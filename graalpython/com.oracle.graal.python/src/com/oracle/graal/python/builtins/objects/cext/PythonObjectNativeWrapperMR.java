@@ -98,6 +98,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -541,7 +542,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         protected static boolean isPyDateTimeCAPI(PythonObject object) {
-            return object.getPythonClass().getName().equals("PyDateTime_CAPI");
+            return object.getLazyPythonClass().getName().equals("PyDateTime_CAPI");
         }
 
         @Specialization(guards = "isPyDateTimeCAPI(object)")
@@ -686,9 +687,10 @@ public class PythonObjectNativeWrapperMR {
         Object doTpDict(PythonClass object, @SuppressWarnings("unused") String key, Object nativeValue,
                         @Cached("create()") CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached("create()") HashingStorageNodes.GetItemNode getItem,
-                        @Cached("create()") WriteAttributeToObjectNode writeAttrNode) {
+                        @Cached("create()") WriteAttributeToObjectNode writeAttrNode,
+                        @Cached("create()") IsBuiltinClassProfile isPrimitiveDictProfile) {
             Object value = asPythonObjectNode.execute(nativeValue);
-            if (value instanceof PDict && ((PDict) value).getPythonClass() == getCore().lookupType(PythonBuiltinClassType.PDict)) {
+            if (value instanceof PDict && isPrimitiveDictProfile.profileObject((PDict) value, PythonBuiltinClassType.PDict)) {
                 // special and fast case: commit items and change store
                 PDict d = (PDict) value;
                 for (Object k : d.keys()) {

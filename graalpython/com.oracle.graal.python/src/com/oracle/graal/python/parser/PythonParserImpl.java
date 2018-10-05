@@ -31,7 +31,6 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.parser.antlr.Builder;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -127,8 +126,7 @@ public final class PythonParserImpl implements PythonParser {
             }
         };
         PBaseException instance;
-        PythonClass exceptionType = core.getErrorClass(SyntaxError);
-        instance = core.factory().createBaseException(exceptionType, "invalid syntax", new Object[0]);
+        instance = core.factory().createBaseException(SyntaxError, "invalid syntax", new Object[0]);
         String path = source.getPath();
         instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
         instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : "");

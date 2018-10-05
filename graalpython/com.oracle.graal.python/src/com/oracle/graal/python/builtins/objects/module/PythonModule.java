@@ -31,12 +31,12 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public final class PythonModule extends PythonObject {
     private final String name;
 
-    public PythonModule(PythonClass clazz, String name) {
+    public PythonModule(LazyPythonClass clazz, String name) {
         super(clazz);
         this.name = name;
         addDefaultConstants(name);

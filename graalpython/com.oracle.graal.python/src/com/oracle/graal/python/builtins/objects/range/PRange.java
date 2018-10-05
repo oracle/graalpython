@@ -29,7 +29,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.RangeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -43,15 +43,15 @@ public final class PRange extends PImmutableSequence {
     private final int step;
     private final int length;
 
-    public PRange(PythonClass clazz, int stop) {
+    public PRange(LazyPythonClass clazz, int stop) {
         this(clazz, 0, stop, 1);
     }
 
-    public PRange(PythonClass clazz, int start, int stop) {
+    public PRange(LazyPythonClass clazz, int start, int stop) {
         this(clazz, start, stop, 1);
     }
 
-    public PRange(PythonClass clazz, int start, int stop, int step) {
+    public PRange(LazyPythonClass clazz, int start, int stop, int step) {
         super(clazz);
         if (step == 0) {
             CompilerDirectives.transferToInterpreter();

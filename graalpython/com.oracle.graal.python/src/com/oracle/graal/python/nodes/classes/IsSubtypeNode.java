@@ -58,8 +58,8 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
 
-    private ConditionProfile exceptionDerivedProfile = ConditionProfile.createBinaryProfile();
-    private ConditionProfile exceptionClsProfile = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile exceptionDerivedProfile = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile exceptionClsProfile = ConditionProfile.createBinaryProfile();
 
     public static IsSubtypeNode create() {
         return IsSubtypeNodeGen.create();
@@ -114,8 +114,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         }
 
         if (exceptionClsProfile.profile(getBasesNode.execute(cls) == null)) {
-            throw raise(
-                            PythonErrorType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
+            throw raise(PythonErrorType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
         }
 
         return abstractIsSubclassNode.execute(derived, cls);

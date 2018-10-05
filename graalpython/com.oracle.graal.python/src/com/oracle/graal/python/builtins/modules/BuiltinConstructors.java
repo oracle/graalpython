@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -126,6 +125,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
@@ -196,7 +196,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public Object bytearray(PythonClass cls, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
-                        @Cached("createBinaryProfile()") ConditionProfile stopIterationProfile,
+                        @Cached("create()") IsBuiltinClassProfile stopIterationProfile,
                         @Cached("create()") CastToByteNode castToByteNode) {
 
             Object it = getIteratorNode.executeWith(iterable);
@@ -210,7 +210,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                     arr[i++] = item;
                 } catch (PException e) {
-                    e.expect(StopIteration, getCore(), stopIterationProfile);
+                    e.expectStopIteration(stopIterationProfile);
                     return create(cls, resize(arr, i));
                 }
             }
@@ -772,7 +772,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFrozenSet frozensetIterable(PythonClass cls, Object iterable,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
 
             Object iterator = getIterator.executeWith(iterable);
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
@@ -780,7 +780,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 try {
                     getSetItemNode().execute(frozenSet, next.execute(iterator), PNone.NO_VALUE);
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     return frozenSet;
                 }
             }
@@ -928,12 +928,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return bi;
         }
 
-        private final ConditionProfile isPrimitiveProfile = ConditionProfile.createBinaryProfile();
+        private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
 
         public abstract Object executeWith(Object cls, Object arg, Object keywordArg);
 
-        protected boolean isPrimitiveInt(Object cls) {
-            return isPrimitiveProfile.profile(cls == getCore().lookupType(PythonBuiltinClassType.PInt));
+        protected boolean isPrimitiveInt(PythonClass cls) {
+            return isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PInt);
         }
 
         @Specialization
@@ -1000,13 +1000,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        int parseInt(Object cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
+        int parseInt(PythonClass cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
             return parseInt(cls, toString(arg), keywordArg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        long parseLong(Object cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
+        long parseLong(PythonClass cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
             return parseLong(cls, toString(arg), keywordArg);
         }
 
@@ -1028,13 +1028,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        int parseInt(Object cls, PString arg, int keywordArg) throws NumberFormatException {
+        int parseInt(PythonClass cls, PString arg, int keywordArg) throws NumberFormatException {
             return parseInt(cls, arg.getValue(), keywordArg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        long parseLong(Object cls, PString arg, int keywordArg) throws NumberFormatException {
+        long parseLong(PythonClass cls, PString arg, int keywordArg) throws NumberFormatException {
             return parseLong(cls, arg.getValue(), keywordArg);
         }
 
@@ -1050,13 +1050,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        int parseInt(@SuppressWarnings("unused") Object cls, String arg, int keywordArg) throws NumberFormatException {
+        int parseInt(@SuppressWarnings("unused") PythonClass cls, String arg, int keywordArg) throws NumberFormatException {
             return Integer.parseInt(arg, keywordArg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        long parseLong(@SuppressWarnings("unused") Object cls, String arg, int keywordArg) throws NumberFormatException {
+        long parseLong(@SuppressWarnings("unused") PythonClass cls, String arg, int keywordArg) throws NumberFormatException {
             return Long.parseLong(arg, keywordArg);
         }
 
@@ -1839,7 +1839,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPythonBuiltinClass(cls)")
-        Object builtinMethod(@SuppressWarnings("unused") PythonClass cls, Object self, PBuiltinFunction func) {
+        Object methodGeneric(@SuppressWarnings("unused") PythonClass cls, Object self, PBuiltinFunction func) {
             return factory().createBuiltinMethod(self, func);
         }
     }

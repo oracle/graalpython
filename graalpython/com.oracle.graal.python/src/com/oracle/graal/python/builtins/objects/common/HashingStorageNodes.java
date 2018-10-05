@@ -74,8 +74,8 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
@@ -87,6 +87,7 @@ import com.oracle.graal.python.nodes.datamodel.IsHashableNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -313,7 +314,7 @@ public abstract class HashingStorageNodes {
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
                         @Cached("create()") GetIteratorNode getIteratorNode,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
 
             HashingStorage curStorage = PDict.createNewStorage(false, 0);
 
@@ -330,7 +331,7 @@ public abstract class HashingStorageNodes {
                     // TODO remove 'null'
                     curStorage = getSetItemNode().execute(curStorage, keyObj, valueObj);
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     return curStorage;
                 }
             }
@@ -359,7 +360,8 @@ public abstract class HashingStorageNodes {
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Cached("create()") SequenceNodes.LenNode seqLenNode,
                         @Cached("createBinaryProfile()") ConditionProfile lengthTwoProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("create()") IsBuiltinClassProfile errorProfile,
+                        @Cached("create()") IsBuiltinClassProfile isTypeErrorProfile) {
 
             Object it = getIterator.executeWith(iterable);
 
@@ -387,10 +389,10 @@ public abstract class HashingStorageNodes {
                     elements.add(element);
                 }
             } catch (PException e) {
-                if (e.getType() == getCore().getErrorClass(TypeError)) {
+                if (isTypeErrorProfile.profileException(e, TypeError)) {
                     throw raise(TypeError, "cannot convert dictionary update sequence element #%d to a sequence", elements.size());
                 } else {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                 }
             }
 

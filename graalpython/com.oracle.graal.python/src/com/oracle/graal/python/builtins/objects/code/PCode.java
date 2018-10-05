@@ -47,7 +47,7 @@ import java.util.Set;
 
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
@@ -114,13 +114,13 @@ public class PCode extends PythonBuiltinObject {
     // internal cache for the FrameDescriptor
     private FrameDescriptor frameDescriptor;
 
-    public PCode(PythonClass cls, RootNode rootNode, PythonCore core) {
+    public PCode(LazyPythonClass cls, RootNode rootNode, PythonCore core) {
         super(cls);
         this.rootNode = rootNode;
         this.core = core;
     }
 
-    public PCode(PythonClass cls, int argcount, int kwonlyargcount,
+    public PCode(LazyPythonClass cls, int argcount, int kwonlyargcount,
                     int nlocals, int stacksize, int flags,
                     byte[] codestring, Object[] constants, Object[] names,
                     Object[] varnames, Object[] freevars, Object[] cellvars,

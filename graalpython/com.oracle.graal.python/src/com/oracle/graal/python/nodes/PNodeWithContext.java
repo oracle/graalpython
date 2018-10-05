@@ -43,6 +43,8 @@ package com.oracle.graal.python.nodes;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -54,6 +56,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class PNodeWithContext extends Node {
     @Child private PythonObjectFactory factory;
@@ -79,25 +82,30 @@ public abstract class PNodeWithContext extends Node {
         throw PException.fromObject(exc, this);
     }
 
-    public final PException raise(PythonErrorType type) {
-        throw raise(getCore().getErrorClass(type));
-    }
-
-    public PException raise(PythonClass exceptionType) {
+    public PException raise(LazyPythonClass exceptionType) {
         throw raise(factory().createBaseException(exceptionType));
     }
 
-    public final PException raise(PythonErrorType type, String format, Object... arguments) {
+    public final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
         assert format != null;
-        throw raise(factory().createBaseException(getCore().getErrorClass(type), format, arguments));
+        throw raise(factory().createBaseException(type, format, arguments));
     }
 
     public final PException raiseIndexError() {
         return raise(PythonErrorType.IndexError, "cannot fit 'int' into an index-sized integer");
     }
 
-    public PythonClass lookupClass(PythonBuiltinClassType type) {
+    public final PythonClass lookupClass(PythonBuiltinClassType type) {
         return getCore().lookupType(type);
+    }
+
+    public final PythonClass getPythonClass(PythonObject object, ConditionProfile profile) {
+        LazyPythonClass lazyClass = object.getLazyPythonClass();
+        if (profile.profile(lazyClass instanceof PythonClass)) {
+            return (PythonClass) lazyClass;
+        } else {
+            return getCore().lookupType((PythonBuiltinClassType) lazyClass);
+        }
     }
 
     public final PythonContext getContext() {

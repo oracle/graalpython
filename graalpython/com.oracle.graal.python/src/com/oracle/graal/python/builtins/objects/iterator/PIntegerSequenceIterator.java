@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 
 public final class PIntegerSequenceIterator extends PIntegerIterator {
@@ -33,7 +33,7 @@ public final class PIntegerSequenceIterator extends PIntegerIterator {
     final IntSequenceStorage sequence;
     int index;
 
-    public PIntegerSequenceIterator(PythonClass clazz, IntSequenceStorage sequence) {
+    public PIntegerSequenceIterator(LazyPythonClass clazz, IntSequenceStorage sequence) {
         super(clazz);
         this.sequence = sequence;
     }

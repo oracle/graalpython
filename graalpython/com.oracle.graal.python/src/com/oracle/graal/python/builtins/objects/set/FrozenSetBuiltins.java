@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Pytho
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.BinaryUnionNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -62,6 +61,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -104,11 +104,12 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = __REDUCE__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+
         @Specialization
-        public Object reduce(PBaseSet self) {
-            PythonClass clazz = self.getPythonClass();
+        public Object reduce(PBaseSet self,
+                        @Cached("createBinaryProfile()") ConditionProfile classProfile) {
             PTuple contents = factory().createTuple(new Object[]{factory().createList(self.getDictStorage().keysAsArray())});
-            return factory().createTuple(new Object[]{clazz, contents, PNone.NONE});
+            return factory().createTuple(new Object[]{getPythonClass(self, classProfile), contents, PNone.NONE});
         }
     }
 
@@ -328,7 +329,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         PBaseSet doIterable(PBaseSet container, HashingStorage dictStorage, Object iterable,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile,
                         @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
 
             HashingStorage curStorage = dictStorage;
@@ -338,7 +339,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                 try {
                     value = next.execute(iterator);
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     container.setDictStorage(curStorage);
                     return container;
                 }

@@ -68,12 +68,17 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     public final PythonClass getPythonClass() {
+        CompilerAsserts.neverPartOfCompilation();
         assert pythonClass != null;
         if (pythonClass instanceof PythonClass) {
             return (PythonClass) pythonClass;
         } else {
             return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) pythonClass);
         }
+    }
+
+    public final LazyPythonClass getLazyPythonClass() {
+        return pythonClass;
     }
 
     public final DynamicObject getStorage() {

@@ -45,4 +45,6 @@ import com.oracle.truffle.api.object.Shape;
 public interface LazyPythonClass {
 
     Shape getInstanceShape();
+
+    String getName();
 }

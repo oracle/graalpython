@@ -26,15 +26,15 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public class PFrozenSet extends PBaseSet {
 
-    public PFrozenSet(PythonClass clazz) {
+    public PFrozenSet(LazyPythonClass clazz) {
         super(clazz);
     }
 
-    public PFrozenSet(PythonClass clazz, HashingStorage storage) {
+    public PFrozenSet(LazyPythonClass clazz, HashingStorage storage) {
         super(clazz, storage);
     }
 

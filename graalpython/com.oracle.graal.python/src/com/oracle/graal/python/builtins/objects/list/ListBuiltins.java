@@ -83,6 +83,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -124,7 +125,7 @@ public class ListBuiltins extends PythonBuiltins {
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode repr,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
             StringBuilder result = new StringBuilder("[");
             Object iterator = getIterator.executeWith(self);
             boolean initial = true;
@@ -133,7 +134,7 @@ public class ListBuiltins extends PythonBuiltins {
                 try {
                     value = next.execute(iterator);
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     return result.append(']').toString();
                 }
                 Object reprString;
@@ -702,7 +703,7 @@ public class ListBuiltins extends PythonBuiltins {
         PList doPList(PList left, PList other,
                         @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode) {
             SequenceStorage newStore = concatNode.execute(left.getSequenceStorage(), other.getSequenceStorage());
-            return factory().createList(left.getPythonClass(), newStore);
+            return factory().createList(left.getLazyPythonClass(), newStore);
         }
 
         @Specialization(guards = "!isList(right)")

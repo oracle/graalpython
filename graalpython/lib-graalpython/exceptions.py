@@ -42,282 +42,39 @@
 # the exceptions / errors
 #
 # ----------------------------------------------------------------------------------------------------------------------
-class SystemExit(BaseException):
-    def __init__(self, *args):
-        if len(args) > 1:
-            self.code = args
-        elif len(args) == 1:
-            self.code = args[0]
-        else:
-            self.code = 0
-        BaseException.__init__(self, *args)
 
-
-class KeyboardInterrupt(BaseException):
-    pass
-
-
-class GeneratorExit(BaseException):
-    pass
-
-
-class Exception(BaseException):
-    pass
-
-
-class StopIteration(Exception):
-    pass
-
-
-class ArithmeticError(Exception):
-    pass
-
-
-class FloatingPointError(ArithmeticError):
-    pass
-
-
-class OverflowError(ArithmeticError):
-    pass
-
-
-class ZeroDivisionError(ArithmeticError):
-    pass
-
-
-class AssertionError(Exception):
-    pass
-
-
-class AttributeError(Exception):
-    pass
-
-
-class BufferError(Exception):
-    pass
-
-
-class EOFError(Exception):
-    pass
-
-
-class ImportError(Exception):
-    def __init__(self, msg, name=None, path=None):
-        self.message = msg
-        self.name = name
-        self.path = path
-
-
-class ModuleNotFoundError(ImportError):
-    def __init__(self, msg, name=None):
-        self.msg = msg
-        self.name = name
-
-    def __str__(self):
-        if self.name is not None:
-            return "ModuleNotFound: '" + self.name + "'. " + self.msg
-        else:
-            return "ModuleNotFound: " + self.msg
-
-
-class LookupError(Exception):
-    pass
-
-
-class IndexError(LookupError):
-    pass
-
-
-class KeyError(LookupError):
-    pass
-
-
-class MemoryError(Exception):
-    pass
-
-
-class NameError(Exception):
-    pass
-
-
-class UnboundLocalError(NameError):
-    pass
-
-
-class OSError(Exception):
-    pass
-
-
-class IOError(Exception):
-    pass
-
-
-class BlockingIOError(OSError):
-    pass
-
-
-class ChildProcessError(OSError):
-    pass
-
-
-class ConnectionError(OSError):
-    pass
-
-
-class BrokenPipeError(OSError):
-    pass
-
-
-class ConnectionAbortedError(OSError):
-    pass
-
-
-class ConnectionRefusedError(OSError):
-    pass
-
-
-class ConnectionResetError(OSError):
-    pass
-
-
-class FileExistsError(OSError):
-    pass
-
-
-class FileNotFoundError(OSError):
-    pass
-
-
-class InterruptedError(OSError):
-    pass
-
-
-class IsADirectoryError(OSError):
-    pass
-
-
-class NotADirectoryError(OSError):
-    pass
-
-
-class PermissionError(OSError):
-    pass
-
-
-class ProcessLookupError(OSError):
-    pass
-
-
-class TimeoutError(OSError):
-    pass
-
-
-# TODO all the OS errors
-
-class ReferenceError(Exception):
-    pass
-
-
-class RuntimeError(Exception):
-    pass
-
-
-class NotImplementedError(Exception):
-    pass
-
-
-class SyntaxError(Exception):
-    pass
-
-
-class IndentationError(SyntaxError):
-    pass
-
-
-class TabError(IndentationError):
-    pass
-
-
-class SystemError(Exception):
-    pass
-
-
-class TypeError(Exception):
-    pass
-
-
-class ValueError(Exception):
-    pass
-
-
-class UnicodeError(ValueError):
-    pass
-
-
-class UnicodeDecodeError(UnicodeError):
-    pass
-
-
-class UnicodeEncodeError(UnicodeError):
-    pass
-
-
-class UnicodeTranslateError(UnicodeError):
-    pass
-
-
-class FileNotFoundError(OSError):
-    pass
-
-
-class RecursionError(RuntimeError):
-    pass
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
-# the warnings
-#
-# ----------------------------------------------------------------------------------------------------------------------
-class Warning(Exception):
-    pass
-
-
-class BytesWarning(Warning):
-    pass
-
-
-class DeprecationWarning(Warning):
-    pass
-
-
-class FutureWarning(Warning):
-    pass
-
-
-class ImportWarning(Warning):
-    pass
-
-
-class PendingDeprecationWarning(Warning):
-    pass
-
-
-class ResourceWarning(Warning):
-    pass
-
-
-class RuntimeWarning(Warning):
-    pass
-
-
-class SyntaxWarning(Warning):
-    pass
-
-
-class UnicodeWarning(Warning):
-    pass
-
-
-class UserWarning(Warning):
-    pass
+def SystemExit__init__(self, *args):
+    if len(args) > 1:
+        self.code = args
+    elif len(args) == 1:
+        self.code = args[0]
+    else:
+        self.code = 0
+    BaseException.__init__(self, *args)
+
+SystemExit.__init__ = SystemExit__init__
+del SystemExit__init__
+
+def ImportError__init__(self, msg, name=None, path=None):
+    self.message = msg
+    self.name = name
+    self.path = path
+
+ImportError.__init__ = ImportError__init__
+del ImportError__init__
+
+def ModuleNotFoundError__init__(self, msg, name=None):
+    self.msg = msg
+    self.name = name
+
+ModuleNotFoundError.__init__ = ModuleNotFoundError__init__
+del ModuleNotFoundError__init__
+
+def ModuleNotFoundError__str__(self):
+    if self.name is not None:
+        return "ModuleNotFound: '" + self.name + "'. " + self.msg
+    else:
+        return "ModuleNotFound: " + self.msg
+
+ModuleNotFoundError__str__.__init__ = ModuleNotFoundError__str__
+del ModuleNotFoundError__str__

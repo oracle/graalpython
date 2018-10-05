@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 /**
  * The base class of all Python built-in data types (int, complex, tuple...). Subclasses of
@@ -39,7 +39,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
  */
 public abstract class PythonBuiltinObject extends PythonObject {
 
-    public PythonBuiltinObject(PythonClass cls) {
+    public PythonBuiltinObject(LazyPythonClass cls) {
         super(cls);
     }
 }

@@ -39,7 +39,6 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     GetSetDescriptor("get_set_desc"),
     PArray("array", "array"),
     PArrayIterator("arrayiterator"),
-    PBaseException("BaseException", "builtins"),
     PIterator("iterator"),
     PBuiltinFunction("method_descriptor"),
     PBuiltinMethod("builtin_function_or_method"),
@@ -85,27 +84,100 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     Super("super", "builtins"),
     PCode("code"),
     PZip("zip", "builtins"),
-    PBuffer("buffer");
+    PBuffer("buffer"),
 
-    private final String shortName;
+    // Errors and exceptions:
+
+    // everything after BaseException is considered to be an exception
+    PBaseException("BaseException", "builtins"),
+    SystemExit("SystemExit", "builtins"),
+    KeyboardInterrupt("KeyboardInterrupt", "builtins"),
+    GeneratorExit("GeneratorExit", "builtins"),
+    Exception("Exception", "builtins"),
+    StopIteration("StopIteration", "builtins"),
+    ArithmeticError("ArithmeticError", "builtins"),
+    FloatingPointError("FloatingPointError", "builtins"),
+    OverflowError("OverflowError", "builtins"),
+    ZeroDivisionError("ZeroDivisionError", "builtins"),
+    AssertionError("AssertionError", "builtins"),
+    AttributeError("AttributeError", "builtins"),
+    BufferError("BufferError", "builtins"),
+    EOFError("EOFError", "builtins"),
+    ImportError("ImportError", "builtins"),
+    ModuleNotFoundError("ModuleNotFoundError", "builtins"),
+    LookupError("LookupError", "builtins"),
+    IndexError("IndexError", "builtins"),
+    KeyError("KeyError", "builtins"),
+    MemoryError("MemoryError", "builtins"),
+    NameError("NameError", "builtins"),
+    UnboundLocalError("UnboundLocalError", "builtins"),
+    OSError("OSError", "builtins"),
+    IOError("IOError", "builtins"),
+    BlockingIOError("BlockingIOError", "builtins"),
+    ChildProcessError("ChildProcessError", "builtins"),
+    ConnectionError("ConnectionError", "builtins"),
+    BrokenPipeError("BrokenPipeError", "builtins"),
+    ConnectionAbortedError("ConnectionAbortedError", "builtins"),
+    ConnectionRefusedError("ConnectionRefusedError", "builtins"),
+    ConnectionResetError("ConnectionResetError", "builtins"),
+    FileExistsError("FileExistsError", "builtins"),
+    FileNotFoundError("FileNotFoundError", "builtins"),
+    InterruptedError("InterruptedError", "builtins"),
+    IsADirectoryError("IsADirectoryError", "builtins"),
+    NotADirectoryError("NotADirectoryError", "builtins"),
+    PermissionError("PermissionError", "builtins"),
+    ProcessLookupError("ProcessLookupError", "builtins"),
+    TimeoutError("TimeoutError", "builtins"),
+
+    // todo: all OS errors
+
+    ReferenceError("ReferenceError", "builtins"),
+    RuntimeError("RuntimeError", "builtins"),
+    NotImplementedError("NotImplementedError", "builtins"),
+    SyntaxError("SyntaxError", "builtins"),
+    IndentationError("IndentationError", "builtins"),
+    TabError("TabError", "builtins"),
+    SystemError("SystemError", "builtins"),
+    TypeError("TypeError", "builtins"),
+    ValueError("ValueError", "builtins"),
+    UnicodeError("UnicodeError", "builtins"),
+    UnicodeDecodeError("UnicodeDecodeError", "builtins"),
+    UnicodeEncodeError("UnicodeEncodeError", "builtins"),
+    UnicodeTranslateError("UnicodeTranslateError", "builtins"),
+    RecursionError("RecursionError", "builtins"),
+
+    // warnings
+    Warning("Warning", "builtins"),
+    BytesWarning("BytesWarning", "builtins"),
+    DeprecationWarning("DeprecationWarning", "builtins"),
+    FutureWarning("FutureWarning", "builtins"),
+    ImportWarning("ImportWarning", "builtins"),
+    PendingDeprecationWarning("PendingDeprecationWarning", "builtins"),
+    ResourceWarning("ResourceWarning", "builtins"),
+    RuntimeWarning("RuntimeWarning", "builtins"),
+    SyntaxWarning("SyntaxWarning", "builtins"),
+    UnicodeWarning("UnicodeWarning", "builtins"),
+    UserWarning("UserWarning", "builtins");
+
+    private final String name;
     private final Shape instanceShape;
     private final String publicInModule;
 
     // initialized in static constructor
     @CompilationFinal private PythonBuiltinClassType base;
 
-    PythonBuiltinClassType(String shortName, String publicInModule) {
-        this.shortName = shortName;
+    PythonBuiltinClassType(String name, String publicInModule) {
+        this.name = name;
         this.publicInModule = publicInModule;
         this.instanceShape = com.oracle.graal.python.builtins.objects.type.PythonClass.freshShape();
     }
 
-    PythonBuiltinClassType(String shortName) {
-        this(shortName, null);
+    PythonBuiltinClassType(String name) {
+        this(name, null);
     }
 
-    public String getShortName() {
-        return shortName;
+    public String getName() {
+        return name;
     }
 
     public PythonBuiltinClassType getBase() {
@@ -119,19 +191,99 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return shortName;
+        return name;
     }
 
     public Shape getInstanceShape() {
         return instanceShape;
     }
 
+    public static final PythonBuiltinClassType[] VALUES = values();
+    public static final PythonBuiltinClassType[] EXCEPTIONS;
+
     static {
+        // fill the EXCEPTIONS array
+
+        EXCEPTIONS = new PythonBuiltinClassType[VALUES.length - PBaseException.ordinal()];
+        for (int i = 0; i < EXCEPTIONS.length; i++) {
+            EXCEPTIONS[i] = VALUES[i + PBaseException.ordinal()];
+        }
+
+        // set the base classes (and check uniqueness):
+
         HashSet<String> set = new HashSet<>();
         for (PythonBuiltinClassType type : values()) {
-            assert set.add(type.shortName) : type.name();
+            assert set.add(type.name) : type.name();
             type.base = PythonObject;
         }
+
         Boolean.base = PInt;
+
+        SystemExit.base = PBaseException;
+        KeyboardInterrupt.base = PBaseException;
+        GeneratorExit.base = PBaseException;
+        Exception.base = PBaseException;
+        StopIteration.base = Exception;
+        ArithmeticError.base = Exception;
+        FloatingPointError.base = ArithmeticError;
+        OverflowError.base = ArithmeticError;
+        ZeroDivisionError.base = ArithmeticError;
+        AssertionError.base = Exception;
+        AttributeError.base = Exception;
+        BufferError.base = Exception;
+        EOFError.base = Exception;
+        ImportError.base = Exception;
+        ModuleNotFoundError.base = ImportError;
+        LookupError.base = Exception;
+        IndexError.base = LookupError;
+        KeyError.base = LookupError;
+        MemoryError.base = Exception;
+        NameError.base = Exception;
+        UnboundLocalError.base = NameError;
+        OSError.base = Exception;
+        IOError.base = Exception;
+        BlockingIOError.base = OSError;
+        ChildProcessError.base = OSError;
+        ConnectionError.base = OSError;
+        BrokenPipeError.base = OSError;
+        ConnectionAbortedError.base = OSError;
+        ConnectionRefusedError.base = OSError;
+        ConnectionResetError.base = OSError;
+        FileExistsError.base = OSError;
+        FileNotFoundError.base = OSError;
+        InterruptedError.base = OSError;
+        IsADirectoryError.base = OSError;
+        NotADirectoryError.base = OSError;
+        PermissionError.base = OSError;
+        ProcessLookupError.base = OSError;
+        TimeoutError.base = OSError;
+
+        ReferenceError.base = Exception;
+        RuntimeError.base = Exception;
+        NotImplementedError.base = Exception;
+        SyntaxError.base = Exception;
+        IndentationError.base = SyntaxError;
+        TabError.base = IndentationError;
+        SystemError.base = Exception;
+        TypeError.base = Exception;
+        ValueError.base = Exception;
+        UnicodeError.base = ValueError;
+        UnicodeDecodeError.base = UnicodeError;
+        UnicodeEncodeError.base = UnicodeError;
+        UnicodeTranslateError.base = UnicodeError;
+        RecursionError.base = RuntimeError;
+
+        // warnings
+        Warning.base = Exception;
+        BytesWarning.base = Warning;
+        DeprecationWarning.base = Warning;
+        FutureWarning.base = Warning;
+        ImportWarning.base = Warning;
+        PendingDeprecationWarning.base = Warning;
+        ResourceWarning.base = Warning;
+        RuntimeWarning.base = Warning;
+        SyntaxWarning.base = Warning;
+        UnicodeWarning.base = Warning;
+        UserWarning.base = Warning;
     }
 }

@@ -44,10 +44,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -56,7 +57,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PGuards.class)
 @TypeSystemReference(PythonArithmeticTypes.class)
@@ -95,15 +95,15 @@ public abstract class JoinInternalNode extends PNodeWithContext {
     protected String join(String string, PythonObject iterable, @SuppressWarnings("unused") PythonClass iterableClass,
                     @Cached("create()") GetIteratorNode getIterator,
                     @Cached("create()") GetNextNode next,
-                    @Cached("createBinaryProfile()") ConditionProfile errorProfile1,
-                    @Cached("createBinaryProfile()") ConditionProfile errorProfile2) {
+                    @Cached("create()") IsBuiltinClassProfile errorProfile1,
+                    @Cached("create()") IsBuiltinClassProfile errorProfile2) {
 
         Object iterator = getIterator.executeWith(iterable);
         StringBuilder str = new StringBuilder();
         try {
             str.append(checkItem(next.execute(iterator), 0));
         } catch (PException e) {
-            e.expectStopIteration(getCore(), errorProfile1);
+            e.expectStopIteration(errorProfile1);
             return "";
         }
         int i = 1;
@@ -112,7 +112,7 @@ public abstract class JoinInternalNode extends PNodeWithContext {
             try {
                 value = next.execute(iterator);
             } catch (PException e) {
-                e.expectStopIteration(getCore(), errorProfile2);
+                e.expectStopIteration(errorProfile2);
                 return str.toString();
             }
             str.append(string);

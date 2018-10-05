@@ -25,10 +25,6 @@
  */
 package com.oracle.graal.python.builtins;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.FOREIGN;
-import static com.oracle.graal.python.nodes.BuiltinNames.MODULE;
-import static com.oracle.graal.python.nodes.BuiltinNames.OBJECT;
-import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS_PATCHES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 
@@ -135,7 +131,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -269,7 +265,7 @@ public final class Python3Core implements PythonCore {
     };
 
     // not using EnumMap, HashMap, etc. to allow this to fold away during partial evaluation
-    @CompilationFinal(dimensions = 1) private final PythonBuiltinClass[] builtinTypes = new PythonBuiltinClass[PythonBuiltinClassType.values().length];
+    @CompilationFinal(dimensions = 1) private final PythonBuiltinClass[] builtinTypes = new PythonBuiltinClass[PythonBuiltinClassType.VALUES.length];
 
     private final Map<String, PythonModule> builtinModules = new HashMap<>();
     @CompilationFinal private PythonModule builtinsModule;
@@ -331,7 +327,6 @@ public final class Python3Core implements PythonCore {
     private void initializePythonCore() {
         String coreHome = PythonCore.getCoreHomeOrFail();
         loadFile("builtins", coreHome);
-        findKnownExceptionTypes();
         for (String s : CORE_FILES) {
             loadFile(s, coreHome);
         }
@@ -430,19 +425,14 @@ public final class Python3Core implements PythonCore {
         return builtinsModule;
     }
 
-    public PythonClass getErrorClass(PythonErrorType type) {
-        return errorClasses[type.ordinal()];
-    }
-
     @Override
     @TruffleBoundary
-    public PException raise(PythonErrorType type, String format, Object... args) {
+    public PException raise(PythonBuiltinClassType type, String format, Object... args) {
         PBaseException instance;
-        PythonClass exceptionType = getErrorClass(type);
         if (format != null) {
-            instance = factory.createBaseException(exceptionType, format, args);
+            instance = factory.createBaseException(type, format, args);
         } else {
-            instance = factory.createBaseException(exceptionType);
+            instance = factory.createBaseException(type);
         }
         throw PException.fromObject(instance, null);
     }
@@ -462,8 +452,8 @@ public final class Python3Core implements PythonCore {
             env.exportSymbol("python_builtins", builtinsModule);
 
             // export all exception classes for the C API
-            for (PythonErrorType errorType : PythonErrorType.VALUES) {
-                PythonClass errorClass = getErrorClass(errorType);
+            for (PythonBuiltinClassType errorType : PythonBuiltinClassType.EXCEPTIONS) {
+                PythonClass errorClass = lookupType(errorType);
                 env.exportSymbol("python_" + errorClass.getName(), errorClass);
             }
         }
@@ -484,7 +474,7 @@ public final class Python3Core implements PythonCore {
 
     private void initializeTypes() {
         // create class objects for builtin types
-        for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.values()) {
+        for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
             initializeBuiltinClass(builtinClass);
         }
         // n.b.: the builtin modules and classes and their constructors are initialized first here,
@@ -497,11 +487,13 @@ public final class Python3Core implements PythonCore {
             }
         }
         // publish builtin types in the "builtins" module
-        for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.values()) {
+        for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
             String module = builtinClass.getPublicInModule();
+            PythonBuiltinClass clazz = lookupType(builtinClass);
             if (module != null) {
-                lookupBuiltinModule(module).setAttribute(builtinClass.getShortName(), lookupType(builtinClass));
+                lookupBuiltinModule(module).setAttribute(builtinClass.getName(), clazz);
             }
+            clazz.setAttribute("__module__", module == null ? "builtins" : module);
         }
         // now initialize well-known objects
         pyTrue = new PInt(lookupType(PythonBuiltinClassType.Boolean), BigInteger.ONE);
@@ -551,10 +543,11 @@ public final class Python3Core implements PythonCore {
         for (Entry<String, BoundBuiltinCallable<?>> entry : builtinFunctions.entrySet()) {
             String methodName = entry.getKey();
             Object value;
+            assert obj instanceof PythonModule || obj instanceof PythonBuiltinClass : "unexpected object while adding builtins";
             if (obj instanceof PythonModule) {
                 value = factory.createBuiltinMethod(obj, (PBuiltinFunction) entry.getValue());
             } else {
-                value = entry.getValue().boundToObject(obj, factory());
+                value = entry.getValue().boundToObject(((PythonBuiltinClass) obj).getType(), factory());
             }
             obj.setAttribute(methodName, value);
         }
@@ -606,13 +599,6 @@ public final class Python3Core implements PythonCore {
             mod = factory().createPythonModule("__anonymous__");
         }
         callTarget.call(PArguments.withGlobals(mod));
-    }
-
-    private void findKnownExceptionTypes() {
-        errorClasses = new PythonClass[PythonErrorType.VALUES.length];
-        for (PythonErrorType type : PythonErrorType.VALUES) {
-            errorClasses[type.ordinal()] = (PythonClass) builtinsModule.getAttribute(type.name());
-        }
     }
 
     @TruffleBoundary

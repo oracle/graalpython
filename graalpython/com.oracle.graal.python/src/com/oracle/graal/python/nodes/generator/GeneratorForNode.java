@@ -29,6 +29,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
@@ -45,7 +46,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
     @Child protected GetNextNode getNext = GetNextNode.create();
     @Child protected GeneratorAccessNode gen = GeneratorAccessNode.create();
 
-    private final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
+    private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
     private final ConditionProfile executesHeadProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile seenYield = BranchProfile.create();
@@ -83,7 +84,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
             try {
                 value = getNext.execute(iterator);
             } catch (PException e) {
-                e.expectStopIteration(getCore(), errorProfile);
+                e.expectStopIteration(errorProfile);
                 return;
             }
             target.doWrite(frame, value);
@@ -100,7 +101,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                 try {
                     value = getNext.execute(iterator);
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     break;
                 }
                 target.doWrite(frame, value);

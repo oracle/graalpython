@@ -85,6 +85,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
@@ -728,7 +729,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         public String translate(String self, PDict table,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
             char[] translatedChars = new char[self.length()];
 
             for (int i = 0; i < self.length(); i++) {
@@ -737,7 +738,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 try {
                     translated = getItemNode.executeObject(table, (int) original);
                 } catch (PException e) {
-                    e.expect(KeyError, getCore(), errorProfile);
+                    e.expect(KeyError, errorProfile);
                 }
                 int ord = translated == null ? original : (int) translated;
                 translatedChars[i] = (char) ord;

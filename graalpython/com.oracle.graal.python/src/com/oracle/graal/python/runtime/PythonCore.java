@@ -32,9 +32,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -83,10 +81,8 @@ public interface PythonCore {
 
     public String[] builtinModuleNames();
 
-    public PythonClass getErrorClass(PythonErrorType type);
-
     // Error throwing functions
-    public PException raise(PythonErrorType type, String format, Object... args);
+    public PException raise(PythonBuiltinClassType type, String format, Object... args);
 
     // Accessors
     public PythonLanguage getLanguage();

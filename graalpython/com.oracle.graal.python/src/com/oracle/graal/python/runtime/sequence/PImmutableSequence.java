@@ -25,12 +25,12 @@
  */
 package com.oracle.graal.python.runtime.sequence;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 
 public abstract class PImmutableSequence extends PSequence {
 
-    public PImmutableSequence(PythonClass cls) {
+    public PImmutableSequence(LazyPythonClass cls) {
         super(cls);
     }
 

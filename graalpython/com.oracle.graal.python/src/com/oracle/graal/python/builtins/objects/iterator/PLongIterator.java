@@ -25,11 +25,11 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public abstract class PLongIterator extends PBuiltinIterator {
 
-    public PLongIterator(PythonClass clazz) {
+    public PLongIterator(LazyPythonClass clazz) {
         super(clazz);
     }
 

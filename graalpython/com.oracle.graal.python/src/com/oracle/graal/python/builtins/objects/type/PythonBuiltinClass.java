@@ -42,7 +42,7 @@ public final class PythonBuiltinClass extends PythonClass implements PythonCalla
     private final PythonBuiltinClassType type;
 
     public PythonBuiltinClass(PythonBuiltinClassType builtinClass, PythonClass base) {
-        super(PythonBuiltinClassType.PythonClass, builtinClass.getShortName(), builtinClass.getInstanceShape(), base);
+        super(PythonBuiltinClassType.PythonClass, builtinClass.getName(), builtinClass.getInstanceShape(), base);
         this.type = builtinClass;
 
     }

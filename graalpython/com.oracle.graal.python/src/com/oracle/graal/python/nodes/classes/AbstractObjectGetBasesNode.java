@@ -46,17 +46,16 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.NodeInfo;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "cpython://Objects/abstract.c/abstract_get_bases")
 public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
     @Child private LookupAndCallBinaryNode getAttributeNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
 
-    private ConditionProfile exceptionMaskProfile = ConditionProfile.createBinaryProfile();
+    private final IsBuiltinClassProfile exceptionMaskProfile = IsBuiltinClassProfile.create();
 
     public static AbstractObjectGetBasesNode create() {
         return AbstractObjectGetBasesNodeGen.create();
@@ -72,7 +71,7 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
                 return (PTuple) bases;
             }
         } catch (PException pe) {
-            pe.expect(PythonErrorType.AttributeError, getCore(), exceptionMaskProfile);
+            pe.expectAttributeError(exceptionMaskProfile);
         }
         return null;
     }

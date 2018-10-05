@@ -45,6 +45,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 
 /**
  * Custom formatter adding Python-specific conversions often required in error messages.
@@ -108,7 +109,7 @@ public class ErrorMessageFormatter {
         if (getClassNode != null) {
             return getClassNode.execute(obj).getName();
         }
-        return GetClassNode.getNameSlowPath(obj);
+        return GetLazyClassNode.getNameSlowPath(obj);
     }
 
     private static Object[] compact(Object[] args, int removedCnt) {

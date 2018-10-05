@@ -28,7 +28,7 @@ package com.oracle.graal.python.builtins.objects.dict;
 import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public abstract class PJavaIteratorIterator<T> extends PythonBuiltinObject {
@@ -36,7 +36,7 @@ public abstract class PJavaIteratorIterator<T> extends PythonBuiltinObject {
     private final Iterator<T> iterator;
     private int index;
 
-    public PJavaIteratorIterator(PythonClass clazz, Iterator<T> iterator) {
+    public PJavaIteratorIterator(LazyPythonClass clazz, Iterator<T> iterator) {
         super(clazz);
         this.iterator = iterator;
     }

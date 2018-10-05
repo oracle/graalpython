@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.traceback;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
@@ -60,7 +60,7 @@ public final class PTraceback extends PythonBuiltinObject {
     private final int index;
     private PFrame frame;
 
-    public PTraceback(PythonClass clazz, PBaseException exception, int index) {
+    public PTraceback(LazyPythonClass clazz, PBaseException exception, int index) {
         super(clazz);
         this.exception = exception;
         this.index = index;

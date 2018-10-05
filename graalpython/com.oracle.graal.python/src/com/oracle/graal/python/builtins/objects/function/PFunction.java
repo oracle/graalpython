@@ -31,7 +31,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -53,11 +53,11 @@ public class PFunction extends PythonObject implements PythonCallable {
     private PCode code;
     private Object[] defaults;
 
-    public PFunction(PythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
+    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
         this(clazz, name, enclosingClassName, arity, callTarget, frameDescriptor, globals, null, closure);
     }
 
-    public PFunction(PythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, Object[] defaults,
+    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, Object[] defaults,
                     PCell[] closure) {
         super(clazz);
         this.name = name;

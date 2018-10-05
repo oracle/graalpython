@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNodeGen.IsIteratorObjectNodeGen;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -134,9 +135,8 @@ public abstract class GetIteratorNode extends UnaryOpNode {
 
         @Specialization
         boolean doPIterator(Object it,
-                        @Cached("create()") GetClassNode getClassNode,
-                        @Cached("create(__NEXT__)") LookupAttributeInMRONode lookupAttributeNode) {
-            return lookupAttributeNode.execute(getClassNode.execute(it)) != PNone.NO_VALUE;
+                        @Cached("create(__NEXT__)") LookupInheritedAttributeNode lookupAttributeNode) {
+            return lookupAttributeNode.execute(it) != PNone.NO_VALUE;
         }
 
         public static IsIteratorObjectNode create() {

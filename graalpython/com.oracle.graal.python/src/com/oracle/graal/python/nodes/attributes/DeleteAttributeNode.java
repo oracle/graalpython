@@ -40,16 +40,13 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @NodeChildren({@NodeChild(value = "object", type = ExpressionNode.class), @NodeChild(value = "key", type = ExpressionNode.class)})
 public abstract class DeleteAttributeNode extends StatementNode {
@@ -61,16 +58,11 @@ public abstract class DeleteAttributeNode extends StatementNode {
         return DeleteAttributeNodeGen.create(object, key);
     }
 
-    public abstract Object execute(Object object, Object key);
+    public abstract void execute(Object object, Object key);
 
     @Specialization
-    protected Object doIt(Object object, Object key,
-                    @Cached("createIdentityProfile()") ValueProfile setAttributeProfile,
-                    @Cached("create()") GetClassNode getClassNode,
-                    @Cached("create(__DELATTR__)") LookupAttributeInMRONode delAttributeLookup,
-                    @Cached("create()") CallBinaryMethodNode callDelAttribute) {
-        PythonClass type = getClassNode.execute(object);
-        Object descr = setAttributeProfile.profile(delAttributeLookup.execute(type));
-        return callDelAttribute.executeObject(descr, object, key);
+    protected void doIt(Object object, Object key,
+                    @Cached("create(__DELATTR__)") LookupAndCallBinaryNode call) {
+        call.executeObject(object, key);
     }
 }

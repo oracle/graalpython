@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 
@@ -33,11 +33,11 @@ public class PArray extends PSequence {
 
     private SequenceStorage store;
 
-    public PArray(PythonClass clazz) {
+    public PArray(LazyPythonClass clazz) {
         super(clazz);
     }
 
-    public PArray(PythonClass clazz, SequenceStorage store) {
+    public PArray(LazyPythonClass clazz, SequenceStorage store) {
         super(clazz);
         this.store = store;
     }

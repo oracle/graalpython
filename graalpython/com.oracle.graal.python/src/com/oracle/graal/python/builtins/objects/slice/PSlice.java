@@ -29,7 +29,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -42,7 +42,7 @@ public class PSlice extends PythonBuiltinObject {
     protected int stop;
     protected final int step;
 
-    public PSlice(PythonClass cls, int start, int stop, int step) {
+    public PSlice(LazyPythonClass cls, int start, int stop, int step) {
         super(cls);
         this.start = start;
         this.stop = stop;

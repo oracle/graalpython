@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.nodes.builtins;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -56,8 +56,8 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.FastConstructListNodeGen;
@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodesFactory.IndexNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -85,7 +86,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ListNodes {
 
@@ -95,7 +95,7 @@ public abstract class ListNodes {
 
         @Child private GetNextNode next = GetNextNode.create();
 
-        private final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
+        private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         @CompilationFinal private ListStorageType type = ListStorageType.Uninitialized;
 
@@ -117,7 +117,7 @@ public abstract class ListNodes {
                             }
                             elements[i++] = value;
                         } catch (PException e) {
-                            e.expectStopIteration(getCore(), errorProfile);
+                            e.expectStopIteration(errorProfile);
                             break;
                         }
                     }
@@ -155,7 +155,7 @@ public abstract class ListNodes {
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
-                                    e.expectStopIteration(getCore(), errorProfile);
+                                    e.expectStopIteration(errorProfile);
                                     break;
                                 }
                             }
@@ -173,7 +173,7 @@ public abstract class ListNodes {
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
-                                    e.expectStopIteration(getCore(), errorProfile);
+                                    e.expectStopIteration(errorProfile);
                                     break;
                                 }
                             }
@@ -191,7 +191,7 @@ public abstract class ListNodes {
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
-                                    e.expectStopIteration(getCore(), errorProfile);
+                                    e.expectStopIteration(errorProfile);
                                     break;
                                 }
                             }
@@ -209,7 +209,7 @@ public abstract class ListNodes {
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
-                                    e.expectStopIteration(getCore(), errorProfile);
+                                    e.expectStopIteration(errorProfile);
                                     break;
                                 }
                             }
@@ -227,7 +227,7 @@ public abstract class ListNodes {
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
-                                    e.expectStopIteration(getCore(), errorProfile);
+                                    e.expectStopIteration(errorProfile);
                                     break;
                                 }
                             }
@@ -245,7 +245,7 @@ public abstract class ListNodes {
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
-                                    e.expectStopIteration(getCore(), errorProfile);
+                                    e.expectStopIteration(errorProfile);
                                     break;
                                 }
                             }
@@ -278,7 +278,7 @@ public abstract class ListNodes {
                     }
                     elements[i++] = value;
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     break;
                 }
             }

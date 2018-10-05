@@ -250,8 +250,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object doI(String typeName) {
             PythonCore core = getCore();
-            for (PythonBuiltinClassType type : PythonBuiltinClassType.values()) {
-                if (type.getShortName().equals(typeName)) {
+            for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
+                if (type.getName().equals(typeName)) {
                     return core.lookupType(type);
                 }
             }
@@ -361,11 +361,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyErrOccurred extends PythonUnaryBuiltinNode {
         @Specialization
-        Object run(Object errorMarker) {
+        Object run(Object errorMarker,
+                        @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
             PException currentException = getContext().getCurrentException();
             if (currentException != null) {
                 currentException.getExceptionObject().reifyException();
-                return currentException.getType();
+                return getPythonClass(currentException.getExceptionObject(), getClassProfile);
             }
             return errorMarker;
         }
@@ -770,7 +771,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             getContext().setCurrentException(p);
         }
 
-        protected <T> T raiseNative(T defaultValue, PythonErrorType errType, String fmt, Object... args) {
+        protected <T> T raiseNative(T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
             try {
                 throw raise(errType, fmt, args);
             } catch (PException p) {
@@ -1589,7 +1590,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
-            CompilerDirectives.transferToInterpreter();
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
                             Truffle.getRuntime().createCallTarget(new MethKeywordsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
@@ -1601,7 +1601,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
-            CompilerDirectives.transferToInterpreter();
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
                             Truffle.getRuntime().createCallTarget(new MethVarargsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
@@ -1613,7 +1612,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
-            CompilerDirectives.transferToInterpreter();
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
                             Truffle.getRuntime().createCallTarget(new MethNoargsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
@@ -1625,7 +1623,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
-            CompilerDirectives.transferToInterpreter();
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
                             Truffle.getRuntime().createCallTarget(new MethORoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }

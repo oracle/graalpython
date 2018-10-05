@@ -194,7 +194,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
         public PMappingproxy copy(PMappingproxy proxy) {
-            return factory().createMappingproxy(proxy.getPythonClass(), proxy.getDictStorage());
+            return factory().createMappingproxy(proxy.getLazyPythonClass(), proxy.getDictStorage());
         }
     }
 }

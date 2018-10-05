@@ -82,6 +82,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -152,11 +153,13 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonVarargsBuiltinNode {
-        @Child CallVarargsMethodNode dispatchNew = CallVarargsMethodNode.create();
-        @Child LookupAttributeInMRONode lookupNew = LookupAttributeInMRONode.create(__NEW__);
-        @Child CallVarargsMethodNode dispatchInit = CallVarargsMethodNode.create();
-        @Child LookupAttributeInMRONode lookupInit = LookupAttributeInMRONode.create(__INIT__);
-        @Child GetClassNode getClass = GetClassNode.create();
+        @Child private CallVarargsMethodNode dispatchNew = CallVarargsMethodNode.create();
+        @Child private LookupAttributeInMRONode lookupNew = LookupAttributeInMRONode.create(__NEW__);
+        @Child private CallVarargsMethodNode dispatchInit = CallVarargsMethodNode.create();
+        @Child private LookupAttributeInMRONode lookupInit = LookupAttributeInMRONode.create(__INIT__);
+        @Child private GetClassNode getClass = GetClassNode.create();
+
+        private final IsBuiltinClassProfile isClassClassProfile = IsBuiltinClassProfile.create();
 
         public static CallNode create() {
             return CallNodeFactory.create();
@@ -202,7 +205,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 Object newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
                 PythonClass newInstanceKlass = getClass.execute(newInstance);
                 if (newInstanceKlass == self) {
-                    if (arguments.length == 2 && self == getCore().lookupType(PythonBuiltinClassType.PythonClass)) {
+                    if (arguments.length == 2 && isClassClassProfile.profileClass(self, PythonBuiltinClassType.PythonClass)) {
                         // do not call init if we are creating a new instance of type and we are
                         // passing keywords or more than one argument see:
                         // https://github.com/python/cpython/blob/2102c789035ccacbac4362589402ac68baa2cd29/Objects/typeobject.c#L3538
@@ -403,7 +406,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
         @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
 
-        private ConditionProfile typeErrorProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile typeErrorProfile = ConditionProfile.createBinaryProfile();
 
         public static InstanceCheckNode create() {
             return TypeBuiltinsFactory.InstanceCheckNodeFactory.create();
@@ -421,8 +424,9 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         public boolean isInstance(PythonClass cls, Object instance,
-                        @Cached("create()") IsSubtypeNode isSubtypeNode) {
-            if (instance instanceof PythonObject && isSubtypeNode.execute(((PythonObject) instance).getPythonClass(), cls)) {
+                        @Cached("create()") IsSubtypeNode isSubtypeNode,
+                        @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
+            if (instance instanceof PythonObject && isSubtypeNode.execute(getPythonClass((PythonObject) instance, getClassProfile), cls)) {
                 return true;
             }
 

@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -94,12 +95,12 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     @Specialization(guards = "isInDict(frame)")
     protected Object readGlobalDictWithException(VirtualFrame frame,
                     @Cached("create()") GetItemNode getItemNode,
-                    @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                    @Cached("create()") IsBuiltinClassProfile errorProfile) {
         try {
             Object result = getItemNode.execute(PArguments.getGlobals(frame), attributeId);
             return returnGlobalOrBuiltin(result);
         } catch (PException e) {
-            e.expect(KeyError, getCore(), errorProfile);
+            e.expect(KeyError, errorProfile);
             return returnGlobalOrBuiltin(PNone.NO_VALUE);
         }
     }

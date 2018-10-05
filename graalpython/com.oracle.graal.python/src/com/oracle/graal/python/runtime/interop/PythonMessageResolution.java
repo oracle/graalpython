@@ -344,7 +344,8 @@ public class PythonMessageResolution {
         public Object access(Object object, Object field, Object value) {
             String attrKey = getAttributeKey.execute(field);
             if (attrKey != null) {
-                return writeNode.execute(object, attrKey, value);
+                writeNode.execute(object, attrKey, value);
+                return value;
             }
 
             String itemKey = getItemKey.execute(field);

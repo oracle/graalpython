@@ -41,14 +41,14 @@
 package com.oracle.graal.python.builtins.objects.memoryview;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public class PBuffer extends PythonBuiltinObject {
 
     private final Object delegate;
     private final boolean readOnly;
 
-    public PBuffer(PythonClass cls, Object iterable, boolean readOnly) {
+    public PBuffer(LazyPythonClass cls, Object iterable, boolean readOnly) {
         super(cls);
         this.delegate = iterable;
         this.readOnly = readOnly;

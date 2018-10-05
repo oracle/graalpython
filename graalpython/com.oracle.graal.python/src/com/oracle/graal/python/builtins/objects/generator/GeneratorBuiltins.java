@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.RootCallTarget;
@@ -90,7 +91,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
-        private final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
+        private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         protected static DirectCallNode createDirectCall(CallTarget target) {
             return Truffle.getRuntime().createDirectCallNode(target);
@@ -113,7 +114,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             try {
                 return call.call(self.getArguments());
             } catch (PException e) {
-                e.expectStopIteration(getCore(), errorProfile);
+                e.expectStopIteration(errorProfile);
                 self.markAsFinished();
                 throw raise(StopIteration);
             }
@@ -128,7 +129,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             try {
                 return call.call(self.getCallTarget(), self.getArguments());
             } catch (PException e) {
-                e.expectStopIteration(getCore(), errorProfile);
+                e.expectStopIteration(errorProfile);
                 self.markAsFinished();
                 throw raise(StopIteration);
             }

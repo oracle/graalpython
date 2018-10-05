@@ -41,18 +41,19 @@
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 
 public final class GetSetDescriptor extends PythonBuiltinObject implements BoundBuiltinCallable<GetSetDescriptor> {
     private final PythonCallable get;
     private final PythonCallable set;
     private final String name;
-    private final PythonClass type;
+    private final LazyPythonClass type;
 
-    public GetSetDescriptor(PythonClass cls, PythonCallable get, PythonCallable set, String name, PythonClass type) {
+    public GetSetDescriptor(LazyPythonClass cls, PythonCallable get, PythonCallable set, String name, LazyPythonClass type) {
         super(cls);
         this.get = get;
         this.set = set;
@@ -72,15 +73,15 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
         return name;
     }
 
-    public PythonClass getType() {
+    public LazyPythonClass getType() {
         return type;
     }
 
-    public GetSetDescriptor boundToObject(Object klass, PythonObjectFactory factory) {
+    public GetSetDescriptor boundToObject(PythonBuiltinClassType klass, PythonObjectFactory factory) {
         if (klass == type) {
             return this;
         } else {
-            return factory.createGetSetDescriptor(get, set, name, (PythonClass) klass);
+            return factory.createGetSetDescriptor(get, set, name, klass);
         }
     }
 }

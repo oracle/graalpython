@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -67,7 +67,7 @@ public final class PFrame extends PythonBuiltinObject {
     private final Node location;
     private int line = -2;
 
-    public PFrame(PythonClass cls, PBaseException exception, int index) {
+    public PFrame(LazyPythonClass cls, PBaseException exception, int index) {
         super(cls);
         this.exception = exception;
         this.index = index;
@@ -78,7 +78,7 @@ public final class PFrame extends PythonBuiltinObject {
         this.inClassScope = truffleStackTraceElement.getTarget().getRootNode() instanceof ClassBodyRootNode;
     }
 
-    public PFrame(PythonClass cls, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object locals) {
+    public PFrame(LazyPythonClass cls, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object locals) {
         super(cls);
         this.exception = null;
         this.index = -1;

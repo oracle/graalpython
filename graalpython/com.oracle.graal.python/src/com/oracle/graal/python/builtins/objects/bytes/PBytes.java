@@ -27,7 +27,7 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -41,12 +41,12 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
     private SequenceStorage store;
 
-    public PBytes(PythonClass cls, byte[] bytes) {
+    public PBytes(LazyPythonClass cls, byte[] bytes) {
         super(cls);
         store = new ByteSequenceStorage(bytes);
     }
 
-    public PBytes(PythonClass cls, SequenceStorage storage) {
+    public PBytes(LazyPythonClass cls, SequenceStorage storage) {
         super(cls);
         setSequenceStorage(storage);
     }
