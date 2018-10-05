@@ -575,7 +575,7 @@ public final class Python3Core implements PythonCore {
         if (url != null) {
             // This path is hit when we load the core library e.g. from a Jar file
             try {
-                return PythonLanguage.newSource(ctxt, new URL(url + suffix), basename);
+                return getLanguage().newSource(ctxt, new URL(url + suffix), basename);
             } catch (IOException e) {
                 throw new RuntimeException("Could not read core library from " + url);
             }
@@ -583,7 +583,7 @@ public final class Python3Core implements PythonCore {
             Env env = ctxt.getEnv();
             TruffleFile file = env.getTruffleFile(prefix + suffix);
             try {
-                return PythonLanguage.newSource(ctxt, file, basename);
+                return getLanguage().newSource(ctxt, file, basename);
             } catch (SecurityException | IOException t) {
                 throw new RuntimeException("Could not read core library from " + file);
             }

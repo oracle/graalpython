@@ -612,7 +612,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 throw raise(ValueError, "compile() mode must be 'exec', 'eval' or 'single'");
             }
-            return factory().createCode((RootNode) getCore().getParser().parse(pm, getCore(), source, null));
+            Supplier<PCode> createCode = () -> factory().createCode((RootNode) getCore().getParser().parse(pm, getCore(), source, null));
+            if (getCore().isInitialized()) {
+                return createCode.get();
+            } else {
+                return getCore().getLanguage().cacheCode(filename, createCode);
+            }
         }
 
         @SuppressWarnings("unused")

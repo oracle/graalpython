@@ -30,12 +30,14 @@ import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import org.graalvm.options.OptionDescriptors;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -384,12 +386,22 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    public static Source newSource(PythonContext ctxt, TruffleFile src, String name) throws IOException {
-        return newSource(ctxt, Source.newBuilder(ID, src), name);
+    private final ConcurrentHashMap<Object, Source> cachedSources = new ConcurrentHashMap<>();
+
+    public Source newSource(PythonContext ctxt, TruffleFile src, String name) throws IOException {
+        Source source = cachedSources.get(src);
+        if (source == null) {
+            cachedSources.put(src, source = newSource(ctxt, Source.newBuilder(ID, src), name));
+        }
+        return source;
     }
 
-    public static Source newSource(PythonContext ctxt, URL url, String name) throws IOException {
-        return newSource(ctxt, Source.newBuilder(ID, url), name);
+    public Source newSource(PythonContext ctxt, URL url, String name) throws IOException {
+        Source source = cachedSources.get(url);
+        if (source == null) {
+            cachedSources.put(url, source = newSource(ctxt, Source.newBuilder(ID, url), name));
+        }
+        return source;
     }
 
     private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder, String name) throws IOException {
@@ -410,5 +422,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected void initializeMultipleContexts() {
         super.initializeMultipleContexts();
         singleContextAssumption.invalidate();
+    }
+
+    private final ConcurrentHashMap<String, PCode> cachedCode = new ConcurrentHashMap<>();
+
+    public Object cacheCode(String filename, Supplier<PCode> createCode) {
+        return cachedCode.computeIfAbsent(filename, f -> createCode.get());
     }
 }
