@@ -47,9 +47,11 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.RuleNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.NodeFactory;
@@ -92,6 +94,7 @@ import com.oracle.graal.python.parser.antlr.Python3Parser.Lambdef_bodyContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Lambdef_nocond_bodyContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.VarargslistContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -103,7 +106,7 @@ import com.oracle.truffle.api.source.SourceSection;
 
 public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
-    protected final PythonCore core;
+    protected final ParserErrorCallback errors;
     protected final NodeFactory factory;
     protected final TranslationEnvironment environment;
     protected final LoopsBookKeeper loops;
@@ -113,19 +116,19 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
     protected final boolean isInlineMode;
 
-    public PythonTreeTranslator(PythonCore core, String name, TranslationEnvironment environment, Source source, boolean isInlineMode) {
+    public PythonTreeTranslator(ParserErrorCallback errors, String name, TranslationEnvironment environment, Source source, boolean isInlineMode) {
+        this.errors = errors;
         this.name = name;
-        this.core = core;
         this.environment = environment;
         this.source = source;
         this.isInlineMode = isInlineMode;
-        this.factory = core.getLanguage().getNodeFactory();
+        this.factory = errors.getLanguage().getNodeFactory();
         this.loops = new LoopsBookKeeper();
-        this.assigns = new AssignmentTranslator(core, environment, this);
+        this.assigns = new AssignmentTranslator(errors, environment, this);
     }
 
-    public static Node translate(PythonCore core, String name, ParserRuleContext input, TranslationEnvironment environment, Source source, boolean isInlineMode) {
-        PythonTreeTranslator translator = new PythonTreeTranslator(core, name, environment, source, isInlineMode);
+    public static Node translate(ParserErrorCallback errors, String name, ParserRuleContext input, TranslationEnvironment environment, Source source, boolean isInlineMode) {
+        PythonTreeTranslator translator = new PythonTreeTranslator(errors, name, environment, source, isInlineMode);
         try {
             Object parseResult = input.accept(translator);
             if (!isInlineMode && parseResult instanceof RootNode || isInlineMode && parseResult instanceof PNode) {
@@ -300,7 +303,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                         }
                     } else if (isStararg(argctx)) {
                         if (kwargs != null) {
-                            throw core.raise(SyntaxError, "iterable argument unpacking follows keyword argument unpacking");
+                            throw errors.raise(SyntaxError, "iterable argument unpacking follows keyword argument unpacking");
                         }
                         if (starargs != null) {
                             starargs = factory.createBinaryOperation("+", starargs, arg);
@@ -309,10 +312,10 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                         }
                     } else {
                         if (!keywords.isEmpty()) {
-                            throw core.raise(SyntaxError, "positional argument follows keyword argument");
+                            throw errors.raise(SyntaxError, "positional argument follows keyword argument");
                         }
                         if (kwargs != null) {
-                            throw core.raise(SyntaxError, "positional argument follows keyword argument unpacking");
+                            throw errors.raise(SyntaxError, "positional argument follows keyword argument unpacking");
                         }
                         argumentNodes.add(arg);
                     }
@@ -353,7 +356,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             // In CPython, ast.c ensures this
             String argName = ctx.test(0).accept(new ExtractNameVisitor());
             if (argName == null) {
-                throw core.raise(SyntaxError, "Keyword can't be an expression");
+                throw errors.raise(SyntaxError, "Keyword can't be an expression");
             }
             return factory.createKeywordLiteral((ExpressionNode) ctx.test(1).accept(this), argName);
         } else {
@@ -538,7 +541,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
     private PNode visitDictmakerComprehension(Python3Parser.DictmakerContext ctx) {
         if (!ctx.expr().isEmpty()) {
-            throw core.raise(SyntaxError, "dict unpacking cannot be used in dict comprehension");
+            throw errors.raise(SyntaxError, "dict unpacking cannot be used in dict comprehension");
         }
         return factory.callBuiltin(DICT,
                         createComprehensionExpression(ctx, ctx.comp_for(), c -> factory.createTupleLiteral((ExpressionNode) ctx.test(0).accept(this), (ExpressionNode) ctx.test(1).accept(this))));
@@ -554,7 +557,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         } else if (text.equals("False")) {
             return factory.createBooleanLiteral(false);
         } else {
-            throw core.raise(SyntaxError, "Unknown literal %s", text);
+            throw errors.raise(SyntaxError, "Unknown literal %s", text);
         }
     }
 
@@ -610,14 +613,14 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
             if (isBytes) {
                 if (sb != null) {
-                    throw core.raise(SyntaxError, "cannot mix bytes and nonbytes literals");
+                    throw errors.raise(SyntaxError, "cannot mix bytes and nonbytes literals");
                 }
                 if (bb == null) {
                     bb = new BytesBuilder();
                 }
             } else {
                 if (bb != null) {
-                    throw core.raise(SyntaxError, "cannot mix bytes and nonbytes literals");
+                    throw errors.raise(SyntaxError, "cannot mix bytes and nonbytes literals");
                 }
                 if (sb == null) {
                     sb = new StringBuilder();
@@ -634,7 +637,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 if (isRaw) {
                     bb.append(text.getBytes());
                 } else {
-                    bb.append(BytesUtils.fromString(core, text));
+                    bb.append(BytesUtils.fromString(errors, text));
                 }
             } else {
                 if (isRaw) {
@@ -835,7 +838,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     }
 
     private Object parseImaginaryNumber(String text) {
-        return factory.createComplexLiteral(core.factory().createComplex(0.0, Double.parseDouble(text)));
+        return factory.createComplexLiteral(new PComplex(PythonBuiltinClassType.PComplex, 0.0, Double.parseDouble(text)));
     }
 
     private Object parseFloatNumber(String text) {
@@ -973,7 +976,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             return factory.createImportFrom(sb.toString(), fromlist.toArray(new String[0]), asNodes.toArray(new WriteNode[0]), level);
         } else {
             if (!environment.atModuleLevel()) {
-                throw core.raise(SyntaxError, "import * only allowed at module level");
+                throw errors.raise(SyntaxError, "import * only allowed at module level");
             }
             return factory.createImportStar(sb.toString(), level);
         }
@@ -1095,7 +1098,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 delTarget(blockList, targetValue);
             }
         } else {
-            throw core.raise(SyntaxError, "can't delete '%s'", target.getSourceSection().getCharacters());
+            throw errors.raise(SyntaxError, "can't delete '%s'", target.getSourceSection().getCharacters());
         }
     }
 
@@ -1154,7 +1157,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 return factory.createFrameReturn(factory.createWriteLocal((ExpressionNode) ctx.testlist().accept(this), environment.getReturnSlot()));
             }
         }
-        throw core.raise(SyntaxError, "'return' outside function");
+        throw errors.raise(SyntaxError, "'return' outside function");
     }
 
     private static boolean lastChildIsComma(ParserRuleContext ctx) {
@@ -1367,7 +1370,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 WriteNode exceptName = null;
                 if (excctx.test() != null) {
                     if (gotDefaultExcept) {
-                        throw core.raise(SyntaxError, "default except: must be last");
+                        throw errors.raise(SyntaxError, "default except: must be last");
                     }
                     exceptType = (ExpressionNode) excctx.test().accept(this);
                     if (excctx.NAME() != null) {
@@ -1473,11 +1476,11 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         if (environment.isInGeneratorScope()) {
             GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, false);
             RootCallTarget callTarget = gtran.translate();
-            funcDef = GeneratorFunctionDefinitionNode.create(funcName, enclosingClassName, doc, core, arity, defaults, callTarget, fd,
+            funcDef = GeneratorFunctionDefinitionNode.create(funcName, enclosingClassName, doc, arity, defaults, callTarget, fd,
                             environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                             gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
         } else {
-            funcDef = new FunctionDefinitionNode(funcName, enclosingClassName, doc, core, arity, defaults, ct, fd, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
+            funcDef = new FunctionDefinitionNode(funcName, enclosingClassName, doc, arity, defaults, ct, fd, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         }
         environment.leaveScope();
 
@@ -1649,11 +1652,11 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         if (environment.isInGeneratorScope()) {
             GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, false);
             RootCallTarget callTarget = gtran.translate();
-            funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, core, arity, defaults, callTarget, fd,
+            funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, arity, defaults, callTarget, fd,
                             environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                             gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
         } else {
-            funcDef = new FunctionDefinitionNode(funcname, null, null, core, arity, defaults, ct, fd, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
+            funcDef = new FunctionDefinitionNode(funcname, null, null, arity, defaults, ct, fd, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         }
         environment.leaveScope();
 
@@ -1723,7 +1726,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ExpressionNode body = asClassBody(ctx.suite().accept(this), qualName);
         ClassBodyRootNode classBodyRoot = factory.createClassBodyRoot(deriveSourceSection(ctx), className, environment.getCurrentFrame(), body, environment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
-        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(className, null, null, core, Arity.createOneArgumentWithVarKwArgs(className),
+        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(className, null, null, Arity.createOneArgumentWithVarKwArgs(className),
                         factory.createBlock(), ct, environment.getCurrentFrame(), environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         environment.leaveScope();
 

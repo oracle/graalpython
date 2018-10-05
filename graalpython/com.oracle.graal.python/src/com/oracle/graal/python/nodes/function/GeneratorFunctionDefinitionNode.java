@@ -36,7 +36,6 @@ import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
@@ -50,25 +49,25 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     protected final int numOfGeneratorForNode;
     @CompilationFinal private RootCallTarget generatorCallTarget;
 
-    public GeneratorFunctionDefinitionNode(String name, String enclosingClassName, ExpressionNode doc, PythonCore core, Arity arity, StatementNode defaults, RootCallTarget callTarget,
+    public GeneratorFunctionDefinitionNode(String name, String enclosingClassName, ExpressionNode doc, Arity arity, StatementNode defaults, RootCallTarget callTarget,
                     FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-        super(name, enclosingClassName, doc, core, arity, defaults, callTarget, frameDescriptor, definitionCellSlots, executionCellSlots);
+        super(name, enclosingClassName, doc, arity, defaults, callTarget, frameDescriptor, definitionCellSlots, executionCellSlots);
         this.numOfActiveFlags = numOfActiveFlags;
         this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
         this.numOfGeneratorForNode = numOfGeneratorForNode;
     }
 
-    public static GeneratorFunctionDefinitionNode create(String name, String enclosingClassName, ExpressionNode doc, PythonCore core, Arity arity, StatementNode defaults, RootCallTarget callTarget,
+    public static GeneratorFunctionDefinitionNode create(String name, String enclosingClassName, ExpressionNode doc, Arity arity, StatementNode defaults, RootCallTarget callTarget,
                     FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         if (!EmptyNode.isEmpty(defaults)) {
-            return new GeneratorFunctionDefinitionNode(name, enclosingClassName, doc, core, arity, defaults, callTarget,
+            return new GeneratorFunctionDefinitionNode(name, enclosingClassName, doc, arity, defaults, callTarget,
                             frameDescriptor, definitionCellSlots, executionCellSlots,
                             numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
         }
 
-        return new StatelessGeneratorFunctionDefinitionNode(name, enclosingClassName, doc, core, arity, callTarget,
+        return new StatelessGeneratorFunctionDefinitionNode(name, enclosingClassName, doc, arity, callTarget,
                         frameDescriptor, definitionCellSlots, executionCellSlots,
                         numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
     }
@@ -99,10 +98,10 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     public static final class StatelessGeneratorFunctionDefinitionNode extends GeneratorFunctionDefinitionNode {
         @CompilationFinal private PGeneratorFunction cached;
 
-        public StatelessGeneratorFunctionDefinitionNode(String name, String enclosingClassName, ExpressionNode doc, PythonCore core, Arity arity, RootCallTarget callTarget,
+        public StatelessGeneratorFunctionDefinitionNode(String name, String enclosingClassName, ExpressionNode doc, Arity arity, RootCallTarget callTarget,
                         FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
                         int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-            super(name, enclosingClassName, doc, core, arity, BlockNode.create(), callTarget,
+            super(name, enclosingClassName, doc, arity, BlockNode.create(), callTarget,
                             frameDescriptor, definitionCellSlots, executionCellSlots,
                             numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
         }

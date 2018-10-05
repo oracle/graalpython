@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -40,7 +41,7 @@ import com.oracle.truffle.api.TruffleLanguage;
 /**
  * Storage for initialized Python built-in modules and types.
  */
-public interface PythonCore {
+public interface PythonCore extends ParserErrorCallback {
     public static final String FILE_SEPARATOR = File.separator;
     public static final String PATH_SEPARATOR = File.pathSeparator;
     static final String PREFIX = "/";

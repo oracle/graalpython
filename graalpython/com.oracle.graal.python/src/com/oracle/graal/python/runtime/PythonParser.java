@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.runtime;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.frame.Frame;
@@ -67,12 +69,20 @@ public interface PythonParser {
         Eval;
     }
 
+    public interface ParserErrorCallback {
+        RuntimeException raise(PythonBuiltinClassType type, String message, Object... args);
+
+        RuntimeException raiseInvalidSyntax(Source source, SourceSection section);
+
+        PythonLanguage getLanguage();
+    }
+
     /**
      * Parses the given {@link Source} object according to the requested {@link ParserMode}.
      *
      * @return {@link PNode} for {@link ParserMode#InlineEvaluation}, and otherwise {@link RootNode}
      */
-    Node parse(ParserMode mode, PythonCore core, Source source, Frame currentFrame);
+    Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame);
 
     /**
      * Check if an expression can be parsed as an identifier

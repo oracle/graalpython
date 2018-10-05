@@ -35,7 +35,6 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -45,7 +44,6 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
 
     protected final String functionName;
     protected final String enclosingClassName;
-    protected final PythonCore core;
     protected final RootCallTarget callTarget;
     protected final FrameDescriptor frameDescriptor;
     protected final Arity arity;
@@ -54,14 +52,12 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     @Child private ExpressionNode doc;
     @Child private WriteAttributeToObjectNode writeDocNode = WriteAttributeToObjectNode.create();
 
-    public FunctionDefinitionNode(String functionName, String enclosingClassName, ExpressionNode doc, PythonCore core, Arity arity, StatementNode defaults, RootCallTarget callTarget,
-                    FrameDescriptor frameDescriptor,
-                    DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots) {
+    public FunctionDefinitionNode(String functionName, String enclosingClassName, ExpressionNode doc, Arity arity, StatementNode defaults, RootCallTarget callTarget,
+                    FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots) {
         super(definitionCellSlots, executionCellSlots);
         this.functionName = functionName;
         this.enclosingClassName = enclosingClassName;
         this.doc = doc;
-        this.core = core;
         this.callTarget = callTarget;
         this.frameDescriptor = frameDescriptor;
         this.arity = arity;

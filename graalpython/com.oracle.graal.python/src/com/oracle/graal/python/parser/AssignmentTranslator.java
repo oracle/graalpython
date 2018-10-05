@@ -55,18 +55,18 @@ import com.oracle.graal.python.parser.antlr.Python3Parser.ExprlistContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.NormassignContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Star_exprContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.TestContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 
 public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
 
     private final NodeFactory factory;
     private final TranslationEnvironment environment;
     private final PythonTreeTranslator translator;
-    private final PythonCore core;
+    private final ParserErrorCallback errors;
 
-    public AssignmentTranslator(PythonCore core, TranslationEnvironment environment, PythonTreeTranslator translator) {
-        this.core = core;
-        this.factory = core.getLanguage().getNodeFactory();
+    public AssignmentTranslator(ParserErrorCallback errors, TranslationEnvironment environment, PythonTreeTranslator translator) {
+        this.errors = errors;
+        this.factory = errors.getLanguage().getNodeFactory();
         this.environment = environment;
         this.translator = translator;
     }
@@ -113,7 +113,7 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
             temps[i] = tempRead;
             if (leftHandSides[i] instanceof StarredExpressionNode) {
                 if (starredIndex != -1) {
-                    throw core.raise(SyntaxError, "two starred expressions in assignment");
+                    throw errors.raise(SyntaxError, "two starred expressions in assignment");
                 }
                 starredIndex = i;
                 statements[i] = createAssignment(((StarredExpressionNode) leftHandSides[i]).getValue(), (ExpressionNode) tempRead);
@@ -133,7 +133,7 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
         for (int i = 0; i < normassign.size() - 1; i++) {
             NormassignContext normassignContext = normassign.get(i);
             if (normassignContext.yield_expr() != null) {
-                throw core.raise(SyntaxError, "assignment to yield expression not possible");
+                throw errors.raise(SyntaxError, "assignment to yield expression not possible");
             }
             assignments[i + 2] = createAssignment((ExpressionNode) normassignContext.accept(this), (ExpressionNode) tmp);
         }
@@ -164,7 +164,7 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
 
     private PNode makeAugmentedAssignment(ExpressionNode lhs, String text, ExpressionNode rhs) {
         if (!(lhs instanceof ReadNode)) {
-            throw core.raise(SyntaxError, "illegal expression for augmented assignment");
+            throw errors.raise(SyntaxError, "illegal expression for augmented assignment");
         }
         ExpressionNode binOp = factory.createInplaceOperation(text, lhs, rhs);
         PNode duplicate = factory.duplicate(lhs, PNode.class);
@@ -175,7 +175,7 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
     private PNode visitTargetlist(ParserRuleContext ctx, int starSize) {
         if (starSize > 0) {
             if (starSize > 1) {
-                throw core.raise(SyntaxError, "%d starred expressions in assigment", starSize);
+                throw errors.raise(SyntaxError, "%d starred expressions in assigment", starSize);
             }
         }
         List<ExpressionNode> targets = new ArrayList<>();
@@ -198,13 +198,13 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
             } else if (pNode instanceof TupleLiteralNode || pNode instanceof ListLiteralNode) {
                 return pNode;
             } else if (pNode instanceof StarredExpressionNode) {
-                throw core.raise(SyntaxError, "starred assignment target must be in a list or tuple");
+                throw errors.raise(SyntaxError, "starred assignment target must be in a list or tuple");
             } else {
                 String text = ctx.getText();
                 if (environment.isNonlocal(text)) {
-                    throw core.raise(SyntaxError, "no binding for nonlocal variable \"%s\" found", text);
+                    throw errors.raise(SyntaxError, "no binding for nonlocal variable \"%s\" found", text);
                 }
-                throw core.raise(SyntaxError, "Cannot assign to %s", pNode);
+                throw errors.raise(SyntaxError, "Cannot assign to %s", pNode);
             }
         } else {
             return factory.createObjectLiteral(targets.toArray(new ExpressionNode[0]));

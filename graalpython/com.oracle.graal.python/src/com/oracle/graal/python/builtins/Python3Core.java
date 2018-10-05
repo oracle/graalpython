@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS_PATCHES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -131,14 +132,15 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.SourceSection;
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
@@ -626,5 +628,23 @@ public final class Python3Core implements PythonCore {
 
     public PInt getFalse() {
         return pyFalse;
+    }
+
+    public RuntimeException raiseInvalidSyntax(Source source, SourceSection section) {
+        Node location = new Node() {
+            @Override
+            public SourceSection getSourceSection() {
+                return section;
+            }
+        };
+        PBaseException instance;
+        instance = factory().createBaseException(SyntaxError, "invalid syntax", new Object[0]);
+        String path = source.getPath();
+        instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
+        instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : "");
+        instance.setAttribute("lineno", section.getStartLine());
+        instance.setAttribute("offset", section.getStartColumn());
+        instance.setAttribute("msg", section.getCharIndex() == source.getLength() ? "unexpected EOF while parsing" : "invalid syntax");
+        throw PException.fromObject(instance, location);
     }
 }
