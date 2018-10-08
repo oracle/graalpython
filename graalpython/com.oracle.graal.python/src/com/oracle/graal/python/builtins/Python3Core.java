@@ -282,8 +282,13 @@ public final class Python3Core implements PythonCore {
     @CompilationFinal(dimensions = 1) private PythonClass[] errorClasses;
     private final PythonParser parser;
 
-    @CompilationFinal private boolean initialized;
     @CompilationFinal private PythonContext singletonContext;
+
+    /*
+     * This field cannot be made CompilationFinal since code might get compiled during context
+     * initialization.
+     */
+    private boolean initialized;
 
     private final PythonObjectFactory factory = PythonObjectFactory.create();
 

@@ -32,7 +32,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.object.HiddenKey;
 
 /**
@@ -49,7 +49,7 @@ public final class PythonBuiltinClass extends PythonClass implements PythonCalla
 
     @Override
     public void setAttribute(Object name, Object value) {
-        CompilerDirectives.transferToInterpreter();
+        CompilerAsserts.neverPartOfCompilation();
         if (name instanceof HiddenKey || !PythonLanguage.getCore().isInitialized()) {
             setAttributeUnsafe(name, value);
         } else {

@@ -2027,6 +2027,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Fallback
+        @TruffleBoundary
         Object call(Object klsas, Object set, Object get, Object name, Object owner) {
             denyInstantiationAfterInitialization();
             throw new RuntimeException("error in creating getset_descriptor during core initialization");

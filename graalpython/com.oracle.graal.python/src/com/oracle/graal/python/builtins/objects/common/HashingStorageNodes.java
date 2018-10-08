@@ -710,11 +710,6 @@ public abstract class HashingStorageNodes {
         @TruffleBoundary
         @Specialization(guards = {"!storage.getStore().getShape().isValid()"})
         protected HashingStorage doDynamicObjectUpdateShape(DynamicObjectStorage storage, String name, Object value) {
-            /*
-             * Slow path that we do not handle in compiled code. But no need to invalidate compiled
-             * code.
-             */
-            CompilerDirectives.transferToInterpreter();
             storage.getStore().updateShape();
             return doDynamicObjectUncached(storage, name, value);
         }

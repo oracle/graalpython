@@ -657,6 +657,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = {"eq(TP_BASICSIZE, key)", "isPythonUserClass(object)"})
+        @TruffleBoundary
         long doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key, long basicsize) {
             // Do deliberately not use "SetAttributeNode" because we want to directly set the
             // attribute an bypass any user code.
