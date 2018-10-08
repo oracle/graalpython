@@ -117,8 +117,8 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static String concat(Object moduleName, Object qualName) {
-            if (moduleName != PNone.NO_VALUE) {
+        private String concat(Object moduleName, Object qualName) {
+            if (moduleName != PNone.NO_VALUE && !moduleName.equals(getCore().getBuiltins().getModuleName())) {
                 return String.format("<class '%s.%s'>", moduleName, qualName);
             }
             return String.format("<class '%s'>", qualName);

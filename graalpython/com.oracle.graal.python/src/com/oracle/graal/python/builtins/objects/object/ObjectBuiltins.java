@@ -28,6 +28,8 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
@@ -75,7 +77,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -83,7 +84,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -168,17 +168,24 @@ public class ObjectBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         String repr(Object self,
-                        @Cached("create()") GetClassNode getClass) {
+                        @Cached("create()") GetClassNode getClass,
+                        @Cached("create()") ReadAttributeFromObjectNode readModuleNode,
+                        @Cached("create()") ReadAttributeFromObjectNode readQualNameNode) {
             if (self == PNone.NONE) {
                 return "None";
             }
-            return String.format("<%s object at 0x%x>", getClass.execute(self).getName(), self.hashCode());
+            PythonClass type = getClass.execute(self);
+            Object moduleName = readModuleNode.execute(type, __MODULE__);
+            Object qualName = readQualNameNode.execute(type, __QUALNAME__);
+            if (moduleName != PNone.NO_VALUE && !moduleName.equals(getCore().getBuiltins().getModuleName())) {
+                return String.format("<%s.%s object at 0x%x>", moduleName, qualName, self.hashCode());
+            }
+            return String.format("<%s object at 0x%x>", qualName, self.hashCode());
         }
     }
 

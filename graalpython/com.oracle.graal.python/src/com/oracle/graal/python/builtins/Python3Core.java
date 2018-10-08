@@ -425,6 +425,7 @@ public final class Python3Core implements PythonCore {
         return builtinModules.keySet().toArray(new String[0]);
     }
 
+    @Override
     public PythonModule getBuiltins() {
         return builtinsModule;
     }
