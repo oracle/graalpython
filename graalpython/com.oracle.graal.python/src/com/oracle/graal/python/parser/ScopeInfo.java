@@ -142,12 +142,14 @@ public final class ScopeInfo {
         return this.getFrameDescriptor().findFrameSlot(identifier);
     }
 
-    private void createSlotIfNotPresent(String identifier) {
+    FrameSlot createSlotIfNotPresent(String identifier) {
         assert identifier != null : "identifier is null!";
         FrameSlot frameSlot = this.getFrameDescriptor().findFrameSlot(identifier);
         if (frameSlot == null) {
             identifierToIndex.add(identifier);
-            this.getFrameDescriptor().addFrameSlot(identifier);
+            return getFrameDescriptor().addFrameSlot(identifier);
+        } else {
+            return frameSlot;
         }
     }
 

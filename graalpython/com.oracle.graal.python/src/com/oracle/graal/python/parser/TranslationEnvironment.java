@@ -180,7 +180,7 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
     }
 
     private FrameSlot createAndReturnLocal(String name) {
-        return currentScope.getFrameDescriptor().findOrAddFrameSlot(name);
+        return currentScope.createSlotIfNotPresent(name);
     }
 
     private boolean isCellInCurrentScope(String name) {
@@ -349,7 +349,7 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
 
     private void createGlobal(String name) {
         assert name != null : "name is null!";
-        globalScope.getFrameDescriptor().findOrAddFrameSlot(name);
+        globalScope.createSlotIfNotPresent(name);
     }
 
     public void addLocalGlobals(String name) {
@@ -399,7 +399,7 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
     }
 
     public FrameSlot getReturnSlot() {
-        return currentScope.getFrameDescriptor().findOrAddFrameSlot(RETURN_SLOT_ID);
+        return currentScope.createSlotIfNotPresent(RETURN_SLOT_ID);
     }
 
     private ScopeInfo findEnclosingClassScope() {
