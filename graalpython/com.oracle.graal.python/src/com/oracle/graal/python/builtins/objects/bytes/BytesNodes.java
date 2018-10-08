@@ -135,14 +135,19 @@ public abstract class BytesNodes {
 
         public abstract byte[] execute(Object obj);
 
-        @Specialization(rewriteOn = PException.class)
-        byte[] doBytes(PIBytesLike bytes) {
-            return getToByteArrayNode().execute(bytes.getSequenceStorage());
+        @Specialization
+        byte[] doBytes(PBytes bytes,
+                        @Cached("createBinaryProfile()") ConditionProfile exceptionProfile) {
+            return doBytesLike(bytes, exceptionProfile);
         }
 
-        @Specialization(replaces = "doBytes")
-        byte[] doBytesErro(PIBytesLike bytes,
+        @Specialization
+        byte[] doByteArray(PByteArray byteArray,
                         @Cached("createBinaryProfile()") ConditionProfile exceptionProfile) {
+            return doBytesLike(byteArray, exceptionProfile);
+        }
+
+        private byte[] doBytesLike(PIBytesLike bytes, ConditionProfile exceptionProfile) {
             try {
                 return getToByteArrayNode().execute(bytes.getSequenceStorage());
             } catch (PException e) {

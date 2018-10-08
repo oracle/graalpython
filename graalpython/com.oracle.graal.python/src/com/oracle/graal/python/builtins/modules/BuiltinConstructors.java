@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
@@ -557,6 +558,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFloat)
     @GenerateNodeFactory
     public abstract static class FloatNode extends PythonBuiltinNode {
+        @Child private BytesNodes.ToBytesNode toByteArrayNode;
+
         private final ConditionProfile isPrimitiveProfile = ConditionProfile.createBinaryProfile();
 
         protected boolean isPrimitiveFloat(Object cls) {
@@ -610,6 +613,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "!isNativeClass(cls)")
         public Object floatFromString(PythonClass cls, String arg) {
             double value = convertStringToDouble(arg);
+            if (isPrimitiveFloat(cls)) {
+                return value;
+            }
+            return factory().createFloat(cls, value);
+        }
+
+        @Specialization(guards = "!isNativeClass(cls)")
+        @TruffleBoundary
+        public Object floatFromBytes(PythonClass cls, PIBytesLike arg) {
+            double value = convertStringToDouble(new String(getByteArray(arg)));
             if (isPrimitiveFloat(cls)) {
                 return value;
             }
@@ -721,6 +734,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public Object floatFromObject(@SuppressWarnings("unused") Object cls, Object arg) {
             throw raise(TypeError, "can't convert %s to float", arg.getClass().getSimpleName());
         }
+
+        private byte[] getByteArray(PIBytesLike pByteArray) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
+            }
+            return toByteArrayNode.execute(pByteArray);
+        }
     }
 
     // frozenset([iterable])
@@ -779,7 +800,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IntNode extends PythonBuiltinNode {
 
-        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+        @Child private BytesNodes.ToBytesNode toByteArrayNode;
 
         @TruffleBoundary(transferToInterpreterOnException = false)
         private Object stringToInt(String num, int base) {
@@ -1126,9 +1147,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private byte[] getByteArray(PIBytesLike pByteArray) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+                toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
             }
-            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
+            return toByteArrayNode.execute(pByteArray);
         }
 
     }
