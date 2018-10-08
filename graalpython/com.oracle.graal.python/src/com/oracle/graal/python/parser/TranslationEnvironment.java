@@ -180,7 +180,7 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
     }
 
     private FrameSlot createAndReturnLocal(String name) {
-        return currentScope.getFrameDescriptor().findOrAddFrameSlot(name);
+        return currentScope.createSlotIfNotPresent(name);
     }
 
     private boolean isCellInCurrentScope(String name) {
@@ -224,35 +224,33 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         return factory.createWriteLocal(right, slot);
     }
 
-    private StatementNode getWriteNode(String name, Function<FrameSlot, ReadArgumentNode> getReadNode) {
-        FrameSlot slot = currentScope.findFrameSlot(name);
-        ExpressionNode right = getReadNode.apply(slot).asExpression();
-
-        return getWriteNode(name, slot, right);
+    private StatementNode getWriteNode(String name, Function<Integer, ReadArgumentNode> getReadNode) {
+        ExpressionNode right = getReadNode.apply(currentScope.getVariableIndex(name)).asExpression();
+        return getWriteNode(name, currentScope.findFrameSlot(name), right);
     }
 
     public StatementNode getWriteArgumentToLocal(String name) {
-        return getWriteNode(name, slot -> ReadIndexedArgumentNode.create(slot.getIndex()));
+        return getWriteNode(name, index -> ReadIndexedArgumentNode.create(index));
     }
 
     public StatementNode getWriteKeywordArgumentToLocal(String name, ReadDefaultArgumentNode readDefaultArgumentNode) {
-        return getWriteNode(name, slot -> ReadKeywordNode.create(name, slot.getIndex(), readDefaultArgumentNode));
+        return getWriteNode(name, index -> ReadKeywordNode.create(name, index, readDefaultArgumentNode));
     }
 
     public StatementNode getWriteRequiredKeywordArgumentToLocal(String name) {
-        return getWriteNode(name, slot -> ReadKeywordNode.create(name));
+        return getWriteNode(name, index -> ReadKeywordNode.create(name));
     }
 
     public StatementNode getWriteRequiredKeywordArgumentToLocal(String name, ReadDefaultArgumentNode readDefaultArgumentNode) {
-        return getWriteNode(name, slot -> ReadKeywordNode.create(name, readDefaultArgumentNode));
+        return getWriteNode(name, index -> ReadKeywordNode.create(name, readDefaultArgumentNode));
     }
 
     public StatementNode getWriteVarArgsToLocal(String name) {
-        return getWriteNode(name, slot -> ReadVarArgsNode.create(slot.getIndex()));
+        return getWriteNode(name, index -> ReadVarArgsNode.create(index));
     }
 
     public StatementNode getWriteKwArgsToLocal(String name, String[] names) {
-        return getWriteNode(name, slot -> ReadVarKeywordsNode.createForUserFunction(names));
+        return getWriteNode(name, index -> ReadVarKeywordsNode.createForUserFunction(names));
     }
 
     static ScopeInfo findVariableScope(ScopeInfo enclosingScope, String identifier) {
@@ -351,7 +349,7 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
 
     private void createGlobal(String name) {
         assert name != null : "name is null!";
-        globalScope.getFrameDescriptor().findOrAddFrameSlot(name);
+        globalScope.createSlotIfNotPresent(name);
     }
 
     public void addLocalGlobals(String name) {
@@ -401,7 +399,7 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
     }
 
     public FrameSlot getReturnSlot() {
-        return currentScope.getFrameDescriptor().findOrAddFrameSlot(RETURN_SLOT_ID);
+        return currentScope.createSlotIfNotPresent(RETURN_SLOT_ID);
     }
 
     private ScopeInfo findEnclosingClassScope() {

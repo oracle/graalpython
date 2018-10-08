@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.parser;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -51,6 +52,7 @@ public final class ScopeInfo {
 
     private final String scopeId;
     private final FrameDescriptor frameDescriptor;
+    private final ArrayList<String> identifierToIndex;
     private ScopeKind scopeKind;
     private final ScopeInfo parent;
 
@@ -86,6 +88,7 @@ public final class ScopeInfo {
         this.scopeKind = kind;
         this.frameDescriptor = frameDescriptor == null ? new FrameDescriptor() : frameDescriptor;
         this.parent = parent;
+        this.identifierToIndex = new ArrayList<>();
         // register current scope as child to parent scope
         if (this.parent != null) {
             this.nextChildScope = this.parent.firstChildScope;
@@ -139,11 +142,14 @@ public final class ScopeInfo {
         return this.getFrameDescriptor().findFrameSlot(identifier);
     }
 
-    private void createSlotIfNotPresent(String identifier) {
+    FrameSlot createSlotIfNotPresent(String identifier) {
         assert identifier != null : "identifier is null!";
         FrameSlot frameSlot = this.getFrameDescriptor().findFrameSlot(identifier);
         if (frameSlot == null) {
-            this.getFrameDescriptor().addFrameSlot(identifier);
+            identifierToIndex.add(identifier);
+            return getFrameDescriptor().addFrameSlot(identifier);
+        } else {
+            return frameSlot;
         }
     }
 
@@ -266,5 +272,14 @@ public final class ScopeInfo {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return scopeKind.toString() + " " + scopeId;
+    }
+
+    public Integer getVariableIndex(String name) {
+        for (int i = 0; i < identifierToIndex.size(); i++) {
+            if (identifierToIndex.get(i).equals(name)) {
+                return i;
+            }
+        }
+        throw new IllegalStateException("Cannot find argument for name " + name + " in scope " + getScopeId());
     }
 }
