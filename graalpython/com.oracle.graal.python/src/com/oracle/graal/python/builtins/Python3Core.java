@@ -272,14 +272,9 @@ public final class Python3Core implements PythonCore {
     private final Map<String, PythonModule> builtinModules = new HashMap<>();
     @CompilationFinal private PythonModule builtinsModule;
 
-    @CompilationFinal private PythonBuiltinClass typeClass;
-    @CompilationFinal private PythonBuiltinClass objectClass;
-    @CompilationFinal private PythonBuiltinClass moduleClass;
-    @CompilationFinal private PythonBuiltinClass foreignClass;
     @CompilationFinal private PInt pyTrue;
     @CompilationFinal private PInt pyFalse;
 
-    @CompilationFinal(dimensions = 1) private PythonClass[] errorClasses;
     private final PythonParser parser;
 
     @CompilationFinal private PythonContext singletonContext;
@@ -493,7 +488,7 @@ public final class Python3Core implements PythonCore {
                 createModule(annotation.defineModule());
             }
         }
-        // publish builtin types in the "builtins" module
+        // publish builtin types in the corresponding modules
         for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
             String module = builtinClass.getPublicInModule();
             PythonBuiltinClass clazz = lookupType(builtinClass);

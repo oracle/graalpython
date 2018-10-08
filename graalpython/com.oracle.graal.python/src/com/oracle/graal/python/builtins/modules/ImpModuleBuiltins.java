@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -374,7 +375,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 } else {
                     file = env.getTruffleFile(path);
                 }
-                Source src = getCore().getLanguage().newSource(ctxt, file, fileName);
+                Source src = getRootNode().getLanguage(PythonLanguage.class).newSource(ctxt, file, fileName);
                 CallTarget callTarget = env.parse(src);
                 callTarget.call(PArguments.withGlobals(mod));
             } catch (PException e) {

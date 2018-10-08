@@ -91,6 +91,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         private final IsBuiltinClassProfile isNoneBuiltinClassProfile = IsBuiltinClassProfile.create();
         private final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
         private final IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
+        private final BranchProfile errorBranch = BranchProfile.create();
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
         protected boolean descr_check(GetSetDescriptor descr, Object obj, PythonClass type) {
@@ -114,7 +115,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                     }
                 }
             }
-
+            errorBranch.enter();
             throw raise(TypeError, "descriptor '%s' for '%s' objects doesn't apply to '%s' object", descr.getName(), descrType.getName(), type.getName());
         }
     }

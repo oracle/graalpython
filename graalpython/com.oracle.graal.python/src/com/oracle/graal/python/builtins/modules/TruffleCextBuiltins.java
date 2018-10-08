@@ -185,7 +185,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        PythonClass errorHandlerClass = core.factory().createPythonClass(core.lookupType(PythonBuiltinClassType.PythonClass), "CErrorHandler",
+        PythonClass errorHandlerClass = core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, "CErrorHandler",
                         new PythonClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
         builtinConstants.put("CErrorHandler", errorHandlerClass);
         builtinConstants.put(ERROR_HANDLER, core.factory().createPythonObject(errorHandlerClass));

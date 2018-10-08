@@ -120,7 +120,7 @@ public abstract class CastToListNode extends UnaryOpNode {
     @Specialization(rewriteOn = PException.class)
     protected PList starredIterable(PythonObject value,
                     @Cached("create()") ConstructListNode constructListNode) {
-        return constructListNode.execute(lookupClass(PythonBuiltinClassType.PList), value);
+        return constructListNode.execute(PythonBuiltinClassType.PList, value);
     }
 
     @Specialization

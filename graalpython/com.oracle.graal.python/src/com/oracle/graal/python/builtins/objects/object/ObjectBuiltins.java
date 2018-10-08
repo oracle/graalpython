@@ -175,7 +175,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         String repr(Object self,
-                        @Cached("create()") GetLazyClassNode getClass,
+                        @Cached("create()") GetClassNode getClass,
                         @Cached("create()") ReadAttributeFromObjectNode readModuleNode,
                         @Cached("create()") ReadAttributeFromObjectNode readQualNameNode) {
             if (self == PNone.NONE) {

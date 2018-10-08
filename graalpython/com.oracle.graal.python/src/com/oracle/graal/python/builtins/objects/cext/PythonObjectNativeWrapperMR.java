@@ -650,6 +650,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = {"eq(TP_BASICSIZE, key)", "isPythonBuiltinClass(object)"})
+        @TruffleBoundary
         long doTpBasicsize(PythonBuiltinClass object, @SuppressWarnings("unused") String key, long basicsize) {
             // We have to use the 'setAttributeUnsafe' because this properly cannot be modified by
             // the user and we need to initialize it.

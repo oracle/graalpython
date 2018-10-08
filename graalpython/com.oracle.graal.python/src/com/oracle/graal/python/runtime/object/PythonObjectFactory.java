@@ -223,15 +223,15 @@ public final class PythonObjectFactory extends Node {
         return trace(new PInt(PythonBuiltinClassType.PInt, value));
     }
 
-    public Object createInt(PythonClass cls, int value) {
+    public Object createInt(LazyPythonClass cls, int value) {
         return trace(new PInt(cls, BigInteger.valueOf(value)));
     }
 
-    public Object createInt(PythonClass cls, long value) {
+    public Object createInt(LazyPythonClass cls, long value) {
         return trace(new PInt(cls, BigInteger.valueOf(value)));
     }
 
-    public PInt createInt(PythonClass cls, BigInteger value) {
+    public PInt createInt(LazyPythonClass cls, BigInteger value) {
         return trace(new PInt(cls, value));
     }
 
@@ -239,7 +239,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PFloat(PythonBuiltinClassType.PFloat, value));
     }
 
-    public PFloat createFloat(PythonClass cls, double value) {
+    public PFloat createFloat(LazyPythonClass cls, double value) {
         return trace(new PFloat(cls, value));
     }
 
@@ -247,7 +247,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PString(PythonBuiltinClassType.PString, string));
     }
 
-    public PString createString(PythonClass cls, String string) {
+    public PString createString(LazyPythonClass cls, String string) {
         return trace(new PString(cls, string));
     }
 
@@ -255,7 +255,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PString(PythonBuiltinClassType.PString, string));
     }
 
-    public PString createString(PythonClass cls, CharSequence string) {
+    public PString createString(LazyPythonClass cls, CharSequence string) {
         return trace(new PString(cls, string));
     }
 
@@ -263,7 +263,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PBytes(PythonBuiltinClassType.PBytes, array));
     }
 
-    public PBytes createBytes(PythonClass cls, byte[] array) {
+    public PBytes createBytes(LazyPythonClass cls, byte[] array) {
         return trace(new PBytes(cls, array));
     }
 
@@ -271,7 +271,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PBytes(PythonBuiltinClassType.PBytes, storage));
     }
 
-    public PBytes createBytes(PythonClass cls, ByteSequenceStorage storage) {
+    public PBytes createBytes(LazyPythonClass cls, ByteSequenceStorage storage) {
         return trace(new PBytes(cls, storage));
     }
 
@@ -279,7 +279,7 @@ public final class PythonObjectFactory extends Node {
         return createTuple(new Object[0]);
     }
 
-    public final PTuple createEmptyTuple(PythonClass cls) {
+    public final PTuple createEmptyTuple(LazyPythonClass cls) {
         return trace(new PTuple(cls, new Object[0]));
     }
 
@@ -291,11 +291,11 @@ public final class PythonObjectFactory extends Node {
         return trace(new PTuple(PythonBuiltinClassType.PTuple, store));
     }
 
-    public final PTuple createTuple(PythonClass cls, Object[] objects) {
+    public final PTuple createTuple(LazyPythonClass cls, Object[] objects) {
         return trace(new PTuple(cls, objects));
     }
 
-    public final PTuple createTuple(PythonClass cls, SequenceStorage store) {
+    public final PTuple createTuple(LazyPythonClass cls, SequenceStorage store) {
         return trace(new PTuple(cls, store));
     }
 
@@ -339,7 +339,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PythonModule(cls, name));
     }
 
-    public PythonClass createPythonClass(PythonClass metaclass, String name, PythonClass[] bases) {
+    public PythonClass createPythonClass(LazyPythonClass metaclass, String name, PythonClass[] bases) {
         return trace(new PythonClass(metaclass, name, PythonLanguage.freshShape(), bases));
     }
 
@@ -426,7 +426,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PSet(PythonBuiltinClassType.PSet));
     }
 
-    public PSet createSet(PythonClass cls) {
+    public PSet createSet(LazyPythonClass cls) {
         return trace(new PSet(cls));
     }
 

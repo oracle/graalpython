@@ -149,7 +149,7 @@ public class PythonObject extends PythonAbstractObject {
      */
     @Override
     public String toString() {
-        return "<" + getPythonClass().getName() + " object at 0x" + Integer.toHexString(hashCode()) + ">";
+        return "<" + getLazyPythonClass().getName() + " object at 0x" + Integer.toHexString(hashCode()) + ">";
     }
 
     /**

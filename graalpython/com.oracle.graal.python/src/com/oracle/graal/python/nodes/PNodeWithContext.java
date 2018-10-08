@@ -94,10 +94,6 @@ public abstract class PNodeWithContext extends Node {
         return raise(PythonErrorType.IndexError, "cannot fit 'int' into an index-sized integer");
     }
 
-    public final PythonClass lookupClass(PythonBuiltinClassType type) {
-        return getCore().lookupType(type);
-    }
-
     public final PythonClass getPythonClass(LazyPythonClass lazyClass, ConditionProfile profile) {
         if (profile.profile(lazyClass instanceof PythonClass)) {
             return (PythonClass) lazyClass;

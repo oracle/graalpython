@@ -40,9 +40,11 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -84,8 +86,9 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isBuiltinFunction(self)")
         @TruffleBoundary
-        Object reprBuiltinMethod(PBuiltinMethod self) {
-            return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), self.getSelf(), self.hashCode());
+        Object reprBuiltinMethod(PBuiltinMethod self,
+                        @Cached("create()") GetLazyClassNode getClassNode) {
+            return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
         }
     }
 

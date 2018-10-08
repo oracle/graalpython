@@ -219,7 +219,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
          * behavior. (it only captures the frames if a CallTarget boundary is crossed)
          */
         private static final class GetStackTraceRootNode extends RootNode {
-            private ContextReference<PythonContext> contextRef;
+            private final ContextReference<PythonContext> contextRef;
 
             protected GetStackTraceRootNode(PythonLanguage language) {
                 super(language);

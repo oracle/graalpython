@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -118,6 +119,33 @@ public final class IsBuiltinClassProfile {
             }
             return false;
         }
+    }
+
+    public boolean profileClass(PythonClass clazz, PythonBuiltinClassType type) {
+        if (clazz instanceof PythonBuiltinClass) {
+            if (!isBuiltinClass) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isBuiltinClass = true;
+            }
+            if (((PythonBuiltinClass) clazz).getType() == type) {
+                if (!match) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    match = true;
+                }
+                return true;
+            } else {
+                if (!noMatch) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    noMatch = true;
+                }
+                return false;
+            }
+        }
+        if (!isOtherClass) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            isOtherClass = true;
+        }
+        return false;
     }
 
     public static boolean profileClassSlowPath(LazyPythonClass clazz, PythonBuiltinClassType type) {

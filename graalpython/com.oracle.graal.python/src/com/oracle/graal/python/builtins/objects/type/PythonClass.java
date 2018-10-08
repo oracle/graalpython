@@ -40,7 +40,6 @@ import java.util.WeakHashMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -248,10 +247,6 @@ public class PythonClass extends PythonObject implements LazyPythonClass {
         }
 
         return mro.toArray(new PythonClass[mro.size()]);
-    }
-
-    public void addMethod(PFunction method) {
-        setAttribute(method.getName(), method);
     }
 
     @Override

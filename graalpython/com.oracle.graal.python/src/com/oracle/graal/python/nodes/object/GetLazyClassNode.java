@@ -92,68 +92,68 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
     protected abstract LazyPythonClass executeGetClass(Object object);
 
     @Specialization
-    protected LazyPythonClass getIt(@SuppressWarnings("unused") GetSetDescriptor object) {
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") GetSetDescriptor object) {
         return PythonBuiltinClassType.GetSetDescriptor;
     }
 
     @Specialization
-    protected LazyPythonClass getIt(@SuppressWarnings("unused") PNone object) {
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") PNone object) {
         return PythonBuiltinClassType.PNone;
     }
 
     @Specialization
-    protected LazyPythonClass getIt(@SuppressWarnings("unused") PNotImplemented object) {
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") PNotImplemented object) {
         return PythonBuiltinClassType.PNotImplemented;
     }
 
     @Specialization
-    protected LazyPythonClass getIt(@SuppressWarnings("unused") PEllipsis object) {
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") PEllipsis object) {
         return PythonBuiltinClassType.PEllipsis;
     }
 
     @Specialization
-    protected LazyPythonClass getIt(@SuppressWarnings("unused") boolean object) {
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") boolean object) {
         return PythonBuiltinClassType.Boolean;
     }
 
     @Specialization
-    protected LazyPythonClass getIt(@SuppressWarnings("unused") int object) {
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") int object) {
         return PythonBuiltinClassType.PInt;
     }
 
     @Specialization
-    protected LazyPythonClass getIt(@SuppressWarnings("unused") long object) {
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") long object) {
         return PythonBuiltinClassType.PInt;
     }
 
     @Specialization
-    protected LazyPythonClass getIt(@SuppressWarnings("unused") double object) {
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") double object) {
         return PythonBuiltinClassType.PFloat;
     }
 
     @Specialization
-    protected LazyPythonClass getIt(@SuppressWarnings("unused") String object) {
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") String object) {
         return PythonBuiltinClassType.PString;
     }
 
     @Specialization
-    protected PythonClass getIt(PythonNativeObject object,
+    protected static PythonClass getIt(PythonNativeObject object,
                     @Cached("create()") GetNativeClassNode getNativeClassNode) {
         return getNativeClassNode.execute(object);
     }
 
     @Specialization
-    protected LazyPythonClass getIt(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
         return PythonBuiltinClassType.PInt;
     }
 
     @Specialization
-    protected LazyPythonClass getPythonClassGeneric(PythonObject object) {
+    protected static LazyPythonClass getPythonClassGeneric(PythonObject object) {
         return object.getLazyPythonClass();
     }
 
     @Specialization(guards = "isForeignObject(object)")
-    protected LazyPythonClass getIt(@SuppressWarnings("unused") TruffleObject object) {
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") TruffleObject object) {
         return PythonBuiltinClassType.TruffleObject;
     }
 

@@ -157,17 +157,17 @@ public final class PBaseException extends PythonObject {
         CompilerAsserts.neverPartOfCompilation();
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return getPythonClass().getName() + ": " + FORMATTER.format(messageFormat, messageArgs);
+                return getLazyPythonClass().getName() + ": " + FORMATTER.format(messageFormat, messageArgs);
             }
-            return getPythonClass().getName() + ": " + messageFormat;
+            return getLazyPythonClass().getName() + ": " + messageFormat;
         } else if (args.getSequenceStorage().length() == 0) {
-            return getPythonClass().getName();
+            return getLazyPythonClass().getName();
         } else if (args.getSequenceStorage().length() == 1) {
             SequenceStorage store = args.getSequenceStorage();
             Object item = store instanceof BasicSequenceStorage ? store.getItemNormalized(0) : "<unknown>";
-            return getPythonClass().getName() + ": " + item.toString();
+            return getLazyPythonClass().getName() + ": " + item.toString();
         } else {
-            return getPythonClass().getName() + ": " + args.toString();
+            return getLazyPythonClass().getName() + ": " + args.toString();
         }
     }
 

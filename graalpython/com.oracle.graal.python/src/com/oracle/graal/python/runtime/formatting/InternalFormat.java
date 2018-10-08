@@ -14,6 +14,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.truffle.PythonTypesUtil;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
 
 //Copyright (c) Jython Developers
@@ -60,7 +61,7 @@ public class InternalFormat {
      * objects that are not, on their own, thread safe.
      */
     public static class Formatter implements Appendable {
-        final PythonCore core;
+        final ParserErrorCallback errors;
 
         /** The specification according to which we format any number supplied to the method. */
         protected final Spec spec;
@@ -91,8 +92,8 @@ public class InternalFormat {
          * @param result destination buffer
          * @param spec parsed conversion specification
          */
-        public Formatter(PythonCore core, StringBuilder result, Spec spec) {
-            this.core = core;
+        public Formatter(ParserErrorCallback errors, StringBuilder result, Spec spec) {
+            this.errors = errors;
             this.spec = spec;
             this.result = result;
             this.start = this.mark = result.length();
@@ -505,8 +506,8 @@ public class InternalFormat {
          * @param forType the type it was found applied to
          * @return exception to throw
          */
-        public static PException unknownFormat(PythonCore core, char code, String forType) {
-            return core.raise(ValueError, "Unknown format code '%c' for object of type '%s'", code, forType);
+        public static PException unknownFormat(ParserErrorCallback errors, char code, String forType) {
+            throw errors.raise(ValueError, "Unknown format code '%c' for object of type '%s'", code, forType);
         }
 
         /**
@@ -516,8 +517,8 @@ public class InternalFormat {
          * @param forType the type it was found applied to
          * @return exception to throw
          */
-        public static PException alternateFormNotAllowed(PythonCore core, String forType) {
-            return alternateFormNotAllowed(core, forType, '\0');
+        public static PException alternateFormNotAllowed(ParserErrorCallback errors, String forType) {
+            return alternateFormNotAllowed(errors, forType, '\0');
         }
 
         /**
@@ -528,8 +529,8 @@ public class InternalFormat {
          * @param code the formatting code (or '\0' not to mention one)
          * @return exception to throw
          */
-        public static PException alternateFormNotAllowed(PythonCore core, String forType, char code) {
-            return notAllowed(core, "Alternate form (#)", forType, code);
+        public static PException alternateFormNotAllowed(ParserErrorCallback errors, String forType, char code) {
+            return notAllowed(errors, "Alternate form (#)", forType, code);
         }
 
         /**
@@ -540,8 +541,8 @@ public class InternalFormat {
          * @param forType the type it was found applied to
          * @return exception to throw
          */
-        public static PException alignmentNotAllowed(PythonCore core, char align, String forType) {
-            return notAllowed(core, "'" + align + "' alignment flag", forType, '\0');
+        public static PException alignmentNotAllowed(ParserErrorCallback errors, char align, String forType) {
+            return notAllowed(errors, "'" + align + "' alignment flag", forType, '\0');
         }
 
         /**
@@ -552,8 +553,8 @@ public class InternalFormat {
          * @param code the formatting code (or '\0' not to mention one)
          * @return exception to throw
          */
-        public static PException signNotAllowed(PythonCore core, String forType, char code) {
-            return notAllowed(core, "Sign", forType, code);
+        public static PException signNotAllowed(ParserErrorCallback errors, String forType, char code) {
+            return notAllowed(errors, "Sign", forType, code);
         }
 
         /**
@@ -603,7 +604,7 @@ public class InternalFormat {
          * @param code the formatting code for which it is an outrage (or '\0' not to mention one)
          * @return exception to throw
          */
-        public static PException notAllowed(PythonCore core, String outrage, String forType, char code) {
+        public static PException notAllowed(ParserErrorCallback errors, String outrage, String forType, char code) {
             // Try really hard to be like CPython
             String codeAsString, withOrIn;
             if (code == 0) {
@@ -613,7 +614,7 @@ public class InternalFormat {
                 withOrIn = "with ";
                 codeAsString = " '" + code + "'";
             }
-            return core.raise(ValueError, "%s not allowed %s%s format specifier%s", outrage, withOrIn, forType, codeAsString);
+            throw errors.raise(ValueError, "%s not allowed %s%s format specifier%s", outrage, withOrIn, forType, codeAsString);
         }
 
         /**
@@ -625,7 +626,7 @@ public class InternalFormat {
          * @return exception to throw
          */
         public PException precisionTooLarge(String type) {
-            return core.raise(OverflowError, "formatted %s is too long (precision too large?)", type);
+            throw errors.raise(OverflowError, "formatted %s is too long (precision too large?)", type);
         }
 
     }
