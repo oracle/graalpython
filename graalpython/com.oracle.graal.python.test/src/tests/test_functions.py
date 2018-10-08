@@ -72,6 +72,10 @@ def f2(a=f(1, 2), b=10):
     return a, b
 
 
+def f3(a, b=f(1,2), c=10, *args, d="hello", e="world"):
+    return a, b, c, args, d, e
+
+
 class MyClass(object):
     def __init__(self, x = 10):
         pass
@@ -80,6 +84,12 @@ class MyClass(object):
 def test_defaults():
     assert f.__defaults__ == (10,)
     assert f2.__defaults__ == ((1, 2, 10, (), {}), 10)
+
+
+def test_kwdefaults():
+    assert f.__kwdefaults__ == None
+    assert f2.__kwdefaults__ == None
+    assert f3.__kwdefaults__ == { "d": "hello", "e": "world"}
 
 
 def test_defaults_method():
