@@ -31,7 +31,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -40,7 +40,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNodeGen.IsIteratorObjectNodeGen;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -60,12 +60,12 @@ public abstract class GetIteratorNode extends UnaryOpNode {
         return GetIteratorNodeGen.create(collection);
     }
 
-    @Child private GetClassNode getClassNode;
+    @Child private GetLazyClassNode getClassNode;
 
-    private PythonClass getClass(Object value) {
+    private LazyPythonClass getClass(Object value) {
         if (getClassNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getClassNode = insert(GetClassNode.create());
+            getClassNode = insert(GetLazyClassNode.create());
         }
         return getClassNode.execute(value);
     }
@@ -92,7 +92,7 @@ public abstract class GetIteratorNode extends UnaryOpNode {
                     @Cached("create(__GETITEM__)") LookupAttributeInMRONode lookupGetitemAttrMroNode,
                     @Cached("create()") CallUnaryMethodNode dispatchGetattribute,
                     @Cached("create()") IsIteratorObjectNode isIteratorObjectNode) {
-        PythonClass clazz = getClass(value);
+        LazyPythonClass clazz = getClass(value);
         Object attrObj = getattributeProfile.profile(lookupAttrMroNode.execute(clazz));
         if (attrObj != PNone.NO_VALUE && attrObj != PNone.NONE) {
             Object iterObj = dispatchGetattribute.executeObject(attrObj, value);

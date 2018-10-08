@@ -46,13 +46,14 @@ import java.util.List;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -68,12 +69,12 @@ public abstract class TupleNodes {
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class ConstructTupleNode extends PNodeWithContext {
 
-        @Child private GetClassNode getClassNode;
+        @Child private GetLazyClassNode getClassNode;
 
-        protected PythonClass getClass(Object value) {
+        protected LazyPythonClass getClass(Object value) {
             if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
+                getClassNode = insert(GetLazyClassNode.create());
             }
             return getClassNode.execute(value);
         }

@@ -370,13 +370,13 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization
         protected PNone doIt(Object object, Object key, Object value,
-                        @Cached("create()") GetClassNode getObjectClassNode,
+                        @Cached("create()") GetLazyClassNode getObjectClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
                         @Cached("create(__SET__)") LookupAttributeInMRONode lookupSetNode,
                         @Cached("create()") CallTernaryMethodNode callSetNode,
                         @Cached("create()") WriteAttributeToObjectNode writeNode) {
-            PythonClass type = getObjectClassNode.execute(object);
+            LazyPythonClass type = getObjectClassNode.execute(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
                 PythonClass dataDescClass = getDataClassNode.execute(descr);
@@ -402,14 +402,14 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization
         protected PNone doIt(Object object, Object key,
-                        @Cached("create()") GetClassNode getObjectClassNode,
+                        @Cached("create()") GetLazyClassNode getObjectClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
                         @Cached("create(__DELETE__)") LookupAttributeInMRONode lookupDeleteNode,
                         @Cached("create()") CallBinaryMethodNode callSetNode,
                         @Cached("create()") ReadAttributeFromObjectNode attrRead,
                         @Cached("create()") WriteAttributeToObjectNode writeNode) {
-            PythonClass type = getObjectClassNode.execute(object);
+            LazyPythonClass type = getObjectClassNode.execute(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
                 PythonClass dataDescClass = getDataClassNode.execute(descr);

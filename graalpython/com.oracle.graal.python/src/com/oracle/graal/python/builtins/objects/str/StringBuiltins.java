@@ -84,7 +84,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -657,17 +656,10 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class JoinNode extends PythonBuiltinNode {
 
-        @Child private JoinInternalNode joinInternalNode;
-        @Child private GetClassNode getClassNode;
-
         @Specialization
-        protected String join(Object self, Object iterable) {
-            if (joinInternalNode == null || getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                joinInternalNode = insert(JoinInternalNode.create());
-                getClassNode = insert(GetClassNode.create());
-            }
-            return joinInternalNode.execute(self, iterable, getClassNode.execute(iterable));
+        protected String join(Object self, Object iterable,
+                        @Cached("create()") JoinInternalNode join) {
+            return join.execute(self, iterable);
         }
     }
 

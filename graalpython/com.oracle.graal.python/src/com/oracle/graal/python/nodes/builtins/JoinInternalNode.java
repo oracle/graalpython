@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.builtins;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -62,11 +61,11 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 @TypeSystemReference(PythonArithmeticTypes.class)
 public abstract class JoinInternalNode extends PNodeWithContext {
 
-    public abstract String execute(Object self, Object iterable, PythonClass iterableClass);
+    public abstract String execute(Object self, Object iterable);
 
     @Specialization
     @TruffleBoundary
-    protected String join(String string, String arg, @SuppressWarnings("unused") PythonClass iterableClass) {
+    protected String join(String string, String arg) {
         if (arg.isEmpty()) {
             return "";
         }
@@ -92,7 +91,7 @@ public abstract class JoinInternalNode extends PNodeWithContext {
 
     @Specialization
     @TruffleBoundary
-    protected String join(String string, PythonObject iterable, @SuppressWarnings("unused") PythonClass iterableClass,
+    protected String join(String string, PythonObject iterable,
                     @Cached("create()") GetIteratorNode getIterator,
                     @Cached("create()") GetNextNode next,
                     @Cached("create()") IsBuiltinClassProfile errorProfile1,
@@ -122,7 +121,7 @@ public abstract class JoinInternalNode extends PNodeWithContext {
 
     @Fallback
     @SuppressWarnings("unused")
-    protected String join(Object self, Object arg, PythonClass iterableClass) {
+    protected String join(Object self, Object arg) {
         throw raise(TypeError, "can only join an iterable");
     }
 
