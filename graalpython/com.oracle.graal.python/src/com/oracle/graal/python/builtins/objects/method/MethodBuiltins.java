@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -92,8 +93,9 @@ public class MethodBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object reprMethod(PMethod self) {
-            return String.format("<built-in method %s of %p object at 0x%x>", self.getName(), self.getSelf(), self.hashCode());
+        Object reprMethod(PMethod self,
+                        @Cached("create()") GetLazyClassNode getClassNode) {
+            return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
         }
     }
 
