@@ -37,7 +37,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -96,11 +95,6 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
     @Builtin(name = __REDUCE__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        String doBuiltinFunction(PBuiltinFunction self) {
-            return self.getName();
-        }
-
         @Specialization
         String doBuiltinMethod(PBuiltinMethod self) {
             return doMethod(self.getName(), self.getSelf());
