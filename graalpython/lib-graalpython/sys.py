@@ -169,3 +169,8 @@ def make_excepthook():
 __excepthook__ = make_excepthook()
 excepthook = __excepthook__
 del make_excepthook
+
+
+@__builtin__
+def getrecursionlimit():
+    return 1000
