@@ -1000,20 +1000,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
         int parseInt(Object cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
-            return parseInt(cls, new String(getByteArray(arg)), keywordArg);
+            return parseInt(cls, toString(arg), keywordArg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
         long parseLong(Object cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
-            return parseLong(cls, new String(getByteArray(arg)), keywordArg);
+            return parseLong(cls, toString(arg), keywordArg);
         }
 
         @Specialization
         Object parseBytesError(PythonClass cls, PIBytesLike arg, int base,
                         @Cached("create()") BranchProfile errorProfile) {
             try {
-                return parsePInt(cls, new String(getByteArray(arg)), base);
+                return parsePInt(cls, toString(arg), base);
             } catch (NumberFormatException e) {
                 errorProfile.enter();
                 throw raise(ValueError, "invalid literal for int() with base %s: %s", base, arg);
@@ -1144,12 +1144,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return PGuards.isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj);
         }
 
-        private byte[] getByteArray(PIBytesLike pByteArray) {
+        private String toString(PIBytesLike pByteArray) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
             }
-            return toByteArrayNode.execute(pByteArray);
+            return toString(toByteArrayNode.execute(pByteArray));
+        }
+
+        @TruffleBoundary
+        private static String toString(byte[] barr) {
+            return new String(barr);
         }
 
     }
