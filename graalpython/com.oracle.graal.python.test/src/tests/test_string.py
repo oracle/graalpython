@@ -742,6 +742,38 @@ class UnicodeTest(unittest.TestCase):
         self.assertEqual('ﬁﬁNNﬁISH'.title(), 'Fiﬁnnﬁish')
         self.assertEqual('A\u03a3A'.title(), 'A\u03c3a')
 
+    def test_ljust(self):
+        self.checkequal('abc       ', 'abc', 'ljust', 10)
+        self.checkequal('abc   ', 'abc', 'ljust', 6)
+        self.checkequal('abc', 'abc', 'ljust', 3)
+        self.checkequal('abc', 'abc', 'ljust', 2)
+        self.checkequal('abc*******', 'abc', 'ljust', 10, '*')
+        self.checkraises(TypeError, 'abc', 'ljust')
+
+    def test_rjust(self):
+        self.checkequal('       abc', 'abc', 'rjust', 10)
+        self.checkequal('   abc', 'abc', 'rjust', 6)
+        self.checkequal('abc', 'abc', 'rjust', 3)
+        self.checkequal('abc', 'abc', 'rjust', 2)
+        self.checkequal('*******abc', 'abc', 'rjust', 10, '*')
+        self.checkraises(TypeError, 'abc', 'rjust')
+
+    def test_center(self):
+        self.checkequal('   abc    ', 'abc', 'center', 10)
+        self.checkequal(' abc  ', 'abc', 'center', 6)
+        self.checkequal('abc', 'abc', 'center', 3)
+        self.checkequal('abc', 'abc', 'center', 2)
+        self.checkequal('***abc****', 'abc', 'center', 10, '*')
+        self.checkraises(TypeError, 'abc', 'center')
+
+    def test_center_uni(self):
+        self.assertEqual('x'.center(2, '\U0010FFFF'),
+                         'x\U0010FFFF')
+        self.assertEqual('x'.center(3, '\U0010FFFF'),
+                         '\U0010FFFFx\U0010FFFF')
+        self.assertEqual('x'.center(4, '\U0010FFFF'),
+                         '\U0010FFFFx\U0010FFFF\U0010FFFF')
+
 def test_same_id():
     empty_ids = set([id(str()) for i in range(100)])
     assert len(empty_ids) == 1

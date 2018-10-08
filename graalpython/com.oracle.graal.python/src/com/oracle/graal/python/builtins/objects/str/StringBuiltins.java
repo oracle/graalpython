@@ -1664,6 +1664,116 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "center", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class CenterNode extends PythonBuiltinNode {
+
+        private @Child CastToIndexNode toIndexNode;
+
+        private CastToIndexNode getCastToIndexNode() {
+            if (toIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toIndexNode = insert(CastToIndexNode.createOverflow());
+            }
+            return toIndexNode;
+        }
+
+        @Specialization
+        public String createDefault(String self, long width, @SuppressWarnings("unused") PNone fill) {
+            return make(self, getCastToIndexNode().execute(width), " ");
+        }
+
+        @Specialization(guards = "fill.codePointCount(0, fill.length()) == 1")
+        public String create(String self, long width, String fill) {
+            return make(self, getCastToIndexNode().execute(width), fill);
+        }
+
+        @Specialization(guards = "fill.codePointCount(0, fill.length()) != 1")
+        @SuppressWarnings("unused")
+        public String createError(String self, long width, String fill) {
+            throw raise(TypeError, "The fill character must be exactly one character long");
+        }
+
+        @Specialization
+        public String createDefault(String self, PInt width, @SuppressWarnings("unused") PNone fill) {
+            return make(self, getCastToIndexNode().execute(width), " ");
+        }
+
+        @Specialization(guards = "fill.codePointCount(0, fill.length()) == 1")
+        public String create(String self, PInt width, String fill) {
+            return make(self, getCastToIndexNode().execute(width), fill);
+        }
+
+        @Specialization(guards = "fill.codePointCount(0, fill.length()) != 1")
+        @SuppressWarnings("unused")
+        public String createError(String self, PInt width, String fill) {
+            throw raise(TypeError, "The fill character must be exactly one character long");
+        }
+
+        protected String make(String self, int width, String fill) {
+            int fillChar = parseCodePoint(fill);
+            int len = width - self.length();
+            if (len <= 0) {
+                return self;
+            }
+            int half = len / 2;
+            if (len % 2 > 0 && width % 2 > 0) {
+                half += 1;
+            }
+
+            return padding(half, fillChar) + self + padding(len - half, fillChar);
+        }
+
+        protected static String padding(int len, int codePoint) {
+            int[] result = new int[len];
+            for (int i = 0; i < len; i++) {
+                result[i] = codePoint;
+            }
+            return new String(result, 0, len);
+        }
+
+        @TruffleBoundary
+        protected static int parseCodePoint(String fillchar) {
+            if (fillchar == null) {
+                return ' ';
+            }
+            return fillchar.codePointAt(0);
+        }
+    }
+
+    @Builtin(name = "ljust", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class LJustNode extends CenterNode {
+
+        @Override
+        protected String make(String self, int width, String fill) {
+            int fillChar = parseCodePoint(fill);
+            int len = width - self.length();
+            if (len <= 0) {
+                return self;
+            }
+            return self + padding(len, fillChar);
+        }
+
+    }
+
+    @Builtin(name = "rjust", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class RJustNode extends CenterNode {
+
+        @Override
+        protected String make(String self, int width, String fill) {
+            int fillChar = parseCodePoint(fill);
+            int len = width - self.length();
+            if (len <= 0) {
+                return self;
+            }
+            return padding(len, fillChar) + self;
+        }
+
+    }
+
     @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
