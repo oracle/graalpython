@@ -113,6 +113,8 @@ public class MethodBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doGeneric(@SuppressWarnings("unused") Object obj) {
+            // TODO we should not override '__reduce__' but properly distinguish between heap/non
+            // heap types
             throw raise(TypeError, "can't pickle function objects");
         }
     }
