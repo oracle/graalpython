@@ -93,7 +93,6 @@ import com.oracle.graal.python.parser.antlr.Python3Parser.ArgumentContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Lambdef_bodyContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Lambdef_nocond_bodyContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.VarargslistContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.RootCallTarget;

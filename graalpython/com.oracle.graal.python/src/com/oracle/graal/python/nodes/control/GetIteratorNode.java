@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -74,7 +75,7 @@ public abstract class GetIteratorNode extends UnaryOpNode {
      * overridden.
      */
     protected boolean iterCannotBeOverridden(Object value) {
-        return getClass(value).isBuiltin();
+        return PGuards.cannotBeOverridden(getClass(value));
     }
 
     public abstract Object executeWith(Object value);

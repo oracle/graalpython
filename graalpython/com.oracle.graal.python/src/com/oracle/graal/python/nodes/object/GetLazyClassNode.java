@@ -89,7 +89,7 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         return executeGetClass(classProfile.profile(object));
     }
 
-    public abstract PythonClass executeGetClass(Object object);
+    protected abstract LazyPythonClass executeGetClass(Object object);
 
     @Specialization
     protected LazyPythonClass getIt(@SuppressWarnings("unused") GetSetDescriptor object) {

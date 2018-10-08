@@ -130,7 +130,7 @@ public abstract class WithNode extends StatementNode {
 
         e.getExceptionObject().reifyException();
         PBaseException value = e.getExceptionObject();
-        Object type = getPythonClass(value, getClassProfile);
+        Object type = getPythonClass(value.getLazyPythonClass(), getClassProfile);
         Object trace = e.getExceptionObject().getTraceback(factory());
         Object returnValue = exitDispatch.executeCall(frame, exitCallable, createArgs.execute(withObject, type, value, trace), new PKeyword[0]);
         // If exit handler returns 'true', suppress

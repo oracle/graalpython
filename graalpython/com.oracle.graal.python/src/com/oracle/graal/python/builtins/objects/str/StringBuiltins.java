@@ -85,6 +85,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
@@ -1327,7 +1328,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object doGeneric(String left, Object right,
                         @Cached("create()") CallDispatchNode callNode,
-                        @Cached("create()") GetClassNode getClassNode,
+                        @Cached("create()") GetLazyClassNode getClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
             return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode);

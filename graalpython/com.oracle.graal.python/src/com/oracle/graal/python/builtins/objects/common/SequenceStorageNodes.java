@@ -949,7 +949,7 @@ public abstract class SequenceStorageNodes {
         void doGeneric(SequenceStorage s, SliceInfo info, Object iterable,
                         @Cached("create()") SetStorageSliceNode setStorageSliceNode,
                         @Cached("create()") ListNodes.ConstructListNode constructListNode) {
-            PList list = constructListNode.execute(iterable, null);
+            PList list = constructListNode.execute(iterable);
             setStorageSliceNode.execute(s, info, list.getSequenceStorage());
         }
 

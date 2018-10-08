@@ -104,8 +104,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     Object arg3,
                     @Cached("create()") GetClassNode getclass,
                     @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getattr) {
-        return dispatchNode.execute(
-                        getattr.executeObject(getclass.execute(arg1), name), arg1, arg2, arg3);
+        return dispatchNode.execute(getattr.executeObject(getclass.execute(arg1), name), arg1, arg2, arg3);
     }
 
     @Specialization(guards = "!isReversible()")
@@ -115,8 +114,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     Object arg3,
                     @Cached("create()") GetClassNode getclass,
                     @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getattr) {
-        return dispatchNode.execute(
-                        getattr.executeObject(getclass.execute(arg1), name), arg1, arg2, arg3);
+        return dispatchNode.execute(getattr.executeObject(getclass.execute(arg1), name), arg1, arg2, arg3);
     }
 
     private CallTernaryMethodNode ensureReverseDispatch() {

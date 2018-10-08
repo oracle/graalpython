@@ -90,7 +90,7 @@ public abstract class GetClassNode extends PNodeWithContext {
         return executeGetClass(classProfile.profile(object));
     }
 
-    public abstract PythonClass executeGetClass(Object object);
+    protected abstract PythonClass executeGetClass(Object object);
 
     @Specialization(assumptions = "singleContextAssumption()")
     protected PythonClass getIt(@SuppressWarnings("unused") GetSetDescriptor object,
@@ -219,7 +219,7 @@ public abstract class GetClassNode extends PNodeWithContext {
     protected PythonClass getPythonClassGeneric(PythonObject object,
                     @Cached("createIdentityProfile()") ValueProfile profile,
                     @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
-        return profile.profile(getPythonClass(object, getClassProfile));
+        return profile.profile(getPythonClass(object.getLazyPythonClass(), getClassProfile));
     }
 
     @Specialization(guards = "isForeignObject(object)", assumptions = "singleContextAssumption()")

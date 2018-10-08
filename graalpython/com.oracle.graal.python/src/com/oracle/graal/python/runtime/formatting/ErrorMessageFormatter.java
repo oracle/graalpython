@@ -44,7 +44,6 @@ import java.util.Formatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 
 /**
@@ -73,7 +72,7 @@ public class ErrorMessageFormatter {
         return format(null, format, args);
     }
 
-    public String format(GetClassNode getClassNode, String format, Object... args) {
+    public String format(GetLazyClassNode getClassNode, String format, Object... args) {
         Matcher m = fsPattern.matcher(format);
         StringBuilder sb = new StringBuilder(format);
         int removedCnt = 0;
@@ -105,7 +104,7 @@ public class ErrorMessageFormatter {
         return String.format(sb.toString(), compact(args, removedCnt));
     }
 
-    private static String getClassName(GetClassNode getClassNode, Object obj) {
+    private static String getClassName(GetLazyClassNode getClassNode, Object obj) {
         if (getClassNode != null) {
             return getClassNode.execute(obj).getName();
         }

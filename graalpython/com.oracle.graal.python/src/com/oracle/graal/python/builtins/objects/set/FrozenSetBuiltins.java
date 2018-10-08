@@ -109,7 +109,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         public Object reduce(PBaseSet self,
                         @Cached("createBinaryProfile()") ConditionProfile classProfile) {
             PTuple contents = factory().createTuple(new Object[]{factory().createList(self.getDictStorage().keysAsArray())});
-            return factory().createTuple(new Object[]{getPythonClass(self, classProfile), contents, PNone.NONE});
+            return factory().createTuple(new Object[]{getPythonClass(self.getLazyPythonClass(), classProfile), contents, PNone.NONE});
         }
     }
 

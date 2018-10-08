@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -99,8 +98,7 @@ public abstract class PNodeWithContext extends Node {
         return getCore().lookupType(type);
     }
 
-    public final PythonClass getPythonClass(PythonObject object, ConditionProfile profile) {
-        LazyPythonClass lazyClass = object.getLazyPythonClass();
+    public final PythonClass getPythonClass(LazyPythonClass lazyClass, ConditionProfile profile) {
         if (profile.profile(lazyClass instanceof PythonClass)) {
             return (PythonClass) lazyClass;
         } else {

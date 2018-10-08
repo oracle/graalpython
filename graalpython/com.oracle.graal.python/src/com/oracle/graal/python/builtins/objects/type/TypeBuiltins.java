@@ -82,6 +82,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -245,10 +246,11 @@ public class TypeBuiltins extends PythonBuiltins {
         private final BranchProfile isDescProfile = BranchProfile.create();
         private final BranchProfile hasValueProfile = BranchProfile.create();
         private final BranchProfile errorProfile = BranchProfile.create();
+        private final ConditionProfile getClassProfile = ConditionProfile.createBinaryProfile();
 
         @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
-        @Child private GetClassNode getObjectClassNode = GetClassNode.create();
-        @Child private GetClassNode getDataClassNode;
+        @Child private GetLazyClassNode getObjectClassNode = GetLazyClassNode.create();
+        @Child private GetLazyClassNode getDataClassNode;
         @Child private LookupInheritedAttributeNode valueGetLookup;
         @Child private LookupAttributeInMRONode lookupGetNode;
         @Child private LookupAttributeInMRONode lookupSetNode;
@@ -259,12 +261,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(PythonClass object, Object key) {
-            PythonClass type = getObjectClassNode.execute(object);
+            LazyPythonClass type = getObjectClassNode.execute(object);
             Object descr = lookup.execute(type, key);
             Object get = null;
             if (descr != PNone.NO_VALUE) {
                 hasDescProfile.enter();
-                PythonClass dataDescClass = getDataClass(descr);
+                LazyPythonClass dataDescClass = getDataClass(descr);
                 get = lookupGet(dataDescClass);
                 if (get instanceof PythonCallable) {
                     Object delete = PNone.NO_VALUE;
@@ -279,7 +281,7 @@ public class TypeBuiltins extends PythonBuiltins {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             invokeGet = insert(CallTernaryMethodNode.create());
                         }
-                        return invokeGet.execute(get, descr, object, type);
+                        return invokeGet.execute(get, descr, object, getPythonClass(type, getClassProfile));
                     }
                 }
             }
@@ -306,7 +308,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         invokeGet = insert(CallTernaryMethodNode.create());
                     }
-                    return invokeGet.execute(get, descr, object, type);
+                    return invokeGet.execute(get, descr, object, getPythonClass(type, getClassProfile));
                 }
             }
             errorProfile.enter();
@@ -318,10 +320,10 @@ public class TypeBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupAsClass = insert(LookupAttributeInMRONode.Dynamic.create());
             }
-            return lookupAsClass.execute(object, key);
+            return lookupAsClass.execute((PythonClass) object, key);
         }
 
-        private Object lookupDelete(PythonClass dataDescClass) {
+        private Object lookupDelete(LazyPythonClass dataDescClass) {
             if (lookupDeleteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupDeleteNode = insert(LookupAttributeInMRONode.create(__DELETE__));
@@ -329,7 +331,7 @@ public class TypeBuiltins extends PythonBuiltins {
             return lookupDeleteNode.execute(dataDescClass);
         }
 
-        private Object lookupSet(PythonClass dataDescClass) {
+        private Object lookupSet(LazyPythonClass dataDescClass) {
             if (lookupSetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupSetNode = insert(LookupAttributeInMRONode.create(__SET__));
@@ -337,7 +339,7 @@ public class TypeBuiltins extends PythonBuiltins {
             return lookupSetNode.execute(dataDescClass);
         }
 
-        private Object lookupGet(PythonClass dataDescClass) {
+        private Object lookupGet(LazyPythonClass dataDescClass) {
             if (lookupGetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupGetNode = insert(LookupAttributeInMRONode.create(__GET__));
@@ -353,10 +355,10 @@ public class TypeBuiltins extends PythonBuiltins {
             return valueGetLookup.execute(value);
         }
 
-        private PythonClass getDataClass(Object descr) {
+        private LazyPythonClass getDataClass(Object descr) {
             if (getDataClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDataClassNode = insert(GetClassNode.create());
+                getDataClassNode = insert(GetLazyClassNode.create());
             }
             return getDataClassNode.execute(descr);
         }
@@ -426,7 +428,7 @@ public class TypeBuiltins extends PythonBuiltins {
         public boolean isInstance(PythonClass cls, Object instance,
                         @Cached("create()") IsSubtypeNode isSubtypeNode,
                         @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
-            if (instance instanceof PythonObject && isSubtypeNode.execute(getPythonClass((PythonObject) instance, getClassProfile), cls)) {
+            if (instance instanceof PythonObject && isSubtypeNode.execute(getPythonClass(((PythonObject) instance).getLazyPythonClass(), getClassProfile), cls)) {
                 return true;
             }
 

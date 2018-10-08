@@ -47,11 +47,11 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.literal.BuiltinsLiteralNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -66,16 +66,16 @@ public abstract class CastToListNode extends UnaryOpNode {
         return CastToListNodeGen.create(null);
     }
 
-    @Child private GetClassNode getClassNode;
+    @Child private GetLazyClassNode getClassNode;
     @Child private SequenceStorageNodes.LenNode lenNode;
     @Child private SequenceStorageNodes.GetItemNode getItemNode;
 
     public abstract PList executeWith(Object list);
 
-    protected PythonClass getClass(Object value) {
+    protected LazyPythonClass getClass(Object value) {
         if (getClassNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getClassNode = insert(GetClassNode.create());
+            getClassNode = insert(GetLazyClassNode.create());
         }
         return getClassNode.execute(value);
     }
@@ -120,8 +120,7 @@ public abstract class CastToListNode extends UnaryOpNode {
     @Specialization(rewriteOn = PException.class)
     protected PList starredIterable(PythonObject value,
                     @Cached("create()") ConstructListNode constructListNode) {
-        PythonClass valueClass = getClass(value);
-        return constructListNode.execute(lookupClass(PythonBuiltinClassType.PList), value, valueClass);
+        return constructListNode.execute(lookupClass(PythonBuiltinClassType.PList), value);
     }
 
     @Specialization

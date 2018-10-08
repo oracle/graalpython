@@ -387,7 +387,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                     superInit = insert(SuperInitNodeFactory.create());
                     getType = insert(GetTypeNodeGen.create());
                 }
-                SuperObject newSuper = factory().createSuperObject(getPythonClass(self, classProfile));
+                SuperObject newSuper = factory().createSuperObject(getPythonClass(self.getLazyPythonClass(), classProfile));
                 superInit.execute(null, newSuper, getType.execute(self), obj);
                 return newSuper;
             }

@@ -406,7 +406,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PList(cls, storage));
     }
 
-    public PList createList(PythonClass cls) {
+    public PList createList(LazyPythonClass cls) {
         return createList(cls, new Object[0]);
     }
 

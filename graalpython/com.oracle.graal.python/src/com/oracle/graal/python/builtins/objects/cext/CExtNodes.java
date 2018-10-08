@@ -98,6 +98,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -407,7 +408,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
         PythonAbstractObject doNativeObject(TruffleObject object,
-                        @SuppressWarnings("unused") @Cached("create()") GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached("create()") GetLazyClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached("create()") IsBuiltinClassProfile isForeignClassProfile) {
             return factory().createNativeObjectWrapper(object);
         }
@@ -461,7 +462,7 @@ public abstract class CExtNodes {
             return object instanceof PrimitiveNativeWrapper && !isMaterialized((PrimitiveNativeWrapper) object) || object instanceof BoolNativeWrapper;
         }
 
-        protected boolean isForeignObject(TruffleObject obj, GetClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
+        protected boolean isForeignObject(TruffleObject obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
             return isForeignClassProfile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.TruffleObject);
         }
 

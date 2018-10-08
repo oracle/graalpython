@@ -40,13 +40,16 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -60,7 +63,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
             return LookupAttributeInMRONodeGen.DynamicNodeGen.create();
         }
 
-        public abstract Object execute(Object klass, Object key);
+        public abstract Object execute(LazyPythonClass klass, Object key);
 
         protected static boolean compareStrings(String key, String cachedKey) {
             return cachedKey.equals(key);
@@ -68,22 +71,21 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
         @Specialization(guards = "compareStrings(key, cachedKey)", limit = "2")
         @ExplodeLoop
-        protected Object lookupConstantMRO(PythonClass klass, @SuppressWarnings("unused") String key,
+        protected Object lookupConstantMRO(LazyPythonClass klass, @SuppressWarnings("unused") String key,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Cached("create(key)") LookupAttributeInMRONode lookup) {
             return lookup.execute(klass);
         }
 
-        @Specialization
+        @Specialization(replaces = "lookupConstantMRO")
+        protected Object lookup(PythonBuiltinClassType klass, Object key) {
+            return LookupAttributeInMRONode.findAttr(getCore(), klass, key);
+        }
+
+        @Specialization(replaces = "lookupConstantMRO")
         protected Object lookup(PythonClass klass, Object key,
                         @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
             return LookupAttributeInMRONode.lookupSlow(klass, key, readAttrNode);
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        protected Object lookup(Object klass, Object key) {
-            return PNone.NO_VALUE;
         }
     }
 
@@ -103,7 +105,32 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
      * @return The lookup result, or {@link PNone#NO_VALUE} if the key isn't defined on any object
      *         in the MRO.
      */
-    public abstract Object execute(PythonClass klass);
+    public abstract Object execute(LazyPythonClass klass);
+
+    @TruffleBoundary
+    protected static Object findAttr(PythonCore core, PythonBuiltinClassType klass, Object key) {
+        PythonBuiltinClassType current = klass;
+        while (current != PythonBuiltinClassType.PythonObject) {
+            Object value = core.lookupType(current).getAttribute(key);
+            if (value != PNone.NO_VALUE) {
+                return value;
+            }
+            current = current.getBase();
+        }
+        return core.lookupType(current).getAttribute(key);
+    }
+
+    @Specialization(guards = {"klass == cachedKlass"}, limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)")
+    protected Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
+                    @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
+                    @Cached("findAttr(getCore(), cachedKlass, key)") Object cachedValue) {
+        return cachedValue;
+    }
+
+    @Specialization(replaces = "lookupPBCTCached")
+    protected Object lookupPBCTGeneric(PythonBuiltinClassType klass) {
+        return findAttr(getCore(), klass, key);
+    }
 
     final static class PythonClassAssumptionPair {
         public final Assumption assumption;

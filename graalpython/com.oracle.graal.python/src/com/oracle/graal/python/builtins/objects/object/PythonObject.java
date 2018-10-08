@@ -105,8 +105,8 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     @TruffleBoundary
-    public final Object getAttribute(String name) {
-        return getStorage().get(name, PNone.NO_VALUE);
+    public final Object getAttribute(Object key) {
+        return getStorage().get(key, PNone.NO_VALUE);
     }
 
     @TruffleBoundary

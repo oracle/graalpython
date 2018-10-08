@@ -212,7 +212,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         // set the base classes (and check uniqueness):
 
         HashSet<String> set = new HashSet<>();
-        for (PythonBuiltinClassType type : values()) {
+        for (PythonBuiltinClassType type : VALUES) {
             assert set.add(type.name) : type.name();
             type.base = PythonObject;
         }

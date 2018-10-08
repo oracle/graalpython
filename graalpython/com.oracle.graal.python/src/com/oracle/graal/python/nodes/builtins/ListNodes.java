@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -103,7 +103,7 @@ public abstract class ListNodes {
             return new CreateListFromIteratorNode();
         }
 
-        public PList execute(PythonClass cls, Object iterator) {
+        public PList execute(LazyPythonClass cls, Object iterator) {
             SequenceStorage storage;
             if (type == ListStorageType.Uninitialized) {
                 try {
@@ -291,19 +291,19 @@ public abstract class ListNodes {
 
         @Child private ListAppendNode appendNode;
 
-        public final PList execute(Object value, PythonClass valueClass) {
-            return execute(lookupClass(PythonBuiltinClassType.PList), value, valueClass);
+        public final PList execute(Object value) {
+            return execute(PythonBuiltinClassType.PList, value);
         }
 
-        public abstract PList execute(Object cls, Object value, PythonClass valueClass);
+        public abstract PList execute(LazyPythonClass cls, Object value);
 
         @Specialization
-        public PList listString(PythonClass cls, PString arg, PythonClass valueClass) {
-            return listString(cls, arg.getValue(), valueClass);
+        public PList listString(LazyPythonClass cls, PString arg) {
+            return listString(cls, arg.getValue());
         }
 
         @Specialization
-        public PList listString(PythonClass cls, String arg, @SuppressWarnings("unused") PythonClass valueClass) {
+        public PList listString(LazyPythonClass cls, String arg) {
             char[] chars = arg.toCharArray();
             PList list = factory().createList(cls);
 
@@ -315,12 +315,12 @@ public abstract class ListNodes {
         }
 
         @Specialization(guards = "isNoValue(none)")
-        public PList listIterable(PythonClass cls, @SuppressWarnings("unused") PNone none, @SuppressWarnings("unused") PythonClass valueClass) {
+        public PList listIterable(LazyPythonClass cls, @SuppressWarnings("unused") PNone none) {
             return factory().createList(cls);
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
-        public PList listIterable(PythonClass cls, Object iterable, @SuppressWarnings("unused") PythonClass valueClass,
+        public PList listIterable(LazyPythonClass cls, Object iterable,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") CreateListFromIteratorNode createListFromIteratorNode) {
 
@@ -329,7 +329,7 @@ public abstract class ListNodes {
         }
 
         @Fallback
-        public PList listObject(@SuppressWarnings("unused") Object cls, Object value, @SuppressWarnings("unused") PythonClass valueClass) {
+        public PList listObject(@SuppressWarnings("unused") LazyPythonClass cls, Object value) {
             CompilerDirectives.transferToInterpreter();
             throw new RuntimeException("list does not support iterable object " + value);
         }
@@ -352,24 +352,20 @@ public abstract class ListNodes {
 
         @Child private ConstructListNode constructListNode;
 
-        public final PSequence execute(Object value, PythonClass valueClass) {
-            return execute(lookupClass(PythonBuiltinClassType.PList), value, valueClass);
-        }
+        public abstract PSequence execute(Object value);
 
-        public abstract PSequence execute(Object cls, Object value, PythonClass valueClass);
-
-        @Specialization(guards = "cannotBeOverridden(valueClass)")
-        protected PSequence doPList(@SuppressWarnings("unused") Object cls, PSequence value, @SuppressWarnings("unused") PythonClass valueClass) {
+        @Specialization(guards = "cannotBeOverridden(value.getLazyPythonClass())")
+        protected PSequence doPList(PSequence value) {
             return value;
         }
 
         @Fallback
-        protected PSequence doGeneric(Object cls, Object value, PythonClass valueClass) {
+        protected PSequence doGeneric(Object value) {
             if (constructListNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 constructListNode = insert(ConstructListNode.create());
             }
-            return constructListNode.execute(cls, value, valueClass);
+            return constructListNode.execute(PythonBuiltinClassType.PList, value);
         }
 
         public static FastConstructListNode create() {

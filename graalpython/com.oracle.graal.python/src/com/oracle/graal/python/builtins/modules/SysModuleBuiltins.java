@@ -198,7 +198,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             } else {
                 PBaseException exception = currentException.getExceptionObject();
                 exception.reifyException();
-                return factory().createTuple(new Object[]{getPythonClass(exception, getClassProfile), exception, exception.getTraceback(factory())});
+                return factory().createTuple(new Object[]{getPythonClass(exception.getLazyPythonClass(), getClassProfile), exception, exception.getTraceback(factory())});
             }
         }
     }

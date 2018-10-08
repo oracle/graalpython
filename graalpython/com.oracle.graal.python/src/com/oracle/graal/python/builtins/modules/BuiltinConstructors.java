@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
@@ -125,6 +126,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -529,14 +531,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"})
         public Object reversed(PythonClass cls, Object sequence,
-                        @Cached("create()") GetClassNode getClassNode,
+                        @Cached("create()") GetLazyClassNode getClassNode,
                         @Cached("create(__REVERSED__)") LookupAttributeInMRONode reversedNode,
                         @Cached("create()") CallUnaryMethodNode callReversedNode,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode lenNode,
                         @Cached("create(__GETITEM__)") LookupAttributeInMRONode getItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile noReversedProfile,
                         @Cached("createBinaryProfile()") ConditionProfile noGetItemProfile) {
-            PythonClass sequenceKlass = getClassNode.execute(sequence);
+            LazyPythonClass sequenceKlass = getClassNode.execute(sequence);
             Object reversed = reversedNode.execute(sequenceKlass);
             if (noReversedProfile.profile(reversed == PNone.NO_VALUE)) {
                 Object getItem = getItemNode.execute(sequenceKlass);
@@ -1192,12 +1194,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public boolean bool(Object cls, Object obj,
-                        @Cached("create(__BOOL__)") LookupAndCallUnaryNode callNode,
-                        @Cached("create()") GetClassNode getClass) {
+                        @Cached("create(__BOOL__)") LookupAndCallUnaryNode callNode) {
             try {
                 return callNode.executeBoolean(obj);
             } catch (UnexpectedResultException ex) {
-                throw raise(PythonErrorType.TypeError, "__bool__ should return bool, returned %s", getClass.execute(ex.getResult()));
+                throw raise(PythonErrorType.TypeError, "__bool__ should return bool, returned %p", ex.getResult());
             }
         }
     }
@@ -1209,10 +1210,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         protected PList constructList(PythonClass cls, Object value,
-                        @Cached("create()") ConstructListNode constructListNode,
-                        @Cached("create()") GetClassNode getClassNode) {
-            PythonClass valueClass = getClassNode.execute(value);
-            return constructListNode.execute(cls, value, valueClass);
+                        @Cached("create()") ConstructListNode constructListNode) {
+            return constructListNode.execute(cls, value);
         }
 
         @Fallback
