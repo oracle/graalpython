@@ -41,11 +41,13 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -102,6 +104,7 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     @Specialization(limit = "1", //
                     guards = {
                                     "object == cachedObject",
+                                    "cachedDict == null",
                                     "checkShape(object, cachedObject, cachedShape)",
                                     "key == cachedKey",
                                     "!isNull(loc)",
@@ -116,6 +119,7 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
                     @Cached("key") Object cachedKey,
                     @Cached("attrKey(key)") Object attrKey,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
+                    @Cached("object.getDict()") PHashingCollection cachedDict,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
                     @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc,
                     @Cached("loc.getFinalAssumption()") Assumption finalAssumption,
@@ -133,6 +137,7 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
                                     "object.getStorage().getShape() == cachedShape",
+                                    "cachedDict == null",
                                     "key == cachedKey",
                                     "isNull(loc) || !loc.isAssumedFinal()",
                     }, //
@@ -141,6 +146,7 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
                     @Cached("key") Object cachedKey,
                     @Cached("attrKey(cachedKey)") Object attrKey,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
+                    @Cached("object.getDict()") PHashingCollection cachedDict,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
                     @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc) {
         if (loc == null) {
@@ -153,10 +159,12 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     @SuppressWarnings("unused")
     @Specialization(guards = {
                     "object.getStorage().getShape() == cachedShape",
+                    "cachedDict == null",
                     "!layoutAssumption.isValid()"
     })
     protected Object updateShapeAndRead(PythonObject object, Object key,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
+                    @Cached("object.getDict()") PHashingCollection cachedDict,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
                     @Cached("create()") ReadAttributeFromObjectNode nextNode) {
         CompilerDirectives.transferToInterpreter();
@@ -164,9 +172,20 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
         return nextNode.execute(object, key);
     }
 
-    @Specialization(replaces = "readDirect")
+    @Specialization(guards = "object.getDict() == null", replaces = "readDirect")
     protected Object readIndirect(PythonObject object, Object key) {
         Object value = object.getStorage().get(attrKey(key));
+        if (value == null) {
+            return PNone.NO_VALUE;
+        } else {
+            return value;
+        }
+    }
+
+    @Specialization(guards = "object.getDict() != null")
+    protected Object readFromDict(PythonObject object, Object key,
+                    @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+        Object value = getItemNode.execute(object.getDict().getDictStorage(), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
