@@ -1669,11 +1669,12 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CenterNode extends PythonBuiltinNode {
 
-        protected CastToIndexNode toIndexNode;
+        private @Child CastToIndexNode toIndexNode;
 
         private CastToIndexNode getCastToIndexNode() {
             if (toIndexNode == null) {
-                toIndexNode = CastToIndexNode.createOverflow();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toIndexNode = insert(CastToIndexNode.createOverflow());
             }
             return toIndexNode;
         }
