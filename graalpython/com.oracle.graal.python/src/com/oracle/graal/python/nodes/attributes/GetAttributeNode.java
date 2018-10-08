@@ -41,14 +41,20 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeChild(value = "object", type = ExpressionNode.class)
 public abstract class GetAttributeNode extends ExpressionNode implements ReadNode {
@@ -56,6 +62,8 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
     private final String key;
 
     @Child LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
+    @Child LookupAndCallBinaryNode dispatchGetAttr;
+    @CompilationFinal private ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
 
     protected GetAttributeNode(String key) {
         this.key = key;
@@ -77,16 +85,39 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     protected int doItInt(Object object) throws UnexpectedResultException {
-        return dispatchNode.executeInt(object, key);
+        try {
+            return dispatchNode.executeInt(object, key);
+        } catch (PException pe) {
+            pe.expect(AttributeError, getCore(), errorProfile);
+            return getDispatchGetAttr().executeInt(object, key);
+        }
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     protected boolean doItBoolean(Object object) throws UnexpectedResultException {
-        return dispatchNode.executeBool(object, key);
+        try {
+            return dispatchNode.executeBool(object, key);
+        } catch (PException pe) {
+            pe.expect(AttributeError, getCore(), errorProfile);
+            return getDispatchGetAttr().executeBool(object, key);
+        }
     }
 
     @Specialization(replaces = {"doItInt", "doItBoolean"})
     protected Object doIt(Object object) {
-        return dispatchNode.executeObject(object, key);
+        try {
+            return dispatchNode.executeObject(object, key);
+        } catch (PException pe) {
+            pe.expect(AttributeError, getCore(), errorProfile);
+            return getDispatchGetAttr().executeObject(object, key);
+        }
+    }
+
+    private LookupAndCallBinaryNode getDispatchGetAttr() {
+        if (dispatchGetAttr == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            dispatchGetAttr = insert(LookupAndCallBinaryNode.create(__GETATTR__));
+        }
+        return dispatchGetAttr;
     }
 }

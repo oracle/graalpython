@@ -60,11 +60,37 @@ def test_set_dict_attr():
     assert_raises(AttributeError, set_dict_attr)
 
     class MyClass(object):
-        pass
+        def __init__(self):
+            self.a = 9
 
     m = MyClass()
-    assert m.__dict__ == {}
+    assert m.a == 9
+    assert m.__dict__ == {'a': 9}
+    assert m.a == 9
     m.__dict__ = {'a': 10}
     assert m.__dict__ == {'a': 10}
     assert m.a == 10
 
+    class MyOtherClass(object):
+        def __getattribute__(self, item):
+            return object.__getattribute__(self, item)
+
+        def __getattr__(self, item):
+            if item == "my_attr":
+                return 10
+            raise AttributeError
+
+    m1 = MyOtherClass()
+    print()
+
+    def get_non_existing_attr():
+        return m1.my_attr_2
+
+    assert_raises(AttributeError, get_non_existing_attr)
+    assert m1.my_attr == 10
+    assert "my_attr" not in m1.__dict__
+
+    m1.__dict__ = {'d': 10}
+    assert m1.my_attr == 10
+    assert "my_attr" not in m1.__dict__
+    assert m1.d == 10
