@@ -128,3 +128,17 @@ def test_metaclass_methods():
     assert len(global_log) == 4
     assert global_log[2] == ['__call__', MyClass, (1, 2), {}]
     assert global_log[3] == ['MyKlass object', 1, 2]
+    
+
+class A:
+    class B:
+        pass
+
+
+def test_nested_class():
+    assert A.__name__ == "A"
+    assert A.__qualname__ == "A"
+    assert A.__module__ == __name__
+    assert A.B.__name__ == "B"
+    assert A.B.__qualname__ == "A.B"
+    assert A.B.__module__ == __name__
