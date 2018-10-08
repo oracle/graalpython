@@ -1809,7 +1809,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPythonBuiltinClass(cls)")
-        Object method(@SuppressWarnings("unused") PythonClass cls, Object self, PBuiltinFunction func) {
+        Object builtinMethod(@SuppressWarnings("unused") PythonClass cls, Object self, PBuiltinFunction func) {
             return factory().createBuiltinMethod(self, func);
         }
     }
