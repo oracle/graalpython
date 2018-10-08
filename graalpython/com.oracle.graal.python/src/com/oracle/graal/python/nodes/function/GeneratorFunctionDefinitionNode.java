@@ -47,12 +47,15 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     protected final int numOfActiveFlags;
     protected final int numOfGeneratorBlockNode;
     protected final int numOfGeneratorForNode;
+    protected final FrameDescriptor frameDescriptor;
+
     @CompilationFinal private RootCallTarget generatorCallTarget;
 
     public GeneratorFunctionDefinitionNode(String name, String enclosingClassName, ExpressionNode doc, Arity arity, StatementNode defaults, RootCallTarget callTarget,
                     FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-        super(name, enclosingClassName, doc, arity, defaults, callTarget, frameDescriptor, definitionCellSlots, executionCellSlots);
+        super(name, enclosingClassName, doc, arity, defaults, callTarget, definitionCellSlots, executionCellSlots);
+        this.frameDescriptor = frameDescriptor;
         this.numOfActiveFlags = numOfActiveFlags;
         this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
         this.numOfGeneratorForNode = numOfGeneratorForNode;
@@ -77,15 +80,14 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
         defaults.executeVoid(frame);
 
         PCell[] closure = getClosureFromLocals(frame);
-        return withDocString(frame,
-                        factory().createGeneratorFunction(functionName, enclosingClassName, arity, getGeneratorCallTarget(closure), frameDescriptor, PArguments.getGlobals(frame), closure));
+        return withDocString(frame, factory().createGeneratorFunction(functionName, enclosingClassName, arity, getGeneratorCallTarget(closure), PArguments.getGlobals(frame), closure));
     }
 
     protected RootCallTarget getGeneratorCallTarget(PCell[] closure) {
         if (generatorCallTarget == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            GeneratorFunctionRootNode generatorFunctionRootNode = new GeneratorFunctionRootNode(getContext().getLanguage(), callTarget, functionName,
-                            frameDescriptor, closure, executionCellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+            GeneratorFunctionRootNode generatorFunctionRootNode = new GeneratorFunctionRootNode(getContext().getLanguage(), callTarget, functionName, frameDescriptor,
+                            closure, executionCellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
             generatorCallTarget = Truffle.getRuntime().createCallTarget(generatorFunctionRootNode);
         }
         return generatorCallTarget;
@@ -111,8 +113,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
             if (cached == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 PCell[] closure = getClosureFromLocals(frame);
-                cached = withDocString(frame,
-                                factory().createGeneratorFunction(functionName, enclosingClassName, arity, getGeneratorCallTarget(closure), frameDescriptor, PArguments.getGlobals(frame), closure));
+                cached = withDocString(frame, factory().createGeneratorFunction(functionName, enclosingClassName, arity, getGeneratorCallTarget(closure), PArguments.getGlobals(frame), closure));
             }
             return cached;
         }

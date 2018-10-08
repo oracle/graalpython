@@ -552,8 +552,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @TruffleBoundary
         private static Object evalExpression(PCode code, PythonObject globals, PythonObject locals, PCell[] closure) {
-            RootNode root = code.getRootNode();
-            return evalNode(root, globals, locals, closure);
+            return evalNode(code.getRootCallTarget(), globals, locals, closure);
         }
 
         @TruffleBoundary
@@ -567,7 +566,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             PythonParser parser = getCore().getParser();
             Source source = PythonLanguage.newSource(getContext(), expression, name);
-            RootNode parsed = (RootNode) parser.parse(ParserMode.Eval, getCore(), source, callerFrame);
+            RootCallTarget parsed = Truffle.getRuntime().createCallTarget((RootNode) parser.parse(ParserMode.Eval, getCore(), source, callerFrame));
             return evalNode(parsed, globals, locals, closure);
         }
 
@@ -575,12 +574,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
          * @param locals TODO: support the locals dictionary in execution
          */
         @TruffleBoundary
-        private static Object evalNode(RootNode root, PythonObject globals, PythonObject locals, PCell[] closure) {
+        private static Object evalNode(RootCallTarget callTarget, PythonObject globals, PythonObject locals, PCell[] closure) {
             Object[] args = PArguments.create();
             PArguments.setGlobals(args, globals);
             PArguments.setClosure(args, closure);
             // TODO: cache code and CallTargets and use Direct/IndirectCallNode
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(root);
             return callTarget.call(args);
         }
     }
@@ -1472,7 +1470,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
                 String name = func.getName();
                 builtinFunc = factory().createFunction(name, func.getEnclosingClassName(), arity.createWithSelf(name), Truffle.getRuntime().createCallTarget(func.getFunctionRootNode()),
-                                func.getFrameDescriptor(), func.getGlobals(), func.getClosure());
+                                func.getGlobals(), func.getClosure());
             }
 
             PythonObject globals = func.getGlobals();

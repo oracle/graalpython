@@ -371,13 +371,13 @@ public final class PythonObjectFactory extends Node {
         return createBuiltinMethod(PythonBuiltinClassType.PBuiltinMethod, self, function);
     }
 
-    public PFunction createFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
-        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, frameDescriptor, globals, closure));
+    public PFunction createFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
+        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, globals, closure));
     }
 
-    public PFunction createFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, Object[] defaults,
+    public PFunction createFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, Object[] defaults,
                     PCell[] closure) {
-        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, frameDescriptor, globals, defaults, closure));
+        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, globals, defaults, closure));
     }
 
     public PBuiltinFunction createBuiltinFunction(String name, LazyPythonClass type, Arity arity, RootCallTarget callTarget) {
@@ -498,17 +498,14 @@ public final class PythonObjectFactory extends Node {
      * Special objects: generators, proxies, references
      */
 
-    public PGenerator createGenerator(String name, RootCallTarget callTarget,
-                    FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-        return trace(PGenerator.create(PythonBuiltinClassType.PGenerator, name, callTarget, frameDescriptor, arguments, closure, cellSlots,
-                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode));
+    public PGenerator createGenerator(String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots, int numOfActiveFlags,
+                    int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+        return trace(PGenerator.create(PythonBuiltinClassType.PGenerator, name, callTarget, frameDescriptor, arguments, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
+                        numOfGeneratorForNode));
     }
 
-    public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget,
-                    FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
-        return trace(PGeneratorFunction.create(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget,
-                        frameDescriptor, globals, closure));
+    public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
+        return trace(PGeneratorFunction.create(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, globals, closure));
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {

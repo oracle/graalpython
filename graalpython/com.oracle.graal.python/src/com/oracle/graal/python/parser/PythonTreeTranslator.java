@@ -1479,7 +1479,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                             environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                             gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
         } else {
-            funcDef = new FunctionDefinitionNode(funcName, enclosingClassName, doc, arity, defaults, ct, fd, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
+            funcDef = new FunctionDefinitionNode(funcName, enclosingClassName, doc, arity, defaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         }
         environment.leaveScope();
 
@@ -1655,7 +1655,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                             environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                             gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
         } else {
-            funcDef = new FunctionDefinitionNode(funcname, null, null, arity, defaults, ct, fd, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
+            funcDef = new FunctionDefinitionNode(funcname, null, null, arity, defaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         }
         environment.leaveScope();
 
@@ -1726,7 +1726,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ClassBodyRootNode classBodyRoot = factory.createClassBodyRoot(deriveSourceSection(ctx), className, environment.getCurrentFrame(), body, environment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
         FunctionDefinitionNode funcDef = new FunctionDefinitionNode(className, null, null, Arity.createOneArgumentWithVarKwArgs(className),
-                        factory.createBlock(), ct, environment.getCurrentFrame(), environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
+                        factory.createBlock(), ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         environment.leaveScope();
 
         argumentNodes.add(0, factory.createStringLiteral(className));

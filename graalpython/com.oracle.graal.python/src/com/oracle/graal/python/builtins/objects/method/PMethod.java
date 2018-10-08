@@ -34,7 +34,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 
 public final class PMethod extends PythonBuiltinObject implements PythonCallable {
 
@@ -83,11 +82,6 @@ public final class PMethod extends PythonBuiltinObject implements PythonCallable
     @Override
     public RootCallTarget getCallTarget() {
         return callTarget;
-    }
-
-    @Override
-    public FrameDescriptor getFrameDescriptor() {
-        return function.getFrameDescriptor();
     }
 
     @Override

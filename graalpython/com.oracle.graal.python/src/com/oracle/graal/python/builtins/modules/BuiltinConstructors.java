@@ -1521,22 +1521,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class FunctionNode extends PythonBuiltinNode {
         @Specialization
         public PFunction function(PythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, @SuppressWarnings("unused") PNone closure) {
-            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, null);
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), globals, null);
         }
 
         @Specialization
         public PFunction function(PythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure) {
-            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, (PCell[]) closure.getArray());
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), globals, (PCell[]) closure.getArray());
         }
 
         @Specialization
         public PFunction function(PythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure) {
-            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, defaultArgs.getArray(), null);
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), globals, defaultArgs.getArray(), null);
         }
 
         @Specialization
         public PFunction function(PythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure) {
-            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, defaultArgs.getArray(), (PCell[]) closure.getArray());
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), globals, defaultArgs.getArray(), (PCell[]) closure.getArray());
         }
 
         @Fallback

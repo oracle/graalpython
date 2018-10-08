@@ -36,7 +36,6 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 
@@ -45,7 +44,6 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     protected final String functionName;
     protected final String enclosingClassName;
     protected final RootCallTarget callTarget;
-    protected final FrameDescriptor frameDescriptor;
     protected final Arity arity;
 
     @Child protected StatementNode defaults;
@@ -53,13 +51,12 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     @Child private WriteAttributeToObjectNode writeDocNode = WriteAttributeToObjectNode.create();
 
     public FunctionDefinitionNode(String functionName, String enclosingClassName, ExpressionNode doc, Arity arity, StatementNode defaults, RootCallTarget callTarget,
-                    FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots) {
+                    DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots) {
         super(definitionCellSlots, executionCellSlots);
         this.functionName = functionName;
         this.enclosingClassName = enclosingClassName;
         this.doc = doc;
         this.callTarget = callTarget;
-        this.frameDescriptor = frameDescriptor;
         this.arity = arity;
         this.defaults = defaults;
     }
@@ -69,7 +66,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         defaults.executeVoid(frame);
 
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, arity, callTarget, frameDescriptor, PArguments.getGlobals(frame), closure));
+        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, arity, callTarget, PArguments.getGlobals(frame), closure));
     }
 
     protected final <T extends PFunction> T withDocString(VirtualFrame frame, T func) {
