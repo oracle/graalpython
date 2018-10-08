@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins;
 
 import java.util.HashSet;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -169,7 +170,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PythonBuiltinClassType(String name, String publicInModule) {
         this.name = name;
         this.publicInModule = publicInModule;
-        this.instanceShape = com.oracle.graal.python.builtins.objects.type.PythonClass.freshShape();
+        this.instanceShape = PythonLanguage.freshShape();
     }
 
     PythonBuiltinClassType(String name) {

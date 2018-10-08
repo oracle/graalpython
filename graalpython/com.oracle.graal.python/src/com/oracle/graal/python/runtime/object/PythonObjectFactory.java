@@ -340,7 +340,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PythonClass createPythonClass(PythonClass metaclass, String name, PythonClass[] bases) {
-        return trace(new PythonClass(metaclass, name, PythonClass.freshShape(), bases));
+        return trace(new PythonClass(metaclass, name, PythonLanguage.freshShape(), bases));
     }
 
     public PythonNativeClass createNativeClassWrapper(Object object, PythonClass metaClass, String name, PythonClass[] pythonClasses) {

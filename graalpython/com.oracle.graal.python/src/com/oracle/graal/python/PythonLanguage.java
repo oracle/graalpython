@@ -80,6 +80,9 @@ import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.object.Layout;
+import com.oracle.truffle.api.object.ObjectType;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 
@@ -102,6 +105,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @CompilationFinal private boolean nativeBuildTime = TruffleOptions.AOT;
     private final NodeFactory nodeFactory;
     public final ConcurrentHashMap<Class<? extends PythonBuiltinBaseNode>, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
+
+    private static final Layout objectLayout = Layout.newLayout().build();
+    private static final Shape freshShape = objectLayout.createShape(new ObjectType());
 
     public PythonLanguage() {
         this.nodeFactory = NodeFactory.create(this);
@@ -428,5 +434,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public Object cacheCode(String filename, Supplier<PCode> createCode) {
         return cachedCode.computeIfAbsent(filename, f -> createCode.get());
+    }
+
+    public static Shape freshShape() {
+        return freshShape;
     }
 }

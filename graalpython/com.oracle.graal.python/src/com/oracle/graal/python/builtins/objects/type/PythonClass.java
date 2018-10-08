@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -46,8 +47,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.object.Layout;
-import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
@@ -56,7 +55,6 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
  */
 public class PythonClass extends PythonObject implements LazyPythonClass {
 
-    private static final Layout objectLayout = Layout.newLayout().build();
     private final String className;
 
     @CompilationFinal(dimensions = 1) private PythonClass[] baseClasses;
@@ -83,7 +81,7 @@ public class PythonClass extends PythonObject implements LazyPythonClass {
 
     @TruffleBoundary
     public PythonClass(LazyPythonClass typeClass, String name, Shape instanceShape, PythonClass... baseClasses) {
-        super(typeClass, freshShape() /* do not inherit layout from the TypeClass */);
+        super(typeClass, PythonLanguage.freshShape() /* do not inherit layout from the TypeClass */);
         this.className = name;
 
         if (baseClasses.length == 1 && baseClasses[0] == null) {
@@ -168,10 +166,6 @@ public class PythonClass extends PythonObject implements LazyPythonClass {
                 subclass.lookupChanged();
             }
         }
-    }
-
-    public static Shape freshShape() {
-        return objectLayout.createShape(new ObjectType());
     }
 
     public Shape getInstanceShape() {
