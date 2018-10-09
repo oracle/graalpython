@@ -238,7 +238,7 @@ public class JavaInteropTest extends PythonTests {
             }
         }
         assertNotNull("Dacapo found", dacapo);
-        assertEquals("e39957904b7e79caf4fa54f30e8e4ee74d4e9e37", dacapo.getMember("sha1").toString());
+        assertEquals("'e39957904b7e79caf4fa54f30e8e4ee74d4e9e37'", dacapo.getMember("sha1").toString());
     }
 
     public static class ForeignObjectWithOOInvoke implements TruffleObject {
