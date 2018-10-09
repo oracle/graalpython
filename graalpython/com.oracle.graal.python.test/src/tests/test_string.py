@@ -7,6 +7,12 @@ import unittest
 import sys
 
 
+class MyIndexable(object):
+    def __init__(self, value):
+        self.value = value
+    def __index__(self):
+        return self.value
+
 def test_find():
     assert "teststring".find("test") == 0
     assert "teststring".find("string") == 4
@@ -23,6 +29,31 @@ def test_find():
     assert "teststring".find("tst", None, 2) == -1
     assert "teststring".find("st", None, 4) == 2
 
+    s = 'ahoj cau nazadar ahoj'
+    assert s.find('ahoj') == 0
+    assert s.find('ahoj', 4) == 17
+    assert s.find('ahoj', -3) == -1
+    assert s.find('ahoj', -21) == 0
+    assert s.find('cau', -21) == 5
+    assert s.find('cau', -36, -10) == 5
+    assert s.find('cau', None) == 5
+    assert s.find('ahoj', None) == 0
+    assert s.find('cau', None, 8) == 5
+    assert s.find('cau', None, 7) == -1
+    assert s.find('u', 3) == 7
+    assert s.find('u', 3, 7) == -1
+    assert s.find('u', 3, 8) == 7
+    assert s.find('u', -18, -13) == 7
+    assert s.find('u', -18, -12) == 7
+    assert s.find('u', -18, -14) == -1
+    assert s.find('u', -14, -13) == 7
+    assert s.find('u', -12, -13) == -1
+    assert s.find('cau', MyIndexable(4)) == 5
+    assert s.find('cau', MyIndexable(5)) == 5
+    assert s.find('cau', MyIndexable(5), None) == 5
+    assert s.find('cau', MyIndexable(5), MyIndexable(8)) == 5
+    assert s.find('cau', None, MyIndexable(8)) == 5
+    
 
 def test_rfind():
     assert "test string test".rfind("test") == 12
@@ -34,6 +65,20 @@ def test_rfind():
     assert "test string test".rfind("test", 4, 14) == -1
     assert "test string test".rfind("test", None, 14) == 0
 
+    s = 'ahoj cau nazdar ahoj'
+    assert s.rfind('cau', None, None) == 5
+    assert s.rfind('cau', -25, None) == 5
+    assert s.rfind('cau', -25, -3) == 5
+    assert s.rfind('cau', -25, -12) == 5
+    assert s.rfind('cau', -25, -13) == -1
+    assert s.rfind('cau', -15, -12) == 5
+    assert s.rfind('cau', -14, -12) == -1
+    assert s.rfind('ahoj', -14) == 16
+    assert s.rfind('ahoj', -4) == 16
+    assert s.rfind('ahoj', -3) == -1
+    assert s.rfind('ahoj', 16) == 16
+    assert s.rfind('ahoj', 16, 20) == 16
+    assert s.rfind('ahoj', 16, 19) == -1
 
 def test_format():
     assert "{}.{}".format("part1", "part2") == "part1.part2"
@@ -707,13 +752,6 @@ class UnicodeTest(unittest.TestCase):
         
     def test_zfill_specialization(self):
         self.checkequal('123', '123', 'zfill', True)
-
-        class MyIndexable(object):
-            def __init__(self, value):
-                self.value = value
-            def __index__(self):
-                return self.value
-
         self.checkequal('0123', '123', 'zfill', MyIndexable(4))
 
     def test_title(self):
@@ -773,6 +811,76 @@ class UnicodeTest(unittest.TestCase):
                          '\U0010FFFFx\U0010FFFF')
         self.assertEqual('x'.center(4, '\U0010FFFF'),
                          '\U0010FFFFx\U0010FFFF\U0010FFFF')
+
+    # Whether the "contained items" of the container are integers in
+    # range(0, 256) (i.e. bytes, bytearray) or strings of length 1
+    # (str)
+    contains_bytes = False
+
+    def test_count(self):
+        self.checkequal(3, 'aaa', 'count', 'a')
+        self.checkequal(0, 'aaa', 'count', 'b')
+        self.checkequal(3, 'aaa', 'count', 'a')
+        self.checkequal(0, 'aaa', 'count', 'b')
+        self.checkequal(3, 'aaa', 'count', 'a')
+        self.checkequal(0, 'aaa', 'count', 'b')
+        self.checkequal(0, 'aaa', 'count', 'b')
+        self.checkequal(2, 'aaa', 'count', 'a', 1)
+        self.checkequal(0, 'aaa', 'count', 'a', 10)
+        self.checkequal(1, 'aaa', 'count', 'a', -1)
+        self.checkequal(3, 'aaa', 'count', 'a', -10)
+        self.checkequal(1, 'aaa', 'count', 'a', 0, 1)
+        self.checkequal(3, 'aaa', 'count', 'a', 0, 10)
+        self.checkequal(2, 'aaa', 'count', 'a', 0, -1)
+        self.checkequal(0, 'aaa', 'count', 'a', 0, -10)
+        self.checkequal(3, 'aaa', 'count', '', 1)
+        self.checkequal(1, 'aaa', 'count', '', 3)
+        self.checkequal(0, 'aaa', 'count', '', 10)
+        self.checkequal(2, 'aaa', 'count', '', -1)
+        self.checkequal(4, 'aaa', 'count', '', -10)
+
+        self.checkequal(1, '', 'count', '')
+        self.checkequal(0, '', 'count', '', 1, 1)
+        self.checkequal(0, '', 'count', '', sys.maxsize, 0)
+
+        self.checkequal(0, '', 'count', 'xx')
+        self.checkequal(0, '', 'count', 'xx', 1, 1)
+        self.checkequal(0, '', 'count', 'xx', sys.maxsize, 0)
+
+        self.checkraises(TypeError, 'hello', 'count')
+
+        if self.contains_bytes:
+            self.checkequal(0, 'hello', 'count', 42)
+        else:
+            self.checkraises(TypeError, 'hello', 'count', 42)
+
+        # For a variety of combinations,
+        #    verify that str.count() matches an equivalent function
+        #    replacing all occurrences and then differencing the string lengths
+        charset = ['', 'a', 'b']
+        digits = 7
+        base = len(charset)
+        teststrings = set()
+        for i in range(base ** digits):
+            entry = []
+            for j in range(digits):
+                i, m = divmod(i, base)
+                entry.append(charset[m])
+            teststrings.add(''.join(entry))
+        teststrings = [self.fixtype(ts) for ts in teststrings]
+        for i in teststrings:
+            n = len(i)
+            for j in teststrings:
+                r1 = i.count(j)
+                if j:
+                    r2, rem = divmod(n - len(i.replace(j, self.fixtype(''))),
+                                     len(j))
+                else:
+                    r2, rem = len(i)+1, 0
+                if rem or r1 != r2:
+                    self.assertEqual(rem, 0, '%s != 0 for %s' % (rem, i))
+                    self.assertEqual(r1, r2, '%s != %s for %s' % (r1, r2, i))
+                    
 
 def test_same_id():
     empty_ids = set([id(str()) for i in range(100)])

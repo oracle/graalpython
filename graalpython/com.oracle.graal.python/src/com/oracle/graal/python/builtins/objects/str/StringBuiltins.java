@@ -522,6 +522,39 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FindBaseNode extends PythonBuiltinNode {
 
+        private @Child CastToIndexNode startNode;
+        private @Child CastToIndexNode endNode;
+
+        private CastToIndexNode getStartNode() {
+            if (startNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                startNode = insert(CastToIndexNode.createOverflow());
+            }
+            return startNode;
+        }
+
+        private CastToIndexNode getEndNode() {
+            if (endNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                endNode = insert(CastToIndexNode.createOverflow());
+            }
+            return endNode;
+        }
+
+        private SliceInfo computeSlice(int length, long start, long end) {
+            int step = start < end ? 1 : -1;
+            PSlice tmpSlice = factory().createSlice(getStartNode().execute(start), getEndNode().execute(end), step);
+            return tmpSlice.computeIndices(length);
+        }
+
+        private SliceInfo computeSlice(int length, Object startO, Object endO) {
+            int start = startO == PNone.NO_VALUE || startO == PNone.NONE ? 0 : getStartNode().execute(startO);
+            int end = endO == PNone.NO_VALUE || endO == PNone.NONE ? length : getEndNode().execute(endO);
+            int step = start < end ? 1 : -1;
+            PSlice tmpSlice = factory().createSlice(start, end, step);
+            return tmpSlice.computeIndices(length);
+        }
+
         @Specialization
         Object find(String self, String str, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
             return find(self, str);
@@ -529,60 +562,33 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         Object find(String self, String str, long start, @SuppressWarnings("unused") PNone end) {
-            return findGeneric(self, str, start, -1);
+            int len = self.length();
+            SliceInfo info = computeSlice(len, start, len);
+            return findWithBounds(self, str, info.start, info.stop);
         }
 
         @Specialization
         Object find(String self, String str, @SuppressWarnings("unused") PNone start, long end) {
-            return findGeneric(self, str, -1, end);
+            SliceInfo info = computeSlice(self.length(), 0, end);
+            return findWithBounds(self, str, info.start, info.stop);
         }
 
         @Specialization
         Object find(String self, String str, long start, long end) {
-            return findGeneric(self, str, start, end);
+            SliceInfo info = computeSlice(self.length(), start, end);
+            return findWithBounds(self, str, info.start, info.stop);
         }
 
-        @Specialization(guards = {"isNumberOrNone(start)", "isNumberOrNone(end)"}, rewriteOn = ArithmeticException.class)
+        @Specialization
         Object findGeneric(String self, String str, Object start, Object end) throws ArithmeticException {
-            int startInt = getIntValue(start);
-            int endInt = getIntValue(end);
-            return findWithBounds(self, str, startInt, endInt);
-        }
-
-        @Specialization(guards = {"isNumberOrNone(start)", "isNumberOrNone(end)"}, replaces = "findGeneric")
-        Object findGenericOvf(String self, String str, Object start, Object end) {
-            try {
-                int startInt = getIntValue(start);
-                int endInt = getIntValue(end);
-                return findWithBounds(self, str, startInt, endInt);
-            } catch (ArithmeticException e) {
-                throw raise(ValueError, "cannot fit 'int' into an index-sized integer");
-            }
+            SliceInfo info = computeSlice(self.length(), start, end);
+            return findWithBounds(self, str, info.start, info.stop);
         }
 
         @Fallback
         @SuppressWarnings("unused")
         Object findFail(Object self, Object str, Object start, Object end) {
             throw raise(TypeError, "must be str, not %p", str);
-        }
-
-        protected static boolean isNumberOrNone(Object o) {
-            return o instanceof PInt || o instanceof PNone;
-        }
-
-        private static int getIntValue(Object o) throws ArithmeticException {
-            if (o instanceof Integer) {
-                return (int) o;
-            } else if (o instanceof Long) {
-                return PInt.intValueExact((long) o);
-            } else if (o instanceof Boolean) {
-                return PInt.intValue((boolean) o);
-            } else if (o instanceof PInt) {
-                return ((PInt) o).intValueExact();
-            } else if (o instanceof PNone) {
-                return -1;
-            }
-            throw new IllegalArgumentException();
         }
 
         @SuppressWarnings("unused")
@@ -610,16 +616,8 @@ public final class StringBuiltins extends PythonBuiltins {
         @Override
         @TruffleBoundary
         protected int findWithBounds(String self, String str, int start, int end) {
-            if (start != -1 && end != -1) {
-                int idx = self.lastIndexOf(str, end - str.length() - 1);
-                return idx >= start ? idx : -1;
-            } else if (start != -1) {
-                int idx = self.lastIndexOf(str);
-                return idx >= start ? idx : -1;
-            } else {
-                assert end != -1;
-                return self.lastIndexOf(str, end - str.length() - 1);
-            }
+            int idx = self.lastIndexOf(str, end - str.length());
+            return idx >= start ? idx : -1;
         }
     }
 
@@ -637,16 +635,8 @@ public final class StringBuiltins extends PythonBuiltins {
         @Override
         @TruffleBoundary
         protected int findWithBounds(String self, String str, int start, int end) {
-            if (start != -1 && end != -1) {
-                int idx = self.indexOf(str, start);
-                return idx + str.length() <= end ? idx : -1;
-            } else if (start != -1) {
-                return self.indexOf(str, start);
-            } else {
-                assert end != -1;
-                int idx = self.indexOf(str);
-                return idx + str.length() <= end ? idx : -1;
-            }
+            int idx = self.indexOf(str, start);
+            return idx + str.length() <= end ? idx : -1;
         }
     }
 
