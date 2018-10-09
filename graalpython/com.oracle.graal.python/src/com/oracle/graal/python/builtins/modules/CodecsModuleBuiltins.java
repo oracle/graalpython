@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -225,10 +226,35 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         return CodecsModuleBuiltinsFactory.getFactories();
     }
 
+    abstract static class EncodeBaseNode extends PythonBuiltinNode {
+
+        protected static CodingErrorAction convertCodingErrorAction(String errors) {
+            CodingErrorAction errorAction;
+            switch (errors) {
+                // TODO: see [GR-10256] to implement the correct handling mechanics
+                case "ignore":
+                case "surrogatepass":
+                    errorAction = CodingErrorAction.IGNORE;
+                    break;
+                case "replace":
+                case "surrogateescape":
+                case "namereplace":
+                case "backslashreplace":
+                case "xmlcharrefreplace":
+                    errorAction = CodingErrorAction.REPLACE;
+                    break;
+                default:
+                    errorAction = CodingErrorAction.REPORT;
+                    break;
+            }
+            return errorAction;
+        }
+    }
+
     // _codecs.encode(obj, encoding='utf-8', errors='strict')
     @Builtin(name = "__truffle_encode", fixedNumOfPositionalArgs = 1, keywordArguments = {"encoding", "errors"})
     @GenerateNodeFactory
-    public abstract static class CodecsEncodeNode extends PythonBuiltinNode {
+    public abstract static class CodecsEncodeNode extends EncodeBaseNode {
         @Child private SequenceStorageNodes.LenNode lenNode;
 
         @Specialization(guards = "isString(str)")
@@ -278,25 +304,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private PBytes encodeString(String self, String encoding, String errors) {
-            CodingErrorAction errorAction;
-            switch (errors) {
-                // TODO: see [GR-10256] to implement the correct handling mechanics
-                case "ignore":
-                case "surrogatepass":
-                    errorAction = CodingErrorAction.IGNORE;
-                    break;
-                case "replace":
-                case "surrogateescape":
-                case "namereplace":
-                case "backslashreplace":
-                case "xmlcharrefreplace":
-                    errorAction = CodingErrorAction.REPLACE;
-                    break;
-                default:
-                    errorAction = CodingErrorAction.REPORT;
-                    break;
-            }
-
+            CodingErrorAction errorAction = convertCodingErrorAction(errors);
             try {
                 Charset charset = getCharset(encoding);
                 ByteBuffer encoded = charset.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
@@ -320,10 +328,63 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "__truffle_raw_encode", fixedNumOfPositionalArgs = 1, keywordArguments = {"errors"})
+    @GenerateNodeFactory
+    public abstract static class RawEncodeNode extends EncodeBaseNode {
+
+        @Specialization
+        PTuple encode(String self, @SuppressWarnings("unused") PNone none) {
+            return encode(self, "strict");
+        }
+
+        @Specialization
+        PTuple encode(String self, String errors) {
+            return factory().createTuple(encodeString(self, errors));
+        }
+
+        @TruffleBoundary
+        private Object[] encodeString(String self, String errors) {
+            CodingErrorAction errorAction = convertCodingErrorAction(errors);
+
+            try {
+                Charset charset = getCharset("utf-32");
+                ByteBuffer encoded = charset.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
+                int n = encoded.remaining();
+                ByteBuffer buf = ByteBuffer.allocate(n);
+                assert n % Integer.BYTES == 0;
+                int codePoints = n / Integer.BYTES;
+
+                while (encoded.hasRemaining()) {
+                    int codePoint = encoded.getInt();
+                    if (codePoint <= 0xFF) {
+                        buf.put((byte) codePoint);
+                    } else {
+                        buf.put((byte) '\\');
+                        buf.put((byte) 'u');
+                        String hexString = Integer.toHexString(codePoint);
+                        for (int i = 0; i < hexString.length(); i++) {
+                            assert hexString.charAt(i) < 128;
+                            buf.put((byte) hexString.charAt(i));
+                        }
+                    }
+                }
+                buf.flip();
+                n = buf.remaining();
+                byte[] data = new byte[n];
+                buf.get(data);
+                // TODO(fa): bytes object creation should not be behind a TruffleBoundary
+                return new Object[]{factory().createBytes(data), codePoints};
+            } catch (CharacterCodingException e) {
+                throw raise(UnicodeEncodeError, "%s", e.getMessage());
+            }
+        }
+
+    }
+
     // _codecs.decode(obj, encoding='utf-8', errors='strict')
     @Builtin(name = "__truffle_decode", fixedNumOfPositionalArgs = 1, keywordArguments = {"encoding", "errors"})
     @GenerateNodeFactory
-    abstract static class CodecsDecodeNode extends PythonBuiltinNode {
+    abstract static class CodecsDecodeNode extends EncodeBaseNode {
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
 
         @Specialization
@@ -374,31 +435,74 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         String decodeBytes(ByteBuffer bytes, String encoding, String errors) {
-            CodingErrorAction errorAction;
-            switch (errors) {
-                // TODO: see [GR-10256] to implement the correct handling mechanics
-                case "ignore":
-                case "surrogatepass":
-                    errorAction = CodingErrorAction.IGNORE;
-                    break;
-                case "replace":
-                case "surrogateescape":
-                case "namereplace":
-                case "backslashreplace":
-                case "xmlcharrefreplace":
-                    errorAction = CodingErrorAction.REPLACE;
-                    break;
-                default:
-                    errorAction = CodingErrorAction.REPORT;
-                    break;
-            }
-
+            CodingErrorAction errorAction = convertCodingErrorAction(errors);
             try {
                 Charset charset = getCharset(encoding);
                 CharBuffer decoded = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(bytes);
                 return String.valueOf(decoded);
             } catch (IllegalArgumentException e) {
                 throw this.getCore().raise(LookupError, "unknown encoding: %s", encoding);
+            } catch (CharacterCodingException e) {
+                throw raise(UnicodeDecodeError, "%s", e.getMessage());
+            }
+        }
+    }
+
+    @Builtin(name = "__truffle_raw_decode", fixedNumOfPositionalArgs = 1, keywordArguments = {"errors"})
+    @GenerateNodeFactory
+    abstract static class RawDecodeNode extends EncodeBaseNode {
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+
+        @Specialization
+        Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone errors) {
+            String string = decodeBytes(getBytesBuffer(bytes), "strict");
+            return factory().createTuple(new Object[]{string, string.length()});
+        }
+
+        @Specialization(guards = {"isString(errors)"})
+        Object decode(PIBytesLike bytes, Object errors,
+                        @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
+            Object profiledErrors = errorsTypeProfile.profile(errors);
+            String string = decodeBytes(getBytesBuffer(bytes), profiledErrors.toString());
+            return factory().createTuple(new Object[]{string, string.length()});
+        }
+
+        private ByteBuffer getBytesBuffer(PIBytesLike bytesLike) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create(false));
+            }
+            byte[] barr = toByteArrayNode.execute(bytesLike.getSequenceStorage());
+            return ByteBuffer.wrap(barr, 0, barr.length);
+        }
+
+        @TruffleBoundary
+        String decodeBytes(ByteBuffer bytes, String errors) {
+            CodingErrorAction errorAction = convertCodingErrorAction(errors);
+            try {
+                ByteBuffer buf = ByteBuffer.allocate(bytes.remaining() * Integer.BYTES);
+                while (bytes.hasRemaining()) {
+                    int val;
+                    byte b = bytes.get();
+                    if (b == (byte) '\\') {
+                        byte b1 = bytes.get();
+                        if (b1 == (byte) 'u') {
+                            // read 2 bytes as integer
+                            val = bytes.getShort();
+                        } else if (b1 == (byte) 'U') {
+                            val = bytes.getInt();
+                        } else {
+                            throw new CharacterCodingException();
+                        }
+                    } else {
+                        val = b;
+                    }
+                    buf.putInt(val);
+                }
+                buf.flip();
+                Charset charset = getCharset("utf-32");
+                CharBuffer decoded = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(buf);
+                return String.valueOf(decoded);
             } catch (CharacterCodingException e) {
                 throw raise(UnicodeDecodeError, "%s", e.getMessage());
             }

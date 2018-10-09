@@ -75,7 +75,7 @@ public class PFunction extends PythonObject implements PythonCallable {
     @TruffleBoundary
     private static void addDefaultConstants(DynamicObject storage, String name, String enclosingClassName) {
         storage.define(__NAME__, name);
-        storage.define(__QUALNAME__, enclosingClassName == null ? enclosingClassName + "." + name : name);
+        storage.define(__QUALNAME__, enclosingClassName != null ? enclosingClassName + "." + name : name);
     }
 
     public boolean isStatic() {

@@ -1697,6 +1697,9 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 Python3Parser.FuncdefContext funcdefContext = (Python3Parser.FuncdefContext) parent;
                 stack.push("<locals>");
                 stack.push(funcdefContext.NAME().getText());
+            } else if (parent instanceof Python3Parser.ClassdefContext) {
+                Python3Parser.ClassdefContext classdefContext = (Python3Parser.ClassdefContext) parent;
+                stack.push(classdefContext.NAME().getText());
             }
 
             parent = parent.getParent();

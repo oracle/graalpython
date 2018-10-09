@@ -487,16 +487,35 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 bases[i] = (PythonClass) array[i];
             }
 
-            String name = getStringItem(nativeMembers, "tp_name");
+            // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
+            String fqname = getStringItem(nativeMembers, "tp_name");
             String doc = getStringItem(nativeMembers, "tp_doc");
-            String module = getStringItem(nativeMembers, SpecialAttributeNames.__MODULE__);
-            PythonNativeClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, name, bases);
+            // the qualified name (i.e. without module name) like 'A.B...'
+            String qualName = getQualName(fqname);
+            PythonNativeClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, qualName, bases);
             writeNode.execute(cclass, SpecialAttributeNames.__DOC__, doc);
             writeNode.execute(cclass, SpecialAttributeNames.__BASICSIZE__, getLongItem(nativeMembers, "tp_basicsize"));
-            if (module != null) {
-                writeNode.execute(cclass, SpecialAttributeNames.__MODULE__, module);
+            String moduleName = getModuleName(fqname);
+            if (moduleName != null) {
+                writeNode.execute(cclass, SpecialAttributeNames.__MODULE__, moduleName);
             }
             return new PythonClassInitNativeWrapper(cclass);
+        }
+
+        private static String getQualName(String fqname) {
+            int firstDot = fqname.indexOf('.');
+            if (firstDot != -1) {
+                return fqname.substring(firstDot + 1);
+            }
+            return fqname;
+        }
+
+        private static String getModuleName(String fqname) {
+            int firstDotIdx = fqname.indexOf('.');
+            if (firstDotIdx != -1) {
+                return fqname.substring(0, firstDotIdx);
+            }
+            return null;
         }
 
         private String getStringItem(PDict nativeMembers, String key) {

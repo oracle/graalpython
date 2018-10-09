@@ -243,6 +243,12 @@ PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* 
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
 
+PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const char* fmt, ...) {
+    PyObject* args;
+    CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
+    return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
+}
+
 UPCALL_ID(type);
 PyObject* PyObject_Type(PyObject* obj) {
     return UPCALL_O(PY_BUILTIN, _jls_type, native_to_java(obj));

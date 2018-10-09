@@ -37,74 +37,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import unittest
+import pickle
 
-def assert_raises(err, fn, *args, **kwargs):
-    raised = False
-    try:
-        fn(*args, **kwargs)
-    except err:
-        raised = True
-    assert raised
+class TestPickle(unittest.TestCase):
 
+    def test_builtin(self):
+        self.pickle_unpickle(len)
+        import sys
+        self.pickle_unpickle(sys.getrecursionlimit)
 
-def test_name():
-    def foo():
-        pass
-    assert "foo" in str(foo)
-    assert foo.__name__ == "foo"
-    foo.__name__ = "bar"
-    assert foo.__name__ == "bar"
-    assert "bar" not in str(foo)
-    assert "foo" in str(foo)
-    try:
-        foo.__name__ = 42
-    except TypeError as e:
-        assert "__name__ must be set to a string object" in str(e)
-    else:
-        assert False
+    def test_local(self):
+        self.pickle_unpickle("test")
+        myvar = 10
+        self.pickle_unpickle(myvar)
 
+    def pickle_unpickle(self, obj):
+        b_obj = pickle.dumps(obj, protocol=0)
+        r_obj = pickle.loads(b_obj)
+        self.assertEqual(r_obj, obj)
 
-def f(a, b, c=10, *args, **kwargs):
-    return a, b, c, args, kwargs
-
-
-def f2(a=f(1, 2), b=10):
-    return a, b
-
-
-def f3(a, b=f(1,2), c=10, *args, d="hello", e="world"):
-    return a, b, c, args, d, e
-
-
-class MyClass(object):
-    def __init__(self, x = 10):
-        pass
-
-
-def test_defaults():
-    assert f.__defaults__ == (10,)
-    assert f2.__defaults__ == ((1, 2, 10, (), {}), 10)
-
-
-def test_kwdefaults():
-    assert f.__kwdefaults__ == None
-    assert f2.__kwdefaults__ == None
-    assert f3.__kwdefaults__ == { "d": "hello", "e": "world"}
-
-
-def test_defaults_method():
-    obj = MyClass()
-    assert obj.__init__.__defaults__ == (10,)
-
-    def assgn():
-        obj.__init__.__defaults__ = (12,)
-    assert_raises(AttributeError, assgn)
-
-
-def test_constructor():
-    import types
-    func_copy = types.FunctionType(f.__code__, f.__globals__, f.__name__, f.__defaults__, f.__closure__)
-
-    assert func_copy(1, 2) == (1, 2, 10, (), {})
-    assert func_copy(1, 2, 3) == (1, 2, 3, (), {})
-    assert func_copy(1, 2, 3, 4, 5, x=2) == (1, 2, 3, (4, 5), {'x': 2})
+if __name__ == '__main__':
+    unittest.main()

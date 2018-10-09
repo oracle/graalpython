@@ -29,7 +29,10 @@ package com.oracle.graal.python.builtins.objects.method;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__KWDEFAULTS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
@@ -103,6 +106,27 @@ public class MethodBuiltins extends PythonBuiltins {
         Object defaults(PMethod self,
                         @Cached("create()") FunctionBuiltins.GetFunctionDefaultsNode getFunctionDefaultsNode) {
             return getFunctionDefaultsNode.execute(self.getFunction(), PNone.NO_VALUE);
+        }
+    }
+
+    @Builtin(name = __KWDEFAULTS__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetMethodKwdefaultsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object defaults(PMethod self,
+                        @Cached("create()") FunctionBuiltins.GetFunctionKeywordDefaultsNode getFunctionKwdefaultsNode) {
+            return getFunctionKwdefaultsNode.execute(self.getFunction());
+        }
+    }
+
+    @Builtin(name = __REDUCE__, fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doGeneric(@SuppressWarnings("unused") Object obj) {
+            // TODO we should not override '__reduce__' but properly distinguish between heap/non
+            // heap types
+            throw raise(TypeError, "can't pickle function objects");
         }
     }
 }

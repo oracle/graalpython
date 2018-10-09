@@ -52,6 +52,8 @@ import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetObjectTypeNodeGen;
@@ -400,14 +402,14 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Child GetTypeNode getType;
         @Child GetObjectNode getObject;
         @Child CallTernaryMethodNode callGet;
-        @Child LookupAndCallBinaryNode getAttr;
+        @Child ObjectBuiltins.GetAttributeNode objectGetattributeNode;
 
         private Object genericGetAttr(Object object, Object attr) {
-            if (getAttr == null) {
+            if (objectGetattributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getAttr = insert(LookupAndCallBinaryNode.create(SpecialMethodNames.__GETATTRIBUTE__));
+                objectGetattributeNode = insert(ObjectBuiltinsFactory.GetAttributeNodeFactory.create());
             }
-            return getAttr.executeObject(object, attr);
+            return objectGetattributeNode.execute(object, attr);
         }
 
         @Specialization

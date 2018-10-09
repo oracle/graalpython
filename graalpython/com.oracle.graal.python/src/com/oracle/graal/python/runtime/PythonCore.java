@@ -115,6 +115,8 @@ public interface PythonCore {
 
     public PInt getFalse();
 
+    public PythonModule getBuiltins();
+
     static void writeWarning(String warning) {
         PythonLanguage.getLogger().warning(warning);
     }

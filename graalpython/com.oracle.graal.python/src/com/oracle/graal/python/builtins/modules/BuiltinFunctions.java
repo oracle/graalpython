@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -456,6 +457,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class EvalNode extends PythonBuiltinNode {
         @Child private GetItemNode getNameNode = GetItemNode.create();
         @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
 
         @Specialization
         public Object eval(VirtualFrame frame, String expression, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
@@ -513,6 +515,39 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(code, callerGlobals, locals, callerClosure);
+        }
+
+        @Specialization
+        public Object eval(VirtualFrame frame, PBytes expression, PNone globals, PNone locals) {
+            return eval(frame, getString(expression), globals, locals);
+        }
+
+        @Specialization
+        public Object eval(VirtualFrame frame, PBytes expression, PythonObject globals, PNone locals) {
+            return eval(frame, getString(expression), globals, locals);
+        }
+
+        @Specialization
+        public Object eval(VirtualFrame frame, PBytes expression, PythonObject globals, PythonObject locals) {
+            return eval(frame, getString(expression), globals, locals);
+        }
+
+        @Specialization
+        public Object eval(VirtualFrame frame, PBytes expression, PNone globals, PythonObject locals) {
+            return eval(frame, getString(expression), globals, locals);
+        }
+
+        @TruffleBoundary
+        private String getString(PBytes expression) {
+            return new String(getByteArray(expression));
+        }
+
+        private byte[] getByteArray(PIBytesLike pByteArray) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+            }
+            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
         }
 
         @TruffleBoundary

@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
@@ -558,6 +559,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFloat)
     @GenerateNodeFactory
     public abstract static class FloatNode extends PythonBuiltinNode {
+        @Child private BytesNodes.ToBytesNode toByteArrayNode;
+
         private final ConditionProfile isPrimitiveProfile = ConditionProfile.createBinaryProfile();
 
         protected boolean isPrimitiveFloat(Object cls) {
@@ -611,6 +614,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "!isNativeClass(cls)")
         public Object floatFromString(PythonClass cls, String arg) {
             double value = convertStringToDouble(arg);
+            if (isPrimitiveFloat(cls)) {
+                return value;
+            }
+            return factory().createFloat(cls, value);
+        }
+
+        @Specialization(guards = "!isNativeClass(cls)")
+        @TruffleBoundary
+        public Object floatFromBytes(PythonClass cls, PIBytesLike arg) {
+            double value = convertStringToDouble(new String(getByteArray(arg)));
             if (isPrimitiveFloat(cls)) {
                 return value;
             }
@@ -722,6 +735,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public Object floatFromObject(@SuppressWarnings("unused") Object cls, Object arg) {
             throw raise(TypeError, "can't convert %s to float", arg.getClass().getSimpleName());
         }
+
+        private byte[] getByteArray(PIBytesLike pByteArray) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
+            }
+            return toByteArrayNode.execute(pByteArray);
+        }
     }
 
     // frozenset([iterable])
@@ -780,7 +801,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IntNode extends PythonBuiltinNode {
 
-        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+        @Child private BytesNodes.ToBytesNode toByteArrayNode;
 
         @TruffleBoundary(transferToInterpreterOnException = false)
         private Object stringToInt(String num, int base) {
@@ -980,28 +1001,30 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
         int parseInt(Object cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
-            return parseInt(cls, new String(getByteArray(arg)), keywordArg);
+            return parseInt(cls, toString(arg), keywordArg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
         long parseLong(Object cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
-            return parseLong(cls, new String(getByteArray(arg)), keywordArg);
+            return parseLong(cls, toString(arg), keywordArg);
         }
 
-        @Specialization(rewriteOn = NumberFormatException.class)
-        @TruffleBoundary
-        Object parseBytes(PythonClass cls, PIBytesLike arg, int base) {
-            return parsePInt(cls, new String(getByteArray(arg)), base);
-        }
-
-        @Specialization(replaces = "parseBytes")
-        Object parseBytesError(PythonClass cls, PIBytesLike arg, int base) {
+        @Specialization
+        Object parseBytesError(PythonClass cls, PIBytesLike arg, int base,
+                        @Cached("create()") BranchProfile errorProfile) {
             try {
-                return parseBytes(cls, arg, base);
+                return parsePInt(cls, toString(arg), base);
             } catch (NumberFormatException e) {
+                errorProfile.enter();
                 throw raise(ValueError, "invalid literal for int() with base %s: %s", base, arg);
             }
+        }
+
+        @Specialization(guards = "isNoValue(base)")
+        Object parseBytesError(PythonClass cls, PIBytesLike arg, @SuppressWarnings("unused") PNone base,
+                        @Cached("create()") BranchProfile errorProfile) {
+            return parseBytesError(cls, arg, 10, errorProfile);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
@@ -1018,6 +1041,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object parsePInt(PythonClass cls, PString arg, int keywordArg) {
             return parsePInt(cls, arg.getValue(), keywordArg);
+        }
+
+        @Specialization(guards = "isNoValue(base)")
+        Object parsePInt(PythonClass cls, PString arg, PNone base) {
+            return createInt(cls, arg.getValue(), base);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
@@ -1078,7 +1106,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, "int() can't convert non-string with explicit base");
         }
 
-        @Specialization(guards = {"isNoValue(keywordArg)", "!isNoValue(obj)"})
+        @Specialization(guards = {"isNoValue(keywordArg)", "!isNoValue(obj)", "!isHandledType(obj)"})
         public Object createInt(PythonClass cls, Object obj, PNone keywordArg,
                         @Cached("create(__INT__)") LookupAndCallUnaryNode callIntNode,
                         @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTruncNode,
@@ -1113,12 +1141,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private byte[] getByteArray(PIBytesLike pByteArray) {
+        protected static boolean isHandledType(Object obj) {
+            return PGuards.isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj);
+        }
+
+        private String toString(PIBytesLike pByteArray) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+                toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
             }
-            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
+            return toString(toByteArrayNode.execute(pByteArray));
+        }
+
+        @TruffleBoundary
+        private static String toString(byte[] barr) {
+            return new String(barr);
         }
 
     }
