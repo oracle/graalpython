@@ -134,6 +134,9 @@ public class TopLevelExceptionHandler extends RootNode {
 
     @TruffleBoundary
     private void printResult(Object result) {
+        if (result instanceof PNone) {
+            return;
+        }
         OutputStream out = getCurrentContext(PythonLanguage.class).getStandardOut();
         String stringResult = callReprNode.executeObject(result).toString();
         try {
