@@ -340,6 +340,9 @@ public abstract class NativeWrappers {
         /** Number of bytes that constitute a single element. */
         private final int elementAccessSize;
 
+        /** the cached Sulong type */
+        private Object sulongType;
+
         public PySequenceArrayWrapper(Object delegate, int elementAccessSize) {
             super(delegate);
             this.elementAccessSize = elementAccessSize;
@@ -356,6 +359,14 @@ public abstract class NativeWrappers {
         @Override
         public ForeignAccess getForeignAccess() {
             return PySequenceArrayWrapperMRForeign.ACCESS;
+        }
+
+        public Object getSulongType() {
+            return sulongType;
+        }
+
+        public void setSulongType(Object sulongType) {
+            this.sulongType = sulongType;
         }
     }
 
