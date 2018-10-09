@@ -154,20 +154,20 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PythonCore getCore() {
-        return getContext().getCore();
+        return getContextRef().get().getCore();
     }
 
-    private PythonContext getContext() {
+    private ContextReference<PythonContext> getContextRef() {
         if (contextRef == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             contextRef = PythonLanguage.getContextRef();
             allocationReporter = contextRef.get().getEnv().lookup(AllocationReporter.class);
         }
-        return contextRef.get();
+        return contextRef;
     }
 
     private boolean reportAllocations() {
-        return getContext() != null && allocationReporter != null;
+        return getContextRef() != null && allocationReporter != null;
     }
 
     /*
