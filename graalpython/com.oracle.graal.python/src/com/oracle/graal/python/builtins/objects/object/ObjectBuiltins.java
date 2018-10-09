@@ -403,7 +403,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class GetattrNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object getattr(Object object, Object key) {
-            throw raise(AttributeError, "'%p' object has no attribute %s", object, key);
+            throw raise(AttributeError, "'%p' object has no attribute '%s'", object, key);
         }
     }
 
@@ -470,7 +470,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             if (descr != PNone.NO_VALUE) {
                 throw raise(AttributeError, "attribute % is read-only", key);
             } else {
-                throw raise(AttributeError, "%s object has no attribute %s", object, key);
+                throw raise(AttributeError, "%s object has no attribute '%s'", object, key);
             }
         }
     }
