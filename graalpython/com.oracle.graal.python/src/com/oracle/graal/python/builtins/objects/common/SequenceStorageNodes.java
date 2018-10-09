@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetLenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetStorageSliceNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.VerifyNativeItemNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -1837,6 +1838,64 @@ public abstract class SequenceStorageNodes {
 
         public static ToByteArrayNode create(boolean exact) {
             return ToByteArrayNodeGen.create(exact);
+        }
+    }
+
+    public abstract static class ToArrayNode extends SequenceStorageBaseNode {
+
+        @Child private GetItemScalarNode getItemNode;
+
+        private final boolean exact;
+
+        public ToArrayNode(boolean exact) {
+            this.exact = exact;
+        }
+
+        public abstract Object[] execute(SequenceStorage s);
+
+        @Specialization
+        Object[] doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s) {
+            return new Object[0];
+        }
+
+        @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"s.getClass() == cachedClass"})
+        Object[] doBasicStorage(BasicSequenceStorage s,
+                        @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
+            BasicSequenceStorage profiled = CompilerDirectives.castExact(s, cachedClass);
+            if (exact) {
+                return profiled.getCopyOfInternalArray();
+            }
+            return profiled.getInternalArray();
+
+        }
+
+        @Specialization(guards = "!isBasicSequenceStorage(s)")
+        Object[] doGeneric(SequenceStorage s) {
+            Object[] barr = new Object[s.length()];
+            for (int i = 0; i < barr.length; i++) {
+                barr[i] = getGetItemNode().execute(s, i);
+            }
+            return barr;
+        }
+
+        protected GetItemScalarNode getGetItemNode() {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(GetItemScalarNode.create());
+            }
+            return getItemNode;
+        }
+
+        protected static boolean isBasicSequenceStorage(SequenceStorage s) {
+            return s instanceof BasicSequenceStorage;
+        }
+
+        public static ToArrayNode create() {
+            return ToArrayNodeGen.create(true);
+        }
+
+        public static ToArrayNode create(boolean exact) {
+            return ToArrayNodeGen.create(exact);
         }
     }
 

@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
@@ -72,13 +73,9 @@ public abstract class ExecutePositionalStarargsNode extends PNodeWithContext {
     }
 
     @Specialization
-    Object[] starargs(PList starargs) {
-        int length = starargs.getSequenceStorage().length();
-        Object[] internalArray = starargs.getSequenceStorage().getInternalArray();
-        if (internalArray.length != length) {
-            return starargs.getSequenceStorage().getCopyOfInternalArray();
-        }
-        return internalArray;
+    Object[] starargs(PList starargs,
+                    @Cached("createExact()") SequenceStorageNodes.ToArrayNode toArrayNode) {
+        return toArrayNode.execute(starargs.getSequenceStorage());
     }
 
     @Specialization
@@ -130,6 +127,10 @@ public abstract class ExecutePositionalStarargsNode extends PNodeWithContext {
             }
         }
         throw raise(PythonErrorType.TypeError, "argument after * must be an iterable, not %p", object);
+    }
+
+    protected static SequenceStorageNodes.ToArrayNode createExact() {
+        return SequenceStorageNodes.ToArrayNode.create(true);
     }
 
     public static ExecutePositionalStarargsNode create() {

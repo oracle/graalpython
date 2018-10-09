@@ -85,7 +85,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return boxed;
     }
 
-    @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
+    @TruffleBoundary(allowInlining = true)
     public byte[] getInternalByteArray() {
         if (length != values.length) {
             assert length < values.length;
@@ -169,7 +169,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return new ByteSequenceStorage(newArray);
     }
 
-    @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
+    @TruffleBoundary
     public void setByteSliceInBound(int start, int stop, int step, IntSequenceStorage sequence) {
         int otherLength = sequence.length();
         int[] seqValues = sequence.getInternalIntArray();
@@ -209,7 +209,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         length = newLength;
     }
 
-    @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
+    @TruffleBoundary
     public void setByteSliceInBound(int start, int stop, int step, ByteSequenceStorage sequence) {
         int otherLength = sequence.length();
 
