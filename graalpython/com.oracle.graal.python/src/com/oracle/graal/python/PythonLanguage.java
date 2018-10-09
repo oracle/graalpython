@@ -34,17 +34,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.graalvm.options.OptionDescriptors;
 
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -329,7 +328,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean isVisible(PythonContext context, Object value) {
-        return value != PNone.NONE && value != PNone.NO_VALUE;
+        return false;
     }
 
     @Override
@@ -363,12 +362,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected String toString(PythonContext context, Object value) {
-        final PythonModule builtins = context.getBuiltins();
-        PBuiltinFunction reprMethod = ((PBuiltinMethod) builtins.getAttribute(BuiltinNames.REPR)).getFunction();
+        PythonBuiltinClass strType = context.getCore().lookupType(PythonBuiltinClassType.PString);
+        PBuiltinFunction strConstructor = (PBuiltinFunction) strType.getAttribute(SpecialMethodNames.__NEW__);
         Object[] userArgs = PArguments.create(2);
-        PArguments.setArgument(userArgs, 0, PNone.NONE);
+        PArguments.setArgument(userArgs, 0, strType);
         PArguments.setArgument(userArgs, 1, value);
-        Object res = InvokeNode.create(reprMethod).execute(null, userArgs, PKeyword.EMPTY_KEYWORDS);
+        Object res = InvokeNode.create(strConstructor).execute(null, userArgs, PKeyword.EMPTY_KEYWORDS);
         return res.toString();
     }
 
