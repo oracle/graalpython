@@ -70,14 +70,20 @@ def setup(sre_compiler, error_class, flags_table):
 
     def configure_fallback_compiler(mode):
         def fallback_compiler(pattern, flags):
+            sticky = False
             bit_flags = 0
             for flag in flags:
-                bit_flags = bit_flags | FLAGS[flag]
+                # Handle internal stick(y) flag used to signal matching only at the start of input.
+                if flag == "y":
+                    sticky = True
+                else:
+                    bit_flags = bit_flags | FLAGS[flag]
 
             compiled_pattern = sre_compiler(pattern if mode == "str" else _str_to_bytes(pattern), bit_flags)
 
             def executable_pattern(regex_object, input, from_index):
-                result = compiled_pattern.search(input, from_index)
+                search_method = compiled_pattern.match if sticky else compiled_pattern.search
+                result = search_method(input, from_index)
                 is_match = result is not None
                 group_count = 1 + compiled_pattern.groups
                 return _RegexResult(
@@ -191,12 +197,6 @@ class SRE_Match():
     def __repr__(self):
         return "<re.Match object; span=%r, match=%r>" % (self.span(), self.group())
 
-def _prepend_begin_assert(pattern):
-    if isinstance(pattern, str):
-        return pattern if pattern.startswith(r"\A") else r"\A" + pattern
-    else:
-        return pattern if pattern.startswith(rb"\A") else rb"\A" + pattern
-
 def _append_end_assert(pattern):
     if isinstance(pattern, str):
         return pattern if pattern.endswith(r"\Z") else pattern + r"\Z"
@@ -217,11 +217,10 @@ class SRE_Pattern():
                 flags_str.append(char)
         self.flags_str = "".join(flags_str)
         self.__compiled_regexes = dict()
-        self.__tregex_compile(pattern)
         self.groupindex = dict()
-        if self.__compiled_regexes[self.pattern].groups is not None:
-            for group_name in dir(self.__compiled_regexes[self.pattern].groups):
-                self.groupindex[group_name] = self.__compiled_regexes[self.pattern].groups[group_name]
+        if self.__tregex_compile(self.pattern).groups is not None:
+            for group_name in dir(self.__tregex_compile(self.pattern).groups):
+                self.groupindex[group_name] = self.__tregex_compile(self.pattern).groups[group_name]
 
 
     def __check_input_type(self, input):
@@ -233,11 +232,13 @@ class SRE_Pattern():
             raise TypeError("cannot use a bytes pattern on a string-like object")
 
 
-    def __tregex_compile(self, pattern):
-        if pattern not in self.__compiled_regexes:
+    def __tregex_compile(self, pattern, flags=None):
+        if flags is None:
+            flags = self.flags_str
+        if (pattern, flags) not in self.__compiled_regexes:
             tregex_engine = TREGEX_ENGINE_BYTES if self.__binary else TREGEX_ENGINE_STR
             try:
-                self.__compiled_regexes[pattern] = tregex_call_compile(tregex_engine, pattern, self.flags_str)
+                self.__compiled_regexes[(pattern, flags)] = tregex_call_compile(tregex_engine, pattern, flags)
             except ValueError as e:
                 message = str(e)
                 boundary = message.rfind(" at position ")
@@ -247,7 +248,7 @@ class SRE_Pattern():
                     position = int(message[boundary + len(" at position "):])
                     message = message[:boundary]
                     raise error(message, pattern, position)
-        return self.__compiled_regexes[pattern]
+        return self.__compiled_regexes[(pattern, flags)]
 
 
     def __repr__(self):
@@ -267,12 +268,12 @@ class SRE_Pattern():
             sflags = "|".join(flag_items)
         return "re.compile(%s%s%s)" % (self.pattern, sep, sflags)
 
-    def _search(self, pattern, string, pos, endpos):
-        pattern = self.__tregex_compile(pattern)
+    def _search(self, pattern, string, pos, endpos, sticky=False):
+        pattern = self.__tregex_compile(pattern, self.flags_str + ("y" if sticky else ""))
         if endpos == -1 or endpos >= len(string):
-            result = tregex_call_exec(pattern.exec, string, pos)
+            result = tregex_call_exec(pattern.exec, string, min(pos, len(string) + 1))
         else:
-            result = tregex_call_exec(pattern.exec, string[:endpos], pos)
+            result = tregex_call_exec(pattern.exec, string[:endpos], min(pos, endpos % len(string) + 1))
         if result.isMatch:
             return SRE_Match(self, pos, endpos, result)
         else:
@@ -284,11 +285,11 @@ class SRE_Pattern():
 
     def match(self, string, pos=0, endpos=None):
         self.__check_input_type(string)
-        return self._search(_prepend_begin_assert(self.pattern), string, pos, default(endpos, -1))
+        return self._search(self.pattern, string, pos, default(endpos, -1), sticky=True)
 
     def fullmatch(self, string, pos=0, endpos=None):
         self.__check_input_type(string)
-        return self._search(_append_end_assert(_prepend_begin_assert(self.pattern)), string, pos, default(endpos, -1))
+        return self._search(_append_end_assert(self.pattern), string, pos, default(endpos, -1), sticky=True)
 
     def __sanitize_out_type(self, elem):
         """Helper function for findall and split. Ensures that the type of the elements of the
