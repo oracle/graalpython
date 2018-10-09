@@ -459,7 +459,8 @@ def getcodesize(*args, **kwargs):
 
 @__builtin__
 def getlower(char_ord, flags):
-    return ord(chr(char_ord).lower())
+    import _cpython_sre
+    return _cpython_sre.getlower(char_ord, flags)
 
 
 @__builtin__
