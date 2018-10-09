@@ -319,7 +319,7 @@ public final class DictBuiltins extends PythonBuiltins {
             if (delItemNode.execute(self, self.getDictStorage(), key)) {
                 return PNone.NONE;
             }
-            throw getCore().raise(KeyError, this, "%s", key);
+            throw raise(KeyError, "%s", key);
         }
     }
 

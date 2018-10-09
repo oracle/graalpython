@@ -226,7 +226,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             @Override
             public Object execute(VirtualFrame frame) {
                 CompilerDirectives.transferToInterpreter();
-                throw contextRef.get().getCore().raise(ValueError);
+                throw contextRef.get().getCore().raise(ValueError, null);
             }
 
             @Override

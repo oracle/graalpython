@@ -155,8 +155,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
             Object instance = callTyp.execute(frame, typ, new Object[0]);
             if (instance instanceof PBaseException) {
-                PException pException = new PException((PBaseException) instance, this);
-                ((PBaseException) instance).setException(pException);
+                PException pException = PException.fromObject((PBaseException) instance, this);
                 PArguments.setSpecialArgument(self.getArguments(), pException);
             } else {
                 throw raise(TypeError, "exceptions must derive from BaseException");
@@ -169,8 +168,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
             Object instance = callTyp.execute(frame, typ, val.getArray());
             if (instance instanceof PBaseException) {
-                PException pException = new PException((PBaseException) instance, this);
-                ((PBaseException) instance).setException(pException);
+                PException pException = PException.fromObject((PBaseException) instance, this);
                 PArguments.setSpecialArgument(self.getArguments(), pException);
             } else {
                 throw raise(TypeError, "exceptions must derive from BaseException");
@@ -183,8 +181,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
             Object instance = callTyp.execute(frame, typ, new Object[]{val});
             if (instance instanceof PBaseException) {
-                PException pException = new PException((PBaseException) instance, this);
-                ((PBaseException) instance).setException(pException);
+                PException pException = PException.fromObject((PBaseException) instance, this);
                 PArguments.setSpecialArgument(self.getArguments(), pException);
             } else {
                 throw raise(TypeError, "exceptions must derive from BaseException");
@@ -194,16 +191,14 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object sendThrow(PGenerator self, PBaseException instance, @SuppressWarnings("unused") PNone val, @SuppressWarnings("unused") PNone tb) {
-            PException pException = new PException(instance, this);
-            instance.setException(pException);
+            PException pException = PException.fromObject(instance, this);
             PArguments.setSpecialArgument(self.getArguments(), pException);
             return resumeGenerator(self);
         }
 
         @Specialization
         Object sendThrow(PGenerator self, @SuppressWarnings("unused") PythonClass typ, PBaseException instance, PTraceback tb) {
-            PException pException = new PException(instance, this);
-            instance.setException(pException);
+            PException pException = PException.fromObject(instance, this);
             instance.setTraceback(tb);
             PArguments.setSpecialArgument(self.getArguments(), pException);
             return resumeGenerator(self);

@@ -116,6 +116,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
@@ -125,6 +126,7 @@ import com.oracle.truffle.api.object.Shape;
 
 public final class PythonObjectFactory extends Node {
     @CompilationFinal private ContextReference<PythonContext> contextRef;
+    @CompilationFinal private AllocationReporter allocationReporter;
 
     private PythonObjectFactory() {
     }
@@ -139,6 +141,10 @@ public final class PythonObjectFactory extends Node {
 
     @SuppressWarnings("static-method")
     public final <T> T trace(T allocatedObject) {
+        if (reportAllocations()) {
+            allocationReporter.onEnter(null, 0, AllocationReporter.SIZE_UNKNOWN);
+            allocationReporter.onReturnValue(allocatedObject, 0, AllocationReporter.SIZE_UNKNOWN);
+        }
         return allocatedObject;
     }
 
@@ -148,11 +154,20 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PythonCore getCore() {
+        return getContextRef().get().getCore();
+    }
+
+    private ContextReference<PythonContext> getContextRef() {
         if (contextRef == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             contextRef = PythonLanguage.getContextRef();
+            allocationReporter = contextRef.get().getEnv().lookup(AllocationReporter.class);
         }
-        return contextRef.get().getCore();
+        return contextRef;
+    }
+
+    private boolean reportAllocations() {
+        return getContextRef() != null && allocationReporter != null;
     }
 
     /*

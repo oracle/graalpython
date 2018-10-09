@@ -314,7 +314,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             if (s == n) {
-                throw getCore().raise(ValueError, "empty string for complex()");
+                throw raise(ValueError, "empty string for complex()");
             }
 
             double z = -1.0;
@@ -379,7 +379,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         int end = endDouble(str, s);
                         z = Double.valueOf(str.substring(s, end)).doubleValue();
                         if (z == Double.POSITIVE_INFINITY) {
-                            throw getCore().raise(ValueError, String.format("float() out of range: %.150s", str));
+                            throw raise(ValueError, String.format("float() out of range: %.150s", str));
                         }
 
                         s = end;
@@ -407,7 +407,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             } while (s < n && !swError);
 
             if (swError) {
-                throw getCore().raise(ValueError, "malformed string for complex() %s", str.substring(s));
+                throw raise(ValueError, "malformed string for complex() %s", str.substring(s));
             }
 
             return factory().createComplex(cls, x, y);
@@ -640,7 +640,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             for (int i = 0; i < n; i++) {
                 char ch = str.charAt(i);
                 if (ch == '\u0000') {
-                    throw getCore().raise(ValueError, "empty string for complex()");
+                    throw raise(ValueError, "empty string for complex()");
                 }
                 if (Character.isDigit(ch)) {
                     if (s == null) {
@@ -667,7 +667,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return Double.valueOf(sval).doubleValue();
             } catch (NumberFormatException exc) {
                 // throw Py.ValueError("invalid literal for __float__: " + str);
-                throw getCore().raise(ValueError, "could not convert string to float: %s", str);
+                throw raise(ValueError, "could not convert string to float: %s", str);
             }
         }
 
@@ -814,7 +814,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     return bi.intValue();
                 }
             } else {
-                throw getCore().raise(ValueError, "base is out of range for int()");
+                throw raise(ValueError, "base is out of range for int()");
             }
         }
 
@@ -836,7 +836,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (arg1 instanceof String && arg2 instanceof Integer) {
                 return stringToInt((String) arg1, (Integer) arg2);
             } else {
-                throw getCore().raise(ValueError, "invalid base or val for int()");
+                throw raise(ValueError, "invalid base or val for int()");
             }
         }
 
