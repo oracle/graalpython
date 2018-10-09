@@ -65,15 +65,15 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     @Specialization
-    public void raise(PBaseException exception, PNone cause) {
-        throw getCore().raise(exception, this);
+    public void doRaise(PBaseException exception, PNone cause) {
+        throw raise(exception);
     }
 
     @Specialization(guards = "!isPNone(cause)")
-    public void raise(PBaseException exception, Object cause,
+    public void doRaise(PBaseException exception, Object cause,
                     @Cached("create()") WriteAttributeToObjectNode writeCause) {
         writeCause.execute(exception, SpecialAttributeNames.__CAUSE__, cause);
-        throw getCore().raise(exception, this);
+        throw raise(exception);
     }
 
     private void checkBaseClass(PythonClass pythonClass) {
@@ -91,22 +91,22 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     @Specialization
-    public void raise(PythonClass pythonClass, PNone cause) {
+    public void doRaise(PythonClass pythonClass, PNone cause) {
         checkBaseClass(pythonClass);
-        throw getCore().raise(factory().createBaseException(pythonClass), this);
+        throw raise(pythonClass);
     }
 
     @Specialization(guards = "!isPNone(cause)")
-    public void raise(PythonClass pythonClass, Object cause,
+    public void doRaise(PythonClass pythonClass, Object cause,
                     @Cached("create()") WriteAttributeToObjectNode writeCause) {
         checkBaseClass(pythonClass);
         PBaseException pythonException = factory().createBaseException(pythonClass);
         writeCause.execute(pythonException, SpecialAttributeNames.__CAUSE__, cause);
-        throw getCore().raise(pythonException, this);
+        throw raise(pythonException);
     }
 
     @Fallback
-    public void raise(Object exception, Object cause) {
+    public void doRaise(Object exception, Object cause) {
         throw raise(TypeError, "exceptions must derive from BaseException");
     }
 

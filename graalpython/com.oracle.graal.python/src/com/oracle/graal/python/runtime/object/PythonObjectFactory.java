@@ -167,9 +167,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     private boolean reportAllocations() {
-        // tfel: the allocation reporter has an assertion that it is a PE constant. How the reporter
-        // works is subject to change, but until such time we don't report allocations if it isn't
-        return getContext() != null && allocationReporter != null && CompilerDirectives.isPartialEvaluationConstant(allocationReporter);
+        return getContext() != null && allocationReporter != null;
     }
 
     /*

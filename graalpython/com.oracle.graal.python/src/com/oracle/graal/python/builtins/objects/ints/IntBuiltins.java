@@ -980,7 +980,7 @@ public class IntBuiltins extends PythonBuiltins {
             if (shiftCount >= Integer.SIZE) {
                 throw new ArithmeticException("integer overflow");
             } else if (shiftCount < 0) {
-                throw getCore().raise(ValueError, "negative shift count");
+                throw raise(ValueError, "negative shift count");
             }
         }
 

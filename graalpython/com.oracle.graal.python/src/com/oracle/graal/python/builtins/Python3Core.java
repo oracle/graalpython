@@ -142,7 +142,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 
 /**
@@ -434,41 +433,16 @@ public final class Python3Core implements PythonCore {
     }
 
     @Override
-    public PException raise(PBaseException exception, Node node) {
-        PException pException = new PException(exception, node);
-        exception.setException(pException);
-        throw pException;
-    }
-
-    @Override
-    public PException raise(PythonErrorType type, Node node, String format, Object... args) {
+    @TruffleBoundary
+    public PException raise(PythonErrorType type, String format, Object... args) {
         PBaseException instance;
         PythonClass exceptionType = getErrorClass(type);
         if (format != null) {
             instance = factory.createBaseException(exceptionType, format, args);
         } else {
-            instance = factory.createBaseException(exceptionType, factory.createEmptyTuple());
+            instance = factory.createBaseException(exceptionType);
         }
-        throw raise(instance, node);
-    }
-
-    @Override
-    public PException raise(PythonErrorType type, String format, Object... args) {
-        return raise(type, null, format, args);
-    }
-
-    @Override
-    public PException raise(PythonErrorType type) {
-        throw raise(factory.createBaseException(getErrorClass(type)), null);
-    }
-
-    @Override
-    public PException raise(PythonClass exceptionType, Node node) {
-        throw raise(factory.createBaseException(exceptionType), node);
-    }
-
-    public PException raise(PythonErrorType type, Node node) {
-        throw raise(factory.createBaseException(getErrorClass(type)), node);
+        throw PException.fromObject(instance, null);
     }
 
     private void publishBuiltinModules() {

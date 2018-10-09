@@ -135,6 +135,6 @@ public final class PythonParserImpl implements PythonParser {
         instance.setAttribute("lineno", section.getStartLine());
         instance.setAttribute("offset", section.getStartColumn());
         instance.setAttribute("msg", section.getCharIndex() == source.getLength() ? "unexpected EOF while parsing" : "invalid syntax");
-        throw core.raise(instance, location);
+        throw PException.fromObject(instance, location);
     }
 }

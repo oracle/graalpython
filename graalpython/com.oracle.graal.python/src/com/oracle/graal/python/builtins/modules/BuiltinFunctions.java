@@ -1211,7 +1211,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (isString.profile(result instanceof String) || isPString.profile(result instanceof PString)) {
                 return result;
             }
-            throw getCore().raise(TypeError, "__repr__ returned non-string (type %p)", obj);
+            throw raise(TypeError, "__repr__ returned non-string (type %p)", obj);
         }
     }
 

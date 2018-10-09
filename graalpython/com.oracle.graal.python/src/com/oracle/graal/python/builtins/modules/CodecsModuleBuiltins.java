@@ -398,7 +398,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 CharBuffer decoded = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(bytes);
                 return String.valueOf(decoded);
             } catch (IllegalArgumentException e) {
-                throw this.getCore().raise(LookupError, "unknown encoding: %s", encoding);
+                throw this.raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
                 throw raise(UnicodeDecodeError, "%s", e.getMessage());
             }

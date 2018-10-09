@@ -325,8 +325,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             if (val.getException() != null) {
                 getContext().setCurrentException(val.getException());
             } else {
-                PException pException = new PException(val, this);
-                val.setException(pException);
+                PException pException = PException.fromObject(val, this);
                 getContext().setCurrentException(pException);
             }
             return PNone.NONE;
