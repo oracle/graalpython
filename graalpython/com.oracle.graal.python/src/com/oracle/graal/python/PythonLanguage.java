@@ -34,7 +34,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.graalvm.options.OptionDescriptors;
 
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -329,7 +328,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean isVisible(PythonContext context, Object value) {
-        return value != PNone.NONE && value != PNone.NO_VALUE;
+        return false;
     }
 
     @Override

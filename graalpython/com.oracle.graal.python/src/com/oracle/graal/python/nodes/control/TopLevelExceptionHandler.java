@@ -41,9 +41,12 @@
 package com.oracle.graal.python.nodes.control;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -81,6 +84,7 @@ public class TopLevelExceptionHandler extends RootNode {
 
     @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
     @Child private LookupAndCallUnaryNode callStrNode = LookupAndCallUnaryNode.create(__STR__);
+    @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(__REPR__);
     @Child private CallNode callNode = CallNode.create();
 
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
@@ -106,8 +110,9 @@ public class TopLevelExceptionHandler extends RootNode {
             return null;
         } else {
             assert context.get().getCurrentException() == null;
+            Object result;
             try {
-                return run(frame);
+                result = run(frame);
             } catch (PException e) {
                 printExc(e);
                 return null;
@@ -120,6 +125,23 @@ public class TopLevelExceptionHandler extends RootNode {
                 }
                 throw e;
             }
+            if (getSourceSection().getSource().isInteractive()) {
+                printResult(result);
+            }
+            return result;
+        }
+    }
+
+    @TruffleBoundary
+    private void printResult(Object result) {
+        OutputStream out = getCurrentContext(PythonLanguage.class).getStandardOut();
+        String stringResult = callReprNode.executeObject(result).toString();
+        try {
+            out.write(stringResult.getBytes(StandardCharsets.UTF_8));
+            out.write(System.getProperty("line.separator").getBytes(StandardCharsets.UTF_8));
+        } catch (IOException ioex) {
+            // out stream has problems.
+            throw new IllegalStateException(ioex);
         }
     }
 
