@@ -85,7 +85,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     Super("super", "builtins"),
     PCode("code"),
     PZip("zip", "builtins"),
-    PBuffer("buffer"),
+    PBuffer("buffer", "builtins"),
 
     // Errors and exceptions:
 
