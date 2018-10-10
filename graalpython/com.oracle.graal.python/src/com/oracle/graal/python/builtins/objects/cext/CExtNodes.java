@@ -315,8 +315,15 @@ public abstract class CExtNodes {
             return object.getPtr();
         }
 
-        @Specialization(guards = "!isNativeClass(object)")
-        Object doPythonClass(PythonClass object) {
+        @Specialization(guards = {"!isNativeClass(object)", "object == cachedObject"}, limit = "3")
+        Object doPythonClass(@SuppressWarnings("unused") PythonClass object,
+                        @SuppressWarnings("unused") @Cached("object") PythonClass cachedObject,
+                        @Cached("wrap(object)") PythonClassNativeWrapper wrapper) {
+            return wrapper;
+        }
+
+        @Specialization(replaces = "doPythonClass", guards = {"!isNativeClass(object)"})
+        Object doPythonClassUncached(PythonClass object) {
             return PythonClassNativeWrapper.wrap(object);
         }
 
