@@ -542,16 +542,14 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         private SliceInfo computeSlice(int length, long start, long end) {
-            int step = start < end ? 1 : -1;
-            PSlice tmpSlice = factory().createSlice(getStartNode().execute(start), getEndNode().execute(end), step);
+            PSlice tmpSlice = factory().createSlice(getStartNode().execute(start), getEndNode().execute(end), 1);
             return tmpSlice.computeIndices(length);
         }
 
         private SliceInfo computeSlice(int length, Object startO, Object endO) {
             int start = startO == PNone.NO_VALUE || startO == PNone.NONE ? 0 : getStartNode().execute(startO);
             int end = endO == PNone.NO_VALUE || endO == PNone.NONE ? length : getEndNode().execute(endO);
-            int step = start < end ? 1 : -1;
-            PSlice tmpSlice = factory().createSlice(start, end, step);
+            PSlice tmpSlice = factory().createSlice(start, end, 1);
             return tmpSlice.computeIndices(length);
         }
 
@@ -564,24 +562,36 @@ public final class StringBuiltins extends PythonBuiltins {
         Object find(String self, String str, long start, @SuppressWarnings("unused") PNone end) {
             int len = self.length();
             SliceInfo info = computeSlice(len, start, len);
+            if (info.length == 0) {
+                return -1;
+            }
             return findWithBounds(self, str, info.start, info.stop);
         }
 
         @Specialization
         Object find(String self, String str, @SuppressWarnings("unused") PNone start, long end) {
             SliceInfo info = computeSlice(self.length(), 0, end);
+            if (info.length == 0) {
+                return -1;
+            }
             return findWithBounds(self, str, info.start, info.stop);
         }
 
         @Specialization
         Object find(String self, String str, long start, long end) {
             SliceInfo info = computeSlice(self.length(), start, end);
+            if (info.length == 0) {
+                return -1;
+            }
             return findWithBounds(self, str, info.start, info.stop);
         }
 
         @Specialization
         Object findGeneric(String self, String str, Object start, Object end) throws ArithmeticException {
             SliceInfo info = computeSlice(self.length(), start, end);
+            if (info.length == 0) {
+                return -1;
+            }
             return findWithBounds(self, str, info.start, info.stop);
         }
 
