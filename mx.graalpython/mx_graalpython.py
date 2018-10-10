@@ -407,13 +407,12 @@ def graalpython_gate_runner(args, tasks):
         if task:
             svm_image_name = "./graalpython-svm"
             if not os.path.exists(svm_image_name):
-                python_svm(["-h"])
-            else:
-                llvm_home = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
-                args = ["--python.CoreHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-graalpython"),
-                        "--python.StdLibHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-python/3"),
-                        llvm_home]
-                run_python_unittests(svm_image_name, args)
+                svm_image_name = python_svm(["-h"])
+            llvm_home = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
+            args = ["--python.CoreHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-graalpython"),
+                    "--python.StdLibHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-python/3"),
+                    llvm_home]
+            run_python_unittests(svm_image_name, args)
 
     with Task('GraalPython apptests', tasks, tags=[GraalPythonTags.apptests]) as task:
         if task:
@@ -448,6 +447,11 @@ def graalpython_gate_runner(args, tasks):
             ])
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
+            llvm_home = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
+            args = ["--python.CoreHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-graalpython"),
+                    "--python.StdLibHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-python/3"),
+                    llvm_home]
+            run_python_unittests(svm_image, args)
 
 
 mx_gate.add_gate_runner(_suite, graalpython_gate_runner)
