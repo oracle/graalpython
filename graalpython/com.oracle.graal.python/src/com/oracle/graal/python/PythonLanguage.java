@@ -395,19 +395,31 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private final ConcurrentHashMap<Object, Source> cachedSources = new ConcurrentHashMap<>();
 
     public Source newSource(PythonContext ctxt, TruffleFile src, String name) throws IOException {
-        Source source = cachedSources.get(src);
-        if (source == null) {
-            cachedSources.put(src, source = newSource(ctxt, Source.newBuilder(ID, src), name));
+        try {
+            return cachedSources.computeIfAbsent(src, t -> {
+                try {
+                    return newSource(ctxt, Source.newBuilder(ID, src), name);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (RuntimeException e) {
+            throw (IOException) e.getCause();
         }
-        return source;
     }
 
     public Source newSource(PythonContext ctxt, URL url, String name) throws IOException {
-        Source source = cachedSources.get(url);
-        if (source == null) {
-            cachedSources.put(url, source = newSource(ctxt, Source.newBuilder(ID, url), name));
+        try {
+            return cachedSources.computeIfAbsent(url, t -> {
+                try {
+                    return newSource(ctxt, Source.newBuilder(ID, url), name);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (RuntimeException e) {
+            throw (IOException) e.getCause();
         }
-        return source;
     }
 
     private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder, String name) throws IOException {
