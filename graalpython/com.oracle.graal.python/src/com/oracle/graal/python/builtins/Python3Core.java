@@ -491,11 +491,9 @@ public final class Python3Core implements PythonCore {
         // publish builtin types in the corresponding modules
         for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
             String module = builtinClass.getPublicInModule();
-            PythonBuiltinClass clazz = lookupType(builtinClass);
             if (module != null) {
-                lookupBuiltinModule(module).setAttribute(builtinClass.getName(), clazz);
+                lookupBuiltinModule(module).setAttribute(builtinClass.getName(), lookupType(builtinClass));
             }
-            clazz.setAttribute("__module__", module == null ? "builtins" : module);
         }
         // now initialize well-known objects
         pyTrue = new PInt(lookupType(PythonBuiltinClassType.Boolean), BigInteger.ONE);

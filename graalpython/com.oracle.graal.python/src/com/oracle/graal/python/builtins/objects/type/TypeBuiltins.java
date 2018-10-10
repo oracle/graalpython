@@ -461,7 +461,6 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = __SUBCLASSES__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     static abstract class SubclassesNode extends PythonUnaryBuiltinNode {
-        @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
 
         @Specialization
         @TruffleBoundary
@@ -494,6 +493,32 @@ public class TypeBuiltins extends PythonBuiltins {
         Object setName(PythonClass cls, Object value,
                         @Cached("create()") WriteAttributeToObjectNode setName) {
             return setName.execute(cls, __NAME__, value);
+        }
+    }
+
+    @Builtin(name = __MODULE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    static abstract class ModuleNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = "isNoValue(value)")
+        @TruffleBoundary
+        Object getModule(PythonClass cls, @SuppressWarnings("unused") PNone value) {
+            if (cls instanceof PythonBuiltinClass) {
+                String module = ((PythonBuiltinClass) cls).getType().getPublicInModule();
+                return module == null ? "builtins" : module;
+            }
+            Object module = cls.getAttribute(__MODULE__);
+            if (module == PNone.NO_VALUE) {
+                throw raise(AttributeError, "");
+            }
+            return module;
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        @TruffleBoundary
+        Object setModule(PythonClass cls, Object value) {
+            cls.setAttribute(__MODULE__, value);
+            return PNone.NONE;
         }
     }
 }
