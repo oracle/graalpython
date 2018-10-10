@@ -393,7 +393,12 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython C extension tests', tasks, tags=[GraalPythonTags.cpyext]) as task:
         if task:
+            # we deliberately added this to test the combination of Sulong and 'mx_unittest'
+            unittest(['--regex', re.escape('com.oracle.graal.python.test.module.MemoryviewTest'),
+                      "-Dgraal.TraceTruffleCompilation=true"])
+
             gate_unittests(subdir="cpyext/")
+
 
     with Task('GraalPython C extension managed tests', tasks, tags=[GraalPythonTags.cpyext_managed]) as task:
         if task:
