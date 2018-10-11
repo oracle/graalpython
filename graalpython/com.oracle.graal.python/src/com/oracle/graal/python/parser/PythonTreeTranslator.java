@@ -1770,46 +1770,42 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             List<PNode> inputList = (List<PNode>) accept;
             if (inputList.size() == 0) {
                 return factory.createBlock();
+            } else if (inputList.size() == 1) {
+                return asBlock(inputList.get(0));
+            } else {
+                StatementNode[] statements = new StatementNode[inputList.size()];
+                for (int i = 0; i < statements.length; i++) {
+                    statements[i] = asBlock(inputList.get(i));
+                }
+                return factory.createBlock(statements);
             }
-            List<StatementNode> list = new ArrayList<>();
-            for (PNode node : inputList) {
-                list.add(asBlock(node));
-            }
-            StatementNode block = factory.createBlock(list);
-            return block;
         } else {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("unexpected class: " + accept.getClass());
         }
     }
 
     private ExpressionNode asExpression(Object accept) {
-        StatementNode moduleBlock = null;
         if (accept instanceof List) {
             @SuppressWarnings("unchecked")
             List<PNode> list = (List<PNode>) accept;
-            if (list.size() > 0) {
+            if (list.size() == 0) {
+                return EmptyNode.create();
+            } else if (list.size() == 1) {
+                return asExpression(list.get(0));
+            } else {
                 ExpressionNode asExpression = asExpression(list.remove(list.size() - 1));
-                StatementNode writeReturnValue = factory.createWriteLocal(asExpression, environment.getReturnSlot());
-                writeReturnValue.assignSourceSection(asExpression.getSourceSection());
-                list.add(writeReturnValue);
+                return asExpression.withSideEffect(asBlock(list));
             }
-            moduleBlock = asBlock(accept);
         } else if (accept instanceof ExpressionNode.ExpressionStatementNode) {
-            moduleBlock = factory.createWriteLocal(((ExpressionNode.ExpressionStatementNode) accept).getExpression(), environment.getReturnSlot());
-            moduleBlock.assignSourceSection(((ExpressionNode.ExpressionStatementNode) accept).getSourceSection());
+            return ((ExpressionNode.ExpressionStatementNode) accept).getExpression();
         } else if (accept instanceof ExpressionNode) {
-            moduleBlock = factory.createWriteLocal((ExpressionNode) accept, environment.getReturnSlot());
-            moduleBlock.assignSourceSection(((ExpressionNode) accept).getSourceSection());
+            return (ExpressionNode) accept;
         } else if (accept instanceof StatementNode) {
-            moduleBlock = factory.createWriteLocal(EmptyNode.create().withSideEffect((StatementNode) accept), environment.getReturnSlot());
+            return EmptyNode.create().withSideEffect((StatementNode) accept);
         } else if (accept == null) {
             return EmptyNode.create();
-        }
-        ExpressionNode readReturn = factory.createReadLocal(environment.getReturnSlot());
-        if (moduleBlock != null) {
-            return readReturn.withSideEffect(moduleBlock);
         } else {
-            return readReturn;
+            throw new IllegalArgumentException("unexpected class: " + accept.getClass());
         }
     }
 

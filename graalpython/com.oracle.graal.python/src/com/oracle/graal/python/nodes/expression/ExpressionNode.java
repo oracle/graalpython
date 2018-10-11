@@ -41,15 +41,16 @@
 package com.oracle.graal.python.nodes.expression;
 
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
 import com.oracle.truffle.api.instrumentation.StandardTags.ExpressionTag;
 import com.oracle.truffle.api.instrumentation.Tag;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.source.SourceSection;
 
 /**
  * Base class for all expressions. Expressions always return a value.
@@ -135,15 +136,14 @@ public abstract class ExpressionNode extends PNode {
         return new ExpressionStatementNode(this);
     }
 
-    public static final class ExpressionWithSideEffects extends ExpressionNode {
+    public static final class ExpressionWithSideEffect extends ExpressionNode {
         @Child private StatementNode sideEffect;
         @Child private ExpressionNode node;
 
-        private ExpressionWithSideEffects(ExpressionNode node, StatementNode sideEffect) {
+        private ExpressionWithSideEffect(ExpressionNode node, StatementNode sideEffect) {
             this.node = node;
             this.sideEffect = sideEffect;
-            SourceSection sourceSection = node.getSourceSection();
-            this.assignSourceSection(sourceSection);
+            this.assignSourceSection(node.getSourceSection());
         }
 
         @Override
@@ -158,11 +158,40 @@ public abstract class ExpressionNode extends PNode {
         }
     }
 
+    public static final class ExpressionWithSideEffects extends ExpressionNode {
+        @Children private final StatementNode[] sideEffects;
+        @Child private ExpressionNode node;
+
+        private ExpressionWithSideEffects(ExpressionNode node, StatementNode[] sideEffects) {
+            this.node = node;
+            this.sideEffects = sideEffects;
+            this.assignSourceSection(node.getSourceSection());
+        }
+
+        @Override
+        @ExplodeLoop
+        public Object execute(VirtualFrame frame) {
+            for (int i = 0; i < sideEffects.length; i++) {
+                sideEffects[i].executeVoid(frame);
+            }
+            return node.execute(frame);
+        }
+
+        @Override
+        public boolean hasSideEffectAsAnExpression() {
+            return true;
+        }
+    }
+
     /**
      * Some expressions can have hidden side-effects such as writing to a temporary variable. These
      * can be wrapped together with their side effecting {@link StatementNode}.
      */
     public final ExpressionNode withSideEffect(StatementNode sideEffect) {
-        return new ExpressionWithSideEffects(this, sideEffect);
+        if (sideEffect instanceof BlockNode) {
+            return new ExpressionWithSideEffects(this, ((BlockNode) sideEffect).getStatements());
+        } else {
+            return new ExpressionWithSideEffect(this, sideEffect);
+        }
     }
 }
