@@ -29,8 +29,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Attribut
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -147,8 +149,8 @@ public class PythonObject extends PythonAbstractObject {
         return keyList;
     }
 
-    public List<String> getAllAttributeNames() {
-        ArrayList<String> keyList = new ArrayList<>();
+    public Set<String> getAllAttributeNames() {
+        Set<String> keyList = new LinkedHashSet<>();
         PythonClass[] methodResolutionOrder = this.getPythonClass().getMethodResolutionOrder();
         for (Object o : getStorage().getShape().getKeyList()) {
             if (o instanceof String) {
