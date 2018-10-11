@@ -48,6 +48,10 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.NodeFactory;
 
 public abstract class PythonBuiltins {
+    public static interface PythonBuiltinProvider {
+        public abstract PythonBuiltins createInstance();
+    }
+
     protected final Map<String, Object> builtinConstants = new HashMap<>();
     private final Map<String, BoundBuiltinCallable<?>> builtinFunctions = new HashMap<>();
     private final Map<PythonBuiltinClass, Map.Entry<PythonBuiltinClassType[], Boolean>> builtinClasses = new HashMap<>();
