@@ -208,15 +208,6 @@ void initialize_exceptions();
 // defined in 'pyhash.c'
 void initialize_hashes();
 
-// prototype of C landing function
-void* wrap_direct(PyCFunction fun, ...);
-int wrap_setter(PyCFunction fun, PyObject *self, PyObject *value, void *closure);
-void* wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
-void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
-void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
-void* wrap_fastcall(_PyCFunctionFast        fun, PyObject *  self, PyObject   **args, PyObject  *nargs, PyObject *kwnames);
-void* wrap_unsupported(void *fun, ...);
-
 #define TDEBUG __asm__("int $3")
 #define get_method_flags_wrapper(flags)                                 \
     (((flags) < 0) ?                                                    \
