@@ -42,7 +42,6 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltins.PythonBuiltinProvider;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
@@ -142,6 +141,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -189,8 +189,9 @@ public final class Python3Core implements PythonCore {
                     "_sre",
     };
 
-    private static final PythonBuiltins[] BUILTINS;
-    static {
+    private final PythonBuiltins[] builtins;
+
+    private static final PythonBuiltins[] initializeBuiltins() {
         List<PythonBuiltins> builtins = new ArrayList<>();
         builtins.addAll(Arrays.asList(new PythonBuiltins[]{
                         new BuiltinConstructors(),
@@ -272,11 +273,13 @@ public final class Python3Core implements PythonCore {
                         new MemoryviewBuiltins(),
                         new SuperBuiltins(),
         }));
-        ServiceLoader<PythonBuiltinProvider> providers = ServiceLoader.load(PythonBuiltinProvider.class);
-        for (PythonBuiltins.PythonBuiltinProvider provider : providers) {
-            builtins.add(provider.createInstance());
+        if (!TruffleOptions.AOT) {
+            ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
+            for (PythonBuiltins builtin : providers) {
+                builtins.add(builtin);
+            }
         }
-        BUILTINS = builtins.toArray(new PythonBuiltins[builtins.size()]);
+        return builtins.toArray(new PythonBuiltins[builtins.size()]);
     }
 
     // not using EnumMap, HashMap, etc. to allow this to fold away during partial evaluation
@@ -302,6 +305,7 @@ public final class Python3Core implements PythonCore {
 
     public Python3Core(PythonParser parser) {
         this.parser = parser;
+        this.builtins = initializeBuiltins();
     }
 
     @Override
@@ -495,7 +499,7 @@ public final class Python3Core implements PythonCore {
         // n.b.: the builtin modules and classes and their constructors are initialized first here,
         // so we have the mapping from java classes to python classes and builtin names to modules
         // available.
-        for (PythonBuiltins builtin : BUILTINS) {
+        for (PythonBuiltins builtin : builtins) {
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
                 createModule(annotation.defineModule());
@@ -514,7 +518,7 @@ public final class Python3Core implements PythonCore {
     }
 
     private void populateBuiltins() {
-        for (PythonBuiltins builtin : BUILTINS) {
+        for (PythonBuiltins builtin : builtins) {
             builtin.initialize(this);
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
@@ -545,14 +549,14 @@ public final class Python3Core implements PythonCore {
         return mod;
     }
 
-    private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtins) {
-        Map<String, Object> builtinConstants = builtins.getBuiltinConstants();
+    private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtinsForObj) {
+        Map<String, Object> builtinConstants = builtinsForObj.getBuiltinConstants();
         for (Map.Entry<String, Object> entry : builtinConstants.entrySet()) {
             String constantName = entry.getKey();
             obj.setAttribute(constantName, entry.getValue());
         }
 
-        Map<String, BoundBuiltinCallable<?>> builtinFunctions = builtins.getBuiltinFunctions();
+        Map<String, BoundBuiltinCallable<?>> builtinFunctions = builtinsForObj.getBuiltinFunctions();
         for (Entry<String, BoundBuiltinCallable<?>> entry : builtinFunctions.entrySet()) {
             String methodName = entry.getKey();
             Object value;
@@ -565,7 +569,7 @@ public final class Python3Core implements PythonCore {
             obj.setAttribute(methodName, value);
         }
 
-        Map<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> builtinClasses = builtins.getBuiltinClasses();
+        Map<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> builtinClasses = builtinsForObj.getBuiltinClasses();
         for (Entry<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> entry : builtinClasses.entrySet()) {
             boolean isPublic = entry.getValue().getValue();
             if (isPublic) {
