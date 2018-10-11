@@ -173,7 +173,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -1423,7 +1422,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-<<<<<<< e16d06d5559464d23b13c5189155a744d978bd8e
     public abstract static class PExternalFunctionWrapper extends PythonBuiltinObject {
 
         private final Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier;
@@ -1441,22 +1439,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         protected ConvertArgsToSulongNode createConvertArgsToSulongNode() {
             return convertArgsNodeSupplier.get();
-=======
-    @Builtin(name = "METH_KEYWORDS", fixedNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class MethKeywordsNode extends PythonUnaryBuiltinNode {
-        @TruffleBoundary
-        @Specialization
-        Object call(PBuiltinFunction function) {
-            CompilerDirectives.transferToInterpreter();
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MethKeywordsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
->>>>>>> Completely remove native wrapper functions.
         }
 
     }
 
-<<<<<<< e16d06d5559464d23b13c5189155a744d978bd8e
+
     @Builtin(name = "METH_DIRECT", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class MethDirectNode extends PythonBuiltinNode {

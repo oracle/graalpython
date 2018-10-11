@@ -56,8 +56,7 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
                        polyglot_from_string((const char*)(def.ml_name), SRC_CS),
                        truffle_decorate_function(def.ml_meth, native_to_java_exported),
                        get_method_flags_wrapper(def.ml_flags),
-                       polyglot_from_string((const char*)(def.ml_doc ? def.ml_doc : ""), SRC_CS),
-					   convert_method_flags(def.ml_flags));
+                       polyglot_from_string((const char*)(def.ml_doc ? def.ml_doc : ""), SRC_CS));
         def = methods[++idx];
     }
     return 0;
