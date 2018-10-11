@@ -663,13 +663,8 @@ def PyStructSequence_New(typ):
     return stat_result([None] * stat_result.n_sequence_fields * 2)
 
 
-def METH_UNSUPPORTED(fun):
+def METH_UNSUPPORTED():
     raise NotImplementedError("unsupported message type")
-
-
-def METH_DIRECT(fun):
-    return fun
-
 
 class _C:
     def _m(self): pass
@@ -692,14 +687,14 @@ class cstaticmethod():
         return self.__func__(None, *args, **kwargs)
 
 
-def AddFunction(primary, name, cfunc, wrapper, doc, conversion_signature, isclass=False, isstatic=False):
+def AddFunction(primary, name, cfunc, wrapper, doc, isclass=False, isstatic=False):
     owner = to_java(primary)
     if isinstance(owner, moduletype):
         # module case, we create the bound function-or-method
-        func = PyCFunction_NewEx(name, cfunc, wrapper, owner, owner.__name__, doc, conversion_signature)
+        func = PyCFunction_NewEx(name, cfunc, wrapper, owner, owner.__name__, doc)
         object.__setattr__(owner, name, func)
     else:
-        func = wrapper(CreateFunction(name, cfunc, conversion_signature, owner))
+        func = CreateFunction(name, cfunc, wrapper, owner)
         if isclass:
             func = classmethod(func)
         elif isstatic:
@@ -715,8 +710,8 @@ def AddFunction(primary, name, cfunc, wrapper, doc, conversion_signature, isclas
             object.__setattr__(owner, name, func)
 
 
-def PyCFunction_NewEx(name, cfunc, wrapper, self, module, doc, conversion_signature):
-    func = wrapper(CreateFunction(name, cfunc, conversion_signature))
+def PyCFunction_NewEx(name, cfunc, wrapper, self, module, doc):
+    func = CreateFunction(name, cfunc, wrapper)
     PyTruffle_SetAttr(func, "__name__", name)
     PyTruffle_SetAttr(func, "__doc__", doc)
     method = PyTruffle_BuiltinMethod(self, func)
@@ -747,13 +742,13 @@ def AddGetSet(primary, name, getter, setter, doc, closure):
     pclass = to_java(primary)
     fset = fget = None
     if getter:
-        getter_w = CreateFunction(name, getter, 0, pclass)
+        getter_w = CreateFunction(name, getter, pclass)
         def member_getter(self):
             return capi_to_java(getter_w(self, closure))
 
         fget = member_getter
     if setter:
-        setter_w = CreateFunction(name, setter, 0, pclass)
+        setter_w = CreateFunction(name, setter, pclass)
         def member_setter(self, value):
             result = setter_w(self, value, closure)
             if result != 0:
@@ -1096,7 +1091,7 @@ def check_argtype(idx, obj, typ):
 
 
 def import_c_func(name):
-    return CreateFunction(name, capi[name], 0)
+    return CreateFunction(name, capi[name])
 
 
 capi = capi_to_java = None

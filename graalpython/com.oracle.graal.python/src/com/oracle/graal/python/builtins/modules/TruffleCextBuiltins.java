@@ -55,6 +55,7 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -131,6 +132,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
@@ -164,9 +166,9 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -312,62 +314,41 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "CreateFunction", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
+    @Builtin(name = "CreateFunction", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CreateFunctionNode extends PythonBuiltinNode {
-        // Constants for conversion signature (keep in sync with 'ConversionSignature' in 'capi.h').
-        private static final int DEFAULT = 0;
-        private static final int FASTCALL = 1;
-        private static final int ALLOC_FUNC = 2;
-        private static final int GETATTR_FUNC = 3;
-        private static final int SETATTR_FUNC = 4;
-        private static final int RICHCMP_FUNC = 5;
-        private static final int SSIZE_OBJ_ARG_PROC = 6;
-        private static final int SSIZE_ARG_PROC = 7;
 
         @Specialization
         @TruffleBoundary
-        PBuiltinFunction run(String name, TruffleObject callable, int conversionSignature, PythonClass type) {
-            CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(createExternalFunctionRootNode(name, callable, conversionSignature));
-            return factory().createBuiltinFunction(name, type, createArity(name), callTarget);
+        PBuiltinFunction runWrapper(String name, TruffleObject callable, PExternalFunctionWrapper wrapper, PythonClass type) {
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(createExternalFunctionRootNode(name, callable, wrapper.createConvertArgsToSulongNode()));
+            Arity arity = createArity(name);
+            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(getRootNode().getLanguage(PythonLanguage.class), factory(), callTarget);
+            return factory().createBuiltinFunction(name, type, arity, wrappedCallTarget);
         }
 
         @Specialization(guards = {"isNoValue(type)"})
         @TruffleBoundary
-        PBuiltinFunction runWithoutType(String name, TruffleObject callable, int conversionSignature, @SuppressWarnings("unused") PNone type) {
-            CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(createExternalFunctionRootNode(name, callable, conversionSignature));
-            return factory().createBuiltinFunction(name, null, createArity(name), callTarget);
+        PBuiltinFunction runWrapperWithoutType(String name, TruffleObject callable, PExternalFunctionWrapper wrapper, @SuppressWarnings("unused") PNone type) {
+            return runWrapper(name, callable, wrapper, null);
         }
 
-        private ExternalFunctionNode createExternalFunctionRootNode(String name, TruffleObject callable, int conversionSignature) {
-            return ExternalFunctionNode.create(getRootNode().getLanguage(PythonLanguage.class), name, callable, createConversionNode(conversionSignature));
+        @Specialization(guards = {"isNoValue(wrapper)"})
+        @TruffleBoundary
+        PBuiltinFunction run(String name, TruffleObject callable, PythonClass type, @SuppressWarnings("unused") PNone wrapper) {
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(createExternalFunctionRootNode(name, callable, AllToSulongNode.create()));
+            return factory().createBuiltinFunction(name, type, createArity(name), callTarget);
         }
 
-        private static ConvertArgsToSulongNode createConversionNode(int signatureKind) {
-            CompilerAsserts.neverPartOfCompilation();
-            switch (signatureKind) {
-                case DEFAULT:
-                    return AllToSulongNode.create();
-                case FASTCALL:
-                    return FastCallArgsToSulongNode.create();
-                case ALLOC_FUNC:
-                    return BinaryFirstToSulongNode.create();
-                case GETATTR_FUNC:
-                    return BinaryFirstToSulongNode.create();
-                case SETATTR_FUNC:
-                    return TernaryFirstThirdToSulongNode.create();
-                case RICHCMP_FUNC:
-                    return TernaryFirstSecondToSulongNode.create();
-                case SSIZE_OBJ_ARG_PROC:
-                    return TernaryFirstThirdToSulongNode.create();
-                case SSIZE_ARG_PROC:
-                    return BinaryFirstToSulongNode.create();
-                default:
-                    throw new IllegalStateException("unknown argument conversion kind");
-            }
+        @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)"})
+        @TruffleBoundary
+        PBuiltinFunction runWithoutType(String name, TruffleObject callable, PNone wrapper, @SuppressWarnings("unused") PNone type) {
+            return run(name, callable, null, wrapper);
+        }
+
+        private ExternalFunctionNode createExternalFunctionRootNode(String name, TruffleObject callable, ConvertArgsToSulongNode convertArgsNode) {
+            return ExternalFunctionNode.create(getRootNode().getLanguage(PythonLanguage.class), name, callable, convertArgsNode);
         }
 
         private static Arity createArity(String name) {
@@ -1437,143 +1418,236 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_KEYWORDS", fixedNumOfPositionalArgs = 1)
+    public abstract static class PExternalFunctionWrapper extends PythonBuiltinObject {
+
+        private final Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier;
+
+        public PExternalFunctionWrapper(PythonClass cls, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
+            super(cls);
+            this.convertArgsNodeSupplier = convertArgsNodeSupplier;
+        }
+
+        protected abstract RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget);
+
+        protected static RootCallTarget createCallTarget(RootNode n) {
+            return Truffle.getRuntime().createCallTarget(n);
+        }
+
+        protected ConvertArgsToSulongNode createConvertArgsToSulongNode() {
+            return convertArgsNodeSupplier.get();
+        }
+
+    }
+
+    @Builtin(name = "METH_DIRECT", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethKeywordsNode extends PythonUnaryBuiltinNode {
+    public abstract static class MethDirectNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
-            CompilerDirectives.transferToInterpreter();
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MethKeywordsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> AllToSulongNode.create()) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
+                    return callTarget;
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_VARARGS", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_KEYWORDS", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethVarargsNode extends PythonUnaryBuiltinNode {
+    public abstract static class MethKeywordsNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
-            CompilerDirectives.transferToInterpreter();
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MethVarargsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> AllToSulongNode.create()) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
+                    return createCallTarget(new MethKeywordsRoot(language, factory, callTarget));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_NOARGS", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_VARARGS", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethNoargsNode extends PythonUnaryBuiltinNode {
+    public abstract static class MethVarargsNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
-            CompilerDirectives.transferToInterpreter();
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MethNoargsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> AllToSulongNode.create()) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
+                    return createCallTarget(new MethVarargsRoot(language, factory, callTarget));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_O", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_NOARGS", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethONode extends PythonUnaryBuiltinNode {
+    public abstract static class MethNoargsNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
-            CompilerDirectives.transferToInterpreter();
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MethORoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> AllToSulongNode.create()) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
+                    return createCallTarget(new MethNoargsRoot(language, factory, callTarget));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_FASTCALL", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_O", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethFastcallNode extends PythonUnaryBuiltinNode {
+    public abstract static class MethONode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MethFastcallRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> AllToSulongNode.create()) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
+                    return createCallTarget(new MethORoot(language, factory, callTarget));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_ALLOC", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_FASTCALL", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethAllocNode extends PythonUnaryBuiltinNode {
+    public abstract static class MethFastcallNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new AllocFuncRootNode(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> FastCallArgsToSulongNode.create()) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
+                    return createCallTarget(new MethFastcallRoot(language, factory, callTarget));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_GETATTR", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_ALLOC", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethGetattrNode extends PythonUnaryBuiltinNode {
+    public abstract static class MethAllocNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new GetAttrFuncRootNode(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> BinaryFirstToSulongNode.create()) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
+                    return createCallTarget(new AllocFuncRootNode(language, factory, callTarget));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_SETATTR", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_GETATTR", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethSetattrNode extends PythonUnaryBuiltinNode {
+    public abstract static class MethGetattrNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new SetAttrFuncRootNode(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> BinaryFirstToSulongNode.create()) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
+                    return createCallTarget(new GetAttrFuncRootNode(language, factory, callTarget));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_RICHCMP", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_SETATTR", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethRichcmpNode extends PythonUnaryBuiltinNode {
+    public abstract static class MethSetattrNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new RichCmpFuncRootNode(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> TernaryFirstThirdToSulongNode.create()) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
+                    return createCallTarget(new SetAttrFuncRootNode(language, factory, callTarget));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_SSIZE_OBJ_ARG", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_RICHCMP", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethSSizeObjArgNode extends PythonUnaryBuiltinNode {
+    public abstract static class MethRichcmpNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new SSizeObjArgProcRootNode(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> TernaryFirstSecondToSulongNode.create()) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
+                    return createCallTarget(new RichCmpFuncRootNode(language, factory, callTarget));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_REVERSE", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_SSIZE_OBJ_ARG", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethReverseNode extends PythonUnaryBuiltinNode {
+    public abstract static class MethSSizeObjArgNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MethReverseRootNode(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> TernaryFirstThirdToSulongNode.create()) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
+                    return createCallTarget(new SSizeObjArgProcRootNode(language, factory, callTarget));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_POW", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_REVERSE", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethPowNode extends PythonUnaryBuiltinNode {
+    public abstract static class MethReverseNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MethPowRootNode(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> AllToSulongNode.create()) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
+                    return createCallTarget(new MethReverseRootNode(language, factory, callTarget));
+                }
+            };
         }
     }
 
-    abstract static class MethRichcmpOpBaseNode extends PythonUnaryBuiltinNode {
+    @Builtin(name = "METH_POW", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethPowNode extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> AllToSulongNode.create()) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
+                    return createCallTarget(new MethPowRootNode(language, factory, callTarget));
+                }
+            };
+        }
+    }
+
+    abstract static class MethRichcmpOpBaseNode extends PythonBuiltinNode {
         // op codes for binary comparisons (defined in 'object.h')
         protected static final int PY_LT = 0;
         protected static final int PY_LE = 1;
@@ -1590,13 +1664,18 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MethRichcmpOpRootNode(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget(), op)));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> TernaryFirstSecondToSulongNode.create()) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
+                    return createCallTarget(new MethRichcmpOpRootNode(language, factory, callTarget, op));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_LT", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_LT", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class MethLtNode extends MethRichcmpOpBaseNode {
         protected MethLtNode() {
@@ -1604,7 +1683,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_LE", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_LE", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class MethLeNode extends MethRichcmpOpBaseNode {
         protected MethLeNode() {
@@ -1612,7 +1691,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_EQ", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_EQ", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class MethEqNode extends MethRichcmpOpBaseNode {
         protected MethEqNode() {
@@ -1620,7 +1699,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_NE", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_NE", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class MethNeNode extends MethRichcmpOpBaseNode {
         protected MethNeNode() {
@@ -1628,7 +1707,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_GT", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_GT", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class MethGtNode extends MethRichcmpOpBaseNode {
         protected MethGtNode() {
@@ -1636,7 +1715,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_GE", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_GE", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class MethGeNode extends MethRichcmpOpBaseNode {
         protected MethGeNode() {

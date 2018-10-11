@@ -211,41 +211,34 @@ void initialize_hashes();
 #define TDEBUG __asm__("int $3")
 #define get_method_flags_wrapper(flags)                                 \
     (((flags) < 0) ?                                                    \
-     truffle_read(PY_TRUFFLE_CEXT, "METH_DIRECT") :                     \
+     polyglot_invoke(PY_TRUFFLE_CEXT, "METH_DIRECT") :                     \
      (((flags) & METH_FASTCALL) ?                                       \
-      truffle_read(PY_TRUFFLE_CEXT, "METH_FASTCALL") :                  \
+      polyglot_invoke(PY_TRUFFLE_CEXT, "METH_FASTCALL") :                  \
       (((flags) & METH_KEYWORDS) ?                                       \
-       truffle_read(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :                  \
+       polyglot_invoke(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :                  \
        (((flags) & METH_VARARGS) ?                                       \
-        truffle_read(PY_TRUFFLE_CEXT, "METH_VARARGS") :                  \
+        polyglot_invoke(PY_TRUFFLE_CEXT, "METH_VARARGS") :                  \
         (((flags) & METH_NOARGS) ?                                           \
-         truffle_read(PY_TRUFFLE_CEXT, "METH_NOARGS") :                      \
+         polyglot_invoke(PY_TRUFFLE_CEXT, "METH_NOARGS") :                      \
          (((flags) & METH_O) ?                                   \
-          truffle_read(PY_TRUFFLE_CEXT, "METH_O") :              \
-          truffle_read(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
+          polyglot_invoke(PY_TRUFFLE_CEXT, "METH_O") :              \
+          polyglot_invoke(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
 
-// Enum of functions having non-Python objects in their signatures
-// NOTE: Keep in sync with 'TruffleCextBuiltins.CreateFunctionNode' !
-typedef enum e_wrapper {
-	DEFAULT=0, FASTCALL, ALLOC_FUNC, GETATTR_FUNC, SETATTR_FUNC, RICHCMP_FUNC, SSIZE_OBJ_ARG_PROC, SSIZE_ARG_FUNC
-} ConversionSignature;
 
-#define convert_method_flags(flags) (((flags) > 0 && ((flags) & METH_FASTCALL)) ? FASTCALL : DEFAULT)
-
-#define METH_ALLOC         (truffle_read(PY_TRUFFLE_CEXT, "METH_ALLOC"))
+#define METH_ALLOC         (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_ALLOC"))
 #define METH_SSIZE_ARG     METH_ALLOC
-#define METH_GETATTR       (truffle_read(PY_TRUFFLE_CEXT, "METH_GETATTR"))
-#define METH_SETATTR       (truffle_read(PY_TRUFFLE_CEXT, "METH_SETATTR"))
-#define METH_RICHCMP       (truffle_read(PY_TRUFFLE_CEXT, "METH_RICHCMP"))
-#define METH_SSIZE_OBJ_ARG (truffle_read(PY_TRUFFLE_CEXT, "METH_SSIZE_OBJ_ARG"))
-#define METH_REVERSE       (truffle_read(PY_TRUFFLE_CEXT, "METH_REVERSE"))
-#define METH_POW           (truffle_read(PY_TRUFFLE_CEXT, "METH_POW"))
-#define METH_LT            (truffle_read(PY_TRUFFLE_CEXT, "METH_LT"))
-#define METH_LE            (truffle_read(PY_TRUFFLE_CEXT, "METH_LE"))
-#define METH_EQ            (truffle_read(PY_TRUFFLE_CEXT, "METH_EQ"))
-#define METH_NE            (truffle_read(PY_TRUFFLE_CEXT, "METH_NE"))
-#define METH_GT            (truffle_read(PY_TRUFFLE_CEXT, "METH_GT"))
-#define METH_GE            (truffle_read(PY_TRUFFLE_CEXT, "METH_GE"))
+#define METH_GETATTR       (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_GETATTR"))
+#define METH_SETATTR       (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_SETATTR"))
+#define METH_RICHCMP       (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_RICHCMP"))
+#define METH_SSIZE_OBJ_ARG (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_SSIZE_OBJ_ARG"))
+#define METH_REVERSE       (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_REVERSE"))
+#define METH_POW           (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_POW"))
+#define METH_LT            (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_LT"))
+#define METH_LE            (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_LE"))
+#define METH_EQ            (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_EQ"))
+#define METH_NE            (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_NE"))
+#define METH_GT            (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_GT"))
+#define METH_GE            (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_GE"))
 
 #define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
