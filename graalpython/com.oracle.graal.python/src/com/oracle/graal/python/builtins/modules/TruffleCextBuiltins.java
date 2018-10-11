@@ -140,6 +140,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.GetFlagsNode;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
@@ -321,7 +322,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        PBuiltinFunction runWrapper(String name, TruffleObject callable, PExternalFunctionWrapper wrapper, PythonClass type) {
+        PBuiltinFunction runWrapper(String name, TruffleObject callable, PExternalFunctionWrapper wrapper, LazyPythonClass type) {
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(createExternalFunctionRootNode(name, callable, wrapper.createConvertArgsToSulongNode()));
             Arity arity = createArity(name);
             RootCallTarget wrappedCallTarget = wrapper.createCallTarget(getRootNode().getLanguage(PythonLanguage.class), factory(), callTarget);
@@ -336,7 +337,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(wrapper)"})
         @TruffleBoundary
-        PBuiltinFunction run(String name, TruffleObject callable, PythonClass type, @SuppressWarnings("unused") PNone wrapper) {
+        PBuiltinFunction run(String name, TruffleObject callable, LazyPythonClass type, @SuppressWarnings("unused") PNone wrapper) {
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(createExternalFunctionRootNode(name, callable, AllToSulongNode.create()));
             return factory().createBuiltinFunction(name, type, createArity(name), callTarget);
         }
@@ -1422,7 +1423,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         private final Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier;
 
-        public PExternalFunctionWrapper(PythonClass cls, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
+        public PExternalFunctionWrapper(LazyPythonClass cls, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
             super(cls);
             this.convertArgsNodeSupplier = convertArgsNodeSupplier;
         }
@@ -1445,7 +1446,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> AllToSulongNode.create()) {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, () -> AllToSulongNode.create()) {
 
                 @Override
                 protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
@@ -1461,7 +1462,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> AllToSulongNode.create()) {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, () -> AllToSulongNode.create()) {
 
                 @Override
                 protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
@@ -1477,7 +1478,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> AllToSulongNode.create()) {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, () -> AllToSulongNode.create()) {
 
                 @Override
                 protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
@@ -1493,7 +1494,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> AllToSulongNode.create()) {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, () -> AllToSulongNode.create()) {
 
                 @Override
                 protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
@@ -1509,7 +1510,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> AllToSulongNode.create()) {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, () -> AllToSulongNode.create()) {
 
                 @Override
                 protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
@@ -1525,7 +1526,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> FastCallArgsToSulongNode.create()) {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, () -> FastCallArgsToSulongNode.create()) {
 
                 @Override
                 protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
@@ -1541,7 +1542,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> BinaryFirstToSulongNode.create()) {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, () -> BinaryFirstToSulongNode.create()) {
 
                 @Override
                 protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
@@ -1557,7 +1558,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> BinaryFirstToSulongNode.create()) {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, () -> BinaryFirstToSulongNode.create()) {
 
                 @Override
                 protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
@@ -1573,7 +1574,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> TernaryFirstThirdToSulongNode.create()) {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, () -> TernaryFirstThirdToSulongNode.create()) {
 
                 @Override
                 protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
@@ -1589,7 +1590,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> TernaryFirstSecondToSulongNode.create()) {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, () -> TernaryFirstSecondToSulongNode.create()) {
 
                 @Override
                 protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
@@ -1605,7 +1606,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> TernaryFirstThirdToSulongNode.create()) {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, () -> TernaryFirstThirdToSulongNode.create()) {
 
                 @Override
                 protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
@@ -1621,7 +1622,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> AllToSulongNode.create()) {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, () -> AllToSulongNode.create()) {
 
                 @Override
                 protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
@@ -1637,7 +1638,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> AllToSulongNode.create()) {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, () -> AllToSulongNode.create()) {
 
                 @Override
                 protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
@@ -1665,7 +1666,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PExternalFunctionWrapper call() {
-            return new PExternalFunctionWrapper(getCore().lookupType(PythonBuiltinClassType.PythonObject), () -> TernaryFirstSecondToSulongNode.create()) {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, () -> TernaryFirstSecondToSulongNode.create()) {
 
                 @Override
                 protected RootCallTarget createCallTarget(PythonLanguage language, PythonObjectFactory factory, RootCallTarget callTarget) {
