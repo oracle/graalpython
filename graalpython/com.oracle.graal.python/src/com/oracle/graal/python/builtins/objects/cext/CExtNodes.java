@@ -1064,8 +1064,8 @@ public abstract class CExtNodes {
     }
 
     /**
-     * Converts the 1st argument (self/class) as required for {@code allocfunc},
-     * {@code getattrfunc}, {@code ssizeargfunc}.
+     * Converts the 1st argument as required for {@code allocfunc}, {@code getattrfunc}, and
+     * {@code ssizeargfunc}.
      */
     public abstract static class BinaryFirstToSulongNode extends ConvertArgsToSulongNode {
 
