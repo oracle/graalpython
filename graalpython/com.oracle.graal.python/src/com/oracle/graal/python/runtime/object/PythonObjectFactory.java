@@ -167,7 +167,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     private boolean reportAllocations() {
-        return getContextRef() != null && allocationReporter != null;
+        return getContextRef() != null && allocationReporter != null && allocationReporter.isActive();
     }
 
     /*
