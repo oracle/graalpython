@@ -141,8 +141,6 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.GetFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-=======
->>>>>>> Implement fast access for PythonClass flags.
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
