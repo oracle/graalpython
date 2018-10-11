@@ -27,20 +27,20 @@ package com.oracle.graal.python.builtins.objects.set;
 
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalence;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public abstract class PBaseSet extends PHashingCollection {
 
     protected final HashingStorage set;
 
-    public PBaseSet(PythonClass clazz) {
+    public PBaseSet(LazyPythonClass clazz) {
         super(clazz);
         this.set = EconomicMapStorage.create(true);
     }
 
-    public PBaseSet(PythonClass clazz, HashingStorage set) {
+    public PBaseSet(LazyPythonClass clazz, HashingStorage set) {
         super(clazz);
         this.set = set;
     }

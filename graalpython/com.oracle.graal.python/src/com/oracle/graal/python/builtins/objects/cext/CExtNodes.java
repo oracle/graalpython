@@ -98,8 +98,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -369,8 +370,6 @@ public abstract class CExtNodes {
     public abstract static class AsPythonObjectNode extends CExtBaseNode {
         public abstract Object execute(Object value);
 
-        @Child GetClassNode getClassNode;
-
         @Specialization
         boolean doBoolNativeWrapper(BoolNativeWrapper object) {
             return object.getValue();
@@ -407,8 +406,10 @@ public abstract class CExtNodes {
             return object.getDelegate();
         }
 
-        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
-        PythonAbstractObject doNativeObject(TruffleObject object) {
+        @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        PythonAbstractObject doNativeObject(TruffleObject object,
+                        @SuppressWarnings("unused") @Cached("create()") GetLazyClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached("create()") IsBuiltinClassProfile isForeignClassProfile) {
             return factory().createNativeObjectWrapper(object);
         }
 
@@ -461,20 +462,15 @@ public abstract class CExtNodes {
             return object instanceof PrimitiveNativeWrapper && !isMaterialized((PrimitiveNativeWrapper) object) || object instanceof BoolNativeWrapper;
         }
 
-        protected boolean isForeignObject(TruffleObject obj) {
-            // TODO we could probably also just use 'PGuards.isForeignObject'
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            return getClassNode.execute(obj) == getCore().lookupType(PythonBuiltinClassType.TruffleObject);
+        protected boolean isForeignObject(TruffleObject obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
+            return isForeignClassProfile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.TruffleObject);
         }
 
         @TruffleBoundary
-        public static Object doSlowPath(PythonCore core, Object object) {
+        public static Object doSlowPath(Object object) {
             if (object instanceof PythonNativeWrapper) {
                 return ((PythonNativeWrapper) object).getDelegate();
-            } else if (GetClassNode.getItSlowPath(object) == core.lookupType(PythonBuiltinClassType.TruffleObject)) {
+            } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getItSlowPath(object), PythonBuiltinClassType.TruffleObject)) {
                 throw new AssertionError("Unsupported slow path operation: converting 'to_java(" + object + ")");
             }
             return object;

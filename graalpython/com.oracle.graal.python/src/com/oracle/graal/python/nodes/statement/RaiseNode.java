@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -50,7 +51,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @NodeChildren({@NodeChild(value = "type", type = ExpressionNode.class), @NodeChild(value = "cause", type = ExpressionNode.class)})
 public abstract class RaiseNode extends StatementNode {
 
-    private final ConditionProfile simpleBaseCheckProfile = ConditionProfile.createBinaryProfile();
+    private final IsBuiltinClassProfile simpleBaseCheckProfile = IsBuiltinClassProfile.create();
+    private final IsBuiltinClassProfile iterativeBaseCheckProfile = IsBuiltinClassProfile.create();
     private final BranchProfile baseCheckFailedProfile = BranchProfile.create();
 
     @Specialization
@@ -77,12 +79,11 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     private void checkBaseClass(PythonClass pythonClass) {
-        PythonClass baseExceptionClass = getCore().getErrorClass(BaseException);
-        if (simpleBaseCheckProfile.profile(pythonClass == baseExceptionClass)) {
+        if (simpleBaseCheckProfile.profileClass(pythonClass, BaseException)) {
             return;
         }
         for (PythonClass klass : pythonClass.getMethodResolutionOrder()) {
-            if (klass == baseExceptionClass) {
+            if (iterativeBaseCheckProfile.profileClass(klass, BaseException)) {
                 return;
             }
         }

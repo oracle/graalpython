@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -102,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
@@ -126,6 +126,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
@@ -196,7 +198,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public Object bytearray(PythonClass cls, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
-                        @Cached("createBinaryProfile()") ConditionProfile stopIterationProfile,
+                        @Cached("create()") IsBuiltinClassProfile stopIterationProfile,
                         @Cached("create()") CastToByteNode castToByteNode) {
 
             Object it = getIteratorNode.executeWith(iterable);
@@ -210,7 +212,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                     arr[i++] = item;
                 } catch (PException e) {
-                    e.expect(StopIteration, getCore(), stopIterationProfile);
+                    e.expectStopIteration(stopIterationProfile);
                     return create(cls, resize(arr, i));
                 }
             }
@@ -488,7 +490,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // reversed(seq)
-    @Builtin(name = REVERSED, fixedNumOfPositionalArgs = 2, constructsClass = {PythonBuiltinClassType.PStringReverseIterator, PythonBuiltinClassType.PSequenceReverseIterator})
+    @Builtin(name = REVERSED, fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PReverseIterator)
     @GenerateNodeFactory
     public abstract static class ReversedNode extends PythonBuiltinNode {
 
@@ -529,14 +531,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"})
         public Object reversed(PythonClass cls, Object sequence,
-                        @Cached("create()") GetClassNode getClassNode,
+                        @Cached("create()") GetLazyClassNode getClassNode,
                         @Cached("create(__REVERSED__)") LookupAttributeInMRONode reversedNode,
                         @Cached("create()") CallUnaryMethodNode callReversedNode,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode lenNode,
                         @Cached("create(__GETITEM__)") LookupAttributeInMRONode getItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile noReversedProfile,
                         @Cached("createBinaryProfile()") ConditionProfile noGetItemProfile) {
-            PythonClass sequenceKlass = getClassNode.execute(sequence);
+            LazyPythonClass sequenceKlass = getClassNode.execute(sequence);
             Object reversed = reversedNode.execute(sequenceKlass);
             if (noReversedProfile.profile(reversed == PNone.NO_VALUE)) {
                 Object getItem = getItemNode.execute(sequenceKlass);
@@ -561,14 +563,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class FloatNode extends PythonBuiltinNode {
         @Child private BytesNodes.ToBytesNode toByteArrayNode;
 
-        private final ConditionProfile isPrimitiveProfile = ConditionProfile.createBinaryProfile();
+        private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
 
-        protected boolean isPrimitiveFloat(Object cls) {
-            return isPrimitiveProfile.profile(cls == getBuiltinFloatClass());
-        }
-
-        protected PythonBuiltinClass getBuiltinFloatClass() {
-            return getCore().lookupType(PythonBuiltinClassType.PFloat);
+        protected final boolean isPrimitiveFloat(PythonClass cls) {
+            return isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PFloat);
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
@@ -717,6 +715,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return new CExtNodes.SubtypeNew("float");
         }
 
+        protected PythonBuiltinClass getBuiltinFloatClass() {
+            return getCore().lookupType(PythonBuiltinClassType.PFloat);
+        }
+
         // logic similar to float_subtype_new(PyTypeObject *type, PyObject *x) from CPython
         // floatobject.c we have to first create a temporary float, then fill it into
         // a natively allocated subtype structure
@@ -772,7 +774,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFrozenSet frozensetIterable(PythonClass cls, Object iterable,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
 
             Object iterator = getIterator.executeWith(iterable);
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
@@ -780,7 +782,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 try {
                     getSetItemNode().execute(frozenSet, next.execute(iterator), PNone.NO_VALUE);
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     return frozenSet;
                 }
             }
@@ -928,12 +930,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return bi;
         }
 
-        private final ConditionProfile isPrimitiveProfile = ConditionProfile.createBinaryProfile();
+        private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
 
         public abstract Object executeWith(Object cls, Object arg, Object keywordArg);
 
-        protected boolean isPrimitiveInt(Object cls) {
-            return isPrimitiveProfile.profile(cls == getCore().lookupType(PythonBuiltinClassType.PInt));
+        protected boolean isPrimitiveInt(PythonClass cls) {
+            return isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PInt);
         }
 
         @Specialization
@@ -1000,13 +1002,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        int parseInt(Object cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
+        int parseInt(PythonClass cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
             return parseInt(cls, toString(arg), keywordArg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        long parseLong(Object cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
+        long parseLong(PythonClass cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
             return parseLong(cls, toString(arg), keywordArg);
         }
 
@@ -1028,13 +1030,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        int parseInt(Object cls, PString arg, int keywordArg) throws NumberFormatException {
+        int parseInt(PythonClass cls, PString arg, int keywordArg) throws NumberFormatException {
             return parseInt(cls, arg.getValue(), keywordArg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        long parseLong(Object cls, PString arg, int keywordArg) throws NumberFormatException {
+        long parseLong(PythonClass cls, PString arg, int keywordArg) throws NumberFormatException {
             return parseLong(cls, arg.getValue(), keywordArg);
         }
 
@@ -1050,13 +1052,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        int parseInt(@SuppressWarnings("unused") Object cls, String arg, int keywordArg) throws NumberFormatException {
+        int parseInt(@SuppressWarnings("unused") PythonClass cls, String arg, int keywordArg) throws NumberFormatException {
             return Integer.parseInt(arg, keywordArg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        long parseLong(@SuppressWarnings("unused") Object cls, String arg, int keywordArg) throws NumberFormatException {
+        long parseLong(@SuppressWarnings("unused") PythonClass cls, String arg, int keywordArg) throws NumberFormatException {
             return Long.parseLong(arg, keywordArg);
         }
 
@@ -1192,12 +1194,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public boolean bool(Object cls, Object obj,
-                        @Cached("create(__BOOL__)") LookupAndCallUnaryNode callNode,
-                        @Cached("create()") GetClassNode getClass) {
+                        @Cached("create(__BOOL__)") LookupAndCallUnaryNode callNode) {
             try {
                 return callNode.executeBoolean(obj);
             } catch (UnexpectedResultException ex) {
-                throw raise(PythonErrorType.TypeError, "__bool__ should return bool, returned %s", getClass.execute(ex.getResult()));
+                throw raise(PythonErrorType.TypeError, "__bool__ should return bool, returned %p", ex.getResult());
             }
         }
     }
@@ -1209,10 +1210,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         protected PList constructList(PythonClass cls, Object value,
-                        @Cached("create()") ConstructListNode constructListNode,
-                        @Cached("create()") GetClassNode getClassNode) {
-            PythonClass valueClass = getClassNode.execute(value);
-            return constructListNode.execute(cls, value, valueClass);
+                        @Cached("create()") ConstructListNode constructListNode) {
+            return constructListNode.execute(cls, value);
         }
 
         @Fallback
@@ -1397,33 +1396,33 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class StrNode extends PythonBuiltinNode {
         @Child private LookupAndCallTernaryNode callDecodeNode;
 
-        private final ConditionProfile isPrimitiveProfile = ConditionProfile.createBinaryProfile();
+        private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
 
         @CompilationFinal private ConditionProfile isStringProfile;
         @CompilationFinal private ConditionProfile isPStringProfile;
 
-        private Object asPString(Object cls, String str) {
-            if (isPrimitiveProfile.profile(cls == getCore().lookupType(PythonBuiltinClassType.PString))) {
+        private Object asPString(PythonClass cls, String str) {
+            if (isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PString)) {
                 return str;
             } else {
-                return factory().createString((PythonClass) cls, str);
+                return factory().createString(cls, str);
             }
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        public Object str(Object strClass, PNone arg, PNone encoding, PNone errors) {
+        public Object str(PythonClass strClass, PNone arg, PNone encoding, PNone errors) {
             return asPString(strClass, "");
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        public Object str(Object strClass, double arg, PNone encoding, PNone errors) {
+        public Object str(PythonClass strClass, double arg, PNone encoding, PNone errors) {
             return asPString(strClass, PFloat.doubleToString(arg));
         }
 
         @Specialization(guards = {"!isNoValue(obj)", "!isNone(obj)"})
-        public Object str(Object strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+        public Object str(PythonClass strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode callNode) {
             Object result = callNode.executeObject(obj);
             if (getIsStringProfile().profile(result instanceof String)) {
@@ -1435,7 +1434,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(encoding)")
-        public Object doBytesLike(Object strClass, PIBytesLike obj, Object encoding, Object errors) {
+        public Object doBytesLike(PythonClass strClass, PIBytesLike obj, Object encoding, Object errors) {
             Object result = getCallDecodeNode().execute(obj, encoding, errors);
             if (getIsStringProfile().profile(result instanceof String)) {
                 return asPString(strClass, (String) result);
@@ -1446,7 +1445,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(encoding)")
-        public Object doMemoryView(Object strClass, PMemoryView obj, Object encoding, Object errors,
+        public Object doMemoryView(PythonClass strClass, PMemoryView obj, Object encoding, Object errors,
                         @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
                         @Cached("create(TOBYTES)") LookupAndCallUnaryNode callToBytes) {
             Object result = callToBytes.executeObject(obj);
@@ -1517,28 +1516,27 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // function(code, globals[, name[, argdefs[, closure]]])
-    @Builtin(name = "function", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 6, constructsClass = {PythonBuiltinClassType.PFunction,
-                    PythonBuiltinClassType.PGeneratorFunction}, isPublic = false)
+    @Builtin(name = "function", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 6, constructsClass = PythonBuiltinClassType.PFunction, isPublic = false)
     @GenerateNodeFactory
     public abstract static class FunctionNode extends PythonBuiltinNode {
         @Specialization
         public PFunction function(PythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, @SuppressWarnings("unused") PNone closure) {
-            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, null);
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), globals, null);
         }
 
         @Specialization
         public PFunction function(PythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure) {
-            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, (PCell[]) closure.getArray());
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), globals, (PCell[]) closure.getArray());
         }
 
         @Specialization
         public PFunction function(PythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure) {
-            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, defaultArgs.getArray(), null);
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), globals, defaultArgs.getArray(), null);
         }
 
         @Specialization
         public PFunction function(PythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure) {
-            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, defaultArgs.getArray(), (PCell[]) closure.getArray());
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), globals, defaultArgs.getArray(), (PCell[]) closure.getArray());
         }
 
         @Fallback
@@ -1549,7 +1547,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // builtin-function(method-def, self, module)
-    @Builtin(name = "method_descriptor", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 6, constructsClass = {PythonBuiltinClassType.PBuiltinFunction}, isPublic = false)
+    @Builtin(name = "method_descriptor", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 6, constructsClass = PythonBuiltinClassType.PBuiltinFunction, isPublic = false)
     @GenerateNodeFactory
     public abstract static class BuiltinFunctionNode extends PythonBuiltinNode {
         @Specialization
@@ -1561,8 +1559,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // type(object)
     // type(object, bases, dict)
-    @Builtin(name = TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PythonClass,
-                    PythonBuiltinClassType.PythonBuiltinClass})
+    @Builtin(name = TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonClass)
     @GenerateNodeFactory
     public abstract static class TypeNode extends PythonBuiltinNode {
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
@@ -1668,7 +1665,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = MODULE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = {PythonBuiltinClassType.PythonModule}, isPublic = false)
+    @Builtin(name = MODULE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PythonModule, isPublic = false)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     @SuppressWarnings("unused")
@@ -1688,7 +1685,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "NotImplementedType", fixedNumOfPositionalArgs = 1, constructsClass = {PythonBuiltinClassType.PNotImplemented}, isPublic = false)
+    @Builtin(name = "NotImplementedType", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNotImplemented, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
         protected PythonClass getNotImplementedClass() {
@@ -1705,7 +1702,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "ellipsis", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PEllipsis}, isPublic = false)
+    @Builtin(name = "ellipsis", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PEllipsis, isPublic = false)
     @GenerateNodeFactory
     public abstract static class EllipsisTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1715,7 +1712,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "NoneType", fixedNumOfPositionalArgs = 1, constructsClass = {PythonBuiltinClassType.PNone}, isPublic = false)
+    @Builtin(name = "NoneType", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNone, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NoneTypeNode extends PythonBuiltinNode {
         protected PythonClass getNoneClass() {
@@ -1732,7 +1729,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dict_keys", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PDictKeysView}, isPublic = false)
+    @Builtin(name = "dict_keys", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictKeysView, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictKeysTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1742,7 +1739,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dict_keysiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PDictKeysIterator}, isPublic = false)
+    @Builtin(name = "dict_keysiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictKeysIterator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictKeysIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1752,7 +1749,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dict_values", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PDictValuesView}, isPublic = false)
+    @Builtin(name = "dict_values", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictValuesView, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictValuesTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1762,7 +1759,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dict_valuesiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PDictValuesIterator}, isPublic = false)
+    @Builtin(name = "dict_valuesiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictValuesIterator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictValuesIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1772,7 +1769,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dict_items", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PDictItemsView}, isPublic = false)
+    @Builtin(name = "dict_items", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictItemsView, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictItemsTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1782,7 +1779,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dict_itemsiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PDictItemsIterator}, isPublic = false)
+    @Builtin(name = "dict_itemsiterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDictItemsIterator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictItemsIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1792,12 +1789,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "iterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = {
-                    PythonBuiltinClassType.PRangeIterator, PythonBuiltinClassType.PIntegerSequenceIterator, PythonBuiltinClassType.PSequenceIterator,
-                    PythonBuiltinClassType.PBaseSetIterator, PythonBuiltinClassType.PRangeIterator, PythonBuiltinClassType.PArrayIterator,
-                    PythonBuiltinClassType.PDoubleSequenceIterator, PythonBuiltinClassType.PLongSequenceIterator,
-                    PythonBuiltinClassType.PStringIterator, PythonBuiltinClassType.PRangeReverseIterator,
-    }, isPublic = false)
+    @Builtin(name = "iterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PArrayIterator}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class IteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1807,7 +1799,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "callable_iterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PSentinelIterator}, isPublic = false)
+    @Builtin(name = "callable_iterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSentinelIterator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class CallableIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1817,7 +1809,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "foreign_iterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PForeignArrayIterator}, isPublic = false)
+    @Builtin(name = "foreign_iterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PForeignArrayIterator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class ForeignIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1827,7 +1819,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "generator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PGenerator}, isPublic = false)
+    @Builtin(name = "generator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PGenerator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class GeneratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1837,7 +1829,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "method", fixedNumOfPositionalArgs = 3, constructsClass = {PythonBuiltinClassType.PMethod}, isPublic = false)
+    @Builtin(name = "method", fixedNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PMethod, isPublic = false)
     @GenerateNodeFactory
     public abstract static class MethodTypeNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -1846,12 +1838,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPythonBuiltinClass(cls)")
-        Object builtinMethod(@SuppressWarnings("unused") PythonClass cls, Object self, PBuiltinFunction func) {
+        Object methodGeneric(@SuppressWarnings("unused") PythonClass cls, Object self, PBuiltinFunction func) {
             return factory().createBuiltinMethod(self, func);
         }
     }
 
-    @Builtin(name = "builtin_function_or_method", fixedNumOfPositionalArgs = 3, constructsClass = {PythonBuiltinClassType.PBuiltinMethod}, isPublic = false)
+    @Builtin(name = "builtin_function_or_method", fixedNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PBuiltinMethod, isPublic = false)
     @GenerateNodeFactory
     public abstract static class BuiltinMethodTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -1860,7 +1852,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "frame", constructsClass = {PythonBuiltinClassType.PFrame}, isPublic = false)
+    @Builtin(name = "frame", constructsClass = PythonBuiltinClassType.PFrame, isPublic = false)
     @GenerateNodeFactory
     public abstract static class FrameTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -1869,7 +1861,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "traceback", constructsClass = {PythonBuiltinClassType.PTraceback}, isPublic = false)
+    @Builtin(name = "traceback", constructsClass = PythonBuiltinClassType.PTraceback, isPublic = false)
     @GenerateNodeFactory
     public abstract static class TracebackTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -1878,7 +1870,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "code", constructsClass = {PythonBuiltinClassType.PCode}, isPublic = false, minNumOfPositionalArgs = 14, maxNumOfPositionalArgs = 16)
+    @Builtin(name = "code", constructsClass = PythonBuiltinClassType.PCode, isPublic = false, minNumOfPositionalArgs = 14, maxNumOfPositionalArgs = 16)
     @GenerateNodeFactory
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -1942,7 +1934,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cell", constructsClass = {PythonBuiltinClassType.PCell}, isPublic = false)
+    @Builtin(name = "cell", constructsClass = PythonBuiltinClassType.PCell, isPublic = false)
     @GenerateNodeFactory
     public abstract static class CellTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -1951,7 +1943,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "BaseException", constructsClass = {PythonBuiltinClassType.PBaseException}, isPublic = true, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = "BaseException", constructsClass = PythonBuiltinClassType.PBaseException, isPublic = true, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BaseExceptionNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1961,7 +1953,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "mappingproxy", constructsClass = {PythonBuiltinClassType.PMappingproxy}, isPublic = false, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = "mappingproxy", constructsClass = PythonBuiltinClassType.PMappingproxy, isPublic = false, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
         @Child private IsSequenceNode isMappingNode;
@@ -2002,7 +1994,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getset_descriptor", constructsClass = {PythonBuiltinClassType.GetSetDescriptor}, isPublic = false, fixedNumOfPositionalArgs = 1, keywordArguments = {"fget", "fset", "name",
+    @Builtin(name = "getset_descriptor", constructsClass = PythonBuiltinClassType.GetSetDescriptor, isPublic = false, fixedNumOfPositionalArgs = 1, keywordArguments = {"fget", "fset", "name",
                     "owner"})
     @GenerateNodeFactory
     @SuppressWarnings("unused")
@@ -2035,6 +2027,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Fallback
+        @TruffleBoundary
         Object call(Object klsas, Object set, Object get, Object name, Object owner) {
             denyInstantiationAfterInitialization();
             throw new RuntimeException("error in creating getset_descriptor during core initialization");

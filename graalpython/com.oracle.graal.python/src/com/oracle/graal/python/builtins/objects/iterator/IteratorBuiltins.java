@@ -25,10 +25,10 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import java.util.List;
 
@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -52,10 +53,9 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PSequenceIterator)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PIterator)
 public class IteratorBuiltins extends PythonBuiltins {
 
     /*
@@ -176,11 +176,11 @@ public class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isPSequence()")
         public Object next(PSequenceIterator self,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItem,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached("create()") IsBuiltinClassProfile profile) {
             try {
                 return callGetItem.executeObject(self.getObject(), self.index++);
             } catch (PException e) {
-                e.expectIndexError(getCore(), profile);
+                e.expectIndexError(profile);
                 throw raise(StopIteration);
             }
         }

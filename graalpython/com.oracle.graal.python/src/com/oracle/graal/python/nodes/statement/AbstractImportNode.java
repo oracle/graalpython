@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 
@@ -83,6 +84,7 @@ public abstract class AbstractImportNode extends StatementNode {
         return getDictNode;
     }
 
+    @TruffleBoundary
     protected Object importModule(String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
         if (!getCore().isInitialized()) {

@@ -25,12 +25,11 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 
 import java.util.Arrays;
 
@@ -39,6 +38,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNodeGen;
@@ -46,7 +46,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class DestructuringAssignmentNode extends StatementNode implements WriteNode {
 
@@ -60,12 +59,12 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
     @Child private LookupInheritedAttributeNode lookupGetItemNode = LookupInheritedAttributeNode.create(__GETITEM__);
     @Child private TupleNodes.ConstructTupleNode constructTupleNode = TupleNodes.ConstructTupleNode.create();
 
-    private final BranchProfile notEnoughValuesProfile = BranchProfile.create();
+    private final IsBuiltinClassProfile notEnoughValuesProfile = IsBuiltinClassProfile.create();
+    private final IsBuiltinClassProfile tooManyValuesErrorProfile = IsBuiltinClassProfile.create();
     private final BranchProfile tooManyValuesProfile = BranchProfile.create();
-    private final BranchProfile otherErrorsProfile = BranchProfile.create();
 
-    private final ConditionProfile errorProfile1 = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile errorProfile2 = ConditionProfile.createBinaryProfile();
+    private final IsBuiltinClassProfile errorProfile1 = IsBuiltinClassProfile.create();
+    private final IsBuiltinClassProfile errorProfile2 = IsBuiltinClassProfile.create();
     private final int starredIndex;
 
     public DestructuringAssignmentNode(ExpressionNode rhs, ReadNode[] slots, int starredIndex, StatementNode[] assignments) {
@@ -124,7 +123,7 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
             slots[starredIndex].doWrite(frame, factory().createList(array));
             return fillRest(frame, rhsValue, pos);
         } catch (PException e) {
-            e.expect(AttributeError, getCore(), errorProfile1);
+            e.expectAttributeError(errorProfile1);
             // __len__ is not implemented
             Object[] array = new Object[2];
             int length = 0;
@@ -137,7 +136,7 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
                     length++;
                     pos++;
                 } catch (PException e2) {
-                    e2.expect(IndexError, getCore(), errorProfile2);
+                    e2.expect(IndexError, errorProfile2);
                     // expected, fall through
                     break;
                 }
@@ -174,11 +173,9 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
                 nonExistingItem = fillStarred(frame, rhsValue);
             }
         } catch (PException e) {
-            notEnoughValuesProfile.enter();
-            if (e.getType() == getCore().getErrorClass(IndexError)) {
+            if (notEnoughValuesProfile.profileException(e, IndexError)) {
                 throw raise(ValueError, "not enough values to unpack");
             } else {
-                otherErrorsProfile.enter();
                 throw e;
             }
         }
@@ -187,10 +184,9 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
             tooManyValuesProfile.enter();
             throw raise(SyntaxError, "too many values to unpack (expected %d)", nonExistingItem);
         } catch (PException e) {
-            if (e.getType() == getCore().getErrorClass(IndexError)) {
+            if (tooManyValuesErrorProfile.profileException(e, IndexError)) {
                 // expected, fall through
             } else {
-                otherErrorsProfile.enter();
                 throw e;
             }
         }

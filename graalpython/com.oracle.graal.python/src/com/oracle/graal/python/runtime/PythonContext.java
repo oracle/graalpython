@@ -53,7 +53,7 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleOptions;
 
-public class PythonContext {
+public final class PythonContext {
 
     private final PythonLanguage language;
     private PythonModule mainModule;

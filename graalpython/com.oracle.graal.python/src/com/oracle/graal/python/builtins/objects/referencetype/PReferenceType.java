@@ -48,7 +48,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -92,7 +92,7 @@ public class PReferenceType extends PythonBuiltinObject {
     private int hash = -1;
 
     @TruffleBoundary
-    public PReferenceType(PythonClass cls, PythonObject pythonObject, PFunction callback) {
+    public PReferenceType(LazyPythonClass cls, PythonObject pythonObject, PFunction callback) {
         super(cls);
         this.store = new WeakRefStorage(this, pythonObject, callback);
     }

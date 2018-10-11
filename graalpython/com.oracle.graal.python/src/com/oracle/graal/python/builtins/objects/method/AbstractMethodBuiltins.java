@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.method;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
@@ -39,14 +40,21 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -147,6 +155,36 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         @Fallback
         boolean eq(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
             return false;
+        }
+    }
+
+    @Builtin(name = __MODULE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class GetModuleNode extends PythonBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        Object getModule(PythonObject self, @SuppressWarnings("unused") PNone none,
+                        @Cached("create()") ReadAttributeFromObjectNode readObject,
+                        @Cached("create()") GetAttrNode getAttr,
+                        @Cached("create()") WriteAttributeToObjectNode writeObject) {
+            Object module = readObject.execute(self, __MODULE__);
+            if (module == PNone.NO_VALUE) {
+                CompilerDirectives.transferToInterpreter();
+                Object globals = self instanceof PMethod ? ((PMethod) self).getSelf() : ((PBuiltinMethod) self).getSelf();
+                if (globals instanceof PythonModule) {
+                    module = ((PythonModule) globals).getAttribute(__NAME__);
+                } else {
+                    module = getAttr.execute(globals, __MODULE__, PNone.NONE);
+                }
+                writeObject.execute(self, __MODULE__, module);
+            }
+            return module;
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object getModule(PythonObject self, Object value,
+                        @Cached("create()") WriteAttributeToObjectNode writeObject) {
+            writeObject.execute(self, __MODULE__, value);
+            return PNone.NONE;
         }
     }
 }

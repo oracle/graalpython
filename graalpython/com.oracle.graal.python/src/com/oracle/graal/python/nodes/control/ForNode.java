@@ -32,6 +32,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -48,7 +49,6 @@ import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RepeatingNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
 
@@ -129,12 +129,12 @@ abstract class ForNextElementNode extends PNodeWithContext {
     @Specialization
     protected boolean doIterator(VirtualFrame frame, Object object,
                     @Cached("create()") GetNextNode next,
-                    @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                    @Cached("create()") IsBuiltinClassProfile errorProfile) {
         try {
             ((WriteNode) target).doWrite(frame, next.execute(object));
             return true;
         } catch (PException e) {
-            e.expectStopIteration(getCore(), errorProfile);
+            e.expectStopIteration(errorProfile);
             return false;
         }
     }

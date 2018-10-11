@@ -38,32 +38,68 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.frame;
+package com.oracle.graal.python.nodes.classes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public interface GlobalNode {
-    default boolean isInModule(VirtualFrame frame) {
-        return PArguments.getGlobals(frame) instanceof PythonModule;
+public abstract class IsFixedSubtypeMRONode extends PNodeWithContext {
+
+    private final PythonBuiltinClassType clazz;
+
+    private final ConditionProfile equalsProfile = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile innerEqualsProfile = ConditionProfile.createBinaryProfile();
+    private final BranchProfile falseProfile = BranchProfile.create();
+
+    protected IsFixedSubtypeMRONode(PythonBuiltinClassType clazz) {
+        this.clazz = clazz;
     }
 
-    default boolean isInBuiltinDict(VirtualFrame frame) {
-        Object globals = PArguments.getGlobals(frame);
-        if (globals instanceof PDict) {
-            LazyPythonClass clazz = ((PDict) globals).getLazyPythonClass();
-            return clazz == PythonBuiltinClassType.PDict || (clazz instanceof PythonBuiltinClass && ((PythonBuiltinClass) clazz).getType() == PythonBuiltinClassType.PDict);
+    public static IsFixedSubtypeMRONode create(PythonBuiltinClassType type) {
+        return IsFixedSubtypeMRONodeGen.create(type);
+    }
+
+    public abstract boolean execute(LazyPythonClass derived);
+
+    @Specialization
+    protected boolean isSubtype(PythonBuiltinClassType derived) {
+        if (equalsProfile.profile(derived == clazz)) {
+            return true;
         }
+        PythonBuiltinClassType current = derived;
+        while (current != PythonBuiltinClassType.PythonObject) {
+            if (innerEqualsProfile.profile(derived == clazz)) {
+                return true;
+            }
+            current = current.getBase();
+        }
+        falseProfile.enter();
         return false;
     }
 
-    default boolean isInDict(VirtualFrame frame) {
-        Object globals = PArguments.getGlobals(frame);
-        return globals instanceof PDict;
+    @Specialization
+    protected boolean isSubtype(PythonBuiltinClass derived) {
+        return isSubtype(derived.getType());
+    }
+
+    @Specialization
+    protected boolean isSubtype(PythonClass derived,
+                    @Cached("create()") IsBuiltinClassProfile profile) {
+
+        for (PythonClass mro : derived.getMethodResolutionOrder()) {
+            if (profile.profileClass(mro, clazz)) {
+                return true;
+            }
+        }
+        falseProfile.enter();
+        return false;
     }
 }

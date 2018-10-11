@@ -25,11 +25,11 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import java.util.List;
 
@@ -42,11 +42,11 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSentinelIterator)
 public class SentinelIteratorBuiltins extends PythonBuiltins {
@@ -66,7 +66,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
         @Child private BinaryComparisonNode equalNode = BinaryComparisonNode.create(__EQ__, __EQ__, "==");
         @Child private LookupAndCallVarargsNode callNode = LookupAndCallVarargsNode.create(__CALL__);
 
-        private final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
+        private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         private Object callSentinalIteratorTarget(PSentinelIterator iterator) {
             return callNode.execute(null, iterator.getCallTarget(), new Object[]{iterator.getCallTarget()});
@@ -81,7 +81,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
             try {
                 nextValue = callSentinalIteratorTarget(iterator);
             } catch (PException e) {
-                e.expectStopIteration(getCore(), errorProfile);
+                e.expectStopIteration(errorProfile);
                 iterator.markSentinelReached();
                 throw raise(StopIteration);
             }

@@ -25,9 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 /**
  * The base class of all Python built-in data types (int, complex, tuple...). Subclasses of
@@ -41,20 +39,7 @@ import com.oracle.truffle.api.object.HiddenKey;
  */
 public abstract class PythonBuiltinObject extends PythonObject {
 
-    public PythonBuiltinObject(PythonClass cls) {
+    public PythonBuiltinObject(LazyPythonClass cls) {
         super(cls);
-    }
-
-    private boolean isBuiltin() {
-        return pythonClass.getClass() == PythonBuiltinClass.class;
-    }
-
-    @Override
-    public void setAttribute(Object name, Object value) {
-        if (isBuiltin() && !(name instanceof HiddenKey)) {
-            pythonClass.setAttribute(name, value);
-        } else {
-            super.setAttribute(name, value);
-        }
     }
 }

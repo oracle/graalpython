@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -57,8 +57,8 @@ import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -78,14 +78,14 @@ public final class PBaseException extends PythonObject {
     private List<TruffleStackTraceElement> stackTrace;
     private PTraceback[] traceback;
 
-    public PBaseException(PythonClass cls, PTuple args) {
+    public PBaseException(LazyPythonClass cls, PTuple args) {
         super(cls);
         this.args = args;
         this.messageFormat = null;
         this.messageArgs = null;
     }
 
-    public PBaseException(PythonClass cls, String format, Object[] args) {
+    public PBaseException(LazyPythonClass cls, String format, Object[] args) {
         super(cls);
         this.args = null;
         this.messageFormat = format;
@@ -157,17 +157,17 @@ public final class PBaseException extends PythonObject {
         CompilerAsserts.neverPartOfCompilation();
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return getPythonClass().getName() + ": " + FORMATTER.format(messageFormat, messageArgs);
+                return getLazyPythonClass().getName() + ": " + FORMATTER.format(messageFormat, messageArgs);
             }
-            return getPythonClass().getName() + ": " + messageFormat;
+            return getLazyPythonClass().getName() + ": " + messageFormat;
         } else if (args.getSequenceStorage().length() == 0) {
-            return getPythonClass().getName();
+            return getLazyPythonClass().getName();
         } else if (args.getSequenceStorage().length() == 1) {
             SequenceStorage store = args.getSequenceStorage();
             Object item = store instanceof BasicSequenceStorage ? store.getItemNormalized(0) : "<unknown>";
-            return getPythonClass().getName() + ": " + item.toString();
+            return getLazyPythonClass().getName() + ": " + item.toString();
         } else {
-            return getPythonClass().getName() + ": " + args.toString();
+            return getLazyPythonClass().getName() + ": " + args.toString();
         }
     }
 

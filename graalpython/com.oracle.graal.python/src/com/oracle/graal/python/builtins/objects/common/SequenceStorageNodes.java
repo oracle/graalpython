@@ -97,6 +97,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -948,7 +949,7 @@ public abstract class SequenceStorageNodes {
         void doGeneric(SequenceStorage s, SliceInfo info, Object iterable,
                         @Cached("create()") SetStorageSliceNode setStorageSliceNode,
                         @Cached("create()") ListNodes.ConstructListNode constructListNode) {
-            PList list = constructListNode.execute(iterable, null);
+            PList list = constructListNode.execute(iterable);
             setStorageSliceNode.execute(s, info, list.getSequenceStorage());
         }
 
@@ -2078,7 +2079,7 @@ public abstract class SequenceStorageNodes {
         SequenceStorage doWithoutStorage(SequenceStorage s, Object iterable,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile,
                         @Cached("createAppend()") AppendNode appendNode) {
             SequenceStorage currentStore = s;
             Object it = getIteratorNode.executeWith(iterable);
@@ -2088,7 +2089,7 @@ public abstract class SequenceStorageNodes {
                     value = getNextNode.execute(it);
                     currentStore = appendNode.execute(currentStore, value);
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     return currentStore;
                 }
             }

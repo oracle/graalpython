@@ -26,7 +26,7 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 /**
  * This is the base class for all builtin iterator types that cannot be subclassed from Python code.
@@ -35,7 +35,7 @@ public abstract class PBuiltinIterator extends PythonBuiltinObject {
 
     private boolean exhausted = false;
 
-    public PBuiltinIterator(PythonClass clazz) {
+    public PBuiltinIterator(LazyPythonClass clazz) {
         super(clazz);
     }
 

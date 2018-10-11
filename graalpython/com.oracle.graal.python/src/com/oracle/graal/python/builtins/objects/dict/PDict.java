@@ -35,24 +35,24 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.Unmodifiab
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 
 public final class PDict extends PHashingCollection {
 
     private HashingStorage dictStorage;
 
-    public PDict(PythonClass cls, HashingStorage dictStorage) {
+    public PDict(LazyPythonClass cls, HashingStorage dictStorage) {
         super(cls);
         this.dictStorage = dictStorage;
     }
 
-    public PDict(PythonClass cls) {
+    public PDict(LazyPythonClass cls) {
         super(cls);
         this.dictStorage = new EmptyStorage();
     }
 
-    public PDict(PythonClass cls, PKeyword[] keywords) {
+    public PDict(LazyPythonClass cls, PKeyword[] keywords) {
         super(cls);
         this.dictStorage = (keywords != null) ? KeywordsStorage.create(keywords) : new EmptyStorage();
     }

@@ -27,20 +27,17 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 
 public final class PGeneratorFunction extends PFunction {
 
-    public static PGeneratorFunction create(PythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget,
-                    FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
-        return new PGeneratorFunction(clazz, name, enclosingClassName, arity, callTarget, frameDescriptor, globals, closure);
+    public static PGeneratorFunction create(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
+        return new PGeneratorFunction(clazz, name, enclosingClassName, arity, callTarget, globals, closure);
     }
 
-    public PGeneratorFunction(PythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget,
-                    FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
-        super(clazz, name, enclosingClassName, arity, callTarget, frameDescriptor, globals, closure);
+    public PGeneratorFunction(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
+        super(clazz, name, enclosingClassName, arity, callTarget, globals, closure);
     }
 
     @Override

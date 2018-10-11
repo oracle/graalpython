@@ -25,13 +25,9 @@
  */
 package com.oracle.graal.python.parser;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
-
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
 
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.parser.antlr.Builder;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -54,7 +50,7 @@ public final class PythonParserImpl implements PythonParser {
 
     @Override
     @TruffleBoundary
-    public Node parse(ParserMode mode, PythonCore core, Source source, Frame currentFrame) {
+    public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
         // ANTLR parsing
         Python3Parser parser = getPython3Parser(source.getCharacters().toString());
         ParserRuleContext input;
@@ -84,17 +80,17 @@ public final class PythonParserImpl implements PythonParser {
                         ((PIncompleteSourceException) e).setSource(source);
                         throw e;
                     }
-                    throw handleParserError(core, source, e);
+                    throw handleParserError(errors, source, e);
                 }
             } else {
-                throw handleParserError(core, source, e);
+                throw handleParserError(errors, source, e);
             }
         }
 
         // prepare scope translator
-        TranslationEnvironment environment = new TranslationEnvironment(core.getLanguage());
+        TranslationEnvironment environment = new TranslationEnvironment(errors.getLanguage());
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
-        ScopeTranslator<Object> defineScopes = new ScopeTranslator<>(core, environment, source.isInteractive(), inlineLocals);
+        ScopeTranslator<Object> defineScopes = new ScopeTranslator<>(errors, environment, source.isInteractive(), inlineLocals);
         // first pass of the scope translator -> define the scopes
         input.accept(defineScopes);
         // create frame slots for cell and free vars
@@ -102,7 +98,7 @@ public final class PythonParserImpl implements PythonParser {
         defineScopes.createFrameSlotsForCellAndFreeVars();
 
         // create Truffle ASTs
-        return PythonTreeTranslator.translate(core, source.getName(), input, environment, source, mode == ParserMode.InlineEvaluation);
+        return PythonTreeTranslator.translate(errors, source.getName(), input, environment, source, mode == ParserMode.InlineEvaluation);
     }
 
     @Override
@@ -118,23 +114,8 @@ public final class PythonParserImpl implements PythonParser {
         return input.NAME() != null;
     }
 
-    private static PException handleParserError(PythonCore core, Source source, Exception e) {
+    private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
         SourceSection section = PythonErrorStrategy.getPosition(source, e);
-        Node location = new Node() {
-            @Override
-            public SourceSection getSourceSection() {
-                return section;
-            }
-        };
-        PBaseException instance;
-        PythonClass exceptionType = core.getErrorClass(SyntaxError);
-        instance = core.factory().createBaseException(exceptionType, "invalid syntax", new Object[0]);
-        String path = source.getPath();
-        instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
-        instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : "");
-        instance.setAttribute("lineno", section.getStartLine());
-        instance.setAttribute("offset", section.getStartColumn());
-        instance.setAttribute("msg", section.getCharIndex() == source.getLength() ? "unexpected EOF while parsing" : "invalid syntax");
-        throw PException.fromObject(instance, location);
+        throw errors.raiseInvalidSyntax(source, section);
     }
 }

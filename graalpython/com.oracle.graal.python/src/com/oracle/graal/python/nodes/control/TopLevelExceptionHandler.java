@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -136,7 +137,7 @@ public class TopLevelExceptionHandler extends RootNode {
         CompilerDirectives.transferToInterpreter();
         PythonContext theContext = context.get();
         PythonCore core = theContext.getCore();
-        if (core.getErrorClass(SystemExit) == e.getType()) {
+        if (IsBuiltinClassProfile.profileClassSlowPath(e.getExceptionObject().getLazyPythonClass(), SystemExit)) {
             handleSystemExit(e);
         }
 

@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
@@ -1056,7 +1057,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create(__NEXT__)") LookupAndCallUnaryNode next,
                         @Cached("create()") CastToDoubleNode toFloat,
-                        @Cached("createBinaryProfile()") ConditionProfile stopProfile) {
+                        @Cached("create()") IsBuiltinClassProfile stopProfile) {
             Object iterator = getIterator.executeWith(iterable);
             double x, y, t, hi, lo = 0, yr, inf_sum = 0, special_sum = 0, sum;
             double xsave;
@@ -1066,7 +1067,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 try {
                     x = toFloat.execute(next.executeObject(iterator));
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), stopProfile);
+                    e.expectStopIteration(stopProfile);
                     break;
                 }
                 xsave = x;

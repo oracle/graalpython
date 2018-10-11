@@ -26,14 +26,14 @@
 package com.oracle.graal.python.runtime.sequence;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public abstract class PSequence extends PythonBuiltinObject {
 
-    public PSequence(PythonClass cls) {
+    public PSequence(LazyPythonClass cls) {
         super(cls);
     }
 

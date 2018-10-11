@@ -25,17 +25,15 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -47,17 +45,17 @@ import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
 
 public class PythonObject extends PythonAbstractObject {
-    protected final PythonClass pythonClass;
-    protected final DynamicObject storage;
+    private final LazyPythonClass pythonClass;
+    private final DynamicObject storage;
     private PHashingCollection dict;
 
-    public PythonObject(PythonClass pythonClass) {
+    public PythonObject(LazyPythonClass pythonClass) {
         assert pythonClass != null : getClass().getSimpleName();
         this.pythonClass = pythonClass;
         storage = pythonClass.getInstanceShape().newInstance();
     }
 
-    public PythonObject(PythonClass pythonClass, Shape instanceShape) {
+    public PythonObject(LazyPythonClass pythonClass, Shape instanceShape) {
         if (pythonClass == null) {
             CompilerDirectives.transferToInterpreter();
             // special case for base type class
@@ -70,7 +68,16 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     public final PythonClass getPythonClass() {
+        CompilerAsserts.neverPartOfCompilation();
         assert pythonClass != null;
+        if (pythonClass instanceof PythonClass) {
+            return (PythonClass) pythonClass;
+        } else {
+            return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) pythonClass);
+        }
+    }
+
+    public final LazyPythonClass getLazyPythonClass() {
         return pythonClass;
     }
 
@@ -97,43 +104,15 @@ public class PythonObject extends PythonAbstractObject {
         }
     }
 
-    public PythonObject getValidStorageFullLookup(String attributeId) {
-        PythonObject s = null;
-        if (isOwnAttribute(attributeId)) {
-            s = this;
-        } else if (pythonClass != null) {
-            s = pythonClass.getValidStorageFullLookup(attributeId);
-        }
-        return s;
-    }
-
     @TruffleBoundary
-    public Object getAttribute(String name) {
-        // Find the storage location
-        Location storageLocation = getOwnValidLocation(name);
-
-        // Continue the look up in PythonType.
-        if (storageLocation == null) {
-            return pythonClass == null ? PNone.NO_VALUE : pythonClass.getAttribute(name);
-        }
-
-        return storageLocation.get(getStorage());
+    public final Object getAttribute(Object key) {
+        return getStorage().get(key, PNone.NO_VALUE);
     }
 
     @TruffleBoundary
     public void setAttribute(Object name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
         getStorage().define(name, value);
-    }
-
-    @TruffleBoundary
-    public void deleteAttribute(String name) {
-        // Find the storage location
-        if (!getStorage().containsKey(name)) {
-            throw PythonLanguage.getCore().raise(AttributeError, "%s object has no attribute %s", this, name);
-        } else {
-            getStorage().delete(name);
-        }
     }
 
     @TruffleBoundary
@@ -145,30 +124,6 @@ public class PythonObject extends PythonAbstractObject {
             }
         }
         return keyList;
-    }
-
-    public List<String> getAllAttributeNames() {
-        ArrayList<String> keyList = new ArrayList<>();
-        PythonClass[] methodResolutionOrder = this.getPythonClass().getMethodResolutionOrder();
-        for (Object o : getStorage().getShape().getKeyList()) {
-            if (o instanceof String) {
-                keyList.add((String) o);
-            }
-        }
-        for (PythonClass klass : methodResolutionOrder) {
-            keyList.addAll(klass.getAttributeNames());
-        }
-        return keyList;
-    }
-
-    protected Map<String, Object> getAttributes() {
-        final Map<String, Object> attributesMap = new HashMap<>();
-        for (Property p : getStorage().getShape().getProperties()) {
-            if (p.getKey() instanceof String) {
-                attributesMap.put((String) p.getKey(), p.getLocation().get(getStorage()));
-            }
-        }
-        return attributesMap;
     }
 
     public final PythonClass asPythonClass() {
@@ -194,7 +149,7 @@ public class PythonObject extends PythonAbstractObject {
      */
     @Override
     public String toString() {
-        return "<" + pythonClass.getName() + " object at 0x" + Integer.toHexString(hashCode()) + ">";
+        return "<" + getLazyPythonClass().getName() + " object at 0x" + Integer.toHexString(hashCode()) + ">";
     }
 
     /**

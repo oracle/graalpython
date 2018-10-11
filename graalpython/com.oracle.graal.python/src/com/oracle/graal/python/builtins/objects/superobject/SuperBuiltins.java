@@ -376,7 +376,8 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Child SuperInitNode superInit;
 
         @Specialization
-        public Object get(SuperObject self, Object obj, @SuppressWarnings("unused") Object type) {
+        public Object get(SuperObject self, Object obj, @SuppressWarnings("unused") Object type,
+                        @Cached("createBinaryProfile()") ConditionProfile classProfile) {
             if (obj == PNone.NONE || getObject.execute(self) != null) {
                 // not binding to an object or already bound
                 return this;
@@ -386,7 +387,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                     superInit = insert(SuperInitNodeFactory.create());
                     getType = insert(GetTypeNodeGen.create());
                 }
-                SuperObject newSuper = factory().createSuperObject(self.getPythonClass());
+                SuperObject newSuper = factory().createSuperObject(getPythonClass(self.getLazyPythonClass(), classProfile));
                 superInit.execute(null, newSuper, getType.execute(self), obj);
                 return newSuper;
             }

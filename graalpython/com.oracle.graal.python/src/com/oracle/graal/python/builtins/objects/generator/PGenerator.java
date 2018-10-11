@@ -29,7 +29,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
@@ -49,7 +49,7 @@ public final class PGenerator extends PythonBuiltinObject {
     private boolean finished;
     private PCode code;
 
-    public static PGenerator create(PythonClass clazz, String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
+    public static PGenerator create(LazyPythonClass clazz, String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         /*
          * Setting up the persistent frame in {@link #arguments}.
@@ -77,7 +77,7 @@ public final class PGenerator extends PythonBuiltinObject {
         return new PGenerator(clazz, name, callTarget, frameDescriptor, arguments, closure);
     }
 
-    private PGenerator(PythonClass clazz, String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure) {
+    private PGenerator(LazyPythonClass clazz, String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure) {
         super(clazz);
         this.name = name;
         this.callTarget = callTarget;

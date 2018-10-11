@@ -32,9 +32,8 @@ import com.oracle.graal.python.builtins.objects.function.PGeneratorFunction;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 
 public final class PMethod extends PythonBuiltinObject implements PythonCallable {
 
@@ -42,7 +41,7 @@ public final class PMethod extends PythonBuiltinObject implements PythonCallable
     private final Object self;
     private final RootCallTarget callTarget;
 
-    public PMethod(PythonClass cls, Object self, PFunction function) {
+    public PMethod(LazyPythonClass cls, Object self, PFunction function) {
         super(cls);
         this.self = self;
         this.function = function;
@@ -83,11 +82,6 @@ public final class PMethod extends PythonBuiltinObject implements PythonCallable
     @Override
     public RootCallTarget getCallTarget() {
         return callTarget;
-    }
-
-    @Override
-    public FrameDescriptor getFrameDescriptor() {
-        return function.getFrameDescriptor();
     }
 
     @Override

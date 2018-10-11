@@ -44,9 +44,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -81,7 +81,7 @@ public abstract class IsIterableNode extends PDataModelEmulationNode {
 
     @Specialization
     public boolean isIterable(Object object,
-                    @Cached("create()") GetClassNode getClassNode,
+                    @Cached("create()") GetLazyClassNode getClassNode,
                     @Cached("create(__ITER__)") LookupAttributeInMRONode getIterNode,
                     @Cached("create(__GETITEM__)") LookupAttributeInMRONode getGetItemNode,
                     @Cached("create(__NEXT__)") LookupAttributeInMRONode hasNextNode,
@@ -89,7 +89,7 @@ public abstract class IsIterableNode extends PDataModelEmulationNode {
                     @Cached("createBinaryProfile()") ConditionProfile profileIter,
                     @Cached("createBinaryProfile()") ConditionProfile profileGetItem,
                     @Cached("createBinaryProfile()") ConditionProfile profileNext) {
-        PythonClass klass = getClassNode.execute(object);
+        LazyPythonClass klass = getClassNode.execute(object);
         Object iterMethod = getIterNode.execute(klass);
         if (profileIter.profile(iterMethod != PNone.NO_VALUE && iterMethod != PNone.NONE)) {
             return true;

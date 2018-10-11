@@ -86,8 +86,8 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -98,6 +98,8 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -541,12 +543,12 @@ public class PythonObjectNativeWrapperMR {
         }
 
         protected static boolean isPyDateTimeCAPI(PythonObject object) {
-            return object.getPythonClass().getName().equals("PyDateTime_CAPI");
+            return object.getLazyPythonClass().getName().equals("PyDateTime_CAPI");
         }
 
         @Specialization(guards = "isPyDateTimeCAPI(object)")
         Object doDatetimeCAPI(PythonObject object, String key,
-                        @Cached("create()") GetClassNode getClass,
+                        @Cached("create()") GetLazyClassNode getClass,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getAttrNode) {
             return getToSulongNode().execute(getAttrNode.execute(getClass.execute(object), key));
         }
@@ -648,6 +650,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = {"eq(TP_BASICSIZE, key)", "isPythonBuiltinClass(object)"})
+        @TruffleBoundary
         long doTpBasicsize(PythonBuiltinClass object, @SuppressWarnings("unused") String key, long basicsize) {
             // We have to use the 'setAttributeUnsafe' because this properly cannot be modified by
             // the user and we need to initialize it.
@@ -656,6 +659,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = {"eq(TP_BASICSIZE, key)", "isPythonUserClass(object)"})
+        @TruffleBoundary
         long doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key, long basicsize) {
             // Do deliberately not use "SetAttributeNode" because we want to directly set the
             // attribute an bypass any user code.
@@ -686,9 +690,10 @@ public class PythonObjectNativeWrapperMR {
         Object doTpDict(PythonClass object, @SuppressWarnings("unused") String key, Object nativeValue,
                         @Cached("create()") CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached("create()") HashingStorageNodes.GetItemNode getItem,
-                        @Cached("create()") WriteAttributeToObjectNode writeAttrNode) {
+                        @Cached("create()") WriteAttributeToObjectNode writeAttrNode,
+                        @Cached("create()") IsBuiltinClassProfile isPrimitiveDictProfile) {
             Object value = asPythonObjectNode.execute(nativeValue);
-            if (value instanceof PDict && ((PDict) value).getPythonClass() == getCore().lookupType(PythonBuiltinClassType.PDict)) {
+            if (value instanceof PDict && isPrimitiveDictProfile.profileObject((PDict) value, PythonBuiltinClassType.PDict)) {
                 // special and fast case: commit items and change store
                 PDict d = (PDict) value;
                 for (Object k : d.keys()) {

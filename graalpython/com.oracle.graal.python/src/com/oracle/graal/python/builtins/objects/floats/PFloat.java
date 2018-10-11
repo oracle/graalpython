@@ -26,7 +26,7 @@
 package com.oracle.graal.python.builtins.objects.floats;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -34,7 +34,7 @@ public class PFloat extends PythonBuiltinObject {
 
     private final double value;
 
-    public PFloat(PythonClass clazz, double value) {
+    public PFloat(LazyPythonClass clazz, double value) {
         super(clazz);
         this.value = value;
     }
@@ -63,7 +63,7 @@ public class PFloat extends PythonBuiltinObject {
         return create(null, value);
     }
 
-    public static PFloat create(PythonClass cls, double value) {
+    public static PFloat create(LazyPythonClass cls, double value) {
         return new PFloat(cls, value);
     }
 

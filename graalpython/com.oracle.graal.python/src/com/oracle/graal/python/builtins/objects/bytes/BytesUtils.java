@@ -32,6 +32,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.io.UnsupportedEncodingException;
 
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -47,8 +48,8 @@ public final class BytesUtils {
         return new byte[size];
     }
 
-    public static byte[] fromString(PythonCore core, String source) {
-        return decodeEscapeToBytes(core, source);
+    public static byte[] fromString(ParserErrorCallback errors, String source) {
+        return decodeEscapeToBytes(errors, source);
     }
 
     @TruffleBoundary(transferToInterpreterOnException = false)
@@ -96,7 +97,7 @@ public final class BytesUtils {
     }
 
     @TruffleBoundary(transferToInterpreterOnException = false)
-    public static StringBuilder decodeEscapes(PythonCore core, String string, boolean regexMode) {
+    public static StringBuilder decodeEscapes(ParserErrorCallback errors, String string, boolean regexMode) {
         // see _PyBytes_DecodeEscape from
         // https://github.com/python/cpython/blob/master/Objects/bytesobject.c
         // TODO: for the moment we assume ASCII
@@ -111,7 +112,7 @@ public final class BytesUtils {
 
             i++;
             if (i >= length) {
-                throw core.raise(ValueError, "Trailing \\ in string");
+                throw errors.raise(ValueError, "Trailing \\ in string");
             }
 
             chr = string.charAt(i);
@@ -196,13 +197,13 @@ public final class BytesUtils {
                             // fall through
                         }
                     }
-                    throw core.raise(ValueError, "invalid \\x escape at position %d", i);
+                    throw errors.raise(ValueError, "invalid \\x escape at position %d", i);
                 default:
                     if (regexMode) {
                         charList.append('\\');
                         charList.append(chr);
                     } else {
-                        throw core.raise(ValueError, "invalid escape sequence '\\%s' at position %d", chr, i);
+                        throw errors.raise(ValueError, "invalid escape sequence '\\%s' at position %d", chr, i);
                     }
             }
         }
@@ -210,9 +211,9 @@ public final class BytesUtils {
         return charList;
     }
 
-    @TruffleBoundary
-    public static byte[] decodeEscapeToBytes(PythonCore core, String string) {
-        StringBuilder sb = decodeEscapes(core, string, false);
+    private static byte[] decodeEscapeToBytes(ParserErrorCallback errors, String string) {
+        CompilerAsserts.neverPartOfCompilation();
+        StringBuilder sb = decodeEscapes(errors, string, false);
         byte[] bytes = new byte[sb.length()];
         for (int i = 0; i < sb.length(); i++) {
             bytes[i] = (byte) sb.charAt(i);

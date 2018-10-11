@@ -38,7 +38,7 @@ import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Single_inputContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -48,7 +48,7 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
 
     private final TranslationEnvironment environment;
     private final ArrayList<ArgListCompiler<T>> argListCompilers;
-    private final PythonCore core;
+    private final ParserErrorCallback errors;
     private final boolean interactive;
     private final FrameDescriptor curInlineLocals; // used for inline parsing (when != null)
 
@@ -57,8 +57,8 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
 
     private ScopeInfo currentGeneratorScope = null;
 
-    public ScopeTranslator(PythonCore core, TranslationEnvironment environment, boolean interactive, FrameDescriptor curInlineLocals) {
-        this.core = core;
+    public ScopeTranslator(ParserErrorCallback errors, TranslationEnvironment environment, boolean interactive, FrameDescriptor curInlineLocals) {
+        this.errors = errors;
         this.environment = environment;
         this.argListCompilers = new ArrayList<>();
         this.interactive = interactive;
@@ -108,7 +108,7 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
             // TODO: get the decorators
         }
         environment.createLocal(ctx.NAME().getText());
-        ArgListCompiler<T> argListCompiler = new ArgListCompiler<>(core);
+        ArgListCompiler<T> argListCompiler = new ArgListCompiler<>(errors);
         argListCompilers.add(argListCompiler);
         ctx.parameters().accept(argListCompiler);
         ctx.parameters().accept(this);
@@ -127,7 +127,7 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
 
     @Override
     public T visitLambdef_nocond(Python3Parser.Lambdef_nocondContext ctx) {
-        ArgListCompiler<T> argListCompiler = new ArgListCompiler<>(core);
+        ArgListCompiler<T> argListCompiler = new ArgListCompiler<>(errors);
         argListCompilers.add(argListCompiler);
         ctx.accept(argListCompiler);
         ctx.scope = environment.createScope(ctx, ScopeKind.Function);
@@ -150,7 +150,7 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
 
     @Override
     public T visitLambdef(Python3Parser.LambdefContext ctx) {
-        ArgListCompiler<T> argListCompiler = new ArgListCompiler<>(core);
+        ArgListCompiler<T> argListCompiler = new ArgListCompiler<>(errors);
         argListCompilers.add(argListCompiler);
         if (ctx.varargslist() != null) {
             ctx.accept(argListCompiler);

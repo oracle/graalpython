@@ -25,14 +25,14 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public final class PStringIterator extends PBuiltinIterator {
 
     final String value;
     int index;
 
-    public PStringIterator(PythonClass clazz, String value) {
+    public PStringIterator(LazyPythonClass clazz, String value) {
         super(clazz);
         this.value = value;
     }

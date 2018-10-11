@@ -37,44 +37,32 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# ----------------------------------------------------------------------------------------------------------------------
-#
-# the exceptions / errors
-#
-# ----------------------------------------------------------------------------------------------------------------------
 
-def SystemExit__init__(self, *args):
-    if len(args) > 1:
-        self.code = args
-    elif len(args) == 1:
-        self.code = args[0]
-    else:
-        self.code = 0
-    BaseException.__init__(self, *args)
+def test_builtins():
+    import array
+    assert array.array.__module__ == "array" # builtin class
+    assert int.__module__ == "builtins" # builtin class
+    import sys
+    assert sys.getrecursionlimit.__module__ == "sys" # builtin module method
 
-SystemExit.__init__ = SystemExit__init__
-del SystemExit__init__
+def test_imported():
+    import code
+    assert code.InteractiveInterpreter.__module__ == "code" # class
+    assert code.InteractiveInterpreter.runsource.__module__ == "code" # function
+    assert code.InteractiveInterpreter().runsource.__module__ == "code" # method
 
-def ImportError__init__(self, msg, name=None, path=None):
-    self.message = msg
-    self.name = name
-    self.path = path
+class TestClass():
+    def foo(self):
+        pass
 
-ImportError.__init__ = ImportError__init__
-del ImportError__init__
-
-def ModuleNotFoundError__init__(self, msg, name=None):
-    self.msg = msg
-    self.name = name
-
-ModuleNotFoundError.__init__ = ModuleNotFoundError__init__
-del ModuleNotFoundError__init__
-
-def ModuleNotFoundError__str__(self):
-    if self.name is not None:
-        return "ModuleNotFound: '" + self.name + "'. " + self.msg
-    else:
-        return "ModuleNotFound: " + self.msg
-
-ModuleNotFoundError__str__.__init__ = ModuleNotFoundError__str__
-del ModuleNotFoundError__str__
+def test_user_class():
+    assert TestClass.__module__ == __name__
+    assert TestClass().__module__ == __name__
+    assert TestClass.foo.__module__ == __name__
+    assert TestClass().foo.__module__ == __name__
+    # test redefine:
+    TestClass.__module__ = "bar"
+    assert TestClass.__module__ == "bar"
+    t = TestClass()
+    t.__module__ = "baz"
+    assert t.__module__ == "baz"

@@ -25,12 +25,9 @@
  */
 package com.oracle.graal.python.builtins;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.FOREIGN;
-import static com.oracle.graal.python.nodes.BuiltinNames.MODULE;
-import static com.oracle.graal.python.nodes.BuiltinNames.OBJECT;
-import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS_PATCHES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -135,14 +132,15 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.SourceSection;
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
@@ -269,23 +267,23 @@ public final class Python3Core implements PythonCore {
     };
 
     // not using EnumMap, HashMap, etc. to allow this to fold away during partial evaluation
-    @CompilationFinal(dimensions = 1) private final PythonBuiltinClass[] builtinTypes = new PythonBuiltinClass[PythonBuiltinClassType.values().length];
+    @CompilationFinal(dimensions = 1) private final PythonBuiltinClass[] builtinTypes = new PythonBuiltinClass[PythonBuiltinClassType.VALUES.length];
 
     private final Map<String, PythonModule> builtinModules = new HashMap<>();
     @CompilationFinal private PythonModule builtinsModule;
 
-    @CompilationFinal private PythonBuiltinClass typeClass;
-    @CompilationFinal private PythonBuiltinClass objectClass;
-    @CompilationFinal private PythonBuiltinClass moduleClass;
-    @CompilationFinal private PythonBuiltinClass foreignClass;
     @CompilationFinal private PInt pyTrue;
     @CompilationFinal private PInt pyFalse;
 
-    @CompilationFinal(dimensions = 1) private PythonClass[] errorClasses;
     private final PythonParser parser;
 
-    @CompilationFinal private boolean initialized;
     @CompilationFinal private PythonContext singletonContext;
+
+    /*
+     * This field cannot be made CompilationFinal since code might get compiled during context
+     * initialization.
+     */
+    private boolean initialized;
 
     private final PythonObjectFactory factory = PythonObjectFactory.create();
 
@@ -331,7 +329,6 @@ public final class Python3Core implements PythonCore {
     private void initializePythonCore() {
         String coreHome = PythonCore.getCoreHomeOrFail();
         loadFile("builtins", coreHome);
-        findKnownExceptionTypes();
         for (String s : CORE_FILES) {
             loadFile(s, coreHome);
         }
@@ -416,6 +413,7 @@ public final class Python3Core implements PythonCore {
     }
 
     public PythonBuiltinClass lookupType(PythonBuiltinClassType type) {
+        assert builtinTypes[type.ordinal()] != null;
         return builtinTypes[type.ordinal()];
     }
 
@@ -429,19 +427,14 @@ public final class Python3Core implements PythonCore {
         return builtinsModule;
     }
 
-    public PythonClass getErrorClass(PythonErrorType type) {
-        return errorClasses[type.ordinal()];
-    }
-
     @Override
     @TruffleBoundary
-    public PException raise(PythonErrorType type, String format, Object... args) {
+    public PException raise(PythonBuiltinClassType type, String format, Object... args) {
         PBaseException instance;
-        PythonClass exceptionType = getErrorClass(type);
         if (format != null) {
-            instance = factory.createBaseException(exceptionType, format, args);
+            instance = factory.createBaseException(type, format, args);
         } else {
-            instance = factory.createBaseException(exceptionType);
+            instance = factory.createBaseException(type);
         }
         throw PException.fromObject(instance, null);
     }
@@ -461,26 +454,31 @@ public final class Python3Core implements PythonCore {
             env.exportSymbol("python_builtins", builtinsModule);
 
             // export all exception classes for the C API
-            for (PythonErrorType errorType : PythonErrorType.VALUES) {
-                PythonClass errorClass = getErrorClass(errorType);
+            for (PythonBuiltinClassType errorType : PythonBuiltinClassType.EXCEPTIONS) {
+                PythonClass errorClass = lookupType(errorType);
                 env.exportSymbol("python_" + errorClass.getName(), errorClass);
             }
         }
     }
 
+    private PythonClass initializeBuiltinClass(PythonBuiltinClassType type) {
+        int index = type.ordinal();
+        if (builtinTypes[index] == null) {
+            if (type.getBase() == type) {
+                // object case
+                builtinTypes[index] = new PythonBuiltinClass(type, null);
+            } else {
+                builtinTypes[index] = new PythonBuiltinClass(type, initializeBuiltinClass(type.getBase()));
+            }
+        }
+        return builtinTypes[index];
+    }
+
     private void initializeTypes() {
-        // Make prebuilt classes known
-        typeClass = new PythonBuiltinClass(null, TYPE, null);
-        objectClass = new PythonBuiltinClass(typeClass, OBJECT, null);
-        moduleClass = new PythonBuiltinClass(typeClass, MODULE, objectClass);
-        foreignClass = new PythonBuiltinClass(typeClass, FOREIGN, objectClass);
-        typeClass.unsafeSetSuperClass(objectClass);
-        // Prepare core classes that are required all for core setup
-        addType(PythonBuiltinClassType.PythonClass, typeClass);
-        addType(PythonBuiltinClassType.PythonBuiltinClass, typeClass);
-        addType(PythonBuiltinClassType.PythonObject, objectClass);
-        addType(PythonBuiltinClassType.PythonModule, moduleClass);
-        addType(PythonBuiltinClassType.TruffleObject, foreignClass);
+        // create class objects for builtin types
+        for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
+            initializeBuiltinClass(builtinClass);
+        }
         // n.b.: the builtin modules and classes and their constructors are initialized first here,
         // so we have the mapping from java classes to python classes and builtin names to modules
         // available.
@@ -489,12 +487,12 @@ public final class Python3Core implements PythonCore {
             if (annotation.defineModule().length() > 0) {
                 createModule(annotation.defineModule());
             }
-            builtin.initializeClasses(this);
-            for (Entry<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> entry : builtin.getBuiltinClasses().entrySet()) {
-                PythonBuiltinClass pythonClass = entry.getKey();
-                for (PythonBuiltinClassType klass : entry.getValue().getKey()) {
-                    addType(klass, pythonClass);
-                }
+        }
+        // publish builtin types in the corresponding modules
+        for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
+            String module = builtinClass.getPublicInModule();
+            if (module != null) {
+                lookupBuiltinModule(module).setAttribute(builtinClass.getName(), lookupType(builtinClass));
             }
         }
         // now initialize well-known objects
@@ -525,11 +523,6 @@ public final class Python3Core implements PythonCore {
         builtinModules.put("_frozen_importlib", bootstrap);
     }
 
-    private void addType(PythonBuiltinClassType klass, PythonBuiltinClass typ) {
-        builtinTypes[klass.ordinal()] = typ;
-        typ.setType(klass);
-    }
-
     private PythonModule createModule(String name) {
         PythonModule mod = builtinModules.get(name);
         if (mod == null) {
@@ -550,10 +543,11 @@ public final class Python3Core implements PythonCore {
         for (Entry<String, BoundBuiltinCallable<?>> entry : builtinFunctions.entrySet()) {
             String methodName = entry.getKey();
             Object value;
+            assert obj instanceof PythonModule || obj instanceof PythonBuiltinClass : "unexpected object while adding builtins";
             if (obj instanceof PythonModule) {
                 value = factory.createBuiltinMethod(obj, (PBuiltinFunction) entry.getValue());
             } else {
-                value = entry.getValue().boundToObject(obj, factory());
+                value = entry.getValue().boundToObject(((PythonBuiltinClass) obj).getType(), factory());
             }
             obj.setAttribute(methodName, value);
         }
@@ -581,7 +575,7 @@ public final class Python3Core implements PythonCore {
         if (url != null) {
             // This path is hit when we load the core library e.g. from a Jar file
             try {
-                return PythonLanguage.newSource(ctxt, new URL(url + suffix), basename);
+                return getLanguage().newSource(ctxt, new URL(url + suffix), basename);
             } catch (IOException e) {
                 throw new RuntimeException("Could not read core library from " + url);
             }
@@ -589,7 +583,7 @@ public final class Python3Core implements PythonCore {
             Env env = ctxt.getEnv();
             TruffleFile file = env.getTruffleFile(prefix + suffix);
             try {
-                return PythonLanguage.newSource(ctxt, file, basename);
+                return getLanguage().newSource(ctxt, file, basename);
             } catch (SecurityException | IOException t) {
                 throw new RuntimeException("Could not read core library from " + file);
             }
@@ -605,13 +599,6 @@ public final class Python3Core implements PythonCore {
             mod = factory().createPythonModule("__anonymous__");
         }
         callTarget.call(PArguments.withGlobals(mod));
-    }
-
-    private void findKnownExceptionTypes() {
-        errorClasses = new PythonClass[PythonErrorType.VALUES.length];
-        for (PythonErrorType type : PythonErrorType.VALUES) {
-            errorClasses[type.ordinal()] = (PythonClass) builtinsModule.getAttribute(type.name());
-        }
     }
 
     @TruffleBoundary
@@ -639,5 +626,23 @@ public final class Python3Core implements PythonCore {
 
     public PInt getFalse() {
         return pyFalse;
+    }
+
+    public RuntimeException raiseInvalidSyntax(Source source, SourceSection section) {
+        Node location = new Node() {
+            @Override
+            public SourceSection getSourceSection() {
+                return section;
+            }
+        };
+        PBaseException instance;
+        instance = factory().createBaseException(SyntaxError, "invalid syntax", new Object[0]);
+        String path = source.getPath();
+        instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
+        instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : "");
+        instance.setAttribute("lineno", section.getStartLine());
+        instance.setAttribute("offset", section.getStartColumn());
+        instance.setAttribute("msg", section.getCharIndex() == source.getLength() ? "unexpected EOF while parsing" : "invalid syntax");
+        throw PException.fromObject(instance, location);
     }
 }

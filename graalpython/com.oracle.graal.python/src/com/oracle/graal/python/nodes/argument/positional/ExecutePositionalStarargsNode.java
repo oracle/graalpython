@@ -51,12 +51,12 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ExecutePositionalStarargsNode extends PNodeWithContext {
     public abstract Object[] executeWith(Object starargs);
@@ -116,7 +116,7 @@ public abstract class ExecutePositionalStarargsNode extends PNodeWithContext {
     Object[] starargs(Object object,
                     @Cached("create()") GetIteratorNode getIterator,
                     @Cached("create()") GetNextNode next,
-                    @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                    @Cached("create()") IsBuiltinClassProfile errorProfile) {
         Object iterator = getIterator.executeWith(object);
         if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
             ArrayList<Object> internalStorage = new ArrayList<>();
@@ -124,7 +124,7 @@ public abstract class ExecutePositionalStarargsNode extends PNodeWithContext {
                 try {
                     internalStorage.add(next.execute(iterator));
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     return internalStorage.toArray();
                 }
             }

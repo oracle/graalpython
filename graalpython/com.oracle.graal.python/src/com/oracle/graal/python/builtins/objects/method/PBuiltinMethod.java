@@ -29,7 +29,7 @@ import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 
@@ -40,7 +40,7 @@ public class PBuiltinMethod extends PythonBuiltinObject implements PythonCallabl
     private final Object self;
     private final RootCallTarget callTarget;
 
-    public PBuiltinMethod(PythonClass clazz, Object self, PBuiltinFunction function) {
+    public PBuiltinMethod(LazyPythonClass clazz, Object self, PBuiltinFunction function) {
         super(clazz);
         this.self = self;
         this.function = function;

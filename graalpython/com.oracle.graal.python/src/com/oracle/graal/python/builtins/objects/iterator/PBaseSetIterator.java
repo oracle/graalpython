@@ -27,12 +27,12 @@ package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.dict.PJavaIteratorIterator;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public final class PBaseSetIterator extends PJavaIteratorIterator<Object> {
     private final PBaseSet set;
 
-    public PBaseSetIterator(PythonClass clazz, PBaseSet set) {
+    public PBaseSetIterator(LazyPythonClass clazz, PBaseSet set) {
         super(clazz, set.getDictStorage().keys().iterator());
         this.set = set;
     }

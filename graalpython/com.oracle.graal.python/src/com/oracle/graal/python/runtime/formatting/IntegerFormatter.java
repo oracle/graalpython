@@ -118,7 +118,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
 
                 default:
                     // Should never get here, since this was checked in caller.
-                    throw unknownFormat(core, spec.type, "long");
+                    throw unknownFormat(errors, spec.type, "long");
             }
 
             // If required to, group the whole-part digits.
@@ -234,7 +234,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
         // Limit is 256 if we're formatting for byte output, unicode range otherwise.
         BigInteger limit = bytes ? LIMIT_BYTE : LIMIT_UNICODE;
         if (value.signum() < 0 || value.compareTo(limit) >= 0) {
-            throw core.raise(OverflowError, "%c arg not in range(0x%s)", toHexString(limit));
+            throw errors.raise(OverflowError, "%c arg not in range(0x%s)", toHexString(limit));
         } else {
             result.appendCodePoint(value.intValue());
         }
@@ -302,7 +302,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
 
                 default:
                     // Should never get here, since this was checked in caller.
-                    throw unknownFormat(core, spec.type, "integer");
+                    throw unknownFormat(errors, spec.type, "integer");
             }
 
             // If required to, group the whole-part digits.
@@ -417,7 +417,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
         // Limit is 256 if we're formatting for byte output, unicode range otherwise.
         int limit = bytes ? 256 : LIMIT_UNICODE.intValue() + 1;
         if (value < 0 || value >= limit) {
-            throw core.raise(OverflowError, "%c arg not in range(0x%x)", limit);
+            throw errors.raise(OverflowError, "%c arg not in range(0x%x)", limit);
         } else {
             result.appendCodePoint(value);
         }
@@ -644,12 +644,12 @@ public class IntegerFormatter extends InternalFormat.Formatter {
         @Override
         void format_c(BigInteger value) {
             if (value.signum() < 0) {
-                throw core.raise(OverflowError, "unsigned byte integer is less than minimum");
+                throw errors.raise(OverflowError, "unsigned byte integer is less than minimum");
             } else {
                 // Limit is 256 if we're formatting for byte output, unicode range otherwise.
                 BigInteger limit = bytes ? LIMIT_BYTE : LIMIT_UNICODE;
                 if (value.compareTo(limit) >= 0) {
-                    throw core.raise(OverflowError, "unsigned byte integer is greater than maximum");
+                    throw errors.raise(OverflowError, "unsigned byte integer is greater than maximum");
                 } else {
                     result.appendCodePoint(value.intValue());
                 }
@@ -687,12 +687,12 @@ public class IntegerFormatter extends InternalFormat.Formatter {
         @Override
         void format_c(int value) {
             if (value < 0) {
-                throw core.raise(OverflowError, "unsigned byte integer is less than minimum");
+                throw errors.raise(OverflowError, "unsigned byte integer is less than minimum");
             } else {
                 // Limit is 256 if we're formatting for byte output, unicode range otherwise.
                 int limit = bytes ? 256 : LIMIT_UNICODE.intValue() + 1;
                 if (value >= limit) {
-                    throw core.raise(OverflowError, "unsigned byte integer is greater than maximum");
+                    throw errors.raise(OverflowError, "unsigned byte integer is greater than maximum");
                 } else {
                     result.appendCodePoint(value);
                 }

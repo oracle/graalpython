@@ -40,13 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.PyProcsWrapper.GetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PyProcsWrapper.SetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PyProcsWrapper.SsizeargfuncWrapper;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
@@ -57,7 +57,6 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @MessageResolution(receiverType = PyProcsWrapper.class)
 public class PyProcsWrapperMR {
@@ -67,7 +66,7 @@ public class PyProcsWrapperMR {
         @Child PythonMessageResolution.ExecuteNode executeNode;
         @Child private ToSulongNode toSulongNode;
         @Child private ToJavaNode toJavaNode;
-        @CompilationFinal ConditionProfile attributeErrorProfile;
+        @CompilationFinal private IsBuiltinClassProfile attributeErrorProfile;
         @CompilationFinal ContextReference<PythonContext> contextRef;
 
         public Object access(GetAttrWrapper object, Object[] arguments) {
@@ -82,18 +81,10 @@ public class PyProcsWrapperMR {
                 result = getExecuteNode().execute(object.getDelegate(), converted);
             } catch (PException e) {
                 // TODO move to node
-                e.expectAttributeError(getContext().getCore(), getProfile());
+                e.expectAttributeError(getProfile());
                 result = PNone.NO_VALUE;
             }
             return getToSulongNode().execute(result);
-        }
-
-        private PythonContext getContext() {
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = PythonLanguage.getContextRef();
-            }
-            return contextRef.get();
         }
 
         public Object access(SetAttrWrapper object, Object[] arguments) {
@@ -137,10 +128,10 @@ public class PyProcsWrapperMR {
             return executeNode;
         }
 
-        private ConditionProfile getProfile() {
+        private IsBuiltinClassProfile getProfile() {
             if (attributeErrorProfile == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                attributeErrorProfile = ConditionProfile.createBinaryProfile();
+                attributeErrorProfile = IsBuiltinClassProfile.create();
             }
             return attributeErrorProfile;
         }

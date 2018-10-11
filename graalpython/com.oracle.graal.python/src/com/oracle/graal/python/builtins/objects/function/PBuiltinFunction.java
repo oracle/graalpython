@@ -29,9 +29,9 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -44,12 +44,12 @@ import com.oracle.truffle.api.nodes.RootNode;
 public final class PBuiltinFunction extends PythonBuiltinObject implements PythonCallable, BoundBuiltinCallable<PBuiltinFunction> {
 
     private final String name;
-    private final PythonClass enclosingType;
+    private final LazyPythonClass enclosingType;
     private final RootCallTarget callTarget;
     private final Arity arity;
     private final boolean isStatic;
 
-    public PBuiltinFunction(PythonClass clazz, String name, PythonClass enclosingType, Arity arity, RootCallTarget callTarget) {
+    public PBuiltinFunction(LazyPythonClass clazz, String name, LazyPythonClass enclosingType, Arity arity, RootCallTarget callTarget) {
         super(clazz);
         this.name = name;
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
@@ -97,7 +97,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Pytho
         return name;
     }
 
-    public PythonClass getEnclosingType() {
+    public LazyPythonClass getEnclosingType() {
         return enclosingType;
     }
 
@@ -111,13 +111,11 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Pytho
         }
     }
 
-    public PBuiltinFunction boundToObject(Object klass, PythonObjectFactory factory) {
+    public PBuiltinFunction boundToObject(PythonBuiltinClassType klass, PythonObjectFactory factory) {
         if (klass == enclosingType) {
             return this;
-        } else if (klass instanceof PythonModule) {
-            return this;
         } else {
-            return factory.createBuiltinFunction(name, (PythonClass) klass, arity, callTarget);
+            return factory.createBuiltinFunction(name, klass, arity, callTarget);
         }
     }
 }

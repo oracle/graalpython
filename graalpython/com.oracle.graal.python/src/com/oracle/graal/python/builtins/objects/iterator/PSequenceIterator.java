@@ -26,14 +26,14 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 
 public final class PSequenceIterator extends PBuiltinIterator {
     protected final Object sequence;
     protected int index = 0;
 
-    public PSequenceIterator(PythonClass clazz, Object sequence) {
+    public PSequenceIterator(LazyPythonClass clazz, Object sequence) {
         super(clazz);
         this.sequence = sequence;
     }

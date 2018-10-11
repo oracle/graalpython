@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -77,6 +78,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -237,10 +239,11 @@ public class ObjectBuiltins extends PythonBuiltins {
         private final BranchProfile hasValueProfile = BranchProfile.create();
         private final BranchProfile errorProfile = BranchProfile.create();
         private final ConditionProfile typeIsObjectProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile getClassProfile = ConditionProfile.createBinaryProfile();
 
         @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
-        @Child private GetClassNode getObjectClassNode = GetClassNode.create();
-        @Child private GetClassNode getDataClassNode;
+        @Child private GetLazyClassNode getObjectClassNode = GetLazyClassNode.create();
+        @Child private GetLazyClassNode getDataClassNode;
         @Child private LookupAttributeInMRONode lookupGetNode;
         @Child private LookupAttributeInMRONode lookupSetNode;
         @Child private LookupAttributeInMRONode lookupDeleteNode;
@@ -250,9 +253,9 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(Object object, Object key) {
-            PythonClass type = getObjectClassNode.execute(object);
+            LazyPythonClass type = getObjectClassNode.execute(object);
             Object descr = lookup.execute(type, key);
-            PythonClass dataDescClass = null;
+            LazyPythonClass dataDescClass = null;
             if (descr != PNone.NO_VALUE) {
                 hasDescProfile.enter();
                 dataDescClass = getDataClass(descr);
@@ -266,7 +269,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                     Object get = lookupGet(dataDescClass);
                     if (get instanceof PythonCallable) {
                         // Only override if __get__ is defined, too, for compatibility with CPython.
-                        return dispatch(object, type, descr, get);
+                        return dispatch(object, getPythonClass(type, getClassProfile), descr, get);
                     }
                 }
             }
@@ -289,7 +292,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 if (get == PNone.NO_VALUE) {
                     return descr;
                 } else if (get instanceof PythonCallable) {
-                    return dispatch(object, type, descr, get);
+                    return dispatch(object, getPythonClass(type, getClassProfile), descr, get);
                 }
             }
             errorProfile.enter();
@@ -320,7 +323,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             return dispatchGet.execute(get, descr, typeIsObjectProfile.profile(type == object) ? PNone.NONE : object, type);
         }
 
-        private Object lookupGet(PythonClass dataDescClass) {
+        private Object lookupGet(LazyPythonClass dataDescClass) {
             if (lookupGetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupGetNode = insert(LookupAttributeInMRONode.create(__GET__));
@@ -328,7 +331,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             return lookupGetNode.execute(dataDescClass);
         }
 
-        private Object lookupDelete(PythonClass dataDescClass) {
+        private Object lookupDelete(LazyPythonClass dataDescClass) {
             if (lookupDeleteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupDeleteNode = insert(LookupAttributeInMRONode.create(__DELETE__));
@@ -336,7 +339,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             return lookupDeleteNode.execute(dataDescClass);
         }
 
-        private Object lookupSet(PythonClass dataDescClass) {
+        private Object lookupSet(LazyPythonClass dataDescClass) {
             if (lookupSetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupSetNode = insert(LookupAttributeInMRONode.create(__SET__));
@@ -344,10 +347,10 @@ public class ObjectBuiltins extends PythonBuiltins {
             return lookupSetNode.execute(dataDescClass);
         }
 
-        private PythonClass getDataClass(Object descr) {
+        private LazyPythonClass getDataClass(Object descr) {
             if (getDataClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDataClassNode = insert(GetClassNode.create());
+                getDataClassNode = insert(GetLazyClassNode.create());
             }
             return getDataClassNode.execute(descr);
         }
@@ -367,13 +370,13 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization
         protected PNone doIt(Object object, Object key, Object value,
-                        @Cached("create()") GetClassNode getObjectClassNode,
+                        @Cached("create()") GetLazyClassNode getObjectClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
                         @Cached("create(__SET__)") LookupAttributeInMRONode lookupSetNode,
                         @Cached("create()") CallTernaryMethodNode callSetNode,
                         @Cached("create()") WriteAttributeToObjectNode writeNode) {
-            PythonClass type = getObjectClassNode.execute(object);
+            LazyPythonClass type = getObjectClassNode.execute(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
                 PythonClass dataDescClass = getDataClassNode.execute(descr);
@@ -399,14 +402,14 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization
         protected PNone doIt(Object object, Object key,
-                        @Cached("create()") GetClassNode getObjectClassNode,
+                        @Cached("create()") GetLazyClassNode getObjectClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
                         @Cached("create(__DELETE__)") LookupAttributeInMRONode lookupDeleteNode,
                         @Cached("create()") CallBinaryMethodNode callSetNode,
                         @Cached("create()") ReadAttributeFromObjectNode attrRead,
                         @Cached("create()") WriteAttributeToObjectNode writeNode) {
-            PythonClass type = getObjectClassNode.execute(object);
+            LazyPythonClass type = getObjectClassNode.execute(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
                 PythonClass dataDescClass = getDataClassNode.execute(descr);
