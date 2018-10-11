@@ -55,13 +55,13 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -94,7 +94,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L149
         @Specialization
         Object get(GetSetDescriptor descr, Object obj, PythonClass type) {
-            if (descr_check(getCore(), descr, obj, type)) {
+            if (descr_check(this, descr, obj, type)) {
                 return descr;
             }
             if (descr.getGet() != null) {
@@ -116,7 +116,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object set(GetSetDescriptor descr, Object obj, Object value) {
             // the noneType is not important here - there are no setters on None
-            if (descr_check(getCore(), descr, obj, getClassNode.execute(obj))) {
+            if (descr_check(this, descr, obj, getClassNode.execute(obj))) {
                 return descr;
             }
             if (descr.getSet() != null) {
@@ -129,7 +129,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     }
 
     // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
-    private static boolean descr_check(PythonCore core, GetSetDescriptor descr, Object obj, PythonClass type) {
+    private static boolean descr_check(PNodeWithContext node, GetSetDescriptor descr, Object obj, PythonClass type) {
         if (PGuards.isNone(obj)) {
             if (!(type instanceof PythonBuiltinClass) || ((PythonBuiltinClass) type).getType() != PythonBuiltinClassType.PNone) {
                 return true;
@@ -141,6 +141,6 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             }
         }
 
-        throw core.raise(TypeError, "descriptor '%s' for '%s' objects doesn't apply to '%s' object", descr.getName(), descr.getType().getName(), type.getName());
+        throw node.raise(TypeError, "descriptor '%s' for '%s' objects doesn't apply to '%s' object", descr.getName(), descr.getType().getName(), type.getName());
     }
 }

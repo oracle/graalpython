@@ -62,6 +62,12 @@ public final class PException extends RuntimeException implements TruffleExcepti
         this.location = node;
     }
 
+    public static PException fromObject(PBaseException actual, Node node) {
+        PException pException = new PException(actual, node);
+        actual.setException(pException);
+        return pException;
+    }
+
     @Override
     public String getMessage() {
         if (message == null) {

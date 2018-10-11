@@ -76,19 +76,20 @@ public abstract class PNodeWithContext extends Node {
     }
 
     public final PException raise(PBaseException exc) {
-        throw getCore().raise(exc, this);
+        throw PException.fromObject(exc, this);
     }
 
     public final PException raise(PythonErrorType type) {
-        throw getCore().raise(type, this);
+        throw raise(getCore().getErrorClass(type));
     }
 
-    public final PException raise(PythonErrorType type, String format) {
-        throw getCore().raise(type, this, format);
+    public PException raise(PythonClass exceptionType) {
+        throw raise(factory().createBaseException(exceptionType));
     }
 
     public final PException raise(PythonErrorType type, String format, Object... arguments) {
-        throw getCore().raise(type, this, format, arguments);
+        assert format != null;
+        throw raise(factory().createBaseException(getCore().getErrorClass(type), format, arguments));
     }
 
     public final PException raiseIndexError() {

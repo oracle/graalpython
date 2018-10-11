@@ -110,7 +110,7 @@ public abstract class SetNodes {
 
         @Fallback
         public PSet setObject(@SuppressWarnings("unused") Object cls, Object value) {
-            throw getCore().raise(TypeError, this, "'%p' object is not iterable", value);
+            throw raise(TypeError, "'%p' object is not iterable", value);
         }
 
         private SetItemNode getSetItemNode() {

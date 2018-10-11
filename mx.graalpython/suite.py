@@ -4,7 +4,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "5.181.1",
+    "mxversion": "5.190.1",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -86,6 +86,47 @@ suite = {
     #  PROJECTS
     #
     # --------------------------------------------------------------------------------------------------------------
+    "externalProjects": {
+        "lib.python": {
+            "type": "python",
+            "path": 'graalpython/lib-python',
+            "source": [
+                "3"
+            ]
+        },
+
+        "lib.graalpython": {
+            "type": "python",
+            "path": 'graalpython/lib-graalpython',
+            "source": []
+        },
+
+        "perf.benchmarks": {
+            "type": "python",
+            "path": 'graalpython/benchmarks',
+            "source": [
+                "src"
+            ]
+        },
+
+        "util.scripts": {
+            "type": "python",
+            "path": 'scripts',
+            "source": []
+        },
+
+        "com.oracle.graal.python.cext": {
+            "type": "python",
+            "path": "graalpython/com.oracle.graal.python.cext",
+            "source": [
+                "include",
+                "src",
+                "modules"
+            ]
+        },
+    },
+
+
     "projects": {
         # GRAALPYTHON ANTLR
         "com.oracle.graal.python.parser.antlr": {
