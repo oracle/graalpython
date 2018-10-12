@@ -74,6 +74,7 @@ public final class NativeMemberNames {
     public static final String TP_ITERNEXT = "tp_iternext";
     public static final String TP_NEW = "tp_new";
     public static final String TP_DICT = "tp_dict";
+    public static final String TP_MRO = "tp_mro";
     public static final String _BASE = "_base";
     public static final String OB_ITEM = "ob_item";
     public static final String SQ_ITEM = "sq_item";

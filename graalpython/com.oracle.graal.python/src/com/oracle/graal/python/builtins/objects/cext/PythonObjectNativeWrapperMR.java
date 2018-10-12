@@ -388,6 +388,11 @@ public class PythonObjectNativeWrapperMR {
             return object.getNativeWrapper().getNameWrapper();
         }
 
+        @Specialization(guards = "eq(TP_MRO, key)")
+        Object doTpMro(PythonClass object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(factory().createTuple(object.getMethodResolutionOrder()));
+        }
+
         @Specialization(guards = "eq(TP_BASE, key)")
         Object doTpBase(PythonClass object, @SuppressWarnings("unused") String key) {
             PythonClass superClass = object.getSuperClass();
