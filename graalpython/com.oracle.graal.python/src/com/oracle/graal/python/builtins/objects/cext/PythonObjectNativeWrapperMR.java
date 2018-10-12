@@ -943,7 +943,9 @@ public class PythonObjectNativeWrapperMR {
         }
 
         private long ensureLong(Object nativePointer) {
-            if (nativePointer instanceof TruffleObject) {
+            if (nativePointer instanceof Long) {
+                return (long) nativePointer;
+            } else {
                 if (asPointerNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     asPointerNode = insert(Message.AS_POINTER.createNode());
@@ -955,7 +957,6 @@ public class PythonObjectNativeWrapperMR {
                     throw e.raise();
                 }
             }
-            return (long) nativePointer;
         }
 
         protected static boolean isBoolNativeWrapper(Object obj) {
