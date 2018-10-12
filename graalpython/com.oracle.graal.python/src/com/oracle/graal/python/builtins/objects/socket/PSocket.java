@@ -44,7 +44,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectableChannel;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public class PSocket extends PythonBuiltinObject {
     public final static int AF_UNSPEC = 0;
@@ -75,7 +75,7 @@ public class PSocket extends PythonBuiltinObject {
 
     private SocketType socketType;
 
-    public PSocket(PythonClass cls, int family, int type, int proto) {
+    public PSocket(LazyPythonClass cls, int family, int type, int proto) {
         super(cls);
         this.family = family;
         this.type = type;

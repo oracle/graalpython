@@ -738,7 +738,7 @@ public final class PythonObjectFactory extends Node {
      */
 
     public PSocket createSocket(int family, int type, int proto) {
-        return trace(new PSocket(lookupClass(PythonBuiltinClassType.PSocket), family, type, proto));
+        return trace(new PSocket(PythonBuiltinClassType.PSocket, family, type, proto));
     }
 
     public PSocket createSocket(PythonClass cls, int family, int type, int proto) {
