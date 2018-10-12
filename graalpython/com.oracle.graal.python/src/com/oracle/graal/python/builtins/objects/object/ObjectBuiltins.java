@@ -81,6 +81,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -478,8 +479,10 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     static abstract class DictNode extends PythonBinaryBuiltinNode {
+        private final IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
+
         protected boolean isExactObjectInstance(PythonObject self) {
-            return lookupClass(PythonBuiltinClassType.PythonObject) == self.getPythonClass();
+            return isBuiltinClassProfile.profileObject(self, PythonBuiltinClassType.PythonObject);
         }
 
         @SuppressWarnings("unused")

@@ -47,6 +47,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Attribut
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -63,7 +64,7 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
 
     @Child LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
     @Child LookupAndCallBinaryNode dispatchGetAttr;
-    @CompilationFinal private ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
+    @CompilationFinal private IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
 
     protected GetAttributeNode(String key) {
         this.key = key;
@@ -88,7 +89,7 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
         try {
             return dispatchNode.executeInt(object, key);
         } catch (PException pe) {
-            pe.expect(AttributeError, getCore(), errorProfile);
+            pe.expect(AttributeError, isBuiltinClassProfile);
             return getDispatchGetAttr().executeInt(object, key);
         }
     }
@@ -98,7 +99,7 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
         try {
             return dispatchNode.executeBool(object, key);
         } catch (PException pe) {
-            pe.expect(AttributeError, getCore(), errorProfile);
+            pe.expect(AttributeError, isBuiltinClassProfile);
             return getDispatchGetAttr().executeBool(object, key);
         }
     }
@@ -108,7 +109,7 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
         try {
             return dispatchNode.executeObject(object, key);
         } catch (PException pe) {
-            pe.expect(AttributeError, getCore(), errorProfile);
+            pe.expect(AttributeError, isBuiltinClassProfile);
             return getDispatchGetAttr().executeObject(object, key);
         }
     }
