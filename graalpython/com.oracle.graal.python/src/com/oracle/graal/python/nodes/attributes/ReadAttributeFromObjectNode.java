@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
@@ -175,9 +176,10 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
 
     @Specialization(guards = "isForeignObject(object)")
     protected Object readForeign(TruffleObject object, Object key,
+                    @Cached("create()") PForeignToPTypeNode fromForeign,
                     @Cached("createReadNode()") Node readNode) {
         try {
-            return ForeignAccess.sendRead(readNode, object, attrKey(key));
+            return fromForeign.executeConvert(ForeignAccess.sendRead(readNode, object, attrKey(key)));
         } catch (UnknownIdentifierException | UnsupportedMessageException e) {
             return PNone.NO_VALUE;
         }
