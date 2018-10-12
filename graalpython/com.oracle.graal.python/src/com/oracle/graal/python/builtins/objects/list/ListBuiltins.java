@@ -36,6 +36,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
@@ -72,10 +73,10 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -83,9 +84,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -121,23 +120,15 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public Object repr(Object self,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode repr,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+        public Object repr(PList self,
+                        @Cached("create(__REPR__)") LookupAndCallUnaryNode repr) {
             StringBuilder result = new StringBuilder("[");
-            Object iterator = getIterator.executeWith(self);
+            SequenceStorage storage = self.getSequenceStorage();
             boolean initial = true;
-            while (true) {
-                Object value;
-                try {
-                    value = next.execute(iterator);
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    return result.append(']').toString();
-                }
-                Object reprString;
+            Object value;
+            Object reprString;
+            for (int index = 0; index < storage.length(); index++) {
+                value = storage.getItemNormalized(index);
                 if (self != value) {
                     reprString = repr.executeObject(value);
                     if (reprString instanceof PString) {
@@ -157,7 +148,55 @@ public class ListBuiltins extends PythonBuiltins {
                     raise(PythonErrorType.TypeError, "__repr__ returned non-string (type %s)", reprString);
                 }
             }
+            return result.append("]").toString();
         }
+    }
+
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class ListInitNode extends PythonBinaryBuiltinNode {
+
+        public abstract PNone execute(PList list, Object source);
+
+        @Specialization
+        public PNone init(PList list, String value,
+                        @Cached("create()") ListAppendNode appendNode) {
+            clearStorage(list);
+            char[] chars = value.toCharArray();
+            for (char c : chars) {
+                appendNode.execute(list, Character.toString(c));
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNoValue(none)")
+        @SuppressWarnings("unused")
+        public PNone init(PList list, PNone none) {
+            clearStorage(list);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
+        public PNone listIterable(PList list, Object iterable,
+                        @Cached("create()") GetIteratorNode getIteratorNode,
+                        @Cached("create()") CreateStorageFromIteratorNode storageNode) {
+            clearStorage(list);
+            Object iterObj = getIteratorNode.executeWith(iterable);
+            list.setSequenceStorage(storageNode.execute(iterObj));
+            return PNone.NONE;
+        }
+
+        private static void clearStorage(PList list) {
+            if (EmptySequenceStorage.INSTANCE != list.getSequenceStorage()) {
+                list.setSequenceStorage(EmptySequenceStorage.INSTANCE);
+            }
+        }
+
+        protected boolean isPSequence(Object value) {
+            return value instanceof PSequence;
+        }
+
     }
 
     @Builtin(name = __DELITEM__, fixedNumOfPositionalArgs = 2)
@@ -286,6 +325,10 @@ public class ListBuiltins extends PythonBuiltins {
 
         protected static SequenceStorageNodes.ExtendNode createExtend() {
             return SequenceStorageNodes.ExtendNode.create(() -> ListGeneralizationNode.create());
+        }
+
+        public static ListExtendNode create() {
+            return ListBuiltinsFactory.ListExtendNodeFactory.create();
         }
     }
 

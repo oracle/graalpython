@@ -109,7 +109,6 @@ import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -1209,9 +1208,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class ListNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        protected PList constructList(PythonClass cls, Object value,
-                        @Cached("create()") ConstructListNode constructListNode) {
-            return constructListNode.execute(cls, value);
+        protected PList constructList(PythonClass cls, @SuppressWarnings("unused") Object value) {
+            return factory().createList(cls);
         }
 
         @Fallback

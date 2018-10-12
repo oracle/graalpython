@@ -21,18 +21,17 @@ class CommonTest(seq_tests.CommonTest):
         # Init clears previous values
         a = self.type2test([1, 2, 3])
         a.__init__()
-# XXX We need to implement __init__ node? 
-#        self.assertEqual(a, self.type2test([]))
+        self.assertEqual(a, self.type2test([]))
 
         # Init overwrites previous values
         a = self.type2test([1, 2, 3])
         a.__init__([4, 5, 6])
-#        self.assertEqual(a, self.type2test([4, 5, 6]))
+        self.assertEqual(a, self.type2test([4, 5, 6]))
 
         # Mutables always return a new object
         b = self.type2test(a)
-#        self.assertNotEqual(id(a), id(b))
-#        self.assertEqual(a, b)
+        self.assertNotEqual(id(a), id(b))
+        self.assertEqual(a, b)
     
 # TODO No assertRaiseRegex available
 #    def test_getitem_error(self):
