@@ -247,7 +247,7 @@ uint64_t PyTruffle_Wchar_Size() {
     return SIZEOF_WCHAR_T;
 }
 
-void* PyObjectHandle_ForJavaObject(void* cobj, unsigned long flags) {
+void* PyObjectHandle_ForJavaObject(void* cobj) {
     if (truffle_cannot_be_handle(cobj)) {
         return truffle_deref_handle_for_managed(cobj);
     }
