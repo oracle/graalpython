@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cell;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.Assumption;
@@ -55,7 +54,7 @@ public class PCell extends PythonBuiltinObject {
     private Object ref;
 
     public PCell() {
-        super(PythonLanguage.getCore().lookupType(PythonBuiltinClassType.PCell));
+        super(PythonBuiltinClassType.PCell);
     }
 
     public Object getRef() {

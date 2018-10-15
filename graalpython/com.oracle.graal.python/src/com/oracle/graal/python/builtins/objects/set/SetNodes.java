@@ -45,12 +45,13 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -59,7 +60,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateNodeFactory
 public abstract class SetNodes {
@@ -68,15 +68,15 @@ public abstract class SetNodes {
     public abstract static class ConstructSetNode extends PNodeWithContext {
         @Child private SetItemNode setItemNode;
 
-        public abstract PSet execute(Object cls, Object value);
+        public abstract PSet execute(LazyPythonClass cls, Object value);
 
         public final PSet executeWith(Object value) {
-            return this.execute(lookupClass(PythonBuiltinClassType.PSet), value);
+            return this.execute(PythonBuiltinClassType.PSet, value);
         }
 
         @Specialization
         @TruffleBoundary
-        public PSet setString(PythonClass cls, String arg) {
+        public PSet setString(LazyPythonClass cls, String arg) {
             PSet set = factory().createSet(cls);
             for (int i = 0; i < arg.length(); i++) {
                 getSetItemNode().execute(set, String.valueOf(arg.charAt(i)), PNone.NO_VALUE);
@@ -86,15 +86,15 @@ public abstract class SetNodes {
 
         @Specialization(guards = "emptyArguments(none)")
         @SuppressWarnings("unused")
-        public PSet set(PythonClass cls, PNone none) {
+        public PSet set(LazyPythonClass cls, PNone none) {
             return factory().createSet();
         }
 
         @Specialization(guards = "!isNoValue(iterable)")
-        public PSet setIterable(PythonClass cls, Object iterable,
+        public PSet setIterable(LazyPythonClass cls, Object iterable,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
 
             PSet set = factory().createSet(cls);
             Object iterator = getIterator.executeWith(iterable);
@@ -102,15 +102,15 @@ public abstract class SetNodes {
                 try {
                     getSetItemNode().execute(set, next.execute(iterator), PNone.NO_VALUE);
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     return set;
                 }
             }
         }
 
         @Fallback
-        public PSet setObject(@SuppressWarnings("unused") Object cls, Object value) {
-            throw getCore().raise(TypeError, this, "'%p' object is not iterable", value);
+        public PSet setObject(@SuppressWarnings("unused") LazyPythonClass cls, Object value) {
+            throw raise(TypeError, "'%p' object is not iterable", value);
         }
 
         private SetItemNode getSetItemNode() {

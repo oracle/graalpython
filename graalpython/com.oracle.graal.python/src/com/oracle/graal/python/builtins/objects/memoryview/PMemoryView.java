@@ -41,11 +41,11 @@
 package com.oracle.graal.python.builtins.objects.memoryview;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public class PMemoryView extends PythonBuiltinObject {
 
-    public PMemoryView(PythonClass cls, @SuppressWarnings("unused") Object obj) {
+    public PMemoryView(LazyPythonClass cls, @SuppressWarnings("unused") Object obj) {
         super(cls);
     }
 

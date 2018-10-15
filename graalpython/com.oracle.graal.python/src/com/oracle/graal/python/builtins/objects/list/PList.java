@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.list;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
@@ -35,7 +35,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 public final class PList extends PSequence {
     private SequenceStorage store;
 
-    public PList(PythonClass cls, SequenceStorage store) {
+    public PList(LazyPythonClass cls, SequenceStorage store) {
         super(cls);
         this.store = store;
     }

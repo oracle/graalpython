@@ -136,7 +136,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNull(self)", "isBoxed(self)"})
-        Object doForeignBoxed(TruffleObject self) {
+        boolean doForeignBoxed(TruffleObject self) {
             try {
                 return getCastToBooleanNode().executeWith(unboxLeft(self));
             } catch (UnsupportedMessageException e) {
@@ -145,7 +145,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isForeignArray(self)")
-        Object doForeignArray(TruffleObject self,
+        boolean doForeignArray(TruffleObject self,
                         @Cached("GET_SIZE.createNode()") Node sizeNode) {
             try {
                 return getCastToBooleanNode().executeWith(ForeignAccess.sendGetSize(sizeNode, self));
@@ -155,7 +155,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isForeignObject(self)", "!isBoxed(self)", "!isForeignArray(self)"})
-        Object doForeignObject(TruffleObject self) {
+        boolean doForeignObject(TruffleObject self) {
             return !isNull(self);
         }
 
@@ -778,7 +778,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object o) {
+        PNone doGeneric(@SuppressWarnings("unused") Object o) {
             return PNone.NONE;
         }
 
@@ -867,13 +867,14 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetattrNode extends UnboxNode {
         @Specialization(guards = "isForeignObject(object)")
-        protected Object doIt(TruffleObject object, Object key, Object value,
+        protected PNone doIt(TruffleObject object, Object key, Object value,
                         @Cached("WRITE.createNode()") Node writeNode) {
             try {
-                return ForeignAccess.sendWrite(writeNode, object, key, value);
+                ForeignAccess.sendWrite(writeNode, object, key, value);
             } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException e) {
                 throw raise(PythonErrorType.AttributeError, "foreign object %s has no attribute %s", object, key);
             }
+            return PNone.NONE;
         }
     }
 
@@ -893,13 +894,14 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DelattrNode extends UnboxNode {
         @Specialization(guards = "isForeignObject(object)")
-        protected Object doIt(TruffleObject object, Object key,
+        protected PNone doIt(TruffleObject object, Object key,
                         @Cached("REMOVE.createNode()") Node delNode) {
             try {
-                return ForeignAccess.sendRemove(delNode, object, key);
+                ForeignAccess.sendRemove(delNode, object, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.AttributeError, "foreign object %s has no attribute %s", object, key);
             }
+            return PNone.NONE;
         }
     }
 
@@ -909,7 +911,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         AccessForeignItemNodes.RemoveForeignItemNode delForeignItemNode = AccessForeignItemNodes.RemoveForeignItemNode.create();
 
         @Specialization
-        Object doit(TruffleObject object, Object key) {
+        PNone doit(TruffleObject object, Object key) {
             delForeignItemNode.execute(object, key);
             return PNone.NONE;
         }

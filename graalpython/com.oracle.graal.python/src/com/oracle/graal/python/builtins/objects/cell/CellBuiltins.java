@@ -55,10 +55,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltinsFactory.GetRefNodeGen;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -121,13 +120,12 @@ public class CellBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public String repr(PCell self,
                         @Cached("create()") GetRefNode getRef,
-                        @Cached("create()") GetClassNode getClassNode) {
+                        @Cached("create()") GetLazyClassNode getClassNode) {
             Object ref = getRef.execute(self);
             if (ref == null) {
-                return String.format("<cell at %s: empty>", this.hashCode());
+                return String.format("<cell at %s: empty>", self.hashCode());
             }
-            PythonClass refClass = getClassNode.execute(ref);
-            return String.format("<cell at %s: %s object at %s>", this.hashCode(), refClass, ref.hashCode());
+            return String.format("<cell at %s: %s object at %s>", self.hashCode(), getClassNode.execute(ref).getName(), ref.hashCode());
         }
 
         @Fallback

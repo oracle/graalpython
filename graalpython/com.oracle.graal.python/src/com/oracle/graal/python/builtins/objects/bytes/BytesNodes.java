@@ -51,12 +51,13 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -65,7 +66,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class BytesNodes {
@@ -79,7 +79,7 @@ public abstract class BytesNodes {
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") ToBytesNode toBytesNode,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
             ArrayList<byte[]> parts = new ArrayList<>();
             int partsTotalSize = 0;
             Object iterator = getIteratorNode.executeWith(iterable);
@@ -87,7 +87,7 @@ public abstract class BytesNodes {
                 try {
                     partsTotalSize += append(parts, toBytesNode.execute(getNextNode.execute(iterator)));
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     return joinArrays(sep, parts, partsTotalSize);
                 }
             }
@@ -135,18 +135,23 @@ public abstract class BytesNodes {
 
         public abstract byte[] execute(Object obj);
 
-        @Specialization(rewriteOn = PException.class)
-        byte[] doBytes(PIBytesLike bytes) {
-            return getToByteArrayNode().execute(bytes.getSequenceStorage());
+        @Specialization
+        byte[] doBytes(PBytes bytes,
+                        @Cached("create()") IsBuiltinClassProfile exceptionProfile) {
+            return doBytesLike(bytes, exceptionProfile);
         }
 
-        @Specialization(replaces = "doBytes")
-        byte[] doBytesErro(PIBytesLike bytes,
-                        @Cached("createBinaryProfile()") ConditionProfile exceptionProfile) {
+        @Specialization
+        byte[] doByteArray(PByteArray byteArray,
+                        @Cached("create()") IsBuiltinClassProfile exceptionProfile) {
+            return doBytesLike(byteArray, exceptionProfile);
+        }
+
+        private byte[] doBytesLike(PIBytesLike bytes, IsBuiltinClassProfile exceptionProfile) {
             try {
                 return getToByteArrayNode().execute(bytes.getSequenceStorage());
             } catch (PException e) {
-                e.expect(TypeError, getCore(), exceptionProfile);
+                e.expect(TypeError, exceptionProfile);
                 return doError(bytes);
             }
         }

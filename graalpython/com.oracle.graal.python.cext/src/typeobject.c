@@ -232,10 +232,7 @@ int PyType_Ready(PyTypeObject* cls) {
     PyDict_SetItemString(native_members, "tp_name", polyglot_from_string(cls->tp_name, SRC_CS));
     PyDict_SetItemString(native_members, "tp_doc", polyglot_from_string(cls->tp_doc ? cls->tp_doc : "", SRC_CS));
     PyDict_SetItemString(native_members, "tp_basicsize", PyLong_FromSsize_t(cls->tp_basicsize));
-    const char* lastDot = strrchr(cls->tp_name, '.');
-    if (lastDot) {
-        PyDict_SetItemString(native_members, "__module__", polyglot_from_string(lastDot + 1, SRC_CS));
-    }
+    const char* class_name = cls->tp_name;
     PyTypeObject* javacls = polyglot_invoke(PY_TRUFFLE_CEXT,
                                             "PyType_Ready",
                                             // no conversion of cls here, because we

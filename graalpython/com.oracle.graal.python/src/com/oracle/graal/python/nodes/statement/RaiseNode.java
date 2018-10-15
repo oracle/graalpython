@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -50,7 +51,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @NodeChildren({@NodeChild(value = "type", type = ExpressionNode.class), @NodeChild(value = "cause", type = ExpressionNode.class)})
 public abstract class RaiseNode extends StatementNode {
 
-    private final ConditionProfile simpleBaseCheckProfile = ConditionProfile.createBinaryProfile();
+    private final IsBuiltinClassProfile simpleBaseCheckProfile = IsBuiltinClassProfile.create();
+    private final IsBuiltinClassProfile iterativeBaseCheckProfile = IsBuiltinClassProfile.create();
     private final BranchProfile baseCheckFailedProfile = BranchProfile.create();
 
     @Specialization
@@ -65,24 +67,23 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     @Specialization
-    public void raise(PBaseException exception, PNone cause) {
-        throw getCore().raise(exception, this);
+    public void doRaise(PBaseException exception, PNone cause) {
+        throw raise(exception);
     }
 
     @Specialization(guards = "!isPNone(cause)")
-    public void raise(PBaseException exception, Object cause,
+    public void doRaise(PBaseException exception, Object cause,
                     @Cached("create()") WriteAttributeToObjectNode writeCause) {
         writeCause.execute(exception, SpecialAttributeNames.__CAUSE__, cause);
-        throw getCore().raise(exception, this);
+        throw raise(exception);
     }
 
     private void checkBaseClass(PythonClass pythonClass) {
-        PythonClass baseExceptionClass = getCore().getErrorClass(BaseException);
-        if (simpleBaseCheckProfile.profile(pythonClass == baseExceptionClass)) {
+        if (simpleBaseCheckProfile.profileClass(pythonClass, BaseException)) {
             return;
         }
         for (PythonClass klass : pythonClass.getMethodResolutionOrder()) {
-            if (klass == baseExceptionClass) {
+            if (iterativeBaseCheckProfile.profileClass(klass, BaseException)) {
                 return;
             }
         }
@@ -91,22 +92,22 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     @Specialization
-    public void raise(PythonClass pythonClass, PNone cause) {
+    public void doRaise(PythonClass pythonClass, PNone cause) {
         checkBaseClass(pythonClass);
-        throw getCore().raise(factory().createBaseException(pythonClass), this);
+        throw raise(pythonClass);
     }
 
     @Specialization(guards = "!isPNone(cause)")
-    public void raise(PythonClass pythonClass, Object cause,
+    public void doRaise(PythonClass pythonClass, Object cause,
                     @Cached("create()") WriteAttributeToObjectNode writeCause) {
         checkBaseClass(pythonClass);
         PBaseException pythonException = factory().createBaseException(pythonClass);
         writeCause.execute(pythonException, SpecialAttributeNames.__CAUSE__, cause);
-        throw getCore().raise(pythonException, this);
+        throw raise(pythonException);
     }
 
     @Fallback
-    public void raise(Object exception, Object cause) {
+    public void doRaise(Object exception, Object cause) {
         throw raise(TypeError, "exceptions must derive from BaseException");
     }
 

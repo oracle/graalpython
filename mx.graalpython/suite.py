@@ -4,7 +4,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "5.181.1",
+    "mxversion": "5.190.1",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -25,7 +25,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "a8a599d132146bb0f87a2b95572db7d76b641b88",
+                "version": "97d30b8572cbae48cf8d8360f1dd4411f7cbaeec",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -33,7 +33,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "a8a599d132146bb0f87a2b95572db7d76b641b88",
+                "version": "97d30b8572cbae48cf8d8360f1dd4411f7cbaeec",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -86,6 +86,47 @@ suite = {
     #  PROJECTS
     #
     # --------------------------------------------------------------------------------------------------------------
+    "externalProjects": {
+        "lib.python": {
+            "type": "python",
+            "path": 'graalpython/lib-python',
+            "source": [
+                "3"
+            ]
+        },
+
+        "lib.graalpython": {
+            "type": "python",
+            "path": 'graalpython/lib-graalpython',
+            "source": []
+        },
+
+        "perf.benchmarks": {
+            "type": "python",
+            "path": 'graalpython/benchmarks',
+            "source": [
+                "src"
+            ]
+        },
+
+        "util.scripts": {
+            "type": "python",
+            "path": 'scripts',
+            "source": []
+        },
+
+        "com.oracle.graal.python.cext": {
+            "type": "python",
+            "path": "graalpython/com.oracle.graal.python.cext",
+            "source": [
+                "include",
+                "src",
+                "modules"
+            ]
+        },
+    },
+
+
     "projects": {
         # GRAALPYTHON ANTLR
         "com.oracle.graal.python.parser.antlr": {
@@ -123,6 +164,7 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "ANTLR4",
             ],
+            "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "1.8",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],

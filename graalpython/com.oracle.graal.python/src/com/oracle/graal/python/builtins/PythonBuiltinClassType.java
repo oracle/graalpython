@@ -25,84 +25,266 @@
  */
 package com.oracle.graal.python.builtins;
 
+import java.util.HashSet;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.object.Shape;
 
-public enum PythonBuiltinClassType {
+public enum PythonBuiltinClassType implements LazyPythonClass {
 
-    TruffleObject(com.oracle.truffle.api.interop.TruffleObject.class, "truffle_object"),
-    Boolean(java.lang.Boolean.class, "bool"),
-    GetSetDescriptor(com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor.class, "get_set_desc"),
-    PArray(com.oracle.graal.python.builtins.objects.array.PArray.class, "array"),
-    PArrayIterator(com.oracle.graal.python.builtins.objects.iterator.PArrayIterator.class, "arrayiterator"),
-    PBaseException(com.oracle.graal.python.builtins.objects.exception.PBaseException.class, "BaseException"),
-    PBaseSetIterator(com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator.class, "iterator"),
-    PBuiltinFunction(com.oracle.graal.python.builtins.objects.function.PBuiltinFunction.class, "method_descriptor"),
-    PBuiltinMethod(com.oracle.graal.python.builtins.objects.method.PBuiltinMethod.class, "builtin_function_or_method"),
-    PByteArray(com.oracle.graal.python.builtins.objects.bytes.PByteArray.class, "bytearray"),
-    PBytes(com.oracle.graal.python.builtins.objects.bytes.PBytes.class, "bytes"),
-    PCell(com.oracle.graal.python.builtins.objects.cell.PCell.class, "cell"),
-    PComplex(com.oracle.graal.python.builtins.objects.complex.PComplex.class, "complex"),
-    PDict(com.oracle.graal.python.builtins.objects.dict.PDict.class, "dict"),
-    PDictKeysView(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView.class, "dict_keys"),
-    PDictItemsIterator(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsIterator.class, "dict_itemsiterator"),
-    PDictItemsView(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView.class, "dict_items"),
-    PDictKeysIterator(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysIterator.class, "dict_keysiterator"),
-    PDictValuesIterator(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesIterator.class, "dict_valuesiterator"),
-    PDictValuesView(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView.class, "dict_values"),
-    PDoubleSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator.class, "iterator"),
-    PEllipsis(com.oracle.graal.python.builtins.objects.PEllipsis.class, "ellipsis"),
-    PEnumerate(com.oracle.graal.python.builtins.objects.enumerate.PEnumerate.class, "enumerate"),
-    PFloat(com.oracle.graal.python.builtins.objects.floats.PFloat.class, "float"),
-    PFrame(com.oracle.graal.python.builtins.objects.frame.PFrame.class, "frame"),
-    PFrozenSet(com.oracle.graal.python.builtins.objects.set.PFrozenSet.class, "frozenset"),
-    PFunction(com.oracle.graal.python.builtins.objects.function.PFunction.class, "function"),
-    PGenerator(com.oracle.graal.python.builtins.objects.generator.PGenerator.class, "generator"),
-    PGeneratorFunction(com.oracle.graal.python.builtins.objects.function.PGeneratorFunction.class, "function"),
-    PInt(com.oracle.graal.python.builtins.objects.ints.PInt.class, "int"),
-    PIntegerSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator.class, "iterator"),
-    PList(com.oracle.graal.python.builtins.objects.list.PList.class, "list"),
-    PLongSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator.class, "iterator"),
-    PMappingproxy(com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy.class, "mappingproxy"),
-    PMemoryView(com.oracle.graal.python.builtins.objects.memoryview.PMemoryView.class, "memoryview"),
-    PMethod(com.oracle.graal.python.builtins.objects.method.PMethod.class, "method"),
-    PNone(com.oracle.graal.python.builtins.objects.PNone.class, "NoneType"),
-    PNotImplemented(com.oracle.graal.python.builtins.objects.PNotImplemented.class, "NotImplementedType"),
-    PRandom(com.oracle.graal.python.builtins.objects.random.PRandom.class, "random"),
-    PRange(com.oracle.graal.python.builtins.objects.range.PRange.class, "range"),
-    PRangeIterator(com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.class, "iterator"),
-    PRangeReverseIterator(com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator.class, "iterator"),
-    PReferenceType(com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.class, "ReferenceType"),
-    PSentinelIterator(com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator.class, "callable_iterator"),
-    PSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator.class, "iterator"),
-    PForeignArrayIterator(com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator.class, "foreign_iterator"),
-    PSequenceReverseIterator(com.oracle.graal.python.builtins.objects.reversed.PSequenceReverseIterator.class, "reversed"),
-    PSet(com.oracle.graal.python.builtins.objects.set.PSet.class, "set"),
-    PSlice(com.oracle.graal.python.builtins.objects.slice.PSlice.class, "slice"),
-    PString(com.oracle.graal.python.builtins.objects.str.PString.class, "str"),
-    PStringIterator(com.oracle.graal.python.builtins.objects.iterator.PStringIterator.class, "iterator"),
-    PStringReverseIterator(com.oracle.graal.python.builtins.objects.reversed.PStringReverseIterator.class, "reversed"),
-    PTraceback(com.oracle.graal.python.builtins.objects.traceback.PTraceback.class, "traceback"),
-    PTuple(com.oracle.graal.python.builtins.objects.tuple.PTuple.class, "tuple"),
-    PythonBuiltinClass(com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass.class, "type"),
-    PythonClass(com.oracle.graal.python.builtins.objects.type.PythonClass.class, "type"),
-    PythonNativeClass(com.oracle.graal.python.builtins.objects.cext.PythonNativeClass.class, "type"),
-    PythonModule(com.oracle.graal.python.builtins.objects.module.PythonModule.class, "module"),
-    PythonObject(com.oracle.graal.python.builtins.objects.object.PythonObject.class, "object"),
-    PythonNativeObject(com.oracle.graal.python.builtins.objects.cext.PythonNativeObject.class, "object"),
-    Super(com.oracle.graal.python.builtins.objects.superobject.SuperObject.class, "super"),
-    PCode(com.oracle.graal.python.builtins.objects.code.PCode.class, "code"),
-    PZip(com.oracle.graal.python.builtins.objects.iterator.PZip.class, "zip"),
-    PBuffer(com.oracle.graal.python.builtins.objects.memoryview.PBuffer.class, "buffer");
+    TruffleObject("truffle_object"),
+    Boolean("bool", "builtins"),
+    GetSetDescriptor("get_set_desc"),
+    PArray("array", "array"),
+    PArrayIterator("arrayiterator"),
+    PIterator("iterator"),
+    PBuiltinFunction("method_descriptor"),
+    PBuiltinMethod("builtin_function_or_method"),
+    PByteArray("bytearray", "builtins"),
+    PBytes("bytes", "builtins"),
+    PCell("cell"),
+    PComplex("complex", "builtins"),
+    PDict("dict", "builtins"),
+    PDictKeysView("dict_keys"),
+    PDictItemsIterator("dict_itemsiterator"),
+    PDictItemsView("dict_items"),
+    PDictKeysIterator("dict_keysiterator"),
+    PDictValuesIterator("dict_valuesiterator"),
+    PDictValuesView("dict_values"),
+    PEllipsis("ellipsis"),
+    PEnumerate("enumerate", "builtins"),
+    PFloat("float", "builtins"),
+    PFrame("frame"),
+    PFrozenSet("frozenset", "builtins"),
+    PFunction("function"),
+    PGenerator("generator"),
+    PInt("int", "builtins"),
+    PList("list", "builtins"),
+    PMappingproxy("mappingproxy"),
+    PMemoryView("memoryview", "builtins"),
+    PMethod("method"),
+    PNone("NoneType"),
+    PNotImplemented("NotImplementedType"),
+    PRandom("Random", "_random"),
+    PRange("range", "builtins"),
+    PReferenceType("ReferenceType", "_weakref"),
+    PSentinelIterator("callable_iterator"),
+    PForeignArrayIterator("foreign_iterator"),
+    PReverseIterator("reversed", "builtins"),
+    PSet("set", "builtins"),
+    PSlice("slice", "builtins"),
+    PString("str", "builtins"),
+    PTraceback("traceback"),
+    PTuple("tuple", "builtins"),
+    PythonClass("type", "builtins"),
+    PythonModule("module"),
+    PythonObject("object", "builtins"),
+    Super("super", "builtins"),
+    PCode("code"),
+    PZip("zip", "builtins"),
+    PBuffer("buffer", "builtins"),
 
-    private final String shortName;
+    // Errors and exceptions:
 
-    PythonBuiltinClassType(@SuppressWarnings("unused") Class<?> clazz, String shortName) {
-        this.shortName = shortName;
+    // everything after BaseException is considered to be an exception
+    PBaseException("BaseException", "builtins"),
+    SystemExit("SystemExit", "builtins"),
+    KeyboardInterrupt("KeyboardInterrupt", "builtins"),
+    GeneratorExit("GeneratorExit", "builtins"),
+    Exception("Exception", "builtins"),
+    StopIteration("StopIteration", "builtins"),
+    ArithmeticError("ArithmeticError", "builtins"),
+    FloatingPointError("FloatingPointError", "builtins"),
+    OverflowError("OverflowError", "builtins"),
+    ZeroDivisionError("ZeroDivisionError", "builtins"),
+    AssertionError("AssertionError", "builtins"),
+    AttributeError("AttributeError", "builtins"),
+    BufferError("BufferError", "builtins"),
+    EOFError("EOFError", "builtins"),
+    ImportError("ImportError", "builtins"),
+    ModuleNotFoundError("ModuleNotFoundError", "builtins"),
+    LookupError("LookupError", "builtins"),
+    IndexError("IndexError", "builtins"),
+    KeyError("KeyError", "builtins"),
+    MemoryError("MemoryError", "builtins"),
+    NameError("NameError", "builtins"),
+    UnboundLocalError("UnboundLocalError", "builtins"),
+    OSError("OSError", "builtins"),
+    IOError("IOError", "builtins"),
+    BlockingIOError("BlockingIOError", "builtins"),
+    ChildProcessError("ChildProcessError", "builtins"),
+    ConnectionError("ConnectionError", "builtins"),
+    BrokenPipeError("BrokenPipeError", "builtins"),
+    ConnectionAbortedError("ConnectionAbortedError", "builtins"),
+    ConnectionRefusedError("ConnectionRefusedError", "builtins"),
+    ConnectionResetError("ConnectionResetError", "builtins"),
+    FileExistsError("FileExistsError", "builtins"),
+    FileNotFoundError("FileNotFoundError", "builtins"),
+    InterruptedError("InterruptedError", "builtins"),
+    IsADirectoryError("IsADirectoryError", "builtins"),
+    NotADirectoryError("NotADirectoryError", "builtins"),
+    PermissionError("PermissionError", "builtins"),
+    ProcessLookupError("ProcessLookupError", "builtins"),
+    TimeoutError("TimeoutError", "builtins"),
+
+    // todo: all OS errors
+
+    ReferenceError("ReferenceError", "builtins"),
+    RuntimeError("RuntimeError", "builtins"),
+    NotImplementedError("NotImplementedError", "builtins"),
+    SyntaxError("SyntaxError", "builtins"),
+    IndentationError("IndentationError", "builtins"),
+    TabError("TabError", "builtins"),
+    SystemError("SystemError", "builtins"),
+    TypeError("TypeError", "builtins"),
+    ValueError("ValueError", "builtins"),
+    UnicodeError("UnicodeError", "builtins"),
+    UnicodeDecodeError("UnicodeDecodeError", "builtins"),
+    UnicodeEncodeError("UnicodeEncodeError", "builtins"),
+    UnicodeTranslateError("UnicodeTranslateError", "builtins"),
+    RecursionError("RecursionError", "builtins"),
+
+    // warnings
+    Warning("Warning", "builtins"),
+    BytesWarning("BytesWarning", "builtins"),
+    DeprecationWarning("DeprecationWarning", "builtins"),
+    FutureWarning("FutureWarning", "builtins"),
+    ImportWarning("ImportWarning", "builtins"),
+    PendingDeprecationWarning("PendingDeprecationWarning", "builtins"),
+    ResourceWarning("ResourceWarning", "builtins"),
+    RuntimeWarning("RuntimeWarning", "builtins"),
+    SyntaxWarning("SyntaxWarning", "builtins"),
+    UnicodeWarning("UnicodeWarning", "builtins"),
+    UserWarning("UserWarning", "builtins");
+
+    private final String name;
+    private final Shape instanceShape;
+    private final String publicInModule;
+
+    // initialized in static constructor
+    @CompilationFinal private PythonBuiltinClassType base;
+
+    PythonBuiltinClassType(String name, String publicInModule) {
+        this.name = name;
+        this.publicInModule = publicInModule;
+        this.instanceShape = PythonLanguage.freshShape();
+    }
+
+    PythonBuiltinClassType(String name) {
+        this(name, null);
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public PythonBuiltinClassType getBase() {
+        return base;
+    }
+
+    public String getPublicInModule() {
+        return publicInModule;
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return shortName;
+        return name;
+    }
+
+    public Shape getInstanceShape() {
+        return instanceShape;
+    }
+
+    public static final PythonBuiltinClassType[] VALUES = values();
+    public static final PythonBuiltinClassType[] EXCEPTIONS;
+
+    static {
+        // fill the EXCEPTIONS array
+
+        EXCEPTIONS = new PythonBuiltinClassType[VALUES.length - PBaseException.ordinal()];
+        for (int i = 0; i < EXCEPTIONS.length; i++) {
+            EXCEPTIONS[i] = VALUES[i + PBaseException.ordinal()];
+        }
+
+        // set the base classes (and check uniqueness):
+
+        HashSet<String> set = new HashSet<>();
+        for (PythonBuiltinClassType type : VALUES) {
+            assert set.add(type.name) : type.name();
+            type.base = PythonObject;
+        }
+
+        Boolean.base = PInt;
+
+        SystemExit.base = PBaseException;
+        KeyboardInterrupt.base = PBaseException;
+        GeneratorExit.base = PBaseException;
+        Exception.base = PBaseException;
+        StopIteration.base = Exception;
+        ArithmeticError.base = Exception;
+        FloatingPointError.base = ArithmeticError;
+        OverflowError.base = ArithmeticError;
+        ZeroDivisionError.base = ArithmeticError;
+        AssertionError.base = Exception;
+        AttributeError.base = Exception;
+        BufferError.base = Exception;
+        EOFError.base = Exception;
+        ImportError.base = Exception;
+        ModuleNotFoundError.base = ImportError;
+        LookupError.base = Exception;
+        IndexError.base = LookupError;
+        KeyError.base = LookupError;
+        MemoryError.base = Exception;
+        NameError.base = Exception;
+        UnboundLocalError.base = NameError;
+        OSError.base = Exception;
+        IOError.base = Exception;
+        BlockingIOError.base = OSError;
+        ChildProcessError.base = OSError;
+        ConnectionError.base = OSError;
+        BrokenPipeError.base = OSError;
+        ConnectionAbortedError.base = OSError;
+        ConnectionRefusedError.base = OSError;
+        ConnectionResetError.base = OSError;
+        FileExistsError.base = OSError;
+        FileNotFoundError.base = OSError;
+        InterruptedError.base = OSError;
+        IsADirectoryError.base = OSError;
+        NotADirectoryError.base = OSError;
+        PermissionError.base = OSError;
+        ProcessLookupError.base = OSError;
+        TimeoutError.base = OSError;
+
+        ReferenceError.base = Exception;
+        RuntimeError.base = Exception;
+        NotImplementedError.base = Exception;
+        SyntaxError.base = Exception;
+        IndentationError.base = SyntaxError;
+        TabError.base = IndentationError;
+        SystemError.base = Exception;
+        TypeError.base = Exception;
+        ValueError.base = Exception;
+        UnicodeError.base = ValueError;
+        UnicodeDecodeError.base = UnicodeError;
+        UnicodeEncodeError.base = UnicodeError;
+        UnicodeTranslateError.base = UnicodeError;
+        RecursionError.base = RuntimeError;
+
+        // warnings
+        Warning.base = Exception;
+        BytesWarning.base = Warning;
+        DeprecationWarning.base = Warning;
+        FutureWarning.base = Warning;
+        ImportWarning.base = Warning;
+        PendingDeprecationWarning.base = Warning;
+        ResourceWarning.base = Warning;
+        RuntimeWarning.base = Warning;
+        SyntaxWarning.base = Warning;
+        UnicodeWarning.base = Warning;
+        UserWarning.base = Warning;
     }
 }

@@ -40,14 +40,13 @@
  */
 package com.oracle.graal.python.runtime.exception;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PException extends RuntimeException implements TruffleException {
     private static final long serialVersionUID = -6437116280384996361L;
@@ -62,6 +61,12 @@ public final class PException extends RuntimeException implements TruffleExcepti
         this.location = node;
     }
 
+    public static PException fromObject(PBaseException actual, Node node) {
+        PException pException = new PException(actual, node);
+        actual.setException(pException);
+        return pException;
+    }
+
     @Override
     public String getMessage() {
         if (message == null) {
@@ -72,10 +77,6 @@ public final class PException extends RuntimeException implements TruffleExcepti
 
     public void setMessage(Object object) {
         message = object.toString();
-    }
-
-    public PythonClass getType() {
-        return pythonException.getPythonClass();
     }
 
     public TruffleStackTraceElement getTruffleStackTraceElement(int index) {
@@ -117,7 +118,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
 
     @Override
     public boolean isSyntaxError() {
-        return getType() != null && getType().getName().equals("SyntaxError");
+        return IsBuiltinClassProfile.profileClassSlowPath(getExceptionObject().getLazyPythonClass(), PythonBuiltinClassType.SyntaxError);
     }
 
     public void setIncompleteSource(boolean val) {
@@ -138,26 +139,26 @@ public final class PException extends RuntimeException implements TruffleExcepti
         return exit;
     }
 
-    public void expectIndexError(PythonCore core, ConditionProfile profile) {
-        if (profile.profile(getType() != core.getErrorClass(PythonErrorType.IndexError))) {
+    public void expectIndexError(IsBuiltinClassProfile profile) {
+        if (!profile.profileException(this, PythonBuiltinClassType.IndexError)) {
             throw this;
         }
     }
 
-    public void expectStopIteration(PythonCore core, ConditionProfile profile) {
-        if (profile.profile(getType() != core.getErrorClass(PythonErrorType.StopIteration))) {
+    public void expectStopIteration(IsBuiltinClassProfile profile) {
+        if (!profile.profileException(this, PythonBuiltinClassType.StopIteration)) {
             throw this;
         }
     }
 
-    public void expectAttributeError(PythonCore core, ConditionProfile profile) {
-        if (profile.profile(getType() != core.getErrorClass(PythonErrorType.AttributeError))) {
+    public void expectAttributeError(IsBuiltinClassProfile profile) {
+        if (!profile.profileException(this, PythonBuiltinClassType.AttributeError)) {
             throw this;
         }
     }
 
-    public void expect(PythonErrorType error, PythonCore core, ConditionProfile profile) {
-        if (profile.profile(getType() != core.getErrorClass(error))) {
+    public void expect(PythonBuiltinClassType error, IsBuiltinClassProfile profile) {
+        if (!profile.profileException(this, error)) {
             throw this;
         }
     }

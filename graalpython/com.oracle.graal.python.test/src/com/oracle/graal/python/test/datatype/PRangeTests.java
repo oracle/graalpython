@@ -35,6 +35,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.test.PythonTests;
@@ -42,7 +43,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class PRangeTests {
     @Before
@@ -75,14 +75,14 @@ public class PRangeTests {
         Object iter = getIter.executeWith(range);
         GetNextNode next = GetNextNode.create();
         testRoot.doInsert(next);
-        ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
+        IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         while (true) {
             try {
                 int item = next.executeInt(iter);
                 assertEquals(index, item);
             } catch (PException e) {
-                e.expectStopIteration(PythonLanguage.getCore(), errorProfile);
+                e.expectStopIteration(errorProfile);
                 break;
             }
             index++;
@@ -99,14 +99,14 @@ public class PRangeTests {
         Object iter = getIter.executeWith(range);
         GetNextNode next = GetNextNode.create();
         testRoot.doInsert(next);
-        ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
+        IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         while (true) {
             try {
                 int item = next.executeInt(iter);
                 assertEquals(index, item);
             } catch (PException e) {
-                e.expectStopIteration(PythonLanguage.getCore(), errorProfile);
+                e.expectStopIteration(errorProfile);
                 break;
             }
             index += 2;

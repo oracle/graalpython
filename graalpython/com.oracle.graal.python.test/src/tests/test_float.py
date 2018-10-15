@@ -96,6 +96,8 @@ class BasicTests(unittest.TestCase):
     def test_create(self):
         assert float(99) == 99
         assert float(999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999) == 1e+132
+        assert float(b"0.001") == 0.001
+        assert float("0.001") == 0.001
 
     def test_hex(self):
         data = [

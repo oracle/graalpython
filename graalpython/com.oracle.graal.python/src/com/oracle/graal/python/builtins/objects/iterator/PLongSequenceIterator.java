@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 
 public final class PLongSequenceIterator extends PLongIterator {
@@ -34,7 +34,7 @@ public final class PLongSequenceIterator extends PLongIterator {
     int index;
     protected boolean stopIterationReached = false;
 
-    public PLongSequenceIterator(PythonClass clazz, LongSequenceStorage sequence) {
+    public PLongSequenceIterator(LazyPythonClass clazz, LongSequenceStorage sequence) {
         super(clazz);
         this.sequence = sequence;
     }

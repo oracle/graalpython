@@ -147,12 +147,12 @@ def __codec_registry_init__():
 # TODO implement the encode / decode methods
 @__builtin__
 def escape_encode(data, errors=None):
-    raise NotImplementedError()
+    raise NotImplementedError("escape_encode")
 
 
 @__builtin__
 def escape_decode(data, errors=None):
-    raise NotImplementedError()
+    raise NotImplementedError("escape_decode")
 
 
 @__builtin__
@@ -207,7 +207,7 @@ def utf_16_be_decode(string, errors=None, final=False):
 
 @__builtin__
 def utf_16_ex_decode(data, errors=None, byteorder=0, final=False):
-    raise NotImplementedError()
+    raise NotImplementedError("utf_16_ex_decode")
 
 
 @__builtin__
@@ -242,37 +242,37 @@ def utf_32_be_decode(string, errors=None, final=False):
 
 @__builtin__
 def utf_32_ex_decode(data, errors=None, byteorder=0, final=False):
-    raise NotImplementedError()
+    raise NotImplementedError("utf_32_ex_decode")
 
 
 @__builtin__
 def unicode_escape_encode(string, errors=None):
-    raise NotImplementedError()
+    raise NotImplementedError("unicode_escape_encode")
 
 
 @__builtin__
 def unicode_escape_decode(string, errors=None):
-    raise NotImplementedError()
+    raise NotImplementedError("unicode_escape_decode")
 
 
 @__builtin__
 def unicode_internal_encode(obj, errors=None):
-    raise NotImplementedError()
+    raise NotImplementedError("unicode_internal_encode")
 
 
 @__builtin__
 def unicode_internal_decode(obj, errors=None):
-    raise NotImplementedError()
+    raise NotImplementedError("unicode_internal_decode")
 
 
 @__builtin__
 def raw_unicode_escape_encode(string, errors=None):
-    raise NotImplementedError()
+    return __truffle_raw_encode(string, errors)
 
 
 @__builtin__
 def raw_unicode_escape_decode(string, errors=None):
-    raise NotImplementedError()
+    return __truffle_raw_decode(string, errors)
 
 
 @__builtin__
@@ -297,49 +297,49 @@ def ascii_decode(string, errors=None):
 
 @__builtin__
 def charmap_encode(string, errors=None, mapping=None):
-    raise NotImplementedError()
+    raise NotImplementedError("charmap_encode")
 
 
 @__builtin__
 def charmap_decode(string, errors=None, mapping=None):
-    raise NotImplementedError()
+    raise NotImplementedError("charmap_decode")
 
 
 @__builtin__
 def charmap_build(mapping):
-    raise NotImplementedError()
+    raise NotImplementedError("charmap_build")
 
 
 @__builtin__
 def readbuffer_encode(data, errors=None):
-    raise NotImplementedError()
+    raise NotImplementedError("readbuffer_encode")
 
 
 @__builtin__
 def mbcs_encode(string, errors=None):
-    raise NotImplementedError()
+    raise NotImplementedError("mbcs_encode")
 
 
 @__builtin__
 def mbcs_decode(string, errors=None, final=False):
-    raise NotImplementedError()
+    raise NotImplementedError("mbcs_decode")
 
 
 @__builtin__
 def oem_encode(string, errors):
-    raise NotImplementedError()
+    raise NotImplementedError("oem_encode")
 
 
 @__builtin__
 def oem_decode(string, errors=None, final=False):
-    raise NotImplementedError()
+    raise NotImplementedError("oem_decode")
 
 
 @__builtin__
 def code_page_encode(code_page, string, errors=None):
-    raise NotImplementedError()
+    raise NotImplementedError("code_page_encode")
 
 
 @__builtin__
 def code_page_decode(code_page, string, errors=None, final=False):
-    raise NotImplementedError()
+    raise NotImplementedError("code_page_decode")

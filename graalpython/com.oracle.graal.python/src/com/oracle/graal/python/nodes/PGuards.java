@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -334,7 +336,7 @@ public abstract class PGuards {
      * Tests if the class of a Python object is a builtin class, i.e., any magic methods cannot be
      * overridden.
      */
-    public static boolean cannotBeOverridden(PythonClass clazz) {
-        return clazz.isBuiltin();
+    public static boolean cannotBeOverridden(LazyPythonClass clazz) {
+        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 }

@@ -314,14 +314,6 @@ def PyList_Size(listObj):
 
 ##################### LONG
 
-@may_raise
-def PyLong_FromLongLong(n, signed):
-    if signed:
-        return int(n)
-    else:
-        return int(n & 0xffffffffffffffff)
-
-
 @may_raise(-1)
 def PyLong_AsPrimitive(n, signed, size, descr):
     if isinstance(n, int):
@@ -337,6 +329,11 @@ def _PyLong_Sign(n):
         return -1
     else:
         return 1
+
+
+@may_raise
+def PyLong_FromDouble(d):
+    return int(d)
 
 
 @may_raise
@@ -866,7 +863,10 @@ def PyObject_Call(callee, args, kwargs):
 
 
 def PyObject_CallMethod(rcvr, method, args):
-    return getattr(rcvr, method)(*args)
+    # TODO(fa) that seems to be a workaround
+    if type(args) is tuple:
+        return getattr(rcvr, method)(*args)
+    return getattr(rcvr, method)(args)
 
 
 @may_raise
@@ -1137,42 +1137,6 @@ def PyTruffle_Debug(*args):
 
 def PyTruffle_GetBuiltin(name):
     return getattr(sys.modules["builtins"], name)
-
-
-def PyTruffle_Type(type_name):
-    import types
-    if type_name == "mappingproxy":
-        return types.MappingProxyType
-    elif type_name == "NotImplementedType":
-        return type(NotImplemented)
-    elif type_name == "module":
-        return types.ModuleType
-    elif type_name == "NoneType":
-        return type(None)
-    elif type_name == "PyCapsule":
-        return PyCapsule
-    elif type_name == "function":
-        return types.FunctionType
-    elif type_name == "method_descriptor" or type_name == "wrapper_descriptor":
-        return type(list.append)
-    elif type_name == "getset_descriptor":
-        return getset_descriptor
-    elif type_name == "member_descriptor":
-        return property
-    elif type_name == "builtin_function_or_method":
-        return types.BuiltinFunctionType
-    elif type_name == "ellipsis":
-        return type(...)
-    elif type_name == "method":
-        return types.MethodType
-    elif type_name == "code":
-        return types.CodeType
-    elif type_name == "traceback":
-        return types.TracebackType
-    elif type_name == "frame":
-        return types.FrameType
-    else:
-        return getattr(sys.modules["builtins"], type_name)
 
 
 def check_argtype(idx, obj, typ):

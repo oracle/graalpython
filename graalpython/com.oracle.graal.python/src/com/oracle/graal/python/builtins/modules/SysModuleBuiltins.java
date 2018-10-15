@@ -68,12 +68,14 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleOptions;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
@@ -187,7 +189,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public static abstract class ExcInfoNode extends PythonBuiltinNode {
         @Specialization
-        public Object run() {
+        public Object run(
+                        @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
             if (currentException == null) {
@@ -195,7 +198,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             } else {
                 PBaseException exception = currentException.getExceptionObject();
                 exception.reifyException();
-                return factory().createTuple(new Object[]{currentException.getType(), exception, exception.getTraceback(factory())});
+                return factory().createTuple(new Object[]{getPythonClass(exception.getLazyPythonClass(), getClassProfile), exception, exception.getTraceback(factory())});
             }
         }
     }
@@ -216,7 +219,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
          * behavior. (it only captures the frames if a CallTarget boundary is crossed)
          */
         private static final class GetStackTraceRootNode extends RootNode {
-            private ContextReference<PythonContext> contextRef;
+            private final ContextReference<PythonContext> contextRef;
 
             protected GetStackTraceRootNode(PythonLanguage language) {
                 super(language);
@@ -226,7 +229,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             @Override
             public Object execute(VirtualFrame frame) {
                 CompilerDirectives.transferToInterpreter();
-                throw contextRef.get().getCore().raise(ValueError);
+                throw contextRef.get().getCore().raise(ValueError, null);
             }
 
             @Override

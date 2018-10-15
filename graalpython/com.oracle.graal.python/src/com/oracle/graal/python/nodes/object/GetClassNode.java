@@ -47,15 +47,14 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -63,12 +62,17 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class})
 public abstract class GetClassNode extends PNodeWithContext {
     private final ValueProfile classProfile = ValueProfile.createClassProfile();
+
+    /*
+     * =============== Changes in this class must be mirrored in GetLazyClassNode ===============
+     */
 
     public static GetClassNode create() {
         return GetClassNodeGen.create();
@@ -86,7 +90,7 @@ public abstract class GetClassNode extends PNodeWithContext {
         return executeGetClass(classProfile.profile(object));
     }
 
-    public abstract PythonClass executeGetClass(Object object);
+    protected abstract PythonClass executeGetClass(Object object);
 
     @Specialization(assumptions = "singleContextAssumption()")
     protected PythonClass getIt(@SuppressWarnings("unused") GetSetDescriptor object,
@@ -195,20 +199,27 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @Specialization
-    protected PythonClass getIt(PException object) {
-        return object.getType();
-    }
-
-    @Specialization
     protected PythonClass getIt(PythonNativeObject object,
                     @Cached("create()") GetNativeClassNode getNativeClassNode) {
         return getNativeClassNode.execute(object);
     }
 
+    @Specialization(assumptions = "singleContextAssumption()")
+    protected PythonClass getIt(@SuppressWarnings("unused") PythonNativeVoidPtr object,
+                    @Cached("getIt(object)") PythonClass klass) {
+        return klass;
+    }
+
+    @Specialization
+    protected PythonClass getIt(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
+        return getCore().lookupType(PythonBuiltinClassType.PInt);
+    }
+
     @Specialization
     protected PythonClass getPythonClassGeneric(PythonObject object,
-                    @Cached("createIdentityProfile()") ValueProfile profile) {
-        return profile.profile(object.getPythonClass());
+                    @Cached("createIdentityProfile()") ValueProfile profile,
+                    @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
+        return profile.profile(getPythonClass(object.getLazyPythonClass(), getClassProfile));
     }
 
     @Specialization(guards = "isForeignObject(object)", assumptions = "singleContextAssumption()")
@@ -248,13 +259,5 @@ public abstract class GetClassNode extends PNodeWithContext {
             CompilerDirectives.transferToInterpreter();
             throw new IllegalStateException("unknown type " + o.getClass().getName());
         }
-    }
-
-    @TruffleBoundary
-    public static String getNameSlowPath(Object o) {
-        if (PGuards.isForeignObject(o)) {
-            return BuiltinNames.FOREIGN;
-        }
-        return getItSlowPath(o).getName();
     }
 }

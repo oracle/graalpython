@@ -37,8 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
-def test_alarm():
+def skip_test_alarm():
     # (tfel): this test is very brittle, because it is supposed to work with our
     # first, very primitive implementation of signal handlers, which does not
     # allow Python code to run in the handler. So we rely on a side-effect on an

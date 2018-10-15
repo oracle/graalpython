@@ -26,7 +26,7 @@
 package com.oracle.graal.python.builtins.objects.complex;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class PComplex extends PythonBuiltinObject {
@@ -36,7 +36,7 @@ public final class PComplex extends PythonBuiltinObject {
     private final double real;
     private final double imag;
 
-    public PComplex(PythonClass clazz, double real, double imaginary) {
+    public PComplex(LazyPythonClass clazz, double real, double imaginary) {
         super(clazz);
         this.real = real;
         this.imag = imaginary;

@@ -27,22 +27,19 @@ package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.FrameUtil;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class FrameSlotNode extends ExpressionNode {
-    private final ConditionProfile isPrimitiveProfile = ConditionProfile.createBinaryProfile();
+    private final IsBuiltinClassProfile isPrimitiveIntProfile = IsBuiltinClassProfile.create();
 
-    protected boolean isPrimitiveInt(PInt cls) {
-        PythonClass pythonClass = cls.getPythonClass();
-        return isPrimitiveProfile.profile(pythonClass instanceof PythonBuiltinClass && ((PythonBuiltinClass) pythonClass).getType() == PythonBuiltinClassType.PInt);
+    protected boolean isPrimitiveInt(PInt value) {
+        return isPrimitiveIntProfile.profileObject(value, PythonBuiltinClassType.PInt);
     }
 
     protected final FrameSlot frameSlot;

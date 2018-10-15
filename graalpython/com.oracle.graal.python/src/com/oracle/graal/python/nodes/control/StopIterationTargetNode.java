@@ -25,17 +25,17 @@
  */
 package com.oracle.graal.python.nodes.control;
 
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class StopIterationTargetNode extends StatementNode {
 
     @Child private StatementNode tryPart;
     @Child private StatementNode catchPart;
 
-    private final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
+    private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
     public StopIterationTargetNode(StatementNode tryPart, StatementNode catchPart) {
         this.tryPart = tryPart;
@@ -55,7 +55,7 @@ public final class StopIterationTargetNode extends StatementNode {
         try {
             tryPart.executeVoid(frame);
         } catch (PException ex) {
-            ex.expectStopIteration(getCore(), errorProfile);
+            ex.expectStopIteration(errorProfile);
             catchPart.executeVoid(frame);
         }
     }

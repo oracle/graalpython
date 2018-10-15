@@ -218,7 +218,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
 
             default:
                 // Should never get here, since this was checked in PyFloat.
-                throw unknownFormat(core, spec.type, "float");
+                throw unknownFormat(errors, spec.type, "float");
         }
 
         // If the format type is an upper-case letter, convert the result to upper case.

@@ -26,14 +26,14 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public final class PArrayIterator extends PBuiltinIterator {
 
     final PArray array;
     int index;
 
-    public PArrayIterator(PythonClass clazz, PArray array) {
+    public PArrayIterator(LazyPythonClass clazz, PArray array) {
         super(clazz);
         this.array = array;
     }

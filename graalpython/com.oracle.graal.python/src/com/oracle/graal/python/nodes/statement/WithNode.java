@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
@@ -44,6 +45,7 @@ import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeChildren({@NodeChild(value = "withContext", type = ExpressionNode.class)})
 public abstract class WithNode extends StatementNode {
@@ -56,6 +58,8 @@ public abstract class WithNode extends StatementNode {
     @Child private CallDispatchNode exitDispatch = CallDispatchNode.create();
     @Child private CastToBooleanNode toBooleanNode = CastToBooleanNode.createIfTrueNode();
     @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
+
+    private final ConditionProfile getClassProfile = ConditionProfile.createBinaryProfile();
 
     protected WithNode(WriteNode targetNode, StatementNode body) {
         this.targetNode = targetNode;
@@ -125,8 +129,8 @@ public abstract class WithNode extends StatementNode {
         }
 
         e.getExceptionObject().reifyException();
-        Object type = e.getType();
-        Object value = e.getExceptionObject();
+        PBaseException value = e.getExceptionObject();
+        Object type = getPythonClass(value.getLazyPythonClass(), getClassProfile);
         Object trace = e.getExceptionObject().getTraceback(factory());
         Object returnValue = exitDispatch.executeCall(frame, exitCallable, createArgs.execute(withObject, type, value, trace), new PKeyword[0]);
         // If exit handler returns 'true', suppress

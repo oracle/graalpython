@@ -30,12 +30,14 @@ import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import org.graalvm.options.OptionDescriptors;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -78,6 +80,9 @@ import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.object.Layout;
+import com.oracle.truffle.api.object.ObjectType;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 
@@ -100,6 +105,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @CompilationFinal private boolean nativeBuildTime = TruffleOptions.AOT;
     private final NodeFactory nodeFactory;
     public final ConcurrentHashMap<Class<? extends PythonBuiltinBaseNode>, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
+
+    private static final Layout objectLayout = Layout.newLayout().build();
+    private static final Shape freshShape = objectLayout.createShape(new ObjectType());
 
     public PythonLanguage() {
         this.nodeFactory = NodeFactory.create(this);
@@ -384,12 +392,34 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    public static Source newSource(PythonContext ctxt, TruffleFile src, String name) throws IOException {
-        return newSource(ctxt, Source.newBuilder(ID, src), name);
+    private final ConcurrentHashMap<Object, Source> cachedSources = new ConcurrentHashMap<>();
+
+    public Source newSource(PythonContext ctxt, TruffleFile src, String name) throws IOException {
+        try {
+            return cachedSources.computeIfAbsent(src, t -> {
+                try {
+                    return newSource(ctxt, Source.newBuilder(ID, src), name);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (RuntimeException e) {
+            throw (IOException) e.getCause();
+        }
     }
 
-    public static Source newSource(PythonContext ctxt, URL url, String name) throws IOException {
-        return newSource(ctxt, Source.newBuilder(ID, url), name);
+    public Source newSource(PythonContext ctxt, URL url, String name) throws IOException {
+        try {
+            return cachedSources.computeIfAbsent(url, t -> {
+                try {
+                    return newSource(ctxt, Source.newBuilder(ID, url), name);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (RuntimeException e) {
+            throw (IOException) e.getCause();
+        }
     }
 
     private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder, String name) throws IOException {
@@ -410,5 +440,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected void initializeMultipleContexts() {
         super.initializeMultipleContexts();
         singleContextAssumption.invalidate();
+    }
+
+    private final ConcurrentHashMap<String, PCode> cachedCode = new ConcurrentHashMap<>();
+
+    public Object cacheCode(String filename, Supplier<PCode> createCode) {
+        return cachedCode.computeIfAbsent(filename, f -> createCode.get());
+    }
+
+    public static Shape freshShape() {
+        return freshShape;
     }
 }

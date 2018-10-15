@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public final class PRangeIterator extends PIntegerIterator {
@@ -34,7 +34,7 @@ public final class PRangeIterator extends PIntegerIterator {
     final int step;
     int index;
 
-    public PRangeIterator(PythonClass clazz, int start, int stop, int step) {
+    public PRangeIterator(LazyPythonClass clazz, int start, int stop, int step) {
         super(clazz);
         index = start;
         this.stop = stop;
@@ -71,7 +71,7 @@ public final class PRangeIterator extends PIntegerIterator {
         final int step;
         int index;
 
-        public PRangeReverseIterator(PythonClass clazz, int index, int stop, int step) {
+        public PRangeReverseIterator(LazyPythonClass clazz, int index, int stop, int step) {
             super(clazz);
             this.index = index;
             this.stop = stop;

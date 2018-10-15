@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -37,12 +37,12 @@ public final class PTuple extends PImmutableSequence {
 
     private SequenceStorage store;
 
-    public PTuple(PythonClass cls, Object[] elements) {
+    public PTuple(LazyPythonClass cls, Object[] elements) {
         super(cls);
         this.store = new ObjectSequenceStorage(elements);
     }
 
-    public PTuple(PythonClass cls, SequenceStorage store) {
+    public PTuple(LazyPythonClass cls, SequenceStorage store) {
         super(cls);
         this.store = store;
     }

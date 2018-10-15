@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -54,12 +55,12 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @NodeInfo(shortName = "cpython://Objects/abstract.c/recursive_issubclass")
 @ImportStatic(PythonOptions.class)
 public abstract class IsSubtypeNode extends PNodeWithContext {
-    @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
 
+    @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
     @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
 
-    private ConditionProfile exceptionDerivedProfile = ConditionProfile.createBinaryProfile();
-    private ConditionProfile exceptionClsProfile = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile exceptionDerivedProfile = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile exceptionClsProfile = ConditionProfile.createBinaryProfile();
 
     public static IsSubtypeNode create() {
         return IsSubtypeNodeGen.create();
@@ -69,9 +70,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     @Specialization(guards = {"derived == cachedDerived", "cls == cachedCls"}, limit = "getVariableArgumentInlineCacheLimit()")
     @ExplodeLoop
-    boolean isSubtypeOfConstantType(
-                    @SuppressWarnings("unused") PythonClass derived,
-                    @SuppressWarnings("unused") PythonClass cls,
+    boolean isSubtypeOfConstantType(@SuppressWarnings("unused") PythonClass derived, @SuppressWarnings("unused") PythonClass cls,
                     @Cached("derived") PythonClass cachedDerived,
                     @Cached("cls") PythonClass cachedCls) {
         for (PythonClass n : cachedDerived.getMethodResolutionOrder()) {
@@ -84,17 +83,14 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     @Specialization(guards = {"derived == cachedDerived"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "isSubtypeOfConstantType")
     @ExplodeLoop
-    boolean isSubtypeOfVariableType(
-                    @SuppressWarnings("unused") PythonClass derived,
-                    PythonClass cls,
+    boolean isSubtypeOfVariableType(@SuppressWarnings("unused") PythonClass derived, PythonClass cls,
                     @Cached("derived") PythonClass cachedDerived) {
-        boolean isSubtype = false;
         for (PythonClass n : cachedDerived.getMethodResolutionOrder()) {
             if (n == cls) {
-                isSubtype = true;
+                return true;
             }
         }
-        return isSubtype;
+        return false;
     }
 
     @Specialization(replaces = {"isSubtypeOfConstantType", "isSubtypeOfVariableType"})
@@ -107,15 +103,14 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return false;
     }
 
-    @Specialization
+    @Fallback
     public boolean isSubclass(Object derived, Object cls) {
         if (exceptionDerivedProfile.profile(getBasesNode.execute(derived) == null)) {
             throw raise(PythonErrorType.TypeError, "issubclass() arg 1 must be a class");
         }
 
         if (exceptionClsProfile.profile(getBasesNode.execute(cls) == null)) {
-            throw raise(
-                            PythonErrorType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
+            throw raise(PythonErrorType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
         }
 
         return abstractIsSubclassNode.execute(derived, cls);

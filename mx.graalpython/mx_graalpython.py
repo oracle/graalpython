@@ -265,6 +265,7 @@ def python3_unittests(args):
 # mx gate --tags pythontest
 # mx gate --tags fulltest
 
+AOT_INCOMPATIBLE_TESTS = ["test_interop.py"]
 
 class GraalPythonTags(object):
     junit = 'python-junit'
@@ -348,20 +349,18 @@ def gate_unittests(args=[], subdir=""):
         mx.run(["python3"] + test_args, nonZeroIsFatal=True)
 
 
-def _python_svm_unittest(svm_image):
-    suite_dir = _suite.dir
-    llvm_home = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
-
+def run_python_unittests(python_binary, args=[], aot_compatible=True, exclude=[]):
     # tests root directory
-    tests_folder = os.path.join(suite_dir, "graalpython", "com.oracle.graal.python.test", "src", "tests")
+    tests_folder = os.path.join(_suite.dir, "graalpython", "com.oracle.graal.python.test", "src", "tests")
 
     # list of excluded tests
-    excluded = ["test_interop.py"]
+    if aot_compatible:
+        exclude += AOT_INCOMPATIBLE_TESTS
 
     def is_included(path):
         if path.endswith(".py"):
             basename = os.path.basename(path)
-            return basename.startswith("test_") and basename not in excluded
+            return basename.startswith("test_") and basename not in exclude
         return False
 
     # list all 1st-level tests and exclude the SVM-incompatible ones
@@ -378,13 +377,9 @@ def _python_svm_unittest(svm_image):
             except OSError:
                 pass
 
-    args = ["--python.CoreHome=%s" % os.path.join(suite_dir, "graalpython", "lib-graalpython"),
-            "--python.StdLibHome=%s" % os.path.join(suite_dir, "graalpython", "lib-python/3"),
-            llvm_home,
-            os.path.join(suite_dir, "graalpython", "com.oracle.graal.python.test", "src", "graalpytest.py"),
-            "-v"]
+    args += [os.path.join(_suite.dir, "graalpython", "com.oracle.graal.python.test", "src", "graalpytest.py"), "-v"]
     args += testfiles
-    return mx.run([svm_image] + args, nonZeroIsFatal=True)
+    return mx.run([python_binary] + args, nonZeroIsFatal=True)
 
 
 def graalpython_gate_runner(args, tasks):
@@ -398,7 +393,12 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython C extension tests', tasks, tags=[GraalPythonTags.cpyext]) as task:
         if task:
+            # we deliberately added this to test the combination of Sulong and 'mx_unittest'
+            unittest(['--regex', re.escape('com.oracle.graal.python.test.module.MemoryviewTest'),
+                      "-Dgraal.TraceTruffleCompilation=true"])
+
             gate_unittests(subdir="cpyext/")
+
 
     with Task('GraalPython C extension managed tests', tasks, tags=[GraalPythonTags.cpyext_managed]) as task:
         if task:
@@ -412,16 +412,19 @@ def graalpython_gate_runner(args, tasks):
         if task:
             svm_image_name = "./graalpython-svm"
             if not os.path.exists(svm_image_name):
-                python_svm(["-h"])
-            else:
-                _python_svm_unittest(svm_image_name)
+                svm_image_name = python_svm(["-h"])
+            llvm_home = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
+            args = ["--python.CoreHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-graalpython"),
+                    "--python.StdLibHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-python/3"),
+                    llvm_home]
+            run_python_unittests(svm_image_name, args)
 
     with Task('GraalPython apptests', tasks, tags=[GraalPythonTags.apptests]) as task:
         if task:
             apprepo = os.environ["GRAALPYTHON_APPTESTS_REPO_URL"]
             _apptest_suite = _suite.import_suite(
                 "graalpython-apptests",
-                version="f40fcf3af008d30a67e0dbc325a0d90f1e68f0c0",
+                version="006db2cfd79a51ba49e23a42629da13a54b87451",
                 urlinfos=[mx.SuiteImportURLInfo(mx_urlrewrites.rewriteurl(apprepo), "git", mx.vc_system("git"))]
             )
             mx.run_mx(["-p", _apptest_suite.dir, "graalpython-apptests"])
@@ -449,6 +452,11 @@ def graalpython_gate_runner(args, tasks):
             ])
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
+            llvm_home = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
+            args = ["--python.CoreHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-graalpython"),
+                    "--python.StdLibHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-python/3"),
+                    llvm_home]
+            run_python_unittests(svm_image, args)
 
 
 mx_gate.add_gate_runner(_suite, graalpython_gate_runner)

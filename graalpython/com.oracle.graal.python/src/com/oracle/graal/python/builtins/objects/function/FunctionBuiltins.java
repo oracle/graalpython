@@ -27,8 +27,11 @@
 package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DEFAULTS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__KWDEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +42,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltinsFactory.GetFunctionDefaultsNodeFactory;
+import com.oracle.graal.python.builtins.objects.function.FunctionBuiltinsFactory.GetFunctionKeywordDefaultsNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
@@ -138,7 +142,7 @@ public class FunctionBuiltins extends PythonBuiltins {
     @Builtin(name = __DEFAULTS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class GetFunctionDefaultsNode extends PythonBinaryBuiltinNode {
-        protected final ConditionProfile nullDefaultsProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile nullDefaultsProfile = ConditionProfile.createBinaryProfile();
 
         @TruffleBoundary
         private static Object[] extractDefaults(PFunction function) {
@@ -178,4 +182,56 @@ public class FunctionBuiltins extends PythonBuiltins {
             return GetFunctionDefaultsNodeFactory.create();
         }
     }
+
+    @Builtin(name = __KWDEFAULTS__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetFunctionKeywordDefaultsNode extends PythonUnaryBuiltinNode {
+        @TruffleBoundary
+        private static PKeyword[] extractDefaults(PFunction function) {
+            ArrayList<PKeyword> kwdefaults = new ArrayList<>();
+            List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(function.getFunctionRootNode(), ReadKeywordNode.class);
+            for (ReadKeywordNode readKeywordNode : readKeywordNodes) {
+                if (!readKeywordNode.canBePositional()) {
+                    Object defaultValue = readKeywordNode.getDefaultValue();
+                    if (defaultValue != null) {
+                        kwdefaults.add(new PKeyword(readKeywordNode.getName(), defaultValue));
+                    }
+                }
+            }
+
+            return kwdefaults.toArray(new PKeyword[0]);
+        }
+
+        @Specialization(guards = "!takesVarargs(self)")
+        Object doNoKeywordOnlyArgs(@SuppressWarnings("unused") PFunction self) {
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "takesVarargs(self)")
+        Object doGeneric(PFunction self) {
+            PKeyword[] kwdefaults = extractDefaults(self);
+            if (kwdefaults.length > 0) {
+                return factory().createDict(kwdefaults);
+            }
+            return PNone.NONE;
+        }
+
+        protected static boolean takesVarargs(PFunction self) {
+            return self.getArity().takesVarArgs();
+        }
+
+        public static GetFunctionKeywordDefaultsNode create() {
+            return GetFunctionKeywordDefaultsNodeFactory.create();
+        }
+    }
+
+    @Builtin(name = __REDUCE__, fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Fallback
+        Object doGeneric(@SuppressWarnings("unused") Object obj) {
+            throw raise(TypeError, "can't pickle function objects");
+        }
+    }
+
 }

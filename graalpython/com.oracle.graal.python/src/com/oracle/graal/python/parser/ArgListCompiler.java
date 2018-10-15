@@ -54,17 +54,17 @@ import com.oracle.graal.python.parser.antlr.Python3Parser.SplatparameterContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.VdefparameterContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.VkwargsparameterContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.VsplatparameterContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 
 public class ArgListCompiler<T> extends Python3BaseVisitor<T> {
     public boolean arglist, keywordlist;
     public final List<String> names;
     public final List<String> fpnames;
     public final List<ParserRuleContext> init_code;
-    private final PythonCore core;
+    private final ParserErrorCallback errors;
 
-    public ArgListCompiler(PythonCore core) {
-        this.core = core;
+    public ArgListCompiler(ParserErrorCallback errors) {
+        this.errors = errors;
         arglist = keywordlist = false;
         // defaults = null;
         names = new ArrayList<>();
@@ -80,7 +80,7 @@ public class ArgListCompiler<T> extends Python3BaseVisitor<T> {
 
     private void addName(String name) {
         if (names.contains(name)) {
-            throw core.raise(SyntaxError, "duplicate argument name found");
+            throw errors.raise(SyntaxError, "duplicate argument name found");
         }
         names.add(name);
     }
@@ -92,7 +92,7 @@ public class ArgListCompiler<T> extends Python3BaseVisitor<T> {
         if (ctx.test() != null) {
             init_code.add(ctx);
         } else if (!init_code.isEmpty() && !arglist) {
-            throw core.raise(SyntaxError, "non-default argument follows default argument. Line %d column %d", ctx.start.getLine(), ctx.start.getCharPositionInLine());
+            throw errors.raise(SyntaxError, "non-default argument follows default argument. Line %d column %d", ctx.start.getLine(), ctx.start.getCharPositionInLine());
         }
         return null;
     }
@@ -129,7 +129,7 @@ public class ArgListCompiler<T> extends Python3BaseVisitor<T> {
         if (ctx.test() != null) {
             init_code.add(ctx);
         } else if (!init_code.isEmpty() && !arglist) {
-            throw core.raise(SyntaxError, "non-default argument follows default argument. Line %d column %d", ctx.start.getLine(), ctx.start.getCharPositionInLine());
+            throw errors.raise(SyntaxError, "non-default argument follows default argument. Line %d column %d", ctx.start.getLine(), ctx.start.getCharPositionInLine());
         }
         return null;
     }

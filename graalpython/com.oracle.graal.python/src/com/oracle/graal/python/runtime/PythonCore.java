@@ -29,22 +29,19 @@ import java.io.File;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Storage for initialized Python built-in modules and types.
  */
-public interface PythonCore {
+public interface PythonCore extends ParserErrorCallback {
     public static final String FILE_SEPARATOR = File.separator;
     public static final String PATH_SEPARATOR = File.pathSeparator;
     static final String PREFIX = "/";
@@ -85,20 +82,8 @@ public interface PythonCore {
 
     public String[] builtinModuleNames();
 
-    public PythonClass getErrorClass(PythonErrorType type);
-
     // Error throwing functions
-    public PException raise(PythonErrorType type, Node node, String format, Object... args);
-
-    public PException raise(PBaseException exception, Node node);
-
-    public PException raise(PythonErrorType type, String format, Object... args);
-
-    public PException raise(PythonErrorType type);
-
-    public PException raise(PythonErrorType type, Node node);
-
-    public PException raise(PythonClass cls, Node node);
+    public PException raise(PythonBuiltinClassType type, String format, Object... args);
 
     // Accessors
     public PythonLanguage getLanguage();
@@ -114,6 +99,8 @@ public interface PythonCore {
     public PInt getTrue();
 
     public PInt getFalse();
+
+    public PythonModule getBuiltins();
 
     static void writeWarning(String warning) {
         PythonLanguage.getLogger().warning(warning);

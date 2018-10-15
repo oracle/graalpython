@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 
 public final class PDoubleSequenceIterator extends PDoubleIterator {
@@ -33,7 +33,7 @@ public final class PDoubleSequenceIterator extends PDoubleIterator {
     final DoubleSequenceStorage sequence;
     int index;
 
-    public PDoubleSequenceIterator(PythonClass clazz, DoubleSequenceStorage sequence) {
+    public PDoubleSequenceIterator(LazyPythonClass clazz, DoubleSequenceStorage sequence) {
         super(clazz);
         this.sequence = sequence;
     }

@@ -32,9 +32,11 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -55,6 +57,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     protected final String attributeId;
     protected final ConditionProfile isGlobalProfile = ConditionProfile.createBinaryProfile();
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
+    protected final ConditionProfile isInitializedProfile = ConditionProfile.createBinaryProfile();
     @Child private HashingStorageNodes.GetItemNode getHashingItemNode;
     @Child private GetItemNode readFromDictNode;
 
@@ -94,12 +97,12 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     @Specialization(guards = "isInDict(frame)")
     protected Object readGlobalDictWithException(VirtualFrame frame,
                     @Cached("create()") GetItemNode getItemNode,
-                    @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                    @Cached("create()") IsBuiltinClassProfile errorProfile) {
         try {
             Object result = getItemNode.execute(PArguments.getGlobals(frame), attributeId);
             return returnGlobalOrBuiltin(result);
         } catch (PException e) {
-            e.expect(KeyError, getCore(), errorProfile);
+            e.expect(KeyError, errorProfile);
             return returnGlobalOrBuiltin(PNone.NO_VALUE);
         }
     }
@@ -114,13 +117,13 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
             }
             PythonContext context = getContext();
             PythonCore core = context.getCore();
-            Object builtin;
-            if (core.isInitialized()) {
-                builtin = readFromBuiltinsNode.execute(context.getBuiltins(), attributeId);
+            PythonModule builtins;
+            if (isInitializedProfile.profile(core.isInitialized())) {
+                builtins = context.getBuiltins();
             } else {
-                CompilerDirectives.transferToInterpreter();
-                builtin = readFromBuiltinsNode.execute(core.lookupBuiltinModule("builtins"), attributeId);
+                builtins = core.lookupBuiltinModule("builtins");
             }
+            Object builtin = readFromBuiltinsNode.execute(builtins, attributeId);
             if (isBuiltinProfile.profile(builtin != PNone.NO_VALUE)) {
                 return builtin;
             } else {

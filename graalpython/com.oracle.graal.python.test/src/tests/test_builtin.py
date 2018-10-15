@@ -25,3 +25,9 @@ class BuiltinTest(unittest.TestCase):
         self.assertEqual(bin(MyIndexable(False)), '0b0')
         self.assertEqual(bin(MyIndexable(True)), '0b1')
         self.assertEqual(bin(MyIndexable(-(2**65))), '-0b1' + '0' * 65)
+
+    def test_GR11897(self):
+        globs = {}
+        code = 'a' + ' = ' + '8.01234567890123'
+        exec(code, globs)
+        self.assertEqual(globs['a'], 8.01234567890123)

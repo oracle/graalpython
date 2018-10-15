@@ -55,7 +55,8 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -64,7 +65,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -979,7 +980,7 @@ public class IntBuiltins extends PythonBuiltins {
             if (shiftCount >= Integer.SIZE) {
                 throw new ArithmeticException("integer overflow");
             } else if (shiftCount < 0) {
-                throw getCore().raise(ValueError, "negative shift count");
+                throw raise(ValueError, "negative shift count");
             }
         }
 
@@ -1695,9 +1696,14 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         long hash(PInt self) {
             return self.longValue();
+        }
+
+        @Specialization
+        @TruffleBoundary
+        long hash(PythonNativeVoidPtr self) {
+            return self.object.hashCode();
         }
     }
 
@@ -1768,12 +1774,12 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IntNode extends PythonBuiltinNode {
-        @Child private GetClassNode getClassNode;
+        @Child private GetLazyClassNode getClassNode;
 
-        protected PythonClass getClass(Object value) {
+        protected LazyPythonClass getClass(Object value) {
             if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
+                getClassNode = insert(GetLazyClassNode.create());
             }
             return getClassNode.execute(value);
         }

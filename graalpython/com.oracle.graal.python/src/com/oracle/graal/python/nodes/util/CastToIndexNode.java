@@ -40,15 +40,15 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -63,10 +63,10 @@ public abstract class CastToIndexNode extends PNodeWithContext {
     @Child private LookupAndCallUnaryNode callIndexNode;
     @Child private CastToIndexNode recursiveNode;
 
-    private final PythonErrorType errorType;
+    private final PythonBuiltinClassType errorType;
     private final boolean recursive;
 
-    protected CastToIndexNode(PythonErrorType errorType, boolean recursive) {
+    protected CastToIndexNode(PythonBuiltinClassType errorType, boolean recursive) {
         this.errorType = errorType;
         this.recursive = recursive;
     }

@@ -25,49 +25,47 @@
  */
 package com.oracle.graal.python.runtime.exception;
 
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 
-public enum PythonErrorType {
-    ArithmeticError,
-    AssertionError,
-    AttributeError,
-    BaseException,
-    BytesWarning,
-    DeprecationWarning,
-    Exception,
-    FloatingPointError,
-    IOError,
-    ImportError,
-    ImportWarning,
-    IndexError,
-    KeyError,
-    LookupError,
-    MemoryError,
-    NameError,
-    NotImplementedError,
-    OSError,
-    OverflowError,
-    PendingDeprecationWarning,
-    ResourceWarning,
-    RuntimeError,
-    RuntimeWarning,
-    StopIteration,
-    SyntaxError,
-    SyntaxWarning,
-    SystemError,
-    SystemExit,
-    TypeError,
-    UnboundLocalError,
-    UnicodeEncodeError,
-    UnicodeDecodeError,
-    UnicodeError,
-    UnicodeWarning,
-    UserWarning,
-    ValueError,
-    Warning,
-    ZeroDivisionError,
-    BufferError,
-    FileNotFoundError;
-
-    @CompilationFinal(dimensions = 1) public static final PythonErrorType[] VALUES = values();
+public abstract class PythonErrorType {
+    public static final PythonBuiltinClassType ArithmeticError = PythonBuiltinClassType.ArithmeticError;
+    public static final PythonBuiltinClassType AssertionError = PythonBuiltinClassType.AssertionError;
+    public static final PythonBuiltinClassType AttributeError = PythonBuiltinClassType.AttributeError;
+    public static final PythonBuiltinClassType BaseException = PythonBuiltinClassType.PBaseException;
+    public static final PythonBuiltinClassType BytesWarning = PythonBuiltinClassType.BytesWarning;
+    public static final PythonBuiltinClassType DeprecationWarning = PythonBuiltinClassType.DeprecationWarning;
+    public static final PythonBuiltinClassType Exception = PythonBuiltinClassType.Exception;
+    public static final PythonBuiltinClassType FloatingPointError = PythonBuiltinClassType.FloatingPointError;
+    public static final PythonBuiltinClassType IOError = PythonBuiltinClassType.IOError;
+    public static final PythonBuiltinClassType ImportError = PythonBuiltinClassType.ImportError;
+    public static final PythonBuiltinClassType ImportWarning = PythonBuiltinClassType.ImportWarning;
+    public static final PythonBuiltinClassType IndexError = PythonBuiltinClassType.IndexError;
+    public static final PythonBuiltinClassType KeyError = PythonBuiltinClassType.KeyError;
+    public static final PythonBuiltinClassType LookupError = PythonBuiltinClassType.LookupError;
+    public static final PythonBuiltinClassType MemoryError = PythonBuiltinClassType.MemoryError;
+    public static final PythonBuiltinClassType NameError = PythonBuiltinClassType.NameError;
+    public static final PythonBuiltinClassType NotImplementedError = PythonBuiltinClassType.NotImplementedError;
+    public static final PythonBuiltinClassType OSError = PythonBuiltinClassType.OSError;
+    public static final PythonBuiltinClassType OverflowError = PythonBuiltinClassType.OverflowError;
+    public static final PythonBuiltinClassType PendingDeprecationWarning = PythonBuiltinClassType.PendingDeprecationWarning;
+    public static final PythonBuiltinClassType ResourceWarning = PythonBuiltinClassType.ResourceWarning;
+    public static final PythonBuiltinClassType RuntimeError = PythonBuiltinClassType.RuntimeError;
+    public static final PythonBuiltinClassType RuntimeWarning = PythonBuiltinClassType.RuntimeWarning;
+    public static final PythonBuiltinClassType StopIteration = PythonBuiltinClassType.StopIteration;
+    public static final PythonBuiltinClassType SyntaxError = PythonBuiltinClassType.SyntaxError;
+    public static final PythonBuiltinClassType SyntaxWarning = PythonBuiltinClassType.SyntaxWarning;
+    public static final PythonBuiltinClassType SystemError = PythonBuiltinClassType.SystemError;
+    public static final PythonBuiltinClassType SystemExit = PythonBuiltinClassType.SystemExit;
+    public static final PythonBuiltinClassType TypeError = PythonBuiltinClassType.TypeError;
+    public static final PythonBuiltinClassType UnboundLocalError = PythonBuiltinClassType.UnboundLocalError;
+    public static final PythonBuiltinClassType UnicodeEncodeError = PythonBuiltinClassType.UnicodeEncodeError;
+    public static final PythonBuiltinClassType UnicodeDecodeError = PythonBuiltinClassType.UnicodeDecodeError;
+    public static final PythonBuiltinClassType UnicodeError = PythonBuiltinClassType.UnicodeError;
+    public static final PythonBuiltinClassType UnicodeWarning = PythonBuiltinClassType.UnicodeWarning;
+    public static final PythonBuiltinClassType UserWarning = PythonBuiltinClassType.UserWarning;
+    public static final PythonBuiltinClassType ValueError = PythonBuiltinClassType.ValueError;
+    public static final PythonBuiltinClassType Warning = PythonBuiltinClassType.Warning;
+    public static final PythonBuiltinClassType ZeroDivisionError = PythonBuiltinClassType.ZeroDivisionError;
+    public static final PythonBuiltinClassType BufferError = PythonBuiltinClassType.BufferError;
+    public static final PythonBuiltinClassType FileNotFoundError = PythonBuiltinClassType.FileNotFoundError;
 }

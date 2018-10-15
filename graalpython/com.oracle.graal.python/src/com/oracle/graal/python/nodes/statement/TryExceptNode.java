@@ -83,8 +83,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                 if (e instanceof ControlFlowException) {
                     throw e;
                 } else {
-                    PException pe = new PException(getBaseException(e), this);
-                    pe.getExceptionObject().setException(pe);
+                    PException pe = PException.fromObject(getBaseException(e), this);
                     try {
                         catchException(frame, pe, exceptionState);
                     } catch (PException pe_thrown) {
@@ -110,7 +109,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
 
     @TruffleBoundary
     private PBaseException getBaseException(Exception t) {
-        return factory().createBaseException(getCore().getErrorClass(PythonErrorType.ValueError), t.getMessage(), new Object[0]);
+        return factory().createBaseException(PythonErrorType.ValueError, t.getMessage(), new Object[0]);
     }
 
     @ExplodeLoop

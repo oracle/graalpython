@@ -27,7 +27,7 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -40,12 +40,12 @@ public final class PByteArray extends PSequence implements PIBytesLike {
 
     private SequenceStorage store;
 
-    public PByteArray(PythonClass cls, byte[] bytes) {
+    public PByteArray(LazyPythonClass cls, byte[] bytes) {
         super(cls);
         store = new ByteSequenceStorage(bytes);
     }
 
-    public PByteArray(PythonClass cls, SequenceStorage store) {
+    public PByteArray(LazyPythonClass cls, SequenceStorage store) {
         super(cls);
         this.store = store;
     }
@@ -82,7 +82,7 @@ public final class PByteArray extends PSequence implements PIBytesLike {
     }
 
     public PByteArray copy() {
-        return new PByteArray(this.getPythonClass(), store.copy());
+        return new PByteArray(getLazyPythonClass(), store.copy());
     }
 
     @Override

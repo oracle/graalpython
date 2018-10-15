@@ -31,16 +31,25 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNodeGen.CastToSliceComponentNodeGen;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @NodeChildren({@NodeChild(value = "first", type = ExpressionNode.class), @NodeChild(value = "second", type = ExpressionNode.class), @NodeChild(value = "third", type = ExpressionNode.class)})
 @TypeSystemReference(PythonArithmeticTypes.class) // because bool -> int works here
 public abstract class SliceLiteralNode extends ExpressionNode {
+
+    @Child private CastToSliceComponentNode castStartNode;
+    @Child private CastToSliceComponentNode castStopNode;
+    @Child private CastToSliceComponentNode castStepNode;
 
     public abstract PSlice execute(Object start, Object stop, Object step);
 
@@ -50,114 +59,37 @@ public abstract class SliceLiteralNode extends ExpressionNode {
     }
 
     @Specialization
-    public PSlice doInt(@SuppressWarnings("unused") PNone start, int stop, int step) {
-        return factory().createSlice(MISSING_INDEX, stop, step);
+    public PSlice doInt(int start, int stop, PNone step) {
+        return factory().createSlice(start, stop, castStep(step));
     }
 
-    @Specialization
-    public PSlice doInt(int start, int stop, @SuppressWarnings("unused") PNone step) {
-        return factory().createSlice(start, stop, 1);
+    @Fallback
+    public PSlice doGeneric(Object start, Object stop, Object step) {
+        return factory().createSlice(castStart(start), castStop(stop), castStep(step));
     }
 
-    @Specialization(rewriteOn = ArithmeticException.class)
-    public PSlice doLongExact(long start, long stop, @SuppressWarnings("unused") PNone step) {
-        return factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), 1);
-    }
-
-    @Specialization
-    public PSlice doLongGeneric(long start, long stop, @SuppressWarnings("unused") PNone step) {
-        try {
-            return factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), 1);
-        } catch (ArithmeticException e) {
-            throw raiseIndexError();
+    private int castStart(Object o) {
+        if (castStartNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            castStartNode = insert(CastToSliceComponentNode.create(MISSING_INDEX));
         }
+        return castStartNode.execute(o);
     }
 
-    @Specialization(rewriteOn = ArithmeticException.class)
-    public PSlice doPIntExact(PInt start, PInt stop, @SuppressWarnings("unused") PNone step) {
-        return factory().createSlice(start.intValueExact(), stop.intValueExact(), 1);
-    }
-
-    @Specialization
-    public PSlice doPIntGeneric(PInt start, PInt stop, @SuppressWarnings("unused") PNone step) {
-        try {
-            return factory().createSlice(start.intValueExact(), stop.intValueExact(), 1);
-        } catch (ArithmeticException e) {
-            throw raiseIndexError();
+    private int castStop(Object o) {
+        if (castStopNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            castStopNode = insert(CastToSliceComponentNode.create(MISSING_INDEX));
         }
+        return castStopNode.execute(o);
     }
 
-    @Specialization(rewriteOn = ArithmeticException.class)
-    public PSlice doPIntLongExact(PInt start, long stop, @SuppressWarnings("unused") PNone step) {
-        return factory().createSlice(start.intValueExact(), PInt.intValueExact(stop), 1);
-    }
-
-    @Specialization
-    public PSlice doPIntLongGeneric(PInt start, long stop, @SuppressWarnings("unused") PNone step) {
-        try {
-            return factory().createSlice(start.intValueExact(), PInt.intValueExact(stop), 1);
-        } catch (ArithmeticException e) {
-            throw raiseIndexError();
+    private int castStep(Object o) {
+        if (castStepNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            castStepNode = insert(CastToSliceComponentNode.create(1));
         }
-    }
-
-    @Specialization(rewriteOn = ArithmeticException.class)
-    public PSlice doLongPIntExact(long start, PInt stop, @SuppressWarnings("unused") PNone step) {
-        return factory().createSlice(PInt.intValueExact(start), stop.intValueExact(), 1);
-    }
-
-    @Specialization
-    public PSlice doLongPIntGeneric(long start, PInt stop, @SuppressWarnings("unused") PNone step) {
-        try {
-            return factory().createSlice(PInt.intValueExact(start), stop.intValueExact(), 1);
-        } catch (ArithmeticException e) {
-            throw raiseIndexError();
-        }
-    }
-
-    @Specialization
-    public PSlice doSlice(int start, @SuppressWarnings("unused") PNone stop, @SuppressWarnings("unused") PNone step) {
-        return factory().createSlice(start, MISSING_INDEX, MISSING_INDEX);
-    }
-
-    @Specialization
-    public PSlice doPSlice(long start, @SuppressWarnings("unused") PNone stop, @SuppressWarnings("unused") PNone step) {
-        try {
-            return factory().createSlice(PInt.intValueExact(start), MISSING_INDEX, 1);
-        } catch (ArithmeticException e) {
-            throw raiseIndexError();
-        }
-    }
-
-    @Specialization
-    public PSlice doSlice(int start, @SuppressWarnings("unused") PNone stop, int step) {
-        return factory().createSlice(start, MISSING_INDEX, step);
-    }
-
-    @Specialization
-    public PSlice doSlice(@SuppressWarnings("unused") PNone start, int stop, @SuppressWarnings("unused") PNone step) {
-        return factory().createSlice(MISSING_INDEX, stop, MISSING_INDEX);
-    }
-
-    @Specialization
-    public PSlice doSlice(@SuppressWarnings("unused") PNone start, long stop, @SuppressWarnings("unused") PNone step) {
-        return factory().createSlice(MISSING_INDEX, (int) stop, MISSING_INDEX);
-    }
-
-    @Specialization
-    public PSlice doSlice(@SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone stop, int step) {
-        return factory().createSlice(MISSING_INDEX, MISSING_INDEX, step);
-    }
-
-    @Specialization
-    public PSlice doSlice(@SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone stop, PInt step) {
-        return factory().createSlice(MISSING_INDEX, MISSING_INDEX, step.intValueExact());
-    }
-
-    @Specialization
-    @SuppressWarnings("unused")
-    public PSlice doSlice(PNone start, PNone stop, PNone step) {
-        return factory().createSlice(MISSING_INDEX, MISSING_INDEX, 1);
+        return castStepNode.execute(o);
     }
 
     public abstract PNode getFirst();
@@ -172,5 +104,60 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
     public static SliceLiteralNode create() {
         return SliceLiteralNodeGen.create(null, null, null);
+    }
+
+    abstract static class CastToSliceComponentNode extends PNodeWithContext {
+
+        private final int defaultValue;
+        private final BranchProfile indexErrorProfile = BranchProfile.create();
+
+        public CastToSliceComponentNode(int defaultValue) {
+            this.defaultValue = defaultValue;
+        }
+
+        public abstract int execute(int i);
+
+        public abstract int execute(long i);
+
+        public abstract int execute(Object i);
+
+        @Specialization
+        int doNone(@SuppressWarnings("unused") PNone i) {
+            return defaultValue;
+        }
+
+        @Specialization
+        int doBoolean(boolean i) {
+            return PInt.intValue(i);
+        }
+
+        @Specialization
+        int doInt(int i) {
+            return i;
+        }
+
+        @Specialization
+        int doLong(long i) {
+            try {
+                return PInt.intValueExact(i);
+            } catch (ArithmeticException e) {
+                indexErrorProfile.enter();
+                throw raiseIndexError();
+            }
+        }
+
+        @Specialization
+        int doPInt(PInt i) {
+            try {
+                return i.intValueExact();
+            } catch (ArithmeticException e) {
+                indexErrorProfile.enter();
+                throw raiseIndexError();
+            }
+        }
+
+        public static CastToSliceComponentNode create(int defaultValue) {
+            return CastToSliceComponentNodeGen.create(defaultValue);
+        }
     }
 }

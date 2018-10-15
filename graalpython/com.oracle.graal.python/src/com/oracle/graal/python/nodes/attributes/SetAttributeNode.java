@@ -43,30 +43,24 @@ package com.oracle.graal.python.nodes.attributes;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @NodeChildren({@NodeChild(value = "object", type = ExpressionNode.class), @NodeChild(value = "rhs", type = ExpressionNode.class)})
 public abstract class SetAttributeNode extends StatementNode implements WriteNode {
 
     public static final class Dynamic extends PNodeWithContext {
-        private final ValueProfile setAttributeProfile = ValueProfile.createIdentityProfile();
-        @Child private GetClassNode getClassNode = GetClassNode.create();
-        @Child private LookupAttributeInMRONode setAttributeLookup = LookupAttributeInMRONode.create(__SETATTR__);
-        @Child private CallTernaryMethodNode callSetAttribute = CallTernaryMethodNode.create();
+        @Child private LookupAndCallTernaryNode call = LookupAndCallTernaryNode.create(__SETATTR__);
 
-        public Object execute(Object object, Object key, Object value) {
-            Object descr = setAttributeProfile.profile(setAttributeLookup.execute(getClassNode.execute(object)));
-            return callSetAttribute.execute(descr, object, key, value);
+        public void execute(Object object, Object key, Object value) {
+            call.execute(object, key, value);
         }
     }
 
@@ -105,11 +99,7 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
 
     @Specialization
     protected void doIt(Object object, Object value,
-                    @Cached("createIdentityProfile()") ValueProfile setAttributeProfile,
-                    @Cached("create()") GetClassNode getClassNode,
-                    @Cached("create(__SETATTR__)") LookupAttributeInMRONode setAttributeLookup,
-                    @Cached("create()") CallTernaryMethodNode callSetAttribute) {
-        Object descr = setAttributeProfile.profile(setAttributeLookup.execute(getClassNode.execute(object)));
-        callSetAttribute.execute(descr, object, key, value);
+                    @Cached("create(__SETATTR__)") LookupAndCallTernaryNode call) {
+        call.execute(object, key, value);
     }
 }

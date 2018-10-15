@@ -82,7 +82,7 @@ public class PythonTypesUtil {
         } else if (object instanceof PythonClass) {
             return object.toString();
         } else if (object instanceof PythonObject) {
-            return ((PythonObject) object).getPythonClass().getName();
+            return ((PythonObject) object).getLazyPythonClass().getName();
         }
 
         throw new RuntimeException("Unsupported type name " + object.getClass());

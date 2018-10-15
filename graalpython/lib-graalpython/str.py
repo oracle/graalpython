@@ -341,17 +341,29 @@ def __iter__(self):
 str.__iter__ = __iter__
 
 
-def strcount(self, sub, start=0, end=-1):
-    if len(self) == 0:
+def strcount(self, sub, start=None, end=None):
+    selfLeng = len(self)
+    subLeng = len(sub)
+    if start == None:
+        start = 0
+    if selfLeng == 0:
+        if subLeng == 0 and start <= 0:
+            return 1
         return 0
-    if end < 0:
-        end = (len(self) + end) % len(self)
-    cnt = 0
+    if end == None:
+        end = selfLeng
+    if subLeng == 0:
+        if start <= selfLeng:
+            return len(self[start:end]) + 1
+        return 0
+
     idx = self.find(sub, start, end)
     if idx < 0:
         return 0
-    while idx < end and idx >= 0:
-        start = idx + 1
+
+    cnt = 1
+    while idx < selfLeng and idx >= 0 and cnt < selfLeng:
+        start = idx + subLeng
         idx = self.find(sub, start, end)
         if idx >= 0:
             cnt += 1

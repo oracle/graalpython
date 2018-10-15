@@ -52,6 +52,8 @@ import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetObjectTypeNodeGen;
@@ -374,7 +376,8 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Child SuperInitNode superInit;
 
         @Specialization
-        public Object get(SuperObject self, Object obj, @SuppressWarnings("unused") Object type) {
+        public Object get(SuperObject self, Object obj, @SuppressWarnings("unused") Object type,
+                        @Cached("createBinaryProfile()") ConditionProfile classProfile) {
             if (obj == PNone.NONE || getObject.execute(self) != null) {
                 // not binding to an object or already bound
                 return this;
@@ -384,7 +387,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                     superInit = insert(SuperInitNodeFactory.create());
                     getType = insert(GetTypeNodeGen.create());
                 }
-                SuperObject newSuper = factory().createSuperObject(self.getPythonClass());
+                SuperObject newSuper = factory().createSuperObject(getPythonClass(self.getLazyPythonClass(), classProfile));
                 superInit.execute(null, newSuper, getType.execute(self), obj);
                 return newSuper;
             }
@@ -400,14 +403,14 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Child GetTypeNode getType;
         @Child GetObjectNode getObject;
         @Child CallTernaryMethodNode callGet;
-        @Child LookupAndCallBinaryNode getAttr;
+        @Child ObjectBuiltins.GetAttributeNode objectGetattributeNode;
 
         private Object genericGetAttr(Object object, Object attr) {
-            if (getAttr == null) {
+            if (objectGetattributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getAttr = insert(LookupAndCallBinaryNode.create(SpecialMethodNames.__GETATTRIBUTE__));
+                objectGetattributeNode = insert(ObjectBuiltinsFactory.GetAttributeNodeFactory.create());
             }
-            return getAttr.executeObject(object, attr);
+            return objectGetattributeNode.execute(object, attr);
         }
 
         @Specialization

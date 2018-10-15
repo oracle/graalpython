@@ -28,14 +28,14 @@ package com.oracle.graal.python.builtins.objects.ints;
 import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class PInt extends PythonBuiltinObject {
 
     private final BigInteger value;
 
-    public PInt(PythonClass clazz, BigInteger value) {
+    public PInt(LazyPythonClass clazz, BigInteger value) {
         super(clazz);
         assert value != null;
         this.value = value;

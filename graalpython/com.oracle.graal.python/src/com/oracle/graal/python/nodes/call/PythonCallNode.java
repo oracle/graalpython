@@ -38,6 +38,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.dsl.Cached;
@@ -226,6 +227,7 @@ public abstract class PythonCallNode extends ExpressionNode {
 
     @Specialization
     Object call(VirtualFrame frame, ForeignInvoke callable,
+                    @Cached("create()") PForeignToPTypeNode fromForeign,
                     @Cached("create()") BranchProfile keywordsError,
                     @Cached("create()") BranchProfile nameError,
                     @Cached("create()") BranchProfile typeError,
@@ -239,7 +241,7 @@ public abstract class PythonCallNode extends ExpressionNode {
             throw raise(PythonErrorType.TypeError, "foreign invocation does not support keyword arguments");
         }
         try {
-            return ForeignAccess.sendInvoke(invokeNode, callable.receiver, callable.identifier, arguments);
+            return fromForeign.executeConvert(ForeignAccess.sendInvoke(invokeNode, callable.receiver, callable.identifier, arguments));
         } catch (UnknownIdentifierException e) {
             nameError.enter();
             throw raise(PythonErrorType.NameError, e.getMessage());

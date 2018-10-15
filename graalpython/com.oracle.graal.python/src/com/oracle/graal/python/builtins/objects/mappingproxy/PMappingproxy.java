@@ -42,13 +42,13 @@ package com.oracle.graal.python.builtins.objects.mappingproxy;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public class PMappingproxy extends PHashingCollection {
     private final HashingStorage dictStorage;
 
-    public PMappingproxy(PythonClass klass, HashingStorage dictStorage) {
+    public PMappingproxy(LazyPythonClass klass, HashingStorage dictStorage) {
         super(klass);
         this.dictStorage = dictStorage;
     }

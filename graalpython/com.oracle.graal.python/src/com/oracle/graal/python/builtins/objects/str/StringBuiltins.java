@@ -84,8 +84,11 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -520,6 +523,37 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FindBaseNode extends PythonBuiltinNode {
 
+        private @Child CastToIndexNode startNode;
+        private @Child CastToIndexNode endNode;
+
+        private CastToIndexNode getStartNode() {
+            if (startNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                startNode = insert(CastToIndexNode.createOverflow());
+            }
+            return startNode;
+        }
+
+        private CastToIndexNode getEndNode() {
+            if (endNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                endNode = insert(CastToIndexNode.createOverflow());
+            }
+            return endNode;
+        }
+
+        private SliceInfo computeSlice(int length, long start, long end) {
+            PSlice tmpSlice = factory().createSlice(getStartNode().execute(start), getEndNode().execute(end), 1);
+            return tmpSlice.computeIndices(length);
+        }
+
+        private SliceInfo computeSlice(int length, Object startO, Object endO) {
+            int start = startO == PNone.NO_VALUE || startO == PNone.NONE ? 0 : getStartNode().execute(startO);
+            int end = endO == PNone.NO_VALUE || endO == PNone.NONE ? length : getEndNode().execute(endO);
+            PSlice tmpSlice = factory().createSlice(start, end, 1);
+            return tmpSlice.computeIndices(length);
+        }
+
         @Specialization
         Object find(String self, String str, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
             return find(self, str);
@@ -527,60 +561,45 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         Object find(String self, String str, long start, @SuppressWarnings("unused") PNone end) {
-            return findGeneric(self, str, start, -1);
+            int len = self.length();
+            SliceInfo info = computeSlice(len, start, len);
+            if (info.length == 0) {
+                return -1;
+            }
+            return findWithBounds(self, str, info.start, info.stop);
         }
 
         @Specialization
         Object find(String self, String str, @SuppressWarnings("unused") PNone start, long end) {
-            return findGeneric(self, str, -1, end);
+            SliceInfo info = computeSlice(self.length(), 0, end);
+            if (info.length == 0) {
+                return -1;
+            }
+            return findWithBounds(self, str, info.start, info.stop);
         }
 
         @Specialization
         Object find(String self, String str, long start, long end) {
-            return findGeneric(self, str, start, end);
-        }
-
-        @Specialization(guards = {"isNumberOrNone(start)", "isNumberOrNone(end)"}, rewriteOn = ArithmeticException.class)
-        Object findGeneric(String self, String str, Object start, Object end) throws ArithmeticException {
-            int startInt = getIntValue(start);
-            int endInt = getIntValue(end);
-            return findWithBounds(self, str, startInt, endInt);
-        }
-
-        @Specialization(guards = {"isNumberOrNone(start)", "isNumberOrNone(end)"}, replaces = "findGeneric")
-        Object findGenericOvf(String self, String str, Object start, Object end) {
-            try {
-                int startInt = getIntValue(start);
-                int endInt = getIntValue(end);
-                return findWithBounds(self, str, startInt, endInt);
-            } catch (ArithmeticException e) {
-                throw raise(ValueError, "cannot fit 'int' into an index-sized integer");
+            SliceInfo info = computeSlice(self.length(), start, end);
+            if (info.length == 0) {
+                return -1;
             }
+            return findWithBounds(self, str, info.start, info.stop);
+        }
+
+        @Specialization
+        Object findGeneric(String self, String str, Object start, Object end) throws ArithmeticException {
+            SliceInfo info = computeSlice(self.length(), start, end);
+            if (info.length == 0) {
+                return -1;
+            }
+            return findWithBounds(self, str, info.start, info.stop);
         }
 
         @Fallback
         @SuppressWarnings("unused")
         Object findFail(Object self, Object str, Object start, Object end) {
             throw raise(TypeError, "must be str, not %p", str);
-        }
-
-        protected static boolean isNumberOrNone(Object o) {
-            return o instanceof PInt || o instanceof PNone;
-        }
-
-        private static int getIntValue(Object o) throws ArithmeticException {
-            if (o instanceof Integer) {
-                return (int) o;
-            } else if (o instanceof Long) {
-                return PInt.intValueExact((long) o);
-            } else if (o instanceof Boolean) {
-                return PInt.intValue((boolean) o);
-            } else if (o instanceof PInt) {
-                return ((PInt) o).intValueExact();
-            } else if (o instanceof PNone) {
-                return -1;
-            }
-            throw new IllegalArgumentException();
         }
 
         @SuppressWarnings("unused")
@@ -608,14 +627,8 @@ public final class StringBuiltins extends PythonBuiltins {
         @Override
         @TruffleBoundary
         protected int findWithBounds(String self, String str, int start, int end) {
-            if (start != -1 && end != -1) {
-                return self.substring(start, end).lastIndexOf(str);
-            } else if (start != -1) {
-                return self.substring(start).lastIndexOf(str);
-            } else {
-                assert end != -1;
-                return self.substring(0, end).lastIndexOf(str);
-            }
+            int idx = self.lastIndexOf(str, end - str.length());
+            return idx >= start ? idx : -1;
         }
     }
 
@@ -633,14 +646,8 @@ public final class StringBuiltins extends PythonBuiltins {
         @Override
         @TruffleBoundary
         protected int findWithBounds(String self, String str, int start, int end) {
-            if (start != -1 && end != -1) {
-                return self.substring(0, end).indexOf(str, start);
-            } else if (start != -1) {
-                return self.indexOf(str, start);
-            } else {
-                assert end != -1;
-                return self.substring(0, end).indexOf(str);
-            }
+            int idx = self.indexOf(str, start);
+            return idx + str.length() <= end ? idx : -1;
         }
     }
 
@@ -649,17 +656,10 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class JoinNode extends PythonBuiltinNode {
 
-        @Child private JoinInternalNode joinInternalNode;
-        @Child private GetClassNode getClassNode;
-
         @Specialization
-        protected String join(Object self, Object iterable) {
-            if (joinInternalNode == null || getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                joinInternalNode = insert(JoinInternalNode.create());
-                getClassNode = insert(GetClassNode.create());
-            }
-            return joinInternalNode.execute(self, iterable, getClassNode.execute(iterable));
+        protected String join(Object self, Object iterable,
+                        @Cached("create()") JoinInternalNode join) {
+            return join.execute(self, iterable);
         }
     }
 
@@ -722,7 +722,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         public String translate(String self, PDict table,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
             char[] translatedChars = new char[self.length()];
 
             for (int i = 0; i < self.length(); i++) {
@@ -731,7 +731,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 try {
                     translated = getItemNode.executeObject(table, (int) original);
                 } catch (PException e) {
-                    e.expect(KeyError, getCore(), errorProfile);
+                    e.expect(KeyError, errorProfile);
                 }
                 int ord = translated == null ? original : (int) translated;
                 translatedChars[i] = (char) ord;
@@ -1320,7 +1320,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object doGeneric(String left, Object right,
                         @Cached("create()") CallDispatchNode callNode,
-                        @Cached("create()") GetClassNode getClassNode,
+                        @Cached("create()") GetLazyClassNode getClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
             return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode);
@@ -1537,6 +1537,235 @@ public final class StringBuiltins extends PythonBuiltins {
             return spaces == 0 || self.length() > spaces;
 
         }
+    }
+
+    @Builtin(name = "zfill", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class ZFillNode extends PythonBinaryBuiltinNode {
+
+        public abstract String executeObject(String self, Object x);
+
+        @Specialization
+        public String doString(String self, long width) {
+            return zfill(self, (int) width);
+        }
+
+        @Specialization
+        public String doString(String self, PInt width,
+                        @Cached("create()") CastToIndexNode toIndexNode) {
+            return zfill(self, toIndexNode.execute(width));
+        }
+
+        @Specialization
+        public String doString(String self, Object width,
+                        @Cached("create()") CastToIntegerFromIndexNode widthCast,
+                        @Cached("create()") ZFillNode recursiveNode) {
+            return recursiveNode.executeObject(self, widthCast.execute(width));
+        }
+
+        private static String zfill(String self, int width) {
+            int len = self.length();
+            if (len >= width) {
+                return self;
+            }
+            char[] chars = new char[width];
+            int nzeros = width - len;
+            int i = 0;
+            int sStart = 0;
+            if (len > 0) {
+                char start = self.charAt(0);
+                if (start == '+' || start == '-') {
+                    chars[0] = start;
+                    i += 1;
+                    nzeros++;
+                    sStart = 1;
+                }
+            }
+            for (; i < nzeros; i++) {
+                chars[i] = '0';
+            }
+            self.getChars(sStart, len, chars, i);
+            return new String(chars);
+        }
+
+        public static ZFillNode create() {
+            return StringBuiltinsFactory.ZFillNodeFactory.create();
+        }
+    }
+
+    @Builtin(name = "title", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class TitleNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        public String doTitle(String self) {
+            boolean shouldBeLowerCase = false;
+            boolean translated;
+            StringBuilder converted = new StringBuilder();
+            for (int offset = 0; offset < self.length();) {
+                int ch = self.codePointAt(offset);
+                translated = false;
+                if (Character.isAlphabetic(ch)) {
+                    if (shouldBeLowerCase) {
+                        // Should be lower case
+                        if (Character.isUpperCase(ch)) {
+                            translated = true;
+                            if (ch < 256) {
+                                converted.append((char) Character.toLowerCase(ch));
+                            } else {
+                                String origPart = new String(Character.toChars(ch));
+                                String changedPart = origPart.toLowerCase();
+                                converted.append(changedPart);
+                            }
+                        }
+                    } else {
+                        // Should be upper case
+                        if (Character.isLowerCase(ch)) {
+                            translated = true;
+                            if (ch < 256) {
+                                converted.append((char) Character.toUpperCase(ch));
+                            } else {
+                                String origPart = new String(Character.toChars(ch));
+                                String changedPart = origPart.toUpperCase();
+                                if (origPart.length() < changedPart.length()) {
+                                    // the original char was mapped to more chars ->
+                                    // we need to make upper case just the first one
+                                    changedPart = doTitle(changedPart);
+                                }
+                                converted.append(changedPart);
+                            }
+                        }
+                    }
+                    // And this was a letter
+                    shouldBeLowerCase = true;
+                } else {
+                    // This was not a letter
+                    shouldBeLowerCase = false;
+                }
+                if (!translated) {
+                    if (ch < 256) {
+                        converted.append((char) ch);
+                    } else {
+                        converted.append(Character.toChars(ch));
+                    }
+                }
+                offset += Character.charCount(ch);
+            }
+            return converted.toString();
+        }
+    }
+
+    @Builtin(name = "center", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class CenterNode extends PythonBuiltinNode {
+
+        private @Child CastToIndexNode toIndexNode;
+
+        private CastToIndexNode getCastToIndexNode() {
+            if (toIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toIndexNode = insert(CastToIndexNode.createOverflow());
+            }
+            return toIndexNode;
+        }
+
+        @Specialization
+        public String createDefault(String self, long width, @SuppressWarnings("unused") PNone fill) {
+            return make(self, getCastToIndexNode().execute(width), " ");
+        }
+
+        @Specialization(guards = "fill.codePointCount(0, fill.length()) == 1")
+        public String create(String self, long width, String fill) {
+            return make(self, getCastToIndexNode().execute(width), fill);
+        }
+
+        @Specialization(guards = "fill.codePointCount(0, fill.length()) != 1")
+        @SuppressWarnings("unused")
+        public String createError(String self, long width, String fill) {
+            throw raise(TypeError, "The fill character must be exactly one character long");
+        }
+
+        @Specialization
+        public String createDefault(String self, PInt width, @SuppressWarnings("unused") PNone fill) {
+            return make(self, getCastToIndexNode().execute(width), " ");
+        }
+
+        @Specialization(guards = "fill.codePointCount(0, fill.length()) == 1")
+        public String create(String self, PInt width, String fill) {
+            return make(self, getCastToIndexNode().execute(width), fill);
+        }
+
+        @Specialization(guards = "fill.codePointCount(0, fill.length()) != 1")
+        @SuppressWarnings("unused")
+        public String createError(String self, PInt width, String fill) {
+            throw raise(TypeError, "The fill character must be exactly one character long");
+        }
+
+        protected String make(String self, int width, String fill) {
+            int fillChar = parseCodePoint(fill);
+            int len = width - self.length();
+            if (len <= 0) {
+                return self;
+            }
+            int half = len / 2;
+            if (len % 2 > 0 && width % 2 > 0) {
+                half += 1;
+            }
+
+            return padding(half, fillChar) + self + padding(len - half, fillChar);
+        }
+
+        protected static String padding(int len, int codePoint) {
+            int[] result = new int[len];
+            for (int i = 0; i < len; i++) {
+                result[i] = codePoint;
+            }
+            return new String(result, 0, len);
+        }
+
+        @TruffleBoundary
+        protected static int parseCodePoint(String fillchar) {
+            if (fillchar == null) {
+                return ' ';
+            }
+            return fillchar.codePointAt(0);
+        }
+    }
+
+    @Builtin(name = "ljust", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class LJustNode extends CenterNode {
+
+        @Override
+        protected String make(String self, int width, String fill) {
+            int fillChar = parseCodePoint(fill);
+            int len = width - self.length();
+            if (len <= 0) {
+                return self;
+            }
+            return self + padding(len, fillChar);
+        }
+
+    }
+
+    @Builtin(name = "rjust", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class RJustNode extends CenterNode {
+
+        @Override
+        protected String make(String self, int width, String fill) {
+            int fillChar = parseCodePoint(fill);
+            int len = width - self.length();
+            if (len <= 0) {
+                return self;
+            }
+            return padding(len, fillChar) + self;
+        }
+
     }
 
     @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)

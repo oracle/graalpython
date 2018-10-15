@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNo
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.BoolNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.ByteNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DoubleNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.IntNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.LongNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
@@ -97,8 +98,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -265,11 +267,6 @@ public abstract class CExtNodes {
 
         public abstract Object execute(Object obj);
 
-        /*
-         * This is very sad. Only for Sulong, we cannot hand out java.lang.Strings, because then it
-         * won't know what to do with them when they go native. So all places where Strings may be
-         * passed from Python into C code need to wrap Strings into PStrings.
-         */
         @Specialization
         Object doString(String str,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
@@ -277,8 +274,15 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doBoolean(boolean b) {
-            return BoolNativeWrapper.create(b);
+        Object doBoolean(boolean b,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+            PInt boxed = factory().createInt(b);
+            DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
+            if (profile.profile(nativeWrapper == null)) {
+                nativeWrapper = BoolNativeWrapper.create(b);
+                boxed.setNativeWrapper(nativeWrapper);
+            }
+            return nativeWrapper;
         }
 
         @Specialization
@@ -311,8 +315,15 @@ public abstract class CExtNodes {
             return object.getPtr();
         }
 
-        @Specialization(guards = "!isNativeClass(object)")
-        Object doPythonClass(PythonClass object) {
+        @Specialization(guards = {"!isNativeClass(object)", "object == cachedObject"}, limit = "3")
+        Object doPythonClass(@SuppressWarnings("unused") PythonClass object,
+                        @SuppressWarnings("unused") @Cached("object") PythonClass cachedObject,
+                        @Cached("wrap(object)") PythonClassNativeWrapper wrapper) {
+            return wrapper;
+        }
+
+        @Specialization(replaces = "doPythonClass", guards = {"!isNativeClass(object)"})
+        Object doPythonClassUncached(PythonClass object) {
             return PythonClassNativeWrapper.wrap(object);
         }
 
@@ -366,9 +377,7 @@ public abstract class CExtNodes {
     public abstract static class AsPythonObjectNode extends CExtBaseNode {
         public abstract Object execute(Object value);
 
-        @Child GetClassNode getClassNode;
-
-        @Specialization(guards = "!isMaterialized(object)")
+        @Specialization
         boolean doBoolNativeWrapper(BoolNativeWrapper object) {
             return object.getValue();
         }
@@ -404,8 +413,10 @@ public abstract class CExtNodes {
             return object.getDelegate();
         }
 
-        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
-        PythonAbstractObject doNativeObject(TruffleObject object) {
+        @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        PythonAbstractObject doNativeObject(TruffleObject object,
+                        @SuppressWarnings("unused") @Cached("create()") GetLazyClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached("create()") IsBuiltinClassProfile isForeignClassProfile) {
             return factory().createNativeObjectWrapper(object);
         }
 
@@ -455,23 +466,18 @@ public abstract class CExtNodes {
         }
 
         protected static boolean isPrimitiveNativeWrapper(PythonNativeWrapper object) {
-            return object instanceof PrimitiveNativeWrapper && !isMaterialized((PrimitiveNativeWrapper) object);
+            return object instanceof PrimitiveNativeWrapper && !isMaterialized((PrimitiveNativeWrapper) object) || object instanceof BoolNativeWrapper;
         }
 
-        protected boolean isForeignObject(TruffleObject obj) {
-            // TODO we could probably also just use 'PGuards.isForeignObject'
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            return getClassNode.execute(obj) == getCore().lookupType(PythonBuiltinClassType.TruffleObject);
+        protected boolean isForeignObject(TruffleObject obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
+            return isForeignClassProfile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.TruffleObject);
         }
 
         @TruffleBoundary
-        public static Object doSlowPath(PythonCore core, Object object) {
+        public static Object doSlowPath(Object object) {
             if (object instanceof PythonNativeWrapper) {
                 return ((PythonNativeWrapper) object).getDelegate();
-            } else if (GetClassNode.getItSlowPath(object) == core.lookupType(PythonBuiltinClassType.TruffleObject)) {
+            } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getItSlowPath(object), PythonBuiltinClassType.TruffleObject)) {
                 throw new AssertionError("Unsupported slow path operation: converting 'to_java(" + object + ")");
             }
             return object;
@@ -1150,7 +1156,7 @@ public abstract class CExtNodes {
         private CastToIndexNode getIntNode() {
             if (intNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                intNode = CastToIndexNode.createOverflow();
+                intNode = insert(CastToIndexNode.createOverflow());
             }
             return intNode;
         }

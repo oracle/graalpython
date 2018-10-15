@@ -131,8 +131,8 @@ declare_type(PyByteArray_Type, bytearray, PyByteArrayObject);
 declare_type(PyCFunction_Type, builtin_function_or_method, PyCFunctionObject);
 declare_type(PyMethodDescr_Type, method_descriptor, PyMethodDescrObject);
 declare_type(PyGetSetDescr_Type, getset_descriptor, PyGetSetDescrObject);
-declare_type(PyWrapperDescr_Type, wrapper_descriptor, PyWrapperDescrObject);
-declare_type(PyMemberDescr_Type, member_descriptor, PyMemberDescrObject);
+declare_type(PyWrapperDescr_Type, method_descriptor, PyWrapperDescrObject); // LS: previously wrapper_descriptor
+declare_type(PyMemberDescr_Type, property, PyMemberDescrObject); // LS: previously member_descriptor
 declare_type(_PyExc_BaseException, BaseException, PyBaseExceptionObject);
 declare_type(PyBuffer_Type, buffer, PyBufferDecorator);
 declare_type(PyFunction_Type, function, PyFunctionObject);

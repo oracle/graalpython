@@ -52,7 +52,7 @@ public class PythonNativeClass extends PythonClass {
     public final Object object;
 
     public PythonNativeClass(Object obj, PythonClass type, String name, PythonClass... bases) {
-        super(type, name, bases);
+        super(type, name, type.getInstanceShape(), bases);
         object = obj;
     }
 }

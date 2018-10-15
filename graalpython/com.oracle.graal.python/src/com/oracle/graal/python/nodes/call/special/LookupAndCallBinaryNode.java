@@ -119,7 +119,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     }
 
     protected Object getMethod(Object receiver, String methodName) {
-        return GetClassNode.getItSlowPath(receiver).getAttribute(methodName);
+        return LookupAttributeInMRONode.lookupSlow(GetClassNode.getItSlowPath(receiver), methodName);
     }
 
     protected boolean isReversible() {
@@ -154,7 +154,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     protected PythonBinaryBuiltinNode getBuiltin(Object receiver) {
         assert receiver instanceof Boolean || receiver instanceof Integer || receiver instanceof Long || receiver instanceof Double || receiver instanceof String;
-        Object attribute = GetClassNode.getItSlowPath(receiver).getAttribute(name);
+        Object attribute = LookupAttributeInMRONode.lookupSlow(GetClassNode.getItSlowPath(receiver), name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
             if (PythonBinaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {

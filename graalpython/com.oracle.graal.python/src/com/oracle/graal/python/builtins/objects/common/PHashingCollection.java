@@ -42,11 +42,11 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public abstract class PHashingCollection extends PythonBuiltinObject {
 
-    public PHashingCollection(PythonClass cls) {
+    public PHashingCollection(LazyPythonClass cls) {
         super(cls);
     }
 

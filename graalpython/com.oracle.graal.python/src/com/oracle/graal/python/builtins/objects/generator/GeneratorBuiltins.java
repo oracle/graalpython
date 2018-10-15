@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.RootCallTarget;
@@ -90,7 +91,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
-        private final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
+        private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         protected static DirectCallNode createDirectCall(CallTarget target) {
             return Truffle.getRuntime().createDirectCallNode(target);
@@ -113,7 +114,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             try {
                 return call.call(self.getArguments());
             } catch (PException e) {
-                e.expectStopIteration(getCore(), errorProfile);
+                e.expectStopIteration(errorProfile);
                 self.markAsFinished();
                 throw raise(StopIteration);
             }
@@ -128,7 +129,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             try {
                 return call.call(self.getCallTarget(), self.getArguments());
             } catch (PException e) {
-                e.expectStopIteration(getCore(), errorProfile);
+                e.expectStopIteration(errorProfile);
                 self.markAsFinished();
                 throw raise(StopIteration);
             }
@@ -155,8 +156,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
             Object instance = callTyp.execute(frame, typ, new Object[0]);
             if (instance instanceof PBaseException) {
-                PException pException = new PException((PBaseException) instance, this);
-                ((PBaseException) instance).setException(pException);
+                PException pException = PException.fromObject((PBaseException) instance, this);
                 PArguments.setSpecialArgument(self.getArguments(), pException);
             } else {
                 throw raise(TypeError, "exceptions must derive from BaseException");
@@ -169,8 +169,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
             Object instance = callTyp.execute(frame, typ, val.getArray());
             if (instance instanceof PBaseException) {
-                PException pException = new PException((PBaseException) instance, this);
-                ((PBaseException) instance).setException(pException);
+                PException pException = PException.fromObject((PBaseException) instance, this);
                 PArguments.setSpecialArgument(self.getArguments(), pException);
             } else {
                 throw raise(TypeError, "exceptions must derive from BaseException");
@@ -183,8 +182,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
             Object instance = callTyp.execute(frame, typ, new Object[]{val});
             if (instance instanceof PBaseException) {
-                PException pException = new PException((PBaseException) instance, this);
-                ((PBaseException) instance).setException(pException);
+                PException pException = PException.fromObject((PBaseException) instance, this);
                 PArguments.setSpecialArgument(self.getArguments(), pException);
             } else {
                 throw raise(TypeError, "exceptions must derive from BaseException");
@@ -194,16 +192,14 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object sendThrow(PGenerator self, PBaseException instance, @SuppressWarnings("unused") PNone val, @SuppressWarnings("unused") PNone tb) {
-            PException pException = new PException(instance, this);
-            instance.setException(pException);
+            PException pException = PException.fromObject(instance, this);
             PArguments.setSpecialArgument(self.getArguments(), pException);
             return resumeGenerator(self);
         }
 
         @Specialization
         Object sendThrow(PGenerator self, @SuppressWarnings("unused") PythonClass typ, PBaseException instance, PTraceback tb) {
-            PException pException = new PException(instance, this);
-            instance.setException(pException);
+            PException pException = PException.fromObject(instance, this);
             instance.setTraceback(tb);
             PArguments.setSpecialArgument(self.getArguments(), pException);
             return resumeGenerator(self);

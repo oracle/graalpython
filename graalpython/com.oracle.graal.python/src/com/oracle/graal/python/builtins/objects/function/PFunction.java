@@ -31,12 +31,11 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
 
@@ -46,18 +45,17 @@ public class PFunction extends PythonObject implements PythonCallable {
     private final String enclosingClassName;
     private final Arity arity;
     private final RootCallTarget callTarget;
-    private final FrameDescriptor frameDescriptor;
     private final PythonObject globals;
     private final PCell[] closure;
     private final boolean isStatic;
     private PCode code;
     private Object[] defaults;
 
-    public PFunction(PythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
-        this(clazz, name, enclosingClassName, arity, callTarget, frameDescriptor, globals, null, closure);
+    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
+        this(clazz, name, enclosingClassName, arity, callTarget, globals, null, closure);
     }
 
-    public PFunction(PythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, Object[] defaults,
+    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, Object[] defaults,
                     PCell[] closure) {
         super(clazz);
         this.name = name;
@@ -65,7 +63,6 @@ public class PFunction extends PythonObject implements PythonCallable {
         this.enclosingClassName = enclosingClassName;
         this.arity = arity;
         this.callTarget = callTarget;
-        this.frameDescriptor = frameDescriptor;
         this.globals = globals;
         this.defaults = defaults;
         this.closure = closure;
@@ -75,7 +72,7 @@ public class PFunction extends PythonObject implements PythonCallable {
     @TruffleBoundary
     private static void addDefaultConstants(DynamicObject storage, String name, String enclosingClassName) {
         storage.define(__NAME__, name);
-        storage.define(__QUALNAME__, enclosingClassName == null ? enclosingClassName + "." + name : name);
+        storage.define(__QUALNAME__, enclosingClassName != null ? enclosingClassName + "." + name : name);
     }
 
     public boolean isStatic() {
@@ -85,11 +82,6 @@ public class PFunction extends PythonObject implements PythonCallable {
     @Override
     public RootCallTarget getCallTarget() {
         return callTarget;
-    }
-
-    @Override
-    public FrameDescriptor getFrameDescriptor() {
-        return frameDescriptor;
     }
 
     @Override

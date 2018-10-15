@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -52,7 +53,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "array")
 public final class ArrayModuleBuiltins extends PythonBuiltins {
@@ -125,7 +125,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         @Cached("createCast()") CastToByteNode castToByteNode,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile,
                         @Cached("create()") SequenceNodes.LenNode lenNode) {
             Object iter = getIterator.executeWith(initializer);
             int i = 0;
@@ -136,7 +136,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 try {
                     nextValue = next.execute(iter);
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     break;
                 }
                 byteArray[i++] = castToByteNode.execute(nextValue);
@@ -149,7 +149,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         PArray arrayIntInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile,
                         @Cached("create()") SequenceNodes.LenNode lenNode) {
             Object iter = getIterator.executeWith(initializer);
             int i = 0;
@@ -161,7 +161,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 try {
                     nextValue = next.execute(iter);
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     break;
                 }
                 if (nextValue instanceof Integer) {
@@ -178,7 +178,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         PArray arrayLongInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile,
                         @Cached("create()") SequenceNodes.LenNode lenNode) {
             Object iter = getIterator.executeWith(initializer);
             int i = 0;
@@ -190,7 +190,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 try {
                     nextValue = next.execute(iter);
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     break;
                 }
                 if (nextValue instanceof Number) {
@@ -207,7 +207,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         PArray arrayDoubleInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile,
                         @Cached("create()") SequenceNodes.LenNode lenNode) {
             Object iter = getIterator.executeWith(initializer);
             int i = 0;
@@ -219,7 +219,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 try {
                     nextValue = next.execute(iter);
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     break;
                 }
                 if (nextValue instanceof Integer) {

@@ -49,7 +49,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.FastDictStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
@@ -73,9 +72,9 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
@@ -86,7 +85,8 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsHashableNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -177,7 +177,7 @@ public abstract class HashingStorageNodes {
 
     @ImportStatic(PGuards.class)
     abstract static class DictStorageBaseNode extends PNodeWithContext {
-        @Child private GetClassNode getClassNode;
+        @Child private GetLazyClassNode getClassNode;
         @Child private IsHashableNode isHashableNode;
         @Child private Equivalence equivalenceNode;
 
@@ -189,10 +189,10 @@ public abstract class HashingStorageNodes {
             return equivalenceNode;
         }
 
-        protected PythonClass getClass(Object object) {
+        protected LazyPythonClass getClass(Object object) {
             if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
+                getClassNode = insert(GetLazyClassNode.create());
             }
             return getClassNode.execute(object);
         }
@@ -223,7 +223,7 @@ public abstract class HashingStorageNodes {
         }
 
         protected boolean wrappedString(PString s) {
-            return getClass(s).isBuiltin();
+            return PGuards.cannotBeOverridden(getClass(s));
         }
 
         protected EconomicMapStorage switchToEconomicMap(HashingStorage storage) {
@@ -313,7 +313,7 @@ public abstract class HashingStorageNodes {
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
                         @Cached("create()") GetIteratorNode getIteratorNode,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
 
             HashingStorage curStorage = PDict.createNewStorage(false, 0);
 
@@ -330,7 +330,7 @@ public abstract class HashingStorageNodes {
                     // TODO remove 'null'
                     curStorage = getSetItemNode().execute(curStorage, keyObj, valueObj);
                 } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                     return curStorage;
                 }
             }
@@ -359,19 +359,19 @@ public abstract class HashingStorageNodes {
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Cached("create()") SequenceNodes.LenNode seqLenNode,
                         @Cached("createBinaryProfile()") ConditionProfile lengthTwoProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("create()") IsBuiltinClassProfile errorProfile,
+                        @Cached("create()") IsBuiltinClassProfile isTypeErrorProfile) {
 
             Object it = getIterator.executeWith(iterable);
 
             ArrayList<PSequence> elements = new ArrayList<>();
-            PythonClass listClass = getCore().lookupType(PythonBuiltinClassType.PList);
             boolean isStringKey = false;
             try {
                 while (true) {
                     Object next = getNextNode().execute(it);
                     PSequence element = null;
                     int len = 1;
-                    element = createListNode.execute(listClass, next, getClass(next));
+                    element = createListNode.execute(next);
                     assert element != null;
                     // This constructs a new list using the builtin type. So, the object cannot
                     // be subclassed and we can directly call 'len()'.
@@ -387,10 +387,10 @@ public abstract class HashingStorageNodes {
                     elements.add(element);
                 }
             } catch (PException e) {
-                if (e.getType() == getCore().getErrorClass(TypeError)) {
+                if (isTypeErrorProfile.profileException(e, TypeError)) {
                     throw raise(TypeError, "cannot convert dictionary update sequence element #%d to a sequence", elements.size());
                 } else {
-                    e.expectStopIteration(getCore(), errorProfile);
+                    e.expectStopIteration(errorProfile);
                 }
             }
 
@@ -710,11 +710,6 @@ public abstract class HashingStorageNodes {
         @TruffleBoundary
         @Specialization(guards = {"!storage.getStore().getShape().isValid()"})
         protected HashingStorage doDynamicObjectUpdateShape(DynamicObjectStorage storage, String name, Object value) {
-            /*
-             * Slow path that we do not handle in compiled code. But no need to invalidate compiled
-             * code.
-             */
-            CompilerDirectives.transferToInterpreter();
             storage.getStore().updateShape();
             return doDynamicObjectUncached(storage, name, value);
         }

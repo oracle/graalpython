@@ -29,8 +29,10 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MRO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
@@ -39,6 +41,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__PREPARE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSES__;
@@ -62,7 +65,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -80,6 +82,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -92,7 +96,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonClass)
 public class TypeBuiltins extends PythonBuiltins {
@@ -102,14 +105,25 @@ public class TypeBuiltins extends PythonBuiltins {
         return TypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = SpecialMethodNames.__REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
+        public String repr(PythonClass self,
+                        @Cached("create()") ReadAttributeFromObjectNode readModuleNode,
+                        @Cached("create()") ReadAttributeFromObjectNode readQualNameNode) {
+            Object moduleName = readModuleNode.execute(self, __MODULE__);
+            Object qualName = readQualNameNode.execute(self, __QUALNAME__);
+            return concat(moduleName, qualName);
+        }
+
         @TruffleBoundary
-        public String repr(PythonClass self) {
-            return self.toString();
+        private String concat(Object moduleName, Object qualName) {
+            if (moduleName != PNone.NO_VALUE && !moduleName.equals(getCore().getBuiltins().getModuleName())) {
+                return String.format("<class '%s.%s'>", moduleName, qualName);
+            }
+            return String.format("<class '%s'>", qualName);
         }
     }
 
@@ -140,11 +154,13 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonVarargsBuiltinNode {
-        @Child CallVarargsMethodNode dispatchNew = CallVarargsMethodNode.create();
-        @Child LookupAttributeInMRONode lookupNew = LookupAttributeInMRONode.create(__NEW__);
-        @Child CallVarargsMethodNode dispatchInit = CallVarargsMethodNode.create();
-        @Child LookupAttributeInMRONode lookupInit = LookupAttributeInMRONode.create(__INIT__);
-        @Child GetClassNode getClass = GetClassNode.create();
+        @Child private CallVarargsMethodNode dispatchNew = CallVarargsMethodNode.create();
+        @Child private LookupAttributeInMRONode lookupNew = LookupAttributeInMRONode.create(__NEW__);
+        @Child private CallVarargsMethodNode dispatchInit = CallVarargsMethodNode.create();
+        @Child private LookupAttributeInMRONode lookupInit = LookupAttributeInMRONode.create(__INIT__);
+        @Child private GetClassNode getClass = GetClassNode.create();
+
+        private final IsBuiltinClassProfile isClassClassProfile = IsBuiltinClassProfile.create();
 
         public static CallNode create() {
             return CallNodeFactory.create();
@@ -190,7 +206,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 Object newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
                 PythonClass newInstanceKlass = getClass.execute(newInstance);
                 if (newInstanceKlass == self) {
-                    if (arguments.length == 2 && self == getCore().lookupType(PythonBuiltinClassType.PythonBuiltinClass)) {
+                    if (arguments.length == 2 && isClassClassProfile.profileClass(self, PythonBuiltinClassType.PythonClass)) {
                         // do not call init if we are creating a new instance of type and we are
                         // passing keywords or more than one argument see:
                         // https://github.com/python/cpython/blob/2102c789035ccacbac4362589402ac68baa2cd29/Objects/typeobject.c#L3538
@@ -230,11 +246,11 @@ public class TypeBuiltins extends PythonBuiltins {
         private final BranchProfile isDescProfile = BranchProfile.create();
         private final BranchProfile hasValueProfile = BranchProfile.create();
         private final BranchProfile errorProfile = BranchProfile.create();
+        private final ConditionProfile getClassProfile = ConditionProfile.createBinaryProfile();
 
         @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
-        private final ValueProfile typeProfile = ValueProfile.createIdentityProfile();
-        @Child private GetClassNode getDataClassNode;
-        @Child private GetClassNode getObjectClassNode;
+        @Child private GetLazyClassNode getObjectClassNode = GetLazyClassNode.create();
+        @Child private GetLazyClassNode getDataClassNode;
         @Child private LookupInheritedAttributeNode valueGetLookup;
         @Child private LookupAttributeInMRONode lookupGetNode;
         @Child private LookupAttributeInMRONode lookupSetNode;
@@ -245,13 +261,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(PythonClass object, Object key) {
-            PythonClass type = typeProfile.profile(getObjectClass(object));
+            LazyPythonClass type = getObjectClassNode.execute(object);
             Object descr = lookup.execute(type, key);
-            PythonClass dataDescClass = null;
             Object get = null;
             if (descr != PNone.NO_VALUE) {
                 hasDescProfile.enter();
-                dataDescClass = getDataClass(descr);
+                LazyPythonClass dataDescClass = getDataClass(descr);
                 get = lookupGet(dataDescClass);
                 if (get instanceof PythonCallable) {
                     Object delete = PNone.NO_VALUE;
@@ -266,7 +281,7 @@ public class TypeBuiltins extends PythonBuiltins {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             invokeGet = insert(CallTernaryMethodNode.create());
                         }
-                        return invokeGet.execute(get, descr, object, type);
+                        return invokeGet.execute(get, descr, object, getPythonClass(type, getClassProfile));
                     }
                 }
             }
@@ -293,7 +308,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         invokeGet = insert(CallTernaryMethodNode.create());
                     }
-                    return invokeGet.execute(get, descr, object, type);
+                    return invokeGet.execute(get, descr, object, getPythonClass(type, getClassProfile));
                 }
             }
             errorProfile.enter();
@@ -305,10 +320,10 @@ public class TypeBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupAsClass = insert(LookupAttributeInMRONode.Dynamic.create());
             }
-            return lookupAsClass.execute(object, key);
+            return lookupAsClass.execute((PythonClass) object, key);
         }
 
-        private Object lookupDelete(PythonClass dataDescClass) {
+        private Object lookupDelete(LazyPythonClass dataDescClass) {
             if (lookupDeleteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupDeleteNode = insert(LookupAttributeInMRONode.create(__DELETE__));
@@ -316,7 +331,7 @@ public class TypeBuiltins extends PythonBuiltins {
             return lookupDeleteNode.execute(dataDescClass);
         }
 
-        private Object lookupSet(PythonClass dataDescClass) {
+        private Object lookupSet(LazyPythonClass dataDescClass) {
             if (lookupSetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupSetNode = insert(LookupAttributeInMRONode.create(__SET__));
@@ -324,7 +339,7 @@ public class TypeBuiltins extends PythonBuiltins {
             return lookupSetNode.execute(dataDescClass);
         }
 
-        private Object lookupGet(PythonClass dataDescClass) {
+        private Object lookupGet(LazyPythonClass dataDescClass) {
             if (lookupGetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupGetNode = insert(LookupAttributeInMRONode.create(__GET__));
@@ -340,22 +355,13 @@ public class TypeBuiltins extends PythonBuiltins {
             return valueGetLookup.execute(value);
         }
 
-        private PythonClass getDataClass(Object descr) {
+        private LazyPythonClass getDataClass(Object descr) {
             if (getDataClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDataClassNode = insert(GetClassNode.create());
+                getDataClassNode = insert(GetLazyClassNode.create());
             }
             return getDataClassNode.execute(descr);
         }
-
-        private PythonClass getObjectClass(Object descr) {
-            if (getObjectClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getObjectClassNode = insert(GetClassNode.create());
-            }
-            return typeProfile.profile(getObjectClassNode.execute(descr));
-        }
-
     }
 
     @Builtin(name = __PREPARE__, takesVarArgs = true, takesVarKeywordArgs = true)
@@ -402,7 +408,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
         @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
 
-        private ConditionProfile typeErrorProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile typeErrorProfile = ConditionProfile.createBinaryProfile();
 
         public static InstanceCheckNode create() {
             return TypeBuiltinsFactory.InstanceCheckNodeFactory.create();
@@ -420,8 +426,9 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         public boolean isInstance(PythonClass cls, Object instance,
-                        @Cached("create()") IsSubtypeNode isSubtypeNode) {
-            if (instance instanceof PythonObject && isSubtypeNode.execute(((PythonObject) instance).getPythonClass(), cls)) {
+                        @Cached("create()") IsSubtypeNode isSubtypeNode,
+                        @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
+            if (instance instanceof PythonObject && isSubtypeNode.execute(getPythonClass(((PythonObject) instance).getLazyPythonClass(), getClassProfile), cls)) {
                 return true;
             }
 
@@ -454,7 +461,6 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = __SUBCLASSES__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     static abstract class SubclassesNode extends PythonUnaryBuiltinNode {
-        @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
 
         @Specialization
         @TruffleBoundary
@@ -487,6 +493,32 @@ public class TypeBuiltins extends PythonBuiltins {
         Object setName(PythonClass cls, Object value,
                         @Cached("create()") WriteAttributeToObjectNode setName) {
             return setName.execute(cls, __NAME__, value);
+        }
+    }
+
+    @Builtin(name = __MODULE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    static abstract class ModuleNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = "isNoValue(value)")
+        @TruffleBoundary
+        Object getModule(PythonClass cls, @SuppressWarnings("unused") PNone value) {
+            if (cls instanceof PythonBuiltinClass) {
+                String module = ((PythonBuiltinClass) cls).getType().getPublicInModule();
+                return module == null ? "builtins" : module;
+            }
+            Object module = cls.getAttribute(__MODULE__);
+            if (module == PNone.NO_VALUE) {
+                throw raise(AttributeError, "");
+            }
+            return module;
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        @TruffleBoundary
+        Object setModule(PythonClass cls, Object value) {
+            cls.setAttribute(__MODULE__, value);
+            return PNone.NONE;
         }
     }
 }
