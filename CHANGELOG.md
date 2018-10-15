@@ -3,6 +3,11 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 1.0.0 RC8
+
+* Report allocations when the `--memtracer` option is used
+* Initial support for `pickle` module
+
 ## Version 1.0.0 RC7
 
 * Enhance the `java` interop builtin module with introspection utility methods
