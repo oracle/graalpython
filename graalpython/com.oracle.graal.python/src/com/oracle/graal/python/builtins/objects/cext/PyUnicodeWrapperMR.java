@@ -148,7 +148,7 @@ public class PyUnicodeWrapperMR {
 
         Object access(PyUnicodeWrapper obj) {
             if (!obj.isNative()) {
-                obj.setNativePointer(toPyObjectNode.execute(obj.getDelegate()));
+                obj.setNativePointer(toPyObjectNode.execute(obj));
             }
             return obj;
         }

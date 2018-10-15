@@ -102,12 +102,10 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -852,12 +850,11 @@ public class PythonObjectNativeWrapperMR {
     @Resolve(message = "TO_NATIVE")
     abstract static class ToNativeNode extends Node {
         @Child private ToPyObjectNode toPyObjectNode;
-        @Child private MaterializeDelegateNode materializeNode;
         @Child private PIsPointerNode pIsPointerNode = PIsPointerNode.create();
 
         Object access(PythonClassInitNativeWrapper obj) {
             if (!pIsPointerNode.execute(obj)) {
-                obj.setNativePointer(getToPyObjectNode().getHandleForObject(getMaterializeDelegateNode().execute(obj)));
+                obj.setNativePointer(getToPyObjectNode().execute(obj));
             }
             return obj;
         }
@@ -865,17 +862,9 @@ public class PythonObjectNativeWrapperMR {
         Object access(PythonNativeWrapper obj) {
             assert !(obj instanceof PythonClassInitNativeWrapper);
             if (!pIsPointerNode.execute(obj)) {
-                obj.setNativePointer(getToPyObjectNode().execute(getMaterializeDelegateNode().execute(obj)));
+                obj.setNativePointer(getToPyObjectNode().execute(obj));
             }
             return obj;
-        }
-
-        private MaterializeDelegateNode getMaterializeDelegateNode() {
-            if (materializeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                materializeNode = insert(MaterializeDelegateNode.create());
-            }
-            return materializeNode;
         }
 
         private ToPyObjectNode getToPyObjectNode() {
@@ -933,7 +922,7 @@ public class PythonObjectNativeWrapperMR {
 
         public abstract long execute(PythonNativeWrapper o);
 
-        @Specialization(assumptions = "getSingleNativeContextAssumption()", guards = "!obj.isNative()")
+        @Specialization(guards = "!obj.isNative()")
         long doBoolNotNative(BoolNativeWrapper obj,
                         @Cached("create()") MaterializeDelegateNode materializeNode) {
             // special case for True and False singletons
@@ -942,23 +931,15 @@ public class PythonObjectNativeWrapperMR {
             return doFast(obj);
         }
 
-        @Specialization(assumptions = "getSingleNativeContextAssumption()", guards = "obj.isNative()")
+        @Specialization(guards = "obj.isNative()")
         long doBoolNative(BoolNativeWrapper obj) {
             return doFast(obj);
         }
 
-        @Specialization(assumptions = "getSingleNativeContextAssumption()", guards = "!isBoolNativeWrapper(obj)")
+        @Specialization(guards = "!isBoolNativeWrapper(obj)")
         long doFast(PythonNativeWrapper obj) {
             // the native pointer object must either be a TruffleObject or a primitive
             return ensureLong(obj.getNativePointer());
-        }
-
-        @Specialization(replaces = {"doFast", "doBoolNotNative", "doBoolNative"})
-        long doGenericSlow(PythonNativeWrapper obj,
-                        @Cached("create()") MaterializeDelegateNode materializeNode,
-                        @Cached("create()") ToPyObjectNode toPyObjectNode) {
-            Object materialized = materializeNode.execute(obj);
-            return ensureLong(toPyObjectNode.execute(materialized));
         }
 
         private long ensureLong(Object nativePointer) {
@@ -981,67 +962,8 @@ public class PythonObjectNativeWrapperMR {
             return obj instanceof BoolNativeWrapper;
         }
 
-        protected Assumption getSingleNativeContextAssumption() {
-            return PythonContext.getSingleNativeContextAssumption();
-        }
-
         public static PAsPointerNode create() {
             return PAsPointerNodeGen.create();
-        }
-    }
-
-    abstract static class PToNativeNode extends PNodeWithContext {
-        @Child private ToPyObjectNode toPyObjectNode;
-        @Child private MaterializeDelegateNode materializeNode;
-        @Child private PIsPointerNode pIsPointerNode = PIsPointerNode.create();
-
-        public abstract PythonNativeWrapper execute(PythonNativeWrapper obj);
-
-        @Specialization
-        PythonNativeWrapper doInitClass(PythonClassInitNativeWrapper obj) {
-            if (!pIsPointerNode.execute(obj)) {
-                obj.setNativePointer(getToPyObjectNode().getHandleForObject(getMaterializeDelegateNode().execute(obj)));
-            }
-            return obj;
-        }
-
-        @Specialization
-        PythonNativeWrapper doBool(BoolNativeWrapper obj) {
-            if (!pIsPointerNode.execute(obj)) {
-                PInt materialized = (PInt) getMaterializeDelegateNode().execute(obj);
-                obj.setNativePointer(getToPyObjectNode().execute(materialized));
-                if (!materialized.getNativeWrapper().isNative()) {
-                    assert materialized.getNativeWrapper() != obj;
-                    materialized.getNativeWrapper().setNativePointer(obj.getNativePointer());
-                }
-                assert obj.getNativePointer() == materialized.getNativeWrapper().getNativePointer();
-            }
-            return obj;
-        }
-
-        @Fallback
-        PythonNativeWrapper doGeneric(PythonNativeWrapper obj) {
-            assert !(obj instanceof PythonClassInitNativeWrapper);
-            if (!pIsPointerNode.execute(obj)) {
-                obj.setNativePointer(getToPyObjectNode().execute(getMaterializeDelegateNode().execute(obj)));
-            }
-            return obj;
-        }
-
-        private MaterializeDelegateNode getMaterializeDelegateNode() {
-            if (materializeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                materializeNode = insert(MaterializeDelegateNode.create());
-            }
-            return materializeNode;
-        }
-
-        private ToPyObjectNode getToPyObjectNode() {
-            if (toPyObjectNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toPyObjectNode = insert(ToPyObjectNode.create());
-            }
-            return toPyObjectNode;
         }
     }
 
@@ -1053,15 +975,15 @@ public class PythonObjectNativeWrapperMR {
         @Child private PCallNativeNode callNativeBinary;
         @Child private CExtNodes.ToSulongNode toSulongNode;
 
-        public abstract Object execute(PythonNativeWrapper wrapper, Object value);
+        public abstract Object execute(PythonNativeWrapper wrapper);
 
         @Specialization(guards = "isManagedPythonClass(wrapper)")
-        Object doClass(PythonClassNativeWrapper wrapper, PythonClass object) {
+        Object doClass(PythonClassNativeWrapper wrapper) {
             return callUnaryIntoCapi(getPyObjectHandle_ForJavaType(), wrapper);
         }
 
         @Fallback
-        Object doObject(PythonNativeWrapper wrapper, Object object) {
+        Object doObject(PythonNativeWrapper wrapper) {
             return callUnaryIntoCapi(getPyObjectHandle_ForJavaObject(), wrapper);
         }
 
@@ -1092,14 +1014,6 @@ public class PythonObjectNativeWrapperMR {
                 callNativeUnary = insert(PCallNativeNode.create());
             }
             return callNativeUnary.execute(fun, new Object[]{arg});
-        }
-
-        private CExtNodes.ToSulongNode getToSulongNode() {
-            if (toSulongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(CExtNodes.ToSulongNode.create());
-            }
-            return toSulongNode;
         }
 
         public static ToPyObjectNode create() {
