@@ -36,7 +36,7 @@ import mx_sdk
 import mx_subst
 import mx_urlrewrites
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO
+from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite
 from mx_unittest import unittest
 
@@ -868,7 +868,7 @@ def import_python_sources(args):
 # add the defined python benchmark suites
 #
 # ----------------------------------------------------------------------------------------------------------------------
-for py_bench_suite in PythonBenchmarkSuite.get_benchmark_suites():
+for py_bench_suite in PythonBenchmarkSuite.get_benchmark_suites(BENCHMARKS):
     mx_benchmark.add_bm_suite(py_bench_suite)
 
 
