@@ -43,3 +43,8 @@ def measure(num):
 
 def __benchmark__(num=5):
     measure(num)
+
+
+def __teardown__():
+    # teardown example
+    print("arith-binop teardown")

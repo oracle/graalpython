@@ -36,7 +36,7 @@ import mx_sdk
 import mx_subst
 import mx_urlrewrites
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO
+from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite
 from mx_unittest import unittest
 
@@ -424,7 +424,7 @@ def graalpython_gate_runner(args, tasks):
             apprepo = os.environ["GRAALPYTHON_APPTESTS_REPO_URL"]
             _apptest_suite = _suite.import_suite(
                 "graalpython-apptests",
-                version="006db2cfd79a51ba49e23a42629da13a54b87451",
+                version="fe1458e3af707f5996f192aedc7b76585501e8ba",
                 urlinfos=[mx.SuiteImportURLInfo(mx_urlrewrites.rewriteurl(apprepo), "git", mx.vc_system("git"))]
             )
             mx.run_mx(["-p", _apptest_suite.dir, "graalpython-apptests"])
@@ -868,7 +868,7 @@ def import_python_sources(args):
 # add the defined python benchmark suites
 #
 # ----------------------------------------------------------------------------------------------------------------------
-for py_bench_suite in PythonBenchmarkSuite.get_benchmark_suites():
+for py_bench_suite in PythonBenchmarkSuite.get_benchmark_suites(BENCHMARKS):
     mx_benchmark.add_bm_suite(py_bench_suite)
 
 

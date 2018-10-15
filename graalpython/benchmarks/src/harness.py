@@ -46,6 +46,7 @@ from time import time
 _HRULE = '-'.join(['' for i in range(80)])
 ATTR_BENCHMARK = '__benchmark__'
 ATTR_PROCESS_ARGS = '__process_args__'
+ATTR_TEARDOWN = '__teardown__'
 
 
 def ccompile(name, code):
@@ -161,6 +162,10 @@ class BenchRunner(object):
                     print("@@@ name=%s, duration=%s" % (self.bench_module.__name__, duration))
                 else:
                     print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__, duration))
+
+        print("teardown ... ")
+        self._call_attr(ATTR_TEARDOWN)
+        print("benchmark complete")
 
 
 def run_benchmark(prog, args):
