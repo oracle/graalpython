@@ -183,9 +183,9 @@ class GraalPythonVm(GuestVm):
 #
 # ----------------------------------------------------------------------------------------------------------------------
 class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
-    def __init__(self, name, bench_path, benchmarks, harness_path):
+    def __init__(self, name, bench_path, benchmarks):
         self._name = name
-        self._harness_path = harness_path
+        self._harness_path = HARNESS_PATH
         self._harness_path = join(_graalpython_suite.dir, self._harness_path)
         if not self._harness_path:
             mx.abort("python harness path not specified!")
@@ -294,7 +294,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     @classmethod
     def get_benchmark_suites(cls, benchmarks):
         assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: [path, benchmarks], ...}"
-        return [cls(suite_name, suite_info[0], suite_info[1], HARNESS_PATH)
+        return [cls(suite_name, suite_info[0], suite_info[1])
                 for suite_name, suite_info in benchmarks.items()]
 
 
