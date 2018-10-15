@@ -47,6 +47,6 @@ import com.oracle.graal.python.test.PythonTests;
 public class CustomBuiltinsTest extends PythonTests {
     @Test
     public void testCustomBuiltinModule() {
-        assertPrints("success", "import CustomModule; print(CustomModule.success)");
+        assertPrints("success\n", "import CustomModule; print(CustomModule.success)");
     }
 }
