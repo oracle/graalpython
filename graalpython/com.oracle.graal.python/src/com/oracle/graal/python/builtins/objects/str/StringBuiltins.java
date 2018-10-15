@@ -1812,8 +1812,15 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String doString(String primary, PInt idx) {
-            return doString(primary, idx.intValue());
+        public String doString(String primary, long idx,
+                        @Cached("create()") CastToIndexNode castToIndex) {
+            return doString(primary, castToIndex.execute(idx));
+        }
+
+        @Specialization
+        public String doString(String primary, PInt idx,
+                        @Cached("create()") CastToIndexNode castToIndex) {
+            return doString(primary, castToIndex.execute(idx));
         }
 
         @SuppressWarnings("unused")
