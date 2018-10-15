@@ -56,17 +56,18 @@ public abstract class PTypeToForeignNode extends Node {
 
     public static boolean isBoxed(Object object) {
         if (object instanceof PFloat) {
-            return true;
+            return !((PFloat) object).isNative();
         } else if (object instanceof PInt) {
             try {
                 // try to use primitive
-                ((PInt) object).longValueExact();
-                return true;
+                PInt boxed = (PInt) object;
+                boxed.longValueExact();
+                return !boxed.isNative();
             } catch (ArithmeticException e) {
                 return false;
             }
         } else if (object instanceof PString) {
-            return true;
+            return !((PString) object).isNative();
         }
         return false;
     }

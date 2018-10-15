@@ -375,6 +375,8 @@ public abstract class CExtNodes {
      * allocated in native code for consumption in Java.
      */
     public abstract static class AsPythonObjectNode extends CExtBaseNode {
+        @Child private MaterializeDelegateNode materializeNode;
+
         public abstract Object execute(Object value);
 
         @Specialization
@@ -382,24 +384,29 @@ public abstract class CExtNodes {
             return object.getValue();
         }
 
-        @Specialization(guards = "!isMaterialized(object)")
+        @Specialization(guards = "!object.isNative()")
         byte doByteNativeWrapper(ByteNativeWrapper object) {
             return object.getValue();
         }
 
-        @Specialization(guards = "!isMaterialized(object)")
+        @Specialization(guards = "!object.isNative()")
         int doIntNativeWrapper(IntNativeWrapper object) {
             return object.getValue();
         }
 
-        @Specialization(guards = "!isMaterialized(object)")
+        @Specialization(guards = "!object.isNative()")
         long doLongNativeWrapper(LongNativeWrapper object) {
             return object.getValue();
         }
 
-        @Specialization(guards = "!isMaterialized(object)")
+        @Specialization(guards = "!object.isNative()")
         double doDoubleNativeWrapper(DoubleNativeWrapper object) {
             return object.getValue();
+        }
+
+        @Specialization(guards = "object.isNative()")
+        Object doPrimitiveNativeWrapper(PrimitiveNativeWrapper object) {
+            return getMaterializeNode().execute(object);
         }
 
         @Specialization(guards = {"!isPrimitiveNativeWrapper(object)", "object.getClass() == cachedClass"}, limit = "3")
@@ -483,6 +490,14 @@ public abstract class CExtNodes {
             return object;
         }
 
+        private MaterializeDelegateNode getMaterializeNode() {
+            if (materializeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                materializeNode = insert(MaterializeDelegateNode.create());
+            }
+            return materializeNode;
+        }
+
         public static AsPythonObjectNode create() {
             return AsPythonObjectNodeGen.create();
         }
@@ -494,8 +509,6 @@ public abstract class CExtNodes {
     public abstract static class MaterializeDelegateNode extends CExtBaseNode {
 
         public abstract Object execute(PythonNativeWrapper object);
-
-        @Child GetClassNode getClassNode;
 
         @Specialization(guards = "!isMaterialized(object)")
         PInt doBoolNativeWrapper(BoolNativeWrapper object) {
@@ -537,6 +550,7 @@ public abstract class CExtNodes {
         PFloat doDoubleNativeWrapper(DoubleNativeWrapper object) {
             PFloat materializedInt = factory().createFloat(object.getValue());
             object.setMaterializedObject(materializedInt);
+            materializedInt.setNativeWrapper(object);
             return materializedInt;
         }
 

@@ -72,4 +72,8 @@ public final class PString extends PImmutableSequence {
     public boolean equals(Object obj) {
         return obj != null && obj.equals(value);
     }
+
+    public boolean isNative() {
+        return getNativeWrapper() != null && getNativeWrapper().isNative();
+    }
 }

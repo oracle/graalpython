@@ -833,7 +833,7 @@ public abstract class SequenceStorageNodes {
             storage.setIntItemNormalized(idx, value);
         }
 
-        @Specialization
+        @Specialization(guards = "!value.isNative()")
         protected void doInt(IntSequenceStorage storage, int idx, PInt value) {
             try {
                 storage.setIntItemNormalized(idx, value.intValueExact());
@@ -847,7 +847,7 @@ public abstract class SequenceStorageNodes {
             storage.setLongItemNormalized(idx, value);
         }
 
-        @Specialization
+        @Specialization(guards = "!value.isNative()")
         protected void doLong(LongSequenceStorage storage, int idx, PInt value) {
             try {
                 storage.setLongItemNormalized(idx, value.longValueExact());
