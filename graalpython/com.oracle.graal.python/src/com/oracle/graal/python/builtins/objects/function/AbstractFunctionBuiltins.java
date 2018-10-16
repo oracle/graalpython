@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.function.Arity.KeywordName;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -283,7 +285,65 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     public abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object doStatic(@SuppressWarnings("unused") PBuiltinFunction self) {
-            return "";
+            boolean enclosingType = self.getEnclosingType() != null;
+            Arity arity = self.getArity();
+            return getSignature(enclosingType, arity);
+        }
+
+        @Specialization
+        protected Object doStatic(@SuppressWarnings("unused") PFunction self) {
+            boolean enclosingType = self.getEnclosingClassName() != null;
+            Arity arity = self.getArity();
+            return getSignature(enclosingType, arity);
+        }
+
+        @TruffleBoundary
+        private static Object getSignature(boolean enclosingType, Arity arity) {
+            int minArgs = arity.getMinNumOfPositionalArgs();
+            KeywordName[] keywordNames = arity.getKeywordNames();
+            int requiredKeywords = arity.getNumOfRequiredKeywords();
+            boolean takesVarArgs = arity.takesVarArgs();
+            boolean takesVarKeywordArgs = arity.takesVarKeywordArgs();
+
+            StringBuilder sb = new StringBuilder();
+            char argName = 'a';
+            sb.append('(');
+            if (minArgs > 0) {
+                if (!enclosingType) {
+                    sb.append("$module");
+                } else {
+                    sb.append("self");
+                }
+                for (int i = 1; i < minArgs; i++) {
+                    sb.append(", ").append(argName++);
+                }
+            }
+            if (minArgs > 0) {
+                sb.append(", /");
+            }
+            if (keywordNames.length > 0) {
+                int i = 0;
+                while (i < requiredKeywords) {
+                    sb.append(", ").append(keywordNames[i++]);
+                }
+                if (takesVarArgs) {
+                    sb.append(", *args");
+                } else {
+                    sb.append(", *");
+                }
+                while (i < keywordNames.length) {
+                    sb.append(", ").append(keywordNames[i]).append("=?");
+                }
+                if (takesVarKeywordArgs) {
+                    sb.append(", **kwargs");
+                }
+            }
+            sb.append(')');
+            return sb.toString();
+        }
+
+        public static TextSignatureNode create() {
+            return AbstractFunctionBuiltinsFactory.TextSignatureNodeFactory.create();
         }
     }
 }
