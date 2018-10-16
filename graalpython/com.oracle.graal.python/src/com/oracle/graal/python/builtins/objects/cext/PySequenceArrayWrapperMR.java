@@ -88,11 +88,8 @@ import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
-<<<<<<< 5cb233f6d9b5e1571b6a3b50f81049fa5f4c3263
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-=======
 import com.oracle.truffle.api.profiles.ConditionProfile;
->>>>>>> Fix: Correctly do list generalization.
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @MessageResolution(receiverType = PySequenceArrayWrapper.class)
