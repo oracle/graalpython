@@ -554,7 +554,7 @@ public abstract class CExtNodes {
             return materializedInt;
         }
 
-        @Specialization(guards = "isMaterialized(object)")
+        @Specialization(guards = {"object.getClass() == cachedClass", "isMaterialized(object)"})
         Object doMaterialized(PrimitiveNativeWrapper object,
                         @SuppressWarnings("unused") @Cached("object.getClass()") Class<? extends PrimitiveNativeWrapper> cachedClass) {
             return CompilerDirectives.castExact(object, cachedClass).getDelegate();
