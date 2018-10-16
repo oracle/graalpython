@@ -55,6 +55,8 @@ import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFac
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.WriteArrayItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
@@ -86,7 +88,11 @@ import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
+<<<<<<< 5cb233f6d9b5e1571b6a3b50f81049fa5f4c3263
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+=======
+import com.oracle.truffle.api.profiles.ConditionProfile;
+>>>>>>> Fix: Correctly do list generalization.
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @MessageResolution(receiverType = PySequenceArrayWrapper.class)
@@ -234,36 +240,55 @@ public class PySequenceArrayWrapperMR {
     @TypeSystemReference(PythonTypes.class)
     abstract static class WriteArrayItemNode extends Node {
         @Child private CExtNodes.ToJavaNode toJavaNode;
+        @Child private LookupAndCallTernaryNode setItemNode;
 
         public abstract Object execute(Object arrayObject, Object idx, Object value);
 
         @Specialization
-        Object doTuple(PBytes s, long idx, byte value,
-                        @Cached("createStorageSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
-            setItemNode.executeLong(s.getSequenceStorage(), idx, value);
+        Object doBytes(PBytes s, long idx, byte value,
+                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setBytesItemNode) {
+            setBytesItemNode.executeLong(s.getSequenceStorage(), idx, value);
             return value;
         }
 
         @Specialization
-        Object doTuple(PSequence s, long idx, Object value,
-                        @Cached("createStorageSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
-            setItemNode.execute(s.getSequenceStorage(), idx, getToJavaNode().execute(value));
+        Object doByteArray(PByteArray s, long idx, byte value,
+                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setByteArrayItemNode) {
+            setByteArrayItemNode.executeLong(s.getSequenceStorage(), idx, value);
             return value;
         }
 
         @Specialization
-        Object doGeneric(Object tuple, Object idx, Object value,
-                        @Cached("createSetItem()") LookupAndCallTernaryNode setItemNode) {
-            setItemNode.execute(tuple, idx, value);
+        Object doList(PList s, long idx, Object value,
+                        @Cached("createSetListItem()") SequenceStorageNodes.SetItemNode setListItemNode,
+                        @Cached("createBinaryProfile()") ConditionProfile updateStorageProfile) {
+            SequenceStorage storage = s.getSequenceStorage();
+            SequenceStorage updatedStorage = setListItemNode.executeLong(storage, idx, getToJavaNode().execute(value));
+            if (updateStorageProfile.profile(storage != updatedStorage)) {
+                s.setSequenceStorage(updatedStorage);
+            }
             return value;
         }
 
-        protected static SequenceStorageNodes.SetItemNode createStorageSetItem() {
+        @Specialization
+        Object doTuple(PTuple s, long idx, Object value,
+                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setListItemNode) {
+            setListItemNode.executeLong(s.getSequenceStorage(), idx, getToJavaNode().execute(value));
+            return value;
+        }
+
+        @Fallback
+        Object doGeneric(Object sequence, Object idx, Object value) {
+            setItemNode().execute(sequence, idx, getToJavaNode().execute(value));
+            return value;
+        }
+
+        protected static SequenceStorageNodes.SetItemNode createSetListItem() {
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forArrayAssign(), () -> ListGeneralizationNode.create());
+        }
+
+        protected static SequenceStorageNodes.SetItemNode createSetItem() {
             return SequenceStorageNodes.SetItemNode.create("invalid item for assignment");
-        }
-
-        protected static LookupAndCallTernaryNode createSetItem() {
-            return LookupAndCallTernaryNode.create(__SETITEM__);
         }
 
         private CExtNodes.ToJavaNode getToJavaNode() {
@@ -272,6 +297,14 @@ public class PySequenceArrayWrapperMR {
                 toJavaNode = insert(CExtNodes.ToJavaNode.create());
             }
             return toJavaNode;
+        }
+
+        private LookupAndCallTernaryNode setItemNode() {
+            if (setItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                setItemNode = insert(LookupAndCallTernaryNode.create(__SETITEM__));
+            }
+            return setItemNode;
         }
 
         public static WriteArrayItemNode create() {
