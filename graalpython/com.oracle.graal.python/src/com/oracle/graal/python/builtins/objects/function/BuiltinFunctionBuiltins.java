@@ -34,9 +34,12 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -66,6 +69,27 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object reprClassFunction(PBuiltinFunction self) {
             return String.format("<method '%s' of '%s' objects>", self.getName(), self.getEnclosingType().getName());
+        }
+    }
+
+    @Builtin(name = "__objclass__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "self.getEnclosingType() == null")
+        Object objclassMissing(@SuppressWarnings("unused") PBuiltinFunction self) {
+            throw raise(PythonErrorType.AttributeError, "'builtin_function_or_method' object has no attribute '__objclass__'");
+        }
+
+        @Specialization(guards = "self.getEnclosingType() != null")
+        @TruffleBoundary
+        PythonClass objclass(PBuiltinFunction self) {
+            LazyPythonClass enclosingType = self.getEnclosingType();
+            if (enclosingType instanceof PythonBuiltinClassType) {
+                return getCore().lookupType((PythonBuiltinClassType) enclosingType);
+            } else {
+                return (PythonClass) enclosingType;
+            }
         }
     }
 }
