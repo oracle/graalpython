@@ -54,27 +54,27 @@ public abstract class PTypeUnboxNode extends Node {
 
     public abstract Object execute(Object value);
 
-    @Specialization(guards = "!obj.isNative()")
+    @Specialization
     String access(PString obj) {
         return obj.getValue();
     }
 
-    @Specialization(guards = "!obj.isNative()")
+    @Specialization
     double access(PFloat obj) {
         return obj.getValue();
     }
 
-    @Specialization(guards = "!obj.isNative()", rewriteOn = ArithmeticException.class)
+    @Specialization(rewriteOn = ArithmeticException.class)
     int accessInt(PInt obj) {
         return obj.intValueExact();
     }
 
-    @Specialization(guards = "!obj.isNative()", rewriteOn = ArithmeticException.class)
+    @Specialization(rewriteOn = ArithmeticException.class)
     long accessLong(PInt obj) {
         return obj.longValueExact();
     }
 
-    @Specialization(guards = "!obj.isNative()")
+    @Specialization
     Object accessPInt(PInt obj) {
         try {
             // try to use primitive
