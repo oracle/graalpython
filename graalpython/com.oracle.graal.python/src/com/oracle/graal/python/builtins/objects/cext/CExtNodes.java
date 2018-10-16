@@ -404,7 +404,7 @@ public abstract class CExtNodes {
             return object.getValue();
         }
 
-        @Specialization(guards = "object.isNative()")
+        @Specialization(guards = {"isPrimitiveNativeWrapper(object)", "object.isNative()"})
         Object doPrimitiveNativeWrapper(PrimitiveNativeWrapper object) {
             return getMaterializeNode().execute(object);
         }
@@ -473,7 +473,7 @@ public abstract class CExtNodes {
         }
 
         protected static boolean isPrimitiveNativeWrapper(PythonNativeWrapper object) {
-            return object instanceof PrimitiveNativeWrapper;
+            return object instanceof PrimitiveNativeWrapper && !(object instanceof BoolNativeWrapper);
         }
 
         protected boolean isForeignObject(TruffleObject obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {

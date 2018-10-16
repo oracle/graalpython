@@ -316,7 +316,7 @@ def PyList_Size(listObj):
 
 @may_raise(-1)
 def PyLong_AsPrimitive(n, signed, size):
-    return TrufflePInt_AsPrimitive(n, signed, size)
+    return TrufflePInt_AsPrimitive(int(n), signed, size)
 
 
 def _PyLong_Sign(n):
