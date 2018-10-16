@@ -473,7 +473,7 @@ public abstract class CExtNodes {
         }
 
         protected static boolean isPrimitiveNativeWrapper(PythonNativeWrapper object) {
-            return object instanceof PrimitiveNativeWrapper && !isMaterialized((PrimitiveNativeWrapper) object) || object instanceof BoolNativeWrapper;
+            return object instanceof PrimitiveNativeWrapper;
         }
 
         protected boolean isForeignObject(TruffleObject obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
