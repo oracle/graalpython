@@ -58,7 +58,7 @@ public class ModuleRootNode extends PClosureRootNode {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "<module '" + name + "'>";
+        return name;
     }
 
     @Override
