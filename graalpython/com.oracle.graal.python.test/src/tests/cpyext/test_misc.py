@@ -186,14 +186,15 @@ class TestMisc(CPyExtTestCase):
         ),
         code="""PyObject* PointerEquality_Primitive(PyObject* pyVal, PyObject* fun) {
             PyObject** dummyArray = (PyObject**) malloc(sizeof(PyObject*));
+            PyObject *arg, *result0;
             Py_INCREF(pyVal);
             Py_INCREF(fun);
             dummyArray[0] = pyVal;
 
-            PyObject* arg = PyTuple_New(1);
+            arg = PyTuple_New(1);
             PyTuple_SET_ITEM(arg, 0, dummyArray[0]);
             Py_INCREF(arg);
-            PyObject* result0 = PyObject_Call(fun, arg, NULL);
+            result0 = PyObject_Call(fun, arg, NULL);
             if (pyVal != result0) {
                 PyErr_Format(PyExc_ValueError, "%s is not pointer equal: 0x%lx vs. 0x%lx", PyUnicode_AsUTF8(PyObject_Repr(pyVal)), (void*)pyVal, (void*)result0);
                 return NULL;
