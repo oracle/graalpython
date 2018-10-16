@@ -72,7 +72,6 @@ import com.oracle.graal.python.builtins.objects.foreign.TruffleObjectBuiltinsFac
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -958,8 +957,9 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __STR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class StrNode extends UnboxNode {
+        protected final String method = __STR__;
         @Child private LookupAndCallUnaryNode callStrNode;
-        @Child private ObjectBuiltins.StrNode objectStrNode;
+        @Child protected PythonUnaryBuiltinNode objectStrNode;
         @Child private Node getSizeNode;
         @Child private Node readNode;
 
@@ -996,12 +996,12 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         private LookupAndCallUnaryNode getCallStrNode() {
             if (callStrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callStrNode = insert(LookupAndCallUnaryNode.create(__STR__));
+                callStrNode = insert(LookupAndCallUnaryNode.create(method));
             }
             return callStrNode;
         }
 
-        private ObjectBuiltins.StrNode getObjectStrNode() {
+        protected PythonUnaryBuiltinNode getObjectStrNode() {
             if (objectStrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 objectStrNode = insert(ObjectBuiltinsFactory.StrNodeFactory.create());
@@ -1012,36 +1012,16 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ReprNode extends UnboxNode {
-        @Child private LookupAndCallUnaryNode callReprNode;
-        @Child private ObjectBuiltins.ReprNode objectReprNode;
+    abstract static class ReprNode extends StrNode {
+        protected final String method = __REPR__;
 
-        @Specialization(guards = "isForeignObject(object)")
-        protected Object doIt(TruffleObject object) {
-            if (isBoxed(object)) {
-                try {
-                    return getCallReprNode().executeObject(unboxLeft(object));
-                } catch (UnsupportedMessageException e) {
-                    throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the UNBOX message");
-                }
-            }
-            return getObjectReprNode().execute(object);
-        }
-
-        private LookupAndCallUnaryNode getCallReprNode() {
-            if (callReprNode == null) {
+        @Override
+        protected PythonUnaryBuiltinNode getObjectStrNode() {
+            if (objectStrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callReprNode = insert(LookupAndCallUnaryNode.create(__REPR__));
+                objectStrNode = insert(ObjectBuiltinsFactory.ReprNodeFactory.create());
             }
-            return callReprNode;
-        }
-
-        private ObjectBuiltins.ReprNode getObjectReprNode() {
-            if (objectReprNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                objectReprNode = insert(ObjectBuiltinsFactory.ReprNodeFactory.create());
-            }
-            return objectReprNode;
+            return objectStrNode;
         }
     }
 }
