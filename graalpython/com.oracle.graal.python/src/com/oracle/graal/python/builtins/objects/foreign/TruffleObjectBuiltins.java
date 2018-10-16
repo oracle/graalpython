@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.foreign.TruffleObjectBuiltinsFactory.MulNodeFactory;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
@@ -79,6 +80,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -86,6 +88,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -957,16 +960,36 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     abstract static class StrNode extends UnboxNode {
         @Child private LookupAndCallUnaryNode callStrNode;
         @Child private ObjectBuiltins.StrNode objectStrNode;
+        @Child private Node getSizeNode;
+        @Child private Node readNode;
 
-        @Specialization(guards = "isForeignObject(object)")
-        protected Object doIt(TruffleObject object) {
-            if (isBoxed(object)) {
-                try {
-                    return getCallStrNode().executeObject(unboxLeft(object));
-                } catch (UnsupportedMessageException e) {
-                    throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the UNBOX message");
-                }
+        @Specialization(guards = {"isBoxed(object)"})
+        protected Object doBoxed(TruffleObject object) {
+            try {
+                return getCallStrNode().executeObject(unboxLeft(object));
+            } catch (UnsupportedMessageException e) {
+                throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the UNBOX message");
             }
+        }
+
+        @Specialization(guards = {"isForeignArray(object)"})
+        protected Object doArray(TruffleObject object,
+                        @Cached("create()") CastToListNode asList,
+                        @Cached("GET_SIZE.createNode()") Node sizeNode) {
+            try {
+                Object size = ForeignAccess.sendGetSize(sizeNode, object);
+                if (size instanceof Integer) {
+                    PForeignArrayIterator iterable = factory().createForeignArrayIterator(object, (int) size);
+                    return getCallStrNode().executeObject(asList.executeWith(iterable));
+                }
+            } catch (PException | UnsupportedMessageException e) {
+                // fall through
+            }
+            return doIt(object);
+        }
+
+        @Fallback
+        protected Object doIt(Object object) {
             return getObjectStrNode().execute(object);
         }
 
