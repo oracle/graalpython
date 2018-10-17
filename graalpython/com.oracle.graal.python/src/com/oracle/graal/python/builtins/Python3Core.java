@@ -187,6 +187,7 @@ public final class Python3Core implements PythonCore {
                     "unicodedata",
                     "_locale",
                     "_sre",
+                    "function",
     };
 
     private final PythonBuiltins[] builtins;

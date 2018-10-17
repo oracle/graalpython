@@ -324,7 +324,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
             if (keywordNames.length > 0) {
                 int i = 0;
                 while (i < requiredKeywords) {
-                    sb.append(", ").append(keywordNames[i++]);
+                    sb.append(", ").append(keywordNames[i++].name).append('=');
                 }
                 if (takesVarArgs) {
                     sb.append(", *args");
@@ -332,7 +332,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
                     sb.append(", *");
                 }
                 while (i < keywordNames.length) {
-                    sb.append(", ").append(keywordNames[i]).append("=?");
+                    sb.append(", ").append(keywordNames[i++].name).append("=?");
                 }
                 if (takesVarKeywordArgs) {
                     sb.append(", **kwargs");
