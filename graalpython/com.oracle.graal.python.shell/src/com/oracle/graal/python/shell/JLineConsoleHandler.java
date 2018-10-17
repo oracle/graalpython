@@ -47,9 +47,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.IntConsumer;
+import java.util.function.IntFunction;
+import java.util.function.IntSupplier;
 
 import org.graalvm.polyglot.Context;
 
@@ -95,12 +98,13 @@ public class JLineConsoleHandler extends ConsoleHandler {
     }
 
     @Override
-    public void setHistory(Supplier<Integer> getSize, Consumer<String> addItem, Function<Integer, String> getItem, BiConsumer<Integer, String> setItem, Consumer<Integer> removeItem, Runnable clear) {
+    public void setHistory(BooleanSupplier shouldRecord, IntSupplier getSize, Consumer<String> addItem, IntFunction<String> getItem, BiConsumer<Integer, String> setItem, IntConsumer removeItem,
+                    Runnable clear) {
         console.setHistory(new History() {
-            private int pos = getSize.get();
+            private int pos = getSize.getAsInt();
 
             public int size() {
-                return getSize.get();
+                return getSize.getAsInt();
             }
 
             public void set(int arg0, CharSequence arg1) {
@@ -216,8 +220,10 @@ public class JLineConsoleHandler extends ConsoleHandler {
             }
 
             public void add(CharSequence arg0) {
-                addItem.accept(arg0.toString());
-                pos = size();
+                if (shouldRecord.getAsBoolean()) {
+                    addItem.accept(arg0.toString());
+                    pos = size();
+                }
             }
         });
     }

@@ -45,9 +45,12 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.IntConsumer;
+import java.util.function.IntFunction;
+import java.util.function.IntSupplier;
 
 import org.graalvm.polyglot.Context;
 
@@ -73,7 +76,8 @@ public abstract class ConsoleHandler {
     }
 
     @SuppressWarnings("unused")
-    public void setHistory(Supplier<Integer> getSize, Consumer<String> addItem, Function<Integer, String> getItem, BiConsumer<Integer, String> setItem, Consumer<Integer> removeItem, Runnable clear) {
+    public void setHistory(BooleanSupplier shouldRecord, IntSupplier getSize, Consumer<String> addItem, IntFunction<String> getItem, BiConsumer<Integer, String> setItem, IntConsumer removeItem,
+                    Runnable clear) {
         // ignore by default
     }
 

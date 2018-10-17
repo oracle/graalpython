@@ -83,7 +83,8 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     private static final class LocalData implements TruffleObject {
         private final HashMap<String, String> bindings = new HashMap<>();
         private final List<String> history = new ArrayList<>();
-        protected Object completer;
+        protected Object completer = null;
+        public boolean autoHistory = true;
 
         public ForeignAccess getForeignAccess() {
             return null;
@@ -317,6 +318,29 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class RedisplayNode extends PythonBuiltinNode {
         @Specialization
         PNone setCompleter() {
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "get_auto_history", fixedNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class GetAutoHistoryNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean setCompleter(PythonModule self,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            LocalData data = (LocalData) readNode.execute(self, DATA);
+            return data.autoHistory;
+        }
+    }
+
+    @Builtin(name = "set_auto_history", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class SetAutoHistoryNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PNone setCompleter(PythonModule self, boolean enabled,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            LocalData data = (LocalData) readNode.execute(self, DATA);
+            data.autoHistory = enabled;
             return PNone.NONE;
         }
     }

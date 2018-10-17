@@ -593,8 +593,13 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private void setupReadline(Context context, ConsoleHandler consoleHandler) {
-        final Value readline = context.eval(Source.newBuilder(getLanguageId(), "import readline; readline", "setup-interactive").interactive(true).buildLiteral());
+        // First run nothing to trigger the setup of interactive mode (site import and so on)
+        context.eval(Source.newBuilder(getLanguageId(), "None", "setup-interactive").interactive(true).buildLiteral());
+        // Then we can get the readline module and see if any completers were registered and use its
+        // history feature
+        final Value readline = context.eval(Source.newBuilder(getLanguageId(), "import readline; readline", "setup-interactive").buildLiteral());
         final Value completer = readline.getMember("get_completer").execute();
+        final Value shouldRecord = readline.getMember("get_auto_history");
         final Value addHistory = readline.getMember("add_history");
         final Value getHistoryItem = readline.getMember("get_history_item");
         final Value setHistoryItem = readline.getMember("replace_history_item");
@@ -602,6 +607,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         final Value clearHistory = readline.getMember("clear_history");
         final Value getHistorySize = readline.getMember("get_current_history_length");
         consoleHandler.setHistory(
+                        () -> shouldRecord.execute().asBoolean(),
                         () -> getHistorySize.execute().asInt(),
                         (item) -> addHistory.execute(item),
                         (pos) -> getHistoryItem.execute(pos).asString(),
