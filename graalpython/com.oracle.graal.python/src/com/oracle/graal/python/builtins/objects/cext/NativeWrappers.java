@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -58,9 +57,23 @@ public abstract class NativeWrappers {
 
     public abstract static class PythonNativeWrapper implements TruffleObject {
 
+        private Object delegate;
         private Object nativePointer;
 
-        public abstract Object getDelegate();
+        public PythonNativeWrapper() {
+        }
+
+        public PythonNativeWrapper(Object delegate) {
+            this.delegate = delegate;
+        }
+
+        public Object getDelegate() {
+            return delegate;
+        }
+
+        protected void setDelegate(Object delegate) {
+            this.delegate = delegate;
+        }
 
         public Object getNativePointer() {
             return nativePointer;
@@ -92,6 +105,13 @@ public abstract class NativeWrappers {
 
         private PythonObjectDictStorage nativeMemberStore;
 
+        public DynamicObjectNativeWrapper() {
+        }
+
+        public DynamicObjectNativeWrapper(Object delegate) {
+            super(delegate);
+        }
+
         public PythonObjectDictStorage createNativeMemberStore() {
             if (nativeMemberStore == null) {
                 nativeMemberStore = new PythonObjectDictStorage(SHAPE.newInstance());
@@ -110,14 +130,12 @@ public abstract class NativeWrappers {
      */
     public static class PythonObjectNativeWrapper extends DynamicObjectNativeWrapper {
 
-        private final PythonAbstractObject pythonObject;
-
         public PythonObjectNativeWrapper(PythonAbstractObject object) {
-            this.pythonObject = object;
+            super(object);
         }
 
         public PythonAbstractObject getPythonObject() {
-            return pythonObject;
+            return (PythonAbstractObject) getDelegate();
         }
 
         public static DynamicObjectNativeWrapper wrap(PythonAbstractObject obj, ConditionProfile noWrapperProfile) {
@@ -131,37 +149,24 @@ public abstract class NativeWrappers {
         }
 
         @Override
-        public Object getDelegate() {
-            return pythonObject;
-        }
-
-        @Override
         public String toString() {
             CompilerAsserts.neverPartOfCompilation();
-            return String.format("PythonObjectNativeWrapper(%s, isNative=%s)", pythonObject, isNative());
+            return String.format("PythonObjectNativeWrapper(%s, isNative=%s)", getDelegate(), isNative());
         }
     }
 
     public abstract static class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
 
-        private PythonObject materializedObject;
-
         protected abstract Object getBoxedValue();
 
-        @Override
-        public Object getDelegate() {
-            if (materializedObject != null) {
-                return materializedObject;
-            }
-            return getBoxedValue();
+        // this method exists just for readability
+        public Object getMaterializedObject() {
+            return getDelegate();
         }
 
-        void setMaterializedObject(PythonObject materializedObject) {
-            this.materializedObject = materializedObject;
-        }
-
-        PythonObject getMaterializedObject() {
-            return materializedObject;
+        // this method exists just for readability
+        public void setMaterializedObject(Object materializedPrimitive) {
+            setDelegate(materializedPrimitive);
         }
     }
 
@@ -372,19 +377,12 @@ public abstract class NativeWrappers {
      */
     public static class PySequenceArrayWrapper extends PythonNativeWrapper {
 
-        private final Object delegate;
-
         /** Number of bytes that constitute a single element. */
         private final int elementAccessSize;
 
         public PySequenceArrayWrapper(Object delegate, int elementAccessSize) {
-            this.delegate = delegate;
+            super(delegate);
             this.elementAccessSize = elementAccessSize;
-        }
-
-        @Override
-        public Object getDelegate() {
-            return delegate;
         }
 
         public int getElementAccessSize() {
@@ -402,37 +400,26 @@ public abstract class NativeWrappers {
     }
 
     public static class TruffleObjectNativeWrapper extends PythonNativeWrapper {
-        private final TruffleObject foreignObject;
 
         public TruffleObjectNativeWrapper(TruffleObject foreignObject) {
-            this.foreignObject = foreignObject;
-        }
-
-        public TruffleObject getForeignObject() {
-            return foreignObject;
+            super(foreignObject);
         }
 
         public static TruffleObjectNativeWrapper wrap(TruffleObject foreignObject) {
             assert !(foreignObject instanceof PythonNativeWrapper) : "attempting to wrap a native wrapper";
             return new TruffleObjectNativeWrapper(foreignObject);
         }
-
-        @Override
-        public Object getDelegate() {
-            return foreignObject;
-        }
     }
 
     abstract static class PyUnicodeWrapper extends PythonNativeWrapper {
-        private final PString delegate;
 
         public PyUnicodeWrapper(PString delegate) {
-            this.delegate = delegate;
+            super(delegate);
         }
 
         @Override
         public PString getDelegate() {
-            return delegate;
+            return (PString) super.getDelegate();
         }
 
         @Override
@@ -452,7 +439,6 @@ public abstract class NativeWrappers {
         public PyUnicodeData(PString delegate) {
             super(delegate);
         }
-
     }
 
     /**
