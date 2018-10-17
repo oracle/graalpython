@@ -531,7 +531,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     }
 
                     String continuePrompt = null;
-                    StringBuilder sb = new StringBuilder(input);
+                    StringBuilder sb = new StringBuilder(input).append('\n');
                     while (true) { // processing subsequent lines while input is incomplete
                         lastStatus = 0;
                         try {
@@ -547,8 +547,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                                 if (additionalInput == null) {
                                     throw new EOFException();
                                 }
-                                sb.append('\n');
-                                sb.append(additionalInput);
+                                sb.append(additionalInput).append('\n');
                                 // The only continuation in the while loop
                                 continue;
                             } else if (e.isExit()) {
