@@ -38,6 +38,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -242,10 +243,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    static final String interactiveStartup = "import site\nimport sys\ngetattr(sys, '__interactivehook__', lambda: None)()";
-
     private void runInteractiveStartup(PythonCore pythonCore) {
-        Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, doParse(pythonCore, Source.newBuilder(ID, interactiveStartup, "<site import>").build()))).call();
+        PythonContext context = pythonCore.getContext();
+        HashingStorage sysModules = context.getImportedModules().getDictStorage();
+        String siteModuleName = "site";
+        if (!sysModules.hasKey(siteModuleName, HashingStorage.getSlowPathEquivalence(siteModuleName))) {
+            Source src = Source.newBuilder(ID, "import site\nimport sys\ngetattr(sys, '__interactivehook__', lambda: None)()\n", "<site import>").build();
+            Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, doParse(pythonCore, src))).call();
+        }
     }
 
     private RootNode doParse(PythonCore pythonCore, Source source) {
