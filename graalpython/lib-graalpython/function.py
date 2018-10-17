@@ -57,7 +57,7 @@ def __signature__(self):
             kind = inspect.Parameter.KEYWORD_ONLY
             if p != "*":
                 parameters.append(inspect.Parameter(p, inspect.Parameter.VAR_POSITIONAL))
-        else:
+        elif p:
             if "=" in p:
                 kind = inspect.Parameter.POSITIONAL_OR_KEYWORD
             parameters.append(inspect.Parameter(p, kind))
