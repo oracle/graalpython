@@ -244,6 +244,11 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             throw new RuntimeException("Unsupported initializer " + initializer);
         }
 
+        @Specialization(guards = "!isString(typeCode)")
+        PArray noArray(@SuppressWarnings("unused") PythonClass cls, Object typeCode, @SuppressWarnings("unused") Object initializer) {
+            throw raise(TypeError, "array() argument 1 must be a unicode character, not %p", typeCode);
+        }
+        
         @TruffleBoundary
         private static long longValue(Number n) {
             return n.longValue();
