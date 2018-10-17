@@ -44,8 +44,14 @@ from time import time
 
 
 _HRULE = '-'.join(['' for i in range(80)])
-ATTR_BENCHMARK = '__benchmark__'
+
+#: this function is used to pre-process the arguments as expected by the __benchmark__ and __setup__ entry points
 ATTR_PROCESS_ARGS = '__process_args__'
+#: gets called with the preprocessed arguments before __benchmark__
+ATTR_SETUP = '__setup__'
+#: gets called with the preprocessed arguments N times
+ATTR_BENCHMARK = '__benchmark__'
+#: performs any teardown needed in the benchmark
 ATTR_TEARDOWN = '__teardown__'
 
 
@@ -145,6 +151,10 @@ class BenchRunner(object):
 
         print("### args = %s" % args)
         print(_HRULE)
+
+        print("### setup ... ")
+        self._call_attr(ATTR_SETUP, *args)
+        print("### start benchmark ... ")
 
         bench_func = self._get_attr(ATTR_BENCHMARK)
         if bench_func and hasattr(bench_func, '__call__'):
