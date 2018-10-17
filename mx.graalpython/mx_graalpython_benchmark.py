@@ -116,7 +116,7 @@ class AbstractPythonVm(Vm):
 
     def run(self, cwd, args):
         _check_vm_args(self.name(), args)
-        stdout_capture = mx.OutputCapture()
+        stdout_capture = mx.TeeOutputCapture(mx.OutputCapture())
         ret_code = mx.run([self.interpreter] + args, out=stdout_capture, err=stdout_capture)
         print(stdout_capture.data)
         return ret_code, stdout_capture.data
