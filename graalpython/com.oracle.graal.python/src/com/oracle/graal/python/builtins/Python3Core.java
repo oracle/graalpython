@@ -403,7 +403,7 @@ public final class Python3Core implements PythonCore {
         String scriptPath;
         if (args.length > 0) {
             String argv0 = args[0];
-            if (argv0 != null && !argv0.startsWith("-")) {
+            if (argv0 != null && !argv0.startsWith("-") && !argv0.isEmpty()) {
                 TruffleFile scriptFile = env.getTruffleFile(argv0);
                 try {
                     scriptPath = scriptFile.getAbsoluteFile().getParent().getPath();
