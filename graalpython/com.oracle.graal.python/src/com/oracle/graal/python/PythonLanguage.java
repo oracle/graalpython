@@ -231,7 +231,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
             // if we are running the interpreter, module 'site' is automatically imported
             if (source.isInteractive()) {
-                Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, doParse(pythonCore, Source.newBuilder(ID, "import site", "<site import>").build()))).call();
+                runInteractiveStartup(pythonCore);
             }
         }
         RootNode root = doParse(pythonCore, source);
@@ -240,6 +240,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         } else {
             return Truffle.getRuntime().createCallTarget(root);
         }
+    }
+
+    static final String interactiveStartup = "import site\nimport sys\ngetattr(sys, '__interactivehook__', lambda: None)()";
+
+    private void runInteractiveStartup(PythonCore pythonCore) {
+        Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, doParse(pythonCore, Source.newBuilder(ID, interactiveStartup, "<site import>").build()))).call();
     }
 
     private RootNode doParse(PythonCore pythonCore, Source source) {
