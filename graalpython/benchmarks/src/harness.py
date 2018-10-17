@@ -149,7 +149,7 @@ class BenchRunner(object):
             # default args processor considers all args as ints
             args = list(map(int, self.bench_args))
 
-        print("### args = %s" % args)
+        print("### args = ", args)
         print(_HRULE)
 
         print("### setup ... ")
