@@ -43,6 +43,11 @@ package com.oracle.graal.python.shell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.graalvm.polyglot.Context;
 
@@ -59,7 +64,16 @@ public abstract class ConsoleHandler {
 
     public abstract void setPrompt(String prompt);
 
+    public void addCompleter(@SuppressWarnings("unused") Function<String, List<String>> completer) {
+        // ignore by default
+    }
+
     public void setContext(@SuppressWarnings("unused") Context context) {
+        // ignore by default
+    }
+
+    @SuppressWarnings("unused")
+    public void setHistory(Supplier<Integer> getSize, Consumer<String> addItem, Function<Integer, String> getItem, BiConsumer<Integer, String> setItem, Consumer<Integer> removeItem, Runnable clear) {
         // ignore by default
     }
 

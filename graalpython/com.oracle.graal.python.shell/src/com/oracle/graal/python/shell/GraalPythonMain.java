@@ -48,6 +48,7 @@ import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.PolyglotException.StackFrame;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.SourceSection;
+import org.graalvm.polyglot.Value;
 
 import jline.console.UserInterruptException;
 
@@ -517,9 +518,12 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     public int readEvalPrint(Context context, ConsoleHandler consoleHandler) {
         int lastStatus = 0;
         try {
+            setupReadline(context, consoleHandler);
+
             while (true) { // processing inputs
                 boolean doEcho = doEcho(context);
                 consoleHandler.setPrompt(doEcho ? getPrompt(context) : null);
+
                 try {
                     String input = consoleHandler.readLine();
                     if (input == null) {
@@ -585,6 +589,36 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
         } catch (ExitException e) {
             return e.code;
+        }
+    }
+
+    private void setupReadline(Context context, ConsoleHandler consoleHandler) {
+        final Value readline = context.eval(Source.newBuilder(getLanguageId(), "import readline; readline", "setup-interactive").interactive(true).buildLiteral());
+        final Value completer = readline.getMember("get_completer").execute();
+        final Value addHistory = readline.getMember("add_history");
+        final Value getHistoryItem = readline.getMember("get_history_item");
+        final Value setHistoryItem = readline.getMember("replace_history_item");
+        final Value deleteHistoryItem = readline.getMember("remove_history_item");
+        final Value clearHistory = readline.getMember("clear_history");
+        final Value getHistorySize = readline.getMember("get_current_history_length");
+        consoleHandler.setHistory(
+                        () -> getHistorySize.execute().asInt(),
+                        (item) -> addHistory.execute(item),
+                        (pos) -> getHistoryItem.execute(pos).asString(),
+                        (pos, item) -> setHistoryItem.execute(pos, item),
+                        (pos) -> deleteHistoryItem.execute(pos),
+                        () -> clearHistory.execute());
+
+        if (completer.canExecute()) {
+            consoleHandler.addCompleter((buffer) -> {
+                List<String> candidates = new ArrayList<>();
+                Value candidate = completer.execute(buffer, candidates.size());
+                while (candidate.isString()) {
+                    candidates.add(candidate.asString());
+                    candidate = completer.execute(buffer, candidates.size());
+                }
+                return candidates;
+            });
         }
     }
 

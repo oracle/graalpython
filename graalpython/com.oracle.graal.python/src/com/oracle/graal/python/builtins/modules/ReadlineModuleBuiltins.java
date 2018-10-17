@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -161,6 +162,79 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "get_history_item", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class SetHistoryLengthNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        String setCompleter(PythonModule self, int index,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            LocalData data = (LocalData) readNode.execute(self, DATA);
+            try {
+                return data.history.get(index);
+            } catch (IndexOutOfBoundsException e) {
+                throw raise(PythonErrorType.IndexError, "index out of bounds");
+            }
+        }
+    }
+
+    @Builtin(name = "replace_history_item", fixedNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class ReplaceItemNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        String setCompleter(PythonModule self, int index, PString string,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            return setCompleter(self, index, string.getValue(), readNode);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        String setCompleter(PythonModule self, int index, String string,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            LocalData data = (LocalData) readNode.execute(self, DATA);
+            try {
+                return data.history.set(index, string);
+            } catch (IndexOutOfBoundsException e) {
+                throw raise(PythonErrorType.IndexError, "index out of bounds");
+            }
+        }
+    }
+
+    @Builtin(name = "remove_history_item", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class DeleteItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        String setCompleter(PythonModule self, int index,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            LocalData data = (LocalData) readNode.execute(self, DATA);
+            try {
+                return data.history.remove(index);
+            } catch (IndexOutOfBoundsException e) {
+                throw raise(PythonErrorType.IndexError, "index out of bounds");
+            }
+        }
+    }
+
+    @Builtin(name = "add_history", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class AddHistoryNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PNone addHistory(PythonModule self, PString item,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            return addHistory(self, item.getValue(), readNode);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        PNone addHistory(PythonModule self, String item,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            LocalData data = (LocalData) readNode.execute(self, DATA);
+            data.history.add(item);
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "read_history_file", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class ReadHistoryFileNode extends PythonBinaryBuiltinNode {
@@ -181,6 +255,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
                 while ((line = reader.readLine()) != null) {
                     data.history.add(line);
                 }
+                reader.close();
             } catch (IOException e) {
                 throw raise(PythonErrorType.IOError, e.getMessage());
             }
@@ -208,9 +283,22 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
                     writer.write(l);
                     writer.newLine();
                 }
+                writer.close();
             } catch (IOException e) {
                 throw raise(PythonErrorType.IOError, e.getMessage());
             }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "clear_history", fixedNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class ClearNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PNone setCompleter(PythonModule self,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            LocalData data = (LocalData) readNode.execute(self, DATA);
+            data.history.clear();
             return PNone.NONE;
         }
     }

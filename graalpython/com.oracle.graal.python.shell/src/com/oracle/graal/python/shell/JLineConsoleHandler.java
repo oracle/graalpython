@@ -40,16 +40,26 @@
  */
 package com.oracle.graal.python.shell;
 
-import jline.console.ConsoleReader;
-import jline.console.UserInterruptException;
-import jline.console.completer.CandidateListCompletionHandler;
-import jline.console.completer.CompletionHandler;
-import jline.console.history.MemoryHistory;
-import org.graalvm.polyglot.Context;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import org.graalvm.polyglot.Context;
+
+import jline.console.ConsoleReader;
+import jline.console.UserInterruptException;
+import jline.console.completer.CandidateListCompletionHandler;
+import jline.console.completer.Completer;
+import jline.console.completer.CompletionHandler;
+import jline.console.history.History;
+import jline.console.history.MemoryHistory;
 
 public class JLineConsoleHandler extends ConsoleHandler {
     private final ConsoleReader console;
@@ -64,10 +74,152 @@ public class JLineConsoleHandler extends ConsoleHandler {
             console.setHistory(history);
             console.setHandleUserInterrupt(true);
             console.setExpandEvents(false);
+            console.setCommentBegin("#");
         } catch (IOException ex) {
             // TODO throw proper exception type
             throw new RuntimeException("unexpected error opening console reader", ex);
         }
+    }
+
+    @Override
+    public void addCompleter(Function<String, List<String>> completer) {
+        console.addCompleter(new Completer() {
+            public int complete(String buffer, int cursor, List<CharSequence> candidates) {
+                if (buffer != null) {
+                    candidates.addAll(completer.apply(buffer));
+                }
+                return candidates.isEmpty() ? -1 : 0;
+            }
+        });
+
+    }
+
+    @Override
+    public void setHistory(Supplier<Integer> getSize, Consumer<String> addItem, Function<Integer, String> getItem, BiConsumer<Integer, String> setItem, Consumer<Integer> removeItem, Runnable clear) {
+        console.setHistory(new History() {
+            private int pos = getSize.get();
+
+            public int size() {
+                return getSize.get();
+            }
+
+            public void set(int arg0, CharSequence arg1) {
+                setItem.accept(arg0, arg1.toString());
+            }
+
+            public void replace(CharSequence arg0) {
+                if (pos < 0 || pos >= size()) {
+                    return;
+                }
+                setItem.accept(pos, arg0.toString());
+            }
+
+            public CharSequence removeLast() {
+                int t = size() - 1;
+                String s = getItem.apply(t);
+                removeItem.accept(t);
+                return s;
+            }
+
+            public CharSequence removeFirst() {
+                int t = size() - 1;
+                String s = getItem.apply(t);
+                removeItem.accept(0);
+                return s;
+            }
+
+            public CharSequence remove(int arg0) {
+                int t = size() - 1;
+                String s = getItem.apply(t);
+                removeItem.accept(arg0);
+                return s;
+            }
+
+            public boolean previous() {
+                if (pos >= 0) {
+                    pos--;
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+            public boolean next() {
+                if (pos < size()) {
+                    pos++;
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+            public boolean moveToLast() {
+                pos = size();
+                return true;
+            }
+
+            public boolean moveToFirst() {
+                pos = 0;
+                return true;
+            }
+
+            public void moveToEnd() {
+                moveToLast();
+            }
+
+            public boolean moveTo(int arg0) {
+                pos = arg0;
+                int size = size();
+                if (pos < 0 || pos >= size) {
+                    pos = pos % size;
+                    return false;
+                }
+                return true;
+            }
+
+            public Iterator<Entry> iterator() {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            public boolean isEmpty() {
+                return size() == 0;
+            }
+
+            public int index() {
+                return pos;
+            }
+
+            public CharSequence get(int arg0) {
+                return getItem.apply(arg0);
+            }
+
+            public ListIterator<Entry> entries(int arg0) {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            public ListIterator<Entry> entries() {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            public CharSequence current() {
+                if (pos < 0 || pos >= size()) {
+                    return "";
+                }
+                return getItem.apply(pos);
+            }
+
+            public void clear() {
+                clear.run();
+            }
+
+            public void add(CharSequence arg0) {
+                addItem.accept(arg0.toString());
+                pos = size();
+            }
+        });
     }
 
     @Override
