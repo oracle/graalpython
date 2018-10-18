@@ -34,17 +34,18 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBuiltinFunction)
 public class BuiltinFunctionBuiltins extends PythonBuiltins {
@@ -83,13 +84,9 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getEnclosingType() != null")
         @TruffleBoundary
-        PythonClass objclass(PBuiltinFunction self) {
-            LazyPythonClass enclosingType = self.getEnclosingType();
-            if (enclosingType instanceof PythonBuiltinClassType) {
-                return getCore().lookupType((PythonBuiltinClassType) enclosingType);
-            } else {
-                return (PythonClass) enclosingType;
-            }
+        PythonClass objclass(PBuiltinFunction self,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+            return getPythonClass(self.getEnclosingType(), profile);
         }
     }
 }
