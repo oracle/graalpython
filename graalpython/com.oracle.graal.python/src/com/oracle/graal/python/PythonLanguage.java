@@ -41,10 +41,14 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
@@ -86,8 +90,9 @@ import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
+import com.oracle.truffle.api.source.SourceSection;
 
-@TruffleLanguage.Registration(id = PythonLanguage.ID, name = PythonLanguage.NAME, version = PythonLanguage.VERSION, mimeType = PythonLanguage.MIME_TYPE, interactive = true, internal = false, contextPolicy = TruffleLanguage.ContextPolicy.SHARED)
+@TruffleLanguage.Registration(id = PythonLanguage.ID, name = PythonLanguage.NAME, version = PythonLanguage.VERSION, characterMimeTypes = PythonLanguage.MIME_TYPE, interactive = true, internal = false, contextPolicy = TruffleLanguage.ContextPolicy.SHARED)
 @ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, StandardTags.TryBlockTag.class, StandardTags.ExpressionTag.class,
                 DebuggerTags.AlwaysHalt.class})
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {
@@ -378,6 +383,25 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         scopes.add(Scope.newBuilder("__main__", context.getMainModule()).build());
         scopes.add(Scope.newBuilder("builtins", context.getBuiltins()).build());
         return scopes;
+    }
+
+    @Override
+    @TruffleBoundary
+    protected SourceSection findSourceLocation(PythonContext context, Object value) {
+        if (value instanceof PFunction || value instanceof PMethod) {
+            PythonCallable callable = (PythonCallable) value;
+            return callable.getCallTarget().getRootNode().getSourceSection();
+        } else if (value instanceof PCode) {
+            return ((PCode) value).getRootNode().getSourceSection();
+        } else if (value instanceof PythonClass) {
+            for (String k : ((PythonClass) value).getAttributeNames()) {
+                SourceSection attrSourceLocation = findSourceLocation(context, ((PythonClass) value).getAttribute(k));
+                if (attrSourceLocation != null) {
+                    return attrSourceLocation;
+                }
+            }
+        }
+        return null;
     }
 
     @Override
