@@ -61,6 +61,14 @@ def test_create():
     a = array('b', b'x' * 10)
     assert str(a) == "array('b', [120, 120, 120, 120, 120, 120, 120, 120, 120, 120])"
 
+def test_wrong_create():
+    from array import array
+    raised = False
+    try :
+        a = array([1,2,3])
+    except TypeError:
+        raised = True
+    assert raised
 
 def test_add():
     from array import array
