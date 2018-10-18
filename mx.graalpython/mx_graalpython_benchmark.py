@@ -116,16 +116,24 @@ class AbstractPythonVm(Vm):
 
     def run(self, cwd, args):
         _check_vm_args(self.name(), args)
-        stdout_capture = mx.TeeOutputCapture(mx.OutputCapture())
+        out = mx.OutputCapture()
+        stdout_capture = mx.TeeOutputCapture(out)
         ret_code = mx.run([self.interpreter] + args, out=stdout_capture, err=stdout_capture)
-        print(stdout_capture.data)
-        return ret_code, stdout_capture.data
+        return ret_code, out.data
 
 
 class CPythonVm(AbstractPythonVm):
+    PYTHON_INTERPRETER = "python3"
+
+    def __init__(self, config_name, options=None, virtualenv=None):
+        super(CPythonVm, self).__init__(config_name, options)
+        self._virtualenv = virtualenv
+
     @property
     def interpreter(self):
-        return "python3"
+        if self._virtualenv:
+            return os.path.join(self._virtualenv, CPythonVm.PYTHON_INTERPRETER)
+        return CPythonVm.PYTHON_INTERPRETER
 
     def name(self):
         return VM_NAME_CPYTHON
