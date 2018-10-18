@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -199,6 +200,11 @@ public class ArrayBuiltins extends PythonBuiltins {
             }
             return String.format("array('%s', %s)", typeCode, array);
         }
+    }
+
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ReprNode extends StrNode {
     }
 
     @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
