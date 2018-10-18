@@ -646,6 +646,45 @@ class ListTest(list_tests.CommonTest):
         l.append("d")
         self.assertEqual(l, ["a", "b", "c", "d"])
 
+    def test_extend_bytes_2(self):
+        b = bytes([3,4,255])
+        l = [1,2]
+        l.extend(b)
+        self.assertEqual(l, [1,2,3,4,255])
+
+    def test_extend_bytearray(self):
+        b = bytearray([3,4,255])
+        l = [1,2]
+        l.extend(b)
+        self.assertEqual(l, [1,2,3,4,255])
+
+    def test_init_extend_with_lying_list(self):
+        class LyingList(list):
+            def __iter__(self):
+                return iter([10, 20, 30, 40])
+
+        l = LyingList([1,2,3,4])
+        self.assertEqual([1,2,3,4], l)
+
+        ll = list(l)
+        self.assertEqual([10,20,30,40], ll)
+
+        ll = list(LyingList([1.0, 5.6, 7.7]))
+        self.assertEqual([10,20,30,40], ll)
+
+        a = [1,0]
+        a.extend(l)
+        self.assertEqual([1,0,10,20,30,40], a)
+
+        a = [1,0]
+        a.extend(ll)
+        self.assertEqual([1,0,10,20,30,40], a)
+
+        ll.extend(ll)
+        self.assertEqual([10,20,30,40,10,20,30,40], ll)
+
+        l.extend(l)
+        self.assertEqual([1,2,3,4,10,20,30,40], l)
 
 class ListCompareTest(CompareTest):
 

@@ -89,6 +89,8 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -97,6 +99,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -2038,6 +2041,7 @@ public abstract class SequenceStorageNodes {
         }
     }
 
+    @ImportStatic(PGuards.class)
     public abstract static class ExtendNode extends SequenceStorageBaseNode {
         @Child private CreateEmptyNode createEmptyNode = CreateEmptyNode.create();
         @Child private GeneralizationNode genNode;
@@ -2050,7 +2054,17 @@ public abstract class SequenceStorageNodes {
 
         public abstract SequenceStorage execute(SequenceStorage s, Object iterable);
 
-        @Specialization(guards = "hasStorage(seq)")
+        @Child private GetLazyClassNode getClassNode;
+
+        protected LazyPythonClass getClass(Object value) {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetLazyClassNode.create());
+            }
+            return getClassNode.execute(value);
+        }
+
+        @Specialization(guards = {"hasStorage(seq)", "cannotBeOverridden(getClass(seq))"})
         SequenceStorage doWithStorage(SequenceStorage s, PSequence seq,
                         @Cached("createClassProfile()") ValueProfile leftProfile,
                         @Cached("createClassProfile()") ValueProfile rightProfile,
@@ -2075,7 +2089,7 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = "!hasStorage(iterable)")
+        @Specialization(guards = "!hasStorage(iterable) || !cannotBeOverridden(getClass(iterable))")
         SequenceStorage doWithoutStorage(SequenceStorage s, Object iterable,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
