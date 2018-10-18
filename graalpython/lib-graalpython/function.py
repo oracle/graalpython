@@ -37,4 +37,35 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# an empty file for now
+def __signature__(self):
+    import inspect
+    text_sig = self.__text_signature__
+    text_sig = text_sig[1:-1] # remove parens
+    paramnames = [p.strip() for p in text_sig.split(",")]
+    i = 0
+    kind = inspect.Parameter.POSITIONAL_ONLY
+    parameters = []
+    while i < len(paramnames):
+        p = paramnames[i]
+        if p.startswith("$"):
+            pass
+        elif p == "/":
+            kind = inspect.Parameter.POSITIONAL_OR_KEYWORD
+        elif p.startswith("**"):
+            parameters.append(inspect.Parameter(p, inspect.Parameter.VAR_KEYWORD))
+        elif p.startswith("*"):
+            kind = inspect.Parameter.KEYWORD_ONLY
+            if p != "*":
+                parameters.append(inspect.Parameter(p, inspect.Parameter.VAR_POSITIONAL))
+        elif p:
+            if "=" in p:
+                kind = inspect.Parameter.POSITIONAL_OR_KEYWORD
+            parameters.append(inspect.Parameter(p, kind))
+        i += 1
+
+    return inspect.Signature(parameters=parameters)
+
+
+# attach to builtin methods and builtin functions
+type(list.append).__signature__ = property(__signature__)
+type(abs).__signature__ = property(__signature__)

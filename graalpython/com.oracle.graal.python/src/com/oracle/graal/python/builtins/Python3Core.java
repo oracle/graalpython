@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
@@ -187,6 +188,7 @@ public final class Python3Core implements PythonCore {
                     "unicodedata",
                     "_locale",
                     "_sre",
+                    "function",
     };
 
     private final PythonBuiltins[] builtins;
@@ -270,7 +272,8 @@ public final class Python3Core implements PythonCore {
                         new SysModuleBuiltins(),
                         new BufferBuiltins(),
                         new MemoryviewBuiltins(),
-                        new SuperBuiltins()));
+                        new SuperBuiltins(),
+                        new ReadlineModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
             for (PythonBuiltins builtin : providers) {

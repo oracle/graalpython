@@ -22,11 +22,48 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 class repeat():
-    pass
+    def __init__(self, obj, times=None):
+        self.obj = obj
+        self.times = times
+        self.step = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.times is not None:
+            if self.step >= self.times:
+                raise StopIteration
+            else:
+                self.step += 1
+        return self.obj
 
 
 class chain():
-    pass
+    """
+    Return a chain object whose .__next__() method returns elements from the
+    first iterable until it is exhausted, then elements from the next
+    iterable, until all of the iterables are exhausted.
+    """
+    def __init__(self, *iterables):
+        self._iterables = iterables
+        self._len = len(iterables)
+        if self._len > 0:
+            self._current = iter(self._iterables[0])
+        self._idx = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self._idx >= self._len:
+            raise StopIteration
+        try:
+            return next(self._current)
+        except (StopIteration, IndexError):
+            self._idx += 1
+            self._current = iter(self._iterables[self._idx])
+            return self.__next__()
 
 
 class starmap():

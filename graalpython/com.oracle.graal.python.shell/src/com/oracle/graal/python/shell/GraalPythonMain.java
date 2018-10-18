@@ -48,6 +48,7 @@ import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.PolyglotException.StackFrame;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.SourceSection;
+import org.graalvm.polyglot.Value;
 
 import jline.console.UserInterruptException;
 
@@ -58,8 +59,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     private static final String LANGUAGE_ID = "python";
     private static final Source QUIT_EOF = Source.newBuilder(LANGUAGE_ID, "import site\nexit()", "<exit-on-eof>").internal(true).buildLiteral();
-    private static final Source GET_PROMPT = Source.newBuilder(LANGUAGE_ID, "import sys\nsys.ps1", "<prompt>").internal(true).buildLiteral();
-    private static final Source GET_CONTINUE_PROMPT = Source.newBuilder(LANGUAGE_ID, "import sys\nsys.ps2", "<continue-prompt>").internal(true).buildLiteral();
 
     private ArrayList<String> programArgs = null;
     private String commandString = null;
@@ -517,9 +516,14 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     public int readEvalPrint(Context context, ConsoleHandler consoleHandler) {
         int lastStatus = 0;
         try {
+            setupReadline(context, consoleHandler);
+            Value sys = context.eval(Source.create(getLanguageId(), "import sys; sys"));
+            context.eval(Source.create(getLanguageId(), "del sys\ndel site\ndel readline"));
+
             while (true) { // processing inputs
                 boolean doEcho = doEcho(context);
-                consoleHandler.setPrompt(doEcho ? getPrompt(context) : null);
+                consoleHandler.setPrompt(doEcho ? sys.getMember("ps1").asString() : null);
+
                 try {
                     String input = consoleHandler.readLine();
                     if (input == null) {
@@ -538,7 +542,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             context.eval(Source.newBuilder(getLanguageId(), sb.toString(), "<stdin>").interactive(true).buildLiteral());
                         } catch (PolyglotException e) {
                             if (continuePrompt == null) {
-                                continuePrompt = doEcho ? getContinuePrompt(context) : null;
+                                continuePrompt = doEcho ? sys.getMember("ps2").asString() : null;
                             }
                             if (e.isIncompleteSource()) {
                                 // read another line of input
@@ -587,6 +591,42 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
     }
 
+    private void setupReadline(Context context, ConsoleHandler consoleHandler) {
+        // First run nothing to trigger the setup of interactive mode (site import and so on)
+        context.eval(Source.newBuilder(getLanguageId(), "None", "setup-interactive").interactive(true).buildLiteral());
+        // Then we can get the readline module and see if any completers were registered and use its
+        // history feature
+        final Value readline = context.eval(Source.create(getLanguageId(), "import readline; readline"));
+        final Value completer = readline.getMember("get_completer").execute();
+        final Value shouldRecord = readline.getMember("get_auto_history");
+        final Value addHistory = readline.getMember("add_history");
+        final Value getHistoryItem = readline.getMember("get_history_item");
+        final Value setHistoryItem = readline.getMember("replace_history_item");
+        final Value deleteHistoryItem = readline.getMember("remove_history_item");
+        final Value clearHistory = readline.getMember("clear_history");
+        final Value getHistorySize = readline.getMember("get_current_history_length");
+        consoleHandler.setHistory(
+                        () -> shouldRecord.execute().asBoolean(),
+                        () -> getHistorySize.execute().asInt(),
+                        (item) -> addHistory.execute(item),
+                        (pos) -> getHistoryItem.execute(pos).asString(),
+                        (pos, item) -> setHistoryItem.execute(pos, item),
+                        (pos) -> deleteHistoryItem.execute(pos),
+                        () -> clearHistory.execute());
+
+        if (completer.canExecute()) {
+            consoleHandler.addCompleter((buffer) -> {
+                List<String> candidates = new ArrayList<>();
+                Value candidate = completer.execute(buffer, candidates.size());
+                while (candidate.isString()) {
+                    candidates.add(candidate.asString());
+                    candidate = completer.execute(buffer, candidates.size());
+                }
+                return candidates;
+            });
+        }
+    }
+
     private static final class ExitException extends RuntimeException {
         private static final long serialVersionUID = 1L;
         private final int code;
@@ -598,27 +638,5 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     private static boolean doEcho(@SuppressWarnings("unused") Context context) {
         return true;
-    }
-
-    private static String getPrompt(Context context) {
-        try {
-            return context.eval(GET_PROMPT).asString();
-        } catch (PolyglotException e) {
-            if (e.isExit()) {
-                throw new ExitException(e.getExitStatus());
-            }
-            throw new RuntimeException("error while retrieving prompt", e);
-        }
-    }
-
-    private static String getContinuePrompt(Context context) {
-        try {
-            return context.eval(GET_CONTINUE_PROMPT).asString();
-        } catch (PolyglotException e) {
-            if (e.isExit()) {
-                throw new ExitException(e.getExitStatus());
-            }
-            throw new RuntimeException("error while retrieving continue prompt", e);
-        }
     }
 }
