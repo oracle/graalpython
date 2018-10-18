@@ -3,6 +3,12 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 1.0.0 RC9
+
+* Support `help` in the builtin Python shell
+* Add `readline` to enable history and autocompletion in the Python shell
+* Improve display of foreign array-like objects
+
 ## Version 1.0.0 RC8
 
 * Report allocations when the `--memtracer` option is used
