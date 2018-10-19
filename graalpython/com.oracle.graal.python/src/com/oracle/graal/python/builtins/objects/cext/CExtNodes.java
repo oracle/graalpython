@@ -404,19 +404,13 @@ public abstract class CExtNodes {
             return object.getValue();
         }
 
-        @Specialization(guards = {"isPrimitiveNativeWrapper(object)", "object.isNative()"})
+        @Specialization(guards = {"!isBoolNativeWrapper(object)", "object.isNative()"})
         Object doPrimitiveNativeWrapper(PrimitiveNativeWrapper object) {
             return getMaterializeNode().execute(object);
         }
 
-        @Specialization(guards = {"!isPrimitiveNativeWrapper(object)", "object.getClass() == cachedClass"}, limit = "3")
-        Object doNativeWrapper(PythonNativeWrapper object,
-                        @SuppressWarnings("unused") @Cached("object.getClass()") Class<? extends PythonNativeWrapper> cachedClass) {
-            return CompilerDirectives.castExact(object, cachedClass).getDelegate();
-        }
-
-        @Specialization(guards = "!isPrimitiveNativeWrapper(object)", replaces = "doNativeWrapper")
-        Object doNativeWrapperGeneric(PythonNativeWrapper object) {
+        @Specialization(guards = "!isPrimitiveNativeWrapper(object)")
+        Object doNativeWrapper(PythonNativeWrapper object) {
             return object.getDelegate();
         }
 
@@ -473,7 +467,11 @@ public abstract class CExtNodes {
         }
 
         protected static boolean isPrimitiveNativeWrapper(PythonNativeWrapper object) {
-            return object instanceof PrimitiveNativeWrapper && !(object instanceof BoolNativeWrapper);
+            return object instanceof PrimitiveNativeWrapper;
+        }
+
+        protected static boolean isBoolNativeWrapper(PythonNativeWrapper object) {
+            return object instanceof BoolNativeWrapper;
         }
 
         protected boolean isForeignObject(TruffleObject obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
@@ -598,14 +596,39 @@ public abstract class CExtNodes {
 
         public abstract Object execute(Object value);
 
+        public abstract boolean executeBool(boolean value);
+
+        public abstract byte executeByte(byte value);
+
+        public abstract int executeInt(int value);
+
+        public abstract long executeLong(long value);
+
+        public abstract double executeDouble(double value);
+
         @Specialization
         PythonAbstractObject doPythonObject(PythonAbstractObject value) {
             return value;
         }
 
         @Specialization
-        Object doWrapper(PythonObjectNativeWrapper value) {
+        Object doWrapper(PythonNativeWrapper value) {
             return toJavaNode.execute(value);
+        }
+
+        @Specialization
+        String doString(String object) {
+            return object;
+        }
+
+        @Specialization
+        boolean doBoolean(boolean b) {
+            return b;
+        }
+
+        @Specialization
+        byte doLong(byte b) {
+            return b;
         }
 
         @Fallback
