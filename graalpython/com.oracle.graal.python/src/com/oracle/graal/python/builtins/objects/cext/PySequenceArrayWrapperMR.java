@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFac
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.WriteArrayItemNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
@@ -68,7 +67,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -411,82 +409,68 @@ public class PySequenceArrayWrapperMR {
     abstract static class GetTypeIDNode extends CExtBaseNode {
 
         @Child private PCallNativeNode callUnaryNode = PCallNativeNode.create();
-        @Child private SequenceNodes.LenNode lenNode;
 
-        @CompilationFinal TruffleObject funGetByteArrayTypeID;
-        @CompilationFinal TruffleObject funGetPtrArrayTypeID;
+        @CompilationFinal private TruffleObject funGetByteArrayTypeID;
+        @CompilationFinal private TruffleObject funGetPtrArrayTypeID;
 
         public abstract Object execute(Object delegate);
 
-        private Object callGetByteArrayTypeID(long len) {
+        protected Object callGetByteArrayTypeID() {
+            return callGetArrayTypeID(importCAPISymbol(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID));
+        }
+
+        protected Object callGetPtrArrayTypeID() {
+            return callGetArrayTypeID(importCAPISymbol(NativeCAPISymbols.FUN_GET_PTR_ARRAY_TYPE_ID));
+        }
+
+        private Object callGetByteArrayTypeIDCached() {
             if (funGetByteArrayTypeID == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 funGetByteArrayTypeID = importCAPISymbol(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID);
             }
-            return callUnaryNode.execute(funGetByteArrayTypeID, new Object[]{len});
+            return callGetArrayTypeID(funGetByteArrayTypeID);
         }
 
-        private Object callGetPtrArrayTypeID(long len) {
+        private Object callGetPtrArrayTypeIDCached() {
             if (funGetPtrArrayTypeID == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 funGetPtrArrayTypeID = importCAPISymbol(NativeCAPISymbols.FUN_GET_PTR_ARRAY_TYPE_ID);
             }
-            return callUnaryNode.execute(funGetPtrArrayTypeID, new Object[]{len});
+            return callGetArrayTypeID(funGetPtrArrayTypeID);
         }
 
-        @Specialization
-        Object doTuple(PTuple tuple) {
-            return callGetPtrArrayTypeID(getLength(tuple));
+        private Object callGetArrayTypeID(TruffleObject fun) {
+            // We use length=0 indicating an unknown length. This allows us to reuse the type but
+            // Sulong will report the wrong length via interop for a pointer to this object.
+            return callUnaryNode.execute(fun, new Object[]{0});
         }
 
-        @Specialization
-        Object doList(PList list) {
-            return callGetPtrArrayTypeID(getLength(list));
+        @Specialization(assumptions = "singleContextAssumption()", guards = "hasByteArrayContent(object)")
+        Object doByteArray(@SuppressWarnings("unused") PSequence object,
+                        @Cached("callGetByteArrayTypeID()") Object nativeType) {
+            // TODO(fa): use weak reference ?
+            return nativeType;
         }
 
-        @Specialization
-        Object doBytes(PBytes bytes) {
-            return callGetByteArrayTypeID(getLength(bytes));
+        @Specialization(guards = "hasByteArrayContent(object)", replaces = "doByteArray")
+        Object doByteArrayMultiCtx(@SuppressWarnings("unused") PSequence object) {
+            return callGetByteArrayTypeIDCached();
         }
 
-        @Specialization
-        Object doByteArray(PByteArray bytes) {
-            return callGetByteArrayTypeID(getLength(bytes));
+        @Specialization(assumptions = "singleContextAssumption()", guards = "!hasByteArrayContent(object)")
+        Object doPtrArray(@SuppressWarnings("unused") PSequence object,
+                        @Cached("callGetPtrArrayTypeID()") Object nativeType) {
+            // TODO(fa): use weak reference ?
+            return nativeType;
         }
 
-        @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
-        Object doGeneric(Object object,
-                        @Cached("create(__LEN__)") LookupAndCallUnaryNode getLenNode) {
-            try {
-                return callGetPtrArrayTypeID(getLenNode.executeInt(object));
-            } catch (UnexpectedResultException e) {
-                // TODO do something useful
-                throw new AssertionError();
-            }
+        @Specialization(guards = "!hasByteArrayContent(object)", replaces = "doPtrArray")
+        Object doPtrArrayMultiCtx(@SuppressWarnings("unused") PSequence object) {
+            return callGetPtrArrayTypeIDCached();
         }
 
-        protected static ListBuiltins.GetItemNode createListGetItem() {
-            return ListBuiltinsFactory.GetItemNodeFactory.create();
-        }
-
-        protected static TupleBuiltins.GetItemNode createTupleGetItem() {
-            return TupleBuiltinsFactory.GetItemNodeFactory.create();
-        }
-
-        protected boolean isTuple(Object object) {
-            return object instanceof PTuple;
-        }
-
-        protected boolean isList(Object object) {
-            return object instanceof PList;
-        }
-
-        private int getLength(PSequence s) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceNodes.LenNode.create());
-            }
-            return lenNode.execute(s);
+        protected static boolean hasByteArrayContent(Object object) {
+            return object instanceof PBytes || object instanceof PByteArray;
         }
 
         public static GetTypeIDNode create() {
