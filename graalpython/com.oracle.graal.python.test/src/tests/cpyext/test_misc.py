@@ -150,3 +150,27 @@ class TestMisc(CPyExtTestCase):
         arguments=["char* name", "PyObject* globals", "PyObject* locals", "PyObject* fromlist", "int level"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyTruffle_Intrinsic_Pmovmskb = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            (0xffffcafebabe, 0xefffdeadbeef),
+        ),
+        code="""
+        #include <emmintrin.h>
+        PyObject* PyTruffle_Intrinsic_Pmovmskb(PyObject* arg0, PyObject* arg1) {
+            int r;
+            int64_t a = (int64_t) PyLong_AsSsize_t(arg0);
+            int64_t b = (int64_t) PyLong_AsSsize_t(arg1);
+            __m128i zero = _mm_setzero_si128();
+            __m128i v = _mm_set_epi64(_m_from_int64(b), _m_from_int64(a));
+            v = _mm_cmpeq_epi8(v, zero);
+            r = _mm_movemask_epi8(v);
+            return (r == 0 || r == 49344) ? Py_True : Py_False;
+        }
+        """,
+        resultspec="O",
+        argspec="OO",
+        arguments=["PyObject* arg0", "PyObject* arg1"],
+        cmpfunc=unhandled_error_compare
+    )
