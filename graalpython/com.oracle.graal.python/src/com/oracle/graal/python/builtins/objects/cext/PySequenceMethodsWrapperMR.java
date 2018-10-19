@@ -60,7 +60,7 @@ public class PySequenceMethodsWrapperMR {
         @Child private ToSulongNode toSulongNode;
 
         public Object access(PySequenceMethodsWrapper object, String key) {
-            PythonClass delegate = object.getDelegate();
+            PythonClass delegate = object.getPythonClass();
             Object result;
             switch (key) {
                 case NativeMemberNames.SQ_REPEAT:

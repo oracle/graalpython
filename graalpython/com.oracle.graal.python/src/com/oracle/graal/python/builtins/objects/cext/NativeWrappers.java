@@ -67,7 +67,7 @@ public abstract class NativeWrappers {
             this.delegate = delegate;
         }
 
-        public Object getDelegate() {
+        public final Object getDelegate() {
             return delegate;
         }
 
@@ -417,9 +417,8 @@ public abstract class NativeWrappers {
             super(delegate);
         }
 
-        @Override
-        public PString getDelegate() {
-            return (PString) super.getDelegate();
+        public PString getPString() {
+            return (PString) getDelegate();
         }
 
         @Override

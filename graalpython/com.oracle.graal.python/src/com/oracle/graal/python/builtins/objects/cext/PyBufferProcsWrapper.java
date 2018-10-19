@@ -47,15 +47,8 @@ import com.oracle.truffle.api.interop.TruffleObject;
 
 public class PyBufferProcsWrapper extends PythonNativeWrapper {
 
-    private final PythonClass delegate;
-
     public PyBufferProcsWrapper(PythonClass delegate) {
-        this.delegate = delegate;
-    }
-
-    @Override
-    public PythonClass getDelegate() {
-        return delegate;
+        super(delegate);
     }
 
     static boolean isInstance(TruffleObject o) {
@@ -65,5 +58,9 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
     @Override
     public ForeignAccess getForeignAccess() {
         return PyBufferProcsWrapperMRForeign.ACCESS;
+    }
+
+    public PythonClass getPythonClass() {
+        return (PythonClass) getDelegate();
     }
 }
