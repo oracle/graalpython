@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassN
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PAsPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PIsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
@@ -850,10 +849,9 @@ public class PythonObjectNativeWrapperMR {
     @Resolve(message = "TO_NATIVE")
     abstract static class ToNativeNode extends Node {
         @Child private ToPyObjectNode toPyObjectNode;
-        @Child private PIsPointerNode pIsPointerNode = PIsPointerNode.create();
 
         Object access(PythonClassInitNativeWrapper obj) {
-            if (!pIsPointerNode.execute(obj)) {
+            if (!obj.isNative()) {
                 obj.setNativePointer(getToPyObjectNode().execute(obj));
             }
             return obj;
@@ -861,7 +859,7 @@ public class PythonObjectNativeWrapperMR {
 
         Object access(PythonNativeWrapper obj) {
             assert !(obj instanceof PythonClassInitNativeWrapper);
-            if (!pIsPointerNode.execute(obj)) {
+            if (!obj.isNative()) {
                 obj.setNativePointer(getToPyObjectNode().execute(obj));
             }
             return obj;
@@ -878,10 +876,8 @@ public class PythonObjectNativeWrapperMR {
 
     @Resolve(message = "IS_POINTER")
     abstract static class IsPointerNode extends Node {
-        @Child private PIsPointerNode pIsPointerNode = PIsPointerNode.create();
-
         boolean access(PythonNativeWrapper obj) {
-            return pIsPointerNode.execute(obj);
+            return obj.isNative();
         }
     }
 
@@ -891,29 +887,6 @@ public class PythonObjectNativeWrapperMR {
 
         long access(PythonNativeWrapper obj) {
             return pAsPointerNode.execute(obj);
-        }
-    }
-
-    abstract static class PIsPointerNode extends PNodeWithContext {
-
-        public abstract boolean execute(PythonNativeWrapper obj);
-
-        @Specialization(guards = "!obj.isNative()")
-        boolean doBool(BoolNativeWrapper obj) {
-            // Special case: Booleans are singletons, so we need to check if the singletons have
-            // native wrappers associated and if they are already native.
-            PInt boxed = factory().createInt(obj.getValue());
-            DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
-            return nativeWrapper != null && nativeWrapper.isNative();
-        }
-
-        @Fallback
-        boolean doBool(PythonNativeWrapper obj) {
-            return obj.isNative();
-        }
-
-        private static PIsPointerNode create() {
-            return PIsPointerNodeGen.create();
         }
     }
 
