@@ -453,12 +453,12 @@ public class PySequenceArrayWrapperMR {
         }
 
         @Specialization(guards = "hasByteArrayContent(object)", replaces = "doByteArray")
-        Object doByteArrayMultiCtx(@SuppressWarnings("unused") PSequence object) {
+        Object doByteArrayMultiCtx(@SuppressWarnings("unused") Object object) {
             return callGetByteArrayTypeIDCached();
         }
 
         @Specialization(assumptions = "singleContextAssumption()", guards = "!hasByteArrayContent(object)")
-        Object doPtrArray(@SuppressWarnings("unused") PSequence object,
+        Object doPtrArray(@SuppressWarnings("unused") Object object,
                         @Cached("callGetPtrArrayTypeID()") Object nativeType) {
             // TODO(fa): use weak reference ?
             return nativeType;
