@@ -27,6 +27,7 @@ package com.oracle.graal.python.parser;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
+import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.TEMP_LOCAL_PREFIX;
 
 import java.util.List;
 import java.util.function.Function;
@@ -55,8 +56,6 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
 
     private ScopeInfo currentScope;
     private ScopeInfo globalScope;
-
-    private static final String TEMP_LOCAL_PREFIX = "<>temp_";
 
     public TranslationEnvironment(PythonLanguage language) {
         this.factory = language.getNodeFactory();
