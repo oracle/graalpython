@@ -48,6 +48,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.BinasciiModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
@@ -278,6 +279,7 @@ public final class Python3Core implements PythonCore {
                         new BufferBuiltins(),
                         new MemoryviewBuiltins(),
                         new SuperBuiltins(),
+                        new BinasciiModuleBuiltins(),
                         new ReadlineModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
