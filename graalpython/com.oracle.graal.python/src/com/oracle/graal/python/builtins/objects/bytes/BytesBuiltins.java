@@ -53,8 +53,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -511,6 +514,32 @@ public class BytesBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object getitem(PBytes self, Object idx, Object value) {
             throw raise(TypeError, "'bytes' object does not support item assignment");
+        }
+    }
+
+    // static str.maketrans()
+    @Builtin(name = "maketrans", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class MakeTransNode extends PythonBuiltinNode {
+
+        @Specialization
+        public PDict maketrans(PBytes from, PBytes to,
+                        @Cached("create()") SetItemNode setItemNode,
+                        @Cached("create()") ToByteArrayNode toByteArrayNode) {
+            byte[] fromB = toByteArrayNode.execute(from.getSequenceStorage());
+            byte[] toB = toByteArrayNode.execute(to.getSequenceStorage());
+            if (fromB.length != toB.length) {
+                throw new RuntimeException("maketrans arguments must have same length");
+            }
+
+            PDict translation = factory().createDict();
+            for (int i = 0; i < fromB.length; i++) {
+                int key = fromB[i];
+                int value = toB[i];
+                setItemNode.execute(translation, key, value);
+            }
+
+            return translation;
         }
     }
 }
