@@ -47,7 +47,7 @@ PyTypeObject PyLong_Type = PY_TRUFFLE_TYPE("int", &PyType_Type, Py_TPFLAGS_DEFAU
 
 UPCALL_ID(PyLong_AsPrimitive);
 long PyLong_AsLong(PyObject *obj) {
-    return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(long), polyglot_from_string("long", SRC_CS));
+    return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(long));
 }
 
 long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
@@ -55,7 +55,7 @@ long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
         PyErr_BadInternalCall();
         return -1;
     }
-    long result = UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(long), polyglot_from_string("long", SRC_CS));
+    long result = UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(long));
     *overflow = result == -1L && PyErr_Occurred() != NULL;
     return result;
 }
@@ -79,7 +79,7 @@ unsigned long PyLong_AsUnsignedLong(PyObject *obj) {
         PyErr_BadInternalCall();
         return (unsigned long)-1;
     }
-    return (unsigned long) UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 0, sizeof(unsigned long), polyglot_from_string("unsigned long", SRC_CS));
+    return (unsigned long) UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 0, sizeof(unsigned long));
 }
 PyObject * PyLong_FromSsize_t(Py_ssize_t n) {
 	return PyLong_FromLongLong(n);
@@ -90,9 +90,8 @@ PyObject * PyLong_FromDouble(double n) {
     return UPCALL_CEXT_O(_jls_PyLong_FromDouble, n);
 }
 
-UPCALL_ID(ssize_t);
 Py_ssize_t PyLong_AsSsize_t(PyObject *obj) {
-    return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(Py_ssize_t), _jls_ssize_t);
+    return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(Py_ssize_t));
 }
 
 PyObject * PyLong_FromVoidPtr(void *p) {

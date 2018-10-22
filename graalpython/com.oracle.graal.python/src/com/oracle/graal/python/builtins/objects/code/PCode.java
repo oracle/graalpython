@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.nodes.Node;
@@ -70,7 +71,8 @@ public final class PCode extends PythonBuiltinObject {
     private final long FLAG_POS_VAR_ARGS = 2;
     private final long FLAG_POS_VAR_KW_ARGS = 3;
 
-    private final RootCallTarget callTarget;
+    private RootCallTarget callTarget = null;
+    private final RootNode rootNode;
     private final PythonCore core;
 
     // number of arguments (not including keyword only arguments, * or ** args)
@@ -114,7 +116,7 @@ public final class PCode extends PythonBuiltinObject {
     public PCode(LazyPythonClass cls, RootNode rootNode, PythonCore core) {
         super(cls);
         assert rootNode != null;
-        this.callTarget = Truffle.getRuntime().createCallTarget(rootNode);
+        this.rootNode = rootNode;
         this.core = core;
     }
 
@@ -125,7 +127,7 @@ public final class PCode extends PythonBuiltinObject {
                     String filename, String name, int firstlineno,
                     byte[] lnotab) {
         super(cls);
-        this.callTarget = null;
+        this.rootNode = null;
         this.core = null;
 
         this.argcount = argcount;
@@ -294,7 +296,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public RootNode getRootNode() {
-        return callTarget == null ? null : callTarget.getRootNode();
+        return rootNode;
     }
 
     private boolean hasRootNode() {
@@ -434,6 +436,10 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public RootCallTarget getRootCallTarget() {
+        if (rootNode != null && callTarget == null) {
+            CompilerDirectives.transferToInterpreter();
+            callTarget = Truffle.getRuntime().createCallTarget(rootNode);
+        }
         return callTarget;
     }
 }

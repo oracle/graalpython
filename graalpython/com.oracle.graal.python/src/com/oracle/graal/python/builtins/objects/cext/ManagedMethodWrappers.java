@@ -50,15 +50,9 @@ import com.oracle.truffle.api.interop.TruffleObject;
 public abstract class ManagedMethodWrappers {
 
     public abstract static class MethodWrapper extends PythonNativeWrapper {
-        private final Object method;
 
         public MethodWrapper(Object method) {
-            this.method = method;
-        }
-
-        @Override
-        public Object getDelegate() {
-            return method;
+            super(method);
         }
 
         static boolean isInstance(TruffleObject o) {

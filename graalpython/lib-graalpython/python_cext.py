@@ -315,11 +315,8 @@ def PyList_Size(listObj):
 ##################### LONG
 
 @may_raise(-1)
-def PyLong_AsPrimitive(n, signed, size, descr):
-    if isinstance(n, int):
-        return TrufflePInt_AsPrimitive(n, signed, size, descr)
-    else:
-        return TrufflePInt_AsPrimitive(int(n), signed, size, descr)
+def PyLong_AsPrimitive(n, signed, size):
+    return TrufflePInt_AsPrimitive(int(n), signed, size)
 
 
 def _PyLong_Sign(n):
@@ -761,12 +758,12 @@ def AddMember(primary, name, memberType, offset, canSet, doc):
     member = property()
     getter = ReadMemberFunctions[memberType]
     def member_getter(self):
-        return to_java(getter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8, "")))
+        return to_java(getter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8)))
     member.getter(member_getter)
     if to_java(canSet):
         setter = WriteMemberFunctions[memberType]
         def member_setter(self, value):
-            setter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8, ""), to_sulong(value))
+            setter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8), to_sulong(value))
         member.setter(member_setter)
     member.__doc__ = doc
     object.__setattr__(pclass, name, member)

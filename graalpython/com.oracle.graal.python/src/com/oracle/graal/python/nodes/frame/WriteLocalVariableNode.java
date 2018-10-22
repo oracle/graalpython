@@ -105,7 +105,7 @@ public abstract class WriteLocalVariableNode extends StatementNode implements Wr
             return value;
         }
 
-        @Specialization(guards = {"isLongOrObjectKind(frame)", "isPrimitiveInt(value)"}, rewriteOn = ArithmeticException.class)
+        @Specialization(guards = {"isLongOrObjectKind(frame)", "isPrimitiveInt(value)", "!value.isNative()"}, rewriteOn = ArithmeticException.class)
         public PInt writePIntAsLong(VirtualFrame frame, PInt value) {
             frame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Long);
             frame.setLong(frameSlot, value.longValueExact());

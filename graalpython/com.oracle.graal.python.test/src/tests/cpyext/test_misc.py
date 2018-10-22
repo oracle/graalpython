@@ -174,3 +174,40 @@ class TestMisc(CPyExtTestCase):
         arguments=["PyObject* arg0", "PyObject* arg1"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PointerEquality_Primitive = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            (True, lambda arg0, *args: arg0),
+            (False, lambda arg0, *args: arg0),
+            (10, lambda arg0, *args: arg0),
+            (10.0, lambda arg0, *args: arg0),
+            ("ten", lambda arg0, *args: arg0),
+        ),
+        code="""PyObject* PointerEquality_Primitive(PyObject* pyVal, PyObject* fun) {
+            PyObject** dummyArray = (PyObject**) malloc(sizeof(PyObject*));
+            PyObject *arg, *result0;
+            Py_INCREF(pyVal);
+            Py_INCREF(fun);
+            dummyArray[0] = pyVal;
+
+            arg = PyTuple_New(1);
+            PyTuple_SET_ITEM(arg, 0, dummyArray[0]);
+            Py_INCREF(arg);
+            result0 = PyObject_Call(fun, arg, NULL);
+            if (pyVal != result0) {
+                PyErr_Format(PyExc_ValueError, "%s is not pointer equal: 0x%lx vs. 0x%lx", PyUnicode_AsUTF8(PyObject_Repr(pyVal)), (void*)pyVal, (void*)result0);
+                return NULL;
+            }
+
+            free(dummyArray);
+            Py_DECREF(pyVal);
+            Py_DECREF(fun);
+            return Py_True;
+        }
+        """,
+        resultspec="O",
+        argspec="OO",
+        arguments=["PyObject* pyVal", "PyObject* fun"],
+        cmpfunc=unhandled_error_compare
+    )

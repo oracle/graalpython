@@ -58,7 +58,7 @@ public class PyBufferProcsWrapperMR {
 
         public Object access(PyBufferProcsWrapper object, String key) {
             // translate key to attribute name
-            PythonClassNativeWrapper nativeWrapper = object.getDelegate().getNativeWrapper();
+            PythonClassNativeWrapper nativeWrapper = object.getPythonClass().getNativeWrapper();
             // TODO handle case if nativeWrapper does not exist yet
             Object result;
             switch (key) {

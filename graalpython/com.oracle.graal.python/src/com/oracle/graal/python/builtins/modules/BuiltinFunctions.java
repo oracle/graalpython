@@ -171,6 +171,7 @@ import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.Source;
 
 @CoreFunctions(defineModule = "builtins")
@@ -488,33 +489,37 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PCode code, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
+        public Object eval(VirtualFrame frame, PCode code, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
+                        @Cached("createIdentityProfile()") ValueProfile constantCt) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(code, callerGlobals, callerGlobals, callerClosure);
+            return evalExpression(constantCt.profile(code.getRootCallTarget()), callerGlobals, callerGlobals, callerClosure);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PCode code, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
+        public Object eval(VirtualFrame frame, PCode code, PythonObject globals, @SuppressWarnings("unused") PNone locals,
+                        @Cached("createIdentityProfile()") ValueProfile constantCt) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(code, globals, globals, callerClosure);
+            return evalExpression(constantCt.profile(code.getRootCallTarget()), globals, globals, callerClosure);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PCode code, PythonObject globals, PythonObject locals) {
+        public Object eval(VirtualFrame frame, PCode code, PythonObject globals, PythonObject locals,
+                        @Cached("createIdentityProfile()") ValueProfile constantCt) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(code, globals, locals, callerClosure);
+            return evalExpression(constantCt.profile(code.getRootCallTarget()), globals, locals, callerClosure);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PCode code, @SuppressWarnings("unused") PNone globals, PythonObject locals) {
+        public Object eval(VirtualFrame frame, PCode code, @SuppressWarnings("unused") PNone globals, PythonObject locals,
+                        @Cached("createIdentityProfile()") ValueProfile constantCt) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(code, callerGlobals, locals, callerClosure);
+            return evalExpression(constantCt.profile(code.getRootCallTarget()), callerGlobals, locals, callerClosure);
         }
 
         @Specialization
@@ -551,8 +556,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object evalExpression(PCode code, PythonObject globals, PythonObject locals, PCell[] closure) {
-            return evalNode(code.getRootCallTarget(), globals, locals, closure);
+        private static Object evalExpression(RootCallTarget ct, PythonObject globals, PythonObject locals, PCell[] closure) {
+            return evalNode(ct, globals, locals, closure);
         }
 
         @TruffleBoundary

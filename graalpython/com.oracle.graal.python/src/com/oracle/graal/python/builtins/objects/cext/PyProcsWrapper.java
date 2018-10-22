@@ -46,15 +46,8 @@ import com.oracle.truffle.api.interop.TruffleObject;
 
 public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
-    private final Object delegate;
-
     public PyProcsWrapper(Object delegate) {
-        this.delegate = delegate;
-    }
-
-    @Override
-    public Object getDelegate() {
-        return delegate;
+        super(delegate);
     }
 
     static boolean isInstance(TruffleObject o) {

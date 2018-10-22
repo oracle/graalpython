@@ -180,4 +180,8 @@ public final class PInt extends PythonBuiltinObject {
         return val == (int) val;
     }
 
+    public boolean isNative() {
+        return getNativeWrapper() != null && getNativeWrapper().isNative();
+    }
+
 }

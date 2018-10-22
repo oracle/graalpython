@@ -78,7 +78,7 @@ public class PyNumberMethodsWrapperMR {
 
         public Object access(PyNumberMethodsWrapper object, String key) {
             // translate key to attribute name
-            PythonClass delegate = object.getDelegate();
+            PythonClass delegate = object.getPythonClass();
             return getToSulongNode().execute(readMethodNode.execute(delegate, key));
         }
 
