@@ -1258,3 +1258,8 @@ def PySlice_GetIndicesEx(start, stop, step, length):
 @may_raise
 def PySlice_New(start, stop, step):
     return slice(start, stop, step)
+
+
+@may_raise
+def PyMapping_Keys(obj):
+    return list(obj.keys())

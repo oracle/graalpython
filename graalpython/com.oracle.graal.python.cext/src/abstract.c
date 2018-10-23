@@ -266,6 +266,11 @@ PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
     return UPCALL_CEXT_O(_jls_PyObject_GetItem, native_to_java(o), polyglot_from_string(key, SRC_CS));
 }
 
+UPCALL_ID(PyMapping_Keys);
+PyObject * PyMapping_Keys(PyObject *o) {
+    return UPCALL_CEXT_O(_jls_PyMapping_Keys, native_to_java(o));
+}
+
 // taken from CPython "Objects/abstract.c"
 int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
     PyBufferProcs *pb = obj->ob_type->tp_as_buffer;
