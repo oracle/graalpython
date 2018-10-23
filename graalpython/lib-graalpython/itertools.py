@@ -369,3 +369,52 @@ class accumulate(object):
         else:
             self.total = self.func(total, value)
         return self.total
+
+
+class dropwhile(object):
+    """
+    dropwhile(predicate, iterable) --> dropwhile object
+
+    Drop items from the iterable while predicate(item) is true.
+    Afterwards, return every element until the iterable is exhausted.
+    """
+
+    def __init__(self, predicate, iterable):
+        self.predicate = predicate
+        self.iterable = iter(iterable)
+        self.done_dropping = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        while not self.done_dropping:
+            n = next(self.iterable)
+            if self.predicate(n):
+                continue
+            else:
+                self.done_dropping = True
+                return n
+        return next(self.iterable)
+
+
+class filterfalse(object):
+    """
+    filterfalse(function or None, sequence) --> filterfalse object
+
+    Return those items of sequence for which function(item) is false.
+    If function is None, return the items that are false.
+    """
+
+    def __init__(self, func, sequence):
+        self.func = func or (lambda x: False)
+        self.iterator = iter(sequence)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        while True:
+            n = next(self.iterator)
+            if not self.func(n):
+                return n
