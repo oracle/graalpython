@@ -58,13 +58,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private static final String LANGUAGE_ID = "python";
-    private static final Source QUIT_EOF = Source.newBuilder(LANGUAGE_ID, "import site\nexit()", "<exit-on-eof>").internal(true).buildLiteral();
 
     private ArrayList<String> programArgs = null;
     private String commandString = null;
     private String inputFile = null;
+    private String module = null;
+    private boolean ignoreEnv = false;
     private boolean inspectFlag = false;
     private boolean verboseFlag = false;
+    private boolean quietFlag = false;
+    private boolean noUserSite = false;
+    private boolean noSite = false;
+    private boolean stdinIsInteractive = System.console() != null;
     private boolean runCC = false;
     private boolean runLD = false;
     private VersionAction versionAction = VersionAction.None;
@@ -76,10 +81,48 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         for (int i = 0; i < arguments.size(); i++) {
             String arg = arguments.get(i);
             switch (arg) {
-                case "-O":
-                case "-OO":
                 case "-B":
                     System.out.println("Warning: " + arg + " does nothing on GraalPython.");
+                    break;
+                case "-c":
+                    i += 1;
+                    if (i < arguments.size()) {
+                        commandString = arguments.get(i);
+                    } else {
+                        print("Argument expected for the -c option");
+                        printShortHelp();
+                    }
+                    break;
+                case "-E":
+                    ignoreEnv = true;
+                    break;
+                case "-h":
+                    unrecognized.add("--help");
+                    break;
+                case "-i":
+                    inspectFlag = true;
+                    break;
+                case "-m":
+                    i += 1;
+                    if (i < arguments.size()) {
+                        module = arguments.get(i);
+                    } else {
+                        print("Argument expected for the -m option");
+                        printShortHelp();
+                    }
+                    break;
+                case "-O":
+                case "-OO":
+                    System.out.println("Warning: " + arg + " does nothing on GraalPython.");
+                    break;
+                case "-q":
+                    quietFlag = true;
+                    break;
+                case "-s":
+                    noUserSite = true;
+                    break;
+                case "-S":
+                    noSite = true;
                     break;
                 case "-v":
                     verboseFlag = true;
@@ -99,21 +142,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     runLD = true;
                     programArgs.addAll(arguments.subList(i + 1, arguments.size()));
                     return unrecognized;
-                case "-c":
-                    i += 1;
-                    if (i < arguments.size()) {
-                        commandString = arguments.get(i);
-                    } else {
-                        print("Argument expected for the -c option");
-                        printShortHelp();
-                    }
-                    break;
-                case "-h":
-                    unrecognized.add("--help");
-                    break;
-                case "-i":
-                    inspectFlag = true;
-                    break;
                 default:
                     if (!arg.startsWith("-")) {
                         inputFile = arg;
@@ -123,7 +151,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         unrecognized.add(arg);
                     }
             }
-            if (inputFile != null || commandString != null) {
+
+            if (inputFile != null || commandString != null || module != null) {
                 i += 1;
                 if (i < arguments.size()) {
                     programArgs.addAll(arguments.subList(i, arguments.size()));
@@ -159,21 +188,27 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             return;
         }
 
+        if (!ignoreEnv) {
+            String pythonpath = System.getenv("PYTHONPATH");
+            if (pythonpath != null) {
+                contextBuilder.option("python.PythonPath", pythonpath);
+            }
+            inspectFlag = inspectFlag || System.getenv("PYTHONINSPECT") != null;
+            noUserSite = noUserSite || System.getenv("PYTHONNOUSERSITE") != null;
+            verboseFlag = verboseFlag || System.getenv("PYTHONVERBOSE") != null;
+        }
+
         // setting this to make sure our TopLevelExceptionHandler calls the excepthook
         // to print Python exceptions
         contextBuilder.option("python.AlwaysRunExcepthook", "true");
-        if (inspectFlag) {
-            contextBuilder.option("python.InspectFlag", "true");
-        }
+        contextBuilder.option("python.InspectFlag", Boolean.toString(inspectFlag));
+        contextBuilder.option("python.VerboseFlag", Boolean.toString(verboseFlag));
         if (verboseFlag) {
-            contextBuilder.option("python.VerboseFlag", "true");
             contextBuilder.option("log.python.level", "FINE");
         }
-
-        String pythonpath = System.getenv("PYTHONPATH");
-        if (pythonpath != null) {
-            contextBuilder.option("python.PythonPath", pythonpath);
-        }
+        contextBuilder.option("python.QuietFlag", Boolean.toString(quietFlag));
+        contextBuilder.option("python.NoUserSiteFlag", Boolean.toString(noUserSite));
+        contextBuilder.option("python.NoSiteFlag", Boolean.toString(noSite));
 
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);
         contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[0])).in(consoleHandler.createInputStream());
@@ -181,6 +216,16 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         int rc = 1;
         try (Context context = contextBuilder.build()) {
             runVersionAction(versionAction, context.getEngine());
+
+            if (!quietFlag && (verboseFlag || (commandString == null && inputFile == null && module == null && stdinIsInteractive))) {
+                print("Python " + evalInternal(context, "import sys; sys.version + ' on ' + sys.platform").asString());
+                if (!noSite) {
+                    print("Type \"help\", \"copyright\", \"credits\" or \"license\" for more information.");
+                }
+            }
+            if (!noSite) {
+                evalInternal(context, "import site\n");
+            }
             System.err.println("Please note: This Python implementation is in the very early stages, " +
                             "and can run little more than basic benchmarks at this point.");
             consoleHandler.setContext(context);
@@ -429,7 +474,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "-h     : print this help message and exit (also --help)\n" +
                         "-i     : inspect interactively after running script; forces a prompt even\n" +
                         "         if stdin does not appear to be a terminal; also PYTHONINSPECT=x\n" +
-                        // "-m mod : run library module as a script (terminates option list)\n" +
+                        "-m mod : run library module as a script (terminates option list)\n" +
                         "-O     : optimize generated bytecode slightly; also PYTHONOPTIMIZE=x\n" +
                         "-OO    : remove doc-strings in addition to the -O optimizations\n" +
                         // "-R : use a pseudo-random salt to make hash() values of various types
@@ -438,16 +483,17 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         // " a defense against denial-of-service attacks\n" +
                         // "-Q arg : division options: -Qold (default), -Qwarn, -Qwarnall, -Qnew\n"
                         // +
-                        // "-s : don't add user site directory to sys.path; also PYTHONNOUSERSITE\n"
-                        // +
-                        // "-S : don't imply 'import site' on initialization\n" +
+                        "-q     : don't print version and copyright messages on interactive startup" +
+                        "-s     : don't add user site directory to sys.path; also PYTHONNOUSERSITE\n" +
+                        "-S     : don't imply 'import site' on initialization\n" +
                         // "-t : issue warnings about inconsistent tab usage (-tt: issue errors)\n"
                         // +
                         // "-u : unbuffered binary stdout and stderr; also PYTHONUNBUFFERED=x\n" +
                         // " see man page for details on internal buffering relating to '-u'\n" +
-                        // "-v : verbose (trace import statements); also PYTHONVERBOSE=x\n" +
-                        // " can be supplied multiple times to increase verbosity\n" +
+                        "-v     : verbose (trace import statements); also PYTHONVERBOSE=x\n" +
+                        "         can be supplied multiple times to increase verbosity\n" +
                         "-V     : print the Python version number and exit (also --version)\n" +
+                        "         when given twice, print more information about the build" +
                         // "-W arg : warning control; arg is
                         // action:message:category:module:lineno\n" +
                         // " also PYTHONWARNINGS=arg\n" +
@@ -482,7 +528,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected String[] getDefaultLanguages() {
-        return new String[]{getLanguageId(), "llvm"};
+        return new String[]{getLanguageId(), "llvm", "regex"};
     }
 
     @Override
@@ -516,9 +562,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     public int readEvalPrint(Context context, ConsoleHandler consoleHandler) {
         int lastStatus = 0;
         try {
-            setupReadline(context, consoleHandler);
-            Value sys = context.eval(Source.create(getLanguageId(), "import sys; sys"));
-            context.eval(Source.create(getLanguageId(), "del sys\ndel site\ndel readline"));
+            setupREPL(context, consoleHandler);
+            Value sys = evalInternal(context, "import sys; sys");
 
             while (true) { // processing inputs
                 boolean doEcho = doEcho(context);
@@ -570,7 +615,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     }
                 } catch (EOFException e) {
                     try {
-                        context.eval(QUIT_EOF);
+                        evalInternal(context, "import site; exit()\n");
                     } catch (PolyglotException e2) {
                         if (e2.isExit()) {
                             // don't use the exit code from the PolyglotException
@@ -591,12 +636,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
     }
 
-    private void setupReadline(Context context, ConsoleHandler consoleHandler) {
-        // First run nothing to trigger the setup of interactive mode (site import and so on)
-        context.eval(Source.newBuilder(getLanguageId(), "None", "setup-interactive").interactive(true).buildLiteral());
+    private Value evalInternal(Context context, String code) {
+        return context.eval(Source.newBuilder(getLanguageId(), code, "<internal>").internal(true).buildLiteral());
+    }
+
+    private void setupREPL(Context context, ConsoleHandler consoleHandler) {
         // Then we can get the readline module and see if any completers were registered and use its
         // history feature
-        final Value readline = context.eval(Source.create(getLanguageId(), "import readline; readline"));
+        evalInternal(context, "import sys\ngetattr(sys, '__interactivehook__', lambda: None)()\n");
+        final Value readline = evalInternal(context, "import readline; readline");
         final Value completer = readline.getMember("get_completer").execute();
         final Value shouldRecord = readline.getMember("get_auto_history");
         final Value addHistory = readline.getMember("add_history");

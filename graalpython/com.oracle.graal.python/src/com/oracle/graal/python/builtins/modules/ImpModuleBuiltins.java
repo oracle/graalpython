@@ -48,9 +48,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImple
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.regex.Pattern;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -62,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.Se
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -343,47 +340,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 }
             }
             throw raise(NotImplementedError, "_imp.create_builtin");
-        }
-    }
-
-    @Builtin(name = "_truffle_bootstrap_file_into_module", fixedNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class TruffleImportStar extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        public Object run(String path, String modulename) {
-            return run(path, getCore().lookupBuiltinModule(modulename));
-        }
-
-        @Specialization
-        public Object run(PString path, String modulename) {
-            return run(path.getValue(), getCore().lookupBuiltinModule(modulename));
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public Object run(String path, PythonModule mod) {
-            PythonContext ctxt = getContext();
-            Env env = ctxt.getEnv();
-            try {
-                String[] pathParts = path.split(Pattern.quote(PythonCore.FILE_SEPARATOR));
-                String fileName = pathParts[pathParts.length - 1];
-                TruffleFile file;
-                if (fileName.equals(path)) {
-                    // relative filename
-                    file = env.getTruffleFile(PythonCore.getCoreHomeOrFail() + PythonCore.FILE_SEPARATOR + fileName);
-                } else {
-                    file = env.getTruffleFile(path);
-                }
-                Source src = getRootNode().getLanguage(PythonLanguage.class).newSource(ctxt, file, fileName);
-                CallTarget callTarget = env.parse(src);
-                callTarget.call(PArguments.withGlobals(mod));
-            } catch (PException e) {
-                throw e;
-            } catch (IOException | SecurityException e) {
-                throw raise(ImportError, e.getMessage());
-            }
-            return PNone.NONE;
         }
     }
 

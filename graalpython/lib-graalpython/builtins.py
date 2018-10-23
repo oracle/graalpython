@@ -40,13 +40,28 @@
 # IMPORTANT! Any files added here also need to be added to
 # Python3Core.INDIRECT_CORE_FILES, because during bootstrap we pre-parse (but do
 # not run!) all core files.
-import _imp
 
-_imp._truffle_bootstrap_file_into_module("functions.py", "builtins")
-_imp._truffle_bootstrap_file_into_module("staticmethod.py", "builtins")
-_imp._truffle_bootstrap_file_into_module("classmethod.py", "builtins")
-_imp._truffle_bootstrap_file_into_module("exceptions.py", "builtins")
-_imp._truffle_bootstrap_file_into_module("super.py", "builtins")
-_imp._truffle_bootstrap_file_into_module("property.py", "builtins")
-_imp._truffle_bootstrap_file_into_module("ellipsis.py", "builtins")
-_imp._truffle_bootstrap_file_into_module("timsort.py", "builtins")
+
+def __import__(filename, module_name):
+    import sys, posix
+    module = sys.modules[module_name]
+    try:
+        posix.stat(filename)
+    except OSError:
+        filename = "%s/%s" % (sys.graal_python_core_home, filename)
+    fd = posix.open(filename, posix.O_RDONLY)
+    content = posix.read(fd, sys.maxsize)
+    posix.close(fd)
+    code = compile(content, filename, "exec")
+    eval(code, module.__dict__)
+    return module
+
+
+__import__("functions.py", "builtins")
+__import__("staticmethod.py", "builtins")
+__import__("classmethod.py", "builtins")
+__import__("exceptions.py", "builtins")
+__import__("super.py", "builtins")
+__import__("property.py", "builtins")
+__import__("ellipsis.py", "builtins")
+__import__("timsort.py", "builtins")

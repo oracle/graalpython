@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ServiceLoader;
+import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
@@ -79,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictItemsIteratorBuiltins;
@@ -135,15 +137,17 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -169,7 +173,6 @@ public final class Python3Core implements PythonCore {
                     "_warnings",
                     "posix",
                     "_io",
-                    "_frozen_importlib_external",
                     "_frozen_importlib",
                     "classes",
                     "_weakref",
@@ -610,7 +613,8 @@ public final class Python3Core implements PythonCore {
 
     private void loadFile(String s, String prefix) {
         Source source = getSource(s, prefix);
-        CallTarget callTarget = getContext().getEnv().parse(source);
+        Supplier<PCode> getCode = () -> factory.createCode((RootNode) getParser().parse(ParserMode.File, this, source, null));
+        RootCallTarget callTarget = getLanguage().cacheCode(source.getName(), getCode).getRootCallTarget();
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects
