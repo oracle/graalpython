@@ -404,13 +404,13 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isString(other)")
-        String doSO(@SuppressWarnings("unused") String self, Object other) {
-            throw raise(TypeError, "Can't convert '%p' object to str implicitly", other);
+        PNotImplemented doSO(@SuppressWarnings("unused") String self, @SuppressWarnings("unused") Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
 
         @Specialization(guards = "!isString(other)")
-        String doSO(@SuppressWarnings("unused") PString self, Object other) {
-            throw raise(TypeError, "Can't convert '%p' object to str implicitly", other);
+        PNotImplemented doSO(@SuppressWarnings("unused") PString self, @SuppressWarnings("unused") Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
 
         @SuppressWarnings("unused")
