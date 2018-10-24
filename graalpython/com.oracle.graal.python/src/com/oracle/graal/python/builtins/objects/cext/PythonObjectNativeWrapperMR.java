@@ -540,11 +540,11 @@ public class PythonObjectNativeWrapperMR {
             throw new IllegalStateException("delegate of memoryview object is not native");
         }
 
-        protected static boolean isPyDateTimeCAPI(PythonObject object) {
-            return object.getLazyPythonClass().getName().equals("PyDateTime_CAPI");
+        protected static boolean isPyDateTimeCAPI(PythonObject object, GetLazyClassNode getClass) {
+            return getClass.execute(object).getName().equals("PyDateTime_CAPI");
         }
 
-        @Specialization(guards = "isPyDateTimeCAPI(object)")
+        @Specialization(guards = "isPyDateTimeCAPI(object, getClass)", limit = "1")
         Object doDatetimeCAPI(PythonObject object, String key,
                         @Cached("create()") GetLazyClassNode getClass,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getAttrNode) {

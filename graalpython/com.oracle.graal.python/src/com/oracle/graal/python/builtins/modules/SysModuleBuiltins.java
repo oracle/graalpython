@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -75,7 +76,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
@@ -190,7 +190,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     public static abstract class ExcInfoNode extends PythonBuiltinNode {
         @Specialization
         public Object run(
-                        @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
+                        @Cached("create()") GetClassNode getClassNode) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
             if (currentException == null) {
@@ -198,7 +198,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             } else {
                 PBaseException exception = currentException.getExceptionObject();
                 exception.reifyException();
-                return factory().createTuple(new Object[]{getPythonClass(exception.getLazyPythonClass(), getClassProfile), exception, exception.getTraceback(factory())});
+                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback(factory())});
             }
         }
     }

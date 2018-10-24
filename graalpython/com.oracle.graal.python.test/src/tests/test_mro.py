@@ -116,3 +116,42 @@ def test_class_attr_add_del():
     C.foo = 10
     assert C.foo == 10
 
+
+def test_class_assignment():
+    class A:
+        foo = 1
+
+    class B(A):
+        foo = 2
+
+    a = A()
+    assert a.foo == 1
+    a.__class__ = B
+    assert a.foo == 2
+    b = B()
+    assert b.foo == 2
+    b.__class__ = A
+    assert b.foo == 1
+    assert type(a) == B
+    assert type(b) == A
+
+    try:
+        a.__class__ = 1
+    except TypeError:
+        assert True
+    else:
+        assert False
+
+    try:
+        a.__class__ = object
+    except TypeError:
+        assert True
+    else:
+        assert False
+
+    try:
+        object().__class__ = object
+    except TypeError:
+        assert True
+    else:
+        assert False
