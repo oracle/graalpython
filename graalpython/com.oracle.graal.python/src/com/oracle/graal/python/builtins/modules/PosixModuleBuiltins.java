@@ -126,6 +126,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     private static final int SEEK_CUR = 1;
     private static final int SEEK_END = 2;
 
+    private static final int WNOHANG = 1;
+    private static final int WUNTRACED = 3;
+
     private static final int F_OK = 0;
     private static final int X_OK = 1;
 
@@ -247,6 +250,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("SEEK_SET", SEEK_SET);
         builtinConstants.put("SEEK_CUR", SEEK_CUR);
         builtinConstants.put("SEEK_END", SEEK_END);
+
+        builtinConstants.put("WNOHANG", WNOHANG);
+        builtinConstants.put("WUNTRACED", WUNTRACED);
 
         builtinConstants.put("F_OK", F_OK);
         builtinConstants.put("X_OK", X_OK);
@@ -1015,6 +1021,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 lenNode = insert(SequenceNodes.LenNode.create());
             }
             return lenNode.execute(times);
+        }
+    }
+
+    @Builtin(name = "waitpid", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class WaitpidNode extends PythonBinaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        PTuple waitpid(int pid, int options) {
+            throw raise(NotImplementedError, "waitpid");
         }
     }
 
