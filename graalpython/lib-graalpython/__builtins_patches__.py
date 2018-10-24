@@ -77,16 +77,7 @@ setattr(builtins, 'open', open)
 
 
 # platform
-sys.modules["_posixsubprocess"] = type(sys)("_posixsubprocess")
 sys.modules["select"].select = lambda *args: print("select", args)
-sys.modules["os"].WIFSIGNALED = lambda status: False
-sys.modules["os"].WIFEXITED = lambda status: False
-sys.modules["os"].WTERMSIG = lambda status: False
-sys.modules["os"].WEXITSTATUS = lambda status: False
-sys.modules["os"].WIFSTOPPED = lambda status: False
-sys.modules["os"].WSTOPSIG = lambda status: False
-sys.modules["os"].waitpid = lambda status: False
-sys.modules["os"].WNOHANG = lambda status: False
 
 # in setuptools' pkg_resources/__init__.py
 sys.modules["zipimport"] = type(sys)("zipimport")
