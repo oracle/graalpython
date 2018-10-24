@@ -45,10 +45,8 @@
 def __import__(filename, module_name):
     import sys, posix
     module = sys.modules[module_name]
-    try:
-        posix.stat(filename)
-    except OSError:
-        filename = "%s/%s" % (sys.graal_python_core_home, filename)
+    if filename.startswith("%s"):
+        filename = filename % sys.graal_python_core_home
     fd = posix.open(filename, posix.O_RDONLY)
     content = posix.read(fd, sys.maxsize)
     posix.close(fd)
@@ -57,11 +55,11 @@ def __import__(filename, module_name):
     return module
 
 
-__import__("functions.py", "builtins")
-__import__("staticmethod.py", "builtins")
-__import__("classmethod.py", "builtins")
-__import__("exceptions.py", "builtins")
-__import__("super.py", "builtins")
-__import__("property.py", "builtins")
-__import__("ellipsis.py", "builtins")
-__import__("timsort.py", "builtins")
+__import__("%s/functions.py", "builtins")
+__import__("%s/staticmethod.py", "builtins")
+__import__("%s/classmethod.py", "builtins")
+__import__("%s/exceptions.py", "builtins")
+__import__("%s/super.py", "builtins")
+__import__("%s/property.py", "builtins")
+__import__("%s/ellipsis.py", "builtins")
+__import__("%s/timsort.py", "builtins")
