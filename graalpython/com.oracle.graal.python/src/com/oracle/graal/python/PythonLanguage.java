@@ -38,7 +38,6 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -229,32 +228,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected CallTarget parse(ParsingRequest request) throws Exception {
         PythonContext context = this.getContextReference().get();
-        PythonCore pythonCore = context.getCore();
+        PythonCore core = context.getCore();
         Source source = request.getSource();
         CompilerDirectives.transferToInterpreter();
-        if (pythonCore.isInitialized()) {
+        if (core.isInitialized()) {
             context.initializeMainModule(source.getPath());
-
-            // if we are running the interpreter, module 'site' is automatically imported
-            if (source.isInteractive()) {
-                runInteractiveStartup(pythonCore);
-            }
         }
-        RootNode root = doParse(pythonCore, source);
-        if (pythonCore.isInitialized()) {
+        RootNode root = doParse(core, source);
+        if (core.isInitialized()) {
             return Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, root));
         } else {
             return Truffle.getRuntime().createCallTarget(root);
-        }
-    }
-
-    private void runInteractiveStartup(PythonCore pythonCore) {
-        PythonContext context = pythonCore.getContext();
-        HashingStorage sysModules = context.getImportedModules().getDictStorage();
-        String siteModuleName = "site";
-        if (!sysModules.hasKey(siteModuleName, HashingStorage.getSlowPathEquivalence(siteModuleName))) {
-            Source src = Source.newBuilder(ID, "import site\nimport sys\ngetattr(sys, '__interactivehook__', lambda: None)()\n", "<site import>").build();
-            Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, doParse(pythonCore, src))).call();
         }
     }
 
@@ -380,8 +364,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected Iterable<Scope> findTopScopes(PythonContext context) {
         ArrayList<Scope> scopes = new ArrayList<>();
-        scopes.add(Scope.newBuilder("__main__", context.getMainModule()).build());
-        scopes.add(Scope.newBuilder("builtins", context.getBuiltins()).build());
+        if (context.getBuiltins() != null) {
+            // false during initialization
+            scopes.add(Scope.newBuilder("__main__", context.getMainModule()).build());
+            scopes.add(Scope.newBuilder("builtins", context.getBuiltins()).build());
+        }
         return scopes;
     }
 
@@ -407,6 +394,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected String toString(PythonContext context, Object value) {
         final PythonModule builtins = context.getBuiltins();
+        if (builtins == null) {
+            // true during initialization
+            return value.toString();
+        }
         PBuiltinFunction reprMethod = ((PBuiltinMethod) builtins.getAttribute(BuiltinNames.REPR)).getFunction();
         Object[] userArgs = PArguments.create(2);
         PArguments.setArgument(userArgs, 0, PNone.NONE);
@@ -479,7 +470,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private final ConcurrentHashMap<String, PCode> cachedCode = new ConcurrentHashMap<>();
 
-    public Object cacheCode(String filename, Supplier<PCode> createCode) {
+    public PCode cacheCode(String filename, Supplier<PCode> createCode) {
         return cachedCode.computeIfAbsent(filename, f -> createCode.get());
     }
 

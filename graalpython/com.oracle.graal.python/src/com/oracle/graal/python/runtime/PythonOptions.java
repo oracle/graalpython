@@ -86,6 +86,15 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> InspectFlag = new OptionKey<>(false);
 
     @Option(category = OptionCategory.USER, help = "") //
+    public static final OptionKey<Boolean> QuietFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "") //
+    public static final OptionKey<Boolean> NoSiteFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "") //
+    public static final OptionKey<Boolean> NoUserSiteFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "") //
     public static final OptionKey<String> PythonPath = new OptionKey<>("");
 
     @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.") //

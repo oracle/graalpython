@@ -38,26 +38,17 @@
 # SOFTWARE.
 
 import _imp
+import posix
 import sys
 
 
-lib_python = None
-for p in sys.path:
-    if "lib-python/3" in p:
-        path, delim, _ = p.partition('lib-python/3')
-        lib_python = path + delim
-        break
-
-if lib_python is None:
-    raise RuntimeError("Cannot load frozen_importlib")
+def load(suffix=""):
+    module_name = "_frozen_importlib%s" % suffix
+    filename = sys.graal_python_stdlib_home + ("/importlib/_bootstrap%s.py" % suffix)
+    return __import__(filename, module_name)
 
 
-_imp._truffle_bootstrap_file_into_module(lib_python + "/importlib/_bootstrap.py", "_frozen_importlib")
-
-
-# This will setup and install first the builtin and frozen,
-# then the path-based and file-based loaders
-sys.modules[__name__] = sys.modules['_frozen_importlib']
-_install(sys, _imp)
-
-sys.modules['builtins'].__import__ = __builtin__(__import__)
+load("_external")
+importlib = load()
+importlib._install(sys, _imp)
+sys.modules["builtins"].__import__ = __builtin__(importlib.__import__)

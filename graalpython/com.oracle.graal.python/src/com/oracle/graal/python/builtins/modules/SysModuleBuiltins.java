@@ -138,15 +138,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         true,  // dont_write_bytecode
                         false, // hash_randomization
                         false, // ignore_environment
-                        false, // inspect
-                        false, // interactive
+                        PythonOptions.getOption(core.getContext(), PythonOptions.InspectFlag).booleanValue(), // inspect
+                        PythonOptions.getOption(core.getContext(), PythonOptions.InspectFlag).booleanValue(), // interactive
                         false, // isolated
-                        false, // no_site
-                        false, // no_user_site
+                        PythonOptions.getOption(core.getContext(), PythonOptions.NoSiteFlag).booleanValue(), // no_site
+                        PythonOptions.getOption(core.getContext(), PythonOptions.NoUserSiteFlag).booleanValue(), // no_user_site
                         false, // optimize
-                        false, // quiet
+                        PythonOptions.getOption(core.getContext(), PythonOptions.QuietFlag).booleanValue(), // quiet
                         PythonOptions.getOption(core.getContext(), PythonOptions.VerboseFlag).booleanValue(), // verbose
         }));
+        builtinConstants.put("graal_python_core_home", PythonOptions.getOption(core.getContext(), PythonOptions.CoreHome));
+        builtinConstants.put("graal_python_stdlib_home", PythonOptions.getOption(core.getContext(), PythonOptions.StdLibHome));
         // the default values taken from JPython
         builtinConstants.put("float_info", core.factory().createTuple(new Object[]{
                         Double.MAX_VALUE,       // DBL_MAX

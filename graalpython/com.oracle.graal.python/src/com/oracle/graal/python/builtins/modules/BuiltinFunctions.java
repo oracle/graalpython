@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.NextNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -1156,9 +1157,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @SuppressWarnings("unused")
     @Builtin(name = NEXT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonBuiltinNode {
-
-        @Specialization
+    public abstract static class NextNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(defaultObject)")
         public Object next(Object iterator, PNone defaultObject,
                         @Cached("create()") GetNextNode next,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
@@ -1168,6 +1168,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 e.expectAttributeError(errorProfile);
                 throw raise(TypeError, "'%p' object is not an iterator", iterator);
             }
+        }
+
+        @Specialization(guards = "!isNoValue(defaultObject)")
+        public Object next(Object iterator, Object defaultObject,
+                        @Cached("create()") NextNode next,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+            try {
+                return next.execute(iterator, PNone.NO_VALUE);
+            } catch (PException e) {
+                e.expectStopIteration(errorProfile);
+                return defaultObject;
+            }
+        }
+
+        protected static NextNode create() {
+            return NextNodeFactory.create();
         }
     }
 
