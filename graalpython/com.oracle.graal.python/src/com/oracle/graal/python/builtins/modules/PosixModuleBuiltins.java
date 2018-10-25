@@ -263,8 +263,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         String cwd() {
-            // TODO(fa) that should actually be retrieved from native code
-            return System.getProperty("user.dir");
+            if (getContext().isExecutableAccessAllowed()) {
+                // TODO(fa) that should actually be retrieved from native code
+                return System.getProperty("user.dir");
+            } else {
+                return "";
+            }
         }
 
     }
@@ -275,14 +279,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PNone chdir(String spath) {
-            // TODO(fa) that should actually be set via native code
-            try {
-                if (Files.exists(Paths.get(spath))) {
-                    System.setProperty("user.dir", spath);
-                    return PNone.NONE;
+            if (getContext().isExecutableAccessAllowed()) {
+                // TODO(fa) that should actually be set via native code
+                try {
+                    if (Files.exists(Paths.get(spath))) {
+                        System.setProperty("user.dir", spath);
+                        return PNone.NONE;
+                    }
+                } catch (InvalidPathException e) {
+                    // fall through
                 }
-            } catch (InvalidPathException e) {
-                // fall through
             }
             throw raise(PythonErrorType.FileNotFoundError, "No such file or directory: '%s'", spath);
         }
