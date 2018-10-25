@@ -425,7 +425,7 @@ def graalpython_gate_runner(args, tasks):
             apprepo = os.environ["GRAALPYTHON_APPTESTS_REPO_URL"]
             _apptest_suite = SUITE.import_suite(
                 "graalpython-apptests",
-                version="fe1458e3af707f5996f192aedc7b76585501e8ba",
+                version="1fc0e86a54cbe090d36f262c062d8f4eee8f2e6d",
                 urlinfos=[mx.SuiteImportURLInfo(mx_urlrewrites.rewriteurl(apprepo), "git", mx.vc_system("git"))]
             )
             mx.run_mx(["-p", _apptest_suite.dir, "graalpython-apptests"])

@@ -8,6 +8,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Support `help` in the builtin Python shell
 * Add `readline` to enable history and autocompletion in the Python shell
 * Improve display of foreign array-like objects
+* Improve support for string and bytes regular expressions using our TRegex engine
 
 ## Version 1.0.0 RC8
 

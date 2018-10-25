@@ -578,3 +578,5 @@ def compile(p, flags=0):
         p.pattern.groups-1,
         groupindex, indexgroup
         )
+
+compile = _sre.setup(compile, error, sre_parse.FLAGS)

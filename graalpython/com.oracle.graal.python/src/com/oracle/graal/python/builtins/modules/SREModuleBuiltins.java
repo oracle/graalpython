@@ -42,18 +42,20 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.io.UnsupportedEncodingException;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -78,112 +80,13 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.regex.RegexSyntaxException;
 
 @CoreFunctions(defineModule = "_sre")
 public class SREModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SREModuleBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = "tregex_preprocess_for_verbose", fixedNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class TRegexPreprocessVerboseNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        Object run(PString str) {
-            return run(str.getValue());
-        }
-
-        @Specialization
-        Object run(String str) {
-            return replaceAll(str);
-        }
-
-        /**
-         * removes comments and whitespaces if they are not in a character class
-         */
-        @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
-        private static String replaceAll(String r) {
-            StringBuffer sb = new StringBuffer(r);
-            int charclassNestingLevel = 0;
-            boolean inComment = false;
-            for (int i = 0; i < sb.length();) {
-                char c = sb.charAt(i);
-                if (c == '[' && !inComment) {
-                    charclassNestingLevel++;
-                } else if (c == ']' && !inComment) {
-                    charclassNestingLevel--;
-                } else if (c == '#' && charclassNestingLevel == 0) {
-                    inComment = true;
-                } else if (c == '\n' && inComment) {
-                    inComment = false;
-                }
-                if (inComment || (Character.isWhitespace(c) && charclassNestingLevel == 0)) {
-                    sb.deleteCharAt(i);
-                } else {
-                    i++;
-                }
-            }
-
-            for (int idx = sb.indexOf("\\Z"); idx != -1; idx = sb.indexOf("\\Z", idx + 2)) {
-                sb.replace(idx, idx + 2, "$");
-            }
-
-            return sb.toString();
-        }
-
-        @Fallback
-        Object run(Object o) {
-            throw raise(PythonErrorType.TypeError, "expected string, not %p", o);
-        }
-
-    }
-
-    @Builtin(name = "tregex_preprocess_default", fixedNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class TRegexPreprocessDefaultNode extends PythonUnaryBuiltinNode {
-        @CompilationFinal private Pattern namedCaptGroupPattern;
-
-        @Specialization
-        Object run(PString str) {
-            return run(str.getValue());
-        }
-
-        @Specialization
-        Object run(String str) {
-            if (namedCaptGroupPattern == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                namedCaptGroupPattern = Pattern.compile("\\?P\\<(?<GRPNAME>\\w*)\\>");
-            }
-            return replaceAll(str);
-        }
-
-        /**
-         * replaces named capturing groups {@code ?P<name>} by {@code ?<name>} and replaces
-         * end-of-string {@code \Z} by {@code $}.
-         */
-        @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
-        private String replaceAll(String r) {
-            Matcher matcher0 = namedCaptGroupPattern.matcher(r);
-            StringBuffer sb = new StringBuffer();
-            while (matcher0.find()) {
-                matcher0.appendReplacement(sb, "?<" + matcher0.group("GRPNAME") + ">");
-            }
-            matcher0.appendTail(sb);
-
-            for (int idx = sb.indexOf("\\Z"); idx != -1; idx = sb.indexOf("\\Z", idx + 2)) {
-                sb.replace(idx, idx + 2, "$");
-            }
-
-            return sb.toString();
-        }
-
-        @Fallback
-        Object run(Object o) {
-            throw raise(PythonErrorType.TypeError, "expected string, not %p", o);
-        }
-
     }
 
     /**
@@ -195,6 +98,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
     abstract static class ProcessEscapeSequences extends PythonUnaryBuiltinNode {
 
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+        @Child private BytesNodes.ToBytesNode toBytesNode;
 
         @CompilationFinal private Pattern namedCaptGroupPattern;
 
@@ -220,6 +124,15 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 return factory().createByteArray(bytes);
             }
             return str;
+        }
+
+        @Specialization
+        Object run(PMemoryView memoryView) {
+            byte[] bytes = doBytes(getToBytesNode().execute(memoryView));
+            if (bytes != null) {
+                return factory().createByteArray(bytes);
+            }
+            return memoryView;
         }
 
         @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
@@ -255,47 +168,72 @@ public class SREModuleBuiltins extends PythonBuiltins {
             return toByteArrayNode;
         }
 
+        private BytesNodes.ToBytesNode getToBytesNode() {
+            if (toBytesNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toBytesNode = insert(BytesNodes.ToBytesNode.create());
+            }
+            return toBytesNode;
+        }
     }
 
-    @Builtin(name = "tregex_call_safe", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "tregex_call_compile", fixedNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class TRegexCallSafe extends PythonBuiltinNode {
+    abstract static class TRegexCallCompile extends PythonBuiltinNode {
 
-        private Object doIt(TruffleObject callable, String arg1, Object arg2,
-                        BranchProfile runtimeError,
-                        BranchProfile typeError, Node invokeNode) {
+        @Specialization(guards = "isForeignObject(callable)")
+        Object call(TruffleObject callable, Object arg1, Object arg2,
+                        @Cached("create()") BranchProfile syntaxError,
+                        @Cached("create()") BranchProfile typeError,
+                        @Cached("createExecute()") Node invokeNode) {
             try {
                 return ForeignAccess.sendExecute(invokeNode, callable, new Object[]{arg1, arg2});
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
-            } catch (RuntimeException e) {
-                runtimeError.enter();
-                throw raise(RuntimeError, "%s", e);
+            } catch (RegexSyntaxException e) {
+                syntaxError.enter();
+                if (e.getPosition() == -1) {
+                    throw raise(ValueError, "%s", e.getReason());
+                } else {
+                    throw raise(ValueError, "%s at position %d", e.getReason(), e.getPosition());
+                }
             }
-        }
-
-        @Specialization(guards = "isForeignObject(callable)")
-        Object call(TruffleObject callable, String arg1, String arg2,
-                        @Cached("create()") BranchProfile runtimeError,
-                        @Cached("create()") BranchProfile typeError,
-                        @Cached("createExecute()") Node invokeNode) {
-            return doIt(callable, arg1, arg2, runtimeError, typeError, invokeNode);
-        }
-
-        @Specialization(guards = "isForeignObject(callable)")
-        Object call(TruffleObject callable, String arg1, int arg2,
-                        @Cached("create()") BranchProfile runtimeError,
-                        @Cached("create()") BranchProfile typeError,
-                        @Cached("createExecute()") Node invokeNode) {
-            return doIt(callable, arg1, arg2, runtimeError, typeError, invokeNode);
         }
 
         @SuppressWarnings("unused")
         @Fallback
         Object call(Object callable, Object arg1, Object arg2) {
-            throw raise(RuntimeError);
+            throw raise(RuntimeError, "invalid arguments passed to tregex_call_compile");
+        }
+
+        protected static Node createExecute() {
+            return Message.EXECUTE.createNode();
+        }
+    }
+
+    @Builtin(name = "tregex_call_exec", fixedNumOfPositionalArgs = 3)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    abstract static class TRegexCallExec extends PythonBuiltinNode {
+
+        @Specialization(guards = "isForeignObject(callable)")
+        Object call(TruffleObject callable, Object arg1, Number arg2,
+                        @Cached("create()") BranchProfile typeError,
+                        @Cached("createExecute()") Node invokeNode) {
+            try {
+                return ForeignAccess.sendExecute(invokeNode, callable, new Object[]{arg1, arg2});
+            } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
+                typeError.enter();
+                throw raise(TypeError, "%s", e);
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object call(Object callable, Object arg1, Object arg2) {
+            throw raise(RuntimeError, "invalid arguments passed to tregex_call_exec");
         }
 
         protected static Node createExecute() {
