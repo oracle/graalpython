@@ -61,32 +61,15 @@ public class PSocket extends PythonBuiltinObject {
     private final int proto;
 
     private double timeout;
-    private boolean blocking;
 
-    private SelectableChannel channel;
+    @SuppressWarnings("unused") private SelectableChannel channel;
     private InetSocketAddress address = EPHEMERAL_ADDRESS;
-
-    private enum SocketType {
-        UNKNOWN_SOCKET,
-        CLIENT_SOCKET,
-        SERVER_SOCKET,
-        DATAGRAM_SOCKET
-    }
-
-    private SocketType socketType;
 
     public PSocket(LazyPythonClass cls, int family, int type, int proto) {
         super(cls);
         this.family = family;
         this.type = type;
         this.proto = proto;
-        switch (type) {
-            case SOCK_DGRAM:
-                socketType = SocketType.DATAGRAM_SOCKET;
-                break;
-            default:
-                socketType = SocketType.UNKNOWN_SOCKET;
-        }
     }
 
     public int getFamily() {

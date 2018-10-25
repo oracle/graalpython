@@ -58,6 +58,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSocket)
+@SuppressWarnings("unused")
 public class SocketBuiltins extends PythonBuiltins {
 
     @Override

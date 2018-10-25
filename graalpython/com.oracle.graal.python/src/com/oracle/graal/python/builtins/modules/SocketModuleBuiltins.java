@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -66,8 +67,12 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SocketNode extends PythonBuiltinNode {
         @Specialization
-        Object socket(PythonClass cls, int family, int type, int proto, PNone fileno) {
-            return factory().createSocket(cls, family, type, proto);
+        Object socket(PythonClass cls, int family, int type, int proto, @SuppressWarnings("unused") PNone fileno) {
+            if (getContext().getEnv().isNativeAccessAllowed()) {
+                return factory().createSocket(cls, family, type, proto);
+            } else {
+                throw raise(PythonErrorType.OSError, "creating sockets not allowed");
+            }
         }
     }
 }
