@@ -74,7 +74,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -107,7 +106,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
-    @CompilationFinal private boolean nativeBuildTime = TruffleOptions.AOT;
     private final NodeFactory nodeFactory;
     public final ConcurrentHashMap<Class<? extends PythonBuiltinBaseNode>, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
 
@@ -130,7 +128,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
-        nativeBuildTime = false; // now we're running
         ensureHomeInOptions(newEnv);
         PythonCore.writeInfo("Using preinitialized context.");
         context.patch(newEnv);
@@ -456,10 +453,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             srcBuilder.internal(true);
         }
         return newBuilder.build();
-    }
-
-    public boolean isNativeBuildTime() {
-        return nativeBuildTime;
     }
 
     @Override

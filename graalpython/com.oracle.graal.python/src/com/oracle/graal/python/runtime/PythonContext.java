@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.options.OptionValues;
 
@@ -52,7 +53,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 
 public final class PythonContext {
@@ -193,7 +193,7 @@ public final class PythonContext {
 
     private void setupRuntimeInformation() {
         PythonModule sysModule = core.initializeSysModule();
-        if (TruffleOptions.AOT && !language.isNativeBuildTime() && isExecutableAccessAllowed()) {
+        if (ImageInfo.inImageRuntimeCode() && isExecutableAccessAllowed()) {
             sysModule.setAttribute("executable", ProcessProperties.getExecutableName());
         }
         sysModules = (PDict) sysModule.getAttribute("modules");
