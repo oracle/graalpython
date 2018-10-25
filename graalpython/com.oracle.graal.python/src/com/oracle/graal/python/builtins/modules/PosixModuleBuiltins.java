@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.ConvertPathlikeObjectNodeGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
@@ -801,7 +802,21 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ReadNode extends PythonFileNode {
-        @Specialization
+        @Specialization(guards = "readOpaque()")
+        @TruffleBoundary
+        Object readOpaque(int fd, @SuppressWarnings("unused") Object requestedSize) {
+            SeekableByteChannel channel = getFileChannel(fd);
+            try {
+                long size = channel.size() - channel.position();
+                ByteBuffer dst = ByteBuffer.allocate((int) size);
+                channel.read(dst);
+                return new OpaqueBytes(dst.array());
+            } catch (IOException e) {
+                throw raise(OSError, e.getMessage());
+            }
+        }
+
+        @Specialization(guards = "!readOpaque()")
         @TruffleBoundary
         Object read(int fd, long requestedSize) {
             SeekableByteChannel channel = getFileChannel(fd);
@@ -816,6 +831,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw raise(OSError, e.getMessage());
             }
+        }
+
+        protected boolean readOpaque() {
+            return OpaqueBytes.isEnabled(getContext());
         }
     }
 

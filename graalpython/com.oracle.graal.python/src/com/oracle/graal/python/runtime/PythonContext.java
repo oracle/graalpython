@@ -39,6 +39,7 @@ import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -200,6 +201,7 @@ public final class PythonContext {
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
         sysModules.setItem(__MAIN__, mainModule);
+        OpaqueBytes.initializeForNewContext(this);
         currentException = null;
         isInitialized = true;
     }

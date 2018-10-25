@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -295,7 +296,30 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = "join", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class JoinNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        protected boolean readOpaque() {
+            return OpaqueBytes.isEnabled(getContext());
+        }
+
+        @Specialization(guards = {"readOpaque()"})
+        public Object join(PBytes bytes, PList iterable,
+                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
+                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
+                        @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
+            int len = lenNode.execute(iterable.getSequenceStorage());
+            if (len == 1) {
+                // branch profiles aren't really needed, because of the specialization
+                // happening in the getItemNode on first execution and the assumption
+                // in OpaqueBytes.isInstance
+                Object firstItem = getItemNode.execute(iterable.getSequenceStorage(), 0);
+                if (OpaqueBytes.isInstance(firstItem)) {
+                    return firstItem;
+                }
+            }
+            return join(bytes, iterable, toByteArrayNode, bytesJoinNode);
+        }
+
+        @Specialization(guards = {"!readOpaque()"})
         public PBytes join(PBytes bytes, Object iterable,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
