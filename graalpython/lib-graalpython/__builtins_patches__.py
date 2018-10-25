@@ -74,11 +74,6 @@ for module in [_io, io]:
 setattr(builtins, 'open', open)
 
 
-
-
-# platform
-sys.modules["select"].select = lambda *args: print("select", args)
-
 # in setuptools' pkg_resources/__init__.py
 sys.modules["zipimport"] = type(sys)("zipimport")
 sys.modules["zipimport"].zipimporter = None
