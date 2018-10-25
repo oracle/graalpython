@@ -362,11 +362,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyErrOccurred extends PythonUnaryBuiltinNode {
         @Specialization
         Object run(Object errorMarker,
-                        @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
+                        @Cached("create()") GetClassNode getClass) {
             PException currentException = getContext().getCurrentException();
             if (currentException != null) {
-                currentException.getExceptionObject().reifyException();
-                return getPythonClass(currentException.getExceptionObject().getLazyPythonClass(), getClassProfile);
+                PBaseException exceptionObject = currentException.getExceptionObject();
+                exceptionObject.reifyException();
+                return getClass.execute(exceptionObject);
             }
             return errorMarker;
         }

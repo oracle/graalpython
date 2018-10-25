@@ -55,12 +55,14 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -72,7 +74,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -99,13 +100,53 @@ public class ObjectBuiltins extends PythonBuiltins {
         return ObjectBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __CLASS__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __CLASS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    abstract static class ClassNode extends PythonBuiltinNode {
-        @Specialization
-        PythonClass getClass(Object self,
+    abstract static class ClassNode extends PythonBinaryBuiltinNode {
+        private static final String ERROR_MESSAGE = "__class__ assignment only supported for heap types or ModuleType subclasses";
+
+        @Specialization(guards = "isNoValue(value)")
+        PythonClass getClass(Object self, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") GetClassNode getClass) {
             return getClass.execute(self);
+        }
+
+        @Specialization
+        PythonClass setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonBuiltinClass klass) {
+            throw raise(TypeError, ERROR_MESSAGE);
+        }
+
+        @Specialization
+        PythonClass setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonNativeClass klass) {
+            throw raise(TypeError, ERROR_MESSAGE);
+        }
+
+        @Specialization
+        PNone setClass(PythonObject self, PythonClass value,
+                        @Cached("create()") BranchProfile errorValueBranch,
+                        @Cached("create()") BranchProfile errorSelfBranch,
+                        @Cached("create()") GetLazyClassNode getLazyClass) {
+            if (value instanceof PythonBuiltinClass || value instanceof PythonNativeClass) {
+                errorValueBranch.enter();
+                throw raise(TypeError, ERROR_MESSAGE);
+            }
+            LazyPythonClass lazyClass = getLazyClass.execute(self);
+            if (lazyClass instanceof PythonBuiltinClassType || lazyClass instanceof PythonBuiltinClass || lazyClass instanceof PythonNativeClass) {
+                errorSelfBranch.enter();
+                throw raise(TypeError, ERROR_MESSAGE);
+            }
+            self.setLazyPythonClass(value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isPythonObject(self)")
+        PythonClass getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonClass value) {
+            throw raise(TypeError, ERROR_MESSAGE);
+        }
+
+        @Fallback
+        PythonClass getClass(@SuppressWarnings("unused") Object self, Object value) {
+            throw raise(TypeError, "__class__ must be set to a class, not '%p' object", value);
         }
     }
 

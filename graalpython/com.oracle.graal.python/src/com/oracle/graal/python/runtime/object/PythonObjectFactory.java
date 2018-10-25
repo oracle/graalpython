@@ -589,7 +589,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PArray(cls, store));
     }
 
-    public PByteArray createByteArray(PythonClass cls, byte[] array) {
+    public PByteArray createByteArray(LazyPythonClass cls, byte[] array) {
         return trace(new PByteArray(cls, array));
     }
 

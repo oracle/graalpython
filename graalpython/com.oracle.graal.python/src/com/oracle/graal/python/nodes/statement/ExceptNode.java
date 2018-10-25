@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
@@ -53,6 +54,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     @Child private StatementNode body;
     @Child private ExpressionNode exceptType;
     @Child private WriteNode exceptName;
+    @Child private GetLazyClassNode getClass;
 
     // "object" is the uninitialized value (since it's not a valid error type)
     @CompilationFinal private PythonBuiltinClassType singleBuiltinError = PythonBuiltinClassType.PythonObject;
@@ -84,12 +86,20 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         throw ExceptionHandledException.INSTANCE;
     }
 
+    private GetLazyClassNode getClassNode() {
+        if (getClass == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getClass = GetLazyClassNode.create();
+        }
+        return getClass;
+    }
+
     public boolean matchesException(VirtualFrame frame, PException e) {
         if (exceptType == null) {
             return true;
         }
         Object expectedType = exceptType.execute(frame);
-        LazyPythonClass lazyClass = e.getExceptionObject().getLazyPythonClass();
+        LazyPythonClass lazyClass = getClassNode().execute(e.getExceptionObject());
 
         if (singleBuiltinError == PythonBuiltinClassType.PythonObject) {
             CompilerDirectives.transferToInterpreterAndInvalidate();

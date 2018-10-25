@@ -72,6 +72,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -336,10 +337,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @Builtin(name = "copy", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ByteArrayCopyNode extends PythonBuiltinNode {
-
         @Specialization
-        public PByteArray copy(PByteArray byteArray) {
-            return byteArray.copy();
+        public PByteArray copy(PByteArray byteArray,
+                        @Cached("create()") GetLazyClassNode getClass,
+                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArray) {
+            return factory().createByteArray(getClass.execute(byteArray), toByteArray.execute(byteArray.getSequenceStorage()));
         }
     }
 

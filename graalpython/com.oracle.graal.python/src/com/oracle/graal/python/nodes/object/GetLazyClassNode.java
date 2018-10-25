@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -147,7 +148,17 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         return PythonBuiltinClassType.PInt;
     }
 
-    @Specialization
+    /*
+     * We don't cache the object in the AST, but its classStable assumption
+     */
+    @Specialization(guards = "object.getClassStableAssumption() == classStable", assumptions = "classStable", limit = "1")
+    protected static LazyPythonClass getPythonClassCached(@SuppressWarnings("unused") PythonObject object,
+                    @SuppressWarnings("unused") @Cached("object.getClassStableAssumption()") Assumption classStable,
+                    @Cached("object.getLazyPythonClass()") LazyPythonClass klass) {
+        return klass;
+    }
+
+    @Specialization(replaces = "getPythonClassCached")
     protected static LazyPythonClass getPythonClassGeneric(PythonObject object) {
         return object.getLazyPythonClass();
     }

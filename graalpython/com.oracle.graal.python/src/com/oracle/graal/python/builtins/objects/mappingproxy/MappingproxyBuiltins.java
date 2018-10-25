@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -193,8 +194,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public PMappingproxy copy(PMappingproxy proxy) {
-            return factory().createMappingproxy(proxy.getLazyPythonClass(), proxy.getDictStorage());
+        public PMappingproxy copy(PMappingproxy proxy,
+                        @Cached("create()") GetLazyClassNode getClass) {
+            return factory().createMappingproxy(getClass.execute(proxy), proxy.getDictStorage());
         }
     }
 }

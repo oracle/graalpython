@@ -427,8 +427,8 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization
         public boolean isInstance(PythonClass cls, Object instance,
                         @Cached("create()") IsSubtypeNode isSubtypeNode,
-                        @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
-            if (instance instanceof PythonObject && isSubtypeNode.execute(getPythonClass(((PythonObject) instance).getLazyPythonClass(), getClassProfile), cls)) {
+                        @Cached("create()") GetClassNode getClass) {
+            if (instance instanceof PythonObject && isSubtypeNode.execute(getClass.execute(instance), cls)) {
                 return true;
             }
 
