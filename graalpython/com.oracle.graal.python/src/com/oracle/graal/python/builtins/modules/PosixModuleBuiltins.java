@@ -1032,6 +1032,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         int system(String cmd) {
+            if (!getContext().isExecutableAccessAllowed()) {
+                return -1;
+            }
             String[] command = new String[]{shell[0], shell[1], cmd};
             try {
                 Runtime rt = Runtime.getRuntime();
