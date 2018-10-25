@@ -104,7 +104,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "little" : "big");
         builtinConstants.put("copyright", LICENSE);
         builtinConstants.put("dont_write_bytecode", true);
-        if (TruffleOptions.AOT) {
+        if (TruffleOptions.AOT || !core.getContext().isExecutableAccessAllowed()) {
             // cannot set the path at this time since the binary is not yet known; will be patched
             // in the context
             builtinConstants.put("executable", PNone.NONE);

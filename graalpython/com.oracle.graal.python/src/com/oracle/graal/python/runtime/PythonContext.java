@@ -192,7 +192,7 @@ public final class PythonContext {
 
     private void setupRuntimeInformation() {
         PythonModule sysModule = core.initializeSysModule();
-        if (TruffleOptions.AOT && !language.isNativeBuildTime()) {
+        if (TruffleOptions.AOT && !language.isNativeBuildTime() && isExecutableAccessAllowed()) {
             sysModule.setAttribute("executable", ProcessProperties.getExecutableName());
         }
         sysModules = (PDict) sysModule.getAttribute("modules");
@@ -259,5 +259,9 @@ public final class PythonContext {
 
     public static Assumption getSingleNativeContextAssumption() {
         return singleNativeContext;
+    }
+
+    public boolean isExecutableAccessAllowed() {
+        return getEnv().isHostLookupAllowed() || getEnv().isNativeAccessAllowed();
     }
 }
