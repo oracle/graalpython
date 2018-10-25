@@ -79,7 +79,6 @@ sys.modules["zipimport"] = type(sys)("zipimport")
 sys.modules["zipimport"].zipimporter = None
 
 # in setuptools' pkg_resources/__init__.py
-sys.modules["email.parser"] = type(sys)("email.parser")
 sys.modules["plistlib"] = type(sys)("plistlib")
 
 # in setuptools' vendored pyparsing.py

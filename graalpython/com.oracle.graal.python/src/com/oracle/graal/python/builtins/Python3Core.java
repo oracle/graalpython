@@ -198,7 +198,6 @@ public final class Python3Core implements PythonCore {
                     "_locale",
                     "_sre",
                     "function",
-                    "select",
                     "_socket",
     };
 
