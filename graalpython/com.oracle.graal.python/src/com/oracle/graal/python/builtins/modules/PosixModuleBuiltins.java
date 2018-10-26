@@ -101,6 +101,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "posix")
@@ -802,38 +803,42 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ReadNode extends PythonFileNode {
-        @Specialization(guards = "readOpaque()")
-        @TruffleBoundary
-        Object readOpaque(int fd, @SuppressWarnings("unused") Object requestedSize) {
+        @Specialization(guards = "readOpaque(frame)")
+        Object readOpaque(@SuppressWarnings("unused") VirtualFrame frame, int fd, @SuppressWarnings("unused") Object requestedSize) {
             SeekableByteChannel channel = getFileChannel(fd);
             try {
-                long size = channel.size() - channel.position();
-                ByteBuffer dst = ByteBuffer.allocate((int) size);
-                channel.read(dst);
-                return new OpaqueBytes(dst.array());
+                return new OpaqueBytes(doRead(channel, Integer.MAX_VALUE));
             } catch (IOException e) {
                 throw raise(OSError, e.getMessage());
             }
         }
 
-        @Specialization(guards = "!readOpaque()")
-        @TruffleBoundary
-        Object read(int fd, long requestedSize) {
+        @Specialization(guards = "!readOpaque(frame)")
+        Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize) {
             SeekableByteChannel channel = getFileChannel(fd);
             try {
-                long size = Math.min(requestedSize, channel.size() - channel.position());
-                // cast below will always succeed, since requestedSize was an int,
-                // and must thus will always be smaller than a long that cannot be
-                // downcast
-                ByteBuffer dst = ByteBuffer.allocate((int) size);
-                getFileChannel(fd).read(dst);
-                return factory().createBytes(dst.array());
+                byte[] array = doRead(channel, (int) requestedSize);
+                return factory().createBytes(array);
             } catch (IOException e) {
                 throw raise(OSError, e.getMessage());
             }
         }
 
-        protected boolean readOpaque() {
+        @TruffleBoundary
+        private static byte[] doRead(SeekableByteChannel channel, int requestedSize) throws IOException {
+            long size = Math.min(requestedSize, channel.size() - channel.position());
+            // cast below will always succeed, since requestedSize was an int,
+            // and must thus will always be smaller than a long that cannot be
+            // downcast
+            ByteBuffer dst = ByteBuffer.allocate((int) size);
+            channel.read(dst);
+            return dst.array();
+        }
+
+        /**
+         * @param frame - only used so the DSL sees this as a dynamic check
+         */
+        protected boolean readOpaque(VirtualFrame frame) {
             return OpaqueBytes.isEnabled(getContext());
         }
     }

@@ -296,11 +296,14 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = "join", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class JoinNode extends PythonBinaryBuiltinNode {
-        protected boolean readOpaque() {
+        /**
+         * @param bytes - the parameter is used to force the DSL to make this a dynamic check
+         */
+        protected boolean readOpaque(PBytes bytes) {
             return OpaqueBytes.isEnabled(getContext());
         }
 
-        @Specialization(guards = {"readOpaque()"})
+        @Specialization(guards = {"readOpaque(bytes)"})
         public Object join(PBytes bytes, PList iterable,
                         @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
@@ -319,7 +322,7 @@ public class BytesBuiltins extends PythonBuiltins {
             return join(bytes, iterable, toByteArrayNode, bytesJoinNode);
         }
 
-        @Specialization(guards = {"!readOpaque()"})
+        @Specialization(guards = {"!readOpaque(bytes)"})
         public PBytes join(PBytes bytes, Object iterable,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
