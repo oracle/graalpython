@@ -53,6 +53,8 @@ public @interface Builtin {
 
     boolean takesVarKeywordArgs() default false;
 
+    String[] parameterNames() default {};
+
     String[] keywordArguments() default {};
 
     boolean isPublic() default true;

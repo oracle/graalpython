@@ -38,40 +38,69 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.builtins.objects.socket;
 
-import java.io.PrintStream;
-import java.util.List;
+import java.net.InetSocketAddress;
+import java.nio.channels.SelectableChannel;
 
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
-@CoreFunctions(defineModule = "select")
-public class SelectModuleBuiltins extends PythonBuiltins {
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return SelectModuleBuiltinsFactory.getFactories();
+public class PSocket extends PythonBuiltinObject {
+    public final static int AF_UNSPEC = 0;
+    public final static int AF_INET = 2;
+    public final static int AF_INET6 = 23;
+
+    public final static int SOCK_DGRAM = 1;
+    public final static int SOCK_STREAM = 2;
+
+    private final static InetSocketAddress EPHEMERAL_ADDRESS = new InetSocketAddress(0);
+
+    private final int family;
+    private final int type;
+    private final int proto;
+
+    private double timeout;
+
+    @SuppressWarnings("unused") private SelectableChannel channel;
+    private InetSocketAddress address = EPHEMERAL_ADDRESS;
+
+    public PSocket(LazyPythonClass cls, int family, int type, int proto) {
+        super(cls);
+        this.family = family;
+        this.type = type;
+        this.proto = proto;
     }
 
-    @Builtin(name = "select", fixedNumOfPositionalArgs = 3, parameterNames = {"rlist", "wlist", "xlist"}, keywordArguments = {"timeout"})
-    @GenerateNodeFactory
-    static abstract class SelectNode extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        PTuple select(Object rlist, Object wlist, Object xlist, @SuppressWarnings("unused") Object timeout) {
-            if (PythonOptions.getFlag(getContext(), PythonOptions.VerboseFlag)) {
-                new PrintStream(getContext().getEnv().err()).println("select() will always return immediately, we only support blocking I/O for now");
-            }
-            return factory().createTuple(new Object[]{rlist, wlist, xlist});
+    public int getFamily() {
+        return family;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public int getProto() {
+        return proto;
+    }
+
+    public double getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(double timeout) {
+        this.timeout = timeout;
+    }
+
+    public InetSocketAddress getAddress() {
+        return address;
+    }
+
+    public void setBlocking(boolean blocking) {
+        if (blocking) {
+            this.setTimeout(-1.0);
+        } else {
+            this.setTimeout(0.0);
         }
     }
 }

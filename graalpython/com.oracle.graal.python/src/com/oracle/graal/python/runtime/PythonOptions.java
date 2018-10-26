@@ -133,6 +133,14 @@ public final class PythonOptions {
         return context.getOptions().get(key);
     }
 
+    @TruffleBoundary
+    public static boolean getFlag(PythonContext context, OptionKey<Boolean> key) {
+        if (context == null) {
+            return key.getDefaultValue();
+        }
+        return context.getOptions().get(key);
+    }
+
     public static int getCallSiteInlineCacheMaxDepth() {
         return getOption(PythonLanguage.getContextRef().get(), CallSiteInlineCacheMaxDepth);
     }

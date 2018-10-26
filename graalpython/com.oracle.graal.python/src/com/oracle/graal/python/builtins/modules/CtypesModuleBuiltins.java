@@ -40,38 +40,18 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.List;
 
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(defineModule = "select")
-public class SelectModuleBuiltins extends PythonBuiltins {
+@CoreFunctions(defineModule = "ctypes")
+public class CtypesModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return SelectModuleBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = "select", fixedNumOfPositionalArgs = 3, parameterNames = {"rlist", "wlist", "xlist"}, keywordArguments = {"timeout"})
-    @GenerateNodeFactory
-    static abstract class SelectNode extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        PTuple select(Object rlist, Object wlist, Object xlist, @SuppressWarnings("unused") Object timeout) {
-            if (PythonOptions.getFlag(getContext(), PythonOptions.VerboseFlag)) {
-                new PrintStream(getContext().getEnv().err()).println("select() will always return immediately, we only support blocking I/O for now");
-            }
-            return factory().createTuple(new Object[]{rlist, wlist, xlist});
-        }
+        return new ArrayList<>();
     }
 }

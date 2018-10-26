@@ -91,6 +91,13 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
                         @Cached("create()") GetLazyClassNode getClassNode) {
             return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
         }
+
+        @Specialization(guards = "!isBuiltinFunction(self)")
+        @TruffleBoundary
+        Object reprBuiltinMethod(PMethod self,
+                        @Cached("create()") GetLazyClassNode getClassNode) {
+            return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
+        }
     }
 
     @Builtin(name = __REDUCE__, fixedNumOfPositionalArgs = 1)

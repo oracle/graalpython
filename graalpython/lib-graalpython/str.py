@@ -339,9 +339,9 @@ class TemplateFormatter(object):
         return iter(self.parser_list)
 
 
-def strformat(self, *args, **kwargs):
-    template = TemplateFormatter(self)
-    return template.build(args, kwargs)
+def strformat(___self, *___args, **___kwargs):
+    template = TemplateFormatter(___self)
+    return template.build(___args, ___kwargs)
 
 
 str.format = strformat

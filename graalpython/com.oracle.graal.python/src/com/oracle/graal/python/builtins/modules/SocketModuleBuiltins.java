@@ -40,38 +40,39 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.io.PrintStream;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(defineModule = "select")
-public class SelectModuleBuiltins extends PythonBuiltins {
+@CoreFunctions(defineModule = "_socket")
+public class SocketModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return SelectModuleBuiltinsFactory.getFactories();
+        return SocketModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "select", fixedNumOfPositionalArgs = 3, parameterNames = {"rlist", "wlist", "xlist"}, keywordArguments = {"timeout"})
+    // socket(family=AF_INET, type=SOCK_STREAM, proto=0, fileno=None)
+    @Builtin(name = "socket", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 5, keywordArguments = {"family", "type", "proto", "fileno"}, constructsClass = PythonBuiltinClassType.PSocket)
     @GenerateNodeFactory
-    static abstract class SelectNode extends PythonBuiltinNode {
+    public abstract static class SocketNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        PTuple select(Object rlist, Object wlist, Object xlist, @SuppressWarnings("unused") Object timeout) {
-            if (PythonOptions.getFlag(getContext(), PythonOptions.VerboseFlag)) {
-                new PrintStream(getContext().getEnv().err()).println("select() will always return immediately, we only support blocking I/O for now");
+        Object socket(PythonClass cls, int family, int type, int proto, @SuppressWarnings("unused") PNone fileno) {
+            if (getContext().getEnv().isNativeAccessAllowed()) {
+                return factory().createSocket(cls, family, type, proto);
+            } else {
+                throw raise(PythonErrorType.OSError, "creating sockets not allowed");
             }
-            return factory().createTuple(new Object[]{rlist, wlist, xlist});
         }
     }
 }

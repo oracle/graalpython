@@ -432,7 +432,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public Arity getArity() {
-        return new Arity(this.getName(), this.getMinNumOfPositionalArgs(), this.getMaxNumOfPositionalArgs(), this.takesVarKeywordArgs(), this.takesVarArgs(), this.getKeywordNames());
+        return new Arity(this.getName(), this.getMinNumOfPositionalArgs(), this.getMaxNumOfPositionalArgs(), this.takesVarKeywordArgs(), this.takesVarArgs(), null, this.getKeywordNames());
     }
 
     public RootCallTarget getRootCallTarget() {

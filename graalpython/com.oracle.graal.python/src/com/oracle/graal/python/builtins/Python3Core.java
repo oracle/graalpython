@@ -48,10 +48,12 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.BinasciiModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.CtypesModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
@@ -65,11 +67,14 @@ import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
@@ -194,6 +199,7 @@ public final class Python3Core implements PythonCore {
                     "_locale",
                     "_sre",
                     "function",
+                    "_socket",
     };
 
     private final PythonBuiltins[] builtins;
@@ -267,6 +273,7 @@ public final class Python3Core implements PythonCore {
                         new SREModuleBuiltins(),
                         new AstModuleBuiltins(),
                         new SelectModuleBuiltins(),
+                        new SocketModuleBuiltins(),
                         new SignalModuleBuiltins(),
                         new TracebackBuiltins(),
                         new GcModuleBuiltins(),
@@ -278,7 +285,11 @@ public final class Python3Core implements PythonCore {
                         new BufferBuiltins(),
                         new MemoryviewBuiltins(),
                         new SuperBuiltins(),
-                        new ReadlineModuleBuiltins()));
+                        new BinasciiModuleBuiltins(),
+                        new PosixSubprocessModuleBuiltins(),
+                        new CtypesModuleBuiltins(),
+                        new ReadlineModuleBuiltins(),
+                        new PyExpatModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
             for (PythonBuiltins builtin : providers) {

@@ -226,6 +226,16 @@ suite = {
             ],
             "license": ["PSF-License"],
         },
+
+        "site-packages": {
+            "subDir": "graalpython",
+            "native": True,
+            "vpath": False,
+            "results": ["graalpython/lib-python/3/site-packages"],
+            "output": ".",
+            "license": ["MIT"],
+            "defaultBuild" : False,
+        },
     },
 
     "licenses": {

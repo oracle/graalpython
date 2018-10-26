@@ -305,6 +305,9 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
             boolean takesVarArgs = arity.takesVarArgs();
             boolean takesVarKeywordArgs = arity.takesVarKeywordArgs();
 
+            String[] parameterIds = arity.getParameterIds();
+            int paramIdx = 0;
+
             StringBuilder sb = new StringBuilder();
             char argName = 'a';
             sb.append('(');
@@ -315,7 +318,11 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
                     sb.append("self");
                 }
                 for (int i = 1; i < minArgs; i++) {
-                    sb.append(", ").append(argName++);
+                    if (paramIdx >= parameterIds.length) {
+                        sb.append(", ").append(argName++);
+                    } else {
+                        sb.append(", ").append(parameterIds[paramIdx++]);
+                    }
                 }
             }
             if (minArgs > 0) {
