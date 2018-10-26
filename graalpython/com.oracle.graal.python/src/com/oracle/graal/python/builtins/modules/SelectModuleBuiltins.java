@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -65,6 +66,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     static abstract class SelectNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         PTuple select(Object rlist, Object wlist, Object xlist, @SuppressWarnings("unused") Object timeout) {
             if (PythonOptions.getFlag(getContext(), PythonOptions.VerboseFlag)) {
                 new PrintStream(getContext().getEnv().err()).println("select() will always return immediately, we only support blocking I/O for now");
