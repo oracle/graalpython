@@ -104,7 +104,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "little" : "big");
         builtinConstants.put("copyright", LICENSE);
         builtinConstants.put("dont_write_bytecode", true);
-        if (TruffleOptions.AOT) {
+        if (TruffleOptions.AOT || !core.getContext().isExecutableAccessAllowed()) {
             // cannot set the path at this time since the binary is not yet known; will be patched
             // in the context
             builtinConstants.put("executable", PNone.NONE);
@@ -149,6 +149,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }));
         builtinConstants.put("graal_python_core_home", PythonOptions.getOption(core.getContext(), PythonOptions.CoreHome));
         builtinConstants.put("graal_python_stdlib_home", PythonOptions.getOption(core.getContext(), PythonOptions.StdLibHome));
+        builtinConstants.put("graal_python_opaque_filesystem", PythonOptions.getOption(core.getContext(), PythonOptions.OpaqueFilesystem));
         // the default values taken from JPython
         builtinConstants.put("float_info", core.factory().createTuple(new Object[]{
                         Double.MAX_VALUE,       // DBL_MAX

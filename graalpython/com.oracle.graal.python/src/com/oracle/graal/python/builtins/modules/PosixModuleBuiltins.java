@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.ConvertPathlikeObjectNodeGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
@@ -100,6 +101,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "posix")
@@ -263,8 +265,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         String cwd() {
-            // TODO(fa) that should actually be retrieved from native code
-            return System.getProperty("user.dir");
+            if (getContext().isExecutableAccessAllowed()) {
+                // TODO(fa) that should actually be retrieved from native code
+                return System.getProperty("user.dir");
+            } else {
+                return "";
+            }
         }
 
     }
@@ -275,14 +281,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         PNone chdir(String spath) {
-            // TODO(fa) that should actually be set via native code
-            try {
-                if (Files.exists(Paths.get(spath))) {
-                    System.setProperty("user.dir", spath);
-                    return PNone.NONE;
+            if (getContext().isExecutableAccessAllowed()) {
+                // TODO(fa) that should actually be set via native code
+                try {
+                    if (Files.exists(Paths.get(spath))) {
+                        System.setProperty("user.dir", spath);
+                        return PNone.NONE;
+                    }
+                } catch (InvalidPathException e) {
+                    // fall through
                 }
-            } catch (InvalidPathException e) {
-                // fall through
             }
             throw raise(PythonErrorType.FileNotFoundError, "No such file or directory: '%s'", spath);
         }
@@ -795,21 +803,43 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ReadNode extends PythonFileNode {
-        @Specialization
-        @TruffleBoundary
-        Object read(int fd, long requestedSize) {
+        @Specialization(guards = "readOpaque(frame)")
+        Object readOpaque(@SuppressWarnings("unused") VirtualFrame frame, int fd, @SuppressWarnings("unused") Object requestedSize) {
             SeekableByteChannel channel = getFileChannel(fd);
             try {
-                long size = Math.min(requestedSize, channel.size() - channel.position());
-                // cast below will always succeed, since requestedSize was an int,
-                // and must thus will always be smaller than a long that cannot be
-                // downcast
-                ByteBuffer dst = ByteBuffer.allocate((int) size);
-                getFileChannel(fd).read(dst);
-                return factory().createBytes(dst.array());
+                return new OpaqueBytes(doRead(channel, Integer.MAX_VALUE));
             } catch (IOException e) {
                 throw raise(OSError, e.getMessage());
             }
+        }
+
+        @Specialization(guards = "!readOpaque(frame)")
+        Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize) {
+            SeekableByteChannel channel = getFileChannel(fd);
+            try {
+                byte[] array = doRead(channel, (int) requestedSize);
+                return factory().createBytes(array);
+            } catch (IOException e) {
+                throw raise(OSError, e.getMessage());
+            }
+        }
+
+        @TruffleBoundary
+        private static byte[] doRead(SeekableByteChannel channel, int requestedSize) throws IOException {
+            long size = Math.min(requestedSize, channel.size() - channel.position());
+            // cast below will always succeed, since requestedSize was an int,
+            // and must thus will always be smaller than a long that cannot be
+            // downcast
+            ByteBuffer dst = ByteBuffer.allocate((int) size);
+            channel.read(dst);
+            return dst.array();
+        }
+
+        /**
+         * @param frame - only used so the DSL sees this as a dynamic check
+         */
+        protected boolean readOpaque(VirtualFrame frame) {
+            return OpaqueBytes.isEnabled(getContext());
         }
     }
 
@@ -1026,6 +1056,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         int system(String cmd) {
+            if (!getContext().isExecutableAccessAllowed()) {
+                return -1;
+            }
             String[] command = new String[]{shell[0], shell[1], cmd};
             try {
                 Runtime rt = Runtime.getRuntime();

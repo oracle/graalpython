@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.NextNode
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -599,6 +600,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         Object compile(PBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             return compile(new String(toBytesNode.execute(source)), filename, mode, kwFlags, kwDontInherit, kwOptimize);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object compile(OpaqueBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
+            return compile(new String(source.getBytes()), filename, mode, kwFlags, kwDontInherit, kwOptimize);
         }
 
         @SuppressWarnings("unused")

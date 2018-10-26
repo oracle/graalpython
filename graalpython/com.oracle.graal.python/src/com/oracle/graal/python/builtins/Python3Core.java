@@ -42,6 +42,8 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.function.Supplier;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AstModuleBuiltins;
@@ -144,8 +146,8 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleOptions;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -359,7 +361,7 @@ public final class Python3Core implements PythonCore {
 
     @Override
     public void postInitialize() {
-        if (!getLanguage().isNativeBuildTime()) {
+        if (!TruffleOptions.AOT || ImageInfo.inImageRuntimeCode()) {
             initialized = false;
 
             loadFile(__BUILTINS_PATCHES__, PythonCore.getCoreHomeOrFail());
