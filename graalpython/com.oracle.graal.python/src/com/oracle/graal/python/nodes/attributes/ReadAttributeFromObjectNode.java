@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
@@ -104,7 +103,6 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     @Specialization(limit = "1", //
                     guards = {
                                     "object == cachedObject",
-                                    "cachedDict == null",
                                     "checkShape(object, cachedObject, cachedShape)",
                                     "key == cachedKey",
                                     "!isNull(loc)",
@@ -112,17 +110,18 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
                     }, //
                     assumptions = {
                                     "layoutAssumption",
-                                    "finalAssumption"
+                                    "finalAssumption",
+                                    "dictStableAssumption"
                     })
     protected Object readDirectFinal(PythonObject object, Object key,
                     @Cached("object") PythonObject cachedObject,
                     @Cached("key") Object cachedKey,
                     @Cached("attrKey(key)") Object attrKey,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
-                    @Cached("object.getDict()") PHashingCollection cachedDict,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
                     @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc,
                     @Cached("loc.getFinalAssumption()") Assumption finalAssumption,
+                    @SuppressWarnings("unused") @Cached("object.getDictStableAssumption()") Assumption dictStableAssumption,
                     @Cached("readFinalValue(object, loc)") Object cachedValue) {
         assert assertFinal(object, attrKey, cachedValue);
         return cachedValue;
@@ -137,17 +136,19 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
                                     "object.getStorage().getShape() == cachedShape",
-                                    "cachedDict == null",
                                     "key == cachedKey",
                                     "isNull(loc) || !loc.isAssumedFinal()",
                     }, //
-                    assumptions = "layoutAssumption")
+                    assumptions = {
+                                    "layoutAssumption",
+                                    "dictStableAssumption"
+                    })
     protected Object readDirect(PythonObject object, Object key,
                     @Cached("key") Object cachedKey,
                     @Cached("attrKey(cachedKey)") Object attrKey,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
-                    @Cached("object.getDict()") PHashingCollection cachedDict,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
+                    @SuppressWarnings("unused") @Cached("object.getDictStableAssumption()") Assumption dictStableAssumption,
                     @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc) {
         if (loc == null) {
             return PNone.NO_VALUE;
@@ -159,21 +160,21 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     @SuppressWarnings("unused")
     @Specialization(guards = {
                     "object.getStorage().getShape() == cachedShape",
-                    "cachedDict == null",
                     "!layoutAssumption.isValid()"
-    })
+    }, assumptions = "dictStableAssumption")
     protected Object updateShapeAndRead(PythonObject object, Object key,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
-                    @Cached("object.getDict()") PHashingCollection cachedDict,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
+                    @SuppressWarnings("unused") @Cached("object.getDictStableAssumption()") Assumption dictStableAssumption,
                     @Cached("create()") ReadAttributeFromObjectNode nextNode) {
         CompilerDirectives.transferToInterpreter();
         object.getStorage().updateShape();
         return nextNode.execute(object, key);
     }
 
-    @Specialization(guards = "object.getDict() == null", replaces = "readDirect")
-    protected Object readIndirect(PythonObject object, Object key) {
+    @Specialization(replaces = "readDirect", assumptions = "dictStableAssumption")
+    protected Object readIndirect(PythonObject object, Object key,
+                    @SuppressWarnings("unused") @Cached("object.getDictStableAssumption()") Assumption dictStableAssumption) {
         Object value = object.getStorage().get(attrKey(key));
         if (value == null) {
             return PNone.NO_VALUE;
@@ -182,9 +183,10 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
         }
     }
 
-    @Specialization(guards = "object.getDict() != null")
+    @Specialization(guards = "!dictStableAssumption.isValid()")
     protected Object readFromDict(PythonObject object, Object key,
-                    @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+                    @Cached("create()") HashingStorageNodes.GetItemNode getItemNode,
+                    @SuppressWarnings("unused") @Cached("object.getDictStableAssumption()") Assumption dictStableAssumption) {
         Object value = getItemNode.execute(object.getDict().getDictStorage(), key);
         if (value == null) {
             return PNone.NO_VALUE;

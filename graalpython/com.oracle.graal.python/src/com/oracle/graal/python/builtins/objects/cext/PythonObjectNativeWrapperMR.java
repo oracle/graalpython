@@ -680,7 +680,7 @@ public class PythonObjectNativeWrapperMR {
         Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key, Object value) {
             DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
             assert nativeWrapper != null;
-            getSetItemNode().execute(nativeWrapper.createNativeMemberStore(), NativeMemberNames.MD_DEF, value);
+            getSetItemNode().execute(nativeWrapper.createNativeMemberStore(object.getDictStableAssumption()), NativeMemberNames.MD_DEF, value);
             return value;
         }
 
@@ -701,7 +701,7 @@ public class PythonObjectNativeWrapperMR {
                 if (existing != null) {
                     d.setDictStorage(existing.getDictStorage());
                 } else {
-                    d.setDictStorage(new DynamicObjectStorage.PythonObjectDictStorage(object.getStorage()));
+                    d.setDictStorage(new DynamicObjectStorage.PythonObjectDictStorage(object.getStorage(), object.getDictStableAssumption()));
                 }
                 object.setDict(d);
             } else {
@@ -735,7 +735,7 @@ public class PythonObjectNativeWrapperMR {
                 DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
                 logGeneric(key);
-                getSetItemNode().execute(nativeWrapper.createNativeMemberStore(), key, value);
+                getSetItemNode().execute(nativeWrapper.createNativeMemberStore(null), key, value);
                 return value;
             }
             throw UnknownIdentifierException.raise(key);

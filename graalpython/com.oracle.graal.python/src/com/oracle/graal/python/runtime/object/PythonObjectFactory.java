@@ -476,7 +476,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PDict createDictFixedStorage(PythonObject pythonObject) {
-        return createDict(new PythonObjectDictStorage(pythonObject.getStorage()));
+        return createDict(new PythonObjectDictStorage(pythonObject.getStorage(), pythonObject.getDictStableAssumption()));
     }
 
     public PDict createDict(HashingStorage storage) {
@@ -510,7 +510,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {
-        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, new PythonObjectDictStorage(object.getStorage())));
+        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, new PythonObjectDictStorage(object.getStorage(), object.getDictStableAssumption())));
     }
 
     public PMappingproxy createMappingproxy(HashingStorage storage) {
@@ -518,7 +518,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonClass cls, PythonObject object) {
-        return trace(new PMappingproxy(cls, new PythonObjectDictStorage(object.getStorage())));
+        return trace(new PMappingproxy(cls, new PythonObjectDictStorage(object.getStorage(), object.getDictStableAssumption())));
     }
 
     public PMappingproxy createMappingproxy(LazyPythonClass cls, HashingStorage storage) {
