@@ -55,7 +55,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeChild(value = "object", type = ExpressionNode.class)
 public abstract class GetAttributeNode extends ExpressionNode implements ReadNode {
