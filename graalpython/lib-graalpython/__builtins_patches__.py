@@ -72,17 +72,3 @@ for module in [_io, io]:
 
 
 setattr(builtins, 'open', open)
-
-
-# in setuptools' pkg_resources/__init__.py
-sys.modules["zipimport"] = type(sys)("zipimport")
-sys.modules["zipimport"].zipimporter = None
-
-# in setuptools' vendored pyparsing.py
-class ThreadingIntercession(type(sys)):
-    def __getattr__(self, name):
-        import dummy_threading
-        return getattr(dummy_threading, name)
-
-
-sys.modules["threading"] = ThreadingIntercession("threading")
