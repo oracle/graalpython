@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
@@ -287,7 +288,8 @@ public final class Python3Core implements PythonCore {
                         new BinasciiModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
                         new CtypesModuleBuiltins(),
-                        new ReadlineModuleBuiltins()));
+                        new ReadlineModuleBuiltins(),
+                        new PyExpatModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
             for (PythonBuiltins builtin : providers) {

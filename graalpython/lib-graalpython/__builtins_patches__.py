@@ -78,9 +78,6 @@ setattr(builtins, 'open', open)
 sys.modules["zipimport"] = type(sys)("zipimport")
 sys.modules["zipimport"].zipimporter = None
 
-# in setuptools' pkg_resources/__init__.py
-sys.modules["plistlib"] = type(sys)("plistlib")
-
 # in setuptools' vendored pyparsing.py
 class ThreadingIntercession(type(sys)):
     def __getattr__(self, name):
