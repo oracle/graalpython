@@ -157,6 +157,7 @@ class BenchRunner(object):
         print("### start benchmark ... ")
 
         bench_func = self._get_attr(ATTR_BENCHMARK)
+        durations = []
         if bench_func and hasattr(bench_func, '__call__'):
             if self.warmup:
                 print("### warming up for %s iterations ... " % self.warmup)
@@ -166,16 +167,22 @@ class BenchRunner(object):
             for iteration in range(self.iterations):
                 start = time()
                 bench_func(*args)
-                duration = "%.3f" % (time() - start)
+                duration = time() - start
+                durations.append(duration)
+                duration_str = "%.3f" % duration
                 if self._run_once:
-                    print("@@@ name=%s, duration=%s" % (self.bench_module.__name__, duration))
+                    print("@@@ name=%s, duration=%s" % (self.bench_module.__name__, duration_str))
                 else:
-                    print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__, duration))
+                    print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__, duration_str))
 
         print(_HRULE)
         print("### teardown ... ")
         self._call_attr(ATTR_TEARDOWN)
         print("### benchmark complete")
+        print(_HRULE)
+        print("### BEST     duration: %.3f s" % min(durations))
+        print("### WORST    duration: %.3f s" % max(durations))
+        print("### AVG      duration: %.3f" % (sum(durations) / len(durations)))
         print(_HRULE)
 
 
