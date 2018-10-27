@@ -479,10 +479,16 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     static abstract class DictNode extends PythonBinaryBuiltinNode {
-        private final IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
+        private final IsBuiltinClassProfile exactObjInstanceProfile = IsBuiltinClassProfile.create();
+        private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
 
         protected boolean isExactObjectInstance(PythonObject self) {
-            return isBuiltinClassProfile.profileObject(self, PythonBuiltinClassType.PythonObject);
+            return exactObjInstanceProfile.profileObject(self, PythonBuiltinClassType.PythonObject);
+        }
+
+        protected boolean isBuiltinObjectExact(PythonObject self) {
+            // any builtin class except Modules
+            return exactBuiltinInstanceProfile.profileIsOtherBuiltinObject(self, PythonBuiltinClassType.PythonModule);
         }
 
         @SuppressWarnings("unused")
@@ -492,7 +498,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             throw new AssertionError();
         }
 
-        @Specialization(guards = {"!isBuiltinObject(self)", "!isClass(self)", "!isExactObjectInstance(self)", "isNoValue(none)"})
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)", "isNoValue(none)"})
         Object dict(PythonObject self, @SuppressWarnings("unused") PNone none) {
             PHashingCollection dict = self.getDict();
             if (dict == null) {
@@ -502,7 +508,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             return dict;
         }
 
-        @Specialization(guards = {"!isBuiltinObject(self)", "!isClass(self)", "!isExactObjectInstance(self)"})
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)"})
         Object dict(PythonObject self, PDict dict) {
             self.getDictStableAssumption().invalidate();
             self.setDict(dict);
