@@ -47,6 +47,17 @@ def assert_raises(err, fn, *args, **kwargs):
     assert raised
 
 
+def test_set_dict_attr_builtin_extension():
+    class MyList(list):
+        pass
+
+    lst = MyList()
+    assert lst.__dict__ == {}
+    lst.__dict__ = {'a': 9}
+    assert lst.a == 9
+    assert lst.__dict__ == {'a': 9}
+
+
 def test_set_dict_attr():
     o = object()
 
@@ -81,7 +92,6 @@ def test_set_dict_attr():
             raise AttributeError
 
     m1 = MyOtherClass()
-    print()
 
     def get_non_existing_attr():
         return m1.my_attr_2
