@@ -758,21 +758,21 @@ class MathTests(unittest.TestCase):
     def testCos(self):
         self.assertRaises(TypeError, math.cos)
         self.ftest('cos(-pi/2)', math.cos(-math.pi/2), 0, abs_tol=ulp(1))
-#         self.ftest('cos(0)', math.cos(0), 1)
-#         self.ftest('cos(pi/2)', math.cos(math.pi/2), 0, abs_tol=ulp(1))
-#         self.ftest('cos(pi)', math.cos(math.pi), -1)
-#         try:
-#             self.assertTrue(math.isnan(math.cos(INF)))
-#             self.assertTrue(math.isnan(math.cos(NINF)))
-#         except ValueError:
-#             self.assertRaises(ValueError, math.cos, INF)
-#             self.assertRaises(ValueError, math.cos, NINF)
-#         self.assertTrue(math.isnan(math.cos(NAN)))
-# 
-#         #test of specializations
-#         self.ftest('cos(BIG_INT)', math.cos(BIG_INT), 0.4145587418469303)
-#         self.ftest('cos(MyFloat())', math.cos(MyFloat()), 0.8253356149096783)
-#         self.assertRaises(TypeError, math.cos, 'ahoj')
+        self.ftest('cos(0)', math.cos(0), 1)
+        self.ftest('cos(pi/2)', math.cos(math.pi/2), 0, abs_tol=ulp(1))
+        self.ftest('cos(pi)', math.cos(math.pi), -1)
+        try:
+            self.assertTrue(math.isnan(math.cos(INF)))
+            self.assertTrue(math.isnan(math.cos(NINF)))
+        except ValueError:
+            self.assertRaises(ValueError, math.cos, INF)
+            self.assertRaises(ValueError, math.cos, NINF)
+        self.assertTrue(math.isnan(math.cos(NAN)))
+ 
+        #test of specializations
+        self.ftest('cos(BIG_INT)', math.cos(BIG_INT), 0.4145587418469303)
+        self.ftest('cos(MyFloat())', math.cos(MyFloat()), 0.8253356149096783)
+        self.assertRaises(TypeError, math.cos, 'ahoj')
 
     def testCosh(self):
         self.assertRaises(TypeError, math.cosh)
