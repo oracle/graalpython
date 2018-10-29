@@ -241,9 +241,9 @@ public abstract class HashingStorageNodes {
         }
 
         protected static PythonObjectHybridDictStorage switchToHybridDictStorage(PythonObjectDictStorage dictStorage) {
-            Assumption dictStableAssumption = dictStorage.getDictStableAssumption();
-            if (dictStableAssumption != null) {
-                dictStableAssumption.invalidate();
+            Assumption dictUnsetOrSameAsStorage = dictStorage.getDictUnsetOrSameAsStorage();
+            if (dictUnsetOrSameAsStorage != null) {
+                dictUnsetOrSameAsStorage.invalidate();
             }
             return new PythonObjectHybridDictStorage(dictStorage);
         }

@@ -58,7 +58,7 @@ def test_set_dict_attr_builtin_extension():
     assert lst.__dict__ == {'a': 9}
 
 
-def test_set_dict_attr():
+def test_get_dict_attr():
     o = object()
 
     def get_dict_attr():
@@ -70,6 +70,8 @@ def test_set_dict_attr():
     assert_raises(AttributeError, get_dict_attr)
     assert_raises(AttributeError, set_dict_attr)
 
+
+def test_set_dict_attr():
     class MyClass(object):
         def __init__(self):
             self.a = 9
@@ -81,7 +83,29 @@ def test_set_dict_attr():
     m.__dict__ = {'a': 10}
     assert m.__dict__ == {'a': 10}
     assert m.a == 10
+    m.d = 20
+    assert m.d == 20
+    assert "d" in m.__dict__
+    assert m.__dict__ == {'a': 10, 'd': 20}
 
+
+def test_set_attr_builtins():
+    lst = list()
+
+    def set_attr():
+        lst.a = 10
+
+    assert_raises(AttributeError, set_attr)
+
+    class MyList(list):
+        pass
+
+    mlst = MyList()
+    mlst.a = 10
+    assert mlst.a == 10
+
+
+def test_set_dict_attr_with_getattr_defined():
     class MyOtherClass(object):
         def __getattribute__(self, item):
             return object.__getattribute__(self, item)

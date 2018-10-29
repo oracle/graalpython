@@ -113,6 +113,10 @@ public abstract class NativeWrappers {
             super(delegate);
         }
 
+        public PythonObjectDictStorage createNativeMemberStore() {
+            return createNativeMemberStore(null);
+        }
+
         public PythonObjectDictStorage createNativeMemberStore(Assumption dictStableAssumption) {
             if (nativeMemberStore == null) {
                 nativeMemberStore = new PythonObjectDictStorage(SHAPE.newInstance(), dictStableAssumption);

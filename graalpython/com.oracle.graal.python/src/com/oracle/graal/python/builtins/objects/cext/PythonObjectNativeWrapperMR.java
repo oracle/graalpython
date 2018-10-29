@@ -735,7 +735,7 @@ public class PythonObjectNativeWrapperMR {
                 DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
                 logGeneric(key);
-                getSetItemNode().execute(nativeWrapper.createNativeMemberStore(null), key, value);
+                getSetItemNode().execute(nativeWrapper.createNativeMemberStore(), key, value);
                 return value;
             }
             throw UnknownIdentifierException.raise(key);

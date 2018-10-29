@@ -160,22 +160,26 @@ public abstract class DynamicObjectStorage extends HashingStorage {
     }
 
     public static class PythonObjectDictStorage extends DynamicObjectStorage {
-        private final Assumption dictStableAssumption;
+        private final Assumption dictUnsetOrSameAsStorage;
 
-        public PythonObjectDictStorage(DynamicObject store, Assumption dictStableAssumption) {
-            super(store);
-            this.dictStableAssumption = dictStableAssumption;
+        public PythonObjectDictStorage(DynamicObject store) {
+            this(store, null);
         }
 
-        public Assumption getDictStableAssumption() {
-            return dictStableAssumption;
+        public PythonObjectDictStorage(DynamicObject store, Assumption dictUnsetOrSameAsStorage) {
+            super(store);
+            this.dictUnsetOrSameAsStorage = dictUnsetOrSameAsStorage;
+        }
+
+        public Assumption getDictUnsetOrSameAsStorage() {
+            return dictUnsetOrSameAsStorage;
         }
 
         @Override
         @TruffleBoundary
         public HashingStorage copy(Equivalence eq) {
             assert eq == HashingStorage.DEFAULT_EQIVALENCE;
-            return new PythonObjectDictStorage(getStore().copy(getStore().getShape()), null);
+            return new PythonObjectDictStorage(getStore().copy(getStore().getShape()));
         }
     }
 
