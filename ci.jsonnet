@@ -180,7 +180,7 @@
     dynamicImports:: "sulong,/compiler",
 
     setup +: [
-      ["mx", "sforceimport"],
+      ["mx", "sforceimports"],
       ["mx", "--dynamicimports", self.dynamicImports, "build"],
     ]
   },

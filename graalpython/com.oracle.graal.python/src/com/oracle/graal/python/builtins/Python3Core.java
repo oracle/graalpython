@@ -33,19 +33,27 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.ServiceLoader;
+import java.util.function.Supplier;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.BinasciiModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.CtypesModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
@@ -59,10 +67,14 @@ import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
@@ -75,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictItemsIteratorBuiltins;
@@ -131,14 +144,17 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -164,7 +180,6 @@ public final class Python3Core implements PythonCore {
                     "_warnings",
                     "posix",
                     "_io",
-                    "_frozen_importlib_external",
                     "_frozen_importlib",
                     "classes",
                     "_weakref",
@@ -183,88 +198,106 @@ public final class Python3Core implements PythonCore {
                     "unicodedata",
                     "_locale",
                     "_sre",
+                    "function",
+                    "_socket",
     };
 
-    private final PythonBuiltins[] BUILTINS = new PythonBuiltins[]{
-                    new BuiltinConstructors(),
-                    new BuiltinFunctions(),
-                    new InteropModuleBuiltins(),
-                    new ObjectBuiltins(),
-                    new CellBuiltins(),
-                    new BoolBuiltins(),
-                    new FloatBuiltins(),
-                    new BytesBuiltins(),
-                    new ComplexBuiltins(),
-                    new ByteArrayBuiltins(),
-                    new TypeBuiltins(),
-                    new IntBuiltins(),
-                    new TruffleObjectBuiltins(),
-                    new ListBuiltins(),
-                    new DictBuiltins(),
-                    new DictViewBuiltins(),
-                    new DictValuesBuiltins(),
-                    new DictKeysIteratorBuiltins(),
-                    new DictValuesIteratorBuiltins(),
-                    new DictItemsIteratorBuiltins(),
-                    new RangeBuiltins(),
-                    new SliceBuiltins(),
-                    new TupleBuiltins(),
-                    new StringBuiltins(),
-                    new SetBuiltins(),
-                    new FrozenSetBuiltins(),
-                    new IteratorBuiltins(),
-                    new ReversedBuiltins(),
-                    new PZipBuiltins(),
-                    new EnumerateBuiltins(),
-                    new SentinelIteratorBuiltins(),
-                    new ForeignIteratorBuiltins(),
-                    new GeneratorBuiltins(),
-                    new AbstractFunctionBuiltins(),
-                    new FunctionBuiltins(),
-                    new BuiltinFunctionBuiltins(),
-                    new AbstractMethodBuiltins(),
-                    new MethodBuiltins(),
-                    new BuiltinMethodBuiltins(),
-                    new CodeBuiltins(),
-                    new FrameBuiltins(),
-                    new MappingproxyBuiltins(),
-                    new GetSetDescriptorTypeBuiltins(),
-                    new BaseExceptionBuiltins(),
-                    new PosixModuleBuiltins(),
-                    new ImpModuleBuiltins(),
-                    new ArrayModuleBuiltins(),
-                    new ArrayBuiltins(),
-                    new TimeModuleBuiltins(),
-                    new MathModuleBuiltins(),
-                    new MarshalModuleBuiltins(),
-                    new RandomModuleBuiltins(),
-                    new RandomBuiltins(),
-                    new TruffleCextBuiltins(),
-                    new WeakRefModuleBuiltins(),
-                    new ReferenceTypeBuiltins(),
-                    new IOModuleBuiltins(),
-                    new StringModuleBuiltins(),
-                    new ItertoolsModuleBuiltins(),
-                    new FunctoolsModuleBuiltins(),
-                    new ErrnoModuleBuiltins(),
-                    new CodecsModuleBuiltins(),
-                    new CollectionsModuleBuiltins(),
-                    new JavaModuleBuiltins(),
-                    new SREModuleBuiltins(),
-                    new AstModuleBuiltins(),
-                    new SelectModuleBuiltins(),
-                    new SignalModuleBuiltins(),
-                    new TracebackBuiltins(),
-                    new GcModuleBuiltins(),
-                    new AtexitModuleBuiltins(),
-                    new FaulthandlerModuleBuiltins(),
-                    new UnicodeDataModuleBuiltins(),
-                    new LocaleModuleBuiltins(),
-                    new SysModuleBuiltins(),
-                    new BufferBuiltins(),
-                    new MemoryviewBuiltins(),
-                    new SuperBuiltins(),
-    };
+    private final PythonBuiltins[] builtins;
+
+    private static final PythonBuiltins[] initializeBuiltins() {
+        List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
+                        new BuiltinConstructors(),
+                        new BuiltinFunctions(),
+                        new InteropModuleBuiltins(),
+                        new ObjectBuiltins(),
+                        new CellBuiltins(),
+                        new BoolBuiltins(),
+                        new FloatBuiltins(),
+                        new BytesBuiltins(),
+                        new ComplexBuiltins(),
+                        new ByteArrayBuiltins(),
+                        new TypeBuiltins(),
+                        new IntBuiltins(),
+                        new TruffleObjectBuiltins(),
+                        new ListBuiltins(),
+                        new DictBuiltins(),
+                        new DictViewBuiltins(),
+                        new DictValuesBuiltins(),
+                        new DictKeysIteratorBuiltins(),
+                        new DictValuesIteratorBuiltins(),
+                        new DictItemsIteratorBuiltins(),
+                        new RangeBuiltins(),
+                        new SliceBuiltins(),
+                        new TupleBuiltins(),
+                        new StringBuiltins(),
+                        new SetBuiltins(),
+                        new FrozenSetBuiltins(),
+                        new IteratorBuiltins(),
+                        new ReversedBuiltins(),
+                        new PZipBuiltins(),
+                        new EnumerateBuiltins(),
+                        new SentinelIteratorBuiltins(),
+                        new ForeignIteratorBuiltins(),
+                        new GeneratorBuiltins(),
+                        new AbstractFunctionBuiltins(),
+                        new FunctionBuiltins(),
+                        new BuiltinFunctionBuiltins(),
+                        new AbstractMethodBuiltins(),
+                        new MethodBuiltins(),
+                        new BuiltinMethodBuiltins(),
+                        new CodeBuiltins(),
+                        new FrameBuiltins(),
+                        new MappingproxyBuiltins(),
+                        new GetSetDescriptorTypeBuiltins(),
+                        new BaseExceptionBuiltins(),
+                        new PosixModuleBuiltins(),
+                        new ImpModuleBuiltins(),
+                        new ArrayModuleBuiltins(),
+                        new ArrayBuiltins(),
+                        new TimeModuleBuiltins(),
+                        new MathModuleBuiltins(),
+                        new MarshalModuleBuiltins(),
+                        new RandomModuleBuiltins(),
+                        new RandomBuiltins(),
+                        new TruffleCextBuiltins(),
+                        new WeakRefModuleBuiltins(),
+                        new ReferenceTypeBuiltins(),
+                        new IOModuleBuiltins(),
+                        new StringModuleBuiltins(),
+                        new ItertoolsModuleBuiltins(),
+                        new FunctoolsModuleBuiltins(),
+                        new ErrnoModuleBuiltins(),
+                        new CodecsModuleBuiltins(),
+                        new CollectionsModuleBuiltins(),
+                        new JavaModuleBuiltins(),
+                        new SREModuleBuiltins(),
+                        new AstModuleBuiltins(),
+                        new SelectModuleBuiltins(),
+                        new SocketModuleBuiltins(),
+                        new SignalModuleBuiltins(),
+                        new TracebackBuiltins(),
+                        new GcModuleBuiltins(),
+                        new AtexitModuleBuiltins(),
+                        new FaulthandlerModuleBuiltins(),
+                        new UnicodeDataModuleBuiltins(),
+                        new LocaleModuleBuiltins(),
+                        new SysModuleBuiltins(),
+                        new BufferBuiltins(),
+                        new MemoryviewBuiltins(),
+                        new SuperBuiltins(),
+                        new BinasciiModuleBuiltins(),
+                        new PosixSubprocessModuleBuiltins(),
+                        new CtypesModuleBuiltins(),
+                        new ReadlineModuleBuiltins(),
+                        new PyExpatModuleBuiltins()));
+        if (!TruffleOptions.AOT) {
+            ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
+            for (PythonBuiltins builtin : providers) {
+                builtins.add(builtin);
+            }
+        }
+        return builtins.toArray(new PythonBuiltins[builtins.size()]);
+    }
 
     // not using EnumMap, HashMap, etc. to allow this to fold away during partial evaluation
     @CompilationFinal(dimensions = 1) private final PythonBuiltinClass[] builtinTypes = new PythonBuiltinClass[PythonBuiltinClassType.VALUES.length];
@@ -289,6 +322,7 @@ public final class Python3Core implements PythonCore {
 
     public Python3Core(PythonParser parser) {
         this.parser = parser;
+        this.builtins = initializeBuiltins();
     }
 
     @Override
@@ -338,7 +372,7 @@ public final class Python3Core implements PythonCore {
 
     @Override
     public void postInitialize() {
-        if (!getLanguage().isNativeBuildTime()) {
+        if (!TruffleOptions.AOT || ImageInfo.inImageRuntimeCode()) {
             initialized = false;
 
             loadFile(__BUILTINS_PATCHES__, PythonCore.getCoreHomeOrFail());
@@ -482,7 +516,7 @@ public final class Python3Core implements PythonCore {
         // n.b.: the builtin modules and classes and their constructors are initialized first here,
         // so we have the mapping from java classes to python classes and builtin names to modules
         // available.
-        for (PythonBuiltins builtin : BUILTINS) {
+        for (PythonBuiltins builtin : builtins) {
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
                 createModule(annotation.defineModule());
@@ -501,7 +535,7 @@ public final class Python3Core implements PythonCore {
     }
 
     private void populateBuiltins() {
-        for (PythonBuiltins builtin : BUILTINS) {
+        for (PythonBuiltins builtin : builtins) {
             builtin.initialize(this);
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
@@ -532,14 +566,14 @@ public final class Python3Core implements PythonCore {
         return mod;
     }
 
-    private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtins) {
-        Map<String, Object> builtinConstants = builtins.getBuiltinConstants();
+    private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtinsForObj) {
+        Map<String, Object> builtinConstants = builtinsForObj.getBuiltinConstants();
         for (Map.Entry<String, Object> entry : builtinConstants.entrySet()) {
             String constantName = entry.getKey();
             obj.setAttribute(constantName, entry.getValue());
         }
 
-        Map<String, BoundBuiltinCallable<?>> builtinFunctions = builtins.getBuiltinFunctions();
+        Map<String, BoundBuiltinCallable<?>> builtinFunctions = builtinsForObj.getBuiltinFunctions();
         for (Entry<String, BoundBuiltinCallable<?>> entry : builtinFunctions.entrySet()) {
             String methodName = entry.getKey();
             Object value;
@@ -552,7 +586,7 @@ public final class Python3Core implements PythonCore {
             obj.setAttribute(methodName, value);
         }
 
-        Map<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> builtinClasses = builtins.getBuiltinClasses();
+        Map<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> builtinClasses = builtinsForObj.getBuiltinClasses();
         for (Entry<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> entry : builtinClasses.entrySet()) {
             boolean isPublic = entry.getValue().getValue();
             if (isPublic) {
@@ -592,7 +626,8 @@ public final class Python3Core implements PythonCore {
 
     private void loadFile(String s, String prefix) {
         Source source = getSource(s, prefix);
-        CallTarget callTarget = getContext().getEnv().parse(source);
+        Supplier<PCode> getCode = () -> factory.createCode((RootNode) getParser().parse(ParserMode.File, this, source, null));
+        RootCallTarget callTarget = getLanguage().cacheCode(source.getName(), getCode).getRootCallTarget();
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects

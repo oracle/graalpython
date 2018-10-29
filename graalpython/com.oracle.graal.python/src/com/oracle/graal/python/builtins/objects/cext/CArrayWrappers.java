@@ -53,6 +53,10 @@ public abstract class CArrayWrappers {
 
     public abstract static class CArrayWrapper extends PythonNativeWrapper {
 
+        public CArrayWrapper(Object delegate) {
+            super(delegate);
+        }
+
         static boolean isInstance(TruffleObject o) {
             return o instanceof CArrayWrapper;
         }
@@ -71,15 +75,12 @@ public abstract class CArrayWrappers {
      */
     public static class CStringWrapper extends CArrayWrapper {
 
-        private final String delegate;
-
         public CStringWrapper(String delegate) {
-            this.delegate = delegate;
+            super(delegate);
         }
 
-        @Override
-        public String getDelegate() {
-            return delegate;
+        public String getString() {
+            return (String) getDelegate();
         }
 
     }
@@ -90,15 +91,12 @@ public abstract class CArrayWrappers {
      */
     public static class CByteArrayWrapper extends CArrayWrapper {
 
-        private final byte[] delegate;
-
         public CByteArrayWrapper(byte[] delegate) {
-            this.delegate = delegate;
+            super(delegate);
         }
 
-        @Override
-        public byte[] getDelegate() {
-            return delegate;
+        public byte[] getByteArray() {
+            return (byte[]) getDelegate();
         }
 
     }

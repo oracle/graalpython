@@ -81,7 +81,7 @@ public class PyUnicodeWrapperMR {
                 case NativeMemberNames.UNICODE_DATA_UCS2:
                 case NativeMemberNames.UNICODE_DATA_UCS4:
                     elementSize = (int) getSizeofWcharNode().execute();
-                    PString s = object.getDelegate();
+                    PString s = object.getPString();
                     return new PySequenceArrayWrapper(getAsWideCharNode().execute(s, elementSize, s.len()), elementSize);
             }
             throw UnknownIdentifierException.raise(key);
@@ -90,7 +90,7 @@ public class PyUnicodeWrapperMR {
         public Object access(PyUnicodeState object, String key) {
             // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
             int value = 0b000000000000000000000000_1_0_0_000_00;
-            if (onlyAscii(object.getDelegate().getValue())) {
+            if (onlyAscii(object.getPString().getValue())) {
                 value |= 0b1_0_000_00;
             }
             value |= ((int) getSizeofWcharNode().execute() << 2) & 0b11100;
@@ -148,7 +148,7 @@ public class PyUnicodeWrapperMR {
 
         Object access(PyUnicodeWrapper obj) {
             if (!obj.isNative()) {
-                obj.setNativePointer(toPyObjectNode.execute(obj.getDelegate()));
+                obj.setNativePointer(toPyObjectNode.execute(obj));
             }
             return obj;
         }

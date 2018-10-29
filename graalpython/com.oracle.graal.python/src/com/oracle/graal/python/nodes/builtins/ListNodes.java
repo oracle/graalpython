@@ -89,7 +89,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public abstract class ListNodes {
 
-    public final static class CreateListFromIteratorNode extends PNodeWithContext {
+    public final static class CreateStorageFromIteratorNode extends PNodeWithContext {
 
         private static final int START_SIZE = 2;
 
@@ -99,11 +99,11 @@ public abstract class ListNodes {
 
         @CompilationFinal private ListStorageType type = ListStorageType.Uninitialized;
 
-        public static CreateListFromIteratorNode create() {
-            return new CreateListFromIteratorNode();
+        public static CreateStorageFromIteratorNode create() {
+            return new CreateStorageFromIteratorNode();
         }
 
-        public PList execute(LazyPythonClass cls, Object iterator) {
+        public SequenceStorage execute(Object iterator) {
             SequenceStorage storage;
             if (type == ListStorageType.Uninitialized) {
                 try {
@@ -152,6 +152,7 @@ public abstract class ListNodes {
                                     int value = next.executeInt(iterator);
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
+                                        array = elements;
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
@@ -170,6 +171,7 @@ public abstract class ListNodes {
                                     long value = next.executeLong(iterator);
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
+                                        array = elements;
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
@@ -188,6 +190,7 @@ public abstract class ListNodes {
                                     double value = next.executeDouble(iterator);
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
+                                        array = elements;
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
@@ -206,6 +209,7 @@ public abstract class ListNodes {
                                     PList value = PList.expect(next.execute(iterator));
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
+                                        array = elements;
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
@@ -224,6 +228,7 @@ public abstract class ListNodes {
                                     PTuple value = PTuple.expect(next.execute(iterator));
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
+                                        array = elements;
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
@@ -259,7 +264,7 @@ public abstract class ListNodes {
                     storage = genericFallback(iterator, array, i, e.getResult());
                 }
             }
-            return factory().createList(cls, storage);
+            return storage;
         }
 
         private SequenceStorage genericFallback(Object iterator, Object array, int count, Object result) {
@@ -322,10 +327,11 @@ public abstract class ListNodes {
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
         public PList listIterable(LazyPythonClass cls, Object iterable,
                         @Cached("create()") GetIteratorNode getIteratorNode,
-                        @Cached("create()") CreateListFromIteratorNode createListFromIteratorNode) {
+                        @Cached("create()") CreateStorageFromIteratorNode createStorageFromIteratorNode) {
 
             Object iterObj = getIteratorNode.executeWith(iterable);
-            return createListFromIteratorNode.execute(cls, iterObj);
+            SequenceStorage storage = createStorageFromIteratorNode.execute(iterObj);
+            return factory().createList(cls, storage);
         }
 
         @Fallback

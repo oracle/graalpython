@@ -35,10 +35,12 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -51,7 +53,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 
 public final class PythonContext {
@@ -192,7 +193,7 @@ public final class PythonContext {
 
     private void setupRuntimeInformation() {
         PythonModule sysModule = core.initializeSysModule();
-        if (TruffleOptions.AOT && !language.isNativeBuildTime()) {
+        if (ImageInfo.inImageRuntimeCode() && isExecutableAccessAllowed()) {
             sysModule.setAttribute("executable", ProcessProperties.getExecutableName());
         }
         sysModules = (PDict) sysModule.getAttribute("modules");
@@ -200,6 +201,7 @@ public final class PythonContext {
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
         sysModules.setItem(__MAIN__, mainModule);
+        OpaqueBytes.initializeForNewContext(this);
         currentException = null;
         isInitialized = true;
     }
@@ -259,5 +261,9 @@ public final class PythonContext {
 
     public static Assumption getSingleNativeContextAssumption() {
         return singleNativeContext;
+    }
+
+    public boolean isExecutableAccessAllowed() {
+        return getEnv().isHostLookupAllowed() || getEnv().isNativeAccessAllowed();
     }
 }

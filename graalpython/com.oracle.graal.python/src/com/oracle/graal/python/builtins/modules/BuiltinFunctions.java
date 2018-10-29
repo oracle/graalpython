@@ -78,9 +78,11 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.NextNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -171,6 +173,7 @@ import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.Source;
 
 @CoreFunctions(defineModule = "builtins")
@@ -488,33 +491,37 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PCode code, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
+        public Object eval(VirtualFrame frame, PCode code, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
+                        @Cached("createIdentityProfile()") ValueProfile constantCt) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(code, callerGlobals, callerGlobals, callerClosure);
+            return evalExpression(constantCt.profile(code.getRootCallTarget()), callerGlobals, callerGlobals, callerClosure);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PCode code, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
+        public Object eval(VirtualFrame frame, PCode code, PythonObject globals, @SuppressWarnings("unused") PNone locals,
+                        @Cached("createIdentityProfile()") ValueProfile constantCt) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(code, globals, globals, callerClosure);
+            return evalExpression(constantCt.profile(code.getRootCallTarget()), globals, globals, callerClosure);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PCode code, PythonObject globals, PythonObject locals) {
+        public Object eval(VirtualFrame frame, PCode code, PythonObject globals, PythonObject locals,
+                        @Cached("createIdentityProfile()") ValueProfile constantCt) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(code, globals, locals, callerClosure);
+            return evalExpression(constantCt.profile(code.getRootCallTarget()), globals, locals, callerClosure);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PCode code, @SuppressWarnings("unused") PNone globals, PythonObject locals) {
+        public Object eval(VirtualFrame frame, PCode code, @SuppressWarnings("unused") PNone globals, PythonObject locals,
+                        @Cached("createIdentityProfile()") ValueProfile constantCt) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(code, callerGlobals, locals, callerClosure);
+            return evalExpression(constantCt.profile(code.getRootCallTarget()), callerGlobals, locals, callerClosure);
         }
 
         @Specialization
@@ -551,8 +558,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object evalExpression(PCode code, PythonObject globals, PythonObject locals, PCell[] closure) {
-            return evalNode(code.getRootCallTarget(), globals, locals, closure);
+        private static Object evalExpression(RootCallTarget ct, PythonObject globals, PythonObject locals, PCell[] closure) {
+            return evalNode(ct, globals, locals, closure);
         }
 
         @TruffleBoundary
@@ -593,6 +600,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         Object compile(PBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             return compile(new String(toBytesNode.execute(source)), filename, mode, kwFlags, kwDontInherit, kwOptimize);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object compile(OpaqueBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
+            return compile(new String(source.getBytes()), filename, mode, kwFlags, kwDontInherit, kwOptimize);
         }
 
         @SuppressWarnings("unused")
@@ -1151,9 +1164,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @SuppressWarnings("unused")
     @Builtin(name = NEXT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonBuiltinNode {
-
-        @Specialization
+    public abstract static class NextNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(defaultObject)")
         public Object next(Object iterator, PNone defaultObject,
                         @Cached("create()") GetNextNode next,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
@@ -1163,6 +1175,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 e.expectAttributeError(errorProfile);
                 throw raise(TypeError, "'%p' object is not an iterator", iterator);
             }
+        }
+
+        @Specialization(guards = "!isNoValue(defaultObject)")
+        public Object next(Object iterator, Object defaultObject,
+                        @Cached("create()") NextNode next,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+            try {
+                return next.execute(iterator, PNone.NO_VALUE);
+            } catch (PException e) {
+                e.expectStopIteration(errorProfile);
+                return defaultObject;
+            }
+        }
+
+        protected static NextNode create() {
+            return NextNodeFactory.create();
         }
     }
 

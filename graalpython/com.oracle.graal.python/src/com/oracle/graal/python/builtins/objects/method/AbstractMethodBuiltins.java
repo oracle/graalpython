@@ -26,7 +26,6 @@
 
 package com.oracle.graal.python.builtins.objects.method;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -126,16 +125,6 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         @Specialization
         protected Object doIt(PBuiltinMethod self) {
             return self.getName();
-        }
-    }
-
-    @Builtin(name = __CODE__, fixedNumOfPositionalArgs = 1, isGetter = true)
-    @GenerateNodeFactory
-    public abstract static class CodeNode extends PythonBuiltinNode {
-        @Specialization
-        protected Object doIt(PMethod self,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getCode) {
-            return getCode.executeObject(self.getFunction(), __CODE__);
         }
     }
 

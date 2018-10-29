@@ -217,9 +217,10 @@ public abstract class GetClassNode extends PNodeWithContext {
 
     @Specialization
     protected PythonClass getPythonClassGeneric(PythonObject object,
+                    @Cached("create()") GetLazyClassNode getLazyClass,
                     @Cached("createIdentityProfile()") ValueProfile profile,
                     @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
-        return profile.profile(getPythonClass(object.getLazyPythonClass(), getClassProfile));
+        return profile.profile(getPythonClass(getLazyClass.execute(object), getClassProfile));
     }
 
     @Specialization(guards = "isForeignObject(object)", assumptions = "singleContextAssumption()")

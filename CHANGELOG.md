@@ -3,6 +3,16 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 1.0.0 RC9
+
+* Support `help` in the builtin Python shell
+* Add `readline` to enable history and autocompletion in the Python shell
+* Add support for the -q, -E, -s, and -S Python launcher flags
+* Improve display of foreign array-like objects
+* Improve support for string and bytes regular expressions using our TRegex engine
+* Support loading site-packages installed with easy_install
+* Initial support for the `binascii` module
+
 ## Version 1.0.0 RC8
 
 * Report allocations when the `--memtracer` option is used

@@ -81,10 +81,6 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         store.reverse();
     }
 
-    public PByteArray copy() {
-        return new PByteArray(getLazyPythonClass(), store.copy());
-    }
-
     @Override
     public PIBytesLike createFromBytes(PythonObjectFactory factory, byte[] bytes) {
         return factory.createByteArray(bytes);

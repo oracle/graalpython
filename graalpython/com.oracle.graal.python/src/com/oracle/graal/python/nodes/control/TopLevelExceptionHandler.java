@@ -212,7 +212,12 @@ public class TopLevelExceptionHandler extends RootNode {
 
     private Object run(VirtualFrame frame) {
         Object[] arguments = createArgs.execute(frame.getArguments());
-        PArguments.setGlobals(arguments, context.get().getMainModule());
+        if (getSourceSection().getSource().isInternal()) {
+            // internal sources are not run in the main module
+            PArguments.setGlobals(arguments, context.get().getCore().factory().createDict());
+        } else {
+            PArguments.setGlobals(arguments, context.get().getMainModule());
+        }
         return innerCallTarget.call(arguments);
     }
 

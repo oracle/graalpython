@@ -37,6 +37,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -90,6 +91,13 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
                         @Cached("create()") GetLazyClassNode getClassNode) {
             return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
         }
+
+        @Specialization(guards = "!isBuiltinFunction(self)")
+        @TruffleBoundary
+        Object reprBuiltinMethod(PMethod self,
+                        @Cached("create()") GetLazyClassNode getClassNode) {
+            return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
+        }
     }
 
     @Builtin(name = __REDUCE__, fixedNumOfPositionalArgs = 1)
@@ -119,6 +127,22 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
 
         private PException raiseCannotPickle() {
             throw raise(TypeError, "can't pickle function objects");
+        }
+    }
+
+    @Builtin(name = "__text_signature__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
+        @Child AbstractFunctionBuiltins.TextSignatureNode subNode = AbstractFunctionBuiltins.TextSignatureNode.create();
+
+        @Specialization
+        Object getTextSignature(PBuiltinMethod self) {
+            return subNode.execute(self.getFunction());
+        }
+
+        @Specialization
+        Object getTextSignature(PMethod self) {
+            return subNode.execute(self.getFunction());
         }
     }
 }

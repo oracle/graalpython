@@ -111,10 +111,10 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         public String repr(PythonClass self,
-                        @Cached("create()") ReadAttributeFromObjectNode readModuleNode,
-                        @Cached("create()") ReadAttributeFromObjectNode readQualNameNode) {
-            Object moduleName = readModuleNode.execute(self, __MODULE__);
-            Object qualName = readQualNameNode.execute(self, __QUALNAME__);
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode readModuleNode,
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode readQualNameNode) {
+            Object moduleName = readModuleNode.executeObject(self, __MODULE__);
+            Object qualName = readQualNameNode.executeObject(self, __QUALNAME__);
             return concat(moduleName, qualName);
         }
 
@@ -427,8 +427,8 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization
         public boolean isInstance(PythonClass cls, Object instance,
                         @Cached("create()") IsSubtypeNode isSubtypeNode,
-                        @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
-            if (instance instanceof PythonObject && isSubtypeNode.execute(getPythonClass(((PythonObject) instance).getLazyPythonClass(), getClassProfile), cls)) {
+                        @Cached("create()") GetClassNode getClass) {
+            if (instance instanceof PythonObject && isSubtypeNode.execute(getClass.execute(instance), cls)) {
                 return true;
             }
 

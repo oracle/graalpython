@@ -44,8 +44,15 @@ from time import time
 
 
 _HRULE = '-'.join(['' for i in range(80)])
-ATTR_BENCHMARK = '__benchmark__'
+
+#: this function is used to pre-process the arguments as expected by the __benchmark__ and __setup__ entry points
 ATTR_PROCESS_ARGS = '__process_args__'
+#: gets called with the preprocessed arguments before __benchmark__
+ATTR_SETUP = '__setup__'
+#: gets called with the preprocessed arguments N times
+ATTR_BENCHMARK = '__benchmark__'
+#: performs any teardown needed in the benchmark
+ATTR_TEARDOWN = '__teardown__'
 
 
 def ccompile(name, code):
@@ -131,7 +138,6 @@ class BenchRunner(object):
             return attr(*args)
 
     def run(self):
-        print(_HRULE)
         if self._run_once:
             print("### %s, exactly one iteration (no warmup curves)" % (self.bench_module.__name__))
         else:
@@ -143,10 +149,15 @@ class BenchRunner(object):
             # default args processor considers all args as ints
             args = list(map(int, self.bench_args))
 
-        print("### args = %s" % args)
+        print("### args = ", args)
         print(_HRULE)
 
+        print("### setup ... ")
+        self._call_attr(ATTR_SETUP, *args)
+        print("### start benchmark ... ")
+
         bench_func = self._get_attr(ATTR_BENCHMARK)
+        durations = []
         if bench_func and hasattr(bench_func, '__call__'):
             if self.warmup:
                 print("### warming up for %s iterations ... " % self.warmup)
@@ -156,18 +167,31 @@ class BenchRunner(object):
             for iteration in range(self.iterations):
                 start = time()
                 bench_func(*args)
-                duration = "%.3f" % (time() - start)
+                duration = time() - start
+                durations.append(duration)
+                duration_str = "%.3f" % duration
                 if self._run_once:
-                    print("@@@ name=%s, duration=%s" % (self.bench_module.__name__, duration))
+                    print("@@@ name=%s, duration=%s" % (self.bench_module.__name__, duration_str))
                 else:
-                    print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__, duration))
+                    print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__, duration_str))
+
+        print(_HRULE)
+        print("### teardown ... ")
+        self._call_attr(ATTR_TEARDOWN)
+        print("### benchmark complete")
+        print(_HRULE)
+        print("### BEST     duration: %.3f s" % min(durations))
+        print("### WORST    duration: %.3f s" % max(durations))
+        print("### AVG      duration: %.3f" % (sum(durations) / len(durations)))
+        print(_HRULE)
 
 
-def run_benchmark(prog, args):
+def run_benchmark(args):
     warmup = 0
     iterations = 1
     bench_file = None
     bench_args = []
+    paths = []
 
     i = 0
     while i < len(args):
@@ -177,19 +201,36 @@ def run_benchmark(prog, args):
             iterations = _as_int(args[i])
         elif arg.startswith("--iterations"):
             iterations = _as_int(arg.split("=")[1])
+
         elif arg == '-w':
             i += 1
             warmup = _as_int(args[i])
         elif arg.startswith("--warmup"):
             warmup = _as_int(arg.split("=")[1])
+
+        elif arg == '-p':
+            i += 1
+            paths = args[i].split(",")
+        elif arg.startswith("--path"):
+            paths = arg.split("=")[1].split(",")
+
         elif bench_file is None:
             bench_file = arg
         else:
             bench_args.append(arg)
         i += 1
 
+    # set the paths if specified
+    print(_HRULE)
+    if paths:
+        for pth in paths:
+            print("### adding module path: %s" % pth)
+            sys.path.append(pth)
+    else:
+        print("### no extra module search paths specified")
+
     BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup).run()
 
 
 if __name__ == '__main__':
-    run_benchmark(sys.argv[0], sys.argv[1:])
+    run_benchmark(sys.argv[1:])

@@ -31,6 +31,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
@@ -39,13 +40,13 @@ import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeChildren({@NodeChild(value = "withContext", type = ExpressionNode.class)})
 public abstract class WithNode extends StatementNode {
@@ -58,8 +59,6 @@ public abstract class WithNode extends StatementNode {
     @Child private CallDispatchNode exitDispatch = CallDispatchNode.create();
     @Child private CastToBooleanNode toBooleanNode = CastToBooleanNode.createIfTrueNode();
     @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
-
-    private final ConditionProfile getClassProfile = ConditionProfile.createBinaryProfile();
 
     protected WithNode(WriteNode targetNode, StatementNode body) {
         this.targetNode = targetNode;
@@ -91,6 +90,7 @@ public abstract class WithNode extends StatementNode {
 
     @Specialization
     protected void runWith(VirtualFrame frame, Object withObject,
+                    @Cached("create()") GetClassNode getClassNode,
                     @Cached("create()") IsCallableNode isCallableNode,
                     @Cached("create()") IsCallableNode isExitCallableNode) {
 
@@ -110,7 +110,7 @@ public abstract class WithNode extends StatementNode {
             body.executeVoid(frame);
         } catch (PException exception) {
             gotException = true;
-            handleException(frame, withObject, exitCallable, exception, isExitCallableNode);
+            handleException(frame, withObject, exitCallable, exception, isExitCallableNode, getClassNode);
         } finally {
             if (!gotException) {
                 if (isExitCallableNode.execute(exitCallable)) {
@@ -123,14 +123,14 @@ public abstract class WithNode extends StatementNode {
         }
     }
 
-    private void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException e, IsCallableNode isExitCallableNode) {
+    private void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException e, IsCallableNode isExitCallableNode, GetClassNode getClassNode) {
         if (!isExitCallableNode.execute(exitCallable)) {
             throw raise(TypeError, "%p is not callable", exitCallable);
         }
 
         e.getExceptionObject().reifyException();
         PBaseException value = e.getExceptionObject();
-        Object type = getPythonClass(value.getLazyPythonClass(), getClassProfile);
+        PythonClass type = getClassNode.execute(value);
         Object trace = e.getExceptionObject().getTraceback(factory());
         Object returnValue = exitDispatch.executeCall(frame, exitCallable, createArgs.execute(withObject, type, value, trace), new PKeyword[0]);
         // If exit handler returns 'true', suppress

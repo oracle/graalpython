@@ -415,10 +415,42 @@ public class IntBuiltins extends PythonBuiltins {
             return Math.floorDiv(left, right);
         }
 
-        @Specialization
-        PInt doLPi(long left, PInt right) {
+        @Specialization(rewriteOn = ArithmeticException.class)
+        int doLPi(int left, PInt right) throws ArithmeticException {
             raiseDivisionByZero(right.isZero());
-            return factory().createInt(op(BigInteger.valueOf(left), right.getValue()));
+            return Math.floorDiv(left, right.intValueExact());
+        }
+
+        @Specialization
+        int doLPiOvf(int left, PInt right) {
+            raiseDivisionByZero(right.isZero());
+            try {
+                return Math.floorDiv(left, right.intValueExact());
+            } catch (ArithmeticException e) {
+                return 0;
+            }
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        long doLPi(long left, PInt right) throws ArithmeticException {
+            raiseDivisionByZero(right.isZero());
+            return Math.floorDiv(left, right.longValueExact());
+        }
+
+        @Specialization
+        long doLPiOvf(long left, PInt right) {
+            raiseDivisionByZero(right.isZero());
+            try {
+                return Math.floorDiv(left, right.longValueExact());
+            } catch (ArithmeticException e) {
+                return 0;
+            }
+        }
+
+        @Specialization
+        PInt doPiL(PInt left, int right) {
+            raiseDivisionByZero(right == 0);
+            return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
         }
 
         @Specialization

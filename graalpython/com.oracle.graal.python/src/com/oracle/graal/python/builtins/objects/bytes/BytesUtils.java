@@ -199,7 +199,9 @@ public final class BytesUtils {
                     }
                     throw errors.raise(ValueError, "invalid \\x escape at position %d", i);
                 default:
-                    if (regexMode) {
+                    if (regexMode && (chr == '\\' || chr == 'g' || (chr >= '0' && chr <= '9'))) {
+                        // only allow backslashes, named group references and numbered group
+                        // references in regex mode
                         charList.append('\\');
                         charList.append(chr);
                     } else {

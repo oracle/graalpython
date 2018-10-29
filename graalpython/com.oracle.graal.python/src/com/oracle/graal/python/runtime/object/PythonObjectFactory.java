@@ -94,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -589,7 +590,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PArray(cls, store));
     }
 
-    public PByteArray createByteArray(PythonClass cls, byte[] array) {
+    public PByteArray createByteArray(LazyPythonClass cls, byte[] array) {
         return trace(new PByteArray(cls, array));
     }
 
@@ -730,5 +731,17 @@ public final class PythonObjectFactory extends Node {
                         codestring, constants, names,
                         varnames, freevars, cellvars,
                         filename, name, firstlineno, lnotab));
+    }
+
+    /*
+     * Socket
+     */
+
+    public PSocket createSocket(int family, int type, int proto) {
+        return trace(new PSocket(PythonBuiltinClassType.PSocket, family, type, proto));
+    }
+
+    public PSocket createSocket(PythonClass cls, int family, int type, int proto) {
+        return trace(new PSocket(cls, family, type, proto));
     }
 }

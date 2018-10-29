@@ -53,9 +53,13 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -295,7 +299,33 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = "join", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class JoinNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        /**
+         * @param bytes - the parameter is used to force the DSL to make this a dynamic check
+         */
+        protected boolean readOpaque(PBytes bytes) {
+            return OpaqueBytes.isEnabled(getContext());
+        }
+
+        @Specialization(guards = {"readOpaque(bytes)"})
+        public Object join(PBytes bytes, PList iterable,
+                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
+                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
+                        @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
+            int len = lenNode.execute(iterable.getSequenceStorage());
+            if (len == 1) {
+                // branch profiles aren't really needed, because of the specialization
+                // happening in the getItemNode on first execution and the assumption
+                // in OpaqueBytes.isInstance
+                Object firstItem = getItemNode.execute(iterable.getSequenceStorage(), 0);
+                if (OpaqueBytes.isInstance(firstItem)) {
+                    return firstItem;
+                }
+            }
+            return join(bytes, iterable, toByteArrayNode, bytesJoinNode);
+        }
+
+        @Specialization(guards = {"!readOpaque(bytes)"})
         public PBytes join(PBytes bytes, Object iterable,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
@@ -484,6 +514,32 @@ public class BytesBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object getitem(PBytes self, Object idx, Object value) {
             throw raise(TypeError, "'bytes' object does not support item assignment");
+        }
+    }
+
+    // static str.maketrans()
+    @Builtin(name = "maketrans", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class MakeTransNode extends PythonBuiltinNode {
+
+        @Specialization
+        public PDict maketrans(PBytes from, PBytes to,
+                        @Cached("create()") SetItemNode setItemNode,
+                        @Cached("create()") ToByteArrayNode toByteArrayNode) {
+            byte[] fromB = toByteArrayNode.execute(from.getSequenceStorage());
+            byte[] toB = toByteArrayNode.execute(to.getSequenceStorage());
+            if (fromB.length != toB.length) {
+                throw new RuntimeException("maketrans arguments must have same length");
+            }
+
+            PDict translation = factory().createDict();
+            for (int i = 0; i < fromB.length; i++) {
+                int key = fromB[i];
+                int value = toB[i];
+                setItemNode.execute(translation, key, value);
+            }
+
+            return translation;
         }
     }
 }

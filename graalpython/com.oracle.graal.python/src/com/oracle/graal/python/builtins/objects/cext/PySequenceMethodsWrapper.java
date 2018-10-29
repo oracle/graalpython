@@ -50,15 +50,8 @@ import com.oracle.truffle.api.interop.TruffleObject;
  */
 public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
-    private final PythonClass delegate;
-
     public PySequenceMethodsWrapper(PythonClass delegate) {
-        this.delegate = delegate;
-    }
-
-    @Override
-    public PythonClass getDelegate() {
-        return delegate;
+        super(delegate);
     }
 
     static boolean isInstance(TruffleObject o) {
@@ -68,5 +61,9 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
     @Override
     public ForeignAccess getForeignAccess() {
         return PySequenceMethodsWrapperMRForeign.ACCESS;
+    }
+
+    public PythonClass getPythonClass() {
+        return (PythonClass) getDelegate();
     }
 }

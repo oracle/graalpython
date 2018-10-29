@@ -35,6 +35,19 @@ def partition(self, sep):
 str.partition = partition
 
 
+def expandtabs(self, tabsize=8):
+    """
+    S.expandtabs(tabsize=8) -> str
+
+    Return a copy of S where all tab characters are expanded using spaces.
+    If tabsize is not given, a tab size of 8 characters is assumed.
+    """
+    return self.replace("\t", " " * tabsize)
+
+
+str.expandtabs = expandtabs
+
+
 # Auto number state
 ANS_INIT = 1
 ANS_AUTO = 2
@@ -326,9 +339,9 @@ class TemplateFormatter(object):
         return iter(self.parser_list)
 
 
-def strformat(self, *args, **kwargs):
-    template = TemplateFormatter(self)
-    return template.build(args, kwargs)
+def strformat(___self, *___args, **___kwargs):
+    template = TemplateFormatter(___self)
+    return template.build(___args, ___kwargs)
 
 
 str.format = strformat

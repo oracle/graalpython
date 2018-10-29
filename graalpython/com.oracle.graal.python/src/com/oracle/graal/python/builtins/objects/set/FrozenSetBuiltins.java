@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -107,9 +108,9 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object reduce(PBaseSet self,
-                        @Cached("createBinaryProfile()") ConditionProfile classProfile) {
+                        @Cached("create()") GetLazyClassNode getClass) {
             PTuple contents = factory().createTuple(new Object[]{factory().createList(self.getDictStorage().keysAsArray())});
-            return factory().createTuple(new Object[]{getPythonClass(self.getLazyPythonClass(), classProfile), contents, PNone.NONE});
+            return factory().createTuple(new Object[]{getClass.execute(self), contents, PNone.NONE});
         }
     }
 

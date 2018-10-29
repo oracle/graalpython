@@ -176,3 +176,11 @@ def test_builtin_open():
         unlink(file_name)
 
     assert success
+
+
+import sys
+if getattr(sys, "graal_python_opaque_filesystem", False):
+    # this cannot possibly work with opaque files
+    for k in globals():
+        if k.startswith("test_"):
+            del globals()[k]

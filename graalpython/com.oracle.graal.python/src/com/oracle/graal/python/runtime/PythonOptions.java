@@ -82,8 +82,21 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "This option is set by the Python launcher to tell the language it can print exceptions directly") //
     public static final OptionKey<Boolean> AlwaysRunExcepthook = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.USER, help = "This option makes reading from files return opaque objects. Imports can work with such data, " +
+                    "but all other access to the contents of the file is disabled, so the files are kept secret.") //
+    public static final OptionKey<Boolean> OpaqueFilesystem = new OptionKey<>(false);
+
     @Option(category = OptionCategory.USER, help = "") //
     public static final OptionKey<Boolean> InspectFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "") //
+    public static final OptionKey<Boolean> QuietFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "") //
+    public static final OptionKey<Boolean> NoSiteFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "") //
+    public static final OptionKey<Boolean> NoUserSiteFlag = new OptionKey<>(false);
 
     @Option(category = OptionCategory.USER, help = "") //
     public static final OptionKey<String> PythonPath = new OptionKey<>("");
@@ -114,6 +127,14 @@ public final class PythonOptions {
 
     @TruffleBoundary
     public static int getIntOption(PythonContext context, OptionKey<Integer> key) {
+        if (context == null) {
+            return key.getDefaultValue();
+        }
+        return context.getOptions().get(key);
+    }
+
+    @TruffleBoundary
+    public static boolean getFlag(PythonContext context, OptionKey<Boolean> key) {
         if (context == null) {
             return key.getDefaultValue();
         }

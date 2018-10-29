@@ -57,20 +57,25 @@ PyObject* ci_item(PyObject* self, Py_ssize_t i);
 int ci_init(PyObject* self, PyObject* args, PyObject* kwds);
 
 PyObject* ci_iter(PyObject* self) {
-    return ((NativeCustomIterableObject*)self)->it;
+    PyObject* result = ((NativeCustomIterableObject*)self)->it;
+    Py_INCREF(result);
+    return result;
 }
 
 PyObject* cit_iter(PyObject* self) {
+    Py_INCREF(self);
     return self;
 }
 
 PyObject* cit_next(PyObject* self) {
     NativeCustomIteratorObject* s = (NativeCustomIteratorObject*)self;
-    return PyLong_FromLongLong(ci_item((PyObject*)(s->obj), (s->pos)++));
+    return ci_item((PyObject*)(s->obj), (s->pos)++);
 }
 
 PyObject* ci_item(PyObject* self, Py_ssize_t i) {
-    return ((NativeCustomIterableObject*)self)->scale * i;
+    PyObject* result = PyLong_FromSsize_t(((NativeCustomIterableObject*)self)->scale * i);
+    Py_INCREF(result);
+    return result;
 }
 
 
@@ -177,6 +182,8 @@ static PyTypeObject CustomIterableType = {
 };
 
 int ci_init(PyObject* self, PyObject* args, PyObject* kwds) {
+    Py_XINCREF(args);
+    Py_XINCREF(kwds);
     static char *kwlist[] = {"scale", NULL};
     Py_ssize_t n = 0;
 
@@ -187,7 +194,11 @@ int ci_init(PyObject* self, PyObject* args, PyObject* kwds) {
     tself->scale = n + 1;
 
     PyObject *argList = PyTuple_New(0);
+    Py_INCREF(argList);
     PyObject *obj = PyObject_CallObject((PyObject *) &CustomIteratorType, argList);
+    Py_DECREF(argList);
+    Py_INCREF(obj);
+    Py_INCREF(tself);
     ((NativeCustomIteratorObject*)obj)->obj = tself;
     tself->it = obj;
 
@@ -221,6 +232,7 @@ PyInit_c_custom_iterable_module(void)
     Py_INCREF(&CustomIteratorType);
     PyModule_AddObject(m, "NativeCustomIterable", (PyObject *)&CustomIterableType);
     PyModule_AddObject(m, "NativeCustomIterator", (PyObject *)&CustomIteratorType);
+    Py_INCREF(m);
     return m;
 }
 

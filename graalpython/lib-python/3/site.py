@@ -304,8 +304,9 @@ def getsitepackages(prefixes=None):
         seen.add(prefix)
 
         if os.sep == '/':
-            sitepackages.append(os.path.join(prefix, "lib",
-                                        "python%d.%d" % sys.version_info[:2],
+            # TRUFFLE: our path for system site-packages is slightly different
+            sitepackages.append(os.path.join(prefix, "lib-python",
+                                        "%d" % sys.version_info[0],
                                         "site-packages"))
         else:
             sitepackages.append(prefix)
@@ -528,9 +529,8 @@ def main():
     if ENABLE_USER_SITE is None:
         ENABLE_USER_SITE = check_enableusersite()
 
-    # TRUFFLE TODO requires _sysconfigdata__* modules
-    #known_paths = addusersitepackages(known_paths)
-    #known_paths = addsitepackages(known_paths)
+    known_paths = addusersitepackages(known_paths)
+    known_paths = addsitepackages(known_paths)
     setquit()
     setcopyright()
     sethelper()

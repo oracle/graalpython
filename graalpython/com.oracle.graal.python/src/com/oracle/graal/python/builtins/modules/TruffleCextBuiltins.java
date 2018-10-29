@@ -362,11 +362,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyErrOccurred extends PythonUnaryBuiltinNode {
         @Specialization
         Object run(Object errorMarker,
-                        @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
+                        @Cached("create()") GetClassNode getClass) {
             PException currentException = getContext().getCurrentException();
             if (currentException != null) {
-                currentException.getExceptionObject().reifyException();
-                return getPythonClass(currentException.getExceptionObject().getLazyPythonClass(), getClassProfile);
+                PBaseException exceptionObject = currentException.getExceptionObject();
+                exceptionObject.reifyException();
+                return getClass.execute(exceptionObject);
             }
             return errorMarker;
         }
@@ -767,15 +768,23 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private GetByteArrayNode getByteArrayNode;
 
         protected void transformToNative(PException p) {
+            NativeBuiltin.transformToNative(getContext(), p);
+        }
+
+        protected static void transformToNative(PythonContext context, PException p) {
             p.getExceptionObject().reifyException();
-            getContext().setCurrentException(p);
+            context.setCurrentException(p);
         }
 
         protected <T> T raiseNative(T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
+            return NativeBuiltin.raiseNative(this, defaultValue, errType, fmt, args);
+        }
+
+        protected static <T> T raiseNative(PNodeWithContext n, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
             try {
-                throw raise(errType, fmt, args);
+                throw n.raise(errType, fmt, args);
             } catch (PException p) {
-                transformToNative(p);
+                NativeBuiltin.transformToNative(n.getContext(), p);
                 return defaultValue;
             }
         }
@@ -881,23 +890,23 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "TrufflePInt_AsPrimitive", fixedNumOfPositionalArgs = 4)
+    @Builtin(name = "TrufflePInt_AsPrimitive", fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class TrufflePInt_AsPrimitive extends NativeBuiltin {
+    abstract static class TrufflePInt_AsPrimitive extends PythonTernaryBuiltinNode {
 
-        public abstract Object executeWith(Object o, int signed, long targetTypeSize, String targetTypeName);
+        public abstract Object executeWith(Object o, int signed, long targetTypeSize);
 
-        public abstract long executeLong(Object o, int signed, long targetTypeSize, String targetTypeName);
+        public abstract long executeLong(Object o, int signed, long targetTypeSize);
 
-        public abstract int executeInt(Object o, int signed, long targetTypeSize, String targetTypeName);
+        public abstract int executeInt(Object o, int signed, long targetTypeSize);
 
         @Specialization(guards = "targetTypeSize == 4")
-        int doInt4(int obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
+        int doInt4(int obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
             return obj;
         }
 
         @Specialization(guards = "targetTypeSize == 8")
-        long doInt8(int obj, int signed, @SuppressWarnings("unused") long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
+        long doInt8(int obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
             if (signed != 0) {
                 return obj;
             } else {
@@ -906,32 +915,32 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        int doIntOther(@SuppressWarnings("unused") int obj, @SuppressWarnings("unused") int signed, long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
-            return raiseNative(-1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+        int doIntOther(@SuppressWarnings("unused") int obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
+            return raiseUnsupportedSize(targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 4")
-        int doLong4(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize, String targetTypeName) {
-            return raiseNative(-1, PythonErrorType.OverflowError, "Python int too large to convert to C %s", targetTypeName);
+        int doLong4(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
+            return raiseTooLarge(targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 8")
-        long doLong8(long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
+        long doLong8(long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize) {
             return obj;
         }
 
         @Specialization(guards = "targetTypeSize == 8")
-        long doLong8(long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
+        long doLong8(long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
             return obj;
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        int doPInt(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
-            return raiseNative(-1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+        int doPInt(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
+            return raiseUnsupportedSize(targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 4")
-        int doPInt4(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize, String targetTypeName) {
+        int doPInt4(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
             try {
                 if (signed != 0) {
                     return obj.intValueExact();
@@ -941,12 +950,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                     throw new ArithmeticException();
                 }
             } catch (ArithmeticException e) {
-                return raiseNative(-1, PythonErrorType.OverflowError, "Python int too large to convert to C %s", targetTypeName);
+                return raiseTooLarge(targetTypeSize);
             }
         }
 
         @Specialization(guards = "targetTypeSize == 8")
-        long doPInt8(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize, String targetTypeName) {
+        long doPInt8(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
             try {
                 if (signed != 0) {
                     return obj.longValueExact();
@@ -956,19 +965,31 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                     throw new ArithmeticException();
                 }
             } catch (ArithmeticException e) {
-                return raiseNative(-1, PythonErrorType.OverflowError, "Python int too large to convert to C %s", targetTypeName);
+                return raiseTooLarge(targetTypeSize);
             }
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        int doPInt(@SuppressWarnings("unused") PInt obj, @SuppressWarnings("unused") int signed, long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
-            return raiseNative(-1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+        int doPInt(@SuppressWarnings("unused") PInt obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
+            return raiseUnsupportedSize(targetTypeSize);
         }
 
         @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)"})
         @SuppressWarnings("unused")
-        int doGeneric(Object obj, boolean signed, int targetTypeSize, String targetTypeName) {
+        int doGeneric(Object obj, boolean signed, int targetTypeSize) {
             return raiseNative(-1, PythonErrorType.TypeError, "an integer is required", obj);
+        }
+
+        private int raiseTooLarge(long targetTypeSize) {
+            return raiseNative(-1, PythonErrorType.OverflowError, "Python int too large to convert to %s-byte C type", targetTypeSize);
+        }
+
+        private Integer raiseUnsupportedSize(long targetTypeSize) {
+            return raiseNative(-1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+        }
+
+        private <T> T raiseNative(T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
+            return NativeBuiltin.raiseNative(this, defaultValue, errType, fmt, args);
         }
     }
 
@@ -1155,7 +1176,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         byte[] doCArrayWrapper(CByteArrayWrapper o, @SuppressWarnings("unused") long size) {
-            return o.getDelegate();
+            return o.getByteArray();
         }
 
         @Specialization
@@ -1555,7 +1576,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             Object arg = readArgNode.execute(frame);
             Object[] arguments = PArguments.create(2);
             PArguments.setArgument(arguments, 0, self);
-            PArguments.setArgument(arguments, 1, factory.createTuple(new Object[]{arg}));
+            PArguments.setArgument(arguments, 1, arg);
             return directCallNode.call(arguments);
         }
     }
@@ -1998,9 +2019,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         long doGeneric(Object n) {
             if (asPrimitiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                asPrimitiveNode = insert(TrufflePInt_AsPrimitiveFactory.create(null));
+                asPrimitiveNode = insert(TrufflePInt_AsPrimitiveFactory.create());
             }
-            return asPrimitiveNode.executeLong(n, 0, Long.BYTES, "void*");
+            return asPrimitiveNode.executeLong(n, 0, Long.BYTES);
         }
     }
 }

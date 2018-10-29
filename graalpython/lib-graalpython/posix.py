@@ -97,3 +97,33 @@ class ScandirIterator:
 @__builtin__
 def scandir(path):
     return ScandirIterator(iter(listdir(path)))
+
+
+@__builtin__
+def WIFSIGNALED(status):
+    return status > 128
+
+
+@__builtin__
+def WIFEXITED(status):
+    return not WIFSIGNALED(status)
+
+
+@__builtin__
+def WTERMSIG(status):
+    return status - 128
+
+
+@__builtin__
+def WEXITSTATUS(status):
+    return status & 127
+
+
+@__builtin__
+def WIFSTOPPED(status):
+    return False
+
+
+@__builtin__
+def WSTOPSIG(status):
+    return 0

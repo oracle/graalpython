@@ -60,7 +60,8 @@ public abstract class PTypeToForeignNode extends Node {
         } else if (object instanceof PInt) {
             try {
                 // try to use primitive
-                ((PInt) object).longValueExact();
+                PInt boxed = (PInt) object;
+                boxed.longValueExact();
                 return true;
             } catch (ArithmeticException e) {
                 return false;

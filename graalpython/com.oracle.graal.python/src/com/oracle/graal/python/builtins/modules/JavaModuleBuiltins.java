@@ -57,6 +57,9 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.TruffleObject;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 @CoreFunctions(defineModule = "java")
 public class JavaModuleBuiltins extends PythonBuiltins {
     @Override
@@ -132,9 +135,13 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isForeignObject(object)", "isForeignObject(klass)"})
         boolean check(Object object, TruffleObject klass) {
             Env env = getContext().getEnv();
-            Object hostKlass = env.asHostObject(klass);
-            if (hostKlass instanceof Class<?>) {
-                return ((Class<?>) hostKlass).isInstance(object);
+            try {
+                Object hostKlass = env.asHostObject(klass);
+                if (hostKlass instanceof Class<?>) {
+                    return ((Class<?>) hostKlass).isInstance(object);
+                }
+            } catch (ClassCastException cce) {
+                throw raise(ValueError, "klass argument '%p' is not a host object", klass);
             }
             return false;
         }
@@ -142,17 +149,21 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isForeignObject(object)", "isForeignObject(klass)"})
         boolean checkForeign(Object object, TruffleObject klass) {
             Env env = getContext().getEnv();
-            Object hostObject = env.asHostObject(object);
-            Object hostKlass = env.asHostObject(klass);
-            if (hostKlass instanceof Class<?>) {
-                return ((Class<?>) hostKlass).isInstance(hostObject);
+            try {
+                Object hostObject = env.asHostObject(object);
+                Object hostKlass = env.asHostObject(klass);
+                if (hostKlass instanceof Class<?>) {
+                    return ((Class<?>) hostKlass).isInstance(hostObject);
+                }
+            } catch (ClassCastException cce) {
+                throw raise(ValueError, "the object '%p' or klass '%p' arguments is not a host object", object, klass);
             }
             return false;
         }
 
         @Fallback
         boolean fallback(Object object, Object klass) {
-            throw raise(PythonErrorType.TypeError, "unsupported instanceof(%p, %p)", object, klass);
+            throw raise(TypeError, "unsupported instanceof(%p, %p)", object, klass);
         }
     }
 }

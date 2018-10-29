@@ -37,20 +37,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import _imp
-import sys
+AF_UNSPEC = 0
+AF_INET = 2
+AF_INET6 = 23
 
-
-lib_python = None
-for p in sys.path:
-    if "lib-python/3" in p:
-        path, delim, _ = p.partition('lib-python/3')
-        lib_python = path + delim
-        break
-
-
-if lib_python is None:
-    raise RuntimeError("Cannot load frozen_importlib")
-
-_imp._truffle_bootstrap_file_into_module(lib_python + "/importlib/_bootstrap_external.py", "_frozen_importlib_external")
-sys.modules[__name__] = sys.modules['_frozen_importlib_external']
+SOCK_DGRAM = 1
+SOCK_STREAM = 2
+SOCK_RAW = 3
+SOCK_RDM = 4
+SOCK_SEQPACKET = 5

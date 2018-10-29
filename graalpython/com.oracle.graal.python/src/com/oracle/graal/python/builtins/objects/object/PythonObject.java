@@ -36,8 +36,11 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Location;
@@ -45,7 +48,8 @@ import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
 
 public class PythonObject extends PythonAbstractObject {
-    private final LazyPythonClass pythonClass;
+    @CompilationFinal private LazyPythonClass pythonClass;
+    private final Assumption classStable = Truffle.getRuntime().createAssumption("class unchanged");
     private final DynamicObject storage;
     private PHashingCollection dict;
 
@@ -77,8 +81,26 @@ public class PythonObject extends PythonAbstractObject {
         }
     }
 
+    public final void setLazyPythonClass(PythonClass cls) {
+        pythonClass = cls;
+        classStable.invalidate();
+    }
+
+    /**
+     * Generally reading this directly might not be safe, because the value is
+     * {@code @CompilationFinal}. It's fine, however, if the class is of a builtin type (because for
+     * objects of these types, we cannot write to the {@code __class__} field anyway.
+     */
     public final LazyPythonClass getLazyPythonClass() {
+        assert (!CompilerDirectives.isCompilationConstant(this) ||
+                        CompilerDirectives.inInterpreter() ||
+                        pythonClass instanceof PythonBuiltinClassType ||
+                        pythonClass instanceof PythonBuiltinClass) : "user type object must not be compilation constant when reading the compilation final lazy python class in compiled code";
         return pythonClass;
+    }
+
+    public final Assumption getClassStableAssumption() {
+        return classStable;
     }
 
     public final DynamicObject getStorage() {

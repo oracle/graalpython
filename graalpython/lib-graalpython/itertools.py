@@ -22,11 +22,48 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 class repeat():
-    pass
+    def __init__(self, obj, times=None):
+        self.obj = obj
+        self.times = times
+        self.step = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.times is not None:
+            if self.step >= self.times:
+                raise StopIteration
+            else:
+                self.step += 1
+        return self.obj
 
 
 class chain():
-    pass
+    """
+    Return a chain object whose .__next__() method returns elements from the
+    first iterable until it is exhausted, then elements from the next
+    iterable, until all of the iterables are exhausted.
+    """
+    def __init__(self, *iterables):
+        self._iterables = iterables
+        self._len = len(iterables)
+        if self._len > 0:
+            self._current = iter(self._iterables[0])
+        self._idx = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self._idx >= self._len:
+            raise StopIteration
+        try:
+            return next(self._current)
+        except (StopIteration, IndexError):
+            self._idx += 1
+            self._current = iter(self._iterables[self._idx])
+            return self.__next__()
 
 
 class starmap():
@@ -332,3 +369,52 @@ class accumulate(object):
         else:
             self.total = self.func(total, value)
         return self.total
+
+
+class dropwhile(object):
+    """
+    dropwhile(predicate, iterable) --> dropwhile object
+
+    Drop items from the iterable while predicate(item) is true.
+    Afterwards, return every element until the iterable is exhausted.
+    """
+
+    def __init__(self, predicate, iterable):
+        self.predicate = predicate
+        self.iterable = iter(iterable)
+        self.done_dropping = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        while not self.done_dropping:
+            n = next(self.iterable)
+            if self.predicate(n):
+                continue
+            else:
+                self.done_dropping = True
+                return n
+        return next(self.iterable)
+
+
+class filterfalse(object):
+    """
+    filterfalse(function or None, sequence) --> filterfalse object
+
+    Return those items of sequence for which function(item) is false.
+    If function is None, return the items that are false.
+    """
+
+    def __init__(self, func, sequence):
+        self.func = func or (lambda x: False)
+        self.iterator = iter(sequence)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        while True:
+            n = next(self.iterator)
+            if not self.func(n):
+                return n

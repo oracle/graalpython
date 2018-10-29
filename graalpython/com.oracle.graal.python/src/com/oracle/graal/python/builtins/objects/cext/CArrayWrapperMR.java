@@ -66,7 +66,7 @@ public class CArrayWrapperMR {
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
         public char access(CStringWrapper object, int idx) {
-            String s = object.getDelegate();
+            String s = object.getString();
             if (idx >= 0 && idx < s.length()) {
                 return s.charAt(idx);
             } else if (idx == s.length()) {
@@ -86,7 +86,7 @@ public class CArrayWrapperMR {
         }
 
         public byte access(CByteArrayWrapper object, int idx) {
-            byte[] arr = object.getDelegate();
+            byte[] arr = object.getByteArray();
             if (idx >= 0 && idx < arr.length) {
                 return arr[idx];
             } else if (idx == arr.length) {
@@ -127,7 +127,7 @@ public class CArrayWrapperMR {
 
         @Specialization
         Object doTuple(CStringWrapper object) {
-            return callGetByteArrayTypeID(object.getDelegate().length());
+            return callGetByteArrayTypeID(object.getString().length());
         }
 
         private Object callGetByteArrayTypeID(long len) {
@@ -149,11 +149,11 @@ public class CArrayWrapperMR {
     @Resolve(message = "GET_SIZE")
     abstract static class GetSizeNode extends Node {
         long access(CStringWrapper obj) {
-            return obj.getDelegate().length();
+            return obj.getString().length();
         }
 
         int access(CByteArrayWrapper obj) {
-            return obj.getDelegate().length;
+            return obj.getByteArray().length;
         }
     }
 

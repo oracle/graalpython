@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -75,7 +76,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
@@ -104,7 +104,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "little" : "big");
         builtinConstants.put("copyright", LICENSE);
         builtinConstants.put("dont_write_bytecode", true);
-        if (TruffleOptions.AOT) {
+        if (TruffleOptions.AOT || !core.getContext().isExecutableAccessAllowed()) {
             // cannot set the path at this time since the binary is not yet known; will be patched
             // in the context
             builtinConstants.put("executable", PNone.NONE);
@@ -138,15 +138,18 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         true,  // dont_write_bytecode
                         false, // hash_randomization
                         false, // ignore_environment
-                        false, // inspect
-                        false, // interactive
+                        PythonOptions.getOption(core.getContext(), PythonOptions.InspectFlag).booleanValue(), // inspect
+                        PythonOptions.getOption(core.getContext(), PythonOptions.InspectFlag).booleanValue(), // interactive
                         false, // isolated
-                        false, // no_site
-                        false, // no_user_site
+                        PythonOptions.getOption(core.getContext(), PythonOptions.NoSiteFlag).booleanValue(), // no_site
+                        PythonOptions.getOption(core.getContext(), PythonOptions.NoUserSiteFlag).booleanValue(), // no_user_site
                         false, // optimize
-                        false, // quiet
+                        PythonOptions.getOption(core.getContext(), PythonOptions.QuietFlag).booleanValue(), // quiet
                         PythonOptions.getOption(core.getContext(), PythonOptions.VerboseFlag).booleanValue(), // verbose
         }));
+        builtinConstants.put("graal_python_core_home", PythonOptions.getOption(core.getContext(), PythonOptions.CoreHome));
+        builtinConstants.put("graal_python_stdlib_home", PythonOptions.getOption(core.getContext(), PythonOptions.StdLibHome));
+        builtinConstants.put("graal_python_opaque_filesystem", PythonOptions.getOption(core.getContext(), PythonOptions.OpaqueFilesystem));
         // the default values taken from JPython
         builtinConstants.put("float_info", core.factory().createTuple(new Object[]{
                         Double.MAX_VALUE,       // DBL_MAX
@@ -190,7 +193,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     public static abstract class ExcInfoNode extends PythonBuiltinNode {
         @Specialization
         public Object run(
-                        @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
+                        @Cached("create()") GetClassNode getClassNode) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
             if (currentException == null) {
@@ -198,7 +201,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             } else {
                 PBaseException exception = currentException.getExceptionObject();
                 exception.reifyException();
-                return factory().createTuple(new Object[]{getPythonClass(exception.getLazyPythonClass(), getClassProfile), exception, exception.getTraceback(factory())});
+                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback(factory())});
             }
         }
     }
