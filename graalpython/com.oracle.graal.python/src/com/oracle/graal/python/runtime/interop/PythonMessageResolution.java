@@ -225,6 +225,7 @@ public class PythonMessageResolution {
     }
 
     private static final class KeysNode extends Node {
+        private static final String PRIVATE_PREFIX = "__";
         @Child private LookupAndCallUnaryNode keysNode = LookupAndCallUnaryNode.create(SpecialMethodNames.KEYS);
         @Child private CastToListNode castToList = CastToListNode.create();
         @Child private GetClassNode getClass = GetClassNode.create();
@@ -243,10 +244,10 @@ public class PythonMessageResolution {
             HashSet<String> keys = new HashSet<>();
             PythonClass klass = getClass.execute(object);
             for (PythonObject o : klass.getMethodResolutionOrder()) {
-                addKeysFromObject(keys, o);
+                addKeysFromObject(keys, o, includeInternal);
             }
             if (object instanceof PythonObject) {
-                addKeysFromObject(keys, (PythonObject) object);
+                addKeysFromObject(keys, (PythonObject) object, includeInternal);
             }
             if (includeInternal) {
                 // we use the internal flag to also return dictionary keys for mappings
@@ -272,12 +273,18 @@ public class PythonMessageResolution {
             return factory.createTuple(keys.toArray(new String[keys.size()]));
         }
 
-        private static void addKeysFromObject(HashSet<String> keys, PythonObject o) {
+        private static void addKeysFromObject(HashSet<String> keys, PythonObject o, boolean includeInternal) {
             for (Object k : o.getStorage().getShape().getKeys()) {
+                String strKey;
                 if (k instanceof String) {
-                    keys.add((String) k);
+                    strKey = (String) k;
                 } else if (k instanceof PString) {
-                    keys.add(((PString) k).getValue());
+                    strKey = ((PString) k).getValue();
+                } else {
+                    continue;
+                }
+                if (includeInternal || !strKey.startsWith(PRIVATE_PREFIX)) {
+                    keys.add(strKey);
                 }
             }
         }
@@ -622,9 +629,15 @@ public class PythonMessageResolution {
         @Child private LookupInheritedAttributeNode getSetNode;
         @Child private LookupInheritedAttributeNode getDeleteNode;
         @Child private GetClassNode getClassNode = GetClassNode.create();
-        @Child IsImmutable isImmutable = new IsImmutable();
+        @Child private IsImmutable isImmutable = new IsImmutable();
+        @Child private KeyForItemAccess itemKey = new KeyForItemAccess();
 
         public int access(Object object, Object fieldName) {
+            String itemFieldName = itemKey.execute(fieldName);
+            if (itemFieldName != null) {
+                return KeyInfo.READABLE | KeyInfo.MODIFIABLE | KeyInfo.REMOVABLE | KeyInfo.REMOVABLE;
+            }
+
             Object owner = object;
             int info = KeyInfo.NONE;
             Object attr = PNone.NO_VALUE;
