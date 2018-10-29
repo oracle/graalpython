@@ -47,6 +47,10 @@ if sys.implementation.name == "graalpython":
         import python_cext
         assert imported_cext is python_cext
 
+    class GetterOnly():
+        def __get__(self, instance, owner):
+            pass
+
     class CustomObject():
         field = 42
 
@@ -55,6 +59,16 @@ if sys.implementation.name == "graalpython":
 
         def __len__(self):
             return 21
+
+        getter = GetterOnly()
+
+        @property
+        def setter(self):
+            pass
+
+        @setter.setter
+        def setter_setter(self):
+            pass
 
     class CustomMutable(CustomObject):
         _items = {}
@@ -195,10 +209,30 @@ if sys.implementation.name == "graalpython":
 
     def test_keys():
         o = CustomObject()
-        assert len(polyglot.__keys__(o)) == 0
+        inherited_keys = len(polyglot.__keys__(o))
         o.my_field = 1
-        assert len(polyglot.__keys__(o)) == 1
+        assert len(polyglot.__keys__(o)) == 1 + inherited_keys
         assert "my_field" in polyglot.__keys__(o)
+
+    def test_key_info():
+        o = CustomObject()
+        o.my_field = 1
+        o.test_exec = lambda: False
+        readable_invokable_insertable = polyglot.__key_info__(o, "__init__")
+
+        readable_invokable_modifiable_insertable = polyglot.__key_info__(o, "__len__")
+        assert readable_invokable_modifiable_insertable == polyglot.__key_info__(o, "test_exec")
+
+        readable_modifiable_insertable = polyglot.__key_info__(o, "field")
+        assert readable_modifiable_insertable == polyglot.__key_info__(o, "my_field")
+
+        assert readable_invokable_insertable != readable_modifiable_insertable
+        assert readable_invokable_insertable != readable_invokable_modifiable_insertable
+        assert readable_modifiable_insertable != readable_invokable_modifiable_insertable
+
+        sideeffects_get = polyglot.__key_info__(o, "getter")
+        sideeffects_get_set = polyglot.__key_info__(o, "setter")
+        assert sideeffects_get != sideeffects_get_set
 
     def test_host_lookup():
         import java

@@ -46,14 +46,17 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -63,11 +66,13 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -80,14 +85,16 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNodeGen;
 import com.oracle.graal.python.nodes.interop.PTypeUnboxNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolutionFactory.ArgumentsFromForeignNodeGen;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.CanResolve;
@@ -125,15 +132,21 @@ public class PythonMessageResolution {
     }
 
     private static final class IsImmutable extends Node {
-        @Child private IsSequenceNode isSequence = IsSequenceNode.create();
-        @Child private HasSetItem hasSetItem = new HasSetItem();
-        final ConditionProfile builtinProfile = ConditionProfile.createBinaryProfile();
+        @Child private GetLazyClassNode getClass;
 
         public boolean execute(Object object) {
-            if (builtinProfile.profile(object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject)) {
+            if (object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject || object instanceof PythonNativeClass || object instanceof PythonNativeObject) {
                 return true;
+            } else if (object instanceof PythonClass) {
+                return false;
+            } else {
+                if (getClass == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getClass = insert(GetLazyClassNode.create());
+                }
+                LazyPythonClass klass = getClass.execute(object);
+                return klass instanceof PythonBuiltinClassType || klass instanceof PythonBuiltinClass || klass instanceof PythonNativeClass;
             }
-            return isSequence.execute(object) && !hasSetItem.execute(object);
         }
     }
 
@@ -212,32 +225,59 @@ public class PythonMessageResolution {
     }
 
     private static final class KeysNode extends Node {
-        @Child private IsMappingNode isMapping = IsMappingNode.create();
         @Child private LookupAndCallUnaryNode keysNode = LookupAndCallUnaryNode.create(SpecialMethodNames.KEYS);
         @Child private CastToListNode castToList = CastToListNode.create();
+        @Child private GetClassNode getClass = GetClassNode.create();
         @Child private PythonObjectFactory factory = PythonObjectFactory.create();
+        @Child private IsMappingNode isMapping = IsMappingNode.create();
+        @Child private GetItemNode getItemNode;
+        @Child private LenNode lenNode;
 
-        public Object execute(Object obj) {
-            if (obj instanceof PythonNativeObject || !(obj instanceof PythonObject)) {
+        @TruffleBoundary
+        public Object execute(Object obj, boolean includeInternal) {
+            if (!(obj instanceof PythonAbstractObject)) {
                 return factory.createTuple(new Object[0]);
             }
-            PythonObject object = (PythonObject) obj;
-            Object[] attributeNames = object.getAttributeNames().toArray();
-            if (isMapping.execute(object)) {
-                PList keys = castToList.executeWith(keysNode.executeObject(object));
-                Object[] keysArray = keys.getSequenceStorage().getCopyOfInternalArray();
-                Object[] retVal = Arrays.copyOf(attributeNames, keysArray.length + attributeNames.length);
-                for (int i = 0; i < keysArray.length; i++) {
-                    Object key = keysArray[i];
-                    if (key instanceof String || key instanceof PString) {
-                        retVal[i + attributeNames.length] = key.toString();
-                    } else {
-                        return factory.createTuple(attributeNames);
+            PythonAbstractObject object = (PythonAbstractObject) obj;
+
+            ArrayList<String> keys = new ArrayList<>();
+            for (PythonObject o : getClass.execute(object).getMethodResolutionOrder()) {
+                addKeysFromObject(keys, o);
+            }
+            if (object instanceof PythonObject) {
+                addKeysFromObject(keys, (PythonObject) object);
+            }
+            if (includeInternal) {
+                // we use the internal flag to also return dictionary keys for mappings
+                if (isMapping.execute(object)) {
+                    if (getItemNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getItemNode = insert(GetItemNode.create());
+                        lenNode = insert(SequenceNodes.LenNode.create());
+                    }
+                    PList mapKeys = castToList.executeWith(keysNode.executeObject(object));
+                    int len = lenNode.execute(mapKeys);
+                    for (int i = 0; i < len; i++) {
+                        Object key = getItemNode.execute(object, i);
+                        if (key instanceof String) {
+                            keys.add("[" + (String) key);
+                        } else if (key instanceof PString) {
+                            keys.add("[" + ((PString) key).getValue());
+                        }
                     }
                 }
-                return factory.createTuple(retVal);
-            } else {
-                return factory.createTuple(attributeNames);
+            }
+
+            return factory.createTuple(keys.toArray(new String[keys.size()]));
+        }
+
+        private static void addKeysFromObject(ArrayList<String> keys, PythonObject o) {
+            for (Object k : o.getStorage().getShape().getKeys()) {
+                if (k instanceof String) {
+                    keys.add((String) k);
+                } else if (k instanceof PString) {
+                    keys.add(((PString) k).getValue());
+                }
             }
         }
     }
@@ -495,14 +535,6 @@ public class PythonMessageResolution {
 
         public Object access(Object object) {
             Object profiled = profile.profile(object);
-            // A sequence object always has a size even if there is no '__len__' attribute. This is,
-            // e.g., the case for 'array'.
-            if (profiled instanceof PSequence) {
-                return true;
-            }
-            if (profiled instanceof PHashingCollection) {
-                return false;
-            }
             if (getIsSequenceNode().execute(profiled) && !getIsMappingNode().execute(profiled)) {
                 // also try to access using an integer index
                 int len = (int) getUnboxNode().execute(getLenNode().executeWith(profiled));
@@ -583,38 +615,88 @@ public class PythonMessageResolution {
 
     @Resolve(message = "KEY_INFO")
     abstract static class PKeyInfoNode extends Node {
-        @Child private LookupAndCallBinaryNode getCallNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
-
-        @Child ReadNode readNode = new ReadNode();
+        @Child private ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.create();
+        @Child private IsCallableNode isCallableNode;
+        @Child private LookupInheritedAttributeNode getGetNode;
+        @Child private LookupInheritedAttributeNode getSetNode;
+        @Child private LookupInheritedAttributeNode getDeleteNode;
+        @Child private GetClassNode getClassNode = GetClassNode.create();
         @Child IsImmutable isImmutable = new IsImmutable();
 
         public int access(Object object, Object fieldName) {
-            Object attr = readNode.execute(object, fieldName);
+            Object owner = object;
             int info = KeyInfo.NONE;
-            if (attr != ReadNode.NONEXISTING_IDENTIFIER) {
-                info |= KeyInfo.READABLE;
-                try {
-                    getCallNode.executeObject(attr, SpecialMethodNames.__CALL__);
-                    info |= KeyInfo.INVOCABLE;
-                } catch (PException e) {
+            Object attr = PNone.NO_VALUE;
+
+            PythonClass klass = getClassNode.execute(object);
+            for (PythonClass c : klass.getMethodResolutionOrder()) {
+                attr = readNode.execute(c, fieldName);
+                if (attr != PNone.NO_VALUE) {
+                    owner = c;
+                    break;
                 }
             }
-            if (!isImmutable.execute(object)) {
-                if (KeyInfo.isReadable(info)) {
+
+            if (attr == PNone.NO_VALUE) {
+                attr = readNode.execute(owner, fieldName);
+            }
+
+            if (attr != PNone.NO_VALUE) {
+                info |= KeyInfo.READABLE;
+
+                if (owner != object) {
+                    if (attr instanceof PFunction || attr instanceof PBuiltinFunction) {
+                        // if the attr is a known getter, we mark it invocable
+                        // for other attributes, we look for a __call__ method later
+                        info |= KeyInfo.INVOCABLE;
+                    } else {
+                        // attr is inherited and might be a descriptor object other than a function
+                        if (getGetNode == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            getGetNode = insert(LookupInheritedAttributeNode.create(SpecialMethodNames.__GET__));
+                            getSetNode = insert(LookupInheritedAttributeNode.create(SpecialMethodNames.__SET__));
+                            getDeleteNode = insert(LookupInheritedAttributeNode.create(SpecialMethodNames.__DELETE__));
+                        }
+                        if (getGetNode.execute(attr) != PNone.NO_VALUE) {
+                            // is a getter, read may have side effects
+                            info |= KeyInfo.READ_SIDE_EFFECTS;
+                        }
+                        if (getSetNode.execute(attr) != PNone.NO_VALUE || getDeleteNode.execute(attr) != PNone.NO_VALUE) {
+                            info |= KeyInfo.WRITE_SIDE_EFFECTS;
+                        }
+                    }
+                }
+
+                if (!isImmutable.execute(owner)) {
                     info |= KeyInfo.REMOVABLE;
                     info |= KeyInfo.MODIFIABLE;
-                } else {
+                }
+
+                if (!isImmutable.execute(object)) {
                     info |= KeyInfo.INSERTABLE;
                 }
+
+                if (!KeyInfo.hasReadSideEffects(info) && !KeyInfo.isInvocable(info)) {
+                    // if this is not a getter, we check if the value inherits a __call__ attr
+                    // if it is a getter, we just cannot really tell if the attr is invocable
+                    if (isCallableNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        isCallableNode = insert(IsCallableNode.create());
+                    }
+                    if (isCallableNode.execute(attr)) {
+                        info |= KeyInfo.INVOCABLE;
+                    }
+                }
             }
+
             return info;
         }
     }
 
     @Resolve(message = "HAS_KEYS")
     abstract static class HasKeysNode extends Node {
-        public Object access(Object obj) {
-            return obj instanceof PythonAbstractObject;
+        public Object access(@SuppressWarnings("unused") Object obj) {
+            return true;
         }
     }
 
@@ -623,13 +705,8 @@ public class PythonMessageResolution {
         @Child KeysNode keysNode = new KeysNode();
         @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-        @SuppressWarnings("unused")
-        public Object access(PNone object) {
-            return factory.createTuple(new Object[0]);
-        }
-
-        public Object access(Object object) {
-            return keysNode.execute(object);
+        public Object access(Object object, boolean includeInternal) {
+            return keysNode.execute(object, includeInternal);
         }
     }
 
