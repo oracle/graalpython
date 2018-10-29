@@ -667,12 +667,12 @@ public class PythonMessageResolution {
                     }
                 }
 
-                if (!isImmutable.execute(owner)) {
-                    info |= KeyInfo.REMOVABLE;
-                    info |= KeyInfo.MODIFIABLE;
-                }
-
-                if (!isImmutable.execute(object)) {
+                if (attr != PNone.NO_VALUE) {
+                    if (!isImmutable.execute(owner)) {
+                        info |= KeyInfo.REMOVABLE;
+                        info |= KeyInfo.MODIFIABLE;
+                    }
+                } else if (!isImmutable.execute(object)) {
                     info |= KeyInfo.INSERTABLE;
                 }
 
