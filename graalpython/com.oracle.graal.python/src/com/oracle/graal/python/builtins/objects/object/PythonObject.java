@@ -50,7 +50,7 @@ import com.oracle.truffle.api.object.Shape;
 public class PythonObject extends PythonAbstractObject {
     @CompilationFinal private LazyPythonClass pythonClass;
     private final Assumption classStable = Truffle.getRuntime().createAssumption("class unchanged");
-    private final Assumption dictStable = Truffle.getRuntime().createAssumption("dict unchanged from instance attributes");
+    private final Assumption dictUnsetOrSameAsStorage = Truffle.getRuntime().createAssumption("dict unset or same as instance attributes");
     private final DynamicObject storage;
     private PHashingCollection dict;
 
@@ -104,8 +104,8 @@ public class PythonObject extends PythonAbstractObject {
         return classStable;
     }
 
-    public final Assumption getDictStableAssumption() {
-        return dictStable;
+    public final Assumption getDictUnsetOrSameAsStorageAssumption() {
+        return dictUnsetOrSameAsStorage;
     }
 
     public final DynamicObject getStorage() {
