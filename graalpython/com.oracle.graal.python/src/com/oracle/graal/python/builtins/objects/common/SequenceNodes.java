@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetSequenceStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -49,6 +50,12 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class SequenceNodes {
@@ -77,6 +84,21 @@ public abstract class SequenceNodes {
 
         public static LenNode create() {
             return LenNodeGen.create();
+        }
+    }
+
+    public abstract static class GetSequenceStorageNode extends Node {
+
+        public abstract SequenceStorage execute(Object seq);
+
+        @Specialization(guards = {"seq.getClass() == cachedClass"})
+        SequenceStorage doWithStorage(PSequence seq,
+                        @Cached("seq.getClass()") Class<? extends PSequence> cachedClass) {
+            return CompilerDirectives.castExact(seq, cachedClass).getSequenceStorage();
+        }
+
+        public static GetSequenceStorageNode create() {
+            return GetSequenceStorageNodeGen.create();
         }
     }
 
