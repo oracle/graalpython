@@ -58,6 +58,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private static final String LANGUAGE_ID = "python";
+    private static final String MIME_TYPE = "text/x-python";
 
     private ArrayList<String> programArgs = null;
     private String commandString = null;
@@ -306,7 +307,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             src = Source.newBuilder(getLanguageId(), commandString, "<string>").build();
         } else {
             assert inputFile != null;
-            src = Source.newBuilder(getLanguageId(), new File(inputFile)).build();
+            src = Source.newBuilder(getLanguageId(), new File(inputFile)).mimeType(MIME_TYPE).build();
         }
         context.eval(src);
     }
