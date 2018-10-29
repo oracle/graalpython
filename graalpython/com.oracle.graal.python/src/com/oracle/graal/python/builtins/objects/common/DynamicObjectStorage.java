@@ -175,7 +175,7 @@ public abstract class DynamicObjectStorage extends HashingStorage {
         @TruffleBoundary
         public HashingStorage copy(Equivalence eq) {
             assert eq == HashingStorage.DEFAULT_EQIVALENCE;
-            return new PythonObjectDictStorage(getStore().copy(getStore().getShape()), getDictStableAssumption());
+            return new PythonObjectDictStorage(getStore().copy(getStore().getShape()), null);
         }
     }
 

@@ -491,13 +491,6 @@ public class ObjectBuiltins extends PythonBuiltins {
             return exactBuiltinInstanceProfile.profileIsOtherBuiltinObject(self, PythonBuiltinClassType.PythonModule);
         }
 
-        @SuppressWarnings("unused")
-        @Specialization
-        Object dict(PythonClass self, PNone none) {
-            CompilerDirectives.transferToInterpreter();
-            throw new AssertionError();
-        }
-
         @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)", "isNoValue(none)"})
         Object dict(PythonObject self, @SuppressWarnings("unused") PNone none) {
             PHashingCollection dict = self.getDict();
