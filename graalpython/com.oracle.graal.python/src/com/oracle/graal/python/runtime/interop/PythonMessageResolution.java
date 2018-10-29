@@ -46,7 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
@@ -240,8 +240,9 @@ public class PythonMessageResolution {
             }
             PythonAbstractObject object = (PythonAbstractObject) obj;
 
-            ArrayList<String> keys = new ArrayList<>();
-            for (PythonObject o : getClass.execute(object).getMethodResolutionOrder()) {
+            HashSet<String> keys = new HashSet<>();
+            PythonClass klass = getClass.execute(object);
+            for (PythonObject o : klass.getMethodResolutionOrder()) {
                 addKeysFromObject(keys, o);
             }
             if (object instanceof PythonObject) {
@@ -258,7 +259,7 @@ public class PythonMessageResolution {
                     PList mapKeys = castToList.executeWith(keysNode.executeObject(object));
                     int len = lenNode.execute(mapKeys);
                     for (int i = 0; i < len; i++) {
-                        Object key = getItemNode.execute(object, i);
+                        Object key = getItemNode.execute(mapKeys, i);
                         if (key instanceof String) {
                             keys.add("[" + (String) key);
                         } else if (key instanceof PString) {
@@ -271,7 +272,7 @@ public class PythonMessageResolution {
             return factory.createTuple(keys.toArray(new String[keys.size()]));
         }
 
-        private static void addKeysFromObject(ArrayList<String> keys, PythonObject o) {
+        private static void addKeysFromObject(HashSet<String> keys, PythonObject o) {
             for (Object k : o.getStorage().getShape().getKeys()) {
                 if (k instanceof String) {
                     keys.add((String) k);
