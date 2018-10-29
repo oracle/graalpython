@@ -40,16 +40,15 @@
  */
 package com.oracle.graal.python.runtime.interop;
 
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 
-public class InteropArray implements TruffleObject {
-
-    private final Object[] array;
+public final class InteropArray implements TruffleObject {
+    @CompilationFinal(dimensions = 1) private final Object[] array;
 
     InteropArray(Object[] array) {
         this.array = array;
@@ -60,11 +59,11 @@ public class InteropArray implements TruffleObject {
         return InteropArrayMRForeign.ACCESS;
     }
 
-    public Object getKeyAt(int pos) {
+    private Object get(int pos) {
         return array[pos];
     }
 
-    public int size() {
+    private int size() {
         return array.length;
     }
 
@@ -77,24 +76,25 @@ public class InteropArray implements TruffleObject {
 
         @Resolve(message = "READ")
         abstract static class Read extends Node {
-            @TruffleBoundary
-            public Object access(InteropArray target, Number index) {
-                return target.getKeyAt(index.intValue());
+            Object access(InteropArray target, int index) {
+                return target.get(index);
+            }
+
+            Object access(InteropArray target, long index) {
+                return target.get((int) index);
             }
         }
 
         @Resolve(message = "HAS_SIZE")
         abstract static class HasSize extends Node {
-
-            public boolean access(@SuppressWarnings("unused") InteropArray target) {
+            boolean access(@SuppressWarnings("unused") InteropArray target) {
                 return true;
             }
         }
 
         @Resolve(message = "GET_SIZE")
         abstract static class GetSize extends Node {
-
-            public Object access(InteropArray target) {
+            int access(InteropArray target) {
                 return target.size();
             }
         }

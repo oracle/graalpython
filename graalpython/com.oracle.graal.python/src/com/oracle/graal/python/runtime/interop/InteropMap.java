@@ -58,9 +58,12 @@ import com.oracle.truffle.api.nodes.Node;
  * A container class used to store per-node attributes used by the instrumentation framework.
  *
  */
-public class InteropMap implements TruffleObject {
+public final class InteropMap implements TruffleObject {
+    private final Map<String, Object> data;
 
-    private final Map<String, Object> data = new HashMap<>();
+    public InteropMap(Map<String, Object> data) {
+        this.data = data;
+    }
 
     @Override
     public ForeignAccess getForeignAccess() {
@@ -68,47 +71,42 @@ public class InteropMap implements TruffleObject {
     }
 
     @TruffleBoundary
-    public void addProperty(String name, Object value) {
-        data.put(name, value);
-    }
-
-    @TruffleBoundary
-    public int size() {
+    private int size() {
         return data.size();
     }
 
     @TruffleBoundary
-    public Object getProperty(String name) {
-        assert hasProperty(name);
+    private Object getKey(String name) {
+        assert hasKey(name);
         return data.get(name);
     }
 
     @TruffleBoundary
-    public boolean hasProperty(String name) {
+    private boolean hasKey(String name) {
         return data.containsKey(name);
     }
 
     @TruffleBoundary
-    public TruffleObject getPropertyNames() {
+    private TruffleObject getKeys() {
         return new InteropArray(data.keySet().toArray());
     }
 
     @TruffleBoundary
     public static InteropMap fromPDict(PDict dict) {
-        InteropMap map = new InteropMap();
+        Map<String, Object> map = new HashMap<>();
         for (DictEntry s : dict.getDictStorage().entries()) {
-            map.addProperty(s.getKey().toString(), s.getValue());
+            map.put(s.getKey().toString(), s.getValue());
         }
-        return map;
+        return new InteropMap(map);
     }
 
     @TruffleBoundary
     public static InteropMap fromPythonObject(PythonObject globals) {
-        InteropMap map = new InteropMap();
+        Map<String, Object> map = new HashMap<>();
         for (String name : globals.getAttributeNames()) {
-            map.addProperty(name, globals.getAttribute(name));
+            map.put(name, globals.getAttribute(name));
         }
-        return map;
+        return new InteropMap(map);
     }
 
     static boolean isInstance(TruffleObject object) {
@@ -120,30 +118,29 @@ public class InteropMap implements TruffleObject {
 
         @Resolve(message = "READ")
         abstract static class Read extends Node {
-            public Object access(InteropMap target, String key) {
-                return target.getProperty(key);
+            Object access(InteropMap target, String key) {
+                return target.getKey(key);
             }
         }
 
         @Resolve(message = "HAS_KEYS")
         abstract static class HasKeys extends Node {
-
-            public Object access(@SuppressWarnings("unused") Object target) {
+            boolean access(@SuppressWarnings("unused") Object target) {
                 return true;
             }
         }
 
         @Resolve(message = "KEYS")
         abstract static class Keys extends Node {
-            public Object access(InteropMap target) {
-                return target.getPropertyNames();
+            Object access(InteropMap target) {
+                return target.getKeys();
             }
         }
 
         @Resolve(message = "KEY_INFO")
         abstract static class KeyInfoMR extends Node {
-            public Object access(InteropMap target, Object key) {
-                if (key instanceof String && target.hasProperty((String) key)) {
+            int access(InteropMap target, Object key) {
+                if (key instanceof String && target.hasKey((String) key)) {
                     return KeyInfo.READABLE;
                 } else {
                     return 0;
