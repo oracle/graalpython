@@ -126,6 +126,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -2043,4 +2044,19 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return asPrimitiveNode.executeLong(n, 0, Long.BYTES);
         }
     }
+
+    @Builtin(name = "PyType_IsSubtype", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyType_IsSubtype extends PythonBinaryBuiltinNode {
+        @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
+
+        @Specialization
+        int doI(PythonClass a, PythonClass b) {
+            if (isSubtypeNode.execute(a, b)) {
+                return 1;
+            }
+            return 0;
+        }
+    }
+
 }

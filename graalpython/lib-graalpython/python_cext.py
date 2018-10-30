@@ -808,11 +808,6 @@ def PyObject_Repr(o):
     return repr(o)
 
 
-@may_raise(-1)
-def PyType_IsSubtype(a, b):
-    return 1 if issubclass(a, b) else 0
-
-
 def PyTuple_New(size):
     return (None,) * size
 
