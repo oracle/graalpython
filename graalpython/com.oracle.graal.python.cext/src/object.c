@@ -249,14 +249,12 @@ PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
 
-UPCALL_ID(type);
 PyObject* PyObject_Type(PyObject* obj) {
-    return UPCALL_O(PY_BUILTIN, _jls_type, native_to_java(obj));
+    return UPCALL_O(PY_BUILTIN, polyglot_from_string("type", SRC_CS), native_to_java(obj));
 }
 
-UPCALL_ID(__getitem__);
 PyObject* PyObject_GetItem(PyObject* obj, PyObject* key) {
-    return UPCALL_O(native_to_java(obj), _jls___getitem__, native_to_java(key));
+    return UPCALL_O(native_to_java(obj), polyglot_from_string("__getitem__", SRC_CS), native_to_java(key));
 }
 
 UPCALL_ID(PyObject_SetItem);
@@ -264,14 +262,12 @@ int PyObject_SetItem(PyObject* obj, PyObject* key, PyObject* value) {
     return UPCALL_CEXT_I(_jls_PyObject_SetItem, native_to_java(obj), native_to_java(key), native_to_java(value));
 }
 
-UPCALL_ID(__format__);
 PyObject* PyObject_Format(PyObject* obj, PyObject* spec) {
-    return UPCALL_O(native_to_java(obj), _jls___format__, native_to_java(spec));
+    return UPCALL_O(native_to_java(obj), polyglot_from_string("__format__", SRC_CS), native_to_java(spec));
 }
 
-UPCALL_ID(iter);
 PyObject* PyObject_GetIter(PyObject* obj) {
-    return UPCALL_O(PY_BUILTIN, _jls_iter, native_to_java(obj));
+    return UPCALL_O(PY_BUILTIN, polyglot_from_string("iter", SRC_CS), native_to_java(obj));
 }
 
 UPCALL_ID(PyObject_IsInstance);
@@ -344,9 +340,8 @@ int PyObject_GenericSetAttr(PyObject* obj, PyObject* attr, PyObject* value) {
     return PyObject_SetAttr(obj, attr, value);
 }
 
-UPCALL_ID(hash);
 Py_hash_t PyObject_Hash(PyObject* obj) {
-    return UPCALL_I(PY_BUILTIN, _jls_hash, native_to_java(obj));
+    return UPCALL_I(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), native_to_java(obj));
 }
 
 UPCALL_ID(PyObject_HashNotImplemented);

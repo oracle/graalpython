@@ -114,9 +114,8 @@ int PyDict_DelItemString(PyObject *d, const char *key) {
     return UPCALL_CEXT_I(_jls_PyDict_DelItem, native_to_java(d), polyglot_from_string(key, SRC_CS));
 }
 
-UPCALL_ID(update);
 int PyDict_Update(PyObject *a, PyObject *b) {
-    PyObject* result = UPCALL_O(native_to_java(a), _jls_update, native_to_java(b));
+    PyObject* result = UPCALL_O(native_to_java(a), polyglot_from_string("update", SRC_CS), native_to_java(b));
     if (PyErr_Occurred()) {
         return -1;
     } else {

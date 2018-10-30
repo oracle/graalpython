@@ -112,7 +112,6 @@ PyObject * PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size) {
     return to_sulong(polyglot_from_string_n(u, size, SRC_CS));
 }
 
-UPCALL_ID(builtin_ascii);
 PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9, void* v10, void* v11, void* v12, void* v13, void* v14, void* v15, void* v16, void* v17, void* v18, void* v19) {
     char** allocated_strings = calloc(sizeof(char*), s);
 #   define ASSIGN(n, value)                     \
@@ -153,7 +152,7 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
             case 'A':
                 c[1] = 's';
                 ;
-                allocated_strings[cnt] = allocated = as_char_pointer(UPCALL_CEXT_NOCAST(_jls_builtin_ascii, native_to_java(polyglot_get_arg(cnt + 2))));
+                allocated_strings[cnt] = allocated = as_char_pointer(UPCALL_O(PY_BUILTIN, polyglot_from_string("ascii", SRC_CS), native_to_java(polyglot_get_arg(cnt + 2))));
                 ASSIGN(cnt, allocated);
                 break;
             case 'U':

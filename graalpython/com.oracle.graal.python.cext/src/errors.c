@@ -45,11 +45,11 @@ void _PyErr_BadInternalCall(const char *filename, int lineno) {
     UPCALL_CEXT_VOID(_jls__PyErr_BadInternalCall, polyglot_from_string(filename, SRC_CS), lineno, native_to_java(NULL));
 }
 
+UPCALL_ID(PyErr_CreateAndSetException);
 #undef PyErr_BadInternalCall
-UPCALL_ID(PyTruffle_Err_Format);
 void PyErr_BadInternalCall(void) {
     assert(0 && "bad argument to internal function");
-    UPCALL_CEXT_VOID(_jls_PyTruffle_Err_Format, native_to_java(PyExc_SystemError), polyglot_from_string("bad argument to internal function", SRC_CS));
+    UPCALL_CEXT_VOID(_jls_PyErr_CreateAndSetException, native_to_java(PyExc_SystemError), polyglot_from_string("bad argument to internal function", SRC_CS));
 }
 #define PyErr_BadInternalCall() _PyErr_BadInternalCall(__FILE__, __LINE__)
 
@@ -64,7 +64,6 @@ void PyErr_SetString(PyObject *exception, const char *string) {
     PyErr_SetObject(exception, value);
 }
 
-UPCALL_ID(PyErr_CreateAndSetException);
 void PyErr_SetObject(PyObject *exception, PyObject *value) {
     UPCALL_CEXT_VOID(_jls_PyErr_CreateAndSetException, native_to_java(exception), native_to_java(value));
 }
