@@ -65,6 +65,10 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
         return WriteAttributeToDynamicObjectNodeGen.create();
     }
 
+    protected static boolean compareKey(Object cachedKey, Object key) {
+        return cachedKey == key;
+    }
+
     @SuppressWarnings("unused")
     @Specialization(guards = {
                     "dynamicObject.getShape() == cachedShape",
@@ -82,7 +86,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
                                     "dynamicObject.getShape() == cachedShape",
-                                    "cachedKey == key",
+                                    "compareKey(cachedKey, key)",
                                     "loc != null",
                                     "loc.canSet(value)"
                     }, //
@@ -110,7 +114,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
                                     "dynamicObject.getShape() == cachedShape",
-                                    "cachedKey == key",
+                                    "compareKey(cachedKey, key)",
                                     "loc == null || !loc.canSet(value)",
                                     "newLoc.canSet(value)"
                     }, //
