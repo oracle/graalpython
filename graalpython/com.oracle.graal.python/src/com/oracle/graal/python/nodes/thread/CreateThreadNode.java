@@ -67,7 +67,9 @@ public class CreateThreadNode extends PNodeWithContext {
         PythonContext context = getContext();
         TruffleContext truffleContext = context.getEnv().getContext();
 
-        return factory().createThread(cls, context.getThreadGroup(), context.getThreadStackSize(), () -> {
+        // TODO: python thread stack size != java thread stack size
+        // ignore setting the stack size for the moment
+        return factory().createThread(cls, context.getThreadGroup(), 0, () -> {
             Object previous = truffleContext.enter();
             Object[] arguments = getArgsNode.executeWith(args);
             PKeyword[] keywords = getKwArgsNode.executeWith(kwargs);

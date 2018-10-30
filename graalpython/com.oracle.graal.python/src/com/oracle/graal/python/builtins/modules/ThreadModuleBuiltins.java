@@ -125,16 +125,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     abstract static class GetThreadStackSizeNode extends PythonUnaryBuiltinNode {
         @Specialization
         long getStackSize(@SuppressWarnings("unused") PNone stackSize) {
-            return getContext().getThreadStackSize();
-        }
-
-        @Specialization
-        long getStackSize(int stackSize,
-                        @Cached("createBinaryProfile()") ConditionProfile invalidSizeProfile) {
-            if (invalidSizeProfile.profile(stackSize < 0)) {
-                throw raise(ValueError, "size must be 0 or a positive value");
-            }
-            return getContext().getAndSetThreadStackSize(stackSize);
+            return getContext().getPythonThreadStackSize();
         }
 
         @Specialization
@@ -143,7 +134,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
             if (invalidSizeProfile.profile(stackSize < 0)) {
                 throw raise(ValueError, "size must be 0 or a positive value");
             }
-            return getContext().getAndSetThreadStackSize(stackSize);
+            return getContext().getAndSetPythonsThreadStackSize(stackSize);
         }
     }
 

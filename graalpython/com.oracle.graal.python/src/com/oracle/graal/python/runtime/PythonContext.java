@@ -64,8 +64,9 @@ public final class PythonContext {
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
-    private final AtomicLong threadStackSize = new AtomicLong(0); // the VM will set it to whatever
-                                                                  // it likes
+
+    // if set to 0 the VM will set it to whatever it likes
+    private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
 
     @CompilationFinal private TruffleLanguage.Env env;
 
@@ -108,12 +109,12 @@ public final class PythonContext {
     }
 
     @TruffleBoundary(allowInlining = true)
-    public long getThreadStackSize() {
-        return threadStackSize.get();
+    public long getPythonThreadStackSize() {
+        return pythonThreadStackSize.get();
     }
 
-    public long getAndSetThreadStackSize(long value) {
-        return threadStackSize.getAndSet(value);
+    public long getAndSetPythonsThreadStackSize(long value) {
+        return pythonThreadStackSize.getAndSet(value);
     }
 
     @TruffleBoundary(allowInlining = true)
