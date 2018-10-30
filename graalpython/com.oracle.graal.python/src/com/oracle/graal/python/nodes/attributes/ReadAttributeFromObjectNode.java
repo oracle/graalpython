@@ -41,13 +41,9 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
@@ -62,33 +58,12 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
-public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
+public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     public static ReadAttributeFromObjectNode create() {
         return ReadAttributeFromObjectNodeGen.create();
     }
 
     public abstract Object execute(Object object, Object key);
-
-    protected static boolean isNull(Object value) {
-        return value == null;
-    }
-
-    protected Object attrKey(Object key) {
-        if (key instanceof PString) {
-            return ((PString) key).getValue();
-        } else {
-            return key;
-        }
-    }
-
-    protected boolean isDictUnsetOrSameAsStorage(PythonObject object) {
-        PHashingCollection dict = object.getDict();
-        if (dict == null) {
-            return true;
-        } else {
-            return dict.getDictStorage() instanceof DynamicObjectStorage.PythonObjectDictStorage;
-        }
-    }
 
     // read from the DynamicObject store
     @Specialization(guards = {

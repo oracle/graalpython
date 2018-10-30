@@ -41,9 +41,7 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -52,24 +50,15 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Location;
-import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
-public abstract class ReadAttributeFromDynamicObjectNode extends PNodeWithContext {
+public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttributeNode {
     public static ReadAttributeFromDynamicObjectNode create() {
         return ReadAttributeFromDynamicObjectNodeGen.create();
     }
 
     public abstract Object execute(Object object, Object key);
-
-    protected static Location getLocationOrNull(Property prop) {
-        return prop == null ? null : prop.getLocation();
-    }
-
-    protected static boolean isNull(Object value) {
-        return value == null;
-    }
 
     protected static Object readFinalValue(DynamicObject object, Location location) {
         Object value = location.get(object);
@@ -83,14 +72,6 @@ public abstract class ReadAttributeFromDynamicObjectNode extends PNodeWithContex
         return cachedObject.getShape() == cachedShape;
     }
 
-    protected Object attrKey(Object key) {
-        if (key instanceof PString) {
-            return ((PString) key).getValue();
-        } else {
-            return key;
-        }
-    }
-
     private static boolean assertFinal(DynamicObject dynamicObject, Object key, Object cachedValue) {
         Object other = dynamicObject.get(key) == null ? PNone.NO_VALUE : dynamicObject.get(key);
         return cachedValue == other || cachedValue instanceof Number && other instanceof Number && ((Number) cachedValue).doubleValue() == ((Number) other).doubleValue();
@@ -102,7 +83,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends PNodeWithContex
                                     "dynamicObject == cachedDynamicObject",
                                     "checkShape(dynamicObject, cachedDynamicObject, cachedShape)",
                                     "key == cachedKey",
-                                    "!isNull(loc)",
+                                    "loc != null",
                                     "loc.isAssumedFinal()",
                     }, //
                     assumptions = {
@@ -127,7 +108,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends PNodeWithContex
                     guards = {
                                     "dynamicObject.getShape() == cachedShape",
                                     "key == cachedKey",
-                                    "isNull(loc) || !loc.isAssumedFinal()",
+                                    "loc == null || !loc.isAssumedFinal()",
                     }, //
                     assumptions = {
                                     "layoutAssumption"

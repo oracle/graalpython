@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -54,11 +52,10 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.FinalLocationException;
 import com.oracle.truffle.api.object.IncompatibleLocationException;
 import com.oracle.truffle.api.object.Location;
-import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
 
 @ImportStatic(PythonOptions.class)
-public abstract class WriteAttributeToDynamicObjectNode extends PNodeWithContext {
+public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeNode {
 
     public abstract boolean execute(Object primary, Object key, Object value);
 
@@ -66,18 +63,6 @@ public abstract class WriteAttributeToDynamicObjectNode extends PNodeWithContext
 
     public static WriteAttributeToDynamicObjectNode create() {
         return WriteAttributeToDynamicObjectNodeGen.create();
-    }
-
-    protected Location getLocationOrNull(Property prop) {
-        return prop == null ? null : prop.getLocation();
-    }
-
-    protected Object attrKey(Object key) {
-        if (key instanceof PString) {
-            return ((PString) key).getValue();
-        } else {
-            return key;
-        }
     }
 
     @SuppressWarnings("unused")
@@ -93,15 +78,11 @@ public abstract class WriteAttributeToDynamicObjectNode extends PNodeWithContext
         return nextNode.execute(dynamicObject, key, value);
     }
 
-    protected static boolean compareKey(Object cachedKey, Object key) {
-        return cachedKey == key;
-    }
-
     @SuppressWarnings("unused")
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
                                     "dynamicObject.getShape() == cachedShape",
-                                    "compareKey(cachedKey, key)",
+                                    "cachedKey == key",
                                     "loc != null",
                                     "loc.canSet(value)"
                     }, //
@@ -129,7 +110,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends PNodeWithContext
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
                                     "dynamicObject.getShape() == cachedShape",
-                                    "compareKey(cachedKey, key)",
+                                    "cachedKey == key",
                                     "loc == null || !loc.canSet(value)",
                                     "newLoc.canSet(value)"
                     }, //

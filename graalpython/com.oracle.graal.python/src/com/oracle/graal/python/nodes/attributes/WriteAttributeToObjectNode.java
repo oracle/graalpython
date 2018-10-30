@@ -41,17 +41,15 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
@@ -59,11 +57,10 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PythonOptions.class)
-public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
+public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     private final ConditionProfile isClassProfile = ConditionProfile.createBinaryProfile();
     private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
@@ -76,16 +73,8 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
         return WriteAttributeToObjectNodeGen.create();
     }
 
-    protected Object attrKey(Object key) {
-        if (key instanceof PString) {
-            return ((PString) key).getValue();
-        } else {
-            return key;
-        }
-    }
-
     protected boolean isAttrWritable(PythonObject self) {
-        if (self instanceof PythonClass || self instanceof PFunction || self instanceof PythonModule || self instanceof PBaseException) {
+        if (self instanceof PythonClass || self instanceof PFunction || self instanceof PMethod || self instanceof PythonModule || self instanceof PBaseException) {
             return true;
         }
         return !exactBuiltinInstanceProfile.profileIsAnyBuiltinObject(self);
@@ -96,19 +85,6 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
             if (key instanceof String) {
                 ((PythonClass) object).invalidateAttributeInMROFinalAssumptions((String) key);
             }
-        }
-    }
-
-    protected static boolean isHiddenKey(Object key) {
-        return key instanceof HiddenKey;
-    }
-
-    protected boolean isDictUnsetOrSameAsStorage(PythonObject object) {
-        PHashingCollection dict = object.getDict();
-        if (dict == null) {
-            return true;
-        } else {
-            return dict.getDictStorage() instanceof DynamicObjectStorage.PythonObjectDictStorage;
         }
     }
 
