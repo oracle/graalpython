@@ -237,10 +237,10 @@ public class JLineConsoleHandler extends ConsoleHandler {
     }
 
     @Override
-    public String readLine() {
+    public String readLine(boolean showPrompt) {
         try {
             console.getTerminal().init();
-            return console.readLine();
+            return console.readLine(showPrompt ? console.getPrompt() : "");
         } catch (UserInterruptException e) {
             throw e;
         } catch (Exception ex) {

@@ -59,9 +59,9 @@ public class DefaultConsoleHandler extends ConsoleHandler {
     }
 
     @Override
-    public String readLine() {
+    public String readLine(boolean showPrompt) {
         try {
-            if (prompt != null) {
+            if (prompt != null && showPrompt) {
                 out.print(prompt);
             }
             return in.readLine();
