@@ -68,14 +68,18 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.math.BigInteger;
+import java.nio.CharBuffer;
 import java.util.List;
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.NextNodeFactory;
@@ -1533,6 +1537,46 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         public Object doit(Object object) {
             return "truffle ast dump not supported for " + object.toString();
+        }
+    }
+
+    @Builtin(name = "input", keywordArguments = {"prompt"})
+    @GenerateNodeFactory
+    abstract static class InputNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        String input(@SuppressWarnings("unused") PNone prompt) {
+            CharBuffer buf = CharBuffer.allocate(1000);
+            try {
+                InputStream stdin = getContext().getStandardIn();
+                int read = stdin.read();
+                while (read != -1 && read != '\n') {
+                    if (buf.remaining() == 0) {
+                        CharBuffer newBuf = CharBuffer.allocate(buf.capacity() * 2);
+                        newBuf.put(buf);
+                        buf = newBuf;
+                    }
+                    buf.put((char) read);
+                    read = stdin.read();
+                }
+                buf.limit(buf.position());
+                buf.rewind();
+                return buf.toString();
+            } catch (IOException e) {
+                throw raise(PythonBuiltinClassType.EOFError, e.getMessage());
+            }
+        }
+
+        @Specialization
+        String inputPrompt(PString prompt) {
+            return inputPrompt(prompt.getValue());
+        }
+
+        @Specialization
+        @TruffleBoundary
+        String inputPrompt(String prompt) {
+            new PrintStream(getContext().getStandardOut()).println(prompt);
+            return input(null);
         }
     }
 }
