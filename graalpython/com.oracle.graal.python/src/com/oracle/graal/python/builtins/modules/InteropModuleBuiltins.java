@@ -54,9 +54,14 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -82,6 +87,23 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
         return InteropModuleBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+
+        PythonContext context = core.getContext();
+        Env env = context.getEnv();
+        String coreHome = PythonOptions.getOption(context, PythonOptions.CoreHome);
+        try {
+            TruffleFile coreDir = env.getTruffleFile(coreHome);
+            TruffleFile docDir = coreDir.resolveSibling("doc");
+            if (docDir.exists() || (docDir = coreDir.getParent().resolveSibling("doc")).exists()) {
+                builtinConstants.put(SpecialAttributeNames.__DOC__, new String(docDir.resolve("INTEROP.md").readAllBytes()));
+            }
+        } catch (SecurityException | IOException e) {
+        }
     }
 
     @Builtin(name = "import_value", minNumOfPositionalArgs = 1, keywordArguments = {"name"})
