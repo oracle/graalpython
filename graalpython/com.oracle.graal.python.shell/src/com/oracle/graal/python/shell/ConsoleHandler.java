@@ -63,7 +63,11 @@ public abstract class ConsoleHandler {
     /**
      * Read a line of input, newline is <b>NOT</b> included in result.
      */
-    public abstract String readLine();
+    public final String readLine() {
+        return readLine(true);
+    }
+
+    public abstract String readLine(boolean prompt);
 
     public abstract void setPrompt(String prompt);
 
@@ -90,7 +94,7 @@ public abstract class ConsoleHandler {
             public int read() throws IOException {
                 if (buffer == null) {
                     pos = 0;
-                    String line = readLine();
+                    String line = readLine(false);
                     if (line == null) {
                         return -1;
                     }
