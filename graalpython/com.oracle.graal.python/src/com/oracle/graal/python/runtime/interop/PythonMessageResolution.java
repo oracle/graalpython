@@ -75,9 +75,11 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
+import com.oracle.graal.python.nodes.datamodel.IsIterableNode;
 import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
@@ -183,44 +185,118 @@ public class PythonMessageResolution {
     private static final class ReadNode extends Node {
         private static final Object NONEXISTING_IDENTIFIER = new Object();
 
-        @Child private IsSequenceNode isSequence = IsSequenceNode.create();
-        @Child private LookupAndCallBinaryNode readNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
-        @Child private GetItemNode getItemNode = GetItemNode.create();
         @Child private KeyForAttributeAccess getAttributeKey = new KeyForAttributeAccess();
-        @Child private KeyForItemAccess getItemKey = new KeyForItemAccess();
-        final ConditionProfile strProfile = ConditionProfile.createBinaryProfile();
         @Child private PTypeToForeignNode toForeign = PTypeToForeignNodeGen.create();
+
+        @Child private LookupAndCallBinaryNode readNode;
+        @Child private KeyForItemAccess getItemKey;
+        @Child private GetItemNode getItemNode;
+        @Child private IsSequenceNode isSequence;
+        @Child private IsIterableNode isIterableNode;
+        @Child private LookupAndCallUnaryNode getIter;
+        @Child private LookupAndCallUnaryNode callNext;
+
+        final ConditionProfile strProfile = ConditionProfile.createBinaryProfile();
+
+        private LookupAndCallBinaryNode getReadNode() {
+            if (readNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readNode = insert(LookupAndCallBinaryNode.create(__GETATTRIBUTE__));
+            }
+            return readNode;
+        }
+
+        private KeyForItemAccess getGetItemKey() {
+            if (getItemKey == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemKey = insert(new KeyForItemAccess());
+            }
+            return getItemKey;
+        }
+
+        private GetItemNode getGetItemNode() {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(GetItemNode.create());
+            }
+            return getItemNode;
+        }
+
+        private IsSequenceNode getIsSequenceNode() {
+            if (isSequence == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSequence = insert(IsSequenceNode.create());
+            }
+            return isSequence;
+        }
+
+        private IsIterableNode getIsIterableNode() {
+            if (isIterableNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isIterableNode = insert(IsIterableNode.create());
+            }
+            return isIterableNode;
+        }
 
         public Object execute(Object object, Object key) {
             String attrKey = getAttributeKey.execute(key);
             if (attrKey != null) {
                 try {
-                    return toForeign.executeConvert(readNode.executeObject(object, attrKey));
+                    return toForeign.executeConvert(getReadNode().executeObject(object, attrKey));
                 } catch (PException e) {
                     // pass, we might be reading an item that starts with "@"
                 }
             }
 
-            String itemKey = getItemKey.execute(key);
+            String itemKey = getGetItemKey().execute(key);
             if (itemKey != null) {
-                return toForeign.executeConvert(getItemNode.execute(object, itemKey));
+                return toForeign.executeConvert(getGetItemNode().execute(object, itemKey));
             }
 
             if (strProfile.profile(key instanceof String)) {
                 try {
-                    return toForeign.executeConvert(readNode.executeObject(object, key));
+                    return toForeign.executeConvert(getReadNode().executeObject(object, key));
                 } catch (PException e) {
                     // pass
                 }
             }
-            if (isSequence.execute(object)) {
+
+            if (getIsSequenceNode().execute(object)) {
                 try {
-                    return toForeign.executeConvert(getItemNode.execute(object, key));
+                    return toForeign.executeConvert(getGetItemNode().execute(object, key));
                 } catch (PException e) {
                     // pass
                 }
             }
+
+            if (key instanceof Integer) {
+                int intKey = (int) key;
+                if (getIsIterableNode().execute(object)) {
+                    if (getIter == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getIter = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__ITER__));
+                    }
+                    Object iter = getIter.executeObject(object);
+                    if (iter != object) {
+                        // there is a separate iterator for this object, should be safe to consume
+                        return iterateToKey(iter, intKey);
+                    }
+                }
+            }
+
             return NONEXISTING_IDENTIFIER;
+        }
+
+        private Object iterateToKey(Object iter, int key) {
+            if (callNext == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNext = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__NEXT__));
+            }
+            Object value = NONEXISTING_IDENTIFIER;
+            for (int i = 0; i <= key; i++) {
+                value = callNext.executeObject(iter);
+            }
+            return value;
         }
     }
 
@@ -534,6 +610,7 @@ public class PythonMessageResolution {
     @Resolve(message = "HAS_SIZE")
     abstract static class PForeignHasSizeNode extends Node {
         @Child private IsSequenceNode isSequenceNode;
+        @Child private IsIterableNode isIterableNode;
         @Child private IsMappingNode isMappingNode;
         @Child private BuiltinFunctions.LenNode lenNode;
         @Child private PTypeUnboxNode unboxNode;
@@ -543,7 +620,10 @@ public class PythonMessageResolution {
 
         public Object access(Object object) {
             Object profiled = profile.profile(object);
-            if (getIsSequenceNode().execute(profiled) && !getIsMappingNode().execute(profiled)) {
+            boolean isMapping = getIsMappingNode().execute(profiled);
+            if (isMapping) {
+                return false;
+            } else if (getIsSequenceNode().execute(profiled)) {
                 // also try to access using an integer index
                 int len = (int) getUnboxNode().execute(getLenNode().executeWith(profiled));
                 if (len > 0) {
@@ -554,6 +634,8 @@ public class PythonMessageResolution {
                         return false;
                     }
                 }
+                return true;
+            } else if (getIsIterableNode().execute(profiled)) {
                 return true;
             }
             return false;
@@ -583,6 +665,14 @@ public class PythonMessageResolution {
             return callGetItemNode;
         }
 
+        private IsIterableNode getIsIterableNode() {
+            if (isIterableNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isIterableNode = insert(IsIterableNode.create());
+            }
+            return isIterableNode;
+        }
+
         private IsSequenceNode getIsSequenceNode() {
             if (isSequenceNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -605,10 +695,47 @@ public class PythonMessageResolution {
         @Child IsSequenceNode isSeq = IsSequenceNode.create();
         @Child private BuiltinFunctions.LenNode lenNode = BuiltinFunctionsFactory.LenNodeFactory.create();
         @Child private PTypeUnboxNode unboxNode = PTypeUnboxNode.create();
+        @Child private IsIterableNode isIter;
+        @Child private LookupInheritedAttributeNode getLenHint;
+        @Child private CallUnaryMethodNode callNode;
+        @Child private CastToListNode castToList;
+        @Child private LookupAndCallUnaryNode getIter;
 
         public Object access(Object object) {
             if (isSeq.execute(object)) {
                 return unboxNode.execute(lenNode.executeWith(object));
+            } else {
+                if (isIter == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    isIter = insert(IsIterableNode.create());
+                }
+                if (isIter.execute(object)) {
+                    if (getLenHint == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getLenHint = insert(LookupInheritedAttributeNode.create(SpecialMethodNames.__LENGTH_HINT__));
+                    }
+                    Object lenHint = getLenHint.execute(object);
+                    if (lenHint != PNone.NO_VALUE) {
+                        if (callNode == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            callNode = insert(CallUnaryMethodNode.create());
+                        }
+                        return unboxNode.execute(callNode.executeObject(lenHint, object));
+                    }
+                    if (getIter == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getIter = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__ITER__));
+                    }
+                    Object iter = getIter.executeObject(object);
+                    if (iter != object) {
+                        if (castToList == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            castToList = insert(CastToListNode.create());
+                        }
+                        // there is a separate iterator for this object, should be safe to consume
+                        return unboxNode.execute(lenNode.executeWith(castToList.executeWith(iter)));
+                    }
+                }
             }
             throw UnsupportedMessageException.raise(Message.GET_SIZE);
         }
@@ -633,6 +760,10 @@ public class PythonMessageResolution {
         @Child private KeyForItemAccess itemKey = new KeyForItemAccess();
 
         public int access(Object object, Object fieldName) {
+            if (fieldName instanceof Integer) {
+                return KeyInfo.READABLE | KeyInfo.READ_SIDE_EFFECTS;
+            }
+
             String itemFieldName = itemKey.execute(fieldName);
             if (itemFieldName != null) {
                 return KeyInfo.READABLE | KeyInfo.MODIFIABLE | KeyInfo.REMOVABLE | KeyInfo.REMOVABLE;

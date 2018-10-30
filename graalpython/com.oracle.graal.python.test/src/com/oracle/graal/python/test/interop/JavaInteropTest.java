@@ -46,7 +46,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Set;
+import java.util.Arrays;
+import java.util.List;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
@@ -227,14 +228,14 @@ public class JavaInteropTest extends PythonTests {
 
         Value libraries = suite.getMember("libraries");
         assertNotNull("libraries found", libraries);
-        final Set<String> suiteKeys = suite.getMemberKeys();
+        final List<Object> suiteKeys = Arrays.asList(suite.invokeMember("keys").as(Object[].class));
         assertTrue("Libraries found among keys: " + suiteKeys, suiteKeys.contains("libraries"));
 
         Value dacapo = null;
-        for (String k : libraries.getMemberKeys()) {
+        for (Object k : libraries.invokeMember("keys").as(List.class)) {
             System.err.println("k " + k);
             if ("DACAPO".equals(k)) {
-                dacapo = libraries.getMember(k);
+                dacapo = libraries.getMember((String) k);
             }
         }
         assertNotNull("Dacapo found", dacapo);
