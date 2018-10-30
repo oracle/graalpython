@@ -199,18 +199,6 @@ void* native_to_java_exported(PyObject* obj) {
     return native_to_java(obj);
 }
 
-void* to_java(PyObject* obj) {
-	PyObject* managed_obj = native_to_java(obj);
-
-	// Since Python object respond to 'IS_POINTER' with true if there has already
-	// been a 'TO_NATIVE' before, we need to first check if it is directly a Python
-	// object to avoid conversion to a pointer.
- 	if (truffle_invoke(PY_TRUFFLE_CEXT, "is_python_object", managed_obj)) {
-   		return managed_obj;
-   	}
-    return truffle_invoke(PY_TRUFFLE_CEXT, "to_java", managed_obj);
-}
-
 void* native_pointer_to_java(PyObject* obj) {
     if (obj == NULL) {
         return Py_NoValue;
