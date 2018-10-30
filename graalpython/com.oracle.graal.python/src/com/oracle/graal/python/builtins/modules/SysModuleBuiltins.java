@@ -138,14 +138,14 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         true,  // dont_write_bytecode
                         false, // hash_randomization
                         false, // ignore_environment
-                        PythonOptions.getOption(core.getContext(), PythonOptions.InspectFlag).booleanValue(), // inspect
-                        PythonOptions.getOption(core.getContext(), PythonOptions.InspectFlag).booleanValue(), // interactive
+                        PythonOptions.getFlag(core.getContext(), PythonOptions.InspectFlag), // inspect
+                        PythonOptions.getFlag(core.getContext(), PythonOptions.InspectFlag), // interactive
                         false, // isolated
-                        PythonOptions.getOption(core.getContext(), PythonOptions.NoSiteFlag).booleanValue(), // no_site
-                        PythonOptions.getOption(core.getContext(), PythonOptions.NoUserSiteFlag).booleanValue(), // no_user_site
+                        PythonOptions.getFlag(core.getContext(), PythonOptions.NoSiteFlag), // no_site
+                        PythonOptions.getFlag(core.getContext(), PythonOptions.NoUserSiteFlag), // no_user_site
                         false, // optimize
-                        PythonOptions.getOption(core.getContext(), PythonOptions.QuietFlag).booleanValue(), // quiet
-                        PythonOptions.getOption(core.getContext(), PythonOptions.VerboseFlag).booleanValue(), // verbose
+                        PythonOptions.getFlag(core.getContext(), PythonOptions.QuietFlag), // quiet
+                        PythonOptions.getFlag(core.getContext(), PythonOptions.VerboseFlag), // verbose
         }));
         builtinConstants.put("graal_python_core_home", PythonOptions.getOption(core.getContext(), PythonOptions.CoreHome));
         builtinConstants.put("graal_python_stdlib_home", PythonOptions.getOption(core.getContext(), PythonOptions.StdLibHome));
