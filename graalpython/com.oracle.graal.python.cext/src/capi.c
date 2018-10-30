@@ -209,6 +209,7 @@ void* native_pointer_to_java(PyObject* obj) {
     } else if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
     }
+    return obj;
 }
 
 __attribute__((always_inline))
