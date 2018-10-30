@@ -51,7 +51,7 @@ import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarar
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.TruffleContext;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -65,17 +65,17 @@ public class CreateThreadNode extends PNodeWithContext {
 
     public PThread execute(VirtualFrame frame, PythonClass cls, Object callable, Object args, Object kwargs) {
         PythonContext context = getContext();
-        TruffleContext truffleContext = context.getEnv().getContext();
+        TruffleLanguage.Env env = context.getEnv();
 
         // TODO: python thread stack size != java thread stack size
         // ignore setting the stack size for the moment
-        return factory().createThread(cls, context.getThreadGroup(), 0, () -> {
-            Object previous = truffleContext.enter();
+        Thread thread = env.createThread(() -> {
             Object[] arguments = getArgsNode.executeWith(args);
             PKeyword[] keywords = getKwArgsNode.executeWith(kwargs);
             callNode.execute(frame, callable, arguments, keywords);
-            truffleContext.leave(previous);
-        });
+        }, env.getContext(), context.getThreadGroup());
+
+        return factory().createPythonThread(cls, thread);
     }
 
     public static CreateThreadNode create() {

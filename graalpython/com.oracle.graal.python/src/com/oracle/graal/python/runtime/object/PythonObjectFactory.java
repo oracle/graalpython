@@ -768,11 +768,11 @@ public final class PythonObjectFactory extends Node {
         return trace(new PRLock(cls));
     }
 
-    public PThread createThread(ThreadGroup group, long stackSize, Runnable runnable) {
-        return trace(new PThread(PythonBuiltinClassType.PThread, group, stackSize, runnable));
+    public PThread createPythonThread(Thread thread) {
+        return trace(new PThread(PythonBuiltinClassType.PThread, thread));
     }
 
-    public PThread createThread(PythonClass cls, ThreadGroup group, long stackSize, Runnable runnable) {
-        return trace(new PThread(cls, group, stackSize, runnable));
+    public PThread createPythonThread(PythonClass cls, Thread thread) {
+        return trace(new PThread(cls, thread));
     }
 }

@@ -128,13 +128,23 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
             return getContext().getPythonThreadStackSize();
         }
 
-        @Specialization
-        long getStackSize(long stackSize,
-                        @Cached("createBinaryProfile()") ConditionProfile invalidSizeProfile) {
+        private long setAndGetStackSizeInternal(long stackSize, ConditionProfile invalidSizeProfile) {
             if (invalidSizeProfile.profile(stackSize < 0)) {
                 throw raise(ValueError, "size must be 0 or a positive value");
             }
             return getContext().getAndSetPythonsThreadStackSize(stackSize);
+        }
+
+        @Specialization
+        long getStackSize(int stackSize,
+                        @Cached("createBinaryProfile()") ConditionProfile invalidSizeProfile) {
+            return setAndGetStackSizeInternal(stackSize, invalidSizeProfile);
+        }
+
+        @Specialization
+        long getStackSize(long stackSize,
+                        @Cached("createBinaryProfile()") ConditionProfile invalidSizeProfile) {
+            return setAndGetStackSizeInternal(stackSize, invalidSizeProfile);
         }
     }
 

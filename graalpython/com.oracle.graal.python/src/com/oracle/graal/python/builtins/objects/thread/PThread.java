@@ -48,13 +48,9 @@ public class PThread extends PythonBuiltinObject {
     public final static String GRAALPYTHON_THREADS = "GRAALPYTHON_THREADS";
     private final Thread thread;
 
-    public PThread(LazyPythonClass cls, ThreadGroup group, Runnable runnable) {
-        this(cls, group, 0, runnable);
-    }
-
-    public PThread(LazyPythonClass cls, ThreadGroup group, long stackSize, Runnable runnable) {
+    public PThread(LazyPythonClass cls, Thread thread) {
         super(cls);
-        this.thread = new Thread(group, runnable, "graalpython-thread-" + group.activeCount(), stackSize);
+        this.thread = thread;
     }
 
     @TruffleBoundary
