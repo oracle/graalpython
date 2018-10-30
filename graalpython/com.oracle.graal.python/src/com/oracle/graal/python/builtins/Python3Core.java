@@ -167,45 +167,54 @@ import com.oracle.truffle.api.source.SourceSection;
  * types.
  */
 public final class Python3Core implements PythonCore {
-    // Order matters!
-    private static final String[] CORE_FILES = new String[]{
-                    "_descriptor",
-                    "object",
-                    "sys",
-                    "dict",
-                    "_mappingproxy",
-                    "str",
-                    "type",
-                    "_imp",
-                    "function",
-                    "_functools",
-                    "method",
-                    "code",
-                    "_warnings",
-                    "posix",
-                    "_io",
-                    "_frozen_importlib",
-                    "classes",
-                    "_weakref",
-                    "set",
-                    "itertools",
-                    "base_exception",
-                    "python_cext",
-                    "_collections",
-                    "memoryview",
-                    "list",
-                    "_codecs",
-                    "bytes",
-                    "bytearray",
-                    "float",
-                    "time",
-                    "unicodedata",
-                    "_locale",
-                    "_sre",
-                    "function",
-                    "_socket",
-                    "_thread",
-    };
+    private final String[] coreFiles;
+
+    private static final String[] initializeCoreFiles() {
+        // Order matters!
+        List<String> coreFiles = new ArrayList<>(Arrays.asList(
+                        "_descriptor",
+                        "object",
+                        "sys",
+                        "dict",
+                        "_mappingproxy",
+                        "str",
+                        "type",
+                        "_imp",
+                        "function",
+                        "_functools",
+                        "method",
+                        "code",
+                        "_warnings",
+                        "posix",
+                        "_io",
+                        "_frozen_importlib",
+                        "classes",
+                        "_weakref",
+                        "set",
+                        "itertools",
+                        "base_exception",
+                        "python_cext",
+                        "_collections",
+                        "memoryview",
+                        "list",
+                        "_codecs",
+                        "bytes",
+                        "bytearray",
+                        "float",
+                        "time",
+                        "unicodedata",
+                        "_locale",
+                        "_sre",
+                        "function",
+                        "_socket"));
+
+        // threads
+        if (PythonLanguage.WITH_THREADS) {
+            coreFiles.add("_thread");
+        }
+
+        return coreFiles.toArray(new String[coreFiles.size()]);
+    }
 
     private final PythonBuiltins[] builtins;
 
@@ -289,10 +298,6 @@ public final class Python3Core implements PythonCore {
                         new SysModuleBuiltins(),
                         new BufferBuiltins(),
                         new MemoryviewBuiltins(),
-                        new ThreadModuleBuiltins(),
-                        new ThreadBuiltins(),
-                        new LockBuiltins(),
-                        new RLockBuiltins(),
                         new SuperBuiltins(),
                         new BinasciiModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
@@ -304,6 +309,14 @@ public final class Python3Core implements PythonCore {
             for (PythonBuiltins builtin : providers) {
                 builtins.add(builtin);
             }
+        }
+        // threads
+        if (PythonLanguage.WITH_THREADS) {
+            builtins.addAll(new ArrayList<>(Arrays.asList(
+                            new ThreadModuleBuiltins(),
+                            new ThreadBuiltins(),
+                            new LockBuiltins(),
+                            new RLockBuiltins())));
         }
         return builtins.toArray(new PythonBuiltins[builtins.size()]);
     }
@@ -332,6 +345,7 @@ public final class Python3Core implements PythonCore {
     public Python3Core(PythonParser parser) {
         this.parser = parser;
         this.builtins = initializeBuiltins();
+        this.coreFiles = initializeCoreFiles();
     }
 
     @Override
@@ -372,7 +386,7 @@ public final class Python3Core implements PythonCore {
     private void initializePythonCore() {
         String coreHome = PythonCore.getCoreHomeOrFail();
         loadFile("builtins", coreHome);
-        for (String s : CORE_FILES) {
+        for (String s : coreFiles) {
             loadFile(s, coreHome);
         }
         exportCInterface(getContext());
@@ -535,7 +549,10 @@ public final class Python3Core implements PythonCore {
         for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
             String module = builtinClass.getPublicInModule();
             if (module != null) {
-                lookupBuiltinModule(module).setAttribute(builtinClass.getName(), lookupType(builtinClass));
+                PythonModule pythonModule = lookupBuiltinModule(module);
+                if (pythonModule != null) {
+                    pythonModule.setAttribute(builtinClass.getName(), lookupType(builtinClass));
+                }
             }
         }
         // now initialize well-known objects

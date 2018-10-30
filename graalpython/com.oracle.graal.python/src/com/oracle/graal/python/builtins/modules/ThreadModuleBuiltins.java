@@ -123,12 +123,14 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "stack_size", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetThreadStackSizeNode extends PythonUnaryBuiltinNode {
+        private final ConditionProfile invalidSizeProfile = ConditionProfile.createBinaryProfile();
+
         @Specialization
         long getStackSize(@SuppressWarnings("unused") PNone stackSize) {
             return getContext().getPythonThreadStackSize();
         }
 
-        private long setAndGetStackSizeInternal(long stackSize, ConditionProfile invalidSizeProfile) {
+        private long setAndGetStackSizeInternal(long stackSize) {
             if (invalidSizeProfile.profile(stackSize < 0)) {
                 throw raise(ValueError, "size must be 0 or a positive value");
             }
@@ -136,15 +138,13 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        long getStackSize(int stackSize,
-                        @Cached("createBinaryProfile()") ConditionProfile invalidSizeProfile) {
-            return setAndGetStackSizeInternal(stackSize, invalidSizeProfile);
+        long getStackSize(int stackSize) {
+            return setAndGetStackSizeInternal(stackSize);
         }
 
         @Specialization
-        long getStackSize(long stackSize,
-                        @Cached("createBinaryProfile()") ConditionProfile invalidSizeProfile) {
-            return setAndGetStackSizeInternal(stackSize, invalidSizeProfile);
+        long getStackSize(long stackSize) {
+            return setAndGetStackSizeInternal(stackSize);
         }
     }
 
