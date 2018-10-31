@@ -38,6 +38,7 @@
 # SOFTWARE.
 import random
 import re
+import sys
 
 try:
     import threading
@@ -334,11 +335,13 @@ try:
             lock = self.locktype()
             del lock
 
+        @unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 5), "skipping for cPython versions < 3.5")
         def test_repr(self):
             lock = self.locktype()
             self.assertRegexpMatches(repr(lock), "<unlocked .* object (.*)?at .*>")
             del lock
 
+        @unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 5), "skipping for cPython versions < 3.5")
         def test_locked_repr(self):
             lock = self.locktype()
             lock.acquire()
