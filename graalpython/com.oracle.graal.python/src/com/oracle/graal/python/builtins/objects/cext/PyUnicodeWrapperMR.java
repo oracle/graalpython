@@ -49,7 +49,9 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeDat
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeState;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PyUnicodeWrapperMRFactory.PyUnicodeToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.PAsPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.PIsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -57,8 +59,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -145,8 +145,10 @@ public class PyUnicodeWrapperMR {
     @Resolve(message = "TO_NATIVE")
     abstract static class ToNativeNode extends Node {
         @Child private ToPyObjectNode toPyObjectNode = ToPyObjectNode.create();
+        @Child private InvalidateNativeObjectsAllManagedNode invalidateNode = InvalidateNativeObjectsAllManagedNode.create();
 
         Object access(PyUnicodeWrapper obj) {
+            invalidateNode.execute();
             if (!obj.isNative()) {
                 obj.setNativePointer(toPyObjectNode.execute(obj));
             }
@@ -156,18 +158,10 @@ public class PyUnicodeWrapperMR {
 
     @Resolve(message = "IS_POINTER")
     abstract static class IsPointerNode extends Node {
-        @Child private Node isPointerNode;
+        @Child private PIsPointerNode pIsPointerNode = PIsPointerNode.create();
 
         boolean access(PyUnicodeWrapper obj) {
-            return obj.isNative() && (!(obj.getNativePointer() instanceof TruffleObject) || ForeignAccess.sendIsPointer(getIsPointerNode(), (TruffleObject) obj.getNativePointer()));
-        }
-
-        private Node getIsPointerNode() {
-            if (isPointerNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isPointerNode = insert(Message.IS_POINTER.createNode());
-            }
-            return isPointerNode;
+            return pIsPointerNode.execute(obj);
         }
     }
 

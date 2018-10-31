@@ -45,6 +45,8 @@ import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CArrayWrappe
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.PIsPointerNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -159,8 +161,10 @@ public class CArrayWrapperMR {
 
     @Resolve(message = "IS_POINTER")
     abstract static class IsPointerNode extends Node {
+        @Child private PIsPointerNode pIsPointerNode = PIsPointerNode.create();
+
         boolean access(CArrayWrapper obj) {
-            return obj.isNative();
+            return pIsPointerNode.execute(obj);
         }
     }
 
@@ -190,8 +194,10 @@ public class CArrayWrapperMR {
     @Resolve(message = "TO_NATIVE")
     abstract static class ToNativeNode extends Node {
         @Child private CExtNodes.AsCharPointer asCharPointerNode;
+        @Child private InvalidateNativeObjectsAllManagedNode invalidateNode = InvalidateNativeObjectsAllManagedNode.create();
 
         Object access(CArrayWrapper obj) {
+            invalidateNode.execute();
             if (!obj.isNative()) {
                 if (asCharPointerNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();

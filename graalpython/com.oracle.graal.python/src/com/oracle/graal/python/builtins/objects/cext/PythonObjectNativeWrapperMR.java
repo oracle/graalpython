@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNative
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.GetSulongTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PAsPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PIsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
@@ -107,6 +108,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -896,8 +898,10 @@ public class PythonObjectNativeWrapperMR {
     @Resolve(message = "TO_NATIVE")
     abstract static class ToNativeNode extends Node {
         @Child private ToPyObjectNode toPyObjectNode;
+        @Child private InvalidateNativeObjectsAllManagedNode invalidateNode = InvalidateNativeObjectsAllManagedNode.create();
 
         Object access(PythonClassInitNativeWrapper obj) {
+            invalidateNode.execute();
             if (!obj.isNative()) {
                 obj.setNativePointer(getToPyObjectNode().execute(obj));
             }
@@ -906,6 +910,7 @@ public class PythonObjectNativeWrapperMR {
 
         Object access(PythonNativeWrapper obj) {
             assert !(obj instanceof PythonClassInitNativeWrapper);
+            invalidateNode.execute();
             if (!obj.isNative()) {
                 obj.setNativePointer(getToPyObjectNode().execute(obj));
             }
@@ -923,8 +928,55 @@ public class PythonObjectNativeWrapperMR {
 
     @Resolve(message = "IS_POINTER")
     abstract static class IsPointerNode extends Node {
+        @Child private PIsPointerNode pIsPointerNode = PIsPointerNode.create();
+
         boolean access(PythonNativeWrapper obj) {
+            return pIsPointerNode.execute(obj);
+        }
+    }
+
+    abstract static class PIsPointerNode extends PNodeWithContext {
+
+        public abstract boolean execute(PythonNativeWrapper obj);
+
+        @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
+        boolean doFalse(@SuppressWarnings("unused") PythonNativeWrapper obj) {
+            return false;
+        }
+
+        @Specialization
+        boolean doGeneric(PythonNativeWrapper obj) {
             return obj.isNative();
+        }
+
+        protected Assumption nativeObjectsAllManagedAssumption() {
+            return getContext().getNativeObjectsAllManagedAssumption();
+        }
+
+        public static PIsPointerNode create() {
+            return PIsPointerNodeGen.create();
+        }
+    }
+
+    abstract static class InvalidateNativeObjectsAllManagedNode extends PNodeWithContext {
+
+        public abstract void execute();
+
+        @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
+        void doValid() {
+            nativeObjectsAllManagedAssumption().invalidate();
+        }
+
+        @Specialization
+        void doInvalid() {
+        }
+
+        protected Assumption nativeObjectsAllManagedAssumption() {
+            return getContext().getNativeObjectsAllManagedAssumption();
+        }
+
+        public static InvalidateNativeObjectsAllManagedNode create() {
+            return InvalidateNativeObjectsAllManagedNode.create();
         }
     }
 
