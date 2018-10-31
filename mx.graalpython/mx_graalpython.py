@@ -432,6 +432,7 @@ def graalpython_gate_runner(args, tasks):
                 version="1fc0e86a54cbe090d36f262c062d8f4eee8f2e6d",
                 urlinfos=[mx.SuiteImportURLInfo(mx_urlrewrites.rewriteurl(apprepo), "git", mx.vc_system("git"))]
             )
+            mx.log(" ".join(["Running", "mx"] + ["-p", _apptest_suite.dir, "graalpython-apptests"]))
             mx.run_mx(["-p", _apptest_suite.dir, "graalpython-apptests"])
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
