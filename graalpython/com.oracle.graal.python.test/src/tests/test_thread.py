@@ -39,10 +39,12 @@
 import random
 import re
 import sys
+try:
+    import _sysconfig as syscfg
+except Exception:
+    import sysconfig as syscfg
 
-import _sysconfig
-
-if _sysconfig.get_config_var('WITH_THREAD'):
+if syscfg.get_config_var('WITH_THREAD'):
     import threading
     import unittest
     from test import support
