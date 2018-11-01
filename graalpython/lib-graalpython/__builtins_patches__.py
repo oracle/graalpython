@@ -37,19 +37,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
+import _pyio
+import io
+
+import _io
+import _sysconfig
 import builtins
+import sys
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # patch _io
 #
 # ----------------------------------------------------------------------------------------------------------------------
-
-import _io
-import _pyio
-import io
-
 
 @__builtin__
 def open(*args, **kwargs):
@@ -72,3 +73,14 @@ for module in [_io, io]:
 
 
 setattr(builtins, 'open', open)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+#
+# patch _thread (needed for setuptools if threading is disabled)
+#
+# ----------------------------------------------------------------------------------------------------------------------
+if not _sysconfig.get_config_var('WITH_THREAD'):
+    import _dummy_thread
+    sys.modules["_thread"] = _dummy_thread
+

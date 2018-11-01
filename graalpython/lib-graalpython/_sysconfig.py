@@ -37,17 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import _sysconfig
-if _sysconfig.get_config_var('WITH_THREAD'):
-    error = RuntimeError
-    TIMEOUT_MAX = __truffle_get_timeout_max__()
 
-
-    @__builtin__
-    def allocate_lock():
-        return LockType()
-
-
-    def _set_sentinel():
-        """Dummy implementation of _thread._set_sentinel()."""
-        return LockType()
+def get_config_var(name):
+    return get_config_vars().get(name)

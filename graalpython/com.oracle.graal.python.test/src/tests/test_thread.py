@@ -40,7 +40,9 @@ import random
 import re
 import sys
 
-try:
+import _sysconfig
+
+if _sysconfig.get_config_var('WITH_THREAD'):
     import threading
     import unittest
     from test import support
@@ -508,6 +510,3 @@ try:
             lock.release()
             self.assertFalse(lock.locked())
             self.assertTrue(lock.acquire(blocking=False))
-
-except (ModuleNotFoundError, ImportError) as e:
-    print(e)

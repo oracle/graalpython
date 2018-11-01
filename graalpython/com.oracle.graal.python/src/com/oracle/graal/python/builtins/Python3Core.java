@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SysConfigModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
@@ -206,12 +207,9 @@ public final class Python3Core implements PythonCore {
                         "_locale",
                         "_sre",
                         "function",
-                        "_socket"));
-
-        // threads
-        if (PythonLanguage.WITH_THREADS) {
-            coreFiles.add("_thread");
-        }
+                        "_sysconfig",
+                        "_socket",
+                        "_thread"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
     }
@@ -303,7 +301,8 @@ public final class Python3Core implements PythonCore {
                         new PosixSubprocessModuleBuiltins(),
                         new CtypesModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
-                        new PyExpatModuleBuiltins()));
+                        new PyExpatModuleBuiltins(),
+                        new SysConfigModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
             for (PythonBuiltins builtin : providers) {
