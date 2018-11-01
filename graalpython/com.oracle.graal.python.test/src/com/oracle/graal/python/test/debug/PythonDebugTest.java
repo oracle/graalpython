@@ -41,6 +41,7 @@
 package com.oracle.graal.python.test.debug;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -330,6 +331,10 @@ public class PythonDebugTest {
     @Test
     public void testGettersSetters() throws Throwable {
         final Source source = Source.newBuilder("python", "" +
+                        "class GetterOnly:\n" +
+                        "  def __get__(self):\n" +
+                        "    return 42\n" +
+                        "\n" +
                         "class P:\n" +
                         "  def __init__(self):\n" +
                         "    self.__x = None\n" +
@@ -347,10 +352,7 @@ public class PythonDebugTest {
                         "    self.__nx += 1\n" +
                         "    self.__x = value\n" +
                         "\n" +
-                        "  @property\n" +
-                        "  def y(self):\n" +
-                        "    self.__ny += 1\n" +
-                        "    return self.__y\n" +
+                        "  y = GetterOnly()\n" +
                         "\n" +
                         "p = P()\n" +
                         "str(p)\n" +
@@ -361,7 +363,7 @@ public class PythonDebugTest {
             expectSuspended((SuspendedEvent event) -> {
                 DebugStackFrame frame = event.getTopStackFrame();
                 assertEquals(1, frame.getSourceSection().getStartLine());
-                event.prepareStepOver(5);
+                event.prepareStepOver(7);
             });
             expectSuspended((SuspendedEvent event) -> {
                 DebugStackFrame frame = event.getTopStackFrame();
@@ -385,7 +387,7 @@ public class PythonDebugTest {
                 assertEquals(3, nx.as(Number.class).intValue());
                 DebugValue y = p.getProperty("y");
                 assertTrue(y.hasReadSideEffects());
-                assertTrue(y.hasWriteSideEffects());
+                assertFalse(y.hasWriteSideEffects());
                 assertTrue(y.isReadable());
                 assertTrue(y.isWritable());
                 DebugValue ny = p.getProperty("__ny");
