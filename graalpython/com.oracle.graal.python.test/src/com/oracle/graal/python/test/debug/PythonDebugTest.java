@@ -42,6 +42,7 @@ package com.oracle.graal.python.test.debug;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -323,6 +324,75 @@ public class PythonDebugTest {
                 checkStack(frame, "fnc", "n", "11", "m", "20");
             });
             assertEquals("50.0", tester.expectDone());
+        }
+    }
+
+    @Test
+    public void testGettersSetters() throws Throwable {
+        final Source source = Source.newBuilder("python", "" +
+                        "class P:\n" +
+                        "  def __init__(self):\n" +
+                        "    self.__x = None\n" +
+                        "    self.__y = None\n" +
+                        "    self.__nx = 0\n" +
+                        "    self.__ny = 0\n" +
+                        "\n" +
+                        "  @property\n" +
+                        "  def x(self):\n" +
+                        "    self.__nx += 1\n" +
+                        "    return self.__x\n" +
+                        "\n" +
+                        "  @x.setter\n" +
+                        "  def x(self, value):\n" +
+                        "    self.__nx += 1\n" +
+                        "    self.__x = value\n" +
+                        "\n" +
+                        "  @property\n" +
+                        "  def y(self):\n" +
+                        "    self.__ny += 1\n" +
+                        "    return self.__y\n" +
+                        "\n" +
+                        "p = P()\n" +
+                        "str(p)\n" +
+                        "\n", "testGettersSetters.py").buildLiteral();
+        try (DebuggerSession session = tester.startSession()) {
+            session.suspendNextExecution();
+            tester.startEval(source);
+            expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals(1, frame.getSourceSection().getStartLine());
+                event.prepareStepOver(5);
+            });
+            expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals("p = P()", frame.getSourceSection().getCharacters().toString());
+                event.prepareStepOver(1);
+            });
+            expectSuspended((SuspendedEvent event) -> {
+                DebugValue p = session.getTopScope("python").getDeclaredValue("p");
+                DebugValue x = p.getProperty("x");
+                assertTrue(x.hasReadSideEffects());
+                assertTrue(x.hasWriteSideEffects());
+                assertTrue(x.isReadable());
+                assertTrue(x.isWritable());
+                DebugValue nx = p.getProperty("__nx");
+                assertEquals(0, nx.as(Number.class).intValue());
+                assertEquals("None", x.as(String.class));
+                assertEquals(1, nx.as(Number.class).intValue());
+                x.set(42);
+                assertEquals(2, nx.as(Number.class).intValue());
+                assertEquals("42", x.as(String.class));
+                assertEquals(3, nx.as(Number.class).intValue());
+                DebugValue y = p.getProperty("y");
+                assertTrue(y.hasReadSideEffects());
+                assertTrue(y.hasWriteSideEffects());
+                assertTrue(y.isReadable());
+                assertTrue(y.isWritable());
+                DebugValue ny = p.getProperty("__ny");
+                assertEquals(0, ny.as(Number.class).intValue());
+                y.set(24);
+                assertEquals("24", y.as(String.class));
+            });
         }
     }
 
