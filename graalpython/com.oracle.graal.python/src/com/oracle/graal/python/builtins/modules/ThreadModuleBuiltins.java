@@ -50,15 +50,20 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.thread.CreateThreadNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -153,10 +158,23 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     abstract static class StartNewThreadNode extends PythonBuiltinNode {
         @Specialization
         long start(VirtualFrame frame, PythonClass cls, Object callable, Object args, Object kwargs,
-                        @Cached("create()") CreateThreadNode createThreadNode) {
-            PThread thread = createThreadNode.execute(frame, cls, callable, args, kwargs);
-            thread.start();
-            return thread.getId();
+                        @Cached("create()") CallNode callNode,
+                        @Cached("create()") ExecutePositionalStarargsNode getArgsNode,
+                        @Cached("create()") ExecuteKeywordStarargsNode getKwArgsNode) {
+            PythonContext context = getContext();
+            TruffleLanguage.Env env = context.getEnv();
+
+            // TODO: python thread stack size != java thread stack size
+            // ignore setting the stack size for the moment
+            Thread thread = env.createThread(() -> {
+                Object[] arguments = getArgsNode.executeWith(args);
+                PKeyword[] keywords = getKwArgsNode.executeWith(kwargs);
+                callNode.execute(frame, callable, arguments, keywords);
+            }, env.getContext(), context.getThreadGroup());
+
+            PThread pThread = factory().createPythonThread(cls, thread);
+            pThread.start();
+            return pThread.getId();
         }
     }
 }
