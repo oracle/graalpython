@@ -66,19 +66,6 @@ suite = {
     #
     # --------------------------------------------------------------------------------------------------------------
     "libraries": {
-        "ANTLR4": {
-            "urls": [
-                "http://www.antlr.org/download/antlr-runtime-4.7.jar"
-            ],
-            "sha1": "30b13b7efc55b7feea667691509cf59902375001",
-        },
-
-        "ANTLR4_COMPLETE": {
-            "urls": [
-                "http://www.antlr.org/download/antlr-4.7-complete.jar"
-            ],
-            "sha1": "5b3a8824334069979a0862ce67ede796c3a4d1b1",
-        },
     },
 
     # --------------------------------------------------------------------------------------------------------------
@@ -132,14 +119,14 @@ suite = {
         "com.oracle.graal.python.parser.antlr": {
             "subDir": "graalpython",
             "buildEnv": {
-                "ANTLR_JAR": "<path:ANTLR4_COMPLETE>",
+                "ANTLR_JAR": "<path:truffle:ANTLR4_COMPLETE>",
                 "PARSER_PATH": "<src_dir:com.oracle.graal.python>/com/oracle/graal/python/parser/antlr",
                 "OUTPUT_PATH": "<src_dir:com.oracle.graal.python>/com/oracle/graal/python/parser/antlr",
                 "PARSER_PKG": "com.oracle.graal.python.parser.antlr",
                 "POSTPROCESSOR": "<suite:graalpython>/graalpython/com.oracle.graal.python.parser.antlr/postprocess.py",
             },
             "dependencies": [
-                "ANTLR4_COMPLETE",
+                "truffle:ANTLR4_COMPLETE",
             ],
             "native": True,
             "vpath": True,
@@ -162,7 +149,7 @@ suite = {
             "dependencies": [
                 "truffle:TRUFFLE_API",
                 "sdk:GRAAL_SDK",
-                "ANTLR4",
+                "truffle:ANTLR4",
                 "regex:TREGEX",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
@@ -280,6 +267,7 @@ suite = {
                 "truffle:TRUFFLE_API",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
+                "truffle:ANTLR4",
             ],
             "sourcesPath": "graalpython.src.zip",
         },
