@@ -72,7 +72,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PLock)
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PLock, PythonBuiltinClassType.PRLock})
 public class LockBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -104,7 +104,7 @@ public class LockBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doAcquire(PLock self, Object blocking, Object timeout) {
+        boolean doAcquire(AbstractPythonLock self, Object blocking, Object timeout) {
             // args setup
             boolean isBlocking = (blocking instanceof PNone) ? DEFAULT_BLOCKING : getCastToBooleanNode().executeWith(blocking);
             double timeoutSeconds = DEFAULT_TIMEOUT;
@@ -153,7 +153,7 @@ public class LockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EnterLockNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object acquire(PLock self, Object blocking, Object timeout,
+        Object acquire(AbstractPythonLock self, Object blocking, Object timeout,
                         @Cached("create()") AcquireLockNode acquireLockNode) {
             return acquireLockNode.execute(self, blocking, timeout);
         }
@@ -164,7 +164,7 @@ public class LockBuiltins extends PythonBuiltins {
     abstract static class ReleaseLockNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object doRelease(PLock self) {
+        Object doRelease(AbstractPythonLock self) {
             self.release();
             return PNone.NONE;
         }
@@ -175,7 +175,7 @@ public class LockBuiltins extends PythonBuiltins {
     abstract static class ExitLockNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object exit(PLock self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object value, @SuppressWarnings("unused") Object traceback) {
+        Object exit(AbstractPythonLock self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object value, @SuppressWarnings("unused") Object traceback) {
             self.release();
             return PNone.NONE;
         }
@@ -199,6 +199,17 @@ public class LockBuiltins extends PythonBuiltins {
             return String.format("<%s %s object at %s>",
                             (self.locked()) ? "locked" : "unlocked",
                             self.getPythonClass().getName(),
+                            self.hashCode());
+        }
+
+        @Specialization
+        @TruffleBoundary
+        String repr(PRLock self) {
+            return String.format("<%s %s object owner=%d count=%d at %s>",
+                            (self.locked()) ? "locked" : "unlocked",
+                            self.getPythonClass().getName(),
+                            self.getOwnerId(),
+                            self.getCount(),
                             self.hashCode());
         }
     }

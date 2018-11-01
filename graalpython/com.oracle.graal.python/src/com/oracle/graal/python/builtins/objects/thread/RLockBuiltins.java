@@ -40,15 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
-import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.DEFAULT_BLOCKING;
-import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.DEFAULT_TIMEOUT;
-import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -56,18 +47,10 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.thread.RLockBuiltinsFactory.AcquireRLockNodeFactory;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -79,98 +62,6 @@ public class RLockBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return RLockBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = "acquire", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"blocking", "timeout"})
-    @GenerateNodeFactory
-    abstract static class AcquireRLockNode extends PythonTernaryBuiltinNode {
-        private @Child CastToDoubleNode castToDoubleNode;
-        private @Child CastToBooleanNode castToBooleanNode;
-        private @CompilationFinal ConditionProfile isBlockingProfile = ConditionProfile.createBinaryProfile();
-        private @CompilationFinal ConditionProfile defaultTimeoutProfile = ConditionProfile.createBinaryProfile();
-
-        private CastToDoubleNode getCastToDoubleNode() {
-            if (castToDoubleNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToDoubleNode = insert(CastToDoubleNode.create());
-            }
-            return castToDoubleNode;
-        }
-
-        private CastToBooleanNode getCastToBooleanNode() {
-            if (castToBooleanNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToBooleanNode = insert(CastToBooleanNode.createIfTrueNode());
-            }
-            return castToBooleanNode;
-        }
-
-        @Specialization
-        boolean doAcquire(PRLock self, Object blocking, Object timeout) {
-            // args setup
-            boolean isBlocking = (blocking instanceof PNone) ? DEFAULT_BLOCKING : getCastToBooleanNode().executeWith(blocking);
-            double timeoutSeconds = DEFAULT_TIMEOUT;
-            if (!(timeout instanceof PNone)) {
-                if (!isBlocking) {
-                    throw raise(ValueError, "can't specify a timeout for a non-blocking call");
-                }
-
-                timeoutSeconds = getCastToDoubleNode().execute(timeout);
-
-                if (timeoutSeconds < 0) {
-                    throw raise(ValueError, "timeout value must be positive");
-                } else if (timeoutSeconds > TIMEOUT_MAX) {
-                    throw raise(OverflowError, "timeout value is too large");
-                }
-            }
-
-            // acquire lock
-            if (isBlockingProfile.profile(!isBlocking)) {
-                return self.acquireNonBlocking();
-            } else {
-                if (defaultTimeoutProfile.profile(timeoutSeconds == DEFAULT_TIMEOUT)) {
-                    return self.acquireBlocking();
-                } else {
-                    return self.acquireTimeout(timeoutSeconds);
-                }
-            }
-        }
-
-        public static AcquireRLockNode create() {
-            return AcquireRLockNodeFactory.create();
-        }
-    }
-
-    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"blocking", "timeout"})
-    @GenerateNodeFactory
-    abstract static class EnterRLockNode extends PythonTernaryBuiltinNode {
-        @Specialization
-        Object acquire(PRLock self, Object blocking, Object timeout,
-                        @Cached("create()") AcquireRLockNode acquireLockNode) {
-            return acquireLockNode.execute(self, blocking, timeout);
-        }
-    }
-
-    @Builtin(name = "release", fixedNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class ReleaseRLockNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        Object doRelease(PRLock self) {
-            self.release();
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = __EXIT__, fixedNumOfPositionalArgs = 4)
-    @GenerateNodeFactory
-    abstract static class ExitRLockNode extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        Object exit(PRLock self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object value, @SuppressWarnings("unused") Object traceback) {
-            self.release();
-            return PNone.NONE;
-        }
     }
 
     @Builtin(name = "_is_owned", fixedNumOfPositionalArgs = 1)
@@ -207,21 +98,6 @@ public class RLockBuiltins extends PythonBuiltins {
             PTuple retVal = factory().createTuple(new Object[]{count, self.getOwnerId()});
             self.releaseAll();
             return retVal;
-        }
-    }
-
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class ReprRLockNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        String repr(PRLock self) {
-            return String.format("<%s %s object owner=%d count=%d at %s>",
-                            (self.locked()) ? "locked" : "unlocked",
-                            self.getPythonClass().getName(),
-                            self.getOwnerId(),
-                            self.getCount(),
-                            self.hashCode());
         }
     }
 }
