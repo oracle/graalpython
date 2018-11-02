@@ -111,8 +111,9 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         public String repr(PythonClass self,
+                        @Cached("create()") ReadAttributeFromObjectNode readModuleNode,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode readQualNameNode) {
-            Object moduleName = self.getAttribute(__MODULE__);
+            Object moduleName = readModuleNode.execute(self, __MODULE__);
             Object qualName = readQualNameNode.executeObject(self, __QUALNAME__);
             return concat(moduleName, qualName);
         }
