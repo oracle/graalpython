@@ -100,8 +100,9 @@ class BasicZipImportTests(ZipImportBaseTestCase):
 
         zipimport._zip_directory_cache.clear()
         mp = MyPath(ZIP_PATH)
-        z = zipimport.zipimporter(mp)
-        self.assertTrue(zipimport._zip_directory_cache[os.path.abspath(ZIP_PATH)] is not None)
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            z = zipimport.zipimporter(mp)
+            self.assertTrue(zipimport._zip_directory_cache[os.path.abspath(ZIP_PATH)] is not None)
 
     def test_zipimporter_find_module(self):
         self.assertTrue(self.z is self.z.find_module("MyTestModule"))
