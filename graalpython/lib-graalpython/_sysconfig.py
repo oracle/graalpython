@@ -37,50 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import _pyio
-import io
 
-import _io
-import _sysconfig
-import builtins
-import sys
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
-# patch _io
-#
-# ----------------------------------------------------------------------------------------------------------------------
-
-@__builtin__
-def open(*args, **kwargs):
-    return _pyio.open(*args, **kwargs)
-
-
-for module in [_io, io]:
-    setattr(module, 'open', open)
-    setattr(module, 'TextIOWrapper', _pyio.TextIOWrapper)
-    setattr(module, 'IncrementalNewlineDecoder', _pyio.IncrementalNewlineDecoder)
-    setattr(module, 'BufferedRandom', _pyio.BufferedRandom)
-    setattr(module, 'BufferedRWPair', _pyio.BufferedRWPair)
-    setattr(module, 'BufferedWriter', _pyio.BufferedWriter)
-    setattr(module, 'BufferedReader', _pyio.BufferedReader)
-    setattr(module, 'StringIO', _pyio.StringIO)
-    setattr(module, '_IOBase', _pyio.IOBase)
-    setattr(module, 'RawIOBase', _pyio.RawIOBase)
-    setattr(module, 'BytesIO', _pyio.BytesIO)
-    setattr(module, '_TextIOBase', _pyio.TextIOBase)
-
-
-setattr(builtins, 'open', open)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
-# patch _thread (needed for setuptools if threading is disabled)
-#
-# ----------------------------------------------------------------------------------------------------------------------
-if not _sysconfig.get_config_var('WITH_THREAD'):
-    import _dummy_thread
-    sys.modules["_thread"] = _dummy_thread
-
+def get_config_var(name):
+    return get_config_vars().get(name)

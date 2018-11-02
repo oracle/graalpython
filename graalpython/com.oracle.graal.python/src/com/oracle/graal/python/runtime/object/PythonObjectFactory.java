@@ -97,6 +97,9 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
+import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.builtins.objects.thread.PRLock;
+import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -743,5 +746,33 @@ public final class PythonObjectFactory extends Node {
 
     public PSocket createSocket(PythonClass cls, int family, int type, int proto) {
         return trace(new PSocket(cls, family, type, proto));
+    }
+
+    /*
+     * Threading
+     */
+
+    public PLock createLock() {
+        return trace(new PLock(PythonBuiltinClassType.PLock));
+    }
+
+    public PLock createLock(PythonClass cls) {
+        return trace(new PLock(cls));
+    }
+
+    public PRLock createRLock() {
+        return trace(new PRLock(PythonBuiltinClassType.PRLock));
+    }
+
+    public PRLock createRLock(PythonClass cls) {
+        return trace(new PRLock(cls));
+    }
+
+    public PThread createPythonThread(Thread thread) {
+        return trace(new PThread(PythonBuiltinClassType.PThread, thread));
+    }
+
+    public PThread createPythonThread(PythonClass cls, Thread thread) {
+        return trace(new PThread(cls, thread));
     }
 }

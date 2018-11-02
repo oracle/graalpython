@@ -103,6 +103,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int MICRO = 0;
     public static final String VERSION = MAJOR + "." + MINOR + "." + MICRO;
 
+    public static boolean WITH_THREADS = false;
+
     public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
 
@@ -480,5 +482,23 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public static Shape freshShape() {
         return freshShape;
+    }
+
+    @Override
+    protected boolean isThreadAccessAllowed(Thread thread, boolean singleThreaded) {
+        if (singleThreaded) {
+            return super.isThreadAccessAllowed(thread, singleThreaded);
+        }
+        return WITH_THREADS;
+    }
+
+    @Override
+    protected void initializeMultiThreading(PythonContext context) {
+        PythonContext.getSingleThreadedAssumption().invalidate();
+    }
+
+    @Override
+    protected void initializeThread(PythonContext context, Thread thread) {
+        super.initializeThread(context, thread);
     }
 }
