@@ -33,6 +33,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.io.BufferedReader;
+import java.io.Console;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -854,15 +855,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class IsATTYNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         boolean isATTY(int fd) {
             // TODO: XXX: actually check
+            Console console = System.console();
             switch (fd) {
                 case 0:
-                    return getContext().getStandardIn() == System.in;
                 case 1:
-                    return getContext().getStandardOut() == System.out;
                 case 2:
-                    return getContext().getStandardErr() == System.err;
+                    return console != null;
                 default:
                     return false;
             }
