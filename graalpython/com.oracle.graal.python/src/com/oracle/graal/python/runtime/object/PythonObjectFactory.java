@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -743,5 +744,9 @@ public final class PythonObjectFactory extends Node {
 
     public PSocket createSocket(PythonClass cls, int family, int type, int proto) {
         return trace(new PSocket(cls, family, type, proto));
+    }
+
+    public PZipImporter createZipImporter(LazyPythonClass cls) {
+        return trace(new PZipImporter(cls));
     }
 }

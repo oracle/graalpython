@@ -1090,7 +1090,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class ConvertPathlikeObjectNode extends PNodeWithContext {
+    public abstract static class ConvertPathlikeObjectNode extends PNodeWithContext {
         @Child private LookupAndCallUnaryNode callFspathNode;
         @CompilationFinal private ValueProfile resultTypeProfile;
 

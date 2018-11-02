@@ -541,6 +541,9 @@ public class BytesBuiltins extends PythonBuiltins {
             }
 
             return translation;
+        }
+    }
+
     @Builtin(name = "replace", fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class ReplaceNode extends PythonTernaryBuiltinNode {
