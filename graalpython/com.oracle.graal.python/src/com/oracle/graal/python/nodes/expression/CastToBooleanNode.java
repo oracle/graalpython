@@ -44,11 +44,19 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.GenerateWrapper;
+import com.oracle.truffle.api.instrumentation.ProbeNode;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
 
+@GenerateWrapper
 public abstract class CastToBooleanNode extends UnaryOpNode {
     protected final IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
+
+    @Override
+    public WrapperNode createWrapper(ProbeNode probe) {
+        return new CastToBooleanNodeWrapper(this, probe);
+    }
 
     public static CastToBooleanNode createIfTrueNode() {
         return YesNodeGen.create(null);
@@ -71,7 +79,9 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
     @Override
     public abstract boolean executeBoolean(VirtualFrame frame);
 
-    public abstract boolean executeWith(Object value);
+    public final boolean executeWith(Object value) {
+        return executeBoolean(null, value);
+    }
 
     @ImportStatic(Message.class)
     public abstract static class YesNode extends CastToBooleanNode {
