@@ -32,12 +32,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.io.BufferedReader;
 import java.io.Console;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.ProcessBuilder.Redirect;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.NonWritableChannelException;
@@ -88,6 +87,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -96,6 +96,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -1043,48 +1044,65 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         static final String[] shell = System.getProperty("os.name").toLowerCase().startsWith("windows") ? new String[]{"cmd.exe", "/c"}
                         : new String[]{(System.getenv().getOrDefault("SHELL", "sh")), "-c"};
 
-        class StreamGobbler extends Thread {
-            static final int bufsize = 4096;
-            InputStream is;
-            OutputStream type;
-            private char[] buf;
+        static class PipePump extends Thread {
+            private final InputStream in;
+            private final OutputStream out;
+            private final byte[] buffer;
+            private boolean finish;
 
-            StreamGobbler(InputStream is, OutputStream outputStream) {
-                this.is = is;
-                this.type = outputStream;
-                this.buf = new char[bufsize];
+            public PipePump(InputStream in, OutputStream out) {
+                this.in = in;
+                this.out = out;
+                this.buffer = new byte[8192];
+                this.finish = false;
             }
 
             @Override
-            @TruffleBoundary
             public void run() {
                 try {
-                    InputStreamReader isr = new InputStreamReader(is);
-                    BufferedReader br = new BufferedReader(isr);
-                    int readSz = 0;
-                    while ((readSz = br.read(buf, 0, bufsize)) > 0) {
-                        type.write(new String(buf).getBytes(), 0, readSz);
+                    while (!Thread.interrupted() && !finish) {
+                        int read = in.read(buffer, 0, in.available());
+                        if (read == -1) {
+                            return;
+                        }
+                        out.write(buffer, 0, read);
                     }
-                } catch (IOException ioe) {
+                } catch (IOException e) {
                 }
+            }
+
+            public void finish() {
+                Thread.yield();
+                finish = true;
             }
         }
 
         @TruffleBoundary
         @Specialization
         int system(String cmd) {
-            if (!getContext().isExecutableAccessAllowed()) {
+            PythonContext context = getContext();
+            if (!context.isExecutableAccessAllowed()) {
                 return -1;
             }
             String[] command = new String[]{shell[0], shell[1], cmd};
+            Env env = context.getEnv();
             try {
-                Runtime rt = Runtime.getRuntime();
-                Process proc = rt.exec(command);
-                StreamGobbler errorGobbler = new StreamGobbler(proc.getErrorStream(), getContext().getStandardErr());
-                StreamGobbler outputGobbler = new StreamGobbler(proc.getInputStream(), getContext().getStandardOut());
-                errorGobbler.start();
-                outputGobbler.start();
-                return proc.waitFor();
+                ProcessBuilder pb = new ProcessBuilder(command);
+                pb.redirectInput(Redirect.PIPE);
+                pb.redirectOutput(Redirect.PIPE);
+                pb.redirectError(Redirect.PIPE);
+                Process proc = pb.start();
+                PipePump stdin = new PipePump(env.in(), proc.getOutputStream());
+                PipePump stdout = new PipePump(proc.getInputStream(), env.out());
+                PipePump stderr = new PipePump(proc.getErrorStream(), env.err());
+                stdin.start();
+                stdout.start();
+                stderr.start();
+                int exitStatus = proc.waitFor();
+                stdin.finish();
+                stdout.finish();
+                stderr.finish();
+                return exitStatus;
             } catch (IOException | InterruptedException e) {
                 return -1;
             }
