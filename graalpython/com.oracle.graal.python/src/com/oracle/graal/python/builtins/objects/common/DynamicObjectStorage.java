@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import java.util.ArrayList;
 
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Layout;
@@ -159,8 +160,19 @@ public abstract class DynamicObjectStorage extends HashingStorage {
     }
 
     public static class PythonObjectDictStorage extends DynamicObjectStorage {
+        private final Assumption dictUnsetOrSameAsStorage;
+
         public PythonObjectDictStorage(DynamicObject store) {
+            this(store, null);
+        }
+
+        public PythonObjectDictStorage(DynamicObject store, Assumption dictUnsetOrSameAsStorage) {
             super(store);
+            this.dictUnsetOrSameAsStorage = dictUnsetOrSameAsStorage;
+        }
+
+        public Assumption getDictUnsetOrSameAsStorage() {
+            return dictUnsetOrSameAsStorage;
         }
 
         @Override

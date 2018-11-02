@@ -158,7 +158,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 return callNode.executeObject(descr.getSet(), obj, value);
             } else {
                 branchProfile.enter();
-                throw raise(AttributeError, "attribute '%s' of '%s' objects is not writable", descr.getName(), descr.getType().getName());
+                throw raise(AttributeError, "attribute '%s' of '%s' object is not writable", descr.getName(), descr.getType().getName());
             }
         }
     }
