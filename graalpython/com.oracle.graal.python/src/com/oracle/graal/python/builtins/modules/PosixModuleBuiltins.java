@@ -1255,6 +1255,25 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "pipe", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class PipeNode extends PythonFileNode {
+        private final BranchProfile gotException = BranchProfile.create();
+
+        @Specialization
+        PTuple pipe() {
+            int[] pipe;
+            try {
+                pipe = getResources().pipe();
+            } catch (IOException e) {
+                gotException.enter();
+                throw raise(OSError, e);
+            }
+            return factory().createTuple(new Object[]{pipe[0], pipe[1]});
+        }
+    }
+
     public abstract static class ConvertPathlikeObjectNode extends PNodeWithContext {
         @Child private LookupAndCallUnaryNode callFspathNode;
         @CompilationFinal private ValueProfile resultTypeProfile;
