@@ -1165,8 +1165,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WaitpidNode extends PythonFileNode {
         @SuppressWarnings("unused")
-        @Specialization
+        @Specialization(guards = {"options == 0"})
+        @TruffleBoundary
         PTuple waitpid(int pid, int options) {
+            try {
+                int exitStatus = getResources().waitpid(pid);
+                return factory().createTuple(new Object[]{pid, exitStatus});
+            } catch (ArrayIndexOutOfBoundsException | InterruptedException e) {
+                throw raise(OSError, "not a valid child pid");
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        PTuple waitpid(Object pid, Object options) {
             throw raise(NotImplementedError, "waitpid");
         }
     }

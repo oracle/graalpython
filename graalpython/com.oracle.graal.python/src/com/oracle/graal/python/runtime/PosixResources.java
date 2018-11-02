@@ -93,7 +93,7 @@ public class PosixResources {
     }
 
     @TruffleBoundary(allowInlining = true)
-    private Channel getFileChannel(int fd) {
+    public Channel getFileChannel(int fd) {
         if (files.size() > fd) {
             return files.get(fd);
         }
