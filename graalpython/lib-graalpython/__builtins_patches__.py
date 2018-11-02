@@ -68,6 +68,7 @@ for module in [_io, io]:
     setattr(module, 'StringIO', _pyio.StringIO)
     setattr(module, '_IOBase', _pyio.IOBase)
     setattr(module, 'RawIOBase', _pyio.RawIOBase)
+    setattr(module, 'FileIO', _pyio.FileIO)
     setattr(module, 'BytesIO', _pyio.BytesIO)
     setattr(module, '_TextIOBase', _pyio.TextIOBase)
 
