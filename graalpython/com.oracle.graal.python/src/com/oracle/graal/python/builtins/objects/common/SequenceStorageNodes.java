@@ -2012,6 +2012,7 @@ public abstract class SequenceStorageNodes {
                 return createEmptyNode.execute(r, len);
             }
             SequenceStorage empty = createEmptyNode.execute(l, len);
+            empty.ensureCapacity(len);
             empty.setNewLength(len);
             return empty;
         }
@@ -2427,8 +2428,8 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        ListSequenceStorage doEmptyPList(@SuppressWarnings("unused") EmptySequenceStorage s, PList val) {
-            return new ListSequenceStorage(val.getSequenceStorage());
+        ListSequenceStorage doEmptyPList(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") PList val) {
+            return new ListSequenceStorage(0);
         }
 
         @Specialization
@@ -2623,9 +2624,9 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = "isList(s)")
-        ListSequenceStorage doList(@SuppressWarnings("unused") SequenceStorage s, @SuppressWarnings("unused") int cap) {
+        ListSequenceStorage doList(@SuppressWarnings("unused") SequenceStorage s, int cap) {
             // TODO not quite accurate in case of native sequence storage
-            return new ListSequenceStorage(s);
+            return new ListSequenceStorage(cap);
         }
 
         @Specialization(guards = "isTuple(s)")
