@@ -708,4 +708,56 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
+
+    @Builtin(name = "rstrip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"bytes"})
+    @GenerateNodeFactory
+    abstract static class RStripNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        PByteArray strip(PByteArray self, @SuppressWarnings("unused") PNone bytes,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            byte[] bs = toBytesNode.execute(self);
+            int len = bs.length;
+            for (int i = bs.length - 1; i >= 0; i--) {
+                if (Character.isWhitespace(bs[i])) {
+                    len--;
+                } else {
+                    break;
+                }
+            }
+            return newBytesUpTo(bs, len);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        PByteArray strip(PByteArray self, PBytes bytes,
+                        @Cached("create()") BytesNodes.ToBytesNode selfToBytesNode,
+                        @Cached("create()") BytesNodes.ToBytesNode otherToBytesNode) {
+            byte[] stripBs = selfToBytesNode.execute(bytes);
+            byte[] bs = otherToBytesNode.execute(self);
+            int len = bs.length;
+            outer: for (int i = bs.length - 1; i >= 0; i--) {
+                for (byte b : stripBs) {
+                    if (b == bs[i]) {
+                        len--;
+                    } else {
+                        break outer;
+                    }
+                }
+            }
+            return newBytesUpTo(bs, len);
+        }
+
+        private PByteArray newBytesUpTo(byte[] bs, int len) {
+            byte[] out;
+            if (len != bs.length) {
+                out = new byte[len];
+                System.arraycopy(bs, 0, out, 0, len);
+            } else {
+                out = bs;
+            }
+            return factory().createByteArray(out);
+        }
+    }
+
 }
