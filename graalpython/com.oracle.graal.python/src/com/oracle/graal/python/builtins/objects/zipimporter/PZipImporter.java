@@ -64,7 +64,7 @@ public class PZipImporter extends PythonBuiltinObject {
     private static enum EntryType {
         IS_SOURCE,
         IS_PACKAGE
-    };
+    }
 
     private static class SearchOrderEntry {
 
@@ -103,7 +103,7 @@ public class PZipImporter extends PythonBuiltinObject {
         NOT_FOUND,
         MODULE,
         PACKAGE
-    };
+    }
 
     public PZipImporter(LazyPythonClass cls) {
         super(cls);

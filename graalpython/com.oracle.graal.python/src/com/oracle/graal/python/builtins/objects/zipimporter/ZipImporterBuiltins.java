@@ -260,7 +260,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
          * @param fullname
          * @param path This optional argument is ignored. It’s there for compatibility with the
          *            importer protocol.
-         * @return
+         * @return the zipimporter or none, if the module is not found
          */
         @Specialization
         public Object doit(PZipImporter self, String fullname, @SuppressWarnings("unused") Object path) {
