@@ -75,9 +75,13 @@ typedef struct {
 PyAPI_DATA(PyTypeObject) PyBuffer_Type;
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 
+typedef void (*init_upcall)();
+
 extern void *PY_TRUFFLE_CEXT;
 extern void *PY_BUILTIN;
 extern void *Py_NoValue;
+extern init_upcall upcalls[];
+extern unsigned init_upcall_n;
 
 /* upcall functions for calling into Python */
 extern PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
@@ -88,13 +92,6 @@ extern PyObject*(*PY_TRUFFLE_CEXT_LANDING)(void* name, ...);
 extern uint64_t (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
 extern double (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
 extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
-
-#define UPCALL_ID(name)                                                 \
-    static void* _jls_ ## name;                                         \
-    __attribute__((constructor))                                        \
-    static void init_jls_ ## name(void) {                               \
-        _jls_ ## name = polyglot_from_string(#name, SRC_CS);            \
-    }
 
 /* Call function with return type 'PyObject *'; does polyglot cast and error handling */
 #define UPCALL_O(__recv__, __name__, ...) PY_TRUFFLE_LANDING((__recv__), __name__, ##__VA_ARGS__)
@@ -137,6 +134,13 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 
 /* Call function of 'python_cext' module with return type 'double'; no polyglot cast but error handling */
 #define UPCALL_CEXT_D(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_D(__name__, ##__VA_ARGS__))
+
+#define UPCALL_ID(name)                                                 \
+    static void* _jls_ ## name;                                         \
+    __attribute__((constructor))                                        \
+    static void init_upcall_ ## name(void) {                               \
+       _jls_ ## name = polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string(#name, SRC_CS)); \
+    }
 
 #define as_char_pointer(obj) ((const char*)UPCALL_CEXT_PTR(polyglot_from_string("to_char_pointer", "ascii"), native_to_java(obj)))
 #define as_long(obj) ((long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "to_long", to_java(obj))))

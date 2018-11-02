@@ -145,9 +145,12 @@ Returns true for None only.
 
 ###### HAS_SIZE
 According to the Truffle interop contract answering `true` to `HAS_SIZE` implies
-that indexed element access is available. Thus, we answer `true` here only for
-(sub-)instances of `tuple`, `list`, `array.array`, `bytearray`, `bytes`, `str`,
-and `range`.
+that indexed element access is available. However, we cannot fully guarantee
+this. We may answer `true` here when the object has both a `__len__` field and a
+`__getitem__` field. If the object's length is reported >0, we also try to read
+the item `0` and if that fails, we answer `false`. If the object reports it's
+empty, we cannot know if a read with an index will actually work, but we'll
+report `true`.
 
 ###### GET_SIZE
 Calls `__len__`. Just because `GET_SIZE` returns something positive does not
@@ -159,27 +162,35 @@ knowing what the `__getitem__` method does with an integer argument. Use
 Returns true for those values that can be unboxed using the `UNBOX` message.
 
 ###### KEY_INFO
-This will lookup the key using `READ`, assume it is readable and writable, and
-check `IS_EXECUTABLE`.
+This will lookup the key using the Python MRO. It will check if it's readable
+and writable, and also check if it has side-effects based on wether it is an
+inherited descriptor (i.e., an object with `__get__`, `__set__`, and/or
+`__delete__`). If the owner of the key is mutable (the owner being the class the
+key is inherited from or the object itself) then `REMOVABLE` and `MODIFABLE` are
+true. If the object itself is mutable, `INSERTABLE` will also be true. Finally,
+if the attribute is a function or it is *not* a descriptor and has a `__call__`,
+we declare it `INOCABLE`. We don't do this for descriptors, because we would
+have to run the `__get__` method and this message should not have side-effects.
 
 ###### HAS_KEYS
-Returns true for any boxed Python object, so small integers, booleans, or floats
-usually don't return true.
+Always returns true.
 
 ###### KEYS
-This returns the direct attributes of the receiver object, which would usually
-be available through `__getattribute__`. 
+This returns the all attributes of the receiver object that would usually be
+available through `__getattribute__`, i.e., both inherited and direct
+attributes.
 
-The `KEYS` message requires the returned object to have only `java.lang.String`
-items. If the object responds to `keys`, `values`, `items`, and `__getitem__`,
-we assume it is Mapping, and we present the result of the `keys` method in
-combination with the attributes if, and only if, all keys are strings. This is
-roughly parallel to how `READ` and `WRITE` would be handled for string keys.
+If the object responds to `keys`, `values`, `items`, and `__getitem__`, we
+assume it is Mapping, and we present the String result of the `keys` method in
+combination with the attributes, prefixed with `[` if, and only if, the request
+asked for _internal_ keys also. The `KEYS` message requires the returned object
+to have only `java.lang.String` items, so inlo String keys are added to the
+result set. The `[` prefix ensures that in our handling of `READ` and `WRITE`
+messages we also treat them as mapping entries, not attributes.
 
 It's still possible that none of the keys can be `READ`: the `READ` message uses
 Python semantics for lookup, which means that an inherited descriptor with a
-`__get__` method may still come before the object's keys and do anything
-(including raising an `AttributeError`).
+`__get__` method or the `__getitem__` method may still intercept actual access.
 
 ###### IS_POINTER
 Returns true if the object is a Python function defined in a Python C extension

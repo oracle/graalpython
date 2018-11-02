@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsDoubleNo
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeClassNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MaterializeDelegateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
@@ -940,8 +941,60 @@ public abstract class CExtNodes {
         }
     }
 
+    public abstract static class DirectUpcallNode extends PNodeWithContext {
+        @Child private AllToJavaNode allToJava;
+
+        protected AllToJavaNode getAllToJavaNode() {
+            if (allToJava == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                allToJava = insert(AllToJavaNode.create());
+            }
+            return allToJava;
+        }
+
+        public abstract Object execute(VirtualFrame frame, Object callable, Object[] args);
+
+        @Specialization(guards = "args.length == 0")
+        Object upcall0(VirtualFrame frame, Object callable, @SuppressWarnings("unused") Object[] args,
+                        @Cached("create()") CallNode callNode) {
+            return callNode.execute(frame, callable, new Object[0], new PKeyword[0]);
+        }
+
+        @Specialization(guards = "args.length == 1")
+        Object upcall1(Object callable, Object[] args,
+                        @Cached("create()") CallUnaryMethodNode callNode,
+                        @Cached("create()") CExtNodes.AsPythonObjectNode toJavaNode) {
+            return callNode.executeObject(callable, toJavaNode.execute(args[0]));
+        }
+
+        @Specialization(guards = "args.length == 2")
+        Object upcall2(Object callable, Object[] args,
+                        @Cached("create()") CallBinaryMethodNode callNode) {
+            Object[] converted = getAllToJavaNode().execute(args);
+            return callNode.executeObject(callable, converted[0], converted[1]);
+        }
+
+        @Specialization(guards = "args.length == 3")
+        Object upcall3(Object callable, Object[] args,
+                        @Cached("create()") CallTernaryMethodNode callNode) {
+            Object[] converted = getAllToJavaNode().execute(args);
+            return callNode.execute(callable, converted[0], converted[1], converted[2]);
+        }
+
+        @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
+        Object upcall(VirtualFrame frame, Object callable, Object[] args,
+                        @Cached("create()") CallNode callNode) {
+            Object[] converted = getAllToJavaNode().execute(args);
+            return callNode.execute(frame, callable, converted, new PKeyword[0]);
+        }
+
+        public static DirectUpcallNode create() {
+            return DirectUpcallNodeGen.create();
+        }
+    }
+
     protected abstract static class UpcallNode extends PNodeWithContext {
-        @Child AllToJavaNode allToJava = null;
+        @Child private AllToJavaNode allToJava;
 
         protected AllToJavaNode getAllToJavaNode() {
             if (allToJava == null) {

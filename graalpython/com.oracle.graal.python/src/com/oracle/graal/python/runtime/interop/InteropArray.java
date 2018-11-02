@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,22 +38,66 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.runtime.interop;
 
-Py_hash_t _Py_HashDouble(double value) {
-    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), value);
-}
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.MessageResolution;
+import com.oracle.truffle.api.interop.Resolve;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.nodes.Node;
 
-long _PyHASH_INF;
-long _PyHASH_NAN;
-long _PyHASH_IMAG;
+public final class InteropArray implements TruffleObject {
+    @CompilationFinal(dimensions = 1) private final Object[] array;
 
-void initialize_hashes() {
-    _PyHASH_INF = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), INFINITY);
-    _PyHASH_NAN = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), NAN);
-    _PyHASH_IMAG = UPCALL_L(PY_TRUFFLE_CEXT, polyglot_from_string("PyHash_Imag", SRC_CS));
-}
+    InteropArray(Object[] array) {
+        this.array = array;
+    }
 
-Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {
-    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), polyglot_from_string(src, "ascii"));
+    @Override
+    public ForeignAccess getForeignAccess() {
+        return InteropArrayMRForeign.ACCESS;
+    }
+
+    private Object get(int pos) {
+        return array[pos];
+    }
+
+    private int size() {
+        return array.length;
+    }
+
+    static boolean isInstance(TruffleObject object) {
+        return object instanceof InteropArray;
+    }
+
+    @MessageResolution(receiverType = InteropArray.class)
+    static class InteropArrayMR {
+
+        @Resolve(message = "READ")
+        abstract static class Read extends Node {
+            Object access(InteropArray target, int index) {
+                return target.get(index);
+            }
+
+            Object access(InteropArray target, long index) {
+                return target.get((int) index);
+            }
+        }
+
+        @Resolve(message = "HAS_SIZE")
+        abstract static class HasSize extends Node {
+            boolean access(@SuppressWarnings("unused") InteropArray target) {
+                return true;
+            }
+        }
+
+        @Resolve(message = "GET_SIZE")
+        abstract static class GetSize extends Node {
+            int access(InteropArray target) {
+                return target.size();
+            }
+        }
+    }
+
 }

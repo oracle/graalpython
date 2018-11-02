@@ -65,6 +65,18 @@ public final class IsBuiltinClassProfile {
         return new IsBuiltinClassProfile();
     }
 
+    public boolean profileIsAnyBuiltinException(PException object) {
+        return profileIsAnyBuiltinClass(object.getExceptionObject().getLazyPythonClass());
+    }
+
+    public boolean profileIsAnyBuiltinObject(PythonObject object) {
+        return profileIsAnyBuiltinClass(object.getLazyPythonClass());
+    }
+
+    public boolean profileIsOtherBuiltinObject(PythonObject object, PythonBuiltinClassType type) {
+        return profileIsOtherBuiltinClass(object.getLazyPythonClass(), type);
+    }
+
     public boolean profileException(PException object, PythonBuiltinClassType type) {
         return profileClass(object.getExceptionObject().getLazyPythonClass(), type);
     }
@@ -72,6 +84,76 @@ public final class IsBuiltinClassProfile {
     public boolean profileObject(PythonObject object, PythonBuiltinClassType type) {
         return profileClass(object.getLazyPythonClass(), type);
 
+    }
+
+    public boolean profileIsAnyBuiltinClass(LazyPythonClass clazz) {
+        if (clazz instanceof PythonBuiltinClassType) {
+            if (!isBuiltinType) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isBuiltinType = true;
+            }
+            return true;
+        } else {
+            if (clazz instanceof PythonBuiltinClass) {
+                if (!isBuiltinClass) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    isBuiltinClass = true;
+                }
+                return true;
+            }
+            if (!isOtherClass) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isOtherClass = true;
+            }
+            return false;
+        }
+    }
+
+    public boolean profileIsOtherBuiltinClass(LazyPythonClass clazz, PythonBuiltinClassType type) {
+        if (clazz instanceof PythonBuiltinClassType) {
+            if (!isBuiltinType) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isBuiltinType = true;
+            }
+            if (clazz == type) {
+                if (!match) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    match = true;
+                }
+                return false;
+            } else {
+                if (!noMatch) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    noMatch = true;
+                }
+                return true;
+            }
+        } else {
+            if (clazz instanceof PythonBuiltinClass) {
+                if (!isBuiltinClass) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    isBuiltinClass = true;
+                }
+                if (((PythonBuiltinClass) clazz).getType() == type) {
+                    if (!match) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        match = true;
+                    }
+                    return false;
+                } else {
+                    if (!noMatch) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        noMatch = true;
+                    }
+                    return true;
+                }
+            }
+            if (!isOtherClass) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isOtherClass = true;
+            }
+            return false;
+        }
     }
 
     public boolean profileClass(LazyPythonClass clazz, PythonBuiltinClassType type) {

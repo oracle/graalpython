@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapp
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -113,8 +114,12 @@ public abstract class NativeWrappers {
         }
 
         public PythonObjectDictStorage createNativeMemberStore() {
+            return createNativeMemberStore(null);
+        }
+
+        public PythonObjectDictStorage createNativeMemberStore(Assumption dictStableAssumption) {
             if (nativeMemberStore == null) {
-                nativeMemberStore = new PythonObjectDictStorage(SHAPE.newInstance());
+                nativeMemberStore = new PythonObjectDictStorage(SHAPE.newInstance(), dictStableAssumption);
             }
             return nativeMemberStore;
         }

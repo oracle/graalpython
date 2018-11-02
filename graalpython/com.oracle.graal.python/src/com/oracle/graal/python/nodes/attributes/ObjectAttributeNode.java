@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,22 +38,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.nodes.attributes;
 
-Py_hash_t _Py_HashDouble(double value) {
-    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), value);
-}
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.object.Location;
+import com.oracle.truffle.api.object.Property;
 
-long _PyHASH_INF;
-long _PyHASH_NAN;
-long _PyHASH_IMAG;
+@ImportStatic({PGuards.class, PythonOptions.class})
+public abstract class ObjectAttributeNode extends PNodeWithContext {
+    protected Object attrKey(Object key) {
+        if (key instanceof PString) {
+            return ((PString) key).getValue();
+        } else {
+            return key;
+        }
+    }
 
-void initialize_hashes() {
-    _PyHASH_INF = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), INFINITY);
-    _PyHASH_NAN = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), NAN);
-    _PyHASH_IMAG = UPCALL_L(PY_TRUFFLE_CEXT, polyglot_from_string("PyHash_Imag", SRC_CS));
-}
+    protected boolean isDictUnsetOrSameAsStorage(PythonObject object) {
+        PHashingCollection dict = object.getDict();
+        if (dict == null) {
+            return true;
+        } else {
+            return dict.getDictStorage() instanceof DynamicObjectStorage.PythonObjectDictStorage;
+        }
+    }
 
-Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {
-    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), polyglot_from_string(src, "ascii"));
+    protected Location getLocationOrNull(Property prop) {
+        return prop == null ? null : prop.getLocation();
+    }
+
+    protected static boolean isHiddenKey(Object key) {
+        return key instanceof HiddenKey;
+    }
 }

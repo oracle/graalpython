@@ -38,22 +38,83 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.thread;
 
-Py_hash_t _Py_HashDouble(double value) {
-    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), value);
-}
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
-long _PyHASH_INF;
-long _PyHASH_NAN;
-long _PyHASH_IMAG;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-void initialize_hashes() {
-    _PyHASH_INF = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), INFINITY);
-    _PyHASH_NAN = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), NAN);
-    _PyHASH_IMAG = UPCALL_L(PY_TRUFFLE_CEXT, polyglot_from_string("PyHash_Imag", SRC_CS));
-}
+public final class PRLock extends AbstractPythonLock {
+    private class InternalReentrantLock extends ReentrantLock {
+        private static final long serialVersionUID = 2531000884985514112L;
 
-Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {
-    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), polyglot_from_string(src, "ascii"));
+        long getOwnerId() {
+            Thread owner = getOwner();
+            if (owner != null) {
+                return owner.getId();
+            }
+            return 0;
+        }
+    }
+
+    private final InternalReentrantLock lock;
+
+    public PRLock(LazyPythonClass cls) {
+        super(cls);
+        this.lock = new InternalReentrantLock();
+    }
+
+    public boolean isOwned() {
+        return lock.isHeldByCurrentThread();
+    }
+
+    public int getCount() {
+        return lock.getHoldCount();
+    }
+
+    public long getOwnerId() {
+        return lock.getOwnerId();
+    }
+
+    public void releaseAll() {
+        while (lock.getHoldCount() > 0) {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    @TruffleBoundary
+    protected boolean acquireNonBlocking() {
+        return lock.tryLock();
+    }
+
+    @Override
+    @TruffleBoundary
+    protected boolean acquireBlocking() {
+        lock.lock();
+        return true;
+    }
+
+    @Override
+    @TruffleBoundary
+    protected boolean acquireTimeout(long timeout) {
+        try {
+            return lock.tryLock(timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            return false;
+        }
+    }
+
+    @Override
+    @TruffleBoundary
+    public void release() {
+        lock.unlock();
+    }
+
+    @Override
+    public boolean locked() {
+        return lock.isLocked();
+    }
 }

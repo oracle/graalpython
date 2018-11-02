@@ -38,22 +38,57 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.thread;
 
-Py_hash_t _Py_HashDouble(double value) {
-    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), value);
-}
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
-long _PyHASH_INF;
-long _PyHASH_NAN;
-long _PyHASH_IMAG;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-void initialize_hashes() {
-    _PyHASH_INF = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), INFINITY);
-    _PyHASH_NAN = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), NAN);
-    _PyHASH_IMAG = UPCALL_L(PY_TRUFFLE_CEXT, polyglot_from_string("PyHash_Imag", SRC_CS));
-}
+public final class PLock extends AbstractPythonLock {
+    private final Semaphore semaphore;
 
-Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {
-    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), polyglot_from_string(src, "ascii"));
+    public PLock(LazyPythonClass cls) {
+        super(cls);
+        semaphore = new Semaphore(1);
+    }
+
+    @Override
+    @TruffleBoundary
+    protected boolean acquireNonBlocking() {
+        return semaphore.tryAcquire();
+    }
+
+    @Override
+    @TruffleBoundary
+    protected boolean acquireBlocking() {
+        try {
+            semaphore.acquire();
+            return true;
+        } catch (InterruptedException e) {
+            return false;
+        }
+    }
+
+    @Override
+    @TruffleBoundary
+    protected boolean acquireTimeout(long timeout) {
+        try {
+            return semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            return false;
+        }
+    }
+
+    @Override
+    @TruffleBoundary
+    public void release() {
+        semaphore.release();
+    }
+
+    @Override
+    public boolean locked() {
+        return semaphore.availablePermits() == 0;
+    }
 }

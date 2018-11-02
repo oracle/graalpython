@@ -90,6 +90,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -240,6 +241,10 @@ public abstract class HashingStorageNodes {
         }
 
         protected static PythonObjectHybridDictStorage switchToHybridDictStorage(PythonObjectDictStorage dictStorage) {
+            Assumption dictUnsetOrSameAsStorage = dictStorage.getDictUnsetOrSameAsStorage();
+            if (dictUnsetOrSameAsStorage != null) {
+                dictUnsetOrSameAsStorage.invalidate();
+            }
             return new PythonObjectHybridDictStorage(dictStorage);
         }
 

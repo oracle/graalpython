@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
@@ -62,6 +63,10 @@ public final class PythonContext {
     private final PythonCore core;
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
+    private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
+
+    // if set to 0 the VM will set it to whatever it likes
+    private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
 
     @CompilationFinal private TruffleLanguage.Env env;
 
@@ -78,6 +83,7 @@ public final class PythonContext {
     private InputStream in;
     @CompilationFinal private Object capiLibrary = null;
     private final static Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
+    private final static Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
 
@@ -97,6 +103,19 @@ public final class PythonContext {
             this.out = env.out();
             this.err = env.err();
         }
+    }
+
+    public ThreadGroup getThreadGroup() {
+        return threadGroup;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public long getPythonThreadStackSize() {
+        return pythonThreadStackSize.get();
+    }
+
+    public long getAndSetPythonsThreadStackSize(long value) {
+        return pythonThreadStackSize.getAndSet(value);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -261,6 +280,10 @@ public final class PythonContext {
 
     public static Assumption getSingleNativeContextAssumption() {
         return singleNativeContext;
+    }
+
+    public static Assumption getSingleThreadedAssumption() {
+        return singleThreaded;
     }
 
     public boolean isExecutableAccessAllowed() {

@@ -38,22 +38,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.thread;
 
-Py_hash_t _Py_HashDouble(double value) {
-    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), value);
-}
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-long _PyHASH_INF;
-long _PyHASH_NAN;
-long _PyHASH_IMAG;
+public class PThread extends PythonBuiltinObject {
+    public final static String GRAALPYTHON_THREADS = "GRAALPYTHON_THREADS";
+    private final Thread thread;
 
-void initialize_hashes() {
-    _PyHASH_INF = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), INFINITY);
-    _PyHASH_NAN = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), NAN);
-    _PyHASH_IMAG = UPCALL_L(PY_TRUFFLE_CEXT, polyglot_from_string("PyHash_Imag", SRC_CS));
-}
+    public PThread(LazyPythonClass cls, Thread thread) {
+        super(cls);
+        this.thread = thread;
+    }
 
-Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {
-    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), polyglot_from_string(src, "ascii"));
+    @TruffleBoundary
+    public void start() {
+        if (!this.thread.isAlive()) {
+            thread.start();
+        }
+    }
+
+    public long getId() {
+        return thread.getId();
+    }
+
+    public String getName() {
+        return thread.getName();
+    }
 }

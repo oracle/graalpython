@@ -38,22 +38,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.modules;
 
-Py_hash_t _Py_HashDouble(double value) {
-    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), value);
-}
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-long _PyHASH_INF;
-long _PyHASH_NAN;
-long _PyHASH_IMAG;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 
-void initialize_hashes() {
-    _PyHASH_INF = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), INFINITY);
-    _PyHASH_NAN = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), NAN);
-    _PyHASH_IMAG = UPCALL_L(PY_TRUFFLE_CEXT, polyglot_from_string("PyHash_Imag", SRC_CS));
-}
+/**
+ * this builtin module is used to fill in truffle land config options into the sysconfig python
+ * module
+ */
+@CoreFunctions(defineModule = "_sysconfig")
+public class SysConfigModuleBuiltins extends PythonBuiltins {
+    private final static Map<Object, Object> STATIC_CONFIG_OPTIONS = new HashMap<>();
+    static {
+        STATIC_CONFIG_OPTIONS.put("WITH_THREAD", PythonLanguage.WITH_THREADS ? 1 : 0);
+    }
 
-Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {
-    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), polyglot_from_string(src, "ascii"));
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
+        return SysConfigModuleBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = "get_config_vars", takesVarArgs = true)
+    @GenerateNodeFactory
+    static abstract class GetConfigVarsNode extends PythonBuiltinNode {
+        @Specialization
+        PDict select(@SuppressWarnings("unused") Object[] arguments) {
+            return factory().createDict(STATIC_CONFIG_OPTIONS);
+        }
+    }
 }

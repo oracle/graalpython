@@ -97,6 +97,9 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
+import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.builtins.objects.thread.PRLock;
+import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -477,7 +480,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PDict createDictFixedStorage(PythonObject pythonObject) {
-        return createDict(new PythonObjectDictStorage(pythonObject.getStorage()));
+        return createDict(new PythonObjectDictStorage(pythonObject.getStorage(), pythonObject.getDictUnsetOrSameAsStorageAssumption()));
     }
 
     public PDict createDict(HashingStorage storage) {
@@ -511,7 +514,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {
-        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, new PythonObjectDictStorage(object.getStorage())));
+        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, new PythonObjectDictStorage(object.getStorage(), object.getDictUnsetOrSameAsStorageAssumption())));
     }
 
     public PMappingproxy createMappingproxy(HashingStorage storage) {
@@ -519,7 +522,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonClass cls, PythonObject object) {
-        return trace(new PMappingproxy(cls, new PythonObjectDictStorage(object.getStorage())));
+        return trace(new PMappingproxy(cls, new PythonObjectDictStorage(object.getStorage(), object.getDictUnsetOrSameAsStorageAssumption())));
     }
 
     public PMappingproxy createMappingproxy(LazyPythonClass cls, HashingStorage storage) {
@@ -746,7 +749,31 @@ public final class PythonObjectFactory extends Node {
         return trace(new PSocket(cls, family, type, proto));
     }
 
-    public PZipImporter createZipImporter(LazyPythonClass cls) {
-        return trace(new PZipImporter(cls));
+    /*
+     * Threading
+     */
+
+    public PLock createLock() {
+        return trace(new PLock(PythonBuiltinClassType.PLock));
+    }
+
+    public PLock createLock(PythonClass cls) {
+        return trace(new PLock(cls));
+    }
+
+    public PRLock createRLock() {
+        return trace(new PRLock(PythonBuiltinClassType.PRLock));
+    }
+
+    public PRLock createRLock(PythonClass cls) {
+        return trace(new PRLock(cls));
+    }
+
+    public PThread createPythonThread(Thread thread) {
+        return trace(new PThread(PythonBuiltinClassType.PThread, thread));
+    }
+
+    public PThread createPythonThread(PythonClass cls, Thread thread) {
+        return trace(new PThread(cls, thread));
     }
 }

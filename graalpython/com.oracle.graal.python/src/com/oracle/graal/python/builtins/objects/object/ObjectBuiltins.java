@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
@@ -80,6 +81,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -402,7 +404,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class GetattrNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object getattr(Object object, Object key) {
-            throw raise(AttributeError, "'%p' object has no attribute %s", object, key);
+            throw raise(AttributeError, "'%p' object has no attribute '%s'", object, key);
         }
     }
 
@@ -469,22 +471,28 @@ public class ObjectBuiltins extends PythonBuiltins {
             if (descr != PNone.NO_VALUE) {
                 throw raise(AttributeError, "attribute % is read-only", key);
             } else {
-                throw raise(AttributeError, "%s object has no attribute %s", object, key);
+                throw raise(AttributeError, "%s object has no attribute '%s'", object, key);
             }
         }
     }
 
-    @Builtin(name = __DICT__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    static abstract class DictNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object dict(@SuppressWarnings("unused") PythonClass self) {
-            CompilerDirectives.transferToInterpreter();
-            throw new AssertionError();
+    static abstract class DictNode extends PythonBinaryBuiltinNode {
+        private final IsBuiltinClassProfile exactObjInstanceProfile = IsBuiltinClassProfile.create();
+        private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
+
+        protected boolean isExactObjectInstance(PythonObject self) {
+            return exactObjInstanceProfile.profileObject(self, PythonBuiltinClassType.PythonObject);
         }
 
-        @Specialization(guards = {"!isBuiltinObject(self)", "!isClass(self)"})
-        Object dict(PythonObject self) {
+        protected boolean isBuiltinObjectExact(PythonObject self) {
+            // any builtin class except Modules
+            return exactBuiltinInstanceProfile.profileIsOtherBuiltinObject(self, PythonBuiltinClassType.PythonModule);
+        }
+
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)", "isNoValue(none)"})
+        Object dict(PythonObject self, @SuppressWarnings("unused") PNone none) {
             PHashingCollection dict = self.getDict();
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
@@ -493,8 +501,15 @@ public class ObjectBuiltins extends PythonBuiltins {
             return dict;
         }
 
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)"})
+        Object dict(PythonObject self, PDict dict) {
+            self.getDictUnsetOrSameAsStorageAssumption().invalidate();
+            self.setDict(dict);
+            return PNone.NONE;
+        }
+
         @Fallback
-        Object dict(Object self) {
+        Object dict(Object self, @SuppressWarnings("unused") Object dict) {
             throw raise(AttributeError, "'%p' object has no attribute '__dict__'", self);
         }
 

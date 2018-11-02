@@ -76,7 +76,9 @@ import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SysConfigModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
@@ -136,6 +138,9 @@ import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -153,8 +158,8 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -165,45 +170,51 @@ import com.oracle.truffle.api.source.SourceSection;
  * types.
  */
 public final class Python3Core implements PythonCore {
-    // Order matters!
-    private static final String[] CORE_FILES = new String[]{
-                    "_descriptor",
-                    "object",
-                    "sys",
-                    "dict",
-                    "_mappingproxy",
-                    "str",
-                    "type",
-                    "_imp",
-                    "function",
-                    "_functools",
-                    "method",
-                    "code",
-                    "_warnings",
-                    "posix",
-                    "_io",
-                    "_frozen_importlib",
-                    "classes",
-                    "_weakref",
-                    "set",
-                    "itertools",
-                    "base_exception",
-                    "python_cext",
-                    "_collections",
-                    "memoryview",
-                    "list",
-                    "_codecs",
-                    "bytes",
-                    "bytearray",
-                    "float",
-                    "time",
-                    "unicodedata",
-                    "_locale",
-                    "_sre",
-                    "function",
-                    "_socket",
-                    "zipimport",
-    };
+    private final String[] coreFiles;
+
+    private static final String[] initializeCoreFiles() {
+        // Order matters!
+        List<String> coreFiles = new ArrayList<>(Arrays.asList(
+                        "_descriptor",
+                        "object",
+                        "sys",
+                        "dict",
+                        "_mappingproxy",
+                        "str",
+                        "type",
+                        "_imp",
+                        "function",
+                        "_functools",
+                        "method",
+                        "code",
+                        "_warnings",
+                        "posix",
+                        "_io",
+                        "_frozen_importlib",
+                        "classes",
+                        "_weakref",
+                        "set",
+                        "itertools",
+                        "base_exception",
+                        "python_cext",
+                        "_collections",
+                        "memoryview",
+                        "list",
+                        "_codecs",
+                        "bytes",
+                        "bytearray",
+                        "float",
+                        "time",
+                        "unicodedata",
+                        "_locale",
+                        "_sre",
+                        "function",
+                        "_sysconfig",
+                        "_socket",
+                        "_thread"));
+
+        return coreFiles.toArray(new String[coreFiles.size()]);
+    }
 
     private final PythonBuiltins[] builtins;
 
@@ -293,6 +304,7 @@ public final class Python3Core implements PythonCore {
                         new CtypesModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
                         new PyExpatModuleBuiltins(),
+                        new SysConfigModuleBuiltins()));
                         new ZipImporterBuiltins(),
                         new ZipImportModuleBuiltins()));
         if (!TruffleOptions.AOT) {
@@ -300,6 +312,14 @@ public final class Python3Core implements PythonCore {
             for (PythonBuiltins builtin : providers) {
                 builtins.add(builtin);
             }
+        }
+        // threads
+        if (PythonLanguage.WITH_THREADS) {
+            builtins.addAll(new ArrayList<>(Arrays.asList(
+                            new ThreadModuleBuiltins(),
+                            new ThreadBuiltins(),
+                            new LockBuiltins(),
+                            new RLockBuiltins())));
         }
         return builtins.toArray(new PythonBuiltins[builtins.size()]);
     }
@@ -328,6 +348,7 @@ public final class Python3Core implements PythonCore {
     public Python3Core(PythonParser parser) {
         this.parser = parser;
         this.builtins = initializeBuiltins();
+        this.coreFiles = initializeCoreFiles();
     }
 
     @Override
@@ -368,7 +389,7 @@ public final class Python3Core implements PythonCore {
     private void initializePythonCore() {
         String coreHome = PythonCore.getCoreHomeOrFail();
         loadFile("builtins", coreHome);
-        for (String s : CORE_FILES) {
+        for (String s : coreFiles) {
             loadFile(s, coreHome);
         }
         exportCInterface(getContext());
@@ -531,7 +552,10 @@ public final class Python3Core implements PythonCore {
         for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
             String module = builtinClass.getPublicInModule();
             if (module != null) {
-                lookupBuiltinModule(module).setAttribute(builtinClass.getName(), lookupType(builtinClass));
+                PythonModule pythonModule = lookupBuiltinModule(module);
+                if (pythonModule != null) {
+                    pythonModule.setAttribute(builtinClass.getName(), lookupType(builtinClass));
+                }
             }
         }
         // now initialize well-known objects

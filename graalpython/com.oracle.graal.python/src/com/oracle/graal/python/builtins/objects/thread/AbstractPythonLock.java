@@ -38,22 +38,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.thread;
 
-Py_hash_t _Py_HashDouble(double value) {
-    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), value);
-}
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
-long _PyHASH_INF;
-long _PyHASH_NAN;
-long _PyHASH_IMAG;
+public abstract class AbstractPythonLock extends PythonBuiltinObject {
 
-void initialize_hashes() {
-    _PyHASH_INF = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), INFINITY);
-    _PyHASH_NAN = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), NAN);
-    _PyHASH_IMAG = UPCALL_L(PY_TRUFFLE_CEXT, polyglot_from_string("PyHash_Imag", SRC_CS));
-}
+    public static double TIMEOUT_MAX = 2 ^ 31;
+    public static boolean DEFAULT_BLOCKING = true;
+    public static double DEFAULT_TIMEOUT = -1.0;
 
-Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {
-    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), polyglot_from_string(src, "ascii"));
+    AbstractPythonLock(LazyPythonClass cls) {
+        super(cls);
+    }
+
+    private static long getTimeoutInMillis(double timeout) {
+        // TODO: look at
+        // https://github.com/python/cpython/blob/e42b705188271da108de42b55d9344642170aa2b/Python/pytime.c
+        // _PyTime_AsMicroseconds
+        long seconds = (long) timeout;
+        long milli = (long) ((timeout - seconds) * 1000);
+        return seconds * 1000 + milli;
+    }
+
+    protected abstract boolean acquireNonBlocking();
+
+    protected abstract boolean acquireBlocking();
+
+    protected abstract boolean acquireTimeout(long timeout);
+
+    protected boolean acquireTimeout(double timeout) {
+        return acquireTimeout(getTimeoutInMillis(timeout));
+    }
+
+    public abstract void release();
+
+    public abstract boolean locked();
 }
