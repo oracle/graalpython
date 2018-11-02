@@ -1774,8 +1774,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Upcall_ptr", minNumOfPositionalArgs = 2, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class UpcallPtrNode extends PythonBuiltinNode {
-        @Child CExtNodes.AsPythonObjectNode toJavaNode = CExtNodes.AsPythonObjectNode.create();
-        @Child CExtNodes.ObjectUpcallNode upcallNode = CExtNodes.ObjectUpcallNode.create();
+        @Child private CExtNodes.AsPythonObjectNode toJavaNode = CExtNodes.AsPythonObjectNode.create();
+        @Child private CExtNodes.ObjectUpcallNode upcallNode = CExtNodes.ObjectUpcallNode.create();
 
         @Specialization
         Object upcall(VirtualFrame frame, Object receiver, String name, Object[] args,
@@ -1793,47 +1793,71 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Cext_Upcall", minNumOfPositionalArgs = 2, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class UpcallCextNode extends PythonBuiltinNode {
-        @Child CExtNodes.ToSulongNode toSulongNode = CExtNodes.ToSulongNode.create();
-        @Child CExtNodes.CextUpcallNode upcallNode = CExtNodes.CextUpcallNode.create();
+        @Child private CExtNodes.ToSulongNode toSulongNode = CExtNodes.ToSulongNode.create();
 
         @Specialization
-        Object upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args) {
+        Object upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args,
+                        @Cached("create()") CExtNodes.CextUpcallNode upcallNode) {
             return toSulongNode.execute(upcallNode.execute(frame, cextModule, name, args));
+        }
+
+        @Specialization(guards = "!isString(callable)")
+        Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object callable, Object[] args,
+                        @Cached("create()") CExtNodes.DirectUpcallNode upcallNode) {
+            return toSulongNode.execute(upcallNode.execute(frame, callable, args));
         }
     }
 
     @Builtin(name = "PyTruffle_Cext_Upcall_d", minNumOfPositionalArgs = 2, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class UpcallCextDNode extends PythonBuiltinNode {
-        @Child CExtNodes.AsDouble asDoubleNode = CExtNodes.AsDouble.create();
-        @Child CExtNodes.CextUpcallNode upcallNode = CExtNodes.CextUpcallNode.create();
+        @Child private CExtNodes.AsDouble asDoubleNode = CExtNodes.AsDouble.create();
 
         @Specialization
-        double upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args) {
+        double upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args,
+                        @Cached("create()") CExtNodes.CextUpcallNode upcallNode) {
             return asDoubleNode.execute(upcallNode.execute(frame, cextModule, name, args));
+        }
+
+        @Specialization(guards = "!isString(callable)")
+        double doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object callable, Object[] args,
+                        @Cached("create()") CExtNodes.DirectUpcallNode upcallNode) {
+            return asDoubleNode.execute(upcallNode.execute(frame, callable, args));
         }
     }
 
     @Builtin(name = "PyTruffle_Cext_Upcall_l", minNumOfPositionalArgs = 2, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class UpcallCextLNode extends PythonBuiltinNode {
-        @Child CExtNodes.AsLong asLongNode = CExtNodes.AsLong.create();
-        @Child CExtNodes.CextUpcallNode upcallNode = CExtNodes.CextUpcallNode.create();
+        @Child private CExtNodes.AsLong asLongNode = CExtNodes.AsLong.create();
 
         @Specialization
-        long upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args) {
+        long upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args,
+                        @Cached("create()") CExtNodes.CextUpcallNode upcallNode) {
             return asLongNode.execute(upcallNode.execute(frame, cextModule, name, args));
+        }
+
+        @Specialization(guards = "!isString(callable)")
+        long doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object callable, Object[] args,
+                        @Cached("create()") CExtNodes.DirectUpcallNode upcallNode) {
+            return asLongNode.execute(upcallNode.execute(frame, callable, args));
         }
     }
 
     @Builtin(name = "PyTruffle_Cext_Upcall_ptr", minNumOfPositionalArgs = 2, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class UpcallCextPtrNode extends PythonBuiltinNode {
-        @Child CExtNodes.CextUpcallNode upcallNode = CExtNodes.CextUpcallNode.create();
 
         @Specialization
-        Object upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args) {
+        Object upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args,
+                        @Cached("create()") CExtNodes.CextUpcallNode upcallNode) {
             return upcallNode.execute(frame, cextModule, name, args);
+        }
+
+        @Specialization(guards = "!isString(callable)")
+        Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object callable, Object[] args,
+                        @Cached("create()") CExtNodes.DirectUpcallNode upcallNode) {
+            return upcallNode.execute(frame, callable, args);
         }
     }
 

@@ -332,7 +332,7 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
         case 'p':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, int, (UPCALL_I(native_to_java(arg), _jls___bool__)));
+            PyTruffle_WriteOut(output_idx, int, (UPCALL_I(native_to_java(arg), polyglot_from_string("__bool__", SRC_CS))));
             break;
         case '(':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);

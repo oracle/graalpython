@@ -461,9 +461,8 @@ PyObject* WriteULongMember(PyObject* object, Py_ssize_t offset, PyObject* value)
     return value;
 }
 
-UPCALL_ID(__bool__);
 PyObject* WriteBoolMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
-    WriteMember(object, offset, UPCALL_O(native_to_java(value), _jls___bool__) == Py_True ? (char)1 : (char)0, char);
+    WriteMember(object, offset, UPCALL_O(native_to_java(value), polyglot_from_string("__bool__", SRC_CS)) == Py_True ? (char)1 : (char)0, char);
     return value;
 }
 
