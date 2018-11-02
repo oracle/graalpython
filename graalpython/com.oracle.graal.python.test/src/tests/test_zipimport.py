@@ -1,41 +1,28 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
-# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2013, Regents of the University of California
 #
-# The Universal Permissive License (UPL), Version 1.0
+# All rights reserved.
 #
-# Subject to the condition set forth below, permission is hereby granted to any
-# person obtaining a copy of this software, associated documentation and/or
-# data (collectively the "Software"), free of charge and under any and all
-# copyright rights in the Software, and any and all patent rights owned or
-# freely licensable by each licensor hereunder covering either (i) the
-# unmodified Software as contributed to or provided by such licensor, or (ii)
-# the Larger Works (as defined below), to deal in both
+# Redistribution and use in source and binary forms, with or without modification, are
+# permitted provided that the following conditions are met:
 #
-# (a) the Software, and
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+# conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list of
+# conditions and the following disclaimer in the documentation and/or other materials provided
+# with the distribution.
 #
-# (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
-# one is included with the Software each a "Larger Work" to which the Software
-# is contributed by such licensors),
-#
-# without restriction, including without limitation the rights to copy, create
-# derivative works of, display, perform, and distribute the Software and make,
-# use, sell, offer for sale, import, export, have made, and have sold the
-# Software and the Larger Work(s), and to sublicense the foregoing rights on
-# either these or other terms.
-#
-# This license is subject to the following condition:
-#
-# The above copyright notice and either this complete permission notice or at a
-# minimum a reference to the UPL must be included in all copies or substantial
-# portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+# GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+# OF THE POSSIBILITY OF SUCH DAMAGE.
+# Qunaibit 02/05/2014
+# With Statement
 
 import sys
 import os
@@ -46,10 +33,8 @@ import importlib
 import zipimport
 from zipimport import ZipImportError
 
-
 from test import support
 from zipfile import ZipFile, ZipInfo, ZIP_STORED, ZIP_DEFLATED
-
 
 test_src = """\
 def get_name():
@@ -62,7 +47,6 @@ ZIP_FILE_NAME = 'testzipfile.zip'
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ZIP_PATH = os.path.join(DIR_PATH, ZIP_FILE_NAME)
 ZIP_ABS_PATH = os.path.abspath(ZIP_PATH);
-
 
 class ZipImportBaseTestCase(unittest.TestCase):
 
@@ -82,11 +66,10 @@ class ZipImportBaseTestCase(unittest.TestCase):
         support.modules_cleanup(*self.modules_before)
 
 class BasicZipImportTests(ZipImportBaseTestCase):
-    
+
     def setUp(self):
         ZipImportBaseTestCase.setUp(self)
         self.z = zipimport.zipimporter(ZIP_PATH)
-
 
     def test_zipimporter_attribute(self):
         self.assertTrue(self.z.prefix == "")
@@ -98,7 +81,7 @@ class BasicZipImportTests(ZipImportBaseTestCase):
         self.assertTrue(self.z._files["cesta/moduleA.py"] is not None)
 
     def test_create_zipimport_from_string(self):
-        zipimport._zip_directory_cache.clear()        
+        zipimport._zip_directory_cache.clear()
         z = zipimport.zipimporter(ZIP_PATH)
         self.assertTrue(zipimport._zip_directory_cache[ZIP_ABS_PATH] is not None)
 
@@ -114,12 +97,12 @@ class BasicZipImportTests(ZipImportBaseTestCase):
                 self.value = path
             def __fspath__(self):
                 return self.value
-                
+
         zipimport._zip_directory_cache.clear()
         mp = MyPath(ZIP_PATH)
         z = zipimport.zipimporter(mp)
         self.assertTrue(zipimport._zip_directory_cache[os.path.abspath(ZIP_PATH)] is not None)
-        
+
     def test_zipimporter_find_module(self):
         self.assertTrue(self.z is self.z.find_module("MyTestModule"))
         self.assertTrue(self.z is self.z.find_module("packageA"))
@@ -175,11 +158,11 @@ class BasicZipImportTests(ZipImportBaseTestCase):
         self.assertTrue(self.z.load_module("packageA/moduleC").__loader__ is self.z)
         self.assertTrue(self.z.load_module("cesta/moduleA").__loader__ is self.z)
         self.assertRaises(ZipImportError, self.z.load_module, "packageA.moduleC")
-    
+
 class ZipImportWithPrefixTests(ZipImportBaseTestCase):
 
     def setUp(self):
-        ZipImportBaseTestCase.setUp(self)        
+        ZipImportBaseTestCase.setUp(self)
         self.z = zipimport.zipimporter(ZIP_PATH + "/cesta")
 
     def tearDown(self):
@@ -202,15 +185,13 @@ class ZipImportWithPrefixTests(ZipImportBaseTestCase):
         self.assertTrue(self.z is self.z.find_module("moduleA"))
 
 class ImportTests(ZipImportBaseTestCase):
-    
+
     def setUp(self):
         ZipImportBaseTestCase.setUp(self)
         sys.path.insert(0, ZIP_PATH)
-    
+
     def test_module_import(self):
         m = importlib.import_module("MyTestModule")
         self.assertTrue (m.get_file() == ZIP_ABS_PATH + "/MyTestModule.py")
         p = importlib.import_module("packageA.moduleC")
         self.assertTrue (p.get_file() == ZIP_ABS_PATH + "/packageA/moduleC.py")
-        
-    

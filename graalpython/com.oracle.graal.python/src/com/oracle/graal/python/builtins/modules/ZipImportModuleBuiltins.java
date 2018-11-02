@@ -46,18 +46,26 @@ import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(defineModule = "zipimport")
+@CoreFunctions(defineModule = ZipImportModuleBuiltins.ZIPIMPORT_MODULE_NAME)
 public class ZipImportModuleBuiltins extends PythonBuiltins {
+
+    protected static final String ZIPIMPORT_MODULE_NAME = "zipimport";
+
+    private static final String ZIP_DIRECTORY_CACHE_NAME = "_zip_directory_cache";
 
     private static final String ZIPIMPORTER_DOC = "zipimporter(archivepath) -> zipimporter object\n" +
                     "\n" +
@@ -76,7 +84,7 @@ public class ZipImportModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        builtinConstants.put("_zip_directory_cache", ZipImporterBuiltins.getCache(core.factory()));
+        builtinConstants.put(ZIP_DIRECTORY_CACHE_NAME, core.factory().createDict());
 
     }
 
@@ -85,8 +93,10 @@ public class ZipImportModuleBuiltins extends PythonBuiltins {
     public abstract static class ZipImporterNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public PZipImporter createNew(PythonClass cls, @SuppressWarnings("unused") Object path) {
-            return factory().createZipImporter(cls);
+        public PZipImporter createNew(PythonClass cls, @SuppressWarnings("unused") Object path,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            PythonModule module = getCore().lookupBuiltinModule(ZIPIMPORT_MODULE_NAME);
+            return factory().createZipImporter(cls, (PDict) readNode.execute(module, ZIP_DIRECTORY_CACHE_NAME));
         }
 
     }

@@ -59,6 +59,11 @@ public class PZipImporter extends PythonBuiltinObject {
     private PDict files;
 
     /**
+     * Cache of the files in the zipfile. Exported in ZipimportModuleBuiltins
+     */
+    private final PDict moduleZipDirectoryCache;
+
+    /**
      * Is the entry source or package
      */
     private static enum EntryType {
@@ -105,9 +110,11 @@ public class PZipImporter extends PythonBuiltinObject {
         PACKAGE
     }
 
-    public PZipImporter(LazyPythonClass cls) {
+    public PZipImporter(LazyPythonClass cls, PDict zipDirectoryCache) {
         super(cls);
         this.archive = null;
+        this.prefix = null;
+        this.moduleZipDirectoryCache = zipDirectoryCache;
         if (searchOrder == null) { // define the order once
             searchOrder = defineSearchOrder();
         }
@@ -119,6 +126,10 @@ public class PZipImporter extends PythonBuiltinObject {
                                         EnumSet.of(EntryType.IS_PACKAGE, EntryType.IS_SOURCE)),
                         new SearchOrderEntry(".py", EnumSet.of(EntryType.IS_SOURCE))
         };
+    }
+
+    public PDict getZipDirectoryCache() {
+        return moduleZipDirectoryCache;
     }
 
     /**

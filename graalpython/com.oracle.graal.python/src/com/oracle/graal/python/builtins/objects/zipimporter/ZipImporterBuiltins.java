@@ -78,21 +78,17 @@ import java.util.zip.ZipFile;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PZipImporter)
 public class ZipImporterBuiltins extends PythonBuiltins {
 
-    /**
-     * cache of the interesting files in the zipfile. exported in ZipimportModuleBuiltins
-     */
-    private static PDict zip_directory_cache;
+    private static final String INIT_WAS_NOT_CALLED = "zipimporter.__init__() wasn't called";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ZipImporterBuiltinsFactory.getFactories();
     }
 
-    public static PDict getCache(PythonObjectFactory factory) {
-        if (zip_directory_cache == null) {
-            zip_directory_cache = factory.createDict();
+    private static void checkInitCalled(PZipImporter self) {
+        if (self.getPrefix() == null) {
+
         }
-        return zip_directory_cache;
     }
 
     @Builtin(name = __INIT__, fixedNumOfPositionalArgs = 1)
@@ -144,7 +140,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             if (zipFile == null) {
                 throw raise(PythonErrorType.ZipImportError, "not a Zip file");
             }
-            Object files = zip_directory_cache.getItem(path);
+            Object files = self.getZipDirectoryCache().getItem(path);
             if (files == null) {
                 PDict filesDict = factory().createDict();
                 Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -163,7 +159,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                     filesDict.setItem(entry.getName(), tuple);
                 }
                 files = filesDict;
-                zip_directory_cache.setItem(path, files);
+                self.getZipDirectoryCache().setItem(path, files);
             }
             self.setArchive(archive);
             self.setPrefix(prefix);
@@ -263,7 +259,11 @@ public class ZipImporterBuiltins extends PythonBuiltins {
          * @return the zipimporter or none, if the module is not found
          */
         @Specialization
-        public Object doit(PZipImporter self, String fullname, @SuppressWarnings("unused") Object path) {
+        public Object doit(PZipImporter self, String fullname, @SuppressWarnings("unused") Object path,
+                        @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
+            if (initWasNotCalled.profile(self.getPrefix() == null)) {
+                throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
+            }
             return self.findModule(fullname) == null ? PNone.NONE : self;
         }
 
@@ -278,7 +278,11 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
         @Specialization
         public PCode doit(PZipImporter self, String fullname,
-                        @Cached("createBinaryProfile()") ConditionProfile canNotFind) {
+                        @Cached("createBinaryProfile()") ConditionProfile canNotFind,
+                        @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
+            if (initWasNotCalled.profile(self.getPrefix() == null)) {
+                throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
+            }
             if (compileNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 compileNode = insert(CompileNode.create());
@@ -304,6 +308,9 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         @Specialization
         @CompilerDirectives.TruffleBoundary
         public PBytes doit(PZipImporter self, String pathname) {
+            if (self.getPrefix() == null) {
+                throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
+            }
             String archive = self.getArchive();
             int len = archive.length();
             int index = 0;
@@ -344,7 +351,11 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object doit(PZipImporter self, String fullname,
-                        @Cached("createBinaryProfile()") ConditionProfile canNotFind) {
+                        @Cached("createBinaryProfile()") ConditionProfile canNotFind,
+                        @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
+            if (initWasNotCalled.profile(self.getPrefix() == null)) {
+                throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
+            }
             ModuleCodeData moduleCodeData = self.getModuleCode(fullname);
             if (canNotFind.profile(moduleCodeData == null)) {
                 throw raise(PythonErrorType.ZipImportError, " can't find module '%s'", fullname);
@@ -361,7 +372,11 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
         @Specialization
         public String doit(PZipImporter self, String fullname,
-                        @Cached("createBinaryProfile()") ConditionProfile canNotFind) {
+                        @Cached("createBinaryProfile()") ConditionProfile canNotFind,
+                        @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
+            if (initWasNotCalled.profile(self.getPrefix() == null)) {
+                throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
+            }
             ModuleCodeData md = self.getModuleCode(fullname);
             if (canNotFind.profile(md == null)) {
                 throw raise(PythonErrorType.ZipImportError, "can't find module '%s'", fullname);
@@ -378,7 +393,11 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
         @Specialization
         public boolean doit(PZipImporter self, String fullname,
-                        @Cached("createBinaryProfile()") ConditionProfile canNotFind) {
+                        @Cached("createBinaryProfile()") ConditionProfile canNotFind,
+                        @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
+            if (initWasNotCalled.profile(self.getPrefix() == null)) {
+                throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
+            }
             ModuleInfo moduleInfo = self.getModuleInfo(fullname);
             if (canNotFind.profile(moduleInfo == ModuleInfo.NOT_FOUND)) {
                 throw raise(PythonErrorType.ZipImportError, "can't find module '%s'", fullname);
@@ -396,7 +415,9 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         @Specialization
         public Object doit(PZipImporter self, String fullname,
                         @Cached("create()") GetCodeNode getCodeNode,
-                        @Cached("createBinaryProfile()") ConditionProfile canNotFind) {
+                        @Cached("createBinaryProfile()") ConditionProfile canNotFind,
+                        @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
+            PCode code = getCodeNode.doit(self, fullname, canNotFind, initWasNotCalled);
 
             PythonModule sysModule = getCore().lookupBuiltinModule("sys");
             PDict sysModules = (PDict) sysModule.getAttribute("modules");
@@ -405,7 +426,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 module = getCore().factory().createPythonModule(fullname);
                 sysModules.setItem(fullname, module);
             }
-            PCode code = getCodeNode.doit(self, fullname, canNotFind);
+
             module.setAttribute(SpecialAttributeNames.__LOADER__, self);
             module.setAttribute(SpecialAttributeNames.__FILE__, code.getFilename());
             if (ModuleInfo.PACKAGE == self.getModuleInfo(fullname)) {
