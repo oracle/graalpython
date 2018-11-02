@@ -72,7 +72,11 @@ public interface PythonParser {
     public interface ParserErrorCallback {
         RuntimeException raise(PythonBuiltinClassType type, String message, Object... args);
 
-        RuntimeException raiseInvalidSyntax(Source source, SourceSection section);
+        RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments);
+
+        default RuntimeException raiseInvalidSyntax(Source source, SourceSection section) {
+            return raiseInvalidSyntax(source, section, "invalid syntax", new Object[0]);
+        }
 
         PythonLanguage getLanguage();
     }

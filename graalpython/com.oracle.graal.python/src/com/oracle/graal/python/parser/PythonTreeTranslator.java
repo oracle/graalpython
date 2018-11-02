@@ -302,7 +302,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                         }
                     } else if (isStararg(argctx)) {
                         if (kwargs != null) {
-                            throw errors.raise(SyntaxError, "iterable argument unpacking follows keyword argument unpacking");
+                            throw errors.raiseInvalidSyntax(source, deriveSourceSection(argctx), "iterable argument unpacking follows keyword argument unpacking");
                         }
                         if (starargs != null) {
                             starargs = factory.createBinaryOperation("+", starargs, arg);
@@ -311,10 +311,10 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                         }
                     } else {
                         if (!keywords.isEmpty()) {
-                            throw errors.raise(SyntaxError, "positional argument follows keyword argument");
+                            throw errors.raiseInvalidSyntax(source, deriveSourceSection(argctx), "positional argument follows keyword argument");
                         }
                         if (kwargs != null) {
-                            throw errors.raise(SyntaxError, "positional argument follows keyword argument unpacking");
+                            throw errors.raiseInvalidSyntax(source, deriveSourceSection(argctx), "positional argument follows keyword argument unpacking");
                         }
                         argumentNodes.add(arg);
                     }
@@ -355,7 +355,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             // In CPython, ast.c ensures this
             String argName = ctx.test(0).accept(new ExtractNameVisitor());
             if (argName == null) {
-                throw errors.raise(SyntaxError, "Keyword can't be an expression");
+                throw errors.raiseInvalidSyntax(source, deriveSourceSection(ctx), "Keyword can't be an expression");
             }
             return factory.createKeywordLiteral((ExpressionNode) ctx.test(1).accept(this), argName);
         } else {
@@ -428,7 +428,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         } else if (ctx.NAME() != null) {
             return environment.findVariable(ctx.NAME().getText());
         } else if (ctx.getChildCount() == 1) {
-            return parseSpecialLiteral(ctx.getText());
+            return parseSpecialLiteral(ctx);
         } else if (ctx.dictorsetmaker() != null) {
             return super.visitAtom(ctx);
         } else if (ctx.getChild(0).getText().equals("{")) { // empty dict
@@ -540,23 +540,24 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
     private PNode visitDictmakerComprehension(Python3Parser.DictmakerContext ctx) {
         if (!ctx.expr().isEmpty()) {
-            throw errors.raise(SyntaxError, "dict unpacking cannot be used in dict comprehension");
+            throw errors.raiseInvalidSyntax(source, deriveSourceSection(ctx), "dict unpacking cannot be used in dict comprehension");
         }
         return factory.callBuiltin(DICT,
                         createComprehensionExpression(ctx, ctx.comp_for(), c -> factory.createTupleLiteral((ExpressionNode) ctx.test(0).accept(this), (ExpressionNode) ctx.test(1).accept(this))));
     }
 
-    private Object parseSpecialLiteral(String text) {
-        if (text.equals("...")) {
+    private Object parseSpecialLiteral(Python3Parser.AtomContext ctx) {
+        String txt = ctx.getText();
+        if (txt.equals("...")) {
             return factory.createObjectLiteral(PEllipsis.INSTANCE);
-        } else if (text.equals("None")) {
+        } else if (txt.equals("None")) {
             return factory.createObjectLiteral(PNone.NONE);
-        } else if (text.equals("True")) {
+        } else if (txt.equals("True")) {
             return factory.createBooleanLiteral(true);
-        } else if (text.equals("False")) {
+        } else if (txt.equals("False")) {
             return factory.createBooleanLiteral(false);
         } else {
-            throw errors.raise(SyntaxError, "Unknown literal %s", text);
+            throw errors.raiseInvalidSyntax(source, deriveSourceSection(ctx), "Unknown literal %s", txt);
         }
     }
 
@@ -975,7 +976,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             return factory.createImportFrom(sb.toString(), fromlist.toArray(new String[0]), asNodes.toArray(new WriteNode[0]), level);
         } else {
             if (!environment.atModuleLevel()) {
-                throw errors.raise(SyntaxError, "import * only allowed at module level");
+                throw errors.raiseInvalidSyntax(source, deriveSourceSection(ctx), "import * only allowed at module level");
             }
             return factory.createImportStar(sb.toString(), level);
         }
@@ -1097,7 +1098,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 delTarget(blockList, targetValue);
             }
         } else {
-            throw errors.raise(SyntaxError, "can't delete '%s'", target.getSourceSection().getCharacters());
+            throw errors.raiseInvalidSyntax(target.getSourceSection().getSource(), target.getSourceSection(), "can't delete '%s'", target.getSourceSection().getCharacters());
         }
     }
 
@@ -1156,7 +1157,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 return factory.createFrameReturn(factory.createWriteLocal((ExpressionNode) ctx.testlist().accept(this), environment.getReturnSlot()));
             }
         }
-        throw errors.raise(SyntaxError, "'return' outside function");
+        throw errors.raiseInvalidSyntax(source, deriveSourceSection(ctx), "'return' outside function");
     }
 
     private static boolean lastChildIsComma(ParserRuleContext ctx) {
@@ -1369,7 +1370,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 WriteNode exceptName = null;
                 if (excctx.test() != null) {
                     if (gotDefaultExcept) {
-                        throw errors.raise(SyntaxError, "default except: must be last");
+                        throw errors.raiseInvalidSyntax(source, deriveSourceSection(excctx), "default except: must be last");
                     }
                     exceptType = (ExpressionNode) excctx.test().accept(this);
                     if (excctx.NAME() != null) {
