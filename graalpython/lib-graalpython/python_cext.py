@@ -517,13 +517,8 @@ def PySequence_Tuple(obj):
 
 
 @may_raise
-def PySequence_Fast(obj, msg):
-    if isinstance(obj, tuple) or isinstance(obj, list):
-        return obj
-    try:
-        return list(obj)
-    except TypeError:
-        raise TypeError(msg)
+def PySequence_List(obj):
+    return list(obj)
 
 
 def PySequence_Check(obj):
