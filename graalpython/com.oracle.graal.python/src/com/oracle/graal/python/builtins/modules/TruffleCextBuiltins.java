@@ -1701,11 +1701,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         Object doGeneric(Object size, Object errorMarker) {
             return raiseNative(errorMarker, TypeError, "expected 'int', but was '%p'", size);
         }
-
-        @TruffleBoundary
-        private static void addToSet(PythonClass base, PythonClass value) {
-            base.getSubClasses().add(value);
-        }
     }
 
     @Builtin(name = "PyTruffle_Upcall", minNumOfPositionalArgs = 3, takesVarArgs = true, declaresExplicitSelf = true)

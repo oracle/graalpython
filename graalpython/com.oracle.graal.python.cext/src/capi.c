@@ -199,6 +199,19 @@ void* native_to_java_exported(PyObject* obj) {
     return native_to_java(obj);
 }
 
+void* native_pointer_to_java(PyObject* obj) {
+    if (obj == NULL) {
+        return Py_NoValue;
+    } else if (obj == Py_None) {
+        return Py_None;
+    } else if (polyglot_is_string(obj)) {
+        return obj;
+    } else if (!truffle_cannot_be_handle(obj)) {
+        return resolve_handle(cache, (uint64_t)obj);
+    }
+    return obj;
+}
+
 __attribute__((always_inline))
 inline void* to_java(PyObject* obj) {
     return polyglot_invoke(PY_TRUFFLE_CEXT, "to_java", native_to_java(obj));

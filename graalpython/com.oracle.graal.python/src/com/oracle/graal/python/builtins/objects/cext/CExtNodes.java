@@ -593,7 +593,8 @@ public abstract class CExtNodes {
         @Child private PCallNativeNode callNativeNode;
         @Child private AsPythonObjectNode toJavaNode = AsPythonObjectNode.create();
 
-        @CompilationFinal TruffleObject nativeToJavaFunction;
+        @CompilationFinal private TruffleObject nativeToJavaFunction;
+        @CompilationFinal private TruffleObject nativePointerToJavaFunction;
 
         public abstract Object execute(Object value);
 
@@ -628,24 +629,47 @@ public abstract class CExtNodes {
         }
 
         @Specialization
+        Object doInt(int i) {
+            // Unfortunately, an int could be a native pointer and therefore a handle. So, we must
+            // try resolving it. At least we know that it's not a native type.
+            return native_pointer_to_java(i);
+        }
+
+        @Specialization
+        Object doLong(long l) {
+            // Unfortunately, a long could be a native pointer and therefore a handle. So, we must
+            // try resolving it. At least we know that it's not a native type.
+            return native_pointer_to_java(l);
+        }
+
+        @Specialization
         byte doLong(byte b) {
             return b;
         }
 
         @Fallback
         Object doForeign(Object value) {
-            if (callNativeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNativeNode = insert(PCallNativeNode.create());
-            }
-            if (callNativeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-            }
             if (nativeToJavaFunction == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 nativeToJavaFunction = importCAPISymbol(NativeCAPISymbols.FUN_NATIVE_TO_JAVA);
             }
-            return toJavaNode.execute(callNativeNode.execute(nativeToJavaFunction, new Object[]{value}));
+            return call_native_conversion(nativeToJavaFunction, value);
+        }
+
+        private Object native_pointer_to_java(Object value) {
+            if (nativePointerToJavaFunction == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                nativePointerToJavaFunction = importCAPISymbol(NativeCAPISymbols.FUN_NATIVE_POINTER_TO_JAVA);
+            }
+            return call_native_conversion(nativePointerToJavaFunction, value);
+        }
+
+        private Object call_native_conversion(TruffleObject target, Object value) {
+            if (callNativeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNativeNode = insert(PCallNativeNode.create());
+            }
+            return toJavaNode.execute(callNativeNode.execute(target, new Object[]{value}));
         }
 
         public static ToJavaNode create() {

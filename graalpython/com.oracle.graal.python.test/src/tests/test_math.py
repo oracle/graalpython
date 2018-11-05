@@ -178,7 +178,8 @@ class MathTests(unittest.TestCase):
         """
         failure = result_check(expected, got, ulp_tol, abs_tol)
         if failure is not None:
-            self.fail("{}: {}".format(name, failure))
+            raise RuntimeError("{}: {}".format(name, failure))
+            #self.fail("{}: {}".format(name, failure))
 
     def testConstants(self):
         # Ref: Abramowitz & Stegun (Dover, 1965)
@@ -223,8 +224,7 @@ class MathTests(unittest.TestCase):
     def testAcosh(self):
         self.assertRaises(TypeError, math.acosh)
         self.ftest('acosh(1)', math.acosh(1), 0)
-        # TODO uncomment when GR-10346 will be fixed
-        #self.ftest('acosh(2)', math.acosh(2), 1.3169578969248168)
+        self.ftest('acosh(2)', math.acosh(2), 1.3169578969248168)
         self.assertRaises(ValueError, math.acosh, 0)
         self.assertRaises(ValueError, math.acosh, -1)
         self.assertEqual(math.acosh(INF), INF)
@@ -233,9 +233,8 @@ class MathTests(unittest.TestCase):
 
         class MyFF:
             def __float__(self):
-                return 6
-        # TODO uncomment when GR-10346 will be fixed
-        #self.ftest('acos(MyFloat())', math.acosh(MyFF()), 0.9272952180016123)
+                return 1.4616427410996713
+        self.ftest('acos(MyFloat())', math.acosh(MyFF()), 0.9272952180016123)
         self.assertRaises(ValueError, math.acosh, MyFloat())
         math.acosh(BIG_INT)
         self.assertRaises(TypeError, math.acosh, 'ahoj')
@@ -279,8 +278,7 @@ class MathTests(unittest.TestCase):
         self.ftest('log(32,2)', math.log(32,2), 5)
         self.ftest('log(10**40, 10)', math.log(10**40, 10), 40)
         self.ftest('log(10**40, 10**20)', math.log(10**40, 10**20), 2)
-        # TODO uncomment when GR-10346 will be fixed
-        #self.ftest('log(10**1000)', math.log(10**1000), 2302.5850929940457)
+        self.ftest('log(10**1000)', math.log(10**1000), 2302.5850929940457)
         self.assertRaises(ValueError, math.log, -1.5)
         self.assertRaises(ValueError, math.log, -10**1000)
         self.assertRaises(ValueError, math.log, NINF)
@@ -357,11 +355,9 @@ class MathTests(unittest.TestCase):
         self.assertTrue(math.isnan(math.log10(NAN)))
 
         # test of specializations
-        # TODO uncomment when GR-10346 will be fixed
-        #self.ftest('log10(MyFloat())', math.log10(MyFloat()), -0.22184874961635637)
+        self.ftest('log10(MyFloat())', math.log10(MyFloat()), -0.22184874961635637)
         self.assertRaises(TypeError, math.log10, 'ahoj')
-        # TODO uncomment when GR-10346 will be fixed
-        #self.ftest('log10(BIG_INT)', math.log10(BIG_INT), 30.999999671364986)
+        self.ftest('log10(BIG_INT)', math.log10(BIG_INT), 30.999999671364986)
 
     def testIsfinite(self):
         self.assertTrue(math.isfinite(0.0))
@@ -761,11 +757,9 @@ class MathTests(unittest.TestCase):
 
     def testCos(self):
         self.assertRaises(TypeError, math.cos)
-        # TODO uncomment when GR-10346 will be fixed
-        #self.ftest('cos(-pi/2)', math.cos(-math.pi/2), 0, abs_tol=ulp(1))
+        self.ftest('cos(-pi/2)', math.cos(-math.pi/2), 0, abs_tol=ulp(1))
         self.ftest('cos(0)', math.cos(0), 1)
-        # TODO uncomment when GR-10346 will be fixed
-        #self.ftest('cos(pi/2)', math.cos(math.pi/2), 0, abs_tol=ulp(1))
+        self.ftest('cos(pi/2)', math.cos(math.pi/2), 0, abs_tol=ulp(1))
         self.ftest('cos(pi)', math.cos(math.pi), -1)
         try:
             self.assertTrue(math.isnan(math.cos(INF)))
@@ -774,7 +768,7 @@ class MathTests(unittest.TestCase):
             self.assertRaises(ValueError, math.cos, INF)
             self.assertRaises(ValueError, math.cos, NINF)
         self.assertTrue(math.isnan(math.cos(NAN)))
-
+ 
         #test of specializations
         self.ftest('cos(BIG_INT)', math.cos(BIG_INT), 0.4145587418469303)
         self.ftest('cos(MyFloat())', math.cos(MyFloat()), 0.8253356149096783)
@@ -783,8 +777,7 @@ class MathTests(unittest.TestCase):
     def testCosh(self):
         self.assertRaises(TypeError, math.cosh)
         self.ftest('cosh(0)', math.cosh(0), 1)
-        # TODO uncomment when GR-10346 will be fixed
-        #self.ftest('cosh(2)-2*cosh(1)**2', math.cosh(2)-2*math.cosh(1)**2, -1) # Thanks to Lambert
+        self.ftest('cosh(2)-2*cosh(1)**2', math.cosh(2)-2*math.cosh(1)**2, -1) # Thanks to Lambert
         self.assertEqual(math.cosh(INF), INF)
         self.assertEqual(math.cosh(NINF), INF)
         self.assertTrue(math.isnan(math.cosh(NAN)))
@@ -815,8 +808,7 @@ class MathTests(unittest.TestCase):
     def testSinh(self):
         self.assertRaises(TypeError, math.sinh)
         self.ftest('sinh(0)', math.sinh(0), 0)
-        # TODO uncomment when GR-10346 will be fixed
-        #self.ftest('sinh(1)**2-cosh(1)**2', math.sinh(1)**2-math.cosh(1)**2, -1)
+        self.ftest('sinh(1)**2-cosh(1)**2', math.sinh(1)**2-math.cosh(1)**2, -1)
         self.ftest('sinh(1)+sinh(-1)', math.sinh(1)+math.sinh(-1), 0)
         self.assertEqual(math.sinh(INF), INF)
         self.assertEqual(math.sinh(NINF), NINF)
@@ -830,9 +822,8 @@ class MathTests(unittest.TestCase):
     def testTan(self):
         self.assertRaises(TypeError, math.tan)
         self.ftest('tan(0)', math.tan(0), 0)
-        # TODO uncomment when GR-10346 will be fixed
-        #self.ftest('tan(pi/4)', math.tan(math.pi/4), 1)
-        #self.ftest('tan(-pi/4)', math.tan(-math.pi/4), -1)
+        self.ftest('tan(pi/4)', math.tan(math.pi/4), 1)
+        self.ftest('tan(-pi/4)', math.tan(-math.pi/4), -1)
         try:
             self.assertTrue(math.isnan(math.tan(INF)))
             self.assertTrue(math.isnan(math.tan(NINF)))
@@ -849,8 +840,7 @@ class MathTests(unittest.TestCase):
     def testTanh(self):
         self.assertRaises(TypeError, math.tanh)
         self.ftest('tanh(0)', math.tanh(0), 0)
-        # TODO uncomment when GR-10346 will be fixed
-        #self.ftest('tanh(1)+tanh(-1)', math.tanh(1)+math.tanh(-1), 0, abs_tol=ulp(1))
+        self.ftest('tanh(1)+tanh(-1)', math.tanh(1)+math.tanh(-1), 0, abs_tol=ulp(1))
         self.ftest('tanh(inf)', math.tanh(INF), 1)
         self.ftest('tanh(-inf)', math.tanh(NINF), -1)
         self.assertTrue(math.isnan(math.tanh(NAN)))
@@ -863,9 +853,8 @@ class MathTests(unittest.TestCase):
     def testAsinh(self):
         self.assertRaises(TypeError, math.asinh)
         self.ftest('asinh(0)', math.asinh(0), 0)
-        # TODO uncomment when GR-10346 will be fixed
-        #self.ftest('asinh(1)', math.asinh(1), 0.88137358701954305)
-        #self.ftest('asinh(-1)', math.asinh(-1), -0.88137358701954305)
+        self.ftest('asinh(1)', math.asinh(1), 0.88137358701954305)
+        self.ftest('asinh(-1)', math.asinh(-1), -0.88137358701954305)
         self.assertEqual(math.asinh(INF), INF)
         self.assertEqual(math.asinh(NINF), NINF)
         self.assertTrue(math.isnan(math.asinh(NAN)))
@@ -892,8 +881,7 @@ class MathTests(unittest.TestCase):
     def testAtanh(self):
         self.assertRaises(TypeError, math.atan)
         self.ftest('atanh(0)', math.atanh(0), 0)
-        # TODO uncomment when GR-10346 will be fixed
-        #self.ftest('atanh(0.5)', math.atanh(0.5), 0.54930614433405489)
+        self.ftest('atanh(0.5)', math.atanh(0.5), 0.54930614433405489)
         #self.ftest('atanh(-0.5)', math.atanh(-0.5), -0.54930614433405489)
         self.assertRaises(ValueError, math.atanh, 1)
         self.assertRaises(ValueError, math.atanh, -1)
