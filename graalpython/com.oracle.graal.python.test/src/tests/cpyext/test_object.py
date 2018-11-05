@@ -38,7 +38,9 @@
 # SOFTWARE.
 
 import sys
+
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction
+
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -144,6 +146,15 @@ class TestObject(object):
         assert "hello" in tester.get_dict().keys() and "world" in tester.get_dict().keys(), "was: %s" % tester.get_dict().keys()
         tester.get_dict()["extra"] = "blah"
         assert tester.extra == "blah"
+
+    def test_repr(self):
+        TestRepr = CPyExtType("TestRepr", '')
+        tester = TestRepr()
+        try:
+            repr(tester)
+        except Exception:
+            assert False
+        assert True
 
 
 class TestObjectFunctions(CPyExtTestCase):
