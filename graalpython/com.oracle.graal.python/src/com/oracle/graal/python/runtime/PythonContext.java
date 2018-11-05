@@ -90,16 +90,19 @@ public final class PythonContext {
 
     /** A thread-local dictionary for custom user state. */
     private ThreadLocal<PDict> customThreadState;
+    private final PosixResources resources;
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
         this.core = core;
         this.env = env;
+        this.resources = new PosixResources();
         if (env == null) {
             this.in = System.in;
             this.out = System.out;
             this.err = System.err;
         } else {
+            this.resources.setEnv(env);
             this.in = env.in();
             this.out = env.out();
             this.err = env.err();
@@ -155,6 +158,24 @@ public final class PythonContext {
     public void setEnv(TruffleLanguage.Env newEnv) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         env = newEnv;
+        in = env.in();
+        out = env.out();
+        err = env.err();
+        resources.setEnv(env);
+    }
+
+    /**
+     * Just for testing
+     */
+    public void setOut(OutputStream out) {
+        this.out = out;
+    }
+
+    /**
+     * Just for testing
+     */
+    public void setErr(OutputStream err) {
+        this.err = err;
     }
 
     public PythonModule getMainModule() {
@@ -177,14 +198,6 @@ public final class PythonContext {
         return out;
     }
 
-    public void setOut(OutputStream out) {
-        this.out = out;
-    }
-
-    public void setErr(OutputStream err) {
-        this.err = err;
-    }
-
     public void setCurrentException(PException e) {
         currentException = e;
     }
@@ -205,8 +218,6 @@ public final class PythonContext {
 
     public void patch(Env newEnv) {
         setEnv(newEnv);
-        setOut(newEnv.out());
-        setErr(newEnv.err());
         setupRuntimeInformation();
         core.postInitialize();
     }
@@ -293,5 +304,9 @@ public final class PythonContext {
 
     public boolean isExecutableAccessAllowed() {
         return getEnv().isHostLookupAllowed() || getEnv().isNativeAccessAllowed();
+    }
+
+    public PosixResources getResources() {
+        return resources;
     }
 }
