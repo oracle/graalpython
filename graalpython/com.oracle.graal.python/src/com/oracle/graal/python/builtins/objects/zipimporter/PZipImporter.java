@@ -120,6 +120,7 @@ public class PZipImporter extends PythonBuiltinObject {
         }
     }
 
+    @CompilerDirectives.TruffleBoundary
     private static SearchOrderEntry[] defineSearchOrder() {
         return new SearchOrderEntry[]{
                         new SearchOrderEntry(SEPARATOR + "__init__.py",

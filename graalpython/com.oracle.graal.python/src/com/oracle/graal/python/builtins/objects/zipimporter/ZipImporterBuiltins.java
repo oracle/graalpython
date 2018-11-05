@@ -84,12 +84,6 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         return ZipImporterBuiltinsFactory.getFactories();
     }
 
-    private static void checkInitCalled(PZipImporter self) {
-        if (self.getPrefix() == null) {
-
-        }
-    }
-
     @Builtin(name = __INIT__, fixedNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
