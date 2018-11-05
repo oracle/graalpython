@@ -820,6 +820,12 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends UnboxNode {
+        public final Object executeWithArgs(TruffleObject callee, Object[] arguments) {
+            return this.execute(callee, arguments, PKeyword.EMPTY_KEYWORDS);
+        }
+
+        public abstract Object execute(TruffleObject callee, Object[] arguments, PKeyword[] keywords);
+
         /**
          * A foreign function call specializes on the length of the passed arguments. Any
          * optimization based on the callee has to happen on the other side.
@@ -851,6 +857,10 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         @Fallback
         protected Object doGeneric(Object callee, @SuppressWarnings("unused") Object arguments, @SuppressWarnings("unused") Object keywords) {
             throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable %s()", callee);
+        }
+
+        public static CallNode create() {
+            return TruffleObjectBuiltinsFactory.CallNodeFactory.create(null);
         }
     }
 
