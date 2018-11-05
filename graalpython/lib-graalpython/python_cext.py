@@ -812,13 +812,6 @@ def PyTuple_New(size):
     return (None,) * size
 
 
-@may_raise
-def PyTuple_GetItem(t, n):
-    if not isinstance(t, tuple):
-        __bad_internal_call(None, None, t)
-    return t[n]
-
-
 @may_raise(-1)
 def PyTuple_Size(t):
     if not isinstance(t, tuple):

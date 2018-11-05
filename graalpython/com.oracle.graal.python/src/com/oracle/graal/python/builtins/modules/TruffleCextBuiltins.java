@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.math.BigInteger;
@@ -143,6 +144,7 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -2056,6 +2058,29 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 return 1;
             }
             return 0;
+        }
+    }
+
+    @Builtin(name = "PyTuple_GetItem", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyTuple_GetItem extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        Object doPTuple(PTuple tuple, long key,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
+            SequenceStorage sequenceStorage = tuple.getSequenceStorage();
+            // we must do a bounds-check but we must not normalize the index
+            if (key < 0 || key >= lenNode.execute(sequenceStorage)) {
+                throw raise(IndexError, NormalizeIndexNode.TUPLE_OUT_OF_BOUNDS);
+            }
+            return getItemNode.execute(sequenceStorage, key);
+        }
+
+        @Fallback
+        Object doPTuple(Object tuple, @SuppressWarnings("unused") Object key) {
+            // TODO(fa) To be absolutely correct, we need to do a 'isinstance' check on the object.
+            throw raise(SystemError, "bad argument to internal function, was '%s' (type '%p')", tuple, tuple);
         }
     }
 
