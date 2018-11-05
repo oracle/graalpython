@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassN
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.GetSulongTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.InvalidateNativeObjectsAllManagedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PAsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PIsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
@@ -976,7 +977,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         public static InvalidateNativeObjectsAllManagedNode create() {
-            return InvalidateNativeObjectsAllManagedNode.create();
+            return InvalidateNativeObjectsAllManagedNodeGen.create();
         }
     }
 
