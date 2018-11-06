@@ -1336,26 +1336,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Set_Ptr", fixedNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyTruffle_Set_Ptr extends NativeBuiltin {
-
-        @Specialization
-        int doPythonObject(PythonAbstractObject nativeWrapper, TruffleObject ptr) {
-            return doNativeWrapper(nativeWrapper.getNativeWrapper(), ptr);
-        }
-
-        @Specialization
-        int doNativeWrapper(PythonNativeWrapper nativeWrapper, TruffleObject ptr) {
-            if (nativeWrapper.isNative()) {
-                PythonContext.getSingleNativeContextAssumption().invalidate();
-            } else {
-                nativeWrapper.setNativePointer(ptr);
-            }
-            return 0;
-        }
-    }
-
     @Builtin(name = "PyTruffle_Set_SulongType", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyTruffle_Set_SulongType extends NativeBuiltin {
