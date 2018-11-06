@@ -49,11 +49,11 @@ import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@NodeChildren({@NodeChild(value = "object", type = ExpressionNode.class), @NodeChild(value = "rhs", type = ExpressionNode.class)})
+@NodeChild(value = "object", type = ExpressionNode.class)
+@NodeChild(value = "rhs", type = ExpressionNode.class)
 public abstract class SetAttributeNode extends StatementNode implements WriteNode {
 
     public static final class Dynamic extends PNodeWithContext {

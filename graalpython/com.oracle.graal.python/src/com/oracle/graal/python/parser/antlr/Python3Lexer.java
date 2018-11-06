@@ -27,7 +27,7 @@
  */
 // Checkstyle: stop
 //@formatter:off
-// Generated from Python3.g4 by ANTLR 4.7
+// Generated from Python3.g4 by ANTLR 4.7.1
 package com.oracle.graal.python.parser.antlr;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
@@ -40,7 +40,7 @@ import org.antlr.v4.runtime.misc.*;
 
 @SuppressWarnings("all")
 public class Python3Lexer extends Lexer {
-	static { RuntimeMetaData.checkVersion("4.7", RuntimeMetaData.VERSION); }
+	static { RuntimeMetaData.checkVersion("4.7.1", RuntimeMetaData.VERSION); }
 
 	protected static final DFA[] _decisionToDFA;
 	protected static final PredictionContextCache _sharedContextCache =

@@ -383,7 +383,7 @@ public class PythonMessageResolution {
         }
 
         @Specialization(replaces = "cached")
-        Object[] cached(Object[] arguments) {
+        Object[] generic(Object[] arguments) {
             Object[] convertedArgs = new Object[arguments.length];
             for (int i = 0; i < arguments.length; i++) {
                 convertedArgs[i] = fromForeign.executeConvert(arguments[i]);
@@ -568,11 +568,7 @@ public class PythonMessageResolution {
     @Resolve(message = "IS_INSTANTIABLE")
     abstract static class IsInstantiableNode extends Node {
         public Object access(Object obj) {
-            if (obj instanceof PythonClass) {
-                return true;
-            } else {
-                return false;
-            }
+            return obj instanceof PythonClass;
         }
     }
 

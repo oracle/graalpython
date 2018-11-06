@@ -273,7 +273,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return recursiveNode.executeObject(value);
         }
 
-        protected BinNode create() {
+        protected static BinNode create() {
             return BuiltinFunctionsFactory.BinNodeFactory.create();
         }
     }
@@ -706,7 +706,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public Object getAttr(Object object, PString name, Object defaultValue) {
+        public Object getAttr2(Object object, PString name, Object defaultValue) {
             return executeWithArgs(object, name.getValue(), defaultValue);
         }
 

@@ -153,7 +153,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     }
 
     @Specialization(guards = "!dynamicObject.getShape().isValid()")
-    protected boolean defineDirect(DynamicObject dynamicObject, Object key, Object value) {
+    protected boolean defineDirect2(DynamicObject dynamicObject, Object key, Object value) {
         CompilerDirectives.transferToInterpreter();
         dynamicObject.updateShape();
         return doIndirect(dynamicObject, key, value);

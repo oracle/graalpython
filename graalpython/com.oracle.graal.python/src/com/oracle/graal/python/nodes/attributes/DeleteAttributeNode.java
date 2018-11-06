@@ -45,10 +45,10 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@NodeChildren({@NodeChild(value = "object", type = ExpressionNode.class), @NodeChild(value = "key", type = ExpressionNode.class)})
+@NodeChild(value = "object", type = ExpressionNode.class)
+@NodeChild(value = "key", type = ExpressionNode.class)
 public abstract class DeleteAttributeNode extends StatementNode {
     public static DeleteAttributeNode create() {
         return DeleteAttributeNodeGen.create(null, null);

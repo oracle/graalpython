@@ -111,11 +111,7 @@ abstract class AbstractInvokeNode extends Node {
     }
 
     protected static boolean isBuiltin(PythonCallable callee) {
-        if (callee instanceof PBuiltinFunction || callee instanceof PBuiltinMethod || callee instanceof PythonBuiltinClass) {
-            return true;
-        } else {
-            return false;
-        }
+        return callee instanceof PBuiltinFunction || callee instanceof PBuiltinMethod || callee instanceof PythonBuiltinClass;
     }
 }
 

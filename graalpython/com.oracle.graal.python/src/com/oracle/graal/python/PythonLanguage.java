@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NodeFactory;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -222,12 +221,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
-    protected void initializeContext(PythonContext context) throws Exception {
+    protected void initializeContext(PythonContext context) {
         context.initialize();
     }
 
     @Override
-    protected CallTarget parse(ParsingRequest request) throws Exception {
+    protected CallTarget parse(ParsingRequest request) {
         PythonContext context = this.getContextReference().get();
         PythonCore core = context.getCore();
         Source source = request.getSource();
@@ -254,7 +253,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
-    protected ExecutableNode parse(InlineParsingRequest request) throws Exception {
+    protected ExecutableNode parse(InlineParsingRequest request) {
         CompilerDirectives.transferToInterpreter();
         final Source source = request.getSource();
         final MaterializedFrame requestFrame = request.getFrame();
@@ -306,7 +305,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean isObjectOfLanguage(Object object) {
-        return object instanceof PNode || object instanceof PythonObject;
+        return object instanceof PythonAbstractObject;
     }
 
     @Override

@@ -830,24 +830,29 @@ public final class StringBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         public PList doSplit(String self, String sep, PNone maxsplit) {
-            PList list = factory().createList();
-            String[] strs = self.split(Pattern.quote(sep));
-            for (String s : strs) {
-                getAppendNode().execute(list, s);
-            }
-            return list;
+            return doSplit(self, sep, -1);
         }
 
         @Specialization
         @TruffleBoundary
         public PList doSplit(String self, String sep, int maxsplit) {
-            PList list = factory().createList();
-            // Python gives the maximum number of splits, Java wants the max number of resulting
-            // parts
-            String[] strs = self.split(Pattern.quote(sep), maxsplit + 1);
-            for (String s : strs) {
-                getAppendNode().execute(list, s);
+            if (sep.isEmpty()) {
+                throw raise(ValueError, "empty separator");
             }
+            int splits = maxsplit == -1 ? Integer.MAX_VALUE : maxsplit;
+
+            PList list = factory().createList();
+            int lastEnd = 0;
+            while (splits > 0) {
+                int nextIndex = self.indexOf(sep, lastEnd);
+                if (nextIndex == -1) {
+                    break;
+                }
+                splits--;
+                getAppendNode().execute(list, self.substring(lastEnd, nextIndex));
+                lastEnd = nextIndex + sep.length();
+            }
+            getAppendNode().execute(list, self.substring(lastEnd, self.length()));
             return list;
         }
 

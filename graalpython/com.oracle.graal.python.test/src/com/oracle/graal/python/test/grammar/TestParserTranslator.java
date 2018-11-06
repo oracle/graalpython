@@ -66,7 +66,6 @@ import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
-import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -149,7 +148,7 @@ public class TestParserTranslator {
         Node actual = n;
         if (n instanceof ExpressionNode.ExpressionStatementNode) {
             actual = n.getChildren().iterator().next();
-        } else if (n instanceof ExpressionNode.ExpressionWithSideEffects) {
+        } else if (n instanceof ExpressionNode.ExpressionWithSideEffects || n instanceof ExpressionNode.ExpressionWithSideEffect) {
             actual = n.getChildren().iterator().next();
         } else if (n instanceof WriteLocalVariableNode) {
             if (((WriteLocalVariableNode) n).getIdentifier().equals(FrameSlotIDs.RETURN_SLOT_ID)) {
@@ -316,9 +315,6 @@ public class TestParserTranslator {
         parseAs("del world", DeleteGlobalNode.class);
         parseAs("del world[0]", DeleteItemNode.class);
         parseAs("del world.field", DeleteAttributeNode.class);
-        BlockNode parseAs = parseAs("del world.field, world[0]", BlockNode.class);
-        getChild(parseAs, 0, DeleteAttributeNode.class);
-        getChild(parseAs, 1, DeleteItemNode.class);
     }
 
     @Test
@@ -333,11 +329,6 @@ public class TestParserTranslator {
 
         parseAs = parseAs("a = 1,2", WriteGlobalNode.class);
         assert parseAs.getRhs() instanceof TupleLiteralNode;
-
-        BlockNode parseAs2 = parseAs("a = b = 1", BlockNode.class);
-        getChild(parseAs2, 0, WriteNode.class); // write tmp
-        getChild(parseAs2, 1, WriteNode.class); // write a
-        getChild(parseAs2, 2, WriteNode.class); // write b
 
         parseAs("a,b = 1,2", DestructuringAssignmentNode.class);
         parseAs("a,*b,c = 1,2", DestructuringAssignmentNode.class);
@@ -375,7 +366,7 @@ public class TestParserTranslator {
 
         AndNode parseAs = parseAs("x < y() <= z", AndNode.class);
         PNode leftNode = parseAs.getLeftNode();
-        assert leftNode instanceof ExpressionNode.ExpressionWithSideEffects;
+        assert leftNode instanceof ExpressionNode.ExpressionWithSideEffect;
         WriteNode tmpWrite = getChild(leftNode, 0, WriteNode.class);
         assert tmpWrite.getRhs() instanceof PythonCallNode;
         PythonCallNode rhs = (PythonCallNode) tmpWrite.getRhs();
