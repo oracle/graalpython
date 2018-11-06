@@ -521,19 +521,12 @@ def PySequence_List(obj):
     return list(obj)
 
 
-def PySequence_Check(obj):
-    # dictionaries are explicitly excluded
-    if isinstance(obj, dict):
-        return False
-    return hasattr(obj, '__getitem__')
-
-
 @may_raise
 def PySequence_GetItem(obj, key):
     if not hasattr(obj, '__getitem__'):
         raise TypeError("'%s' object does not support indexing)" % repr(obj))
     if len(obj) < 0:
-        return error_marker
+        return native_null
     return obj[key]
 
 

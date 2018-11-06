@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -108,6 +109,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -124,6 +126,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
+import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
@@ -2084,4 +2087,32 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PySequence_Check", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PySequence_Check extends PythonUnaryBuiltinNode {
+        @Child private HasInheritedAttributeNode hasInheritedAttrNode;
+
+        @Specialization(guards = "isPSequence(object)")
+        int doSequence(@SuppressWarnings("unused") Object object) {
+            return 1;
+        }
+
+        @Specialization
+        int doDict(@SuppressWarnings("unused") PDict object) {
+            return 0;
+        }
+
+        @Fallback
+        int doGeneric(Object object) {
+            if (hasInheritedAttrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                hasInheritedAttrNode = insert(HasInheritedAttributeNode.create(__GETITEM__));
+            }
+            return hasInheritedAttrNode.execute(object) ? 1 : 0;
+        }
+
+        protected static boolean isPSequence(Object object) {
+            return object instanceof PList || object instanceof PTuple;
+        }
+    }
 }
