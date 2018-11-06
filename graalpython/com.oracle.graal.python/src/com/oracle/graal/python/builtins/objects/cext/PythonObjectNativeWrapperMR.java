@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObject
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.GetSulongTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.InvalidateNativeObjectsAllManagedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PAsPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PIsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
@@ -929,33 +928,10 @@ public class PythonObjectNativeWrapperMR {
 
     @Resolve(message = "IS_POINTER")
     abstract static class IsPointerNode extends Node {
-        @Child private PIsPointerNode pIsPointerNode = PIsPointerNode.create();
+        @Child private CExtNodes.IsPointerNode pIsPointerNode = CExtNodes.IsPointerNode.create();
 
         boolean access(PythonNativeWrapper obj) {
             return pIsPointerNode.execute(obj);
-        }
-    }
-
-    abstract static class PIsPointerNode extends PNodeWithContext {
-
-        public abstract boolean execute(PythonNativeWrapper obj);
-
-        @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
-        boolean doFalse(@SuppressWarnings("unused") PythonNativeWrapper obj) {
-            return false;
-        }
-
-        @Specialization
-        boolean doGeneric(PythonNativeWrapper obj) {
-            return obj.isNative();
-        }
-
-        protected Assumption nativeObjectsAllManagedAssumption() {
-            return getContext().getNativeObjectsAllManagedAssumption();
-        }
-
-        public static PIsPointerNode create() {
-            return PIsPointerNodeGen.create();
         }
     }
 

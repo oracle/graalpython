@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWr
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.PIsPointerNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -161,7 +160,7 @@ public class CArrayWrapperMR {
 
     @Resolve(message = "IS_POINTER")
     abstract static class IsPointerNode extends Node {
-        @Child private PIsPointerNode pIsPointerNode = PIsPointerNode.create();
+        @Child private CExtNodes.IsPointerNode pIsPointerNode = CExtNodes.IsPointerNode.create();
 
         boolean access(CArrayWrapper obj) {
             return pIsPointerNode.execute(obj);
