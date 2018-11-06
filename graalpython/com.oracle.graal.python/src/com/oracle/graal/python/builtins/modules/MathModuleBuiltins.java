@@ -516,7 +516,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return value.getValue().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0;
         }
 
-        protected FactorialNode create() {
+        protected static FactorialNode create() {
             return MathModuleBuiltinsFactory.FactorialNodeFactory.create();
         }
     }
@@ -588,7 +588,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        protected FloorNode create() {
+        protected static FloorNode create() {
             return MathModuleBuiltinsFactory.FloorNodeFactory.create();
         }
     }

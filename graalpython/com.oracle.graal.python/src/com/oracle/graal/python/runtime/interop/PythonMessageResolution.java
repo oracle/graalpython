@@ -383,7 +383,7 @@ public class PythonMessageResolution {
         }
 
         @Specialization(replaces = "cached")
-        Object[] cached(Object[] arguments) {
+        Object[] generic(Object[] arguments) {
             Object[] convertedArgs = new Object[arguments.length];
             for (int i = 0; i < arguments.length; i++) {
                 convertedArgs[i] = fromForeign.executeConvert(arguments[i]);
