@@ -47,8 +47,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
 import com.oracle.truffle.api.instrumentation.StandardTags.ExpressionTag;
+import com.oracle.truffle.api.instrumentation.StandardTags.StatementTag;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
@@ -102,7 +104,16 @@ public abstract class ExpressionNode extends PNode {
 
     @Override
     public boolean hasTag(Class<? extends Tag> tag) {
-        return tag == ExpressionTag.class || super.hasTag(tag);
+        return tag == ExpressionTag.class || (tag == StatementTag.class && isStatement()) || super.hasTag(tag);
+    }
+
+    private boolean isStatement() {
+        Node parent = getParent();
+        if (parent instanceof WrapperNode) {
+            parent = parent.getParent();
+        }
+        // expressions with these parents are considered to be statements
+        return parent instanceof ExpressionWithSideEffect || parent instanceof ExpressionWithSideEffects;
     }
 
     public static final class ExpressionStatementNode extends StatementNode {
