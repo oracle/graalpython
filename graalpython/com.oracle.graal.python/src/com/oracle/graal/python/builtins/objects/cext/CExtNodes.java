@@ -344,7 +344,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
-        Object doPythonClass2(TruffleObject object) {
+        Object doForeignObject(TruffleObject object) {
             return TruffleObjectNativeWrapper.wrap(object);
         }
 
