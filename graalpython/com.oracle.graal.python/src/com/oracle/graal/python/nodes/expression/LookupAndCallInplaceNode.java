@@ -51,10 +51,10 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@NodeChildren({@NodeChild("arg"), @NodeChild("arg2")})
+@NodeChild("arg")
+@NodeChild("arg2")
 public abstract class LookupAndCallInplaceNode extends ExpressionNode {
 
     public abstract static class NotImplementedHandler extends PNodeWithContext {

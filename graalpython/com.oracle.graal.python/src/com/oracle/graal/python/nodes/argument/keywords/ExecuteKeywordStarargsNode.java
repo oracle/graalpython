@@ -53,13 +53,12 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
-@NodeChildren({@NodeChild(value = "starargs", type = ExpressionNode.class)})
+@NodeChild(value = "starargs", type = ExpressionNode.class)
 public abstract class ExecuteKeywordStarargsNode extends Node {
     public abstract PKeyword[] execute(VirtualFrame frame);
 

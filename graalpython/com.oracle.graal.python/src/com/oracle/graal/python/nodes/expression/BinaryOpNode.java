@@ -27,10 +27,10 @@ package com.oracle.graal.python.nodes.expression;
 
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-@NodeChildren({@NodeChild(value = "leftNode", type = ExpressionNode.class), @NodeChild(value = "rightNode", type = ExpressionNode.class)})
+@NodeChild(value = "leftNode", type = ExpressionNode.class)
+@NodeChild(value = "rightNode", type = ExpressionNode.class)
 public abstract class BinaryOpNode extends ExpressionNode {
     public abstract ExpressionNode getLeftNode();
 

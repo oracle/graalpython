@@ -37,13 +37,14 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = __SETITEM__)
-@NodeChildren({@NodeChild(value = "primary", type = ExpressionNode.class), @NodeChild(value = "slice", type = ExpressionNode.class), @NodeChild(value = "right", type = ExpressionNode.class)})
+@NodeChild(value = "primary", type = ExpressionNode.class)
+@NodeChild(value = "slice", type = ExpressionNode.class)
+@NodeChild(value = "right", type = ExpressionNode.class)
 public abstract class SetItemNode extends StatementNode implements WriteNode {
 
     public abstract ExpressionNode getPrimary();

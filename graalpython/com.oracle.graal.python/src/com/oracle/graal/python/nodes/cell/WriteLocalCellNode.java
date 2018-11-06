@@ -34,14 +34,13 @@ import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "write_cell")
-@NodeChildren({@NodeChild(value = "rhs", type = ExpressionNode.class)})
+@NodeChild(value = "rhs", type = ExpressionNode.class)
 public abstract class WriteLocalCellNode extends StatementNode implements WriteIdentifierNode {
     @Child private ExpressionNode readLocal;
 

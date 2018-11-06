@@ -46,11 +46,10 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@NodeChildren({@NodeChild(value = "withContext", type = ExpressionNode.class)})
+@NodeChild(value = "withContext", type = ExpressionNode.class)
 public abstract class WithNode extends StatementNode {
 
     @Child private StatementNode body;

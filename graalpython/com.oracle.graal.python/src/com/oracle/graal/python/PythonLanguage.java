@@ -221,12 +221,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
-    protected void initializeContext(PythonContext context) throws Exception {
+    protected void initializeContext(PythonContext context) {
         context.initialize();
     }
 
     @Override
-    protected CallTarget parse(ParsingRequest request) throws Exception {
+    protected CallTarget parse(ParsingRequest request) {
         PythonContext context = this.getContextReference().get();
         PythonCore core = context.getCore();
         Source source = request.getSource();
@@ -253,7 +253,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
-    protected ExecutableNode parse(InlineParsingRequest request) throws Exception {
+    protected ExecutableNode parse(InlineParsingRequest request) {
         CompilerDirectives.transferToInterpreter();
         final Source source = request.getSource();
         final MaterializedFrame requestFrame = request.getFrame();

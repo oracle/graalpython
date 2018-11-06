@@ -48,7 +48,8 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @SuppressWarnings("unused")
-@NodeChildren({@NodeChild(value = "type", type = ExpressionNode.class), @NodeChild(value = "cause", type = ExpressionNode.class)})
+@NodeChild(value = "type", type = ExpressionNode.class)
+@NodeChild(value = "cause", type = ExpressionNode.class)
 public abstract class RaiseNode extends StatementNode {
 
     private final IsBuiltinClassProfile simpleBaseCheckProfile = IsBuiltinClassProfile.create();
