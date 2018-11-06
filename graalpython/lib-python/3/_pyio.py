@@ -1578,7 +1578,7 @@ class FileIO(RawIOBase):
         except OSError:
             pass
 
-        result = bytearray()
+        result = []
         while True:
             if len(result) >= bufsize:
                 bufsize = len(result)
@@ -1592,9 +1592,9 @@ class FileIO(RawIOBase):
                 return None
             if not chunk: # reached the end of the file
                 break
-            result += chunk
+            result.append(chunk)
 
-        return bytes(result)
+        return b"".join(result)
 
     def readinto(self, b):
         """Same as RawIOBase.readinto()."""
