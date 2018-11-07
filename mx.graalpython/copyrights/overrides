@@ -235,6 +235,7 @@ graalpython/com.oracle.graal.python.test/src/tests/test_re.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_slice.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_sorted.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_string.py,python.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_subprocess.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_tuple.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_with-test-2.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_with.py,zippy.copyright

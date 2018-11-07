@@ -116,6 +116,9 @@ class TestCase(object):
         fail_msg = FAIL + BOLD + "F" + ENDC if verbose else "F"
         print(fail_msg, end="", flush=True)
 
+    def assertIsInstance(self, value, cls):
+        assert isinstance(value, cls), "Expected %r to be instance of %r" % (value, cls)
+
     def assertTrue(self, value, msg=""):
         assert value, msg
 
