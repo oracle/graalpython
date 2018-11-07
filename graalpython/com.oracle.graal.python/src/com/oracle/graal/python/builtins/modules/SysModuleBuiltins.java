@@ -45,6 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -110,19 +111,27 @@ public class SysModuleBuiltins extends PythonBuiltins {
             builtinConstants.put("executable", PNone.NONE);
         } else {
             StringBuilder sb = new StringBuilder();
-            sb.append(System.getProperty("java.home")).append(PythonCore.FILE_SEPARATOR).append("bin").append(PythonCore.FILE_SEPARATOR).append("java ");
+            ArrayList<String> exec_list = new ArrayList<>();
+            sb.append(System.getProperty("java.home")).append(PythonCore.FILE_SEPARATOR).append("bin").append(PythonCore.FILE_SEPARATOR).append("java");
+            exec_list.add(sb.toString());
+            sb.append(' ');
             for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
                 if (arg.matches("-Xrunjdwp:transport=dt_socket,server=y,address=\\d+,suspend=y")) {
                     arg = arg.replace("suspend=y", "suspend=n");
                 }
                 sb.append(arg).append(' ');
+                exec_list.add(arg);
             }
             sb.append("-classpath ");
+            exec_list.add("-classpath");
             sb.append(System.getProperty("java.class.path")).append(' ');
+            exec_list.add(System.getProperty("java.class.path"));
             // we really don't care what the main class or its arguments were - this should
             // always help us launch Graal.Python
             sb.append("com.oracle.graal.python.shell.GraalPythonMain");
+            exec_list.add("com.oracle.graal.python.shell.GraalPythonMain");
             builtinConstants.put("executable", sb.toString());
+            builtinConstants.put("executable_list", core.factory().createList(exec_list.toArray()));
         }
         builtinConstants.put("modules", core.factory().createDict());
         builtinConstants.put("path", core.factory().createList());
