@@ -117,6 +117,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1313,18 +1314,19 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffle_GetTpFlags extends NativeBuiltin {
 
+        @Child private GetTypeFlagsNode getTypeFlagsNode;
         @Child private GetClassNode getClassNode;
 
         @Specialization
         long doPythonObject(PythonNativeWrapper nativeWrapper) {
             PythonClass pclass = getClassNode().execute(nativeWrapper.getDelegate());
-            return pclass.getFlags();
+            return getTypeFlagsNode().execute(pclass);
         }
 
         @Specialization
         long doPythonObject(PythonAbstractObject object) {
             PythonClass pclass = getClassNode().execute(object);
-            return pclass.getFlags();
+            return getTypeFlagsNode().execute(pclass);
         }
 
         private GetClassNode getClassNode() {
@@ -1333,6 +1335,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 getClassNode = insert(GetClassNode.create());
             }
             return getClassNode;
+        }
+
+        private GetTypeFlagsNode getTypeFlagsNode() {
+            if (getTypeFlagsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getTypeFlagsNode = insert(GetTypeFlagsNode.create());
+            }
+            return getTypeFlagsNode;
         }
     }
 
@@ -2033,14 +2043,26 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyType_IsSubtype", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyType_IsSubtype extends PythonBinaryBuiltinNode {
+        private static long calls = 0;
+
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
 
         @Specialization
         int doI(PythonClass a, PythonClass b) {
+            calls++;
+            if (calls % 1000 == 0) {
+                print(calls);
+            }
             if (isSubtypeNode.execute(a, b)) {
                 return 1;
             }
             return 0;
+        }
+
+        @TruffleBoundary
+        private static void print(long calls2) {
+            System.out.println("######### CALLS: " + calls2);
+            System.out.flush();
         }
     }
 

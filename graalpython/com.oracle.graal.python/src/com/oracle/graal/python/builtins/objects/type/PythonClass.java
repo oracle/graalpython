@@ -299,13 +299,17 @@ public class PythonClass extends PythonObject implements LazyPythonClass {
         this.flags.setValue(flags);
     }
 
+    FlagsContainer getFlagsContainer() {
+        return flags;
+    }
+
     /**
      * Flags are copied from the initial dominant base class. However, classes may already be
      * created before the C API was initialized, i.e., flags were not set.
      */
-    private static final class FlagsContainer {
-        private PythonClass initialDominantBase;
-        private long flags;
+    static final class FlagsContainer {
+        PythonClass initialDominantBase;
+        long flags;
 
         public FlagsContainer(PythonClass superClass) {
             this.initialDominantBase = superClass;
