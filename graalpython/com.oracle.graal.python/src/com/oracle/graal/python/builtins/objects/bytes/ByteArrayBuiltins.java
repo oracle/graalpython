@@ -506,8 +506,30 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+        @Child private SequenceStorageNodes.LenNode lenNode;
+
         @Specialization
-        boolean contains(PSequence self, Object other,
+        boolean contains(PByteArray self, PBytes other,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
+        }
+
+        @Specialization
+        boolean contains(PByteArray self, PByteArray other,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
+        }
+
+        private int getLength(SequenceStorage s) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return lenNode.execute(s);
+        }
+
+        @Specialization(guards = {"!isBytes(other)"})
+        boolean contains(PByteArray self, Object other,
                         @Cached("create()") BranchProfile errorProfile,
                         @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
 
