@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
@@ -145,6 +146,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -209,7 +211,8 @@ public final class Python3Core implements PythonCore {
                         "function",
                         "_sysconfig",
                         "_socket",
-                        "_thread"));
+                        "_thread",
+                        "zipimport"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
     }
@@ -302,7 +305,9 @@ public final class Python3Core implements PythonCore {
                         new CtypesModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
                         new PyExpatModuleBuiltins(),
-                        new SysConfigModuleBuiltins()));
+                        new SysConfigModuleBuiltins(),
+                        new ZipImporterBuiltins(),
+                        new ZipImportModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
             for (PythonBuiltins builtin : providers) {

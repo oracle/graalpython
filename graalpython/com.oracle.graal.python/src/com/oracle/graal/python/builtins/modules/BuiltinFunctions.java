@@ -116,6 +116,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
@@ -599,6 +600,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class CompileNode extends PythonBuiltinNode {
+
+        public abstract Object execute(Object source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize);
+
         @Specialization
         @TruffleBoundary
         Object compile(PBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
@@ -639,6 +643,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         Object compile(PCode code, String filename, String mode, Object flags, Object dontInherit, Object optimize) {
             return code;
+        }
+
+        public static CompileNode create() {
+            return BuiltinFunctionsFactory.CompileNodeFactory.create(new ReadArgumentNode[]{});
         }
     }
 

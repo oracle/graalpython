@@ -85,6 +85,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     Super("super", "builtins"),
     PCode("code"),
     PZip("zip", "builtins"),
+    PZipImporter("zipimporter", "zipimport"),
     PBuffer("buffer", "builtins"),
     PThread("start_new_thread", "_thread"),
     PLock("LockType", "_thread"),
@@ -133,6 +134,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PermissionError("PermissionError", "builtins"),
     ProcessLookupError("ProcessLookupError", "builtins"),
     TimeoutError("TimeoutError", "builtins"),
+    ZipImportError("ZipImportError", "zipimport"),
 
     // todo: all OS errors
 
@@ -262,6 +264,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         PermissionError.base = OSError;
         ProcessLookupError.base = OSError;
         TimeoutError.base = OSError;
+        ZipImportError.base = ImportError;
 
         ReferenceError.base = Exception;
         RuntimeError.base = Exception;

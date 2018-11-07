@@ -164,6 +164,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         builtinConstants.put("NotImplemented", PNotImplemented.NOT_IMPLEMENTED);
     }
 
+    @TypeSystemReference(PythonArithmeticTypes.class)
     protected abstract static class CreateByteOrByteArrayNode extends PythonBuiltinNode {
         @Child private IsIndexNode isIndexNode;
         @Child private CastToIndexNode castToIndexNode;

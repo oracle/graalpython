@@ -104,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -734,6 +735,10 @@ public final class PythonObjectFactory extends Node {
                         codestring, constants, names,
                         varnames, freevars, cellvars,
                         filename, name, firstlineno, lnotab));
+    }
+
+    public PZipImporter createZipImporter(LazyPythonClass cls, PDict zipDirectoryCache) {
+        return trace(new PZipImporter(cls, zipDirectoryCache));
     }
 
     /*
