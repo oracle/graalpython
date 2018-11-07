@@ -40,8 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.math.BigInteger;
@@ -107,6 +109,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -123,9 +126,11 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
+import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -142,6 +147,7 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -1330,26 +1336,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Set_Ptr", fixedNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyTruffle_Set_Ptr extends NativeBuiltin {
-
-        @Specialization
-        int doPythonObject(PythonAbstractObject nativeWrapper, TruffleObject ptr) {
-            return doNativeWrapper(nativeWrapper.getNativeWrapper(), ptr);
-        }
-
-        @Specialization
-        int doNativeWrapper(PythonNativeWrapper nativeWrapper, TruffleObject ptr) {
-            if (nativeWrapper.isNative()) {
-                PythonContext.getSingleNativeContextAssumption().invalidate();
-            } else {
-                nativeWrapper.setNativePointer(ptr);
-            }
-            return 0;
-        }
-    }
-
     @Builtin(name = "PyTruffle_Set_SulongType", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyTruffle_Set_SulongType extends NativeBuiltin {
@@ -2041,6 +2027,72 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 asPrimitiveNode = insert(TrufflePInt_AsPrimitiveFactory.create());
             }
             return asPrimitiveNode.executeLong(n, 0, Long.BYTES);
+        }
+    }
+
+    @Builtin(name = "PyType_IsSubtype", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyType_IsSubtype extends PythonBinaryBuiltinNode {
+        @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
+
+        @Specialization
+        int doI(PythonClass a, PythonClass b) {
+            if (isSubtypeNode.execute(a, b)) {
+                return 1;
+            }
+            return 0;
+        }
+    }
+
+    @Builtin(name = "PyTuple_GetItem", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyTuple_GetItem extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        Object doPTuple(PTuple tuple, long key,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
+            SequenceStorage sequenceStorage = tuple.getSequenceStorage();
+            // we must do a bounds-check but we must not normalize the index
+            if (key < 0 || key >= lenNode.execute(sequenceStorage)) {
+                throw raise(IndexError, NormalizeIndexNode.TUPLE_OUT_OF_BOUNDS);
+            }
+            return getItemNode.execute(sequenceStorage, key);
+        }
+
+        @Fallback
+        Object doPTuple(Object tuple, @SuppressWarnings("unused") Object key) {
+            // TODO(fa) To be absolutely correct, we need to do a 'isinstance' check on the object.
+            throw raise(SystemError, "bad argument to internal function, was '%s' (type '%p')", tuple, tuple);
+        }
+    }
+
+    @Builtin(name = "PySequence_Check", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PySequence_Check extends PythonUnaryBuiltinNode {
+        @Child private HasInheritedAttributeNode hasInheritedAttrNode;
+
+        @Specialization(guards = "isPSequence(object)")
+        int doSequence(@SuppressWarnings("unused") Object object) {
+            return 1;
+        }
+
+        @Specialization
+        int doDict(@SuppressWarnings("unused") PDict object) {
+            return 0;
+        }
+
+        @Fallback
+        int doGeneric(Object object) {
+            if (hasInheritedAttrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                hasInheritedAttrNode = insert(HasInheritedAttributeNode.create(__GETITEM__));
+            }
+            return hasInheritedAttrNode.execute(object) ? 1 : 0;
+        }
+
+        protected static boolean isPSequence(Object object) {
+            return object instanceof PList || object instanceof PTuple;
         }
     }
 }

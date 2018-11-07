@@ -517,20 +517,8 @@ def PySequence_Tuple(obj):
 
 
 @may_raise
-def PySequence_Fast(obj, msg):
-    if isinstance(obj, tuple) or isinstance(obj, list):
-        return obj
-    try:
-        return list(obj)
-    except TypeError:
-        raise TypeError(msg)
-
-
-def PySequence_Check(obj):
-    # dictionaries are explicitly excluded
-    if isinstance(obj, dict):
-        return False
-    return hasattr(obj, '__getitem__')
+def PySequence_List(obj):
+    return list(obj)
 
 
 @may_raise
@@ -538,7 +526,7 @@ def PySequence_GetItem(obj, key):
     if not hasattr(obj, '__getitem__'):
         raise TypeError("'%s' object does not support indexing)" % repr(obj))
     if len(obj) < 0:
-        return error_marker
+        return native_null
     return obj[key]
 
 
@@ -808,20 +796,8 @@ def PyObject_Repr(o):
     return repr(o)
 
 
-@may_raise(-1)
-def PyType_IsSubtype(a, b):
-    return 1 if issubclass(a, b) else 0
-
-
 def PyTuple_New(size):
     return (None,) * size
-
-
-@may_raise
-def PyTuple_GetItem(t, n):
-    if not isinstance(t, tuple):
-        __bad_internal_call(None, None, t)
-    return t[n]
 
 
 @may_raise(-1)

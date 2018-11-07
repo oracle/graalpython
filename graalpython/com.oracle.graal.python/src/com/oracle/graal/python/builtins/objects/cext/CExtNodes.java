@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonOb
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeClassNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MaterializeDelegateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
@@ -105,6 +106,7 @@ import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -377,6 +379,7 @@ public abstract class CExtNodes {
      */
     public abstract static class AsPythonObjectNode extends CExtBaseNode {
         @Child private MaterializeDelegateNode materializeNode;
+        @Child private IsPointerNode isPointerNode;
 
         public abstract Object execute(Object value);
 
@@ -385,27 +388,27 @@ public abstract class CExtNodes {
             return object.getValue();
         }
 
-        @Specialization(guards = "!object.isNative()")
+        @Specialization(guards = "!isNative(object)")
         byte doByteNativeWrapper(ByteNativeWrapper object) {
             return object.getValue();
         }
 
-        @Specialization(guards = "!object.isNative()")
+        @Specialization(guards = "!isNative(object)")
         int doIntNativeWrapper(IntNativeWrapper object) {
             return object.getValue();
         }
 
-        @Specialization(guards = "!object.isNative()")
+        @Specialization(guards = "!isNative(object)")
         long doLongNativeWrapper(LongNativeWrapper object) {
             return object.getValue();
         }
 
-        @Specialization(guards = "!object.isNative()")
+        @Specialization(guards = "!isNative(object)")
         double doDoubleNativeWrapper(DoubleNativeWrapper object) {
             return object.getValue();
         }
 
-        @Specialization(guards = {"!isBoolNativeWrapper(object)", "object.isNative()"})
+        @Specialization(guards = {"!isBoolNativeWrapper(object)", "isNative(object)"})
         Object doPrimitiveNativeWrapper(PrimitiveNativeWrapper object) {
             return getMaterializeNode().execute(object);
         }
@@ -465,6 +468,14 @@ public abstract class CExtNodes {
         @Fallback
         Object run(Object obj) {
             throw raise(PythonErrorType.SystemError, "invalid object from native: %s", obj);
+        }
+
+        protected boolean isNative(PythonNativeWrapper object) {
+            if (isPointerNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isPointerNode = insert(IsPointerNode.create());
+            }
+            return isPointerNode.execute(object);
         }
 
         protected static boolean isPrimitiveNativeWrapper(PythonNativeWrapper object) {
@@ -1454,6 +1465,29 @@ public abstract class CExtNodes {
         @Override
         protected ReadArgumentNode[] getArguments() {
             throw new IllegalAccessError();
+        }
+    }
+
+    public abstract static class IsPointerNode extends PNodeWithContext {
+
+        public abstract boolean execute(PythonNativeWrapper obj);
+
+        @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
+        boolean doFalse(@SuppressWarnings("unused") PythonNativeWrapper obj) {
+            return false;
+        }
+
+        @Specialization
+        boolean doGeneric(PythonNativeWrapper obj) {
+            return obj.isNative();
+        }
+
+        protected Assumption nativeObjectsAllManagedAssumption() {
+            return getContext().getNativeObjectsAllManagedAssumption();
+        }
+
+        public static IsPointerNode create() {
+            return IsPointerNodeGen.create();
         }
     }
 }

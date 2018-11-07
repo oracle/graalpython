@@ -62,6 +62,8 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassI
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.GetSulongTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.InvalidateNativeObjectsAllManagedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PAsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
@@ -84,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
@@ -105,6 +108,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -135,11 +139,51 @@ public class PythonObjectNativeWrapperMR {
     @SuppressWarnings("unknown-message")
     @Resolve(message = "com.oracle.truffle.llvm.spi.GetDynamicType")
     abstract static class GetDynamicTypeNode extends Node {
-        @Child GetClassNode getClass = GetClassNode.create();
-        @Child AsPythonObjectNode getDelegate = AsPythonObjectNode.create();
+        @Child private GetLazyClassNode getLazyClassNode = GetLazyClassNode.create();
+        @Child private GetSulongTypeNode getSulongTypeNode = GetSulongTypeNode.create();
+        @Child private AsPythonObjectNode getDelegate = AsPythonObjectNode.create();
 
         public Object access(PythonNativeWrapper object) {
-            PythonClass klass = getClass.execute(getDelegate.execute(object));
+            return getSulongTypeNode.execute(getLazyClassNode.execute(getDelegate.execute(object)));
+        }
+    }
+
+    abstract static class GetSulongTypeNode extends PNodeWithContext {
+
+        private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
+
+        public abstract Object execute(LazyPythonClass clazz);
+
+        @Specialization(guards = "clazz == cachedClass", limit = "10")
+        Object doBuiltinCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
+                        @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass,
+                        @Cached("getSulongTypeForBuiltinClass(clazz)") Object sulongType) {
+            return sulongType;
+        }
+
+        @Specialization(replaces = "doBuiltinCached")
+        Object doBuiltinGeneric(PythonBuiltinClassType clazz) {
+            return getSulongTypeForBuiltinClass(clazz);
+        }
+
+        @Specialization(assumptions = "singleContextAssumption()", guards = "clazz == cachedClass")
+        Object doGeneric(@SuppressWarnings("unused") PythonClass clazz,
+                        @Cached("clazz") @SuppressWarnings("unused") PythonClass cachedClass,
+                        @Cached("doGeneric(clazz)") Object sulongType) {
+            return sulongType;
+        }
+
+        @Specialization
+        Object doGeneric(PythonClass clazz) {
+            return getSulongTypeForClass(clazz);
+        }
+
+        protected Object getSulongTypeForBuiltinClass(PythonBuiltinClassType clazz) {
+            PythonClass pythonClass = getPythonClass(clazz, profile);
+            return getSulongTypeForClass(pythonClass);
+        }
+
+        private static Object getSulongTypeForClass(PythonClass klass) {
             Object sulongType = klass.getSulongType();
             if (sulongType == null) {
                 CompilerDirectives.transferToInterpreter();
@@ -163,6 +207,11 @@ public class PythonObjectNativeWrapperMR {
             }
             return sulongType;
         }
+
+        public static GetSulongTypeNode create() {
+            return GetSulongTypeNodeGen.create();
+        }
+
     }
 
     @Resolve(message = "READ")
@@ -849,8 +898,10 @@ public class PythonObjectNativeWrapperMR {
     @Resolve(message = "TO_NATIVE")
     abstract static class ToNativeNode extends Node {
         @Child private ToPyObjectNode toPyObjectNode;
+        @Child private InvalidateNativeObjectsAllManagedNode invalidateNode = InvalidateNativeObjectsAllManagedNode.create();
 
         Object access(PythonClassInitNativeWrapper obj) {
+            invalidateNode.execute();
             if (!obj.isNative()) {
                 obj.setNativePointer(getToPyObjectNode().execute(obj));
             }
@@ -859,6 +910,7 @@ public class PythonObjectNativeWrapperMR {
 
         Object access(PythonNativeWrapper obj) {
             assert !(obj instanceof PythonClassInitNativeWrapper);
+            invalidateNode.execute();
             if (!obj.isNative()) {
                 obj.setNativePointer(getToPyObjectNode().execute(obj));
             }
@@ -876,8 +928,32 @@ public class PythonObjectNativeWrapperMR {
 
     @Resolve(message = "IS_POINTER")
     abstract static class IsPointerNode extends Node {
+        @Child private CExtNodes.IsPointerNode pIsPointerNode = CExtNodes.IsPointerNode.create();
+
         boolean access(PythonNativeWrapper obj) {
-            return obj.isNative();
+            return pIsPointerNode.execute(obj);
+        }
+    }
+
+    abstract static class InvalidateNativeObjectsAllManagedNode extends PNodeWithContext {
+
+        public abstract void execute();
+
+        @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
+        void doValid() {
+            nativeObjectsAllManagedAssumption().invalidate();
+        }
+
+        @Specialization
+        void doInvalid() {
+        }
+
+        protected Assumption nativeObjectsAllManagedAssumption() {
+            return getContext().getNativeObjectsAllManagedAssumption();
+        }
+
+        public static InvalidateNativeObjectsAllManagedNode create() {
+            return InvalidateNativeObjectsAllManagedNodeGen.create();
         }
     }
 
