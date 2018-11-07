@@ -592,7 +592,7 @@ def run_shared_lib_test(args=None):
 
         int32_t main(int32_t argc, char **argv) {
             poly_isolate_params isolate_params = {};
-            if (poly_create_isolate(&isolate_params, &global_isolate)) {
+            if (poly_create_isolate(&isolate_params, &global_isolate, &isolate_thread)) {
                 return 1;
             }
             return test_basic_python_function();
