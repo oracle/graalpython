@@ -85,3 +85,14 @@ def test_add():
     else:
         assert False
 
+
+def test_add_int_to_long_storage():
+    x = [2147483648, 1]
+    x[0] = 42 # should not raise
+    assert x[0] == 42
+
+def test_add_int_to_long_array():
+    from array import array
+    y = array('l', [1, 2])
+    y[0] = 42 # should not raise
+    assert y[0] == 42
