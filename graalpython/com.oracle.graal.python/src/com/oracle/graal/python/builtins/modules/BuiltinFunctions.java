@@ -96,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -138,6 +139,7 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -1585,6 +1587,48 @@ public final class BuiltinFunctions extends PythonBuiltins {
         String inputPrompt(String prompt) {
             new PrintStream(getContext().getStandardOut()).println(prompt);
             return input(null);
+        }
+    }
+
+    @Builtin(name = "globals", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GlobalsNode extends PythonBuiltinNode {
+        @Child ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
+        private final ConditionProfile condProfile = ConditionProfile.createBinaryProfile();
+
+        @Specialization
+        public Object globals(VirtualFrame frame) {
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
+            PythonObject globals = PArguments.getGlobals(callerFrame);
+            if (condProfile.profile(globals instanceof PythonModule)) {
+                return factory().createDictFixedStorage(globals);
+            } else {
+                return globals;
+            }
+        }
+    }
+
+    @Builtin(name = "locals", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class LocalsNode extends PythonBuiltinNode {
+        @Child ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
+        private final ConditionProfile condProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile inClassProfile = ConditionProfile.createBinaryProfile();
+
+        @Specialization
+        public Object globals(VirtualFrame frame) {
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
+            PFrame pFrame = PArguments.getPFrame(frame);
+            if (condProfile.profile(pFrame != null)) {
+                return pFrame.getLocals(factory());
+            } else {
+                Object specialArgument = PArguments.getSpecialArgument(callerFrame);
+                if (inClassProfile.profile(specialArgument instanceof ClassBodyRootNode)) {
+                    return factory().createDictLocals(frame, true);
+                } else {
+                    return factory().createDictLocals(frame, false);
+                }
+            }
         }
     }
 }

@@ -68,29 +68,6 @@ print = __builtin__(make_print())
 del make_print
 
 
-# We close over the globals to avoid leaking sys to the builtins scope
-def make_globals_function():
-    import sys
-
-    def globals_f():
-        return sys._getframe(1).f_globals
-    globals_f.__name__ = "globals"
-    return globals_f
-globals = __builtin__(make_globals_function())
-del make_globals_function
-
-
-def make_locals_function():
-    import sys
-
-    def locals_f():
-        return sys._getframe(1).f_locals
-    locals_f.__name__ = "locals"
-    return locals_f
-locals = __builtin__(make_locals_function())
-del make_locals_function
-
-
 @__builtin__
 def any(iterable):
     for i in iterable:
