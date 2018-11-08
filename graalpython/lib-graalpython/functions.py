@@ -94,12 +94,6 @@ def filter(func, iterable):
     return tuple(result)
 
 
-@__builtin__
-def exec(source, globals=None, locals=None):
-    # compile returns the source if already a code object
-    return eval(compile(source, "<exec>", "exec"), globals, locals)
-
-
 # This is re-defined later during bootstrap in classes.py
 def __build_class__(func, name, *bases, metaclass=None, **kwargs):
     """

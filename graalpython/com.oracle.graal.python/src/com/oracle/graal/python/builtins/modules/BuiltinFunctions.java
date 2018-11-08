@@ -36,6 +36,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.DELATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.DIR;
 import static com.oracle.graal.python.nodes.BuiltinNames.DIVMOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.EVAL;
+import static com.oracle.graal.python.nodes.BuiltinNames.EXEC;
 import static com.oracle.graal.python.nodes.BuiltinNames.GETATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.HASH;
 import static com.oracle.graal.python.nodes.BuiltinNames.ID;
@@ -173,6 +174,7 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
@@ -596,31 +598,61 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = EXEC, fixedNumOfPositionalArgs = 1, parameterNames = {"source"}, keywordArguments = {"globals", "locals"})
+    @GenerateNodeFactory
+    abstract static class ExecNode extends PythonBuiltinNode {
+        @Child CompileNode compileNode = CompileNode.create();
+        @Child IndirectCallNode indirectCallNode = IndirectCallNode.create();
+
+        @Specialization(guards = {"isNoValue(globals)", "isNoValue(locals)"})
+        PNone execDefault(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
+                        @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
+            PCode code = compileNode.execute(source, "exec", "exec", 0, false, -1);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
+            Object[] args = PArguments.create();
+            PArguments.setGlobals(args, PArguments.getGlobals(callerFrame));
+            PArguments.setClosure(args, PArguments.getClosure(callerFrame));
+            indirectCallNode.call(code.getRootCallTarget(), args);
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = {"isNoValue(locals)"})
+        PNone execDefault(Object source, PDict globals, @SuppressWarnings("unused") PNone locals) {
+            PCode code = compileNode.execute(source, "exec", "exec", 0, false, -1);
+            Object[] args = PArguments.create();
+            PArguments.setGlobals(args, globals);
+            // If locals are not given, they default to the globals, so we don't need the caller
+            // frame's closure at all
+            indirectCallNode.call(code.getRootCallTarget(), args);
+            return PNone.NO_VALUE;
+        }
+    }
+
     // compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1)
     @Builtin(name = COMPILE, fixedNumOfPositionalArgs = 3, keywordArguments = {"flags", "dont_inherit", "optimize"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class CompileNode extends PythonBuiltinNode {
 
-        public abstract Object execute(Object source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize);
+        public abstract PCode execute(Object source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize);
 
         @Specialization
         @TruffleBoundary
-        Object compile(PBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
+        PCode compile(PBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             return compile(new String(toBytesNode.execute(source)), filename, mode, kwFlags, kwDontInherit, kwOptimize);
         }
 
         @Specialization
         @TruffleBoundary
-        Object compile(OpaqueBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
+        PCode compile(OpaqueBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
             return compile(new String(source.getBytes()), filename, mode, kwFlags, kwDontInherit, kwOptimize);
         }
 
         @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        Object compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
+        PCode compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
             Source source = PythonLanguage.newSource(getContext(), expression, filename);
             ParserMode pm;
             if (mode.equals("exec")) {
@@ -642,7 +674,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        Object compile(PCode code, String filename, String mode, Object flags, Object dontInherit, Object optimize) {
+        PCode compile(PCode code, String filename, String mode, Object flags, Object dontInherit, Object optimize) {
             return code;
         }
 
