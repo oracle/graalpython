@@ -2042,27 +2042,28 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyType_IsSubtype", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PyType_IsSubtype extends PythonBinaryBuiltinNode {
-        private static long calls = 0;
+    abstract static class PyType_IsSubtype extends PythonBuiltinNode {
 
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
+        @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodes.AsPythonObjectNode.create();
 
-        @Specialization
-        int doI(PythonClass a, PythonClass b) {
-            calls++;
-            if (calls % 1000 == 0) {
-                print(calls);
-            }
-            if (isSubtypeNode.execute(a, b)) {
-                return 1;
-            }
-            return 0;
+        @Specialization(guards = {"a == cachedA", "b == cachedB"})
+        int doCached(@SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
+                        @Cached("a") @SuppressWarnings("unused") PythonNativeWrapper cachedA,
+                        @Cached("b") @SuppressWarnings("unused") PythonNativeWrapper cachedB,
+                        @Cached("isNativeSubtype(a, b)") int result) {
+            return result;
         }
 
-        @TruffleBoundary
-        private static void print(long calls2) {
-            System.out.println("######### CALLS: " + calls2);
-            System.out.flush();
+        @Specialization(replaces = "doCached")
+        int doGeneric(PythonNativeWrapper a, PythonNativeWrapper b) {
+            return isNativeSubtype(a, b);
+        }
+
+        protected int isNativeSubtype(PythonNativeWrapper a, PythonNativeWrapper b) {
+            assert a instanceof PythonClassNativeWrapper || a instanceof PythonClassInitNativeWrapper;
+            assert b instanceof PythonClassNativeWrapper || b instanceof PythonClassInitNativeWrapper;
+            return isSubtypeNode.execute(asPythonObjectNode.execute(a), asPythonObjectNode.execute(b)) ? 1 : 0;
         }
     }
 

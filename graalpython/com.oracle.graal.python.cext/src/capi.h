@@ -183,6 +183,18 @@ inline void* native_to_java(PyObject* obj) {
     }
 }
 
+__attribute__((always_inline))
+inline void* native_type_to_java(PyTypeObject* type) {
+	PyObject* obj = (PyObject*)type;
+	void* refcnt = obj->ob_refcnt;
+	if (!truffle_cannot_be_handle(refcnt)) {
+		return resolve_handle(cache, refcnt);
+	} else if (IS_POINTER(refcnt)) {
+		return refcnt;
+	}
+	return obj;
+}
+
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
 extern PyObject* to_sulong(void *o);
