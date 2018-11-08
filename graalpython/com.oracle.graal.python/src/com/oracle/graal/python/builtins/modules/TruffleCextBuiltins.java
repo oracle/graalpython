@@ -1846,6 +1846,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         private static final Builtin varargsBuiltin = MayRaiseNode.class.getAnnotation(Builtin.class);
 
         @Specialization
+        @TruffleBoundary
         Object make(PFunction func, Object errorResult) {
             CompilerDirectives.transferToInterpreter();
             func.getFunctionRootNode().accept(new NodeVisitor() {
