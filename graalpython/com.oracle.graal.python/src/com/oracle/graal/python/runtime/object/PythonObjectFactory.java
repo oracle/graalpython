@@ -116,6 +116,7 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
@@ -144,6 +145,7 @@ public final class PythonObjectFactory extends Node {
     @SuppressWarnings("static-method")
     public final <T> T trace(T allocatedObject) {
         if (reportAllocations()) {
+            CompilerAsserts.partialEvaluationConstant(this);
             allocationReporter.onEnter(null, 0, AllocationReporter.SIZE_UNKNOWN);
             allocationReporter.onReturnValue(allocatedObject, 0, AllocationReporter.SIZE_UNKNOWN);
         }
