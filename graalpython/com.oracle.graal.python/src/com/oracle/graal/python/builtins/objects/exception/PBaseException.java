@@ -209,7 +209,7 @@ public final class PBaseException extends PythonObject {
         if (frame != null) {
             // we have a frame, try to get the pFrame from the magic arguments first
             pFrame = PArguments.getPFrame(frame);
-            if (pFrame == null) {
+            if (pFrame == null || pFrame.isIncomplete()) {
                 pFrame = factory.createPFrame(this, index);
                 PArguments.setPFrame(frame, pFrame);
             }

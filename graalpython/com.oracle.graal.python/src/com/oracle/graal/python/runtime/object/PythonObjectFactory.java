@@ -541,6 +541,10 @@ public final class PythonObjectFactory extends Node {
      * Frames, traces and exceptions
      */
 
+    public PFrame createPFrame(Frame frame) {
+        return trace(new PFrame(PythonBuiltinClassType.PFrame, frame));
+    }
+
     public PFrame createPFrame(PBaseException exception, int index) {
         return trace(new PFrame(PythonBuiltinClassType.PFrame, exception, index));
     }

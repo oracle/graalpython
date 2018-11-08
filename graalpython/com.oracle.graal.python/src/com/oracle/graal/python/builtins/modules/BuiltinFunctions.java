@@ -139,7 +139,6 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
-import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -1613,22 +1612,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
     abstract static class LocalsNode extends PythonBuiltinNode {
         @Child ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
         private final ConditionProfile condProfile = ConditionProfile.createBinaryProfile();
-        private final ConditionProfile inClassProfile = ConditionProfile.createBinaryProfile();
 
         @Specialization
         public Object locals(VirtualFrame frame) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PFrame pFrame = PArguments.getPFrame(callerFrame);
-            if (condProfile.profile(pFrame != null)) {
-                return pFrame.getLocals(factory());
-            } else {
-                Object specialArgument = PArguments.getSpecialArgument(callerFrame);
-                if (inClassProfile.profile(specialArgument instanceof ClassBodyRootNode)) {
-                    return factory().createDictLocals(callerFrame, true);
-                } else {
-                    return factory().createDictLocals(callerFrame, false);
-                }
+            if (condProfile.profile(pFrame == null)) {
+                pFrame = factory().createPFrame(callerFrame);
+                PArguments.setPFrame(callerFrame, pFrame);
             }
+            return pFrame.getLocals(factory());
         }
     }
 }
