@@ -1616,17 +1616,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private final ConditionProfile inClassProfile = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        public Object globals(VirtualFrame frame) {
+        public Object locals(VirtualFrame frame) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            PFrame pFrame = PArguments.getPFrame(frame);
+            PFrame pFrame = PArguments.getPFrame(callerFrame);
             if (condProfile.profile(pFrame != null)) {
                 return pFrame.getLocals(factory());
             } else {
                 Object specialArgument = PArguments.getSpecialArgument(callerFrame);
                 if (inClassProfile.profile(specialArgument instanceof ClassBodyRootNode)) {
-                    return factory().createDictLocals(frame, true);
+                    return factory().createDictLocals(callerFrame, true);
                 } else {
-                    return factory().createDictLocals(frame, false);
+                    return factory().createDictLocals(callerFrame, false);
                 }
             }
         }
