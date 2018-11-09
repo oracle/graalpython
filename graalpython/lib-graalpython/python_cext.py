@@ -215,13 +215,6 @@ def PyTruffle_Object_LEN(obj):
 
 ##################### BYTES
 
-def PyBytes_FromStringAndSize(string, size, encoding):
-    if string is not None and string is not Py_NoValue():
-        return bytes(string, encoding)
-    assert size >= 0;
-    return PyTruffle_Bytes_EmptyWithCapacity(size, native_null)
-
-
 def PyBytes_AsStringCheckEmbeddedNull(obj, encoding):
     if not PyBytes_Check(obj):
         raise TypeError('expected bytes, {!s} found'.format(type(obj)))

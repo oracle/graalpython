@@ -49,17 +49,19 @@
 PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS, PyBytesObject_SIZE);
 
 UPCALL_ID(PyBytes_FromStringAndSize);
+UPCALL_ID(PyTruffle_Bytes_EmptyWithCapacity);
 PyObject* PyBytes_FromStringAndSize(const char* str, Py_ssize_t sz) {
-    setlocale(LC_ALL, NULL);
-    const char* encoding = nl_langinfo(CODESET);
-    void *jstr = str != NULL ? polyglot_from_string_n(str, sz, SRC_CS) : to_java(NULL);
-    return UPCALL_CEXT_O(_jls_PyBytes_FromStringAndSize, jstr, sz, polyglot_from_string(encoding, SRC_CS));
+	if (str != NULL) {
+		return UPCALL_CEXT_O(_jls_PyBytes_FromStringAndSize, polyglot_from_i8_array(str, sz));
+	}
+	return UPCALL_CEXT_O(_jls_PyTruffle_Bytes_EmptyWithCapacity, sz);
 }
 
 PyObject * PyBytes_FromString(const char *str) {
-    setlocale(LC_ALL, NULL);
-    const char* encoding = nl_langinfo(CODESET);
-    return UPCALL_CEXT_O(_jls_PyBytes_FromStringAndSize, polyglot_from_string(str, SRC_CS), 0, polyglot_from_string(encoding, SRC_CS));
+	if (str != NULL) {
+		return UPCALL_CEXT_O(_jls_PyBytes_FromStringAndSize, polyglot_from_i8_array(str, strlen(str)));
+	}
+	return UPCALL_CEXT_O(_jls_PyTruffle_Bytes_EmptyWithCapacity, 0);
 }
 
 UPCALL_ID(PyTruffle_Bytes_AsString);
