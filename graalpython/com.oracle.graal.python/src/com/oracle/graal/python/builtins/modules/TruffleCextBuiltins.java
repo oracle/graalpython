@@ -2042,10 +2042,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyType_IsSubtype", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PyType_IsSubtype extends PythonBuiltinNode {
+    abstract static class PyType_IsSubtype extends PythonBinaryBuiltinNode {
 
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
         @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodes.AsPythonObjectNode.create();
+        @Child private CExtNodes.ToJavaNode toJavaNode;
 
         @Specialization(guards = {"a == cachedA", "b == cachedB"})
         int doCached(@SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
@@ -2056,8 +2057,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doCached")
-        int doGeneric(PythonNativeWrapper a, PythonNativeWrapper b) {
+        int doUncached(PythonNativeWrapper a, PythonNativeWrapper b) {
             return isNativeSubtype(a, b);
+        }
+
+        @Fallback
+        int doGeneric(Object a, Object b) {
+            if (toJavaNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toJavaNode = insert(CExtNodes.ToJavaNode.create());
+            }
+            return isSubtypeNode.execute(toJavaNode.execute(a), toJavaNode.execute(b)) ? 1 : 0;
         }
 
         protected int isNativeSubtype(PythonNativeWrapper a, PythonNativeWrapper b) {
