@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -66,6 +67,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class BytesNodes {
@@ -281,18 +283,20 @@ public abstract class BytesNodes {
         }
     }
 
-    public abstract static class FromListNode extends PNodeWithContext {
+    public abstract static class FromSequenceStorageNode extends PNodeWithContext {
 
-        @Child private SequenceStorageNodes.GetItemNode getItemNode;
-        @Child private SequenceStorageNodes.CastToByteNode castToByteNode;
-        @Child private SequenceStorageNodes.LenNode lenNode;
+        @Node.Child private SequenceStorageNodes.GetItemNode getItemNode;
+        @Node.Child private SequenceStorageNodes.CastToByteNode castToByteNode;
+        @Node.Child private SequenceStorageNodes.LenNode lenNode;
 
-        public byte[] execute(PList list) {
-            SequenceStorage listStore = list.getSequenceStorage();
-            int len = getLenNode().execute(listStore);
+        public abstract byte[] execute(SequenceStorage storage);
+
+        @Specialization
+        public byte[] doIt(SequenceStorage storage) {
+            int len = getLenNode().execute(storage);
             byte[] bytes = new byte[len];
             for (int i = 0; i < len; i++) {
-                Object item = getGetItemNode().execute(listStore, i);
+                Object item = getGetItemNode().execute(storage, i);
                 bytes[i] = getCastToByteNode().execute(item);
             }
             return bytes;
@@ -320,6 +324,87 @@ public abstract class BytesNodes {
                 lenNode = insert(SequenceStorageNodes.LenNode.create());
             }
             return lenNode;
+        }
+
+        public static FromSequenceStorageNode createNode() {
+            return BytesNodesFactory.FromSequenceStorageNodeGen.create();
+        }
+    }
+
+    public abstract static class FromListNode extends FromSequenceStorageNode {
+
+        public abstract byte[] execute(PList iterator);
+
+        @Specialization
+        public byte[] doIt(PList list) {
+            return doIt(list.getSequenceStorage());
+        }
+
+        public static FromListNode create() {
+            return BytesNodesFactory.FromListNodeGen.create();
+        }
+    }
+
+    public abstract static class FromTupleNode extends FromSequenceStorageNode {
+
+        public abstract byte[] execute(PTuple tuple);
+
+        @Specialization
+        public byte[] doIt(PTuple tuple) {
+            return doIt(tuple.getSequenceStorage());
+        }
+
+        public static FromTupleNode create() {
+            return BytesNodesFactory.FromTupleNodeGen.create();
+        }
+    }
+
+    public abstract static class FromIteratorNode extends PNodeWithContext {
+
+        public abstract byte[] execute(Object iterator);
+
+        @Specialization
+        public byte[] execute(Object iterObject,
+                        @Cached("create()") SequenceStorageNodes.CastToByteNode castToByteNode,
+                        @Cached("create()") GetNextNode getNextNode,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+            ArrayList<byte[]> parts = new ArrayList<>();
+            int currentLenght = 16;
+            int currentOffset = 0;
+            byte[] currentArray = new byte[currentLenght];
+            parts.add(currentArray);
+            int size = 0;
+            while (true) {
+                if (currentOffset >= currentArray.length) {
+                    // we need to create new array
+                    if (currentLenght < 65536) {
+                        currentLenght = currentLenght * 2;
+                    }
+                    currentArray = new byte[currentLenght];
+                    parts.add(currentArray);
+                    currentOffset = 0;
+                }
+                try {
+                    currentArray[currentOffset] = castToByteNode.execute(getNextNode.execute(iterObject));
+                    currentOffset++;
+                    size++;
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    // convert parts into result array
+                    byte[] bytes = new byte[size];
+
+                    int offset = 0;
+                    for (byte[] part : parts) {
+                        System.arraycopy(part, 0, bytes, offset, Math.min(part.length, size - offset));
+                        offset += part.length;
+                    }
+                    return bytes;
+                }
+            }
+        }
+
+        public static FromIteratorNode create() {
+            return BytesNodesFactory.FromIteratorNodeGen.create();
         }
     }
 
