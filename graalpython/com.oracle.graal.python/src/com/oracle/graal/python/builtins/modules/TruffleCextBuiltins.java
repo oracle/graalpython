@@ -1646,46 +1646,41 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Bytes_EmptyWithCapacity", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "PyTruffle_Bytes_EmptyWithCapacity", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyTruffle_Bytes_EmptyWithCapacity extends NativeBuiltin {
+    abstract static class PyTruffle_Bytes_EmptyWithCapacity extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PBytes doInt(int size, @SuppressWarnings("unused") Object errorMarker) {
+        PBytes doInt(int size) {
             return factory().createBytes(new byte[size]);
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        PBytes doLong(long size, Object errorMarker) {
-            return doInt(PInt.intValueExact(size), errorMarker);
+        PBytes doLong(long size) {
+            return doInt(PInt.intValueExact(size));
         }
 
         @Specialization(replaces = "doLong")
-        PBytes doLongOvf(long size, Object errorMarker) {
+        PBytes doLongOvf(long size) {
             try {
-                return doInt(PInt.intValueExact(size), errorMarker);
+                return doInt(PInt.intValueExact(size));
             } catch (ArithmeticException e) {
                 throw raiseIndexError();
             }
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        PBytes doPInt(PInt size, Object errorMarker) {
-            return doInt(size.intValueExact(), errorMarker);
+        PBytes doPInt(PInt size) {
+            return doInt(size.intValueExact());
         }
 
         @Specialization(replaces = "doPInt")
-        PBytes doPIntOvf(PInt size, Object errorMarker) {
+        PBytes doPIntOvf(PInt size) {
             try {
-                return doInt(size.intValueExact(), errorMarker);
+                return doInt(size.intValueExact());
             } catch (ArithmeticException e) {
                 throw raiseIndexError();
             }
-        }
-
-        @Fallback
-        Object doGeneric(Object size, Object errorMarker) {
-            return raiseNative(errorMarker, TypeError, "expected 'int', but was '%p'", size);
         }
     }
 
@@ -2093,6 +2088,19 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         protected static boolean isPSequence(Object object) {
             return object instanceof PList || object instanceof PTuple;
+        }
+    }
+
+    @Builtin(name = "PyBytes_FromStringAndSize", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyBytes_FromStringAndSize extends NativeBuiltin {
+
+        @Specialization
+        PBytes doGeneric(PythonNativeObject object) {
+            if (object.object instanceof TruffleObject) {
+                return factory().createBytes(getByteArray((TruffleObject) object.object));
+            }
+            throw raise(TypeError, "invalid pointer: %s", object.object);
         }
     }
 }
