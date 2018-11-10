@@ -78,6 +78,8 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
@@ -619,6 +621,47 @@ public class PythonObjectNativeWrapperMR {
         @Specialization(guards = "eq(IM_FUNC, key)")
         Object doImFunc(PBuiltinMethod object, @SuppressWarnings("unused") String key) {
             return getToSulongNode().execute(object.getFunction());
+        }
+
+        @Specialization(guards = "eq(D_MEMBER, key)")
+        Object doDMember(PythonObject object, @SuppressWarnings("unused") String key) {
+            return new PyMemberDefWrapper(object);
+        }
+
+        @Specialization(guards = "eq(D_GETSET, key)")
+        Object doDGetSet(PythonObject object, @SuppressWarnings("unused") String key) {
+            return new PyGetSetDefWrapper(object);
+        }
+
+        @Specialization(guards = "eq(D_METHOD, key)")
+        Object doDBase(PythonObject object, @SuppressWarnings("unused") String key) {
+            return new PyMethodDescrWrapper(object);
+        }
+
+        @Specialization(guards = "eq(M_ML, key)")
+        Object doDBase(PBuiltinFunction object, @SuppressWarnings("unused") String key) {
+            return new PyMethodDescrWrapper(object);
+        }
+
+        @Specialization(guards = "eq(M_ML, key)")
+        Object doDBase(PFunction object, @SuppressWarnings("unused") String key) {
+            return new PyMethodDescrWrapper(object);
+        }
+
+        @Specialization(guards = "eq(M_ML, key)")
+        Object doDBase(PBuiltinMethod object, @SuppressWarnings("unused") String key) {
+            return new PyMethodDescrWrapper(object);
+        }
+
+        @Specialization(guards = "eq(M_ML, key)")
+        Object doDBase(PMethod object, @SuppressWarnings("unused") String key) {
+            return new PyMethodDescrWrapper(object);
+        }
+
+        @Specialization(guards = "eq(D_QUALNAME, key)")
+        Object doDQualname(PythonObject object, @SuppressWarnings("unused") String key,
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getQualnameNode) {
+            return getToSulongNode().execute(getQualnameNode.executeObject(object, SpecialAttributeNames.__QUALNAME__));
         }
 
         @Specialization
