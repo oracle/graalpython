@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNode
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -59,6 +58,8 @@ import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -66,6 +67,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class BytesNodes {
@@ -281,18 +283,17 @@ public abstract class BytesNodes {
         }
     }
 
-    public abstract static class FromListNode extends PNodeWithContext {
+    public static class FromSequenceStorageNode extends Node {
 
-        @Child private SequenceStorageNodes.GetItemNode getItemNode;
-        @Child private SequenceStorageNodes.CastToByteNode castToByteNode;
-        @Child private SequenceStorageNodes.LenNode lenNode;
+        @Node.Child private SequenceStorageNodes.GetItemNode getItemNode;
+        @Node.Child private SequenceStorageNodes.CastToByteNode castToByteNode;
+        @Node.Child private SequenceStorageNodes.LenNode lenNode;
 
-        public byte[] execute(PList list) {
-            SequenceStorage listStore = list.getSequenceStorage();
-            int len = getLenNode().execute(listStore);
+        public byte[] execute(SequenceStorage storage) {
+            int len = getLenNode().execute(storage);
             byte[] bytes = new byte[len];
             for (int i = 0; i < len; i++) {
-                Object item = getGetItemNode().execute(listStore, i);
+                Object item = getGetItemNode().execute(storage, i);
                 bytes[i] = getCastToByteNode().execute(item);
             }
             return bytes;
@@ -320,6 +321,62 @@ public abstract class BytesNodes {
                 lenNode = insert(SequenceStorageNodes.LenNode.create());
             }
             return lenNode;
+        }
+
+        public static FromSequenceStorageNode create() {
+            return new FromSequenceStorageNode();
+        }
+    }
+
+    public static class FromSequenceNode extends Node {
+
+        @Child private FromSequenceStorageNode fromSequenceStorageNode;
+
+        public byte[] execute(PSequence sequence) {
+            if (fromSequenceStorageNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                fromSequenceStorageNode = insert(FromSequenceStorageNode.create());
+            }
+
+            return fromSequenceStorageNode.execute(sequence.getSequenceStorage());
+        }
+
+        public static FromSequenceNode create() {
+            return new FromSequenceNode();
+        }
+    }
+
+    public abstract static class FromIteratorNode extends PNodeWithContext {
+
+        @Child private SequenceStorageNodes.AppendNode appendByteNode;
+
+        public abstract byte[] execute(Object iterator);
+
+        public SequenceStorageNodes.AppendNode getAppendByteNode() {
+            if (appendByteNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                appendByteNode = insert(SequenceStorageNodes.AppendNode.create(() -> SequenceStorageNodes.NoGeneralizationNode.create("byte must be in range(0, 256)")));
+            }
+            return appendByteNode;
+        }
+
+        @Specialization
+        public byte[] doIt(Object iterObject,
+                        @Cached("create()") GetNextNode getNextNode,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+            ByteSequenceStorage bss = new ByteSequenceStorage(16);
+            while (true) {
+                try {
+                    getAppendByteNode().execute(bss, getNextNode.execute(iterObject));
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    return bss.getInternalByteArray();
+                }
+            }
+        }
+
+        public static FromIteratorNode create() {
+            return BytesNodesFactory.FromIteratorNodeGen.create();
         }
     }
 
