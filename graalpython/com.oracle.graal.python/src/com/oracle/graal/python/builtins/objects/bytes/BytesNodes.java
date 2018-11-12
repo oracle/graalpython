@@ -362,7 +362,7 @@ public abstract class BytesNodes {
         }
 
         @Specialization
-        public byte[] execute(Object iterObject,
+        public byte[] doIt(Object iterObject,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
             ByteSequenceStorage bss = new ByteSequenceStorage(16);
