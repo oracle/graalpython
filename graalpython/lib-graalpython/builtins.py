@@ -51,7 +51,7 @@ def __import__(filename, module_name):
     content = posix.read(fd, sys.maxsize)
     posix.close(fd)
     code = compile(content, filename, "exec")
-    eval(code, module.__dict__)
+    exec(code, module.__dict__)
     return module
 
 

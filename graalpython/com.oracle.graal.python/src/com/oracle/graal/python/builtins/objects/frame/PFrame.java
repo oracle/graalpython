@@ -67,6 +67,15 @@ public final class PFrame extends PythonBuiltinObject {
     private final Node location;
     private int line = -2;
 
+    public PFrame(LazyPythonClass cls, Frame frame) {
+        super(cls);
+        this.exception = null;
+        this.index = -1;
+        this.frame = frame;
+        this.location = null;
+        this.inClassScope = PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
+    }
+
     public PFrame(LazyPythonClass cls, PBaseException exception, int index) {
         super(cls);
         this.exception = exception;
@@ -144,5 +153,14 @@ public final class PFrame extends PythonBuiltinObject {
             return localsDict;
         }
         return factory.createDict();
+    }
+
+    /**
+     * Checks if this frame is complete in the sense that all frame accessors would work, e.g.
+     * locals, backref etc. We optimize locals access to create a lightweight PFrame that has no
+     * stack attached to it, which is where we check this.
+     */
+    public boolean isIncomplete() {
+        return location == null;
     }
 }
