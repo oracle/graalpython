@@ -41,12 +41,14 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Location;
@@ -55,6 +57,16 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
 public abstract class ObjectAttributeNode extends PNodeWithContext {
+    private @Child HashingCollectionNodes.GetDictStorageNode getDictStorageNode;
+
+    public HashingCollectionNodes.GetDictStorageNode getGetDictStorageNode() {
+        if (getDictStorageNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getDictStorageNode = insert(HashingCollectionNodes.GetDictStorageNode.create());
+        }
+        return getDictStorageNode;
+    }
+
     protected Object attrKey(Object key) {
         if (key instanceof PString) {
             return ((PString) key).getValue();
@@ -68,7 +80,7 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
         if (dict == null) {
             return true;
         } else {
-            return dict.getDictStorage() instanceof DynamicObjectStorage.PythonObjectDictStorage;
+            return getGetDictStorageNode().execute(dict) instanceof DynamicObjectStorage.PythonObjectDictStorage;
         }
     }
 

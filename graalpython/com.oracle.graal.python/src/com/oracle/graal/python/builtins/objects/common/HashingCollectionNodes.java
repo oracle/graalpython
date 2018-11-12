@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.GetDictStorageNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.Cached;
@@ -81,6 +82,22 @@ public abstract class HashingCollectionNodes {
 
         public static SetItemNode create() {
             return SetItemNodeGen.create();
+        }
+    }
+
+    @ImportStatic({PGuards.class})
+    public abstract static class GetDictStorageNode extends PNodeWithContext {
+
+        public abstract HashingStorage execute(PHashingCollection c);
+
+        @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
+        HashingStorage doWithStorage(PHashingCollection c,
+                        @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
+            return cachedClass.cast(c).getDictStorage();
+        }
+
+        public static GetDictStorageNode create() {
+            return GetDictStorageNodeGen.create();
         }
     }
 }
