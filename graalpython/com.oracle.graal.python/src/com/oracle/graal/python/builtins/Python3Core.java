@@ -207,7 +207,6 @@ public final class Python3Core implements PythonCore {
                         "_codecs",
                         "bytes",
                         "bytearray",
-                        "float",
                         "time",
                         "unicodedata",
                         "_locale",

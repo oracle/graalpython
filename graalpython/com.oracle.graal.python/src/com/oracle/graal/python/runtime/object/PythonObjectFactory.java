@@ -398,7 +398,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PDecoratedMethod(cls));
     }
 
-    public Object createClassmethod(Object callable) {
+    public PDecoratedMethod createClassmethod(Object callable) {
         return trace(new PDecoratedMethod(PythonBuiltinClassType.PClassmethod, callable));
     }
 
@@ -406,7 +406,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PDecoratedMethod(cls));
     }
 
-    public Object createStaticmethod(Object callable) {
+    public PDecoratedMethod createStaticmethod(Object callable) {
         return trace(new PDecoratedMethod(PythonBuiltinClassType.PStaticmethod, callable));
     }
 

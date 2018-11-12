@@ -40,13 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
+import com.oracle.graal.python.builtins.BoundBuiltinCallable;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 
 /**
  * Storage for both classmethods and staticmethods
  */
-public class PDecoratedMethod extends PythonBuiltinObject {
+public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuiltinCallable<Object> {
     private Object callable;
 
     public PDecoratedMethod(LazyPythonClass cls) {
@@ -64,5 +67,9 @@ public class PDecoratedMethod extends PythonBuiltinObject {
 
     public void setCallable(Object callable) {
         this.callable = callable;
+    }
+
+    public Object boundToObject(PythonBuiltinClassType binding, PythonObjectFactory factory) {
+        return this;
     }
 }
