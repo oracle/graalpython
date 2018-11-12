@@ -1636,8 +1636,7 @@ public class IntBuiltins extends PythonBuiltins {
         @Child private GetLazyClassNode getClassNode;
 
         @Child private LookupAndCallVarargsNode constructNode;
-        @Child private BytesNodes.FromListNode fromListNode;
-        @Child private BytesNodes.FromTupleNode fromTupleNode;
+        @Child private BytesNodes.FromSequenceNode fromSequenceNode;
         @Child private BytesNodes.FromIteratorNode fromIteratorNode;
         @Child private GetIteratorNode getIteratorNode;
 
@@ -1653,20 +1652,12 @@ public class IntBuiltins extends PythonBuiltins {
             return getClassNode.execute(value);
         }
 
-        protected BytesNodes.FromListNode getFromListNode() {
-            if (fromListNode == null) {
+        protected BytesNodes.FromSequenceNode getFromSequenceNode() {
+            if (fromSequenceNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                fromListNode = insert(BytesNodes.FromListNode.create());
+                fromSequenceNode = insert(BytesNodes.FromSequenceNode.create());
             }
-            return fromListNode;
-        }
-
-        protected BytesNodes.FromTupleNode getFromTupleNode() {
-            if (fromTupleNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                fromTupleNode = insert(BytesNodes.FromTupleNode.create());
-            }
-            return fromTupleNode;
+            return fromSequenceNode;
         }
 
         protected BytesNodes.FromIteratorNode getFromIteratorNode() {
@@ -1784,13 +1775,13 @@ public class IntBuiltins extends PythonBuiltins {
         // from PArray
         @Specialization
         public Object fromPArray(PythonClass cl, PArray array, String byteorder, Object[] args, boolean signed,
-                        @Cached("createNode()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
+                        @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
             return compute(cl, fromSequenceStorageNode.execute(array.getSequenceStorage()), byteorder, signed);
         }
 
         @Specialization
         public Object fromPArray(PythonClass cl, PArray array, String byteorder, Object[] args, PNone signed,
-                        @Cached("createNode()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
+                        @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
             return fromPArray(cl, array, byteorder, args, false, fromSequenceStorageNode);
         }
 
@@ -1808,7 +1799,7 @@ public class IntBuiltins extends PythonBuiltins {
         // from PList, only if it is not extended
         @Specialization(guards = "cannotBeOverridden(getClass(list))")
         public Object fromPList(PythonClass cl, PList list, String byteorder, Object[] args, boolean signed) {
-            return compute(cl, getFromListNode().execute(list), byteorder, signed);
+            return compute(cl, getFromSequenceNode().execute(list), byteorder, signed);
         }
 
         @Specialization(guards = "cannotBeOverridden(getClass(list))")
@@ -1819,7 +1810,7 @@ public class IntBuiltins extends PythonBuiltins {
         // from PTuple, only if it is not extended
         @Specialization(guards = "cannotBeOverridden(getClass(tuple))")
         public Object fromPTuple(PythonClass cl, PTuple tuple, String byteorder, Object[] args, boolean signed) {
-            return compute(cl, getFromTupleNode().execute(tuple), byteorder, signed);
+            return compute(cl, getFromSequenceNode().execute(tuple), byteorder, signed);
         }
 
         @Specialization(guards = "cannotBeOverridden(getClass(tuple))")

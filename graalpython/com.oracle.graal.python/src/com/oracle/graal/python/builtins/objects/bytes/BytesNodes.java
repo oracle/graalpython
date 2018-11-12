@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.FromSequenceNode;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.ArrayList;
@@ -49,9 +50,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNode
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -60,6 +59,8 @@ import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -283,16 +284,13 @@ public abstract class BytesNodes {
         }
     }
 
-    public abstract static class FromSequenceStorageNode extends PNodeWithContext {
+    public static class FromSequenceStorageNode extends Node {
 
         @Node.Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Node.Child private SequenceStorageNodes.CastToByteNode castToByteNode;
         @Node.Child private SequenceStorageNodes.LenNode lenNode;
 
-        public abstract byte[] execute(SequenceStorage storage);
-
-        @Specialization
-        public byte[] doIt(SequenceStorage storage) {
+        public byte[] execute(SequenceStorage storage) {
             int len = getLenNode().execute(storage);
             byte[] bytes = new byte[len];
             for (int i = 0; i < len; i++) {
@@ -326,79 +324,54 @@ public abstract class BytesNodes {
             return lenNode;
         }
 
-        public static FromSequenceStorageNode createNode() {
-            return BytesNodesFactory.FromSequenceStorageNodeGen.create();
+        public static FromSequenceStorageNode create() {
+            return new FromSequenceStorageNode();
         }
     }
 
-    public abstract static class FromListNode extends FromSequenceStorageNode {
+    public static class FromSequenceNode extends Node {
 
-        public abstract byte[] execute(PList iterator);
+        @Child private FromSequenceStorageNode fromSequenceStorageNode;
 
-        @Specialization
-        public byte[] doIt(PList list) {
-            return doIt(list.getSequenceStorage());
+        public byte[] execute(PSequence sequence) {
+            if (fromSequenceStorageNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                fromSequenceStorageNode = insert(FromSequenceStorageNode.create());
+            }
+
+            return fromSequenceStorageNode.execute(sequence.getSequenceStorage());
         }
 
-        public static FromListNode create() {
-            return BytesNodesFactory.FromListNodeGen.create();
-        }
-    }
-
-    public abstract static class FromTupleNode extends FromSequenceStorageNode {
-
-        public abstract byte[] execute(PTuple tuple);
-
-        @Specialization
-        public byte[] doIt(PTuple tuple) {
-            return doIt(tuple.getSequenceStorage());
-        }
-
-        public static FromTupleNode create() {
-            return BytesNodesFactory.FromTupleNodeGen.create();
+        public static FromSequenceNode create() {
+            return new FromSequenceNode();
         }
     }
 
     public abstract static class FromIteratorNode extends PNodeWithContext {
 
+        @Child private SequenceStorageNodes.AppendNode appendByteNode;
+
         public abstract byte[] execute(Object iterator);
+
+        public SequenceStorageNodes.AppendNode getAppendByteNode() {
+            if (appendByteNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                appendByteNode = insert(SequenceStorageNodes.AppendNode.create(() -> SequenceStorageNodes.NoGeneralizationNode.create("byte must be in range(0, 256)")));
+            }
+            return appendByteNode;
+        }
 
         @Specialization
         public byte[] execute(Object iterObject,
-                        @Cached("create()") SequenceStorageNodes.CastToByteNode castToByteNode,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
-            ArrayList<byte[]> parts = new ArrayList<>();
-            int currentLenght = 16;
-            int currentOffset = 0;
-            byte[] currentArray = new byte[currentLenght];
-            parts.add(currentArray);
-            int size = 0;
+            ByteSequenceStorage bss = new ByteSequenceStorage(16);
             while (true) {
-                if (currentOffset >= currentArray.length) {
-                    // we need to create new array
-                    if (currentLenght < 65536) {
-                        currentLenght = currentLenght * 2;
-                    }
-                    currentArray = new byte[currentLenght];
-                    parts.add(currentArray);
-                    currentOffset = 0;
-                }
                 try {
-                    currentArray[currentOffset] = castToByteNode.execute(getNextNode.execute(iterObject));
-                    currentOffset++;
-                    size++;
+                    getAppendByteNode().execute(bss, getNextNode.execute(iterObject));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
-                    // convert parts into result array
-                    byte[] bytes = new byte[size];
-
-                    int offset = 0;
-                    for (byte[] part : parts) {
-                        System.arraycopy(part, 0, bytes, offset, Math.min(part.length, size - offset));
-                        offset += part.length;
-                    }
-                    return bytes;
+                    return bss.getInternalByteArray();
                 }
             }
         }

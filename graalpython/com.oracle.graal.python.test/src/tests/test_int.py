@@ -505,7 +505,6 @@ class FromBytesTests(unittest.TestCase):
         self.assertIs(type(i), myint2)
         if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
             # It doesn't pass on old CPython
-            print(i)
             self.assertEqual(i, 2)
 
         class myint3(int):
