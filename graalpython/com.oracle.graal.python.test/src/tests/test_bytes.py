@@ -523,3 +523,9 @@ def test_binary_op():
     assert b"123" <= b"1234"
     assert b"123" >= b"123"
     assert not (b"123" >= b"1234")
+
+
+def test_strip_bytearray():
+    assert bytearray(b'abc').strip(b'ac') == b'b'
+    assert bytearray(b'abc').lstrip(b'ac') == b'bc'
+    assert bytearray(b'abc').rstrip(b'ac') == b'ab'

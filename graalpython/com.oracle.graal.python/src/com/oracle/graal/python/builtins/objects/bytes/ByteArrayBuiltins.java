@@ -709,17 +709,68 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "lstrip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"bytes"})
+    @GenerateNodeFactory
+    abstract static class LStripNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PByteArray strip(PByteArray self, @SuppressWarnings("unused") PNone bytes,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            byte[] bs = toBytesNode.execute(self);
+            int i = 0;
+            for (i = 0; i < bs.length; i++) {
+                if (!isWhitespace(bs[i])) {
+                    break;
+                }
+            }
+            return newBytesFrom(bs, i);
+        }
+
+        @TruffleBoundary
+        private static boolean isWhitespace(byte b) {
+            return Character.isWhitespace(b);
+        }
+
+        @Specialization
+        PByteArray strip(PByteArray self, PBytes bytes,
+                        @Cached("create()") BytesNodes.ToBytesNode selfToBytesNode,
+                        @Cached("create()") BytesNodes.ToBytesNode otherToBytesNode) {
+            byte[] stripBs = selfToBytesNode.execute(bytes);
+            byte[] bs = otherToBytesNode.execute(self);
+            int i = 0;
+            outer: for (i = 0; i < bs.length; i++) {
+                for (byte b : stripBs) {
+                    if (b == bs[i]) {
+                        continue outer;
+                    }
+                }
+                break;
+            }
+            return newBytesFrom(bs, i);
+        }
+
+        private PByteArray newBytesFrom(byte[] bs, int i) {
+            byte[] out;
+            if (i != 0) {
+                int len = bs.length - i;
+                out = new byte[len];
+                System.arraycopy(bs, i, out, 0, len);
+            } else {
+                out = bs;
+            }
+            return factory().createByteArray(out);
+        }
+    }
+
     @Builtin(name = "rstrip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"bytes"})
     @GenerateNodeFactory
-    abstract static class RStripNode extends PythonBuiltinNode {
+    abstract static class RStripNode extends PythonBinaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
         PByteArray strip(PByteArray self, @SuppressWarnings("unused") PNone bytes,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             byte[] bs = toBytesNode.execute(self);
             int len = bs.length;
             for (int i = bs.length - 1; i >= 0; i--) {
-                if (Character.isWhitespace(bs[i])) {
+                if (isWhitespace(bs[i])) {
                     len--;
                 } else {
                     break;
@@ -728,8 +779,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return newBytesUpTo(bs, len);
         }
 
-        @Specialization
         @TruffleBoundary
+        private static boolean isWhitespace(byte b) {
+            return Character.isWhitespace(b);
+        }
+
+        @Specialization
         PByteArray strip(PByteArray self, PBytes bytes,
                         @Cached("create()") BytesNodes.ToBytesNode selfToBytesNode,
                         @Cached("create()") BytesNodes.ToBytesNode otherToBytesNode) {
@@ -740,10 +795,10 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                 for (byte b : stripBs) {
                     if (b == bs[i]) {
                         len--;
-                    } else {
-                        break outer;
+                        continue outer;
                     }
                 }
+                break;
             }
             return newBytesUpTo(bs, len);
         }
@@ -759,5 +814,4 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return factory().createByteArray(out);
         }
     }
-
 }
