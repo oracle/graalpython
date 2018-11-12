@@ -193,7 +193,6 @@ public final class Python3Core implements PythonCore {
                         "_warnings",
                         "posix",
                         "_io",
-                        "int",
                         "_frozen_importlib",
                         "classes",
                         "_weakref",

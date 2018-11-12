@@ -1627,7 +1627,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "from_bytes", fixedNumOfPositionalArgs = 3, takesVarArgs = true, keywordArguments = {"signed"})
+    @Builtin(name = "from_bytes", fixedNumOfPositionalArgs = 3, takesVarArgs = true, keywordArguments = {"signed"}, isClassmethod = true)
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     @TypeSystemReference(PythonArithmeticTypes.class)
