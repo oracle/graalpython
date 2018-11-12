@@ -51,6 +51,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Property;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
 public abstract class ObjectAttributeNode extends PNodeWithContext {
@@ -62,8 +63,8 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
         }
     }
 
-    protected boolean isDictUnsetOrSameAsStorage(PythonObject object) {
-        PHashingCollection dict = object.getDict();
+    protected boolean isDictUnsetOrSameAsStorage(PythonObject object, ValueProfile dictClassProfile) {
+        PHashingCollection dict = dictClassProfile.profile(object.getDict());
         if (dict == null) {
             return true;
         } else {

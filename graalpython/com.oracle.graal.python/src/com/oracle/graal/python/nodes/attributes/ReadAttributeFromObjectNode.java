@@ -56,9 +56,12 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
 public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
+    protected final ValueProfile dictClassProfile = ValueProfile.createClassProfile();
+
     public static ReadAttributeFromObjectNode create() {
         return ReadAttributeFromObjectNodeGen.create();
     }
@@ -79,7 +82,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     @Specialization(guards = {
-                    "isDictUnsetOrSameAsStorage(object)"
+                    "isDictUnsetOrSameAsStorage(object, dictClassProfile)"
     }, replaces = "readFromDynamicStorageCached")
     protected Object readFromDynamicStorage(PythonObject object, Object key,
                     @Cached("create()") ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
@@ -104,7 +107,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     @Specialization(guards = {
-                    "!isDictUnsetOrSameAsStorage(object)"
+                    "!isDictUnsetOrSameAsStorage(object, dictClassProfile)"
     }, replaces = "readFromDictCached")
     protected Object readFromDict(PythonObject object, Object key,
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {

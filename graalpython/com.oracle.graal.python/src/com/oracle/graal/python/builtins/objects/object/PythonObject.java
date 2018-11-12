@@ -182,11 +182,11 @@ public class PythonObject extends PythonAbstractObject {
     /**
      * Returns the dictionary backed by {@link #storage} (only available for user objects).
      */
-    public PHashingCollection getDict() {
+    public final PHashingCollection getDict() {
         return dict;
     }
 
-    public void setDict(PHashingCollection dict) {
+    public final void setDict(PHashingCollection dict) {
         this.dict = dict;
     }
 }

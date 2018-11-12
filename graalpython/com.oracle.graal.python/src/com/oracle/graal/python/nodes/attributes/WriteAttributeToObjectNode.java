@@ -58,12 +58,15 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @ImportStatic(PythonOptions.class)
 public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     private final ConditionProfile isClassProfile = ConditionProfile.createBinaryProfile();
     private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
+
+    protected final ValueProfile dictClassProfile = ValueProfile.createClassProfile();
 
     public abstract boolean execute(Object primary, Object key, Object value);
 
@@ -105,7 +108,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     @Specialization(guards = {
                     "isAttrWritable(object) || isHiddenKey(key)",
-                    "isDictUnsetOrSameAsStorage(object)"
+                    "isDictUnsetOrSameAsStorage(object, dictClassProfile)"
     }, replaces = "writeToDynamicStorageCached")
     protected boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
                     @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
@@ -130,7 +133,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     @Specialization(guards = {
-                    "!isDictUnsetOrSameAsStorage(object)"
+                    "!isDictUnsetOrSameAsStorage(object, dictClassProfile)"
     }, replaces = "writeToDictCached")
     protected boolean writeToDict(PythonObject object, Object key, Object value,
                     @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
