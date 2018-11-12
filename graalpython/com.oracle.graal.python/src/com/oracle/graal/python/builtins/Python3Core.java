@@ -216,6 +216,7 @@ public final class Python3Core implements PythonCore {
                         "_sysconfig",
                         "_socket",
                         "_thread",
+                        "ctypes",
                         "zipimport"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
