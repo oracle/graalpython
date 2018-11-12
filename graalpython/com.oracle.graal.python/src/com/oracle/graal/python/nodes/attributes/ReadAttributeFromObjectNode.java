@@ -60,8 +60,6 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
 public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
-    protected final ValueProfile dictClassProfile = ValueProfile.createClassProfile();
-
     public static ReadAttributeFromObjectNode create() {
         return ReadAttributeFromObjectNodeGen.create();
     }
@@ -82,7 +80,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     @Specialization(guards = {
-                    "isDictUnsetOrSameAsStorage(object, dictClassProfile)"
+                    "isDictUnsetOrSameAsStorage(object)"
     }, replaces = "readFromDynamicStorageCached")
     protected Object readFromDynamicStorage(PythonObject object, Object key,
                     @Cached("create()") ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
@@ -107,7 +105,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     @Specialization(guards = {
-                    "!isDictUnsetOrSameAsStorage(object, dictClassProfile)"
+                    "!isDictUnsetOrSameAsStorage(object)"
     }, replaces = "readFromDictCached")
     protected Object readFromDict(PythonObject object, Object key,
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {

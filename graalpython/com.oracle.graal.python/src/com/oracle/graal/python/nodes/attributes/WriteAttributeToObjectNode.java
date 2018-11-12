@@ -66,8 +66,6 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     private final ConditionProfile isClassProfile = ConditionProfile.createBinaryProfile();
     private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
 
-    protected final ValueProfile dictClassProfile = ValueProfile.createClassProfile();
-
     public abstract boolean execute(Object primary, Object key, Object value);
 
     public abstract boolean execute(Object primary, String key, Object value);
@@ -108,7 +106,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     @Specialization(guards = {
                     "isAttrWritable(object) || isHiddenKey(key)",
-                    "isDictUnsetOrSameAsStorage(object, dictClassProfile)"
+                    "isDictUnsetOrSameAsStorage(object)"
     }, replaces = "writeToDynamicStorageCached")
     protected boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
                     @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
@@ -133,7 +131,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     @Specialization(guards = {
-                    "!isDictUnsetOrSameAsStorage(object, dictClassProfile)"
+                    "!isDictUnsetOrSameAsStorage(object)"
     }, replaces = "writeToDictCached")
     protected boolean writeToDict(PythonObject object, Object key, Object value,
                     @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {

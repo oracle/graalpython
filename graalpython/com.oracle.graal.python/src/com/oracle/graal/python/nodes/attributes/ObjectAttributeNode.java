@@ -75,8 +75,8 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
         }
     }
 
-    protected boolean isDictUnsetOrSameAsStorage(PythonObject object, ValueProfile dictClassProfile) {
-        PHashingCollection dict = dictClassProfile.profile(object.getDict());
+    protected boolean isDictUnsetOrSameAsStorage(PythonObject object) {
+        PHashingCollection dict = object.getDict();
         if (dict == null) {
             return true;
         } else {
