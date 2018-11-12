@@ -29,6 +29,7 @@ import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDE
 import static com.oracle.graal.python.nodes.BuiltinNames.BOOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTES;
+import static com.oracle.graal.python.nodes.BuiltinNames.CLASSMETHOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.COMPLEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.ENUMERATE;
@@ -42,6 +43,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.OBJECT;
 import static com.oracle.graal.python.nodes.BuiltinNames.RANGE;
 import static com.oracle.graal.python.nodes.BuiltinNames.REVERSED;
 import static com.oracle.graal.python.nodes.BuiltinNames.SET;
+import static com.oracle.graal.python.nodes.BuiltinNames.STATICMETHOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.STR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
@@ -106,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -2135,6 +2138,43 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object doObjectIndirect(PythonClass self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object object) {
             return factory().createSuperObject(self);
+        }
+    }
+
+    @Builtin(name = CLASSMETHOD, fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PClassmethod, doc = "classmethod(function) -> method\n" +
+                    "\n" +
+                    "Convert a function to be a class method.\n" +
+                    "\n" +
+                    "A class method receives the class as implicit first argument,\n" +
+                    "just like an instance method receives the instance.\n" +
+                    "To declare a class method, use this idiom:\n" +
+                    "\n" +
+                    "  class C:\n" +
+                    "      @classmethod\n" +
+                    "      def f(cls, arg1, arg2, ...):\n" +
+                    "          ...\n" +
+                    "\n" +
+                    "It can be called either on the class (e.g. C.f()) or on an instance\n" +
+                    "(e.g. C().f()).  The instance is ignored except for its class.\n" +
+                    "If a class method is called for a derived class, the derived class\n" +
+                    "object is passed as the implied first argument.\n" +
+                    "\n" +
+                    "Class methods are different than C++ or Java static methods.\n" +
+                    "If you want those, see the staticmethod builtin.")
+    @GenerateNodeFactory
+    public abstract static class ClassmethodNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object doObjectIndirect(PythonClass self, @SuppressWarnings("unused") Object callable) {
+            return factory().createClassmethod(self);
+        }
+    }
+
+    @Builtin(name = STATICMETHOD, fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PStaticmethod)
+    @GenerateNodeFactory
+    public abstract static class StaticmethodNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object doObjectIndirect(PythonClass self, @SuppressWarnings("unused") Object callable) {
+            return factory().createStaticmethod(self);
         }
     }
 }

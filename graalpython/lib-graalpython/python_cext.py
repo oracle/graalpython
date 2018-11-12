@@ -681,7 +681,9 @@ def METH_DIRECT(fun):
     return fun
 
 
-methodtype = classmethod.method
+class _C:
+    def _m(self): pass
+methodtype = type(_C()._m)
 
 
 class modulemethod(methodtype):

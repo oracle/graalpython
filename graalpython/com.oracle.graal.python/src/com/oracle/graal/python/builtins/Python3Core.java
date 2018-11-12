@@ -125,7 +125,10 @@ import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
 import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinMethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -224,6 +227,9 @@ public final class Python3Core implements PythonCore {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
                         new BuiltinConstructors(),
                         new BuiltinFunctions(),
+                        new DecoratedMethodBuiltins(),
+                        new ClassmethodBuiltins(),
+                        new StaticmethodBuiltins(),
                         new InteropModuleBuiltins(),
                         new ObjectBuiltins(),
                         new CellBuiltins(),
