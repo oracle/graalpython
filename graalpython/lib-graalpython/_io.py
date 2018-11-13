@@ -297,9 +297,6 @@ class FileIO(_RawIOBase):
 
         return readable, writable, created, append, flags
 
-    SMALLCHUNK = 8 * 1024
-    BIGCHUNK = 512 * 1024
-
     def __init__(self, name, mode='r', closefd=True, opener=None):
         _RawIOBase.__init__(self)
         self.__fd__ = -1
@@ -512,7 +509,7 @@ class FileIO(_RawIOBase):
         total = 0
         builder = []
         while True:
-            newsize = FileIO.BIGCHUNK
+            newsize = 512 * 1024
             chunk = _os.read(self.__fd__, newsize - total)
             if len(chunk) == 0:
                 break

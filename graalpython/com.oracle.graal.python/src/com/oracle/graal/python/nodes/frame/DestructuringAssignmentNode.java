@@ -25,11 +25,10 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.Arrays;
 
@@ -182,7 +181,7 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
         try {
             getNonExistingItem.execute(rhsValue, nonExistingItem);
             tooManyValuesProfile.enter();
-            throw raise(SyntaxError, "too many values to unpack (expected %d)", nonExistingItem);
+            throw getCore().raiseInvalidSyntax(getEncapsulatingSourceSection().getSource(), getEncapsulatingSourceSection(), "too many values to unpack (expected %d)", nonExistingItem);
         } catch (PException e) {
             if (tooManyValuesErrorProfile.profileException(e, IndexError)) {
                 // expected, fall through

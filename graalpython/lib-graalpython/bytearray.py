@@ -40,3 +40,10 @@
 # an empty file for now
 
 bytearray.decode = bytes.decode
+
+
+def strip(self, what=None):
+    return self.lstrip(what).rstrip(what)
+
+
+bytearray.strip = strip

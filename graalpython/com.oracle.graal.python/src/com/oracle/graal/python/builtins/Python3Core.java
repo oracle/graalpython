@@ -698,7 +698,7 @@ public final class Python3Core implements PythonCore {
         return pyFalse;
     }
 
-    public RuntimeException raiseInvalidSyntax(Source source, SourceSection section) {
+    public RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {
         Node location = new Node() {
             @Override
             public SourceSection getSourceSection() {
@@ -706,7 +706,7 @@ public final class Python3Core implements PythonCore {
             }
         };
         PBaseException instance;
-        instance = factory().createBaseException(SyntaxError, "invalid syntax", new Object[0]);
+        instance = factory().createBaseException(SyntaxError, message, arguments);
         String path = source.getPath();
         instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
         instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : "");

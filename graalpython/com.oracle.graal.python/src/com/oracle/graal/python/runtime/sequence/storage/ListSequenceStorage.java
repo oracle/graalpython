@@ -32,49 +32,23 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 public final class ListSequenceStorage extends TypedSequenceStorage {
 
     private PList[] values;
-    private Class<?> kind;
-
-    public ListSequenceStorage(SequenceStorage elementSample) {
-        values = new PList[]{};
-        if (elementSample instanceof ListSequenceStorage) {
-            ListSequenceStorage list = (ListSequenceStorage) elementSample;
-            this.kind = list.getKind();
-        } else {
-            this.kind = elementSample.getClass();
-        }
-    }
 
     public ListSequenceStorage(PList[] elements) {
-        this(elements, elements[0].getSequenceStorage().getClass());
-        if (kind == ListSequenceStorage.class)
-            this.kind = ((ListSequenceStorage) elements[0].getSequenceStorage()).getKind();
-    }
-
-    public ListSequenceStorage(PList[] elements, int length) {
-        this(elements, elements[0].getSequenceStorage().getClass(), length);
-        if (kind == ListSequenceStorage.class)
-            this.kind = ((ListSequenceStorage) elements[0].getSequenceStorage()).getKind();
-    }
-
-    public ListSequenceStorage(PList[] elements, Class<?> kind) {
         this.values = elements;
         capacity = values.length;
         length = elements.length;
-        this.kind = kind;
     }
 
-    public ListSequenceStorage(PList[] elements, Class<?> kind, int length) {
+    public ListSequenceStorage(PList[] elements, int length) {
         this.values = elements;
         capacity = values.length;
         this.length = length;
-        this.kind = kind;
     }
 
-    public ListSequenceStorage(int capacity, Class<?> kind) {
+    public ListSequenceStorage(int capacity) {
         this.values = new PList[capacity];
         this.capacity = capacity;
         length = 0;
-        this.kind = kind;
     }
 
     @Override
@@ -91,16 +65,12 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public SequenceStorage copy() {
-        return new ListSequenceStorage(Arrays.copyOf(values, length), this.kind);
+        return new ListSequenceStorage(Arrays.copyOf(values, length));
     }
 
     @Override
     public SequenceStorage createEmpty(int newCapacity) {
-        return new ListSequenceStorage(newCapacity, this.kind);
-    }
-
-    public Class<?> getKind() {
-        return kind;
+        return new ListSequenceStorage(newCapacity);
     }
 
     @Override
@@ -175,14 +145,14 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
 
         if (step == 1) {
             System.arraycopy(values, start, newArray, 0, sliceLength);
-            return new ListSequenceStorage(newArray, this.kind);
+            return new ListSequenceStorage(newArray);
         }
 
         for (int i = start, j = 0; j < sliceLength; i += step, j++) {
             newArray[j] = values[i];
         }
 
-        return new ListSequenceStorage(newArray, this.kind);
+        return new ListSequenceStorage(newArray);
     }
 
     public void setListSliceInBound(int start, int stop, int step, ListSequenceStorage sequence) {
