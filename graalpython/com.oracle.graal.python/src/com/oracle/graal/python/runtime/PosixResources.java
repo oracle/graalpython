@@ -48,9 +48,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 /**
  * This class manages the set of file descriptors and child PIDs of a context. File descriptors are
@@ -83,15 +84,23 @@ public class PosixResources {
         files.add(null);
     }
 
-    @TruffleBoundary
-    public Channel getFileChannel(int fd) {
+    @TruffleBoundary(allowInlining = true)
+    public Channel getFileChannel(int fd, ValueProfile classProfile) {
+        if (files.size() > fd) {
+            return classProfile.profile(files.get(fd));
+        }
+        return null;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private Channel getFileChannel(int fd) {
         if (files.size() > fd) {
             return files.get(fd);
         }
         return null;
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(allowInlining = true)
     public String getFilePath(int fd) {
         if (filePaths.size() > fd) {
             return filePaths.get(fd);
@@ -99,7 +108,7 @@ public class PosixResources {
         return null;
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(allowInlining = true)
     public void close(int fd) {
         if (filePaths.size() > fd) {
             files.set(fd, null);
@@ -107,12 +116,12 @@ public class PosixResources {
         }
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(allowInlining = true)
     public void fdopen(int fd, Channel fc) {
         files.set(fd, fc);
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(allowInlining = true)
     public int open(TruffleFile path, Channel fc) {
         int fd = nextFreeFd();
         files.set(fd, fc);
@@ -120,7 +129,7 @@ public class PosixResources {
         return fd;
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(allowInlining = true)
     public int dup(int fd) {
         int dupFd = nextFreeFd();
         files.set(dupFd, getFileChannel(fd));
@@ -128,7 +137,7 @@ public class PosixResources {
         return dupFd;
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(allowInlining = true)
     public int[] pipe() throws IOException {
         Pipe pipe = Pipe.open();
         int read = nextFreeFd();
@@ -138,47 +147,51 @@ public class PosixResources {
         return new int[]{read, write};
     }
 
-    @TruffleBoundary
-    synchronized private int nextFreeFd() {
-        for (int i = 0; i < filePaths.size(); i++) {
-            String openPath = filePaths.get(i);
-            Channel openChannel = files.get(i);
-            if (openPath == null && openChannel == null) {
-                return i;
+    @TruffleBoundary(allowInlining = true)
+    private int nextFreeFd() {
+        synchronized (filePaths) {
+            for (int i = 0; i < filePaths.size(); i++) {
+                String openPath = filePaths.get(i);
+                Channel openChannel = files.get(i);
+                if (openPath == null && openChannel == null) {
+                    return i;
+                }
             }
+            files.add(null);
+            filePaths.add(null);
+            return filePaths.size() - 1;
         }
-        files.add(null);
-        filePaths.add(null);
-        return filePaths.size() - 1;
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(allowInlining = true)
     public void setEnv(Env env) {
         files.set(0, Channels.newChannel(env.in()));
         files.set(1, Channels.newChannel(env.out()));
         files.set(2, Channels.newChannel(env.err()));
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(allowInlining = true)
     public int registerChild(Process child) {
         int pid = nextFreePid();
         children.set(pid, child);
         return pid;
     }
 
-    @TruffleBoundary
-    synchronized private int nextFreePid() {
-        for (int i = 0; i < children.size(); i++) {
-            Process openPath = children.get(i);
-            if (openPath == null) {
-                return i;
+    @TruffleBoundary(allowInlining = true)
+    private int nextFreePid() {
+        synchronized (children) {
+            for (int i = 0; i < children.size(); i++) {
+                Process openPath = children.get(i);
+                if (openPath == null) {
+                    return i;
+                }
             }
+            children.add(null);
+            return children.size() - 1;
         }
-        children.add(null);
-        return children.size() - 1;
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(allowInlining = true)
     public int waitpid(int pid) throws ArrayIndexOutOfBoundsException, InterruptedException {
         Process process = children.get(pid);
         int exitStatus = process.waitFor();
