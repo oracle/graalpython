@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -329,8 +330,9 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_FLAGS, key)")
-        long doTpFlags(PythonClass object, @SuppressWarnings("unused") String key) {
-            return object.getFlags();
+        long doTpFlags(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") GetTypeFlagsNode getTypeFlagsNode) {
+            return getTypeFlagsNode.execute(object);
         }
 
         @Specialization(guards = "eq(TP_NAME, key)")
