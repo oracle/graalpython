@@ -91,6 +91,8 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PLock("LockType", "_thread"),
     PRLock("RLock", "_thread"),
     PSocket("socket", "_socket"),
+    PStaticmethod("staticmethod", "builtins"),
+    PClassmethod("classmethod", "builtins"),
 
     // Errors and exceptions:
 

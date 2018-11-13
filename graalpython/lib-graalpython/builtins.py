@@ -56,8 +56,6 @@ def __import__(filename, module_name):
 
 
 __import__("%s/functions.py", "builtins")
-__import__("%s/staticmethod.py", "builtins")
-__import__("%s/classmethod.py", "builtins")
 __import__("%s/exceptions.py", "builtins")
 __import__("%s/super.py", "builtins")
 __import__("%s/property.py", "builtins")

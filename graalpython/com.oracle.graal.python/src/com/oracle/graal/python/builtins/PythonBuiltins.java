@@ -73,6 +73,7 @@ public abstract class PythonBuiltins {
             RootCallTarget callTarget = core.getLanguage().builtinCallTargetCache.computeIfAbsent(factory.getNodeClass(),
                             (b) -> Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf)));
             if (builtin.constructsClass().length > 0) {
+                assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();
                 PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, null, createArity(builtin, declaresExplicitSelf), callTarget);
                 for (PythonBuiltinClassType type : builtin.constructsClass()) {
                     PythonBuiltinClass builtinClass = core.lookupType(type);
@@ -84,9 +85,15 @@ public abstract class PythonBuiltins {
                 function.setAttribute(__DOC__, builtin.doc());
                 BoundBuiltinCallable<?> callable = function;
                 if (builtin.isGetter() || builtin.isSetter()) {
+                    assert !builtin.isClassmethod() && !builtin.isStaticmethod();
                     PythonCallable get = builtin.isGetter() ? function : null;
                     PythonCallable set = builtin.isSetter() ? function : null;
                     callable = core.factory().createGetSetDescriptor(get, set, builtin.name(), null);
+                } else if (builtin.isClassmethod()) {
+                    assert !builtin.isStaticmethod();
+                    callable = core.factory().createClassmethod(function);
+                } else if (builtin.isStaticmethod()) {
+                    callable = core.factory().createStaticmethod(function);
                 }
                 setBuiltinFunction(builtin.name(), callable);
             }

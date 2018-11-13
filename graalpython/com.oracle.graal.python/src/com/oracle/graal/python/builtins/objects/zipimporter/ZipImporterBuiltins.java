@@ -244,7 +244,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FindModuleNode extends PythonTernaryBuiltinNode {
         /**
-         * 
+         *
          * @param self
          * @param fullname
          * @param path This optional argument is ignored. It’s there for compatibility with the
@@ -416,7 +416,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             PDict sysModules = (PDict) sysModule.getAttribute("modules");
             PythonModule module = (PythonModule) sysModules.getItem(fullname);
             if (module == null) {
-                module = getCore().factory().createPythonModule(fullname);
+                module = factory().createPythonModule(fullname);
                 sysModules.setItem(fullname, module);
             }
 

@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -115,6 +116,7 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
@@ -143,6 +145,7 @@ public final class PythonObjectFactory extends Node {
     @SuppressWarnings("static-method")
     public final <T> T trace(T allocatedObject) {
         if (reportAllocations()) {
+            CompilerAsserts.partialEvaluationConstant(this);
             allocationReporter.onEnter(null, 0, AllocationReporter.SIZE_UNKNOWN);
             allocationReporter.onReturnValue(allocatedObject, 0, AllocationReporter.SIZE_UNKNOWN);
         }
@@ -391,6 +394,22 @@ public final class PythonObjectFactory extends Node {
 
     public GetSetDescriptor createGetSetDescriptor(PythonCallable get, PythonCallable set, String name, LazyPythonClass type) {
         return trace(new GetSetDescriptor(PythonBuiltinClassType.GetSetDescriptor, get, set, name, type));
+    }
+
+    public PDecoratedMethod createClassmethod(LazyPythonClass cls) {
+        return trace(new PDecoratedMethod(cls));
+    }
+
+    public PDecoratedMethod createClassmethod(Object callable) {
+        return trace(new PDecoratedMethod(PythonBuiltinClassType.PClassmethod, callable));
+    }
+
+    public PDecoratedMethod createStaticmethod(LazyPythonClass cls) {
+        return trace(new PDecoratedMethod(cls));
+    }
+
+    public PDecoratedMethod createStaticmethod(Object callable) {
+        return trace(new PDecoratedMethod(PythonBuiltinClassType.PStaticmethod, callable));
     }
 
     /*
