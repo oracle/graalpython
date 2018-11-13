@@ -49,6 +49,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 
 /**
@@ -82,6 +83,7 @@ public class PosixResources {
         files.add(null);
     }
 
+    @TruffleBoundary
     public Channel getFileChannel(int fd) {
         if (files.size() > fd) {
             return files.get(fd);
@@ -89,6 +91,7 @@ public class PosixResources {
         return null;
     }
 
+    @TruffleBoundary
     public String getFilePath(int fd) {
         if (filePaths.size() > fd) {
             return filePaths.get(fd);
@@ -96,6 +99,7 @@ public class PosixResources {
         return null;
     }
 
+    @TruffleBoundary
     public void close(int fd) {
         if (filePaths.size() > fd) {
             files.set(fd, null);
@@ -103,10 +107,12 @@ public class PosixResources {
         }
     }
 
+    @TruffleBoundary
     public void fdopen(int fd, Channel fc) {
         files.set(fd, fc);
     }
 
+    @TruffleBoundary
     public int open(TruffleFile path, Channel fc) {
         int fd = nextFreeFd();
         files.set(fd, fc);
@@ -114,6 +120,7 @@ public class PosixResources {
         return fd;
     }
 
+    @TruffleBoundary
     public int dup(int fd) {
         int dupFd = nextFreeFd();
         files.set(dupFd, getFileChannel(fd));
@@ -121,6 +128,7 @@ public class PosixResources {
         return dupFd;
     }
 
+    @TruffleBoundary
     public int[] pipe() throws IOException {
         Pipe pipe = Pipe.open();
         int read = nextFreeFd();
@@ -130,6 +138,7 @@ public class PosixResources {
         return new int[]{read, write};
     }
 
+    @TruffleBoundary
     synchronized private int nextFreeFd() {
         for (int i = 0; i < filePaths.size(); i++) {
             String openPath = filePaths.get(i);
@@ -143,18 +152,21 @@ public class PosixResources {
         return filePaths.size() - 1;
     }
 
+    @TruffleBoundary
     public void setEnv(Env env) {
         files.set(0, Channels.newChannel(env.in()));
         files.set(1, Channels.newChannel(env.out()));
         files.set(2, Channels.newChannel(env.err()));
     }
 
+    @TruffleBoundary
     public int registerChild(Process child) {
         int pid = nextFreePid();
         children.set(pid, child);
         return pid;
     }
 
+    @TruffleBoundary
     synchronized private int nextFreePid() {
         for (int i = 0; i < children.size(); i++) {
             Process openPath = children.get(i);
@@ -166,6 +178,7 @@ public class PosixResources {
         return children.size() - 1;
     }
 
+    @TruffleBoundary
     public int waitpid(int pid) throws ArrayIndexOutOfBoundsException, InterruptedException {
         Process process = children.get(pid);
         int exitStatus = process.waitFor();
