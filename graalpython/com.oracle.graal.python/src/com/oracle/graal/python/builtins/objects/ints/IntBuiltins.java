@@ -80,6 +80,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -90,6 +91,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PInt)
 public class IntBuiltins extends PythonBuiltins {
@@ -1624,6 +1626,249 @@ public class IntBuiltins extends PythonBuiltins {
         @Fallback
         PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    // to_bytes
+    @Builtin(name = "to_bytes", fixedNumOfPositionalArgs = 3, keywordArguments = {"signed"})
+    @GenerateNodeFactory
+    @SuppressWarnings("unused")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class ToBytesNode extends PythonBuiltinNode {
+
+        private static final String MESSAGE_INT_TO_BIG = "int too big to convert";
+        private static final String MESSAGE_LENGTH_ARGUMENT = "length argument must be non-negative";
+        private static final String MESSAGE_CONVERT_NEGATIVE = "can't convert negative int to unsigned";
+
+        public abstract PBytes execute(Object self, Object byteCount, Object StringOrder, Object signed);
+
+        // used for obtaining int, which will be the size of craeted array
+        @Child private CastToIndexNode castToIndexNode;
+        @Child private ToBytesNode recursiveNode;
+
+        protected CastToIndexNode getCastToIndexNode() {
+            if (castToIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToIndexNode = insert(CastToIndexNode.createOverflow());
+            }
+            return castToIndexNode;
+        }
+
+        @TruffleBoundary
+        private boolean isBigEndian(String order) {
+            if (order.equals("big")) {
+                return true;
+            }
+            if (order.equals("little")) {
+                return false;
+            }
+            throw raise(PythonErrorType.ValueError, "byteorder must be either 'little' or 'big'");
+        }
+
+        @Specialization
+        public PBytes fromLong(long self, int byteCount, String byteorder, PNone signed) {
+            return fromLong(self, byteCount, byteorder, false);
+        }
+
+        private final ConditionProfile negativeByteCountProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile negativeNumberProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile overflowProfile = ConditionProfile.createBinaryProfile();
+
+        @Specialization
+        public PBytes fromLong(long self, int byteCount, String byteorder, boolean signed) {
+            if (negativeByteCountProfile.profile(byteCount < 0)) {
+                throw raise(PythonErrorType.ValueError, MESSAGE_LENGTH_ARGUMENT);
+            }
+            byte signByte = 0;
+            if (self < 0) {
+                if (negativeNumberProfile.profile(!signed)) {
+                    throw raise(PythonErrorType.OverflowError, MESSAGE_CONVERT_NEGATIVE);
+                }
+                signByte = -1;
+            }
+            int index;
+            int delta;
+            if (isBigEndian(byteorder)) {
+                index = byteCount - 1;
+                delta = -1;
+            } else {
+                index = 0;
+                delta = 1;
+            }
+
+            byte[] bytes = new byte[byteCount];
+            long number = self;
+
+            while (number != 0 && 0 <= index && index <= (byteCount - 1)) {
+                bytes[index] = (byte) (number & 0xFF);
+                if (number == signByte) {
+                    number = 0;
+                }
+                number >>= 8;
+                index += delta;
+            }
+            if (overflowProfile.profile((number != 0 && bytes.length == 1 && bytes[0] != self) || (signed && bytes.length == 1 && bytes[0] != self) || (byteCount == 0 && self != 0))) {
+
+                throw raise(PythonErrorType.OverflowError, MESSAGE_INT_TO_BIG);
+            }
+            if (signed) {
+                while (0 <= index && index <= (byteCount - 1)) {
+                    bytes[index] = signByte;
+                    index += delta;
+                }
+            }
+            return factory().createBytes(bytes);
+        }
+
+        @Specialization
+        public PBytes fromLongLong(long self, long byteCount, String byteorder, PNone signed) {
+            return fromLongLong(self, byteCount, byteorder, false);
+        }
+
+        @Specialization
+        public PBytes fromLongLong(long self, long byteCount, String byteorder, boolean signed) {
+            int count = getCastToIndexNode().execute(byteCount);
+            return fromLong(self, count, byteorder, signed);
+        }
+
+        @Specialization
+        public PBytes fromLongPInt(long self, PInt byteCount, String byteorder, PNone signed) {
+            return fromLongPInt(self, byteCount, byteorder, false);
+        }
+
+        @Specialization
+        public PBytes fromLongPInt(long self, PInt byteCount, String byteorder, boolean signed) {
+            int count = getCastToIndexNode().execute(byteCount);
+            return fromLong(self, count, byteorder, signed);
+        }
+
+        @Specialization
+        public PBytes fromPIntInt(PInt self, int byteCount, String byteorder, PNone signed) throws ArithmeticException {
+            return fromPIntInt(self, byteCount, byteorder, false);
+        }
+
+        @TruffleBoundary
+        private byte getSingByte(BigInteger value, boolean signed) {
+            if (value.compareTo(BigInteger.ZERO) == -1) {
+                if (!signed) {
+                    throw raise(PythonErrorType.OverflowError, MESSAGE_CONVERT_NEGATIVE);
+                }
+                return -1;
+            }
+            return 0;
+        }
+
+        @TruffleBoundary
+        private byte[] getBytes(BigInteger value) {
+            return value.toByteArray();
+        }
+
+        @Specialization
+        public PBytes fromPIntInt(PInt self, int byteCount, String byteorder, boolean signed) {
+            if (negativeByteCountProfile.profile(byteCount < 0)) {
+                throw raise(PythonErrorType.ValueError, MESSAGE_LENGTH_ARGUMENT);
+            }
+            BigInteger value = self.getValue();
+            byte signByte = getSingByte(value, signed);
+            byte[] bytes = getBytes(value);
+            if (bytes.length > byteCount) {
+                // Check, whether we need to cut unneeded sign bytes.
+                int len = bytes.length;
+                int startIndex = 0;
+                if (!signed) {
+                    for (startIndex = 0; startIndex < bytes.length; startIndex++) {
+                        if (bytes[startIndex] != 0) {
+                            break;
+                        }
+                    }
+                    len = Math.max(bytes.length - startIndex, byteCount);
+                }
+                if (overflowProfile.profile(len > byteCount)) {
+                    // the corrected len is still bigger then we need.
+                    throw raise(PythonErrorType.OverflowError, MESSAGE_INT_TO_BIG);
+                }
+                if (bytes.length > byteCount) {
+                    // the array starts with sign bytes and has to be truncated to the requested
+                    // size
+                    byte[] tmp = bytes;
+                    bytes = new byte[len];
+                    System.arraycopy(tmp, startIndex, bytes, 0, len);
+                }
+            }
+
+            if (isBigEndian(byteorder)) {
+                if (byteCount > bytes.length) {
+                    // requested array is bigger then we obtained from BigInteger
+                    byte[] resultBytes = new byte[byteCount];
+                    System.arraycopy(bytes, 0, resultBytes, resultBytes.length - bytes.length, bytes.length);
+                    if (signed && signByte == -1) {
+                        // add sign bytes
+                        for (int i = 0; i < resultBytes.length - bytes.length; i++) {
+                            resultBytes[i] = signByte;
+                        }
+                    }
+                    return factory().createBytes(resultBytes);
+                } else {
+                    return factory().createBytes(bytes);
+                }
+            } else {
+                // little endian -> need to switch bytes
+                byte[] resultBytes = new byte[byteCount];
+                for (int i = 0; i < bytes.length; i++) {
+                    resultBytes[i] = bytes[bytes.length - 1 - i];
+                }
+                if (byteCount > bytes.length && signed && signByte == -1) {
+                    // add sign negative bytes
+                    for (int i = bytes.length; i < resultBytes.length; i++) {
+                        resultBytes[i] = signByte;
+                    }
+                }
+                return factory().createBytes(resultBytes);
+            }
+        }
+
+        @Specialization
+        public PBytes fromPIntLong(PInt self, long byteCount, String byteorder, PNone signed) {
+            return fromPIntLong(self, byteCount, byteorder, false);
+        }
+
+        @Specialization
+        public PBytes fromPIntLong(PInt self, long byteCount, String byteorder, boolean signed) {
+            int count = getCastToIndexNode().execute(byteCount);
+            return fromPIntInt(self, count, byteorder, signed);
+        }
+
+        @Specialization
+        public PBytes fromPIntPInt(PInt self, PInt byteCount, String byteorder, PNone signed) {
+            return fromPIntPInt(self, byteCount, byteorder, false);
+        }
+
+        @Specialization
+        public PBytes fromPIntPInt(PInt self, PInt byteCount, String byteorder, boolean signed) {
+            int count = getCastToIndexNode().execute(byteCount);
+            return fromPIntInt(self, count, byteorder, signed);
+        }
+
+        public static boolean isNumber(Object value) {
+            return value instanceof Integer || value instanceof Long || value instanceof PInt;
+        }
+
+        @Fallback
+        PBytes general(Object self, Object byteCount, Object byteorder, Object oSigned) {
+            int count = getCastToIndexNode().execute(byteCount);
+            if (!PGuards.isString(byteorder)) {
+                throw raise(PythonErrorType.TypeError, "to_bytes() argument 2 must be str, not %p", byteorder);
+            }
+            boolean signed = oSigned instanceof Boolean ? (boolean) oSigned : false;
+            if (recursiveNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                recursiveNode = insert(create());
+            }
+            return recursiveNode.execute(self, count, byteorder, signed);
+        }
+
+        protected static ToBytesNode create() {
+            return IntBuiltinsFactory.ToBytesNodeFactory.create(null);
         }
     }
 

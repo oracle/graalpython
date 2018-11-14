@@ -89,7 +89,7 @@ public abstract class CastToIntegerFromIntNode extends PNodeWithContext {
             callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__INT__));
         }
         Object result = callIndexNode.executeObject(x);
-        if (result == PNone.NONE) {
+        if (result == PNone.NO_VALUE) {
             throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
         }
         if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
