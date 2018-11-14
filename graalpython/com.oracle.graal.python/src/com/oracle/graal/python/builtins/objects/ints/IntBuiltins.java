@@ -1759,7 +1759,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private byte[] getBytes(BigInteger value) {
+        private static byte[] getBytes(BigInteger value) {
             return value.toByteArray();
         }
 
