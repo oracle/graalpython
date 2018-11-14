@@ -92,17 +92,21 @@ MICRO_BENCHMARKS = {
     'special-add': ITER_15 + ['5'],
     'special-len': ITER_10 + ['5'],
     'member_access': ITER_10 + ['5'],
+    'magic-bool': ITER_10 + ['100000000'],
+    'magic-iter': ITER_10 + ['50000000'],
+    'instantiation': ITER_10 + ['50000000'],
+    'call-classmethod': ITER_15 + ['50000000'],
+}
+
+
+MICRO_NATIVE_BENCHMARKS = {
     'c_member_access': ITER_25 + ['5'],
     'c-list-iterating-obj': ITER_15 + ['50000000'],
-    'magic-bool': ITER_10 + ['100000000'],
     'c-magic-bool': ITER_10 + ['100000000'],
-    'magic-iter': ITER_10 + ['50000000'],
     'c-magic-iter': ITER_10 + ['50000000'],
-    'instantiation': ITER_10 + ['50000000'],
     'c-instantiation': ITER_10 + ['50000000'],
     'c_arith-binop': ITER_25 + ['5'],
     'c_arith_binop_2': ITER_25 + ['50'],
-    'call-classmethod': ITER_15 + ['50000000'],
     'c-call-classmethod': ITER_15 + ['50000000']
 }
 
@@ -159,6 +163,7 @@ MACRO_BENCHMARKS = {
 # ----------------------------------------------------------------------------------------------------------------------
 BENCHMARKS = {
     "micro": [PATH_MICRO, MICRO_BENCHMARKS],
+    "micro-native": [PATH_MICRO, MICRO_NATIVE_BENCHMARKS],
     "meso": [PATH_MESO, MESO_BENCHMARKS],
     "macro": [PATH_MACRO, MACRO_BENCHMARKS],
     # "interop": [PATH_INTEROP, INTEROP_BENCHMARKS],
