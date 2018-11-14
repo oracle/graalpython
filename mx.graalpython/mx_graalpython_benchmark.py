@@ -125,9 +125,10 @@ class AbstractPythonVm(Vm):
 class CPythonVm(AbstractPythonVm):
     PYTHON_INTERPRETER = "python3"
 
-    def __init__(self, config_name, options=None, virtualenv=None):
+    def __init__(self, config_name, options=None, virtualenv=None, no_warmup=False):
         super(CPythonVm, self).__init__(config_name, options)
         self._virtualenv = virtualenv
+        self._no_warmup = no_warmup
 
     @property
     def interpreter(self):
@@ -137,6 +138,24 @@ class CPythonVm(AbstractPythonVm):
 
     def name(self):
         return VM_NAME_CPYTHON
+
+    @staticmethod
+    def remove_warmup_runs(args):
+        _args = []
+        i = 0
+        while i < len(args):
+            arg = args[i]
+            _args.append(arg)
+            if arg == '-i':
+                _args.append('0')
+                i += 1
+            i += 1
+        return _args
+
+    def run(self, cwd, args):
+        if self._no_warmup:
+            args = CPythonVm.remove_warmup_runs(args)
+        return super(CPythonVm, self).run(cwd, args)
 
 
 class PyPyVm(AbstractPythonVm):
@@ -321,7 +340,8 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
     def failurePatterns(self):
         return [
-            re.compile(r"Exception")
+            # lookahead pattern for when truffle compilation details are enabled in the log
+            re.compile(r"^(?!(\[truffle\])).*Exception")
         ]
 
     def group(self):
