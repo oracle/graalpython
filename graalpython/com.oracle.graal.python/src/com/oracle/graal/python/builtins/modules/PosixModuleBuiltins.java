@@ -591,7 +591,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "rawtypes"})
         @TruffleBoundary(allowInlining = true)
         private static FileAttribute<Set<PosixFilePermission>>[] modeToAttributes(int fileMode) {
             FileAttribute<Set<PosixFilePermission>> fa1 = PosixFilePermissions.asFileAttribute(new HashSet<>(Arrays.asList(otherBitsToPermission[fileMode & 7])));
