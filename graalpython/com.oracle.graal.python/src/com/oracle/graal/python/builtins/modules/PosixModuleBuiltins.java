@@ -97,6 +97,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -548,11 +549,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return getResources().dup(fd);
         }
 
-        @Specialization
-        @TruffleBoundary
-        int dup(PInt fd) {
+        @Specialization(rewriteOn = ArithmeticException.class)
+        int dupPInt(PInt fd) {
+            return getResources().dup(fd.intValueExact());
+        }
+
+        @Specialization(replaces = "dupPInt")
+        int dupOvf(PInt fd) {
             try {
-                return getResources().dup(fd.intValueExact());
+                return dupPInt(fd);
             } catch (ArithmeticException e) {
                 throw raise(OSError, "invalid fd %r", fd);
             }
@@ -663,11 +668,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw raise(OSError, "invalid fd");
             } else {
                 resources.close(fd);
-                try {
-                    channel.close();
-                } catch (IOException e) {
-                    throw raise(OSError, e.getMessage());
-                }
             }
             return PNone.NONE;
         }
@@ -789,12 +789,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ReadNode extends PythonFileNode {
+        private static final int MAX_READ = Integer.MAX_VALUE / 2;
+
         @Specialization(guards = "readOpaque(frame)")
         Object readOpaque(@SuppressWarnings("unused") VirtualFrame frame, int fd, @SuppressWarnings("unused") Object requestedSize,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
             try {
-                return new OpaqueBytes(doRead(channel, Integer.MAX_VALUE));
+                ByteSequenceStorage bytes = doRead(channel, MAX_READ);
+                return new OpaqueBytes(Arrays.copyOf(bytes.getInternalByteArray(), bytes.length()));
             } catch (IOException e) {
                 throw raise(OSError, e.getMessage());
             }
@@ -805,44 +808,39 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
             try {
-                byte[] array = doRead(channel, (int) requestedSize);
+                ByteSequenceStorage array = doRead(channel, (int) requestedSize);
                 return factory().createBytes(array);
             } catch (IOException e) {
                 throw raise(OSError, e.getMessage());
             }
         }
 
-        @TruffleBoundary
-        private byte[] doRead(Channel channel, int requestedSize) throws IOException {
+        private ByteSequenceStorage doRead(Channel channel, int requestedSize) throws IOException {
             if (channel instanceof ReadableByteChannel) {
                 ReadableByteChannel readableChannel = (ReadableByteChannel) channel;
-                int sz;
-                if (requestedSize > (Integer.MAX_VALUE / 2)) {
-                    // common VM limit
-                    sz = Integer.MAX_VALUE / 2;
-                } else {
-                    sz = requestedSize;
-                }
-                ByteBuffer dst;
-                try {
-                    dst = ByteBuffer.allocate(sz);
-                } catch (OutOfMemoryError e) {
-                    // we just read less, that's allowed
-                    dst = ByteBuffer.allocate(8192);
-                }
-                int readSize = readableChannel.read(dst);
-                if (readSize == -1) {
-                    return new byte[0];
+                int sz = Math.min(requestedSize, MAX_READ);
+                ByteBuffer dst = allocateBuffer(sz);
+                int readSize = readIntoBuffer(readableChannel, dst);
+                if (readSize <= 0) {
+                    return new ByteSequenceStorage(0);
                 } else {
                     byte[] array = dst.array();
-                    if (array.length != readSize) {
-                        return Arrays.copyOf(array, readSize);
-                    } else {
-                        return array;
-                    }
+                    ByteSequenceStorage byteSequenceStorage = new ByteSequenceStorage(array);
+                    byteSequenceStorage.setNewLength(readSize);
+                    return byteSequenceStorage;
                 }
             }
             throw raise(OSError, "file not opened for reading");
+        }
+
+        @TruffleBoundary
+        private static int readIntoBuffer(ReadableByteChannel readableChannel, ByteBuffer dst) throws IOException {
+            return readableChannel.read(dst);
+        }
+
+        @TruffleBoundary
+        private static ByteBuffer allocateBuffer(int sz) {
+            return ByteBuffer.allocate(sz);
         }
 
         /**

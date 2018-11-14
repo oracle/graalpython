@@ -68,6 +68,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -245,7 +246,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         public Object add(PBytes left, PIBytesLike right,
                         @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
-            SequenceStorage res = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            ByteSequenceStorage res = (ByteSequenceStorage) concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
             return factory().createBytes(res);
         }
 
@@ -262,7 +263,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         public Object mul(PBytes self, int times,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
-            SequenceStorage res = repeatNode.execute(self.getSequenceStorage(), times);
+            ByteSequenceStorage res = (ByteSequenceStorage) repeatNode.execute(self.getSequenceStorage(), times);
             return factory().createBytes(res);
         }
 
