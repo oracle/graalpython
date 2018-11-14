@@ -167,7 +167,7 @@ public abstract class NativeWrappers {
         public static final byte PRIMITIVE_STATE_BYTE = 0b00000010;
         public static final byte PRIMITIVE_STATE_INT = 0b00000100;
         public static final byte PRIMITIVE_STATE_LONG = 0b00001000;
-        public static final byte PRIMITIVE_STATE_DOUBLE = 0b00001000;
+        public static final byte PRIMITIVE_STATE_DOUBLE = 0b00010000;
 
         private final byte state;
         private final long value;
@@ -228,6 +228,10 @@ public abstract class NativeWrappers {
 
         public boolean isDouble() {
             return state == PRIMITIVE_STATE_DOUBLE;
+        }
+
+        public boolean isIntLike() {
+            return (state & (PRIMITIVE_STATE_BYTE | PRIMITIVE_STATE_INT | PRIMITIVE_STATE_LONG)) != 0;
         }
 
         // this method exists just for readability
