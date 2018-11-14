@@ -1045,23 +1045,29 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         : new String[]{(System.getenv().getOrDefault("SHELL", "sh")), "-c"};
 
         static class PipePump extends Thread {
+            private static final int MAX_READ = 8192;
             private final InputStream in;
             private final OutputStream out;
             private final byte[] buffer;
             private boolean finish;
+            private boolean flush;
 
             public PipePump(InputStream in, OutputStream out) {
                 this.in = in;
                 this.out = out;
-                this.buffer = new byte[8192];
+                this.buffer = new byte[MAX_READ];
                 this.finish = false;
+                this.flush = false;
             }
 
             @Override
             public void run() {
                 try {
-                    while (!Thread.interrupted() && !finish) {
-                        int read = in.read(buffer, 0, in.available());
+                    while (!finish || (flush && in.available() > 0)) {
+                        if (Thread.interrupted()) {
+                            finish = true;
+                        }
+                        int read = in.read(buffer, 0, Math.min(MAX_READ, in.available()));
                         if (read == -1) {
                             return;
                         }
@@ -1071,9 +1077,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            public void finish() {
-                Thread.yield();
+            public void finish(boolean force_flush) {
                 finish = true;
+                flush = force_flush;
+                if (flush) {
+                    // If we need to flush, make ourselves max priority to pump data out as quickly
+                    // as possible
+                    setPriority(Thread.MAX_PRIORITY);
+                }
+                Thread.yield();
             }
         }
 
@@ -1099,9 +1111,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 stdout.start();
                 stderr.start();
                 int exitStatus = proc.waitFor();
-                stdin.finish();
-                stdout.finish();
-                stderr.finish();
+                stdin.finish(false);
+                stdout.finish(true);
+                stderr.finish(true);
                 return exitStatus;
             } catch (IOException | InterruptedException e) {
                 return -1;
