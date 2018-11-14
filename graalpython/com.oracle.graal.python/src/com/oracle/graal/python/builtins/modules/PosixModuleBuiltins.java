@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.ConvertPathlikeObjectNodeGen;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.ReadFromChannelNodeGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
@@ -836,6 +837,80 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    abstract static class ReadFromChannelNode extends PNodeWithContext {
+        private final BranchProfile gotException = BranchProfile.create();
+
+        abstract ByteSequenceStorage execute(Channel channel, int size);
+
+        @Specialization
+        ByteSequenceStorage readSeekable(SeekableByteChannel channel, int size) {
+            long availableSize;
+            try {
+                availableSize = channel.size() - channel.position();
+            } catch (IOException e) {
+                gotException.enter();
+                throw raise(OSError, e.getMessage());
+            }
+            if (availableSize > ReadNode.MAX_READ) {
+                availableSize = ReadNode.MAX_READ;
+            }
+            int sz = (int) Math.min(availableSize, size);
+            return readReadable(channel, sz);
+        }
+
+        @Specialization
+        ByteSequenceStorage readReadable(ReadableByteChannel channel, int size) {
+            int sz = Math.min(size, ReadNode.MAX_READ);
+            ByteBuffer dst = allocateBuffer(sz);
+            int readSize = readIntoBuffer(channel, dst);
+            byte[] array;
+            if (readSize <= 0) {
+                array = new byte[0];
+                readSize = 0;
+            } else {
+                array = getByteBufferArray(dst);
+            }
+            ByteSequenceStorage byteSequenceStorage = new ByteSequenceStorage(array);
+            byteSequenceStorage.setNewLength(readSize);
+            return byteSequenceStorage;
+        }
+
+        @Specialization
+        ByteSequenceStorage readGeneric(Channel channel, int size) {
+            if (channel instanceof SeekableByteChannel) {
+                return readSeekable((SeekableByteChannel) channel, size);
+            } else if (channel instanceof ReadableByteChannel) {
+                return readReadable((ReadableByteChannel) channel, size);
+            } else {
+                throw raise(OSError, "file not opened for reading");
+            }
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static byte[] getByteBufferArray(ByteBuffer dst) {
+            return dst.array();
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private int readIntoBuffer(ReadableByteChannel readableChannel, ByteBuffer dst) {
+            try {
+                return readableChannel.read(dst);
+            } catch (IOException e) {
+                gotException.enter();
+                throw raise(OSError, e.getMessage());
+            }
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static ByteBuffer allocateBuffer(int sz) {
+            return ByteBuffer.allocate(sz);
+        }
+
+        public static ReadFromChannelNode create() {
+            return ReadFromChannelNodeGen.create();
+        }
+    }
+
     @Builtin(name = "read", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -845,66 +920,27 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "readOpaque(frame)")
         Object readOpaque(@SuppressWarnings("unused") VirtualFrame frame, int fd, @SuppressWarnings("unused") Object requestedSize,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile instanceofProfile,
-                        @Cached("create()") BranchProfile gotException) {
+                        @Cached("create()") ReadFromChannelNode readNode) {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
-            try {
-                ByteSequenceStorage bytes = doRead(channel, MAX_READ, channelClassProfile, instanceofProfile);
-                return new OpaqueBytes(Arrays.copyOf(bytes.getInternalByteArray(), bytes.length()));
-            } catch (IOException e) {
-                gotException.enter();
-                throw raise(OSError, e.getMessage());
-            }
+            ByteSequenceStorage bytes = readNode.execute(channel, MAX_READ);
+            return new OpaqueBytes(Arrays.copyOf(bytes.getInternalByteArray(), bytes.length()));
         }
 
         @Specialization(guards = "!readOpaque(frame)")
         Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile instanceofProfile,
-                        @Cached("create()") BranchProfile gotException) {
-            Channel channel = getResources().getFileChannel(fd, channelClassProfile);
+                        @Cached("create()") BranchProfile tooLarge,
+                        @Cached("create()") ReadFromChannelNode readNode) {
+            int size;
             try {
-                ByteSequenceStorage array = doRead(channel, (int) requestedSize, channelClassProfile, instanceofProfile);
-                return factory().createBytes(array);
-            } catch (IOException e) {
-                gotException.enter();
-                throw raise(OSError, e.getMessage());
+                size = Math.toIntExact(requestedSize);
+            } catch (ArithmeticException e) {
+                tooLarge.enter();
+                size = MAX_READ;
             }
-        }
-
-        private ByteSequenceStorage doRead(Channel channel, int requestedSize, ValueProfile channelClassProfile, ConditionProfile instanceofProfile) throws IOException {
-            if (instanceofProfile.profile(channelClassProfile.profile(channel) instanceof ReadableByteChannel)) {
-                ReadableByteChannel readableChannel = (ReadableByteChannel) channel;
-                int sz = Math.min(requestedSize, MAX_READ);
-                ByteBuffer dst = allocateBuffer(sz);
-                int readSize = readIntoBuffer(readableChannel, dst);
-                byte[] array;
-                if (readSize <= 0) {
-                    array = new byte[0];
-                    readSize = 0;
-                } else {
-                    array = getByteBufferArray(dst);
-                }
-                ByteSequenceStorage byteSequenceStorage = new ByteSequenceStorage(array);
-                byteSequenceStorage.setNewLength(readSize);
-                return byteSequenceStorage;
-            }
-            throw raise(OSError, "file not opened for reading");
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static byte[] getByteBufferArray(ByteBuffer dst) {
-            return dst.array();
-        }
-
-        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
-        private static int readIntoBuffer(ReadableByteChannel readableChannel, ByteBuffer dst) throws IOException {
-            return readableChannel.read(dst);
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static ByteBuffer allocateBuffer(int sz) {
-            return ByteBuffer.allocate(sz);
+            Channel channel = getResources().getFileChannel(fd, channelClassProfile);
+            ByteSequenceStorage array = readNode.execute(channel, size);
+            return factory().createBytes(array);
         }
 
         /**
