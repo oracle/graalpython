@@ -846,7 +846,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         ByteSequenceStorage readSeekable(SeekableByteChannel channel, int size) {
             long availableSize;
             try {
-                availableSize = channel.size() - channel.position();
+                availableSize = availableSize(channel);
             } catch (IOException e) {
                 gotException.enter();
                 throw raise(OSError, e.getMessage());
@@ -856,6 +856,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
             int sz = (int) Math.min(availableSize, size);
             return readReadable(channel, sz);
+        }
+
+        @TruffleBoundary(transferToInterpreterOnException = false)
+        private static long availableSize(SeekableByteChannel channel) throws IOException {
+            return channel.size() - channel.position();
         }
 
         @Specialization
