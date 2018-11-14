@@ -589,12 +589,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
 
-        protected final boolean isPrimitiveFloat(PythonClass cls) {
+        public abstract Object executeWith(Object cls, Object arg);
+
+        protected final boolean isPrimitiveFloat(LazyPythonClass cls) {
             return isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PFloat);
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromInt(PythonClass cls, int arg) {
+        public Object floatFromInt(LazyPythonClass cls, int arg) {
             if (isPrimitiveFloat(cls)) {
                 return (double) arg;
             }
@@ -602,7 +604,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromBoolean(PythonClass cls, boolean arg) {
+        public Object floatFromBoolean(LazyPythonClass cls, boolean arg) {
             if (isPrimitiveFloat(cls)) {
                 return arg ? 1d : 0d;
             }
@@ -610,7 +612,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromLong(PythonClass cls, long arg) {
+        public Object floatFromLong(LazyPythonClass cls, long arg) {
             if (isPrimitiveFloat(cls)) {
                 return (double) arg;
             }
@@ -618,7 +620,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromPInt(PythonClass cls, PInt arg) {
+        public Object floatFromPInt(LazyPythonClass cls, PInt arg) {
             if (isPrimitiveFloat(cls)) {
                 return arg.doubleValue();
             }
@@ -626,7 +628,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromFloat(PythonClass cls, double arg) {
+        public Object floatFromFloat(LazyPythonClass cls, double arg) {
             if (isPrimitiveFloat(cls)) {
                 return arg;
             }
@@ -634,7 +636,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromString(PythonClass cls, String arg) {
+        public Object floatFromString(LazyPythonClass cls, String arg) {
             double value = convertStringToDouble(arg);
             if (isPrimitiveFloat(cls)) {
                 return value;
@@ -644,7 +646,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "!isNativeClass(cls)")
         @TruffleBoundary
-        public Object floatFromBytes(PythonClass cls, PIBytesLike arg) {
+        public Object floatFromBytes(LazyPythonClass cls, PIBytesLike arg) {
             double value = convertStringToDouble(new String(getByteArray(arg)));
             if (isPrimitiveFloat(cls)) {
                 return value;
@@ -694,7 +696,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromNone(PythonClass cls, @SuppressWarnings("unused") PNone arg) {
+        public Object floatFromNone(LazyPythonClass cls, @SuppressWarnings("unused") PNone arg) {
             if (isPrimitiveFloat(cls)) {
                 return 0.0;
             }
@@ -702,7 +704,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPrimitiveFloat(cls)")
-        double doubleFromObject(@SuppressWarnings("unused") PythonClass cls, Object obj,
+        double doubleFromObject(@SuppressWarnings("unused") LazyPythonClass cls, Object obj,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode callFloatNode,
                         @Cached("create()") BranchProfile gotException) {
             if (obj instanceof String) {
@@ -729,7 +731,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        Object doPythonObject(PythonClass cls, Object obj,
+        Object doPythonObject(LazyPythonClass cls, Object obj,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode callFloatNode,
                         @Cached("create()") BranchProfile gotException) {
             return floatFromFloat(cls, doubleFromObject(cls, obj, callFloatNode, gotException));

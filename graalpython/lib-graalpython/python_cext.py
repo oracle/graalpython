@@ -342,11 +342,6 @@ def PyFloat_FromDouble(n):
     return float(n)
 
 
-@may_raise
-def PyFloat_FromObject(n):
-    return float(n)
-
-
 ##################### NUMBER
 
 def _safe_check(v, type_check):
@@ -470,11 +465,6 @@ def PyNumber_Index(v):
         warn("__index__ returned non-int (type %s). The ability to return an instance of a strict subclass of int "
              "is deprecated, and may be removed in a future version of Python." % result_type)
     return result
-
-
-@may_raise
-def PyNumber_Float(v):
-    return float(v)
 
 
 @may_raise
