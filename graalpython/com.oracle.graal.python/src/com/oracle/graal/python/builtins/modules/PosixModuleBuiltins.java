@@ -32,7 +32,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.io.Console;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -44,10 +43,7 @@ import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
@@ -111,6 +107,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.sun.security.auth.UnixNumericGroupPrincipal;
 import com.sun.security.auth.UnixNumericUserPrincipal;
@@ -223,13 +220,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getcwd", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class CwdNode extends PythonBuiltinNode {
-        @TruffleBoundary
         @Specialization
         String cwd() {
-            if (getContext().isExecutableAccessAllowed()) {
-                // TODO(fa) that should actually be retrieved from native code
-                return System.getProperty("user.dir");
-            } else {
+            try {
+                return getContext().getEnv().getCurrentWorkingDirectory().getPath();
+            } catch (SecurityException e) {
                 return "";
             }
         }
@@ -239,21 +234,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "chdir", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ChdirNode extends PythonBuiltinNode {
-        @TruffleBoundary
         @Specialization
         PNone chdir(String spath) {
-            if (getContext().isExecutableAccessAllowed()) {
-                // TODO(fa) that should actually be set via native code
-                try {
-                    if (Files.exists(Paths.get(spath))) {
-                        System.setProperty("user.dir", spath);
-                        return PNone.NONE;
-                    }
-                } catch (InvalidPathException e) {
-                    // fall through
-                }
+            Env env = getContext().getEnv();
+            try {
+                TruffleFile dir = env.getTruffleFile(spath);
+                env.setCurrentWorkingDirectory(dir);
+                return PNone.NONE;
+            } catch (UnsupportedOperationException | IllegalArgumentException | SecurityException e) {
+                throw raise(PythonErrorType.FileNotFoundError, "No such file or directory: '%s'", spath);
             }
-            throw raise(PythonErrorType.FileNotFoundError, "No such file or directory: '%s'", spath);
         }
     }
 
@@ -276,7 +266,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         protected abstract Object executeWith(Object fd);
 
         @Specialization(guards = {"fd >= 0", "fd <= 2"})
-        @TruffleBoundary
         Object fstatStd(@SuppressWarnings("unused") int fd) {
             return factory().createTuple(new Object[]{
                             8592,
@@ -293,7 +282,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fd > 2")
-        @TruffleBoundary
         Object fstat(int fd,
                         @Cached("create()") BranchProfile fstatForNonFile,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
@@ -352,7 +340,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fd > 2")
-        @TruffleBoundary
         Object setInheritable(int fd, @SuppressWarnings("unused") Object inheritable) {
             String path = getResources().getFilePath(fd);
             TruffleFile f = getContext().getEnv().getTruffleFile(path);
@@ -368,6 +355,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StatNode extends PythonBinaryBuiltinNode {
+        private final ConditionProfile fileNotFound = ConditionProfile.createBinaryProfile();
+
         private static final int S_IFIFO = 0010000;
         private static final int S_IFCHR = 0020000;
         private static final int S_IFBLK = 0060000;
@@ -388,11 +377,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return stat(path, true);
         }
 
-        @TruffleBoundary
         Object stat(String path, boolean followSymlinks) {
             TruffleFile f = getContext().getEnv().getTruffleFile(path);
             LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
-            if (!f.exists(linkOptions)) {
+            if (fileNotFound.profile(!f.exists(linkOptions))) {
                 throw raise(FileNotFoundError, "No such file or directory: '%s'", path);
             }
             int mode = 0;
@@ -444,33 +432,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
             try {
                 final Set<PosixFilePermission> posixFilePermissions = f.getPosixPermissions(linkOptions);
-                if (posixFilePermissions.contains(PosixFilePermission.OTHERS_READ)) {
-                    mode |= 0004;
-                }
-                if (posixFilePermissions.contains(PosixFilePermission.OTHERS_WRITE)) {
-                    mode |= 0002;
-                }
-                if (posixFilePermissions.contains(PosixFilePermission.OTHERS_EXECUTE)) {
-                    mode |= 0001;
-                }
-                if (posixFilePermissions.contains(PosixFilePermission.GROUP_READ)) {
-                    mode |= 0040;
-                }
-                if (posixFilePermissions.contains(PosixFilePermission.GROUP_WRITE)) {
-                    mode |= 0020;
-                }
-                if (posixFilePermissions.contains(PosixFilePermission.GROUP_EXECUTE)) {
-                    mode |= 0010;
-                }
-                if (posixFilePermissions.contains(PosixFilePermission.OWNER_READ)) {
-                    mode |= 0400;
-                }
-                if (posixFilePermissions.contains(PosixFilePermission.OWNER_WRITE)) {
-                    mode |= 0200;
-                }
-                if (posixFilePermissions.contains(PosixFilePermission.OWNER_EXECUTE)) {
-                    mode |= 0100;
-                }
+                mode = posixPermissionsToMode(mode, posixFilePermissions);
             } catch (UnsupportedOperationException | IOException e1) {
                 if (f.isReadable()) {
                     mode |= 0004;
@@ -507,6 +469,39 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             });
         }
 
+        @TruffleBoundary(allowInlining = true)
+        private static int posixPermissionsToMode(int inputMode, final Set<PosixFilePermission> posixFilePermissions) {
+            int mode = inputMode;
+            if (posixFilePermissions.contains(PosixFilePermission.OTHERS_READ)) {
+                mode |= 0004;
+            }
+            if (posixFilePermissions.contains(PosixFilePermission.OTHERS_WRITE)) {
+                mode |= 0002;
+            }
+            if (posixFilePermissions.contains(PosixFilePermission.OTHERS_EXECUTE)) {
+                mode |= 0001;
+            }
+            if (posixFilePermissions.contains(PosixFilePermission.GROUP_READ)) {
+                mode |= 0040;
+            }
+            if (posixFilePermissions.contains(PosixFilePermission.GROUP_WRITE)) {
+                mode |= 0020;
+            }
+            if (posixFilePermissions.contains(PosixFilePermission.GROUP_EXECUTE)) {
+                mode |= 0010;
+            }
+            if (posixFilePermissions.contains(PosixFilePermission.OWNER_READ)) {
+                mode |= 0400;
+            }
+            if (posixFilePermissions.contains(PosixFilePermission.OWNER_WRITE)) {
+                mode |= 0200;
+            }
+            if (posixFilePermissions.contains(PosixFilePermission.OWNER_EXECUTE)) {
+                mode |= 0100;
+            }
+            return mode;
+        }
+
         protected static StatNode create() {
             return StatNodeFactory.create();
         }
@@ -516,26 +511,33 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ListdirNode extends PythonBuiltinNode {
+        private final BranchProfile gotException = BranchProfile.create();
+
         @Specialization
-        @TruffleBoundary
         Object listdir(String path) {
             try {
                 TruffleFile file = getContext().getEnv().getTruffleFile(path);
                 Collection<TruffleFile> listFiles = file.list();
-                if (listFiles.isEmpty()) {
-                    throw raise(OSError, path);
-                }
-                Object[] filenames = new Object[listFiles.size()];
-                int i = 0;
-                for (TruffleFile f : listFiles) {
-                    filenames[i] = f.getName();
-                    i += 1;
-                }
+                Object[] filenames = listToArray(path, listFiles);
                 return factory().createList(filenames);
             } catch (IOException e) {
-                CompilerDirectives.transferToInterpreter();
+                gotException.enter();
                 throw raise(OSError, path);
             }
+        }
+
+        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
+        private Object[] listToArray(String path, Collection<TruffleFile> listFiles) {
+            if (listFiles.isEmpty()) {
+                throw raise(OSError, path);
+            }
+            Object[] filenames = new Object[listFiles.size()];
+            int i = 0;
+            for (TruffleFile f : listFiles) {
+                filenames[i] = f.getName();
+                i += 1;
+            }
+            return filenames;
         }
     }
 
@@ -544,7 +546,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class DupNode extends PythonFileNode {
         @Specialization
-        @TruffleBoundary
         int dup(int fd) {
             return getResources().dup(fd);
         }
@@ -568,14 +569,38 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class OpenNode extends PythonFileNode {
+        private final BranchProfile gotException = BranchProfile.create();
+
         @Specialization(guards = {"isNoValue(mode)", "isNoValue(dir_fd)"})
         Object open(String pathname, int flags, @SuppressWarnings("unused") PNone mode, PNone dir_fd) {
             return open(pathname, flags, 0777, dir_fd);
         }
 
         @Specialization(guards = {"isNoValue(dir_fd)"})
-        @TruffleBoundary
         Object open(String pathname, int flags, int fileMode, @SuppressWarnings("unused") PNone dir_fd) {
+            Set<StandardOpenOption> options = flagsToOptions(flags);
+            FileAttribute<Set<PosixFilePermission>>[] attributes = modeToAttributes(fileMode);
+            TruffleFile truffleFile = getContext().getEnv().getTruffleFile(pathname);
+            try {
+                SeekableByteChannel fc = truffleFile.newByteChannel(options, attributes);
+                return getResources().open(truffleFile, fc);
+            } catch (IOException e) {
+                gotException.enter();
+                throw raise(OSError, e.getMessage());
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        @TruffleBoundary(allowInlining = true)
+        private static FileAttribute<Set<PosixFilePermission>>[] modeToAttributes(int fileMode) {
+            FileAttribute<Set<PosixFilePermission>> fa1 = PosixFilePermissions.asFileAttribute(new HashSet<>(Arrays.asList(otherBitsToPermission[fileMode & 7])));
+            FileAttribute<Set<PosixFilePermission>> fa2 = PosixFilePermissions.asFileAttribute(new HashSet<>(Arrays.asList(groupBitsToPermission[fileMode >> 3 & 7])));
+            FileAttribute<Set<PosixFilePermission>> fa3 = PosixFilePermissions.asFileAttribute(new HashSet<>(Arrays.asList(ownerBitsToPermission[fileMode >> 6 & 7])));
+            return new FileAttribute[]{fa1, fa2, fa3};
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static Set<StandardOpenOption> flagsToOptions(int flags) {
             Set<StandardOpenOption> options = new HashSet<>();
             if ((flags & WRONLY) != 0) {
                 options.add(StandardOpenOption.WRITE);
@@ -610,16 +635,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if ((flags & TMPFILE) != 0) {
                 options.add(StandardOpenOption.DELETE_ON_CLOSE);
             }
-            FileAttribute<Set<PosixFilePermission>> fa1 = PosixFilePermissions.asFileAttribute(new HashSet<>(Arrays.asList(otherBitsToPermission[fileMode & 7])));
-            FileAttribute<Set<PosixFilePermission>> fa2 = PosixFilePermissions.asFileAttribute(new HashSet<>(Arrays.asList(groupBitsToPermission[fileMode >> 3 & 7])));
-            FileAttribute<Set<PosixFilePermission>> fa3 = PosixFilePermissions.asFileAttribute(new HashSet<>(Arrays.asList(ownerBitsToPermission[fileMode >> 6 & 7])));
-            TruffleFile truffleFile = getContext().getEnv().getTruffleFile(pathname);
-            try {
-                SeekableByteChannel fc = truffleFile.newByteChannel(options, fa1, fa2, fa3);
-                return getResources().open(truffleFile, fc);
-            } catch (IOException e) {
-                throw raise(OSError, e.getMessage());
-            }
+            return options;
         }
     }
 
@@ -627,49 +643,70 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LseekNode extends PythonFileNode {
+        private final BranchProfile gotException = BranchProfile.create();
+        private final ConditionProfile noFile = ConditionProfile.createBinaryProfile();
+
         @Specialization
-        @TruffleBoundary
         Object lseek(int fd, long pos, int how,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
-            if (channel == null || !(channel instanceof SeekableByteChannel)) {
+            if (noFile.profile(channel == null || !(channel instanceof SeekableByteChannel))) {
                 throw raise(OSError, "Illegal seek");
             }
             SeekableByteChannel fc = (SeekableByteChannel) channel;
             try {
-                switch (how) {
-                    case SEEK_CUR:
-                        fc.position(fc.position() + pos);
-                        break;
-                    case SEEK_END:
-                        fc.position(fc.size() + pos);
-                        break;
-                    case SEEK_SET:
-                    default:
-                        fc.position(pos);
-                }
-                return fc.position();
+                return setPosition(pos, how, fc);
             } catch (IOException e) {
+                gotException.enter();
                 throw raise(OSError, e.getMessage());
             }
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static Object setPosition(long pos, int how, SeekableByteChannel fc) throws IOException {
+            switch (how) {
+                case SEEK_CUR:
+                    fc.position(fc.position() + pos);
+                    break;
+                case SEEK_END:
+                    fc.position(fc.size() + pos);
+                    break;
+                case SEEK_SET:
+                default:
+                    fc.position(pos);
+            }
+            return fc.position();
         }
     }
 
     @Builtin(name = "close", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CloseNode extends PythonFileNode {
+        private final BranchProfile gotException = BranchProfile.create();
+        private final ConditionProfile noFile = ConditionProfile.createBinaryProfile();
+
         @Specialization
-        @TruffleBoundary
         Object close(int fd,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             PosixResources resources = getResources();
             Channel channel = resources.getFileChannel(fd, channelClassProfile);
-            if (channel == null) {
+            if (noFile.profile(channel == null)) {
                 throw raise(OSError, "invalid fd");
             } else {
                 resources.close(fd);
+                try {
+                    closeChannel(channel);
+                } catch (IOException e) {
+                    gotException.enter();
+                    throw raise(OSError, e.getMessage());
+                }
             }
             return PNone.NONE;
+        }
+
+        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
+        private static void closeChannel(Channel channel) throws IOException {
+            channel.close();
         }
     }
 
@@ -677,12 +714,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class UnlinkNode extends PythonFileNode {
+        private final BranchProfile gotException = BranchProfile.create();
+
         @Specialization
-        @TruffleBoundary
         Object unlink(String path) {
             try {
                 getContext().getEnv().getTruffleFile(path).delete();
             } catch (RuntimeException | IOException e) {
+                gotException.enter();
                 throw raise(OSError, e.getMessage());
             }
             return PNone.NONE;
@@ -703,17 +742,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class MkdirNode extends PythonFileNode {
+        private final BranchProfile gotException = BranchProfile.create();
+
         @Specialization
         Object mkdir(String path, @SuppressWarnings("unused") PNone mode, PNone dirFd) {
             return mkdir(path, 511, dirFd);
         }
 
         @Specialization
-        @TruffleBoundary
         Object mkdir(String path, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") PNone dirFd) {
             try {
                 getContext().getEnv().getTruffleFile(path).createDirectory();
             } catch (RuntimeException | IOException e) {
+                gotException.enter();
                 throw raise(OSError, e.getMessage());
             }
             return PNone.NONE;
@@ -725,41 +766,51 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class WriteNode extends PythonFileNode {
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+        private final BranchProfile gotException = BranchProfile.create();
+        private final BranchProfile notWritable = BranchProfile.create();
 
         public abstract Object executeWith(Object fd, Object data);
 
         @Specialization
-        @TruffleBoundary
         Object write(int fd, byte[] data,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
             if (channel instanceof WritableByteChannel) {
                 try {
-                    return ((WritableByteChannel) channel).write(ByteBuffer.wrap(data));
+                    return doWriteOp(data, (WritableByteChannel) channel);
                 } catch (NonWritableChannelException | IOException e) {
+                    gotException.enter();
                     throw raise(OSError, e.getMessage());
                 }
             } else {
+                notWritable.enter();
                 throw raise(OSError, "file not opened for writing");
             }
         }
 
-        @Specialization
-        @TruffleBoundary
-        Object write(int fd, String data,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            return write(fd, data.getBytes(), channelClassProfile);
+        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
+        private static int doWriteOp(byte[] data, WritableByteChannel channel) throws IOException {
+            return channel.write(ByteBuffer.wrap(data));
         }
 
         @Specialization
+        Object write(int fd, String data,
+                        @Cached("createClassProfile()") ValueProfile channelClassProfile) {
+            return write(fd, stringToBytes(data), channelClassProfile);
+        }
+
         @TruffleBoundary
+        private static byte[] stringToBytes(String data) {
+            return data.getBytes();
+        }
+
+        @Specialization
         Object write(int fd, PBytes data,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             return write(fd, getByteArray(data), channelClassProfile);
         }
 
         @Specialization
-        @TruffleBoundary
         Object write(int fd, PByteArray data,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             return write(fd, getByteArray(data), channelClassProfile);
@@ -793,52 +844,65 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "readOpaque(frame)")
         Object readOpaque(@SuppressWarnings("unused") VirtualFrame frame, int fd, @SuppressWarnings("unused") Object requestedSize,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile) {
+                        @Cached("createClassProfile()") ValueProfile channelClassProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile instanceofProfile,
+                        @Cached("create()") BranchProfile gotException) {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
             try {
-                ByteSequenceStorage bytes = doRead(channel, MAX_READ);
+                ByteSequenceStorage bytes = doRead(channel, MAX_READ, channelClassProfile, instanceofProfile);
                 return new OpaqueBytes(Arrays.copyOf(bytes.getInternalByteArray(), bytes.length()));
             } catch (IOException e) {
+                gotException.enter();
                 throw raise(OSError, e.getMessage());
             }
         }
 
         @Specialization(guards = "!readOpaque(frame)")
         Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile) {
+                        @Cached("createClassProfile()") ValueProfile channelClassProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile instanceofProfile,
+                        @Cached("create()") BranchProfile gotException) {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
             try {
-                ByteSequenceStorage array = doRead(channel, (int) requestedSize);
+                ByteSequenceStorage array = doRead(channel, (int) requestedSize, channelClassProfile, instanceofProfile);
                 return factory().createBytes(array);
             } catch (IOException e) {
+                gotException.enter();
                 throw raise(OSError, e.getMessage());
             }
         }
 
-        private ByteSequenceStorage doRead(Channel channel, int requestedSize) throws IOException {
-            if (channel instanceof ReadableByteChannel) {
+        private ByteSequenceStorage doRead(Channel channel, int requestedSize, ValueProfile channelClassProfile, ConditionProfile instanceofProfile) throws IOException {
+            if (instanceofProfile.profile(channelClassProfile.profile(channel) instanceof ReadableByteChannel)) {
                 ReadableByteChannel readableChannel = (ReadableByteChannel) channel;
                 int sz = Math.min(requestedSize, MAX_READ);
                 ByteBuffer dst = allocateBuffer(sz);
                 int readSize = readIntoBuffer(readableChannel, dst);
+                byte[] array;
                 if (readSize <= 0) {
-                    return new ByteSequenceStorage(0);
+                    array = new byte[0];
+                    readSize = 0;
                 } else {
-                    byte[] array = dst.array();
-                    ByteSequenceStorage byteSequenceStorage = new ByteSequenceStorage(array);
-                    byteSequenceStorage.setNewLength(readSize);
-                    return byteSequenceStorage;
+                    array = getByteBufferArray(dst);
                 }
+                ByteSequenceStorage byteSequenceStorage = new ByteSequenceStorage(array);
+                byteSequenceStorage.setNewLength(readSize);
+                return byteSequenceStorage;
             }
             throw raise(OSError, "file not opened for reading");
         }
 
-        @TruffleBoundary
+        @TruffleBoundary(allowInlining = true)
+        private static byte[] getByteBufferArray(ByteBuffer dst) {
+            return dst.array();
+        }
+
+        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
         private static int readIntoBuffer(ReadableByteChannel readableChannel, ByteBuffer dst) throws IOException {
             return readableChannel.read(dst);
         }
 
-        @TruffleBoundary
+        @TruffleBoundary(allowInlining = true)
         private static ByteBuffer allocateBuffer(int sz) {
             return ByteBuffer.allocate(sz);
         }
@@ -856,18 +920,21 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class IsATTYNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         boolean isATTY(int fd) {
             // TODO: XXX: actually check
-            Console console = System.console();
             switch (fd) {
                 case 0:
                 case 1:
                 case 2:
-                    return console != null;
+                    return consoleCheck();
                 default:
                     return false;
             }
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static boolean consoleCheck() {
+            return System.console() != null;
         }
     }
 
@@ -875,7 +942,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ExitNode extends PythonBuiltinNode {
-        @TruffleBoundary
         @Specialization
         Object exit(int status) {
             throw new PythonExitException(this, status);
@@ -886,19 +952,27 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ChmodNode extends PythonBuiltinNode {
+        private final BranchProfile gotException = BranchProfile.create();
+
         @Specialization
-        @TruffleBoundary
         Object chmod(String path, int mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone follow_symlinks) {
-            Set<PosixFilePermission> permissions = new HashSet<>(Arrays.asList(otherBitsToPermission[mode & 7]));
-            permissions.addAll(Arrays.asList(groupBitsToPermission[mode >> 3 & 7]));
-            permissions.addAll(Arrays.asList(ownerBitsToPermission[mode >> 6 & 7]));
+            Set<PosixFilePermission> permissions = modeToPermissions(mode);
             try {
                 TruffleFile truffleFile = getContext().getEnv().getTruffleFile(path);
                 truffleFile.setPosixPermissions(permissions);
             } catch (IOException e) {
+                gotException.enter();
                 throw raise(OSError, e.getMessage());
             }
             return PNone.NONE;
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static Set<PosixFilePermission> modeToPermissions(int mode) {
+            Set<PosixFilePermission> permissions = new HashSet<>(Arrays.asList(otherBitsToPermission[mode & 7]));
+            permissions.addAll(Arrays.asList(groupBitsToPermission[mode >> 3 & 7]));
+            permissions.addAll(Arrays.asList(ownerBitsToPermission[mode >> 6 & 7]));
+            return permissions;
         }
 
         @SuppressWarnings("unused")
@@ -1001,7 +1075,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return raise(TypeError, "utime: '%s' must be either a tuple of two ints or None", argname);
         }
 
-        @TruffleBoundary
         private void setMtime(String path, long mtime) {
             try {
                 getContext().getEnv().getTruffleFile(path).setLastModifiedTime(FileTime.fromMillis(mtime));
@@ -1009,7 +1082,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @TruffleBoundary
         private void setAtime(String path, long mtime) {
             try {
                 getContext().getEnv().getTruffleFile(path).setLastAccessTime(FileTime.fromMillis(mtime));
@@ -1197,7 +1269,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return rename(convertSrcNode.execute(effectiveSrc), convertDstNode.execute(effectiveDst));
         }
 
-        @TruffleBoundary
         private Object rename(String src, String dst) {
             try {
                 TruffleFile dstFile = getContext().getEnv().getTruffleFile(dst);
@@ -1223,7 +1294,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class URandomNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
+        @TruffleBoundary(allowInlining = true)
         PBytes urandom(int size) {
             // size is in bytes
             BigInteger bigInteger = new BigInteger(size * 8, new Random());
