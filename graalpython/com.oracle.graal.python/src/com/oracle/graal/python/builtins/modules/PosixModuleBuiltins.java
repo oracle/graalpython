@@ -1049,8 +1049,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             private final InputStream in;
             private final OutputStream out;
             private final byte[] buffer;
-            private boolean finish;
-            private boolean flush;
+            private volatile boolean finish;
+            private volatile boolean flush;
 
             public PipePump(InputStream in, OutputStream out) {
                 this.in = in;
