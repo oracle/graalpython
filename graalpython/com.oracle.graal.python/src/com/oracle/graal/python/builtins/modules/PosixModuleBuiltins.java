@@ -957,11 +957,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class IsATTYNode extends PythonBuiltinNode {
         @Specialization
         boolean isATTY(int fd) {
-            // TODO: XXX: actually check
             switch (fd) {
                 case 0:
                 case 1:
                 case 2:
+                    // TODO: XXX: actually check
                     return consoleCheck();
                 default:
                     return false;
@@ -1144,7 +1144,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    // FIXME: this is not nearly ready, just good enough for now
     @Builtin(name = "system", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
