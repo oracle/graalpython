@@ -151,12 +151,17 @@ def run_unittests(unittests):
     return [res.get()[1] for res in results]
 
 
-def get_unittests(base_tests_path, limit=None, sort=True):
+def get_unittests(base_tests_path, limit=None, sort=True, skip_tests=None):
     def _sorter(iterable):
         return sorted(iterable) if sort else iterable
     unittests = [os.path.join(base_tests_path, name)
                  for name in _sorter(os.listdir(base_tests_path))
                  if name.startswith("test_")]
+    if skip_tests:
+        log("[INFO] skipping unittests: {}", skip_tests)
+        cnt = len(unittests)
+        unittests = [t for t in unittests if t not in skip_tests]
+        log("[INFO] running {} of {} unittests", len(unittests), cnt)
     return unittests[:limit] if limit else unittests
 
 
@@ -624,6 +629,8 @@ def main(prog, args):
     parser.add_argument("-l", "--limit", help="Limit the number of unittests to run.", default=None, type=int)
     parser.add_argument("-t", "--tests_path", help="Unittests path.", default=PATH_UNITTESTS)
     parser.add_argument("-o", "--only_tests", help="Run only these unittests (comma sep values).", default=None)
+    parser.add_argument("-s", "--skip_tests", help="Run all unittests except (comma sep values)."
+                                                   "the only_tets option takes precedence", default=None)
     parser.add_argument("path", help="Path to store the csv output and logs to.", nargs='?', default=None)
 
     global flags
@@ -638,14 +645,16 @@ def main(prog, args):
     else:
         log("[INFO] results will not be saved remotely")
 
+    def _fmt(t):
+        t = t.strip()
+        return os.path.join(flags.tests_path, t if t.endswith(".py") else t + ".py")
+
     if flags.only_tests:
-        def _fmt(t):
-            t = t.strip()
-            return os.path.join(flags.tests_path, t if t.endswith(".py") else t + ".py")
         only_tests = set([_fmt(test) for test in flags.only_tests.split(",")])
         unittests = [t for t in get_unittests(flags.tests_path) if t in only_tests]
     else:
-        unittests = get_unittests(flags.tests_path, limit=flags.limit)
+        skip_tests = set([_fmt(test) for test in flags.skip_tests.split(",")]) if flags.skip_tests else None
+        unittests = get_unittests(flags.tests_path, limit=flags.limit, skip_tests=skip_tests)
 
     results = run_unittests(unittests)
     txt_report_path = file_name(TXT_RESULTS_NAME, current_date)
