@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import java.util.Collections;
 
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+
 public class EmptyStorage extends HashingStorage {
 
     @Override
@@ -80,6 +82,7 @@ public class EmptyStorage extends HashingStorage {
     }
 
     @Override
+    @TruffleBoundary
     public Iterable<Object> values() {
         return Collections.emptyList();
     }

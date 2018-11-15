@@ -479,7 +479,7 @@ public class PythonMessageResolution {
             }
 
             if (object instanceof PythonObject) {
-                if (((PythonObject) object).getAttributeNames().contains(field)) {
+                if (objectHasAttribute(object, field)) {
                     writeNode.execute(object, field, value);
                     return value;
                 }
@@ -525,7 +525,7 @@ public class PythonMessageResolution {
             }
 
             if (object instanceof PythonObject) {
-                if (((PythonObject) object).getAttributeNames().contains(field)) {
+                if (objectHasAttribute(object, field)) {
                     delNode.execute(object, field);
                     return true;
                 }
@@ -545,6 +545,11 @@ public class PythonMessageResolution {
             }
             return true;
         }
+    }
+
+    @TruffleBoundary
+    private static boolean objectHasAttribute(Object object, Object field) {
+        return ((PythonObject) object).getAttributeNames().contains(field);
     }
 
     @Resolve(message = "EXECUTE")

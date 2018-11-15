@@ -184,6 +184,7 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
+    @TruffleBoundary
     private static int extractFirstLineno(RootNode rootNode) {
         RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
         SourceSection sourceSection = funcRootNode.getSourceSection();

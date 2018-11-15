@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -214,6 +215,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
 
         @Specialization
+        @TruffleBoundary
         public String doit(PZipImporter self) {
             String archive = self.getArchive();
             String prefix = self.getPrefix();

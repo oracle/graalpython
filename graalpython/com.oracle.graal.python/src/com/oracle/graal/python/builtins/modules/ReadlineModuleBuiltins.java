@@ -296,6 +296,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ClearNode extends PythonUnaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         PNone setCompleter(PythonModule self,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);

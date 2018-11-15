@@ -378,6 +378,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return stat(path, true);
         }
 
+        @TruffleBoundary
+        long fileTimeToSeconds(FileTime t) {
+            return t.to(TimeUnit.SECONDS);
+        }
+
         Object stat(String path, boolean followSymlinks) {
             TruffleFile f = getContext().getEnv().getTruffleFile(path);
             LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
@@ -402,17 +407,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 mode |= S_IFSOCK | S_IFBLK | S_IFCHR | S_IFIFO;
             }
             try {
-                mtime = f.getLastModifiedTime(linkOptions).to(TimeUnit.SECONDS);
+                mtime = fileTimeToSeconds(f.getLastModifiedTime(linkOptions));
             } catch (IOException e1) {
                 mtime = 0;
             }
             try {
-                ctime = f.getCreationTime(linkOptions).to(TimeUnit.SECONDS);
+                ctime = fileTimeToSeconds(f.getCreationTime(linkOptions));
             } catch (IOException e1) {
                 ctime = 0;
             }
             try {
-                atime = f.getLastAccessTime(linkOptions).to(TimeUnit.SECONDS);
+                atime = fileTimeToSeconds(f.getLastAccessTime(linkOptions));
             } catch (IOException e1) {
                 atime = 0;
             }
@@ -420,16 +425,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 owner = f.getOwner(linkOptions);
                 if (owner instanceof UnixNumericUserPrincipal) {
-                    uid = new Long(((UnixNumericUserPrincipal) owner).getName()).longValue();
+                    uid = strToLong(((UnixNumericUserPrincipal) owner).getName());
                 }
-            } catch (IOException | UnsupportedOperationException | SecurityException e2) {
+            } catch (NumberFormatException | IOException | UnsupportedOperationException | SecurityException e2) {
             }
             try {
                 GroupPrincipal group = f.getGroup(linkOptions);
                 if (group instanceof UnixNumericGroupPrincipal) {
-                    gid = new Long(((UnixNumericGroupPrincipal) group).getName()).longValue();
+                    gid = strToLong(((UnixNumericGroupPrincipal) group).getName());
                 }
-            } catch (IOException | UnsupportedOperationException | SecurityException e2) {
+            } catch (NumberFormatException | IOException | UnsupportedOperationException | SecurityException e2) {
             }
             try {
                 final Set<PosixFilePermission> posixFilePermissions = f.getPosixPermissions(linkOptions);
@@ -468,6 +473,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                             mtime,
                             ctime,
             });
+        }
+
+        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
+        private static long strToLong(String name) throws NumberFormatException {
+            return new Long(name).longValue();
         }
 
         @TruffleBoundary(allowInlining = true)

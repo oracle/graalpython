@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 
 public class PCell extends PythonBuiltinObject {
@@ -79,6 +80,7 @@ public class PCell extends PythonBuiltinObject {
     }
 
     @Override
+    @TruffleBoundary
     public List<String> getAttributeNames() {
         ArrayList<String> arrayList = new ArrayList<>();
         arrayList.add("cell_contents");

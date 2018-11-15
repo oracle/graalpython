@@ -516,6 +516,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Fallback
         public Object endsWith(Object self, Object prefix) {
+            CompilerDirectives.transferToInterpreter();
             throw new RuntimeException("endsWith is not supported for " + self + " " + self.getClass() + " prefix " + prefix);
         }
     }
@@ -867,6 +868,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         // See {@link PyString}
+        @TruffleBoundary
         private PList splitfields(String s, int maxsplit) {
             /*
              * Result built here is a list of split parts, exactly as required for s.split(None,
@@ -1710,6 +1712,7 @@ public final class StringBuiltins extends PythonBuiltins {
             throw raise(TypeError, "The fill character must be exactly one character long");
         }
 
+        @TruffleBoundary
         protected String make(String self, int width, String fill) {
             int fillChar = parseCodePoint(fill);
             int len = width - self.length();
@@ -1724,6 +1727,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return padding(half, fillChar) + self + padding(len - half, fillChar);
         }
 
+        @TruffleBoundary
         protected static String padding(int len, int codePoint) {
             int[] result = new int[len];
             for (int i = 0; i < len; i++) {
@@ -1746,6 +1750,7 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class LJustNode extends CenterNode {
 
         @Override
+        @TruffleBoundary
         protected String make(String self, int width, String fill) {
             int fillChar = parseCodePoint(fill);
             int len = width - self.length();
@@ -1762,6 +1767,7 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class RJustNode extends CenterNode {
 
         @Override
+        @TruffleBoundary
         protected String make(String self, int width, String fill) {
             int fillChar = parseCodePoint(fill);
             int len = width - self.length();

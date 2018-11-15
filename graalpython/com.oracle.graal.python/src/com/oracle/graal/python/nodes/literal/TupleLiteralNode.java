@@ -64,17 +64,33 @@ public final class TupleLiteralNode extends LiteralNode {
         }
     }
 
-    @ExplodeLoop
     private Object expandingTuple(VirtualFrame frame) {
         List<Object> elements = makeList();
         for (ExpressionNode n : values) {
             if (n instanceof StarredExpressionNode) {
-                elements.addAll(asList(((StarredExpressionNode) n).getArray(frame)));
+                Object[] array = ((StarredExpressionNode) n).getArray(frame);
+                addAllElements(elements, array);
             } else {
-                elements.add(n.execute(frame));
+                Object element = n.execute(frame);
+                addElement(elements, element);
             }
         }
-        return factory().createTuple(elements.toArray());
+        return factory().createTuple(listToArray(elements));
+    }
+
+    @TruffleBoundary
+    private static Object[] listToArray(List<Object> elements) {
+        return elements.toArray();
+    }
+
+    @TruffleBoundary
+    private static void addElement(List<Object> elements, Object element) {
+        elements.add(element);
+    }
+
+    @TruffleBoundary
+    private static void addAllElements(List<Object> elements, Object[] array) {
+        elements.addAll(asList(array));
     }
 
     @TruffleBoundary

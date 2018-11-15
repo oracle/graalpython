@@ -16,6 +16,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypesUtil;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 //Copyright (c) Jython Developers
 
@@ -27,7 +28,7 @@ public class InternalFormat {
      * @param text to parse
      * @return parsed equivalent to text
      */
-    public static Spec fromText(PythonCore core, String text) {
+    private static Spec fromText(PythonCore core, String text) {
         Parser parser = new Parser(text);
         try {
             return parser.parse();
@@ -42,6 +43,7 @@ public class InternalFormat {
      * @param text to parse
      * @return parsed equivalent to text
      */
+    @TruffleBoundary
     public static Spec fromText(PythonCore core, Object text, String method) {
         if (text instanceof PBytes) {
             return fromText(core, ((PBytes) text).toString());
@@ -92,7 +94,7 @@ public class InternalFormat {
          * @param result destination buffer
          * @param spec parsed conversion specification
          */
-        public Formatter(ParserErrorCallback errors, StringBuilder result, Spec spec) {
+        protected Formatter(ParserErrorCallback errors, StringBuilder result, Spec spec) {
             this.errors = errors;
             this.spec = spec;
             this.result = result;

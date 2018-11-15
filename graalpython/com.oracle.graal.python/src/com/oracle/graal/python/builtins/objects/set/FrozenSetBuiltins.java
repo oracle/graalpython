@@ -136,6 +136,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode = HashingStorageNodes.ContainsKeyNode.create();
 
         @Specialization
+        @TruffleBoundary
         Object run(PBaseSet self, PBaseSet other) {
             if (self.size() > other.size()) {
                 return false;

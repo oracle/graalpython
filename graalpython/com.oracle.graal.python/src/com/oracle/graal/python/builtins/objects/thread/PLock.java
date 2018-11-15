@@ -49,6 +49,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 public final class PLock extends AbstractPythonLock {
     private final Semaphore semaphore;
 
+    @TruffleBoundary
     public PLock(LazyPythonClass cls) {
         super(cls);
         semaphore = new Semaphore(1);
@@ -88,6 +89,7 @@ public final class PLock extends AbstractPythonLock {
     }
 
     @Override
+    @TruffleBoundary
     public boolean locked() {
         return semaphore.availablePermits() == 0;
     }
