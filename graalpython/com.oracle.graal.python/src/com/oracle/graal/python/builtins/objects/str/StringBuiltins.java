@@ -1242,7 +1242,7 @@ public final class StringBuiltins extends PythonBuiltins {
             } catch (IllegalArgumentException e) {
                 throw raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
-                throw raise(UnicodeEncodeError, "%s", e.getMessage());
+                throw raise(UnicodeEncodeError, e);
             }
         }
     }

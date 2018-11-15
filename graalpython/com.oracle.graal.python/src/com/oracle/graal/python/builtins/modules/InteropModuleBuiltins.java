@@ -229,7 +229,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             try {
                 return ForeignAccess.sendRead(readNode, receiver, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.AttributeError, e.getMessage());
+                throw raise(PythonErrorType.AttributeError, e);
             }
         }
     }
@@ -244,7 +244,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             try {
                 return ForeignAccess.sendWrite(writeNode, receiver, key, value);
             } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException e) {
-                throw raise(PythonErrorType.AttributeError, e.getMessage());
+                throw raise(PythonErrorType.AttributeError, e);
             }
         }
     }
@@ -259,7 +259,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             try {
                 return ForeignAccess.sendRemove(removeNode, receiver, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.AttributeError, e.getMessage());
+                throw raise(PythonErrorType.AttributeError, e);
             }
         }
     }
@@ -274,7 +274,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             try {
                 return ForeignAccess.sendExecute(executeNode, receiver, arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
-                throw raise(PythonErrorType.AttributeError, e.getMessage());
+                throw raise(PythonErrorType.AttributeError, e);
             }
         }
     }
@@ -289,7 +289,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             try {
                 return ForeignAccess.sendNew(executeNode, receiver, arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
-                throw raise(PythonErrorType.AttributeError, e.getMessage());
+                throw raise(PythonErrorType.AttributeError, e);
             }
         }
     }
@@ -304,7 +304,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             try {
                 return ForeignAccess.sendInvoke(executeNode, receiver, key, arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException | UnknownIdentifierException e) {
-                throw raise(PythonErrorType.AttributeError, e.getMessage());
+                throw raise(PythonErrorType.AttributeError, e);
             }
         }
     }
@@ -346,7 +346,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             try {
                 return ForeignAccess.sendGetSize(executeNode, receiver);
             } catch (UnsupportedMessageException e) {
-                throw raise(PythonErrorType.TypeError, e.getMessage());
+                throw raise(PythonErrorType.TypeError, e);
             }
         }
     }
@@ -399,7 +399,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             try {
                 return ForeignAccess.sendKeys(executeNode, receiver);
             } catch (UnsupportedMessageException e) {
-                throw raise(PythonErrorType.TypeError, e.getMessage());
+                throw raise(PythonErrorType.TypeError, e);
             }
         }
     }

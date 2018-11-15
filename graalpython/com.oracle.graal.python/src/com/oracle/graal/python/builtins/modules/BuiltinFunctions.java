@@ -1604,7 +1604,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 buf.rewind();
                 return buf.toString();
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.EOFError, e.getMessage());
+                throw raise(PythonBuiltinClassType.EOFError, e);
             }
         }
 

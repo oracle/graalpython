@@ -121,7 +121,7 @@ abstract class AccessForeignItemNodes {
                 mslice = materializeSlice(idxSlice, object, getSizeNode, foreign2PTypeNode);
             } catch (InteropException e) {
                 CompilerDirectives.transferToInterpreter();
-                throw raise(RuntimeError, e.getMessage());
+                throw raise(RuntimeError, e);
             }
             Object[] values = new Object[mslice.length];
             for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
@@ -225,7 +225,7 @@ abstract class AccessForeignItemNodes {
                 return PNone.NONE;
             } catch (InteropException e) {
                 CompilerDirectives.transferToInterpreter();
-                throw raise(RuntimeError, e.getMessage());
+                throw raise(RuntimeError, e);
             }
         }
 
@@ -243,7 +243,7 @@ abstract class AccessForeignItemNodes {
                 return writeForeignValue(object, convertedIdx, convertedValue, foreignWrite, keyInfoNode, hasSizeNode, foreign2PTypeNode);
             } catch (InteropException e) {
                 CompilerDirectives.transferToInterpreter();
-                throw raise(RuntimeError, e.getMessage());
+                throw raise(RuntimeError, e);
             }
         }
 
@@ -283,7 +283,7 @@ abstract class AccessForeignItemNodes {
                 return PNone.NONE;
             } catch (InteropException e) {
                 CompilerDirectives.transferToInterpreter();
-                throw raise(RuntimeError, e.getMessage());
+                throw raise(RuntimeError, e);
             }
         }
 
@@ -298,7 +298,7 @@ abstract class AccessForeignItemNodes {
                 return removeForeignValue(object, convertedIdx, foreignRemove, keyInfoNode, hasSizeNode);
             } catch (InteropException e) {
                 CompilerDirectives.transferToInterpreter();
-                throw raise(RuntimeError, e.getMessage());
+                throw raise(RuntimeError, e);
             }
         }
 

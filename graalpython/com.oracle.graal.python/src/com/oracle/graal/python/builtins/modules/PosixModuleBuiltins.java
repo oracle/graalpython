@@ -587,7 +587,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 return getResources().open(truffleFile, fc);
             } catch (IOException e) {
                 gotException.enter();
-                throw raise(OSError, e.getMessage());
+                throw raise(OSError, e);
             }
         }
 
@@ -659,7 +659,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 return setPosition(pos, how, fc);
             } catch (IOException e) {
                 gotException.enter();
-                throw raise(OSError, e.getMessage());
+                throw raise(OSError, e);
             }
         }
 
@@ -699,7 +699,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     closeChannel(channel);
                 } catch (IOException e) {
                     gotException.enter();
-                    throw raise(OSError, e.getMessage());
+                    throw raise(OSError, e);
                 }
             }
             return PNone.NONE;
@@ -723,7 +723,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 getContext().getEnv().getTruffleFile(path).delete();
             } catch (RuntimeException | IOException e) {
                 gotException.enter();
-                throw raise(OSError, e.getMessage());
+                throw raise(OSError, e);
             }
             return PNone.NONE;
         }
@@ -756,7 +756,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 getContext().getEnv().getTruffleFile(path).createDirectory();
             } catch (RuntimeException | IOException e) {
                 gotException.enter();
-                throw raise(OSError, e.getMessage());
+                throw raise(OSError, e);
             }
             return PNone.NONE;
         }
@@ -781,7 +781,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     return doWriteOp(data, (WritableByteChannel) channel);
                 } catch (NonWritableChannelException | IOException e) {
                     gotException.enter();
-                    throw raise(OSError, e.getMessage());
+                    throw raise(OSError, e);
                 }
             } else {
                 notWritable.enter();
@@ -849,7 +849,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 availableSize = availableSize(channel);
             } catch (IOException e) {
                 gotException.enter();
-                throw raise(OSError, e.getMessage());
+                throw raise(OSError, e);
             }
             if (availableSize > ReadNode.MAX_READ) {
                 availableSize = ReadNode.MAX_READ;
@@ -902,7 +902,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 return readableChannel.read(dst);
             } catch (IOException e) {
                 gotException.enter();
-                throw raise(OSError, e.getMessage());
+                throw raise(OSError, e);
             }
         }
 
@@ -1003,7 +1003,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 truffleFile.setPosixPermissions(permissions);
             } catch (IOException e) {
                 gotException.enter();
-                throw raise(OSError, e.getMessage());
+                throw raise(OSError, e);
             }
             return PNone.NONE;
         }
