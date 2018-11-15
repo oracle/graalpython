@@ -5,6 +5,8 @@
 
 import unittest
 
+import sys
+
 class First():
 
     def __init__(self, value):
@@ -24,48 +26,49 @@ class BasicComparisonTest(unittest.TestCase):
         self.assertIs(x != y, False)
         self.assertIs(x != z, True)
 
-    def test_ne_high_priority(self):
-        """object.__ne__() should allow reflected __ne__() to be tried"""
-        calls = []
+    if (sys.version_info.major >= 3 and sys.version_info.minor >= 5):
+        def test_ne_high_priority(self):
+            """object.__ne__() should allow reflected __ne__() to be tried"""
+            calls = []
 
-        class Left:
-            # Inherits object.__ne__()
-            def __eq__(*args):
-                calls.append('Left.__eq__')
-                return NotImplemented
+            class Left:
+                # Inherits object.__ne__()
+                def __eq__(*args):
+                    calls.append('Left.__eq__')
+                    return NotImplemented
 
-        class Right:
+            class Right:
 
-            def __eq__(*args):
-                calls.append('Right.__eq__')
-                return NotImplemented
+                def __eq__(*args):
+                    calls.append('Right.__eq__')
+                    return NotImplemented
 
-            def __ne__(*args):
-                calls.append('Right.__ne__')
-                return NotImplemented
+                def __ne__(*args):
+                    calls.append('Right.__ne__')
+                    return NotImplemented
 
-        Left() != Right()
-        self.assertSequenceEqual(calls, ['Left.__eq__', 'Right.__ne__'])
+            Left() != Right()
+            self.assertSequenceEqual(calls, ['Left.__eq__', 'Right.__ne__'])
 
-    def test_ne_low_priority(self):
-        """object.__ne__() should not invoke reflected __eq__()"""
-        calls = []
+        def test_ne_low_priority(self):
+            """object.__ne__() should not invoke reflected __eq__()"""
+            calls = []
 
-        class Base:
+            class Base:
 
-            # Inherits object.__ne__()
-            def __eq__(*args):
-                calls.append('Base.__eq__')
-                return NotImplemented
+                # Inherits object.__ne__()
+                def __eq__(*args):
+                    calls.append('Base.__eq__')
+                    return NotImplemented
 
-        class Derived(Base):  # Subclassing forces higher priority
+            class Derived(Base):  # Subclassing forces higher priority
 
-            def __eq__(*args):
-                calls.append('Derived.__eq__')
-                return NotImplemented
-            def __ne__(*args):
-                calls.append('Derived.__ne__')
-                return NotImplemented
+                def __eq__(*args):
+                    calls.append('Derived.__eq__')
+                    return NotImplemented
+                def __ne__(*args):
+                    calls.append('Derived.__ne__')
+                    return NotImplemented
 
-        Base() != Derived()
-        self.assertSequenceEqual(calls, ['Derived.__ne__', 'Base.__eq__'])
+            Base() != Derived()
+            self.assertSequenceEqual(calls, ['Derived.__ne__', 'Base.__eq__'])
