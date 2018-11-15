@@ -244,10 +244,10 @@ public abstract class PythonCallNode extends ExpressionNode {
             return fromForeign.executeConvert(ForeignAccess.sendInvoke(invokeNode, callable.receiver, callable.identifier, arguments));
         } catch (UnknownIdentifierException e) {
             nameError.enter();
-            throw raise(PythonErrorType.NameError, e.getMessage());
+            throw raise(PythonErrorType.NameError, e);
         } catch (ArityException | UnsupportedTypeException e) {
             typeError.enter();
-            throw raise(PythonErrorType.TypeError, e.getMessage());
+            throw raise(PythonErrorType.TypeError, e);
         } catch (UnsupportedMessageException e) {
             invokeError.enter();
             // the interop contract is to revert to READ and then EXECUTE

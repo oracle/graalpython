@@ -30,6 +30,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -177,6 +179,7 @@ public class PZipImporter extends PythonBuiltinObject {
         return fullname;
     }
 
+    @TruffleBoundary
     protected String makeFilename(String fullname) {
         return prefix + getSubname(fullname).replace('.', File.separatorChar);
     }
@@ -185,12 +188,13 @@ public class PZipImporter extends PythonBuiltinObject {
         return (PTuple) files.getItem(filenameAndSuffix);
     }
 
+    @TruffleBoundary
     protected String makePackagePath(String fullname) {
         return archive + SEPARATOR + prefix + getSubname(fullname);
     }
 
     /**
-     * 
+     *
      * @param filenameAndSuffix
      * @return code
      */
@@ -222,6 +226,7 @@ public class PZipImporter extends PythonBuiltinObject {
      * @param fullname the fully qualified name of the module
      * @return the module's information
      */
+    @TruffleBoundary
     protected final ModuleInfo getModuleInfo(String fullname) {
         String path = makeFilename(fullname);
 
@@ -252,6 +257,7 @@ public class PZipImporter extends PythonBuiltinObject {
         return this;
     }
 
+    @TruffleBoundary
     protected final ModuleCodeData getModuleCode(String fullname) {
         String path = makeFilename(fullname);
         String fullPath = makePackagePath(fullname);

@@ -45,6 +45,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
  * Implementation of a map with a memory-efficient structure that always preserves insertion order
@@ -156,6 +157,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         }
     }
 
+    @TruffleBoundary
     private boolean initFrom(Object o) {
         if (o instanceof EconomicMapStorage) {
             EconomicMapStorage otherMap = (EconomicMapStorage) o;
@@ -761,6 +763,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
     }
 
     @Override
+    @TruffleBoundary
     public Iterable<Object> values() {
         return new Iterable<Object>() {
             @Override
@@ -797,6 +800,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
     }
 
     @Override
+    @TruffleBoundary
     public HashingStorage copy(Equivalence eq) {
         return new EconomicMapStorage(this, this.isSet, eq);
     }

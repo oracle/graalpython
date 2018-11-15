@@ -142,6 +142,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class FormatNode extends PythonBinaryBuiltinNode {
 
         @Specialization
+        @TruffleBoundary
         String format(double self, String formatString,
                         @Cached("create()") StrNode strNode,
                         @Cached("createBinaryProfile()") ConditionProfile strProfile,

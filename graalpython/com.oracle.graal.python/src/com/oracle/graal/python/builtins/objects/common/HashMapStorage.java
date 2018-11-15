@@ -104,6 +104,7 @@ public class HashMapStorage extends HashingStorage {
     }
 
     @Override
+    @TruffleBoundary
     public Iterable<Object> keys() {
         ArrayList<Object> keys = new ArrayList<>(map.size());
         for (Object key : map.keySet()) {

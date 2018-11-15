@@ -242,6 +242,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         public abstract String executeObject(Object x);
 
+        @TruffleBoundary
         private static String buildString(boolean isNegative, String number) {
             StringBuilder sb = new StringBuilder();
             if (isNegative) {
@@ -254,7 +255,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public String doL(long x) {
-            return buildString(x < 0, Long.toBinaryString(Math.abs(x)));
+            return buildString(x < 0, longToBinaryString(x));
+        }
+
+        @TruffleBoundary
+        private static String longToBinaryString(long x) {
+            return Long.toBinaryString(Math.abs(x));
         }
 
         @Specialization
@@ -1287,7 +1293,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         append(sb, " ");
                     }
                     append(sb, callStr.executeObject(getItemNode.execute(store, store.length() - 1)));
-                    sb.append(end);
+                    append(sb, end);
                     write(context, sb.toString());
                 }
             } catch (IOException e) {
@@ -1604,7 +1610,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 buf.rewind();
                 return buf.toString();
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.EOFError, e.getMessage());
+                throw raise(PythonBuiltinClassType.EOFError, e);
             }
         }
 

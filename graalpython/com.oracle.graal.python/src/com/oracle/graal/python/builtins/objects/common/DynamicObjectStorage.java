@@ -209,6 +209,11 @@ public abstract class DynamicObjectStorage extends HashingStorage {
             if (super.hasKey(key, DEFAULT_EQIVALENCE)) {
                 return true;
             }
+            return hasKeyNonAttr(key, eq);
+        }
+
+        @TruffleBoundary
+        private boolean hasKeyNonAttr(Object key, Equivalence eq) {
             return nonAttributesStorage.hasKey(key, eq);
         }
 
@@ -226,8 +231,13 @@ public abstract class DynamicObjectStorage extends HashingStorage {
             if (key instanceof String) {
                 super.setItem(key, value, DEFAULT_EQIVALENCE);
             } else {
-                this.nonAttributesStorage.setItem(key, value, eq);
+                setItemNonAttr(key, value, eq);
             }
+        }
+
+        @TruffleBoundary
+        private void setItemNonAttr(Object key, Object value, Equivalence eq) {
+            this.nonAttributesStorage.setItem(key, value, eq);
         }
 
         @Override
@@ -235,10 +245,16 @@ public abstract class DynamicObjectStorage extends HashingStorage {
             if (super.remove(key, DEFAULT_EQIVALENCE)) {
                 return true;
             }
+            return removeNonAttr(key, eq);
+        }
+
+        @TruffleBoundary
+        private boolean removeNonAttr(Object key, Equivalence eq) {
             return this.nonAttributesStorage.remove(key, eq);
         }
 
         @Override
+        @TruffleBoundary
         public Iterable<Object> keys() {
             if (this.nonAttributesStorage.length() == 0) {
                 return super.keys();
@@ -255,6 +271,7 @@ public abstract class DynamicObjectStorage extends HashingStorage {
         }
 
         @Override
+        @TruffleBoundary
         public Iterable<Object> values() {
             if (this.nonAttributesStorage.length() == 0) {
                 return super.values();
@@ -271,6 +288,7 @@ public abstract class DynamicObjectStorage extends HashingStorage {
         }
 
         @Override
+        @TruffleBoundary
         public Iterable<DictEntry> entries() {
             if (this.nonAttributesStorage.length() == 0) {
                 return super.entries();
@@ -289,12 +307,22 @@ public abstract class DynamicObjectStorage extends HashingStorage {
         @Override
         public void clear() {
             super.clear();
+            clearNonAttrs();
+        }
+
+        @TruffleBoundary
+        private void clearNonAttrs() {
             this.nonAttributesStorage.clear();
         }
 
         @Override
         public HashingStorage copy(Equivalence eq) {
-            return new PythonObjectHybridDictStorage(getStore().copy(getStore().getShape()), (EconomicMapStorage) nonAttributesStorage.copy(eq));
+            return new PythonObjectHybridDictStorage(getStore().copy(getStore().getShape()), (EconomicMapStorage) copyNonAttrs(eq));
+        }
+
+        @TruffleBoundary
+        private HashingStorage copyNonAttrs(Equivalence eq) {
+            return nonAttributesStorage.copy(eq);
         }
     }
 }

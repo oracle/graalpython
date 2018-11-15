@@ -53,6 +53,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -88,6 +89,15 @@ public abstract class PNodeWithContext extends Node {
     public final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
         assert format != null;
         throw raise(factory().createBaseException(type, format, arguments));
+    }
+
+    public final PException raise(PythonBuiltinClassType type, Exception e) {
+        throw raise(type, getMessage(e));
+    }
+
+    @TruffleBoundary
+    private static final String getMessage(Exception e) {
+        return e.getMessage();
     }
 
     public final PException raiseIndexError() {

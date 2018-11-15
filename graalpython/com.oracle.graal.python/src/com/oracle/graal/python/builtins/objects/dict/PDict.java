@@ -37,6 +37,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class PDict extends PHashingCollection {
 
@@ -57,10 +58,12 @@ public final class PDict extends PHashingCollection {
         this.dictStorage = (keywords != null) ? KeywordsStorage.create(keywords) : new EmptyStorage();
     }
 
+    @TruffleBoundary
     public Object getItem(Object key) {
         return dictStorage.getItem(key, HashingStorage.getSlowPathEquivalence(key));
     }
 
+    @TruffleBoundary
     public void setItem(Object key, Object value) {
         try {
             dictStorage.setItem(key, value, HashingStorage.getSlowPathEquivalence(key));
@@ -83,6 +86,7 @@ public final class PDict extends PHashingCollection {
         return newDictStorage;
     }
 
+    @TruffleBoundary
     public void update(PDict other) {
         for (DictEntry entry : other.entries()) {
             this.setItem(entry.key, entry.value);

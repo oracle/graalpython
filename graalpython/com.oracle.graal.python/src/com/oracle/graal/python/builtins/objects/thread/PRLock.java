@@ -50,6 +50,7 @@ public final class PRLock extends AbstractPythonLock {
     private class InternalReentrantLock extends ReentrantLock {
         private static final long serialVersionUID = 2531000884985514112L;
 
+        @TruffleBoundary
         long getOwnerId() {
             Thread owner = getOwner();
             if (owner != null) {

@@ -1122,6 +1122,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     return factory().createInt(cls, (int) value);
                 }
             } else {
+                CompilerDirectives.transferToInterpreter();
                 throw new RuntimeException("Not implemented integer with base: " + keywordArg);
             }
         }

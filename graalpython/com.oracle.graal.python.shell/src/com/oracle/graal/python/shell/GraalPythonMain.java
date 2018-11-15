@@ -227,8 +227,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             if (!noSite) {
                 evalInternal(context, "import site\n");
             }
-            System.err.println("Please note: This Python implementation is in the very early stages, " +
-                            "and can run little more than basic benchmarks at this point.");
+            if (!quietFlag) {
+                System.err.println("Please note: This Python implementation is in the very early stages, " +
+                                "and can run little more than basic benchmarks at this point.");
+            }
             consoleHandler.setContext(context);
 
             if (commandString != null || inputFile != null) {

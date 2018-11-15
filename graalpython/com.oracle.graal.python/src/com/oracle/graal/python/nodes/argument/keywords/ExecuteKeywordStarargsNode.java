@@ -78,12 +78,17 @@ public abstract class ExecuteKeywordStarargsNode extends Node {
     PKeyword[] cached(PDict starargs,
                     @Cached("starargs.size()") int cachedLen) {
         PKeyword[] keywords = new PKeyword[starargs.size()];
+        copyKeywords(starargs, cachedLen, keywords);
+        return keywords;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static void copyKeywords(PDict starargs, int cachedLen, PKeyword[] keywords) {
         Iterator<DictEntry> iterator = starargs.entries().iterator();
         for (int i = 0; i < cachedLen; i++) {
             DictEntry entry = iterator.next();
             keywords[i] = new PKeyword((String) entry.getKey(), entry.getValue());
         }
-        return keywords;
     }
 
     protected boolean isKeywordsStorage(HashingStorage storage) {

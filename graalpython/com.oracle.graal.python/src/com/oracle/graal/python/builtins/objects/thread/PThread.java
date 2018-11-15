@@ -60,10 +60,12 @@ public class PThread extends PythonBuiltinObject {
         }
     }
 
+    @TruffleBoundary
     public long getId() {
         return thread.getId();
     }
 
+    @TruffleBoundary
     public String getName() {
         return thread.getName();
     }

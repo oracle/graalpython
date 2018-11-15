@@ -358,6 +358,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"})
+        @TruffleBoundary
         public HashingStorage doSequence(PythonObject iterable, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") FastConstructListNode createListNode,
@@ -1093,6 +1094,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "selfStorage.length() == other.length()")
+        @TruffleBoundary
         boolean doKeywordsString(DynamicObjectStorage selfStorage, DynamicObjectStorage other) {
             if (selfStorage.length() == other.length()) {
                 Iterable<Object> keys = selfStorage.keys();
@@ -1109,6 +1111,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "selfStorage.length() == other.length()")
+        @TruffleBoundary
         boolean doGeneric(HashingStorage selfStorage, HashingStorage other) {
             if (selfStorage.length() == other.length()) {
                 Iterable<Object> keys = selfStorage.keys();
