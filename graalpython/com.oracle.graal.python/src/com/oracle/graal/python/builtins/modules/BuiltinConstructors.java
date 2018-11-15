@@ -1192,8 +1192,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @SuppressWarnings("unused")
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
 
-        public abstract boolean executeWith(Object cls, Object val);
-
         @Specialization
         public boolean boolB(Object cls, boolean arg) {
             return arg;
@@ -1229,9 +1227,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        public static BoolNode create() {
-            return BuiltinConstructorsFactory.BoolNodeFactory.create();
-        }
     }
 
     // list([iterable])

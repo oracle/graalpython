@@ -76,6 +76,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -200,6 +201,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
 
         @Specialization
+        @TruffleBoundary
         public boolean ne(PythonNativeObject self, PythonNativeObject other) {
             return !self.object.equals(other.object);
         }
@@ -207,14 +209,12 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         public Object ne(Object self, Object other,
                         @Cached("create(__EQ__)") LookupAndCallBinaryNode eqNode,
-                        @Cached("create()") BuiltinConstructors.BoolNode boolNode,
-                        @Cached("create()") GetClassNode getClassNode) {
+                        @Cached("createIfFalseNode()") CastToBooleanNode ifFalseNode) {
             Object result = eqNode.executeObject(self, other);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
-
-            return !boolNode.executeWith(getClassNode.execute(result), result);
+            return ifFalseNode.executeWith(result);
         }
     }
 
