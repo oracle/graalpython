@@ -42,6 +42,8 @@ import sys
 
 import array
 
+BIG_NUMBER = 99999937497465632974931
+
 class _NamedIntConstant(int):
     def __new__(cls, value, name):
         self = super(_NamedIntConstant, cls).__new__(cls, value)
@@ -473,12 +475,9 @@ class FromBytesTests(unittest.TestCase):
         self.assertEqual(int.from_bytes(
             array.array('b', b'\xff\x00\x00'), 'big', signed=True), -65536)
 
-    '''
-    TODO This test is commented out until GR-12448 is not fixed. 
     def test_from_memoryview(self):
         self.assertEqual(int.from_bytes(
             memoryview(b'\xff\x00\x00'), 'big', signed=True), -65536)
-    '''
 
     def test_wrong_input(self):
         self.assertRaises(ValueError, int.from_bytes, [256], 'big')
@@ -561,3 +560,153 @@ class FromBytesTests(unittest.TestCase):
                 return iter([10])
 
         self.assertEqual(int.from_bytes(StrangeList([4,5]), 'big'), 3)
+
+class ToBytesTests(unittest.TestCase):
+
+    class MyInt(int):
+        pass 
+
+    def check(self, tests, byteorder, signed=False):
+        for test, expected in tests.items():
+            try:
+                self.assertEqual(
+                    test.to_bytes(len(expected), byteorder, signed=signed), expected)
+            except Exception as err:
+                raise AssertionError(
+                    "failed to convert {0} with byteorder={1} and signed={2}"
+                    .format(test, byteorder, signed)) from err
+
+    def checkPIntSpec(self, tests, byteorder, signed=False):
+        for test, expected in tests.items():
+            try:
+                self.assertEqual(
+                    MyInt(test).to_bytes(len(expected), byteorder, signed=signed), expected)
+            except Exception as err:
+                raise AssertionError(
+                    "failed to convert {0} with byteorder={1} and signed={2}"
+                    .format(test, byteorder, signed)) from err
+
+
+    def test_SignedBitEndian(self):
+        # Convert integers to signed big-endian byte arrays.
+        tests1 = {
+            0: b'\x00',
+            1: b'\x01',
+            -1: b'\xff',
+            -127: b'\x81',
+            -128: b'\x80',
+            -129: b'\xff\x7f',
+            127: b'\x7f',
+            129: b'\x00\x81',
+            -255: b'\xff\x01',
+            -256: b'\xff\x00',
+            255: b'\x00\xff',
+            256: b'\x01\x00',
+            32767: b'\x7f\xff',
+            -32768: b'\xff\x80\x00',
+            65535: b'\x00\xff\xff',
+            -65536: b'\xff\x00\x00',
+            -8388608: b'\x80\x00\x00'
+        }
+        self.check(tests1, 'big', signed=True)
+        self.checkPIntSpec(tests1, 'big', signed=True)
+
+    def test_SignedLittleEndian(self):
+        # Convert integers to signed little-endian byte arrays.
+        tests2 = {
+            0: b'\x00',
+            1: b'\x01',
+            -1: b'\xff',
+            -127: b'\x81',
+            -128: b'\x80',
+            -129: b'\x7f\xff',
+            127: b'\x7f',
+            129: b'\x81\x00',
+            -255: b'\x01\xff',
+            -256: b'\x00\xff',
+            255: b'\xff\x00',
+            256: b'\x00\x01',
+            32767: b'\xff\x7f',
+            -32768: b'\x00\x80',
+            65535: b'\xff\xff\x00',
+            -65536: b'\x00\x00\xff',
+            -8388608: b'\x00\x00\x80'
+        }
+        self.check(tests2, 'little', signed=True)
+        self.checkPIntSpec(tests2, 'little', signed=True)
+ 
+    def test_UnsignedBigEndian(self):
+        # Convert integers to unsigned big-endian byte arrays.
+        tests3 = {
+            0: b'\x00',
+            1: b'\x01',
+            127: b'\x7f',
+            128: b'\x80',
+            255: b'\xff',
+            256: b'\x01\x00',
+            32767: b'\x7f\xff',
+            32768: b'\x80\x00',
+            65535: b'\xff\xff',
+            65536: b'\x01\x00\x00'
+        }
+        self.check(tests3, 'big', signed=False)
+        self.checkPIntSpec(tests3, 'big', signed=False)
+
+    def test_UnsignedLittleEndian(self):
+        # Convert integers to unsigned little-endian byte arrays.
+        tests4 = {
+            0: b'\x00',
+            1: b'\x01',
+            127: b'\x7f',
+            128: b'\x80',
+            255: b'\xff',
+            256: b'\x00\x01',
+            32767: b'\xff\x7f',
+            32768: b'\x00\x80',
+            65535: b'\xff\xff',
+            65536: b'\x00\x00\x01'
+        }
+        self.check(tests4, 'little', signed=False)
+        self.checkPIntSpec(tests4, 'little', signed=False)
+
+    def test_SpecialCases(self):
+        self.assertEqual((0).to_bytes(0, 'big'), b'')
+        self.assertEqual((1).to_bytes(5, 'big'), b'\x00\x00\x00\x00\x01')
+        self.assertEqual((0).to_bytes(5, 'big'), b'\x00\x00\x00\x00\x00')
+        self.assertEqual((-1).to_bytes(5, 'big', signed=True),
+                         b'\xff\xff\xff\xff\xff')
+
+    def test_WrongInput(self):
+        self.assertRaises(OverflowError, (256).to_bytes, 1, 'big', signed=False)
+        self.assertRaises(OverflowError, (256).to_bytes, 1, 'big', signed=True)
+        self.assertRaises(OverflowError, (256).to_bytes, 1, 'little', signed=False)
+        self.assertRaises(OverflowError, (256).to_bytes, 1, 'little', signed=True)
+        self.assertRaises(OverflowError, (-1).to_bytes, 2, 'big', signed=False)
+        self.assertRaises(OverflowError, (-1).to_bytes, 2, 'little', signed=False)
+        self.assertRaises(OverflowError, (1).to_bytes, 0, 'big')
+
+    def test_WrongTypes(self):
+        class MyTest():
+            def __int__(self):
+                return 3
+
+        self.assertRaises(TypeError, (1).to_bytes, MyTest(), 'big')
+
+        class MyTest2():
+            def __int__(self):
+              return 3
+            def __index__(self):
+              return 4
+
+        self.assertEqual((1).to_bytes(MyTest2(), 'big'), b'\x00\x00\x00\x01')
+
+    def test_SubClass(self):
+        class MyTest(int):
+            def __int__(self):
+                return 3
+            def __index__(self):
+                return 4
+        
+        self.assertEqual(MyTest(1).to_bytes(MyTest(10), 'big'), b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01')
+
+
