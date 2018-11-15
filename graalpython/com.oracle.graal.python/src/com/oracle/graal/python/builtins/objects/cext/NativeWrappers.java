@@ -163,11 +163,11 @@ public abstract class NativeWrappers {
 
     public static class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
 
-        public static final byte PRIMITIVE_STATE_BOOL = 0b00000001;
-        public static final byte PRIMITIVE_STATE_BYTE = 0b00000010;
-        public static final byte PRIMITIVE_STATE_INT = 0b00000100;
-        public static final byte PRIMITIVE_STATE_LONG = 0b00001000;
-        public static final byte PRIMITIVE_STATE_DOUBLE = 0b00010000;
+        public static final byte PRIMITIVE_STATE_BOOL = 1 << 0;
+        public static final byte PRIMITIVE_STATE_BYTE = 1 << 1;
+        public static final byte PRIMITIVE_STATE_INT = 1 << 2;
+        public static final byte PRIMITIVE_STATE_LONG = 1 << 3;
+        public static final byte PRIMITIVE_STATE_DOUBLE = 1 << 4;
 
         private final byte state;
         private final long value;
