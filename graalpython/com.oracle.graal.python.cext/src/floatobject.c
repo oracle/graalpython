@@ -16,23 +16,9 @@ typedef enum {
 static float_format_type double_format, float_format;
 static float_format_type detected_double_format, detected_float_format;
 
-UPCALL_ID(PyFloat_FromObject);
+UPCALL_ID(PyFloat_AsDouble);
 double PyFloat_AsDouble(PyObject *op) {
-    if (op == NULL) {
-        PyErr_BadArgument();
-        return -1.0;
-    }
-
-    if (PyFloat_Check(op)) {
-        return PyFloat_AS_DOUBLE(op);
-    }
-
-    op = UPCALL_CEXT_O(_jls_PyFloat_FromObject, native_to_java(op));
-    if (op == NULL) {
-        return -1.0;
-    } else {
-        return PyFloat_AS_DOUBLE(op);
-    }
+    return ((double (*)(void*))_jls_PyFloat_AsDouble)(native_to_java(op));
 }
 
 UPCALL_ID(PyFloat_FromDouble);

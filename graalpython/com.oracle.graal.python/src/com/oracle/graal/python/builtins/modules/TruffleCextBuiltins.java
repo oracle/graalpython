@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBi
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
@@ -773,6 +774,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private Node isBoxedNode;
         @Child private Node unboxNode;
         @Child private GetByteArrayNode getByteArrayNode;
+        @Child private ReadAttributeFromObjectNode readNativeNull;
+
+        protected Object getNativeNull(Object module) {
+            if (readNativeNull == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readNativeNull = insert(ReadAttributeFromObjectNode.create());
+            }
+            Object wrapper = readNativeNull.execute(module, NATIVE_NULL);
+            assert wrapper instanceof PythonNativeNull;
+            return wrapper;
+        }
 
         protected void transformToNative(PException p) {
             NativeBuiltin.transformToNative(getContext(), p);
@@ -1928,8 +1940,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_Register_NULL extends PythonUnaryBuiltinNode {
         @Specialization
         Object doIt(Object object,
-                        @Cached("create()") ReadAttributeFromObjectNode writeAttrNode) {
-            Object wrapper = writeAttrNode.execute(getCore().lookupBuiltinModule("python_cext"), NATIVE_NULL);
+                        @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
+            Object wrapper = readAttrNode.execute(getCore().lookupBuiltinModule("python_cext"), NATIVE_NULL);
             if (wrapper instanceof PythonNativeNull) {
                 ((PythonNativeNull) wrapper).setPtr(object);
             }
@@ -2135,6 +2147,94 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 return factory().createBytes(getByteArray((TruffleObject) object.object));
             }
             throw raise(TypeError, "invalid pointer: %s", object.object);
+        }
+    }
+
+    @Builtin(name = "PyFloat_AsDouble", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyFloat_AsDouble extends NativeBuiltin {
+
+        @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode;
+        @Child private CExtNodes.AsDouble asDoubleNode;
+
+        @Specialization(guards = "!object.isDouble()")
+        double doLongNativeWrapper(PrimitiveNativeWrapper object) {
+            return object.getLong();
+        }
+
+        @Specialization(guards = "object.isDouble()")
+        double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
+            return object.getDouble();
+        }
+
+        @Specialization(rewriteOn = PException.class)
+        double doGeneric(Object object) {
+            if (asPythonObjectNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asPythonObjectNode = insert(CExtNodes.AsPythonObjectNode.create());
+            }
+            if (asDoubleNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asDoubleNode = insert(CExtNodes.AsDouble.create());
+            }
+            return asDoubleNode.execute(asPythonObjectNode.execute(object));
+        }
+
+        @Specialization(replaces = "doGeneric")
+        double doGenericErr(Object object) {
+            try {
+                return doGeneric(object);
+            } catch (PException e) {
+                transformToNative(e);
+                return -1.0;
+            }
+        }
+    }
+
+    @Builtin(name = "PyNumber_Float", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class PyNumber_Float extends NativeBuiltin {
+
+        @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode;
+        @Child private CExtNodes.ToSulongNode toSulongNode;
+        @Child private BuiltinConstructors.FloatNode floatNode;
+
+        @Specialization(guards = "object.isDouble()")
+        Object doDoubleNativeWrapper(@SuppressWarnings("unused") Object module, PrimitiveNativeWrapper object) {
+            return object;
+        }
+
+        @Specialization(guards = "!object.isDouble()")
+        Object doLongNativeWrapper(@SuppressWarnings("unused") Object module, PrimitiveNativeWrapper object,
+                        @Cached("create()") CExtNodes.ToSulongNode primitiveToSulongNode) {
+            return primitiveToSulongNode.execute((double) object.getLong());
+        }
+
+        @Specialization(rewriteOn = PException.class)
+        Object doGeneric(@SuppressWarnings("unused") Object module, Object object) {
+            if (asPythonObjectNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asPythonObjectNode = insert(CExtNodes.AsPythonObjectNode.create());
+            }
+            if (floatNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                floatNode = insert(BuiltinConstructorsFactory.FloatNodeFactory.create(null));
+            }
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(CExtNodes.ToSulongNode.create());
+            }
+            return toSulongNode.execute(floatNode.executeWith(PythonBuiltinClassType.PFloat, asPythonObjectNode.execute(object)));
+        }
+
+        @Specialization(replaces = "doGeneric")
+        Object doGenericErr(Object module, Object object) {
+            try {
+                return doGeneric(module, object);
+            } catch (PException e) {
+                transformToNative(e);
+                return getNativeNull(module);
+            }
         }
     }
 }

@@ -61,12 +61,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.Materializ
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.BoolNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.ByteNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DoubleNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.IntNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.LongNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
@@ -282,7 +277,7 @@ public abstract class CExtNodes {
             PInt boxed = factory().createInt(b);
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
             if (profile.profile(nativeWrapper == null)) {
-                nativeWrapper = BoolNativeWrapper.create(b);
+                nativeWrapper = PrimitiveNativeWrapper.createBool(b);
                 boxed.setNativeWrapper(nativeWrapper);
             }
             return nativeWrapper;
@@ -290,17 +285,17 @@ public abstract class CExtNodes {
 
         @Specialization
         Object doInteger(int i) {
-            return IntNativeWrapper.create(i);
+            return PrimitiveNativeWrapper.createInt(i);
         }
 
         @Specialization
         Object doLong(long l) {
-            return LongNativeWrapper.create(l);
+            return PrimitiveNativeWrapper.createLong(l);
         }
 
         @Specialization
         Object doDouble(double d) {
-            return DoubleNativeWrapper.create(d);
+            return PrimitiveNativeWrapper.createDouble(d);
         }
 
         @Specialization
@@ -383,32 +378,32 @@ public abstract class CExtNodes {
 
         public abstract Object execute(Object value);
 
-        @Specialization
-        boolean doBoolNativeWrapper(BoolNativeWrapper object) {
-            return object.getValue();
+        @Specialization(guards = "object.isBool()")
+        boolean doBoolNativeWrapper(PrimitiveNativeWrapper object) {
+            return object.getBool();
         }
 
-        @Specialization(guards = "!isNative(object)")
-        byte doByteNativeWrapper(ByteNativeWrapper object) {
-            return object.getValue();
+        @Specialization(guards = {"object.isByte()", "!isNative(object)"})
+        byte doByteNativeWrapper(PrimitiveNativeWrapper object) {
+            return object.getByte();
         }
 
-        @Specialization(guards = "!isNative(object)")
-        int doIntNativeWrapper(IntNativeWrapper object) {
-            return object.getValue();
+        @Specialization(guards = {"object.isInt()", "!isNative(object)"})
+        int doIntNativeWrapper(PrimitiveNativeWrapper object) {
+            return object.getInt();
         }
 
-        @Specialization(guards = "!isNative(object)")
-        long doLongNativeWrapper(LongNativeWrapper object) {
-            return object.getValue();
+        @Specialization(guards = {"object.isLong()", "!isNative(object)"})
+        long doLongNativeWrapper(PrimitiveNativeWrapper object) {
+            return object.getLong();
         }
 
-        @Specialization(guards = "!isNative(object)")
-        double doDoubleNativeWrapper(DoubleNativeWrapper object) {
-            return object.getValue();
+        @Specialization(guards = {"object.isDouble()", "!isNative(object)"})
+        double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
+            return object.getDouble();
         }
 
-        @Specialization(guards = {"!isBoolNativeWrapper(object)", "isNative(object)"})
+        @Specialization(guards = {"!object.isBool()", "isNative(object)"})
         Object doPrimitiveNativeWrapper(PrimitiveNativeWrapper object) {
             return getMaterializeNode().execute(object);
         }
@@ -482,10 +477,6 @@ public abstract class CExtNodes {
             return object instanceof PrimitiveNativeWrapper;
         }
 
-        protected static boolean isBoolNativeWrapper(PythonNativeWrapper object) {
-            return object instanceof BoolNativeWrapper;
-        }
-
         protected boolean isForeignObject(TruffleObject obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
             return isForeignClassProfile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.TruffleObject);
         }
@@ -520,9 +511,9 @@ public abstract class CExtNodes {
 
         public abstract Object execute(PythonNativeWrapper object);
 
-        @Specialization(guards = "!isMaterialized(object)")
-        PInt doBoolNativeWrapper(BoolNativeWrapper object) {
-            PInt materializedInt = factory().createInt(object.getValue());
+        @Specialization(guards = {"!isMaterialized(object)", "object.isBool()"})
+        PInt doBoolNativeWrapper(PrimitiveNativeWrapper object) {
+            PInt materializedInt = factory().createInt(object.getBool());
             object.setMaterializedObject(materializedInt);
             if (materializedInt.getNativeWrapper() != null) {
                 object.setNativePointer(materializedInt.getNativeWrapper().getNativePointer());
@@ -532,33 +523,33 @@ public abstract class CExtNodes {
             return materializedInt;
         }
 
-        @Specialization(guards = "!isMaterialized(object)")
-        PInt doByteNativeWrapper(ByteNativeWrapper object) {
-            PInt materializedInt = factory().createInt(object.getValue());
+        @Specialization(guards = {"!isMaterialized(object)", "object.isByte()"})
+        PInt doByteNativeWrapper(PrimitiveNativeWrapper object) {
+            PInt materializedInt = factory().createInt(object.getByte());
             object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
             return materializedInt;
         }
 
-        @Specialization(guards = "!isMaterialized(object)")
-        PInt doIntNativeWrapper(IntNativeWrapper object) {
-            PInt materializedInt = factory().createInt(object.getValue());
+        @Specialization(guards = {"!isMaterialized(object)", "object.isInt()"})
+        PInt doIntNativeWrapper(PrimitiveNativeWrapper object) {
+            PInt materializedInt = factory().createInt(object.getInt());
             object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
             return materializedInt;
         }
 
-        @Specialization(guards = "!isMaterialized(object)")
-        PInt doLongNativeWrapper(LongNativeWrapper object) {
-            PInt materializedInt = factory().createInt(object.getValue());
+        @Specialization(guards = {"!isMaterialized(object)", "object.isLong()"})
+        PInt doLongNativeWrapper(PrimitiveNativeWrapper object) {
+            PInt materializedInt = factory().createInt(object.getLong());
             object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
             return materializedInt;
         }
 
-        @Specialization(guards = "!isMaterialized(object)")
-        PFloat doDoubleNativeWrapper(DoubleNativeWrapper object) {
-            PFloat materializedInt = factory().createFloat(object.getValue());
+        @Specialization(guards = {"!isMaterialized(object)", "object.isDouble()"})
+        PFloat doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
+            PFloat materializedInt = factory().createFloat(object.getDouble());
             object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
             return materializedInt;
@@ -1158,29 +1149,14 @@ public abstract class CExtNodes {
             return value.getValue();
         }
 
-        @Specialization
-        double doBoolNativeWrapper(BoolNativeWrapper object) {
-            return PInt.intValue(object.getValue());
+        @Specialization(guards = "!object.isDouble()")
+        double doLongNativeWrapper(PrimitiveNativeWrapper object) {
+            return object.getLong();
         }
 
-        @Specialization
-        double doByteNativeWrapper(ByteNativeWrapper object) {
-            return object.getValue();
-        }
-
-        @Specialization
-        double doIntNativeWrapper(IntNativeWrapper object) {
-            return object.getValue();
-        }
-
-        @Specialization
-        double doLongNativeWrapper(LongNativeWrapper object) {
-            return object.getValue();
-        }
-
-        @Specialization
-        double doDoubleNativeWrapper(DoubleNativeWrapper object) {
-            return object.getValue();
+        @Specialization(guards = "object.isDouble()")
+        double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
+            return object.getDouble();
         }
 
         // TODO: this should just use the builtin constructor node so we don't duplicate the corner
@@ -1246,24 +1222,14 @@ public abstract class CExtNodes {
             return (long) value.getValue();
         }
 
-        @Specialization
-        long doBoolNativeWrapper(BoolNativeWrapper object) {
-            return PInt.intValue(object.getValue());
+        @Specialization(guards = "!object.isDouble()")
+        long doLongNativeWrapper(PrimitiveNativeWrapper object) {
+            return object.getLong();
         }
 
-        @Specialization
-        long doByteNativeWrapper(ByteNativeWrapper object) {
-            return object.getValue();
-        }
-
-        @Specialization
-        long doIntNativeWrapper(IntNativeWrapper object) {
-            return object.getValue();
-        }
-
-        @Specialization
-        long doLongNativeWrapper(LongNativeWrapper object) {
-            return object.getValue();
+        @Specialization(guards = "object.isDouble()")
+        long doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
+            return (long) object.getDouble();
         }
 
         @Specialization

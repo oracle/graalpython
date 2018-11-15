@@ -197,7 +197,7 @@ PyObject * PyNumber_Long(PyObject *o) {
 
 UPCALL_ID(PyNumber_Float);
 PyObject * PyNumber_Float(PyObject *o) {
-    return UPCALL_CEXT_O(_jls_PyNumber_Float, native_to_java(o));
+    return ((PyObject* (*)(void*))_jls_PyNumber_Float)(native_to_java(o));
 }
 
 UPCALL_ID(PyNumber_Absolute);
