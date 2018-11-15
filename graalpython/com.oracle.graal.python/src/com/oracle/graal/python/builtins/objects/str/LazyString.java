@@ -48,8 +48,22 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class LazyString implements CharSequence {
 
-    protected static int MinLazyStringLength = PythonOptions.getMinLazyStringLength();
-    protected static boolean UseLazyStrings = PythonOptions.useLazyString();
+    protected static final int MinLazyStringLength;
+    protected static final boolean UseLazyStrings;
+    static {
+        boolean useLazyStrings = PythonOptions.LazyStrings.getDefaultValue();
+        int minLazyStringLength = PythonOptions.MinLazyStringLength.getDefaultValue();
+        try {
+            useLazyStrings = PythonOptions.useLazyString();
+            minLazyStringLength = PythonOptions.getMinLazyStringLength();
+        } catch (AssertionError e) {
+            // This can happen e.g. when we build a native image without
+            // a pre-initialized Python context
+            assert e.getMessage().equals("No current context available");
+        }
+        MinLazyStringLength = minLazyStringLength;
+        UseLazyStrings = useLazyStrings;
+    }
 
     public static int length(CharSequence cs, ConditionProfile profile1, ConditionProfile profile2) {
         if (profile1.profile(cs instanceof String)) {
