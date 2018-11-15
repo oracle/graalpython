@@ -54,7 +54,9 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -196,9 +198,23 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
+
         @Specialization
-        public boolean eq(Object self, Object other) {
-            return self != other;
+        public boolean ne(PythonNativeObject self, PythonNativeObject other) {
+            return !self.object.equals(other.object);
+        }
+
+        @Specialization
+        public Object ne(Object self, Object other,
+                        @Cached("create(__EQ__)") LookupAndCallBinaryNode eqNode,
+                        @Cached("create()") BuiltinConstructors.BoolNode boolNode,
+                        @Cached("create()") GetClassNode getClassNode) {
+            Object result = eqNode.executeObject(self, other);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                return result;
+            }
+
+            return !boolNode.executeWith(getClassNode.execute(result), result);
         }
     }
 

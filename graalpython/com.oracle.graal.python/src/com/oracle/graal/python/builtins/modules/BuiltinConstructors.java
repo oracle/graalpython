@@ -1191,6 +1191,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
+
+        public abstract boolean executeWith(Object cls, Object val);
+
         @Specialization
         public boolean boolB(Object cls, boolean arg) {
             return arg;
@@ -1224,6 +1227,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             } catch (UnexpectedResultException ex) {
                 throw raise(PythonErrorType.TypeError, "__bool__ should return bool, returned %p", ex.getResult());
             }
+        }
+
+        public static BoolNode create() {
+            return BuiltinConstructorsFactory.BoolNodeFactory.create();
         }
     }
 

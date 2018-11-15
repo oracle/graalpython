@@ -195,6 +195,7 @@ graalpython/com.oracle.graal.python.test/src/tests/test_call-staticmethod.py,zip
 graalpython/com.oracle.graal.python.test/src/tests/test_call-variable-function.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_class-chain-check.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_codecs.py,python.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_compare.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_enumerate.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_euler11.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_euler31.py,benchmarks.copyright
