@@ -108,9 +108,11 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
@@ -1590,6 +1592,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonClass)
     @GenerateNodeFactory
     public abstract static class TypeNode extends PythonBuiltinNode {
+        private static final long SIZEOF_PY_OBJECT_PTR = 8L;
+        @Child private ReadAttributeFromObjectNode readAttrNode;
+        @Child private WriteAttributeToObjectNode writeAttrNode;
+        @Child private CastToIndexNode castToInt;
+
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
         public Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
@@ -1640,7 +1647,37 @@ public final class BuiltinConstructors extends PythonBuiltins {
             for (DictEntry entry : namespace.entries()) {
                 pythonClass.setAttribute(entry.getKey(), entry.getValue());
             }
+            addDictIfNative(pythonClass);
             return pythonClass;
+        }
+
+        private void addDictIfNative(PythonClass pythonClass) {
+            for (Object cls : pythonClass.getMethodResolutionOrder()) {
+                if (cls instanceof PythonNativeClass) {
+                    if (readAttrNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        readAttrNode = insert(ReadAttributeFromObjectNode.create());
+                        writeAttrNode = insert(WriteAttributeToObjectNode.create());
+                        castToInt = insert(CastToIndexNode.create());
+                    }
+                    long dictoffset = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__DICTOFFSET__));
+                    long basicsize = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__BASICSIZE__));
+                    long itemsize = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__ITEMSIZE__));
+                    if (dictoffset == 0) {
+                        // add_dict
+                        if (itemsize != 0) {
+                            dictoffset = -SIZEOF_PY_OBJECT_PTR;
+                        } else {
+                            dictoffset = basicsize;
+                            basicsize += SIZEOF_PY_OBJECT_PTR;
+                        }
+                    }
+                    writeAttrNode.execute(pythonClass, SpecialAttributeNames.__DICTOFFSET__, dictoffset);
+                    writeAttrNode.execute(pythonClass, SpecialAttributeNames.__BASICSIZE__, basicsize);
+                    writeAttrNode.execute(pythonClass, SpecialAttributeNames.__ITEMSIZE__, itemsize);
+                    break;
+                }
+            }
         }
 
         private PythonClass calculate_metaclass(PythonClass cls, PTuple bases, GetClassNode getMetaclassNode) {

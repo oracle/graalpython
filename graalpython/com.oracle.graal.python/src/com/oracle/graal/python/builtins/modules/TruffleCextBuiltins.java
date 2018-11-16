@@ -529,6 +529,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             PythonNativeClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, qualName, bases);
             writeNode.execute(cclass, SpecialAttributeNames.__DOC__, doc);
             writeNode.execute(cclass, SpecialAttributeNames.__BASICSIZE__, getLongItem(nativeMembers, NativeMemberNames.TP_BASICSIZE));
+            writeNode.execute(cclass, SpecialAttributeNames.__ITEMSIZE__, getLongItem(nativeMembers, NativeMemberNames.TP_ITEMSIZE));
             writeNode.execute(cclass, SpecialAttributeNames.__DICTOFFSET__, getLongItem(nativeMembers, NativeMemberNames.TP_DICTOFFSET));
             String moduleName = getModuleName(fqname);
             if (moduleName != null) {

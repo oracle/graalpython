@@ -98,7 +98,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -467,7 +466,19 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
         Object doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__BASICSIZE__)") LookupInheritedAttributeNode getAttrNode) {
+                        @Cached("create(__BASICSIZE__)") LookupAttributeInMRONode getAttrNode) {
+            return getAttrNode.execute(object);
+        }
+
+        @Specialization(guards = "eq(TP_ITEMSIZE, key)")
+        Object doTpItemsize(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create(__ITEMSIZE__)") LookupAttributeInMRONode getAttrNode) {
+            return getAttrNode.execute(object);
+        }
+
+        @Specialization(guards = "eq(TP_DICTOFFSET, key)")
+        Object doTpDictoffset(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create(__DICTOFFSET__)") LookupAttributeInMRONode getAttrNode) {
             return getAttrNode.execute(object);
         }
 
