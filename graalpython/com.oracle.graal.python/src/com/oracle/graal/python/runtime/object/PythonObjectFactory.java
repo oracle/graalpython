@@ -199,7 +199,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PythonObject(cls, cls.getInstanceShape()));
     }
 
-    public PythonNativeObject createNativeObjectWrapper(Object obj) {
+    public PythonNativeObject createNativeObjectWrapper(TruffleObject obj) {
         return trace(new PythonNativeObject(obj));
     }
 

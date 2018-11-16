@@ -41,14 +41,15 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
  * A simple wrapper around objects created through the Python C API that can be cast to PyObject*.
  */
 public class PythonNativeObject extends PythonAbstractObject {
-    public final Object object;
+    public final TruffleObject object;
 
-    public PythonNativeObject(Object obj) {
+    public PythonNativeObject(TruffleObject obj) {
         object = obj;
     }
 

@@ -64,11 +64,13 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -93,6 +95,11 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -507,6 +514,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     static abstract class DictNode extends PythonBinaryBuiltinNode {
         private final IsBuiltinClassProfile exactObjInstanceProfile = IsBuiltinClassProfile.create();
         private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
+        @Child private Node readNode;
 
         protected boolean isExactObjectInstance(PythonObject self) {
             return exactObjInstanceProfile.profileObject(self, PythonBuiltinClassType.PythonObject);
@@ -532,6 +540,38 @@ public class ObjectBuiltins extends PythonBuiltins {
             self.getDictUnsetOrSameAsStorageAssumption().invalidate();
             self.setDict(dict);
             return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNoValue(none)")
+        Object dict(PythonNativeObject self, @SuppressWarnings("unused") PNone none,
+                        @Cached("create(__DICTOFFSET__)") LookupInheritedAttributeNode getDictoffset,
+                        @Cached("create()") BranchProfile noOffset,
+                        @Cached("create()") BranchProfile wrongType,
+                        @Cached("create()") CExtNodes.ToJavaNode toJava) {
+            Object dictoffset = getDictoffset.execute(self);
+            int offset;
+            if (dictoffset instanceof Long) {
+                offset = ((Long) dictoffset).intValue();
+            } else if (dictoffset instanceof Integer) {
+                offset = (Integer) dictoffset;
+            } else if (dictoffset instanceof PInt) {
+                offset = ((PInt) dictoffset).intValue();
+            } else if (dictoffset instanceof PNone) {
+                noOffset.enter();
+                throw raise(AttributeError, "'%p' object has no attribute '__dict__'", self);
+            } else {
+                wrongType.enter();
+                throw raise(TypeError, "tp_dictoffset of native type is not an integer, got '%p'", dictoffset);
+            }
+            if (readNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readNode = insert(Message.READ.createNode());
+            }
+            try {
+                return toJava.execute(ForeignAccess.sendRead(readNode, self.object, offset));
+            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                throw raise(AttributeError, "'%p' object has no native '__dict__'", self);
+            }
         }
 
         @Fallback

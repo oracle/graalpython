@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTe
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
@@ -522,13 +523,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             }
 
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String fqname = getStringItem(nativeMembers, "tp_name");
-            String doc = getStringItem(nativeMembers, "tp_doc");
+            String fqname = getStringItem(nativeMembers, NativeMemberNames.TP_NAME);
+            String doc = getStringItem(nativeMembers, NativeMemberNames.TP_DOC);
             // the qualified name (i.e. without module name) like 'A.B...'
             String qualName = getQualName(fqname);
             PythonNativeClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, qualName, bases);
             writeNode.execute(cclass, SpecialAttributeNames.__DOC__, doc);
-            writeNode.execute(cclass, SpecialAttributeNames.__BASICSIZE__, getLongItem(nativeMembers, "tp_basicsize"));
+            writeNode.execute(cclass, SpecialAttributeNames.__BASICSIZE__, getLongItem(nativeMembers, NativeMemberNames.TP_BASICSIZE));
+            writeNode.execute(cclass, SpecialAttributeNames.__DICTOFFSET__, getLongItem(nativeMembers, NativeMemberNames.TP_DICTOFFSET));
             String moduleName = getModuleName(fqname);
             if (moduleName != null) {
                 writeNode.execute(cclass, SpecialAttributeNames.__MODULE__, moduleName);
