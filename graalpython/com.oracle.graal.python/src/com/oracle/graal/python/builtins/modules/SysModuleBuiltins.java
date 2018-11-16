@@ -174,6 +174,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         2,                      // FLT_RADIX
                         1                       // FLT_ROUNDS
         }));
+        builtinConstants.put("maxunicode", Character.MAX_CODE_POINT);
 
         String os = getPythonOSName();
         builtinConstants.put("platform", os);
