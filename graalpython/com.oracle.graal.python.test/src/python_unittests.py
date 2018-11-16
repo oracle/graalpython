@@ -158,16 +158,16 @@ def run_unittests(unittests, timeout):
         try:
             _, output = res.get(timeout)
             out.append(output)
-            log("[PROGRESS] {} / {}, \t\t {}%", i, num_unittests, int((i * 100.0) / num_unittests))
         except TimeoutError:
             log("[ERR] timeout while getting results for {}, skipping!", unittests[i])
             timed_out.append(unittests[i])
+        log("[PROGRESS] {} / {}: \t {}%", i+1, num_unittests, int(((i+1) * 100.0) / num_unittests))
 
     log("".join(['-' for i in range(120)]))
     for t in timed_out:
         log("[TIMEOUT] skipped: {}", t)
     log("".join(['-' for i in range(120)]))
-
+    log("[STATS] processed {} out of {} unitttests", num_unittests - len(timed_out), num_unittests)
     pool.terminate()
     pool.join()
     return out
