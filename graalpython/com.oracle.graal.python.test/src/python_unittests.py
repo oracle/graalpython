@@ -44,7 +44,7 @@ import re
 import subprocess
 from collections import defaultdict
 from json import dumps
-from multiprocessing import Pool
+from multiprocessing import Pool, TimeoutError
 from pprint import pformat
 
 import argparse
@@ -136,19 +136,41 @@ def _run_unittest(test_path):
     return success, output
 
 
-def run_unittests(unittests):
+TIMEOUT = 60 * 20  # 20 mins per unittest wait time max ...
+
+
+def run_unittests(unittests, timeout):
     assert isinstance(unittests, (list, tuple))
     num_unittests = len(unittests)
     log("[EXEC] running {} unittests ... ", num_unittests)
+    log("[EXEC] timeout per unittest: {} seconds", timeout)
     results = []
 
     pool = Pool()
     for ut in unittests:
         results.append(pool.apply_async(_run_unittest, args=(ut, )))
     pool.close()
-    pool.join()
 
-    return [res.get()[1] for res in results]
+    log("[INFO] collect results ... ")
+    out = []
+    timed_out = []
+    for i, res in enumerate(results):
+        try:
+            _, output = res.get(timeout)
+            out.append(output)
+            log("[PROGRESS] {} / {}, \t\t {}%", i, num_unittests, int((i * 100.0) / num_unittests))
+        except TimeoutError:
+            log("[ERR] timeout while getting results for {}, skipping!", unittests[i])
+            timed_out.append(unittests[i])
+
+    log("".join(['-' for i in range(120)]))
+    for t in timed_out:
+        log("[TIMEOUT] skipped: {}", t)
+    log("".join(['-' for i in range(120)]))
+
+    pool.terminate()
+    pool.join()
+    return out
 
 
 def get_unittests(base_tests_path, limit=None, sort=True, skip_tests=None):
@@ -628,6 +650,7 @@ def main(prog, args):
     parser.add_argument("-v", "--verbose", help="Verbose output.", action="store_true")
     parser.add_argument("-l", "--limit", help="Limit the number of unittests to run.", default=None, type=int)
     parser.add_argument("-t", "--tests_path", help="Unittests path.", default=PATH_UNITTESTS)
+    parser.add_argument("-T", "--timeout", help="Timeout per unittest run.", default=TIMEOUT, type=int)
     parser.add_argument("-o", "--only_tests", help="Run only these unittests (comma sep values).", default=None)
     parser.add_argument("-s", "--skip_tests", help="Run all unittests except (comma sep values)."
                                                    "the only_tets option takes precedence", default=None)
@@ -656,7 +679,7 @@ def main(prog, args):
         skip_tests = set([_fmt(test) for test in flags.skip_tests.split(",")]) if flags.skip_tests else None
         unittests = get_unittests(flags.tests_path, limit=flags.limit, skip_tests=skip_tests)
 
-    results = run_unittests(unittests)
+    results = run_unittests(unittests, flags.timeout)
     txt_report_path = file_name(TXT_RESULTS_NAME, current_date)
     output = save_as_txt(txt_report_path, results)
 
