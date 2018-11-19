@@ -626,7 +626,13 @@ public class PythonMessageResolution {
                 return false;
             } else if (getIsSequenceNode().execute(profiled)) {
                 // also try to access using an integer index
-                int len = (int) getUnboxNode().execute(getLenNode().executeWith(profiled));
+                Object size = getUnboxNode().execute(getLenNode().executeWith(profiled));
+                int len = 0;
+                if (size instanceof Integer) {
+                    len = (int) size;
+                } else if (size instanceof Long) {
+                    len = ((Long) size).intValue();
+                }
                 if (len > 0) {
                     try {
                         getCallGetItemNode().executeObject(profiled, 0);
