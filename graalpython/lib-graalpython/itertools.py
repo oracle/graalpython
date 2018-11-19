@@ -418,3 +418,30 @@ class filterfalse(object):
             n = next(self.iterator)
             if not self.func(n):
                 return n
+
+class takewhile(object):
+    """Make an iterator that returns elements from the iterable as
+    long as the predicate is true.
+
+    Equivalent to :
+    
+    def takewhile(predicate, iterable):
+        for x in iterable:
+            if predicate(x):
+                yield x
+            else:
+                break
+    """
+    def __init__(self, predicate, iterable):
+        self._predicate = predicate
+        self._iter = iter(iterable)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        value = next(self._iter)
+        if not self._predicate(value):
+            self._iter = iter([])
+            raise StopIteration()
+        return value
