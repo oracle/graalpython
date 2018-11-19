@@ -1215,6 +1215,11 @@ public abstract class CExtNodes {
 
         public abstract long execute(Object arg);
 
+        @Specialization(guards = "value.length() == 1")
+        long run(String value) {
+            return value.charAt(0);
+        }
+
         @Specialization
         long run(boolean value) {
             return value ? 1 : 0;
