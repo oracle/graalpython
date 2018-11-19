@@ -62,8 +62,14 @@ class chain():
             return next(self._current)
         except (StopIteration, IndexError):
             self._idx += 1
+            if self._idx >= self._len:
+                raise StopIteration
             self._current = iter(self._iterables[self._idx])
             return self.__next__()
+
+    @classmethod
+    def from_iterable(cls, arg):
+        return cls(*iter(arg))
 
 
 class starmap():
