@@ -37,6 +37,7 @@ import org.graalvm.options.OptionDescriptors;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -313,6 +314,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (value != null) {
             if (value instanceof PythonObject) {
                 return ((PythonObject) value).asPythonClass();
+            } else if (value instanceof PythonNativeObject) {
+                return null;
             } else if (value instanceof PythonAbstractObject ||
                             value instanceof Number ||
                             value instanceof String ||
