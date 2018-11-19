@@ -562,6 +562,13 @@ public class PythonObjectNativeWrapperMR {
             return new PyUnicodeState(object);
         }
 
+        @Specialization(guards = "eq(UNICODE_HASH, key)")
+        @TruffleBoundary
+        long doUnicodeHash(PString object, @SuppressWarnings("unused") String key) {
+            // TODO also support bare 'String' ?
+            return object.hashCode();
+        }
+
         @Specialization(guards = "eq(MD_DICT, key)")
         Object doMdDict(Object object, @SuppressWarnings("unused") String key,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getDictNode) {
