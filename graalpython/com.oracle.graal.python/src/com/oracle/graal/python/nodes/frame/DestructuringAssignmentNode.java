@@ -42,6 +42,7 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNodeGen;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -173,7 +174,11 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
             }
         } catch (PException e) {
             if (notEnoughValuesProfile.profileException(e, IndexError)) {
-                throw raise(ValueError, "not enough values to unpack");
+                if (lenNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    lenNode = insert(BuiltinFunctionsFactory.LenNodeFactory.create());
+                }
+                throw raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, lenNode.executeWith(rhsValue));
             } else {
                 throw e;
             }
