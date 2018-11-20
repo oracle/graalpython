@@ -67,9 +67,11 @@ import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryIfNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
+import com.oracle.graal.python.nodes.frame.DeleteNameNode;
 import com.oracle.graal.python.nodes.frame.DestructuringAssignmentNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
+import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.frame.WriteLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
@@ -422,6 +424,10 @@ public class NodeFactory {
         return DeleteGlobalNode.create(attributeId);
     }
 
+    public StatementNode createDeleteName(String attributeId) {
+        return DeleteNameNode.create(attributeId);
+    }
+
     public ExpressionNode createSlice(ExpressionNode lower, ExpressionNode upper, ExpressionNode step) {
         return SliceLiteralNode.create(lower, upper, step);
     }
@@ -460,6 +466,10 @@ public class NodeFactory {
 
     public ExpressionNode createReadGlobalOrBuiltinScope(String attributeId) {
         return ReadGlobalOrBuiltinNode.create(attributeId);
+    }
+
+    public ReadNode createLoadName(String name) {
+        return ReadNameNode.create(name);
     }
 
     public ExpressionNode createBooleanLiteral(boolean value) {

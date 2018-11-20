@@ -116,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
+import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
@@ -180,6 +181,7 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.Source;
@@ -607,29 +609,78 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = EXEC, fixedNumOfPositionalArgs = 1, parameterNames = {"source"}, keywordArguments = {"globals", "locals"})
     @GenerateNodeFactory
     abstract static class ExecNode extends PythonBuiltinNode {
+        private final BranchProfile hasFreeVars = BranchProfile.create();
         @Child CompileNode compileNode = CompileNode.create();
         @Child IndirectCallNode indirectCallNode = IndirectCallNode.create();
 
-        @Specialization(guards = {"isNoValue(globals)", "isNoValue(locals)"})
-        PNone execDefault(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
+        private void assertNoFreeVars(PCode code) {
+            RootNode rootNode = code.getRootNode();
+            if (rootNode instanceof PClosureRootNode && ((PClosureRootNode) rootNode).hasFreeVars()) {
+                hasFreeVars.enter();
+                throw raise(PythonBuiltinClassType.TypeError, "code object passed to exec() may not contain free variables");
+            }
+        }
+
+        @Specialization(guards = {"isNoValue(globals) || isNone(globals)", "isNoValue(locals) || isNone(locals)"})
+        PNone execInheritGlobalsInheritLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
                         @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
-            PCode code = compileNode.execute(source, "exec", "exec", 0, false, -1);
+            PCode code = createAndCheckCode(source);
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             Object[] args = PArguments.create();
-            PArguments.setGlobals(args, PArguments.getGlobals(callerFrame));
-            PArguments.setClosure(args, PArguments.getClosure(callerFrame));
+            inheritGlobals(callerFrame, args);
+            inheritLocals(callerFrame, args);
             indirectCallNode.call(code.getRootCallTarget(), args);
             return PNone.NO_VALUE;
         }
 
-        @Specialization(guards = {"isNoValue(locals)"})
-        PNone execDefault(Object source, PDict globals, @SuppressWarnings("unused") PNone locals) {
+        private PCode createAndCheckCode(Object source) {
             PCode code = compileNode.execute(source, "exec", "exec", 0, false, -1);
+            assertNoFreeVars(code);
+            return code;
+        }
+
+        private static void inheritGlobals(Frame callerFrame, Object[] args) {
+            PArguments.setGlobals(args, PArguments.getGlobals(callerFrame));
+        }
+
+        private void inheritLocals(Frame callerFrame, Object[] args) {
+            PFrame pFrame = PArguments.getPFrame(callerFrame);
+            if (pFrame == null) {
+                pFrame = factory().createPFrame(callerFrame);
+                PArguments.setPFrame(callerFrame, pFrame);
+            }
+            PDict callerLocals = pFrame.getLocals(factory());
+            PArguments.setSpecialArgument(args, callerLocals);
+        }
+
+        @Specialization(guards = {"isNoValue(locals) || isNone(locals)"})
+        PNone execCustomGlobalsGlobalLocals(Object source, PDict globals, @SuppressWarnings("unused") PNone locals) {
+            PCode code = createAndCheckCode(source);
             Object[] args = PArguments.create();
             PArguments.setGlobals(args, globals);
-            PArguments.setPFrame(args, factory().createPFrame(globals));
-            // If locals are not given, they default to the globals, so we don't need the caller
-            // frame's closure at all
+            PArguments.setSpecialArgument(args, globals);
+            indirectCallNode.call(code.getRootCallTarget(), args);
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = {"isNone(globals)", "!isNoValue(locals)", "!isNone(locals)"})
+        PNone execInheritGlobalsCustomLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, Object locals,
+                        @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
+            PCode code = createAndCheckCode(source);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
+            Object[] args = PArguments.create();
+            inheritGlobals(callerFrame, args);
+            PArguments.setSpecialArgument(args, locals);
+            indirectCallNode.call(code.getRootCallTarget(), args);
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = {"!isNoValue(locals)", "!isNone(locals)"})
+        PNone execCustomGlobalsCustomLocals(Object source, PDict globals, Object locals) {
+            PCode code = createAndCheckCode(source);
+            Object[] args = PArguments.create();
+            PArguments.setGlobals(args, globals);
+            PArguments.setSpecialArgument(args, locals);
             indirectCallNode.call(code.getRootCallTarget(), args);
             return PNone.NO_VALUE;
         }

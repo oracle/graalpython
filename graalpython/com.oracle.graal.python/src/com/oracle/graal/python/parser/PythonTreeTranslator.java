@@ -71,6 +71,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
+import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
@@ -1093,6 +1094,9 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         } else if (target instanceof ReadGlobalOrBuiltinNode) {
             ReadGlobalOrBuiltinNode readGlobalOrBuiltin = (ReadGlobalOrBuiltinNode) target;
             blockList.add(factory.createDeleteGlobal(readGlobalOrBuiltin.getAttributeId()));
+        } else if (target instanceof ReadNameNode) {
+            ReadNameNode readName = (ReadNameNode) target;
+            blockList.add(factory.createDeleteName(readName.getAttributeId()));
         } else if (target instanceof TupleLiteralNode) {
             for (PNode targetValue : ((TupleLiteralNode) target).getValues()) {
                 delTarget(blockList, targetValue);

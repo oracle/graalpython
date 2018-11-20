@@ -305,7 +305,7 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
             FrameSlot cellSlot = currentScope.findFrameSlot(name);
             return (ReadNode) factory.createReadLocalCell(cellSlot, true);
         }
-        return findVariableInGlobalOrBuiltinScope(name);
+        return factory.createLoadName(name);
     }
 
     private ReadNode findVariableInGlobalOrBuiltinScope(String name) {

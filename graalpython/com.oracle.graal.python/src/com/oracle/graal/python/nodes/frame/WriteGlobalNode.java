@@ -60,8 +60,8 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
         this.attributeId = attributeId;
     }
 
-    public static WriteGlobalNode create() {
-        return create(null, null);
+    public static WriteGlobalNode create(String attributeId) {
+        return create(attributeId, null);
     }
 
     public static WriteGlobalNode create(String attributeId, ExpressionNode rhs) {
