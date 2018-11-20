@@ -274,12 +274,12 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"isNoValue(iterable)", "isEmpty(kwargs)"})
-        public HashingStorage doEmpty(@SuppressWarnings("unused") Object iterable, @SuppressWarnings("unused") PKeyword[] kwargs) {
+        public HashingStorage doEmpty(@SuppressWarnings("unused") PNone iterable, @SuppressWarnings("unused") PKeyword[] kwargs) {
             return new EmptyStorage();
         }
 
         @Specialization(guards = {"isNoValue(iterable)", "!isEmpty(kwargs)"})
-        public HashingStorage doKeywords(@SuppressWarnings("unused") Object iterable, PKeyword[] kwargs) {
+        public HashingStorage doKeywords(@SuppressWarnings("unused") PNone iterable, PKeyword[] kwargs) {
             return new KeywordsStorage(kwargs);
         }
 
@@ -295,25 +295,25 @@ public abstract class HashingStorageNodes {
             return lookupKeysAttributeNode.execute(o) != PNone.NO_VALUE;
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "isEmpty(kwargs)"})
-        public HashingStorage doPDict(PDict iterable, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            return iterable.getDictStorage().copy(HashingStorage.DEFAULT_EQIVALENCE);
+        @Specialization(guards = "isEmpty(kwargs)")
+        public HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs) {
+            return dictLike.getDictStorage().copy(HashingStorage.DEFAULT_EQIVALENCE);
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "!isEmpty(kwargs)"}, rewriteOn = HashingStorage.UnmodifiableStorageException.class)
-        public HashingStorage doPDictKwargs(PDict iterable, PKeyword[] kwargs,
+        @Specialization(guards = "!isEmpty(kwargs)", rewriteOn = HashingStorage.UnmodifiableStorageException.class)
+        public HashingStorage doPDictKwargs(PHashingCollection iterable, PKeyword[] kwargs,
                         @Cached("create()") UnionNode unionNode) {
             return unionNode.execute(iterable.getDictStorage(), new KeywordsStorage(kwargs));
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "!isEmpty(kwargs)"})
+        @Specialization(guards = "!isEmpty(kwargs)")
         public HashingStorage doPDictKwargs(PDict iterable, PKeyword[] kwargs) {
             HashingStorage dictStorage = iterable.getDictStorage().copy(HashingStorage.DEFAULT_EQIVALENCE);
             dictStorage.addAll(new KeywordsStorage(kwargs));
             return dictStorage;
         }
 
-        @Specialization(guards = {"!isNoValue(mapping)", "!isPDict(mapping)", "hasKeysAttribute(mapping)"})
+        @Specialization(guards = {"!isPDict(mapping)", "hasKeysAttribute(mapping)"})
         public HashingStorage doMapping(PythonObject mapping, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
