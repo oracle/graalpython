@@ -597,6 +597,13 @@ public abstract class CExtNodes {
         @CompilationFinal private TruffleObject nativeToJavaFunction;
         @CompilationFinal private TruffleObject nativePointerToJavaFunction;
 
+        /**
+         * This should be set to {@code true} if the target of a value assignment is known to be a
+         * {@code PyObject*}. For example, if native code assigns to
+         * {@code ((PyTupleObject*)obj)->ob_item[i] = val} where {@code ob_item} is of type
+         * {@code PyObject**}, then we know that {@code val} should be interpreted as pointer and
+         * must point to a full Python object.
+         */
         private final boolean forcePointer;
 
         protected ToJavaNode(boolean forcePointer) {
@@ -680,7 +687,7 @@ public abstract class CExtNodes {
         }
 
         public static ToJavaNode create() {
-            return ToJavaNodeGen.create(false);
+            return ToJavaNodeGen.create(true);
         }
 
         public static ToJavaNode create(boolean forcePointer) {
