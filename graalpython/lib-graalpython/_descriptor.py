@@ -46,13 +46,21 @@ def make_named_tuple_class(name, fields):
     class named_tuple(tuple):
         __name__ = name
         n_sequence_fields = len(fields)
+        fields = fields
 
         def __str__(self):
             return self.__repr__()
 
         def __repr__(self):
-            return "%s%s" % (name, tuple.__repr__(self))
-
+            sb = [name, "("]
+            for f in fields:
+                sb.append(f)
+                sb.append("=")
+                sb.append(repr(getattr(self, f)))
+                sb.append(", ")
+            sb.pop()
+            sb.append(")")
+            return "".join(sb)
 
     def _define_named_tuple_methods():
         for i, name in enumerate(fields):

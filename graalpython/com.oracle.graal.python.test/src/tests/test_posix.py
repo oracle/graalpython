@@ -37,102 +37,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from _descriptor import make_named_tuple_class
-
-stat_result = make_named_tuple_class("stat_result", [
-    "st_mode", "st_ino", "st_dev", "st_nlink",
-    "st_uid", "st_gid", "st_size", "st_atime",
-    "st_mtime", "st_ctime"
-])
-old_stat = stat
+import unittest
 
 
-@__builtin__
-def stat(filename):
-    return stat_result(old_stat(filename))
-
-
-@__builtin__
-def lstat(filename):
-    return stat_result(old_stat(filename, False))
-
-
-old_fstat = fstat
-
-
-@__builtin__
-def fstat(fd):
-    return stat_result(old_fstat(fd))
-
-
-@__builtin__
-def fspath(path):
-    """Return the file system path representation of the object.
-
-    If the object is str or bytes, then allow it to pass through as-is. If the
-    object defines __fspath__(), then return the result of that method. All other
-    types raise a TypeError."""
-    if isinstance(path, str) or isinstance(path, bytes):
-        return path
-    __fspath__ = getattr(path, "__fspath__", None)
-    if __fspath__:
-        return __fspath__()
-    else:
-        raise TypeError("expected str, bytes or os.PathLike object, not object")
-
-
-class ScandirIterator:
-    def __init__(self, it):
-        self.__delegate = it
-
-    def __iter__(self):
-        return self.__delegate.__iter__()
-
-    def __next__(self):
-        return self.__delegate.__next__()
-
-
-@__builtin__
-def scandir(path):
-    return ScandirIterator(iter(listdir(path)))
-
-
-@__builtin__
-def WIFSIGNALED(status):
-    return status > 128
-
-
-@__builtin__
-def WIFEXITED(status):
-    return not WIFSIGNALED(status)
-
-
-@__builtin__
-def WTERMSIG(status):
-    return status - 128
-
-
-@__builtin__
-def WEXITSTATUS(status):
-    return status & 127
-
-
-@__builtin__
-def WIFSTOPPED(status):
-    return False
-
-
-@__builtin__
-def WSTOPSIG(status):
-    return 0
-
-
-uname_result = make_named_tuple_class("posix.uname_result", [
-    "sysname", "nodename", "release", "version", "machine"
-])
-old_uname = uname
-
-
-@__builtin__
-def uname():
-    return uname_result(old_uname())
+class PosixTests(unittest.TestCase):
+    def test_uname(self):
+        # just like cpython, a simple smoke test
+        import posix
+        uname = posix.uname()
+        self.assertRaises(TypeError, lambda: posix.uname(1))
+        self.assertIsNotNone(uname.sysname)
+        self.assertIsNotNone(uname.nodename)
+        self.assertIsNotNone(uname.release)
+        self.assertIsNotNone(uname.version)
+        self.assertIsNotNone(uname.machine)

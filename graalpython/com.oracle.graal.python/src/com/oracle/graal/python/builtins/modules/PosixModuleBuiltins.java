@@ -37,6 +37,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ProcessBuilder.Redirect;
 import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.nio.channels.NonWritableChannelException;
@@ -1364,6 +1366,32 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             // sign may introduce an extra byte
             byte[] range = Arrays.copyOfRange(bigInteger.toByteArray(), 0, size);
             return factory().createBytes(range);
+        }
+    }
+
+    @Builtin(name = "uname", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class UnameNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary(allowInlining = true)
+        PTuple uname() {
+            String sysname = System.getProperty("os.name", "");
+            String nodename = "";
+            try {
+                InetAddress addr;
+                addr = InetAddress.getLocalHost();
+                nodename = addr.getHostName();
+            } catch (UnknownHostException | SecurityException ex) {
+            }
+            String release = System.getProperty("os.version", "");
+            String version = "";
+            String machine = System.getProperty("os.arch", "");
+            if (machine.equals("amd64")) {
+                // be compatible with CPython's designation
+                machine = "x86_64";
+            }
+            return factory().createTuple(new Object[]{sysname, nodename, release, version, machine});
         }
     }
 }

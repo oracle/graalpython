@@ -127,6 +127,11 @@ class TestCase(object):
             msg = "Expected '%r' to be None" % value
         assert value is None, msg
 
+    def assertIsNotNone(self, value, msg=""):
+        if not msg:
+            msg = "Expected '%r' to not be None" % value
+        assert value is not None, msg
+
     def assertIs(self, actual, expected, msg=""):
         if not msg:
             msg = "Expected '%r' to be '%r'" % (actual, expected)
