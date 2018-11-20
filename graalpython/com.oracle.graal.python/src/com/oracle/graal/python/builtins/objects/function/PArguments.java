@@ -148,7 +148,11 @@ public final class PArguments {
     }
 
     public static void setPFrame(Frame frame, PFrame pFrame) {
-        ((PFrame[]) frame.getArguments()[INDEX_PFRAME_ARGUMENT])[0] = pFrame;
+        setPFrame(frame.getArguments(), pFrame);
+    }
+
+    public static void setPFrame(Object[] args, PFrame pFrame) {
+        ((PFrame[]) args[INDEX_PFRAME_ARGUMENT])[0] = pFrame;
     }
 
     public static PFrame getPFrame(Frame frame) {

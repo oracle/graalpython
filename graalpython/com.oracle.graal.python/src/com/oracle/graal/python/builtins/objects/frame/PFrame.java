@@ -76,6 +76,16 @@ public final class PFrame extends PythonBuiltinObject {
         this.inClassScope = PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
     }
 
+    public PFrame(LazyPythonClass cls, PDict locals) {
+        super(cls);
+        this.exception = null;
+        this.index = -1;
+        this.frame = null;
+        this.location = null;
+        this.inClassScope = false;
+        this.localsDict = locals;
+    }
+
     public PFrame(LazyPythonClass cls, PBaseException exception, int index) {
         super(cls);
         this.exception = exception;
@@ -151,8 +161,11 @@ public final class PFrame extends PythonBuiltinObject {
                 }
             }
             return localsDict;
+        } else if (localsDict != null) {
+            return localsDict;
+        } else {
+            return factory.createDict();
         }
-        return factory.createDict();
     }
 
     /**

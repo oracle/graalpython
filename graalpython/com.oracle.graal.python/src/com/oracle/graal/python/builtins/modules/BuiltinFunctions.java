@@ -627,6 +627,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PCode code = compileNode.execute(source, "exec", "exec", 0, false, -1);
             Object[] args = PArguments.create();
             PArguments.setGlobals(args, globals);
+            PArguments.setPFrame(args, factory().createPFrame(globals));
             // If locals are not given, they default to the globals, so we don't need the caller
             // frame's closure at all
             indirectCallNode.call(code.getRootCallTarget(), args);
