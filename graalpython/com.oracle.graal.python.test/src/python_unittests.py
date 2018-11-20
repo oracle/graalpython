@@ -72,7 +72,7 @@ PTRN_OK = re.compile(
     r'^OK \((failures=(?P<failures>\d+))?(, )?(errors=(?P<errors>\d+))?(, )?(skipped=(?P<skipped>\d+))?\)$')
 PTRN_JAVA_EXCEPTION = re.compile(r'^(?P<exception>com\.oracle\.[^:]*):(?P<message>.*)')
 PTRN_MODULE_NOT_FOUND = re.compile(r'.*ModuleNotFound: \'(?P<module>.*)\'\..*', re.DOTALL)
-
+PTRN_IMPORT_ERROR = re.compile(r".*cannot import name \'(?P<module>.*)\'.*", re.DOTALL)
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -279,11 +279,14 @@ def process_output(output_lines):
 # python  error processing
 #
 # ----------------------------------------------------------------------------------------------------------------------
-def process_errors(unittests, error_messages, error=None, msg_processor=None):
+def process_errors(unittests, error_messages, err=None, msg_processor=None):
+    if isinstance(err, str):
+        err = {err,}
+
     def _err_filter(item):
-        if not error:
+        if not err:
             return True
-        return item[0] == error
+        return item[0] in err
 
     def _processor(msg):
         if not msg_processor:
@@ -301,6 +304,11 @@ def process_errors(unittests, error_messages, error=None, msg_processor=None):
 
 def get_missing_module(msg):
     match = re.match(PTRN_MODULE_NOT_FOUND, msg)
+    return match.group('module') if match else None
+
+
+def get_cannot_import_module(msg):
+    match = re.match(PTRN_IMPORT_ERROR, msg)
     return match.group('module') if match else None
 
 
@@ -499,7 +507,7 @@ HTML_TEMPLATE = '''
 '''
 
 
-def save_as_html(report_name, rows, totals, missing_modules, java_issues, current_date):
+def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modules, java_issues, current_date):
     def grid(*components):
         def _fmt(cmp):
             if isinstance(cmp, tuple):
@@ -601,6 +609,11 @@ def save_as_html(report_name, rows, totals, missing_modules, java_issues, curren
         for cnt, name in sorted(((cnt, name) for name, cnt in missing_modules.items()), reverse=True)
     ])
 
+    cannot_import_modules_info = ul('modules which could not be imported', [
+        '<b>{}</b>&nbsp;<span class="text-muted">could not be imported by {} unittests</span>'.format(name, cnt)
+        for cnt, name in sorted(((cnt, name) for name, cnt in cannot_import_modules.items()), reverse=True)
+    ])
+
     java_issues_info = ul('Java issues', [
         '<b>{}</b>&nbsp;<span class="text-muted">caused by {} unittests</span>'.format(name, cnt)
         for cnt, name in sorted(((cnt, name) for name, cnt in java_issues.items()), reverse=True)
@@ -619,7 +632,10 @@ def save_as_html(report_name, rows, totals, missing_modules, java_issues, curren
 
     table_stats = table('stats', CSV_HEADER, rows)
 
-    content = ' <br> '.join([total_stats_info, table_stats, missing_modules_info, java_issues_info])
+    content = ' <br> '.join([total_stats_info, table_stats,
+                             missing_modules_info,
+                             cannot_import_modules_info,
+                             java_issues_info])
 
     report = HTML_TEMPLATE.format(
         title='GraalPython Unittests Stats',
@@ -688,15 +704,19 @@ def main(prog, args):
     csv_report_path = file_name(CSV_RESULTS_NAME, current_date)
     rows, totals = save_as_csv(csv_report_path, unittests, error_messages, java_exceptions, stats)
 
-    missing_modules = process_errors(unittests, error_messages, error='ModuleNotFoundError',
+    missing_modules = process_errors(unittests, error_messages, 'ModuleNotFoundError',
                                      msg_processor=get_missing_module)
     log("[MISSING MODULES] \n{}", pformat(dict(missing_modules)))
+
+    cannot_import_modules = process_errors(unittests, error_messages, err='ImportError',
+                                           msg_processor=get_cannot_import_module)
+    log("[CANNOT IMPORT MODULES] \n{}", pformat(dict(cannot_import_modules)))
 
     java_issues = process_errors(unittests, java_exceptions)
     log("[JAVA ISSUES] \n{}", pformat(dict(java_issues)))
 
     html_report_path = file_name(HTML_RESULTS_NAME, current_date)
-    save_as_html(html_report_path, rows, totals, missing_modules, java_issues, current_date)
+    save_as_html(html_report_path, rows, totals, missing_modules, cannot_import_modules, java_issues, current_date)
 
     if flags.path:
         log("[SAVE] saving results to {} ... ", flags.path)
