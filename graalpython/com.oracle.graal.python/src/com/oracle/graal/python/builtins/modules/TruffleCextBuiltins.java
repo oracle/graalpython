@@ -94,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -112,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -2246,4 +2248,28 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             }
         }
     }
+
+    @Builtin(name = "PySet_Add", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PySet_Add extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        int add(PBaseSet self, Object o,
+                        @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
+            try {
+                setItemNode.execute(self, o, PNone.NO_VALUE);
+            } catch (PException e) {
+                NativeBuiltin.transformToNative(getContext(), e);
+                return -1;
+            }
+            return 0;
+        }
+
+        @Fallback
+        int add(Object self, @SuppressWarnings("unused") Object o) {
+            return NativeBuiltin.raiseNative(this, -1, SystemError, "expected a set object, not %p", self);
+        }
+
+    }
+
 }
