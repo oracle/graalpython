@@ -62,9 +62,10 @@ TXT_RESULTS_NAME = "{}.txt.gz".format(_BASE_NAME)
 CSV_RESULTS_NAME = "{}.csv".format(_BASE_NAME)
 HTML_RESULTS_NAME = "{}.html".format(_BASE_NAME)
 
+HR = "".join(['-' for _ in range(120)])
 
 PTRN_ERROR = re.compile(r'^(?P<error>[A-Z][a-z][a-zA-Z]+):(?P<message>.*)$')
-PTRN_UNITTEST = re.compile(r'^#### running: graalpython/lib-python/3/test/(?P<unittest>.*)$')
+PTRN_UNITTEST = re.compile(r'^#### running: graalpython/lib-python/3/test/(?P<unittest>[\w.]+).*$', re.DOTALL)
 PTRN_NUM_TESTS = re.compile(r'^Ran (?P<num_tests>\d+) test.*$')
 PTRN_FAILED = re.compile(
     r'^FAILED \((failures=(?P<failures>\d+))?(, )?(errors=(?P<errors>\d+))?(, )?(skipped=(?P<skipped>\d+))?\)$')
@@ -126,8 +127,11 @@ def scp(results_file_path, destination_path, destination_name=None):
     return _run_cmd(cmd)[0]
 
 
-def _run_unittest(test_path):
-    cmd = ["mx", "python3", "--python.CatchAllExceptions=true", test_path, "-v"]
+def _run_unittest(test_path, with_cpython=False):
+    if with_cpython:
+        cmd = ["python3", test_path, "-v"]
+    else:
+        cmd = ["mx", "python3", "--python.CatchAllExceptions=true", test_path, "-v"]
     success, output = _run_cmd(cmd)
     output = '''
 ##############################################################
@@ -139,7 +143,7 @@ def _run_unittest(test_path):
 TIMEOUT = 60 * 20  # 20 mins per unittest wait time max ...
 
 
-def run_unittests(unittests, timeout):
+def run_unittests(unittests, timeout, with_cpython=False):
     assert isinstance(unittests, (list, tuple))
     num_unittests = len(unittests)
     log("[EXEC] running {} unittests ... ", num_unittests)
@@ -148,7 +152,7 @@ def run_unittests(unittests, timeout):
 
     pool = Pool()
     for ut in unittests:
-        results.append(pool.apply_async(_run_unittest, args=(ut, )))
+        results.append(pool.apply_async(_run_unittest, args=(ut, with_cpython)))
     pool.close()
 
     log("[INFO] collect results ... ")
@@ -163,11 +167,12 @@ def run_unittests(unittests, timeout):
             timed_out.append(unittests[i])
         log("[PROGRESS] {} / {}: \t {}%", i+1, num_unittests, int(((i+1) * 100.0) / num_unittests))
 
-    log("".join(['-' for i in range(120)]))
-    for t in timed_out:
-        log("[TIMEOUT] skipped: {}", t)
-    log("".join(['-' for i in range(120)]))
-    log("[STATS] processed {} out of {} unitttests", num_unittests - len(timed_out), num_unittests)
+    if timed_out:
+        log(HR)
+        for t in timed_out:
+            log("[TIMEOUT] skipped: {}", t)
+        log(HR)
+    log("[STATS] processed {} out of {} unittests", num_unittests - len(timed_out), num_unittests)
     pool.terminate()
     pool.join()
     return out
@@ -325,6 +330,11 @@ class Col(object):
     NUM_SKIPPED = 'num_skipped'
     NUM_PASSES = 'num_passes'
     PYTHON_ERRORS = 'python_errors'
+    CPY_NUM_TESTS = 'cpy_num_tests'
+    CPY_NUM_FAILS = 'cpy_num_fails'
+    CPY_NUM_ERRORS = 'cpy_num_errors'
+    CPY_NUM_SKIPPED = 'cpy_num_skipped'
+    CPY_NUM_PASSES = 'cpy_num_passes'
 
 
 CSV_HEADER = [
@@ -334,6 +344,11 @@ CSV_HEADER = [
     Col.NUM_ERRORS,
     Col.NUM_SKIPPED,
     Col.NUM_PASSES,
+    Col.CPY_NUM_TESTS,
+    Col.CPY_NUM_FAILS,
+    Col.CPY_NUM_ERRORS,
+    Col.CPY_NUM_SKIPPED,
+    Col.CPY_NUM_PASSES,
     Col.PYTHON_ERRORS
 ]
 
@@ -358,7 +373,7 @@ def save_as_txt(report_path, results):
         return output
 
 
-def save_as_csv(report_path, unittests, error_messages, java_exceptions, stats):
+def save_as_csv(report_path, unittests, error_messages, java_exceptions, stats, cpy_stats=None):
     rows = []
     with open(report_path, 'w') as CSV:
         totals = {
@@ -373,18 +388,27 @@ def save_as_csv(report_path, unittests, error_messages, java_exceptions, stats):
 
         for unittest in unittests:
             unittest_stats = stats[unittest]
+            cpy_unittest_stats = cpy_stats[unittest] if cpy_stats else None
             unittest_errmsg = error_messages[unittest]
             if not unittest_errmsg:
                 unittest_errmsg = java_exceptions[unittest]
 
             rows.append({
                 Col.UNITTEST: unittest,
+                # graalpython stats
                 Col.NUM_TESTS: unittest_stats.num_tests,
                 Col.NUM_FAILS: unittest_stats.num_fails,
                 Col.NUM_ERRORS: unittest_stats.num_errors,
                 Col.NUM_SKIPPED: unittest_stats.num_skipped,
                 Col.NUM_PASSES: unittest_stats.num_passes,
-                Col.PYTHON_ERRORS: dumps(list(unittest_errmsg))
+                # cpython stats
+                Col.CPY_NUM_TESTS: cpy_unittest_stats.num_tests if cpy_unittest_stats else None,
+                Col.CPY_NUM_FAILS: cpy_unittest_stats.num_fails if cpy_unittest_stats else None,
+                Col.CPY_NUM_ERRORS: cpy_unittest_stats.num_errors if cpy_unittest_stats else None,
+                Col.CPY_NUM_SKIPPED: cpy_unittest_stats.num_skipped if cpy_unittest_stats else None,
+                Col.CPY_NUM_PASSES: cpy_unittest_stats.num_passes if cpy_unittest_stats else None,
+                # errors
+                Col.PYTHON_ERRORS: dumps(list(unittest_errmsg)),
             })
 
             # update totals that ran in some way
@@ -695,14 +719,23 @@ def main(prog, args):
         skip_tests = set([_fmt(test) for test in flags.skip_tests.split(",")]) if flags.skip_tests else None
         unittests = get_unittests(flags.tests_path, limit=flags.limit, skip_tests=skip_tests)
 
-    results = run_unittests(unittests, flags.timeout)
+    # get cpython stats
+    log(HR)
+    log("[INFO] get cpython stats")
+    cpy_results = run_unittests(unittests, flags.timeout, with_cpython=True)
+    cpy_stats = process_output('\n'.join(cpy_results))[-1]
+
+    # get graalpython stats
+    log(HR)
+    log("[INFO] get graalpython stats")
+    results = run_unittests(unittests, flags.timeout, with_cpython=False)
     txt_report_path = file_name(TXT_RESULTS_NAME, current_date)
     output = save_as_txt(txt_report_path, results)
 
     unittests, error_messages, java_exceptions, stats = process_output(output)
 
     csv_report_path = file_name(CSV_RESULTS_NAME, current_date)
-    rows, totals = save_as_csv(csv_report_path, unittests, error_messages, java_exceptions, stats)
+    rows, totals = save_as_csv(csv_report_path, unittests, error_messages, java_exceptions, stats, cpy_stats=cpy_stats)
 
     missing_modules = process_errors(unittests, error_messages, 'ModuleNotFoundError',
                                      msg_processor=get_missing_module)
