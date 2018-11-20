@@ -313,7 +313,7 @@ public class PySequenceArrayWrapperMR {
         private CExtNodes.ToJavaNode getToJavaNode() {
             if (toJavaNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toJavaNode = insert(CExtNodes.ToJavaNode.create());
+                toJavaNode = insert(CExtNodes.ToJavaNode.create(true));
             }
             return toJavaNode;
         }

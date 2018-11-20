@@ -597,6 +597,12 @@ public abstract class CExtNodes {
         @CompilationFinal private TruffleObject nativeToJavaFunction;
         @CompilationFinal private TruffleObject nativePointerToJavaFunction;
 
+        private final boolean forcePointer;
+
+        protected ToJavaNode(boolean forcePointer) {
+            this.forcePointer = forcePointer;
+        }
+
         public abstract Object execute(Object value);
 
         public abstract boolean executeBool(boolean value);
@@ -630,10 +636,9 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doInt(int i) {
-            // Unfortunately, an int could be a native pointer and therefore a handle. So, we must
-            // try resolving it. At least we know that it's not a native type.
-            return native_pointer_to_java(i);
+        int doInt(int i) {
+            // Note: Sulong guarantees that an integer won't be a pointer
+            return i;
         }
 
         @Specialization
@@ -660,7 +665,8 @@ public abstract class CExtNodes {
         private Object native_pointer_to_java(Object value) {
             if (nativePointerToJavaFunction == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativePointerToJavaFunction = importCAPISymbol(NativeCAPISymbols.FUN_NATIVE_POINTER_TO_JAVA);
+                String funName = forcePointer ? NativeCAPISymbols.FUN_NATIVE_LONG_TO_JAVA : NativeCAPISymbols.FUN_NATIVE_POINTER_TO_JAVA;
+                nativePointerToJavaFunction = importCAPISymbol(funName);
             }
             return call_native_conversion(nativePointerToJavaFunction, value);
         }
@@ -674,7 +680,11 @@ public abstract class CExtNodes {
         }
 
         public static ToJavaNode create() {
-            return ToJavaNodeGen.create();
+            return ToJavaNodeGen.create(false);
+        }
+
+        public static ToJavaNode create(boolean forcePointer) {
+            return ToJavaNodeGen.create(forcePointer);
         }
     }
 
