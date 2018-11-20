@@ -87,7 +87,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         timeStruct[3] = zonedDateTime.getHour();
         timeStruct[4] = zonedDateTime.getMinute();
         timeStruct[5] = zonedDateTime.getSecond();
-        timeStruct[6] = zonedDateTime.getDayOfWeek().getValue();
+        timeStruct[6] = zonedDateTime.getDayOfWeek().getValue() - 1;
         timeStruct[7] = zonedDateTime.getDayOfYear();
         timeStruct[8] = (zonedDateTime.getZone().getRules().isDaylightSavings(instant)) ? 1 : 0;
         timeStruct[9] = zone.getId();
@@ -119,7 +119,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.localtime([seconds])
-    @Builtin(name = "__truffle_localtime_tuple__", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "__truffle_localtime_tuple__", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonLocalTimeNode extends PythonBuiltinNode {
@@ -132,6 +132,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         public PTuple localtime(long seconds) {
             return factory().createTuple(getTimeStruct(seconds, true));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public PTuple localtime(@SuppressWarnings("unused") PNone seconds) {
+            return factory().createTuple(getTimeStruct(System.currentTimeMillis() / 1000.0, true));
         }
 
         @Specialization
