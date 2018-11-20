@@ -1609,6 +1609,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // type(object, bases, dict)
     @Builtin(name = TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonClass)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class TypeNode extends PythonBuiltinNode {
         private static final long SIZEOF_PY_OBJECT_PTR = 8L;
         @Child private ReadAttributeFromObjectNode readAttrNode;
