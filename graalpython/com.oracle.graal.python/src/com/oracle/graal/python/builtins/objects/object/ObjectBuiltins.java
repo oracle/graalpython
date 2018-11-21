@@ -186,7 +186,6 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
         public boolean eq(PythonNativeObject self, PythonNativeObject other,
                         @Cached("create()") CExtNodes.IsNode nativeIsNode) {
             return nativeIsNode.execute(self, other);
@@ -206,7 +205,6 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private CastToBooleanNode ifFalseNode;
 
         @Specialization
-        @TruffleBoundary
         public boolean ne(PythonNativeObject self, PythonNativeObject other,
                         @Cached("create()") CExtNodes.IsNode nativeIsNode) {
             return !nativeIsNode.execute(self, other);
