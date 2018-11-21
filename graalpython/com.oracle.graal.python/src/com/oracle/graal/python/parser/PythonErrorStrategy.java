@@ -73,7 +73,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
             }
         }
         Token token = r.getOffendingToken();
-        return source.createSection(token.getStartIndex(), token.getStopIndex() - token.getStartIndex());
+        return source.createSection(token.getStartIndex(), Math.max(0, token.getStopIndex() - token.getStartIndex()));
     }
 
     private static String getTokeLineText(Parser recognizer, Token token) {
