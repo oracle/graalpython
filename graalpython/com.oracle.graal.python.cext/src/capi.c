@@ -226,8 +226,15 @@ void* native_long_to_java(uint64_t val) {
         return Py_None;
     } else if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
+    } else {
+        void* refcnt = obj->ob_refcnt;
+        if (!truffle_cannot_be_handle(refcnt)) {
+            return resolve_handle(cache, refcnt);
+        } else if (IS_POINTER(refcnt)) {
+            return refcnt;
+        }
+        return obj;
     }
-    return obj;
 }
 
 __attribute__((always_inline))
