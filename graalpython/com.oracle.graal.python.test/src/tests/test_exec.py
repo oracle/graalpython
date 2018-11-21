@@ -266,3 +266,14 @@ class ExecTests:
         assert d['a'] == d['b']
         assert len(d['a']) == len(d['b'])
         assert d['a'] == d['b']
+
+    def test_locals_call(self):
+        l = locals()
+        exec("""if 1:
+            assert locals() is l
+            def f(a):
+                exec('a=3')
+                return a
+            x = f(4)\n""")
+        assert eval("locals() is l")
+        assert l["x"] == 4
