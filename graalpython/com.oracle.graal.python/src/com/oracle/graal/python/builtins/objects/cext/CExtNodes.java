@@ -870,6 +870,10 @@ public abstract class CExtNodes {
             return isFunc;
         }
 
+        public static IsNode create() {
+            return new CExtNodes.IsNode();
+        }
+
     }
 
     public abstract static class AllToJavaNode extends PNodeWithContext {

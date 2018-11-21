@@ -55,6 +55,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -74,6 +76,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -183,12 +186,13 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public boolean eq(PythonNativeObject self, PythonNativeObject other) {
-            return self.object.equals(other.object);
+        public boolean eq(PythonNativeObject self, PythonNativeObject other,
+                        @Cached("create()") CExtNodes.IsNode nativeIsNode) {
+            return nativeIsNode.execute(self, other);
         }
 
-        @Specialization
-        public boolean eq(Object self, Object other) {
+        @Fallback
+        public Object eq(Object self, Object other) {
             return self == other;
         }
     }
@@ -196,9 +200,31 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
+
+        @Child private LookupAndCallBinaryNode eqNode;
+        @Child private CastToBooleanNode ifFalseNode;
+
         @Specialization
-        public boolean eq(Object self, Object other) {
-            return self != other;
+        public boolean ne(PythonNativeObject self, PythonNativeObject other,
+                        @Cached("create()") CExtNodes.IsNode nativeIsNode) {
+            return !nativeIsNode.execute(self, other);
+        }
+
+        @Fallback
+        public Object ne(Object self, Object other) {
+            if (eqNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                eqNode = insert(LookupAndCallBinaryNode.create(__EQ__));
+            }
+            Object result = eqNode.executeObject(self, other);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                return result;
+            }
+            if (ifFalseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                ifFalseNode = insert(CastToBooleanNode.createIfFalseNode());
+            }
+            return ifFalseNode.executeWith(result);
         }
     }
 
