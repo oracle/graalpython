@@ -77,6 +77,8 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallBinaryCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -1271,6 +1273,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = OBJECT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonObject)
     @GenerateNodeFactory
     public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
+        @Child private PCallBinaryCapiFunction callNativeGenericNewNode;
+        @Child private CExtNodes.ToSulongNode toSulongNode;
+        @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode;
+
         @Override
         public final Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             return execute(frame, PNone.NO_VALUE, arguments, keywords);
@@ -1281,18 +1287,42 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createPythonObject((PythonClass) arguments[0]);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"})
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf", "!isNativeClass(self)"})
         Object doObjectDirect(@SuppressWarnings("unused") PythonClass self, Object[] varargs, PKeyword[] kwargs,
                         @Cached("self") PythonClass cachedSelf) {
             return doObjectIndirect(cachedSelf, varargs, kwargs);
         }
 
-        @Specialization(replaces = "doObjectDirect")
+        @Specialization(guards = "!isNativeClass(self)", replaces = "doObjectDirect")
         Object doObjectIndirect(PythonClass self, Object[] varargs, PKeyword[] kwargs) {
             if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
             return factory().createPythonObject(self);
+        }
+
+        @Specialization
+        Object doNativeObjectIndirect(PythonNativeClass self, Object[] varargs, PKeyword[] kwargs) {
+            if (varargs.length > 0 || kwargs.length > 0) {
+                // TODO: tfel: this should throw an error only if init isn't overridden
+            }
+            return callNativeGenericNewNode(self, 0);
+        }
+
+        private Object callNativeGenericNewNode(PythonNativeClass self, long nitems) {
+            if (callNativeGenericNewNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNativeGenericNewNode = insert(PCallBinaryCapiFunction.create(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_NEW));
+            }
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(CExtNodes.ToSulongNode.create());
+            }
+            if (asPythonObjectNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asPythonObjectNode = insert(CExtNodes.AsPythonObjectNode.create());
+            }
+            return asPythonObjectNode.execute(callNativeGenericNewNode.execute(toSulongNode.execute(self), nitems));
         }
     }
 
