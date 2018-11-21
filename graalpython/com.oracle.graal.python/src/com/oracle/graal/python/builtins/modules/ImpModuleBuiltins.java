@@ -63,8 +63,10 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -267,10 +269,18 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             return checkResultNode;
         }
 
+        @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__REPR__);
+
         @TruffleBoundary
         private PException reportImportError(RuntimeException e, String path) {
             StringBuilder sb = new StringBuilder();
-            sb.append(e.getMessage());
+            if (e instanceof PException) {
+                PBaseException excObj = ((PException) e).getExceptionObject();
+                sb.append(callReprNode.executeObject(excObj));
+            } else {
+                // that call will cause problems if the format string contains '%p'
+                sb.append(e.getMessage());
+            }
             Throwable cause = e;
             Object pythonCause = PNone.NONE;
             while ((cause = cause.getCause()) != null) {
@@ -285,7 +295,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     sb.append(cause.getMessage());
                 }
             }
-            PBaseException importExc = factory().createBaseException(ImportError, "cannot load %s: %s", new Object[]{path, sb.toString()});
+            Object[] args = new Object[]{path, sb.toString()};
+            PBaseException importExc = factory().createBaseException(ImportError, "cannot load %s: %s", args);
             importExc.setAttribute(__CAUSE__, pythonCause);
             throw raise(importExc);
         }
