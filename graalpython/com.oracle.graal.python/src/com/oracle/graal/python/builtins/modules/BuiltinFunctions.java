@@ -136,6 +136,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttri
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
@@ -483,19 +484,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(expression, callerGlobals, callerGlobals, callerClosure, callerFrame);
+            return evalExpression(expression, callerGlobals, callerGlobals, callerClosure, callerFrame, "<string>");
         }
 
         @Specialization
         public Object eval(VirtualFrame frame, String expression, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            return evalExpression(expression, globals, globals, null, callerFrame);
+            return evalExpression(expression, globals, globals, null, callerFrame, null);
         }
 
         @Specialization
         public Object eval(VirtualFrame frame, String expression, PythonObject globals, PythonObject locals) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            return evalExpression(expression, globals, locals, null, callerFrame);
+            return evalExpression(expression, globals, locals, null, callerFrame, null);
         }
 
         @Specialization
@@ -503,7 +504,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(expression, callerGlobals, locals, callerClosure, callerFrame);
+            return evalExpression(expression, callerGlobals, locals, callerClosure, callerFrame, null);
         }
 
         @Specialization
@@ -579,12 +580,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object evalExpression(String expression, PythonObject globals, PythonObject locals, PCell[] closure, Frame callerFrame) {
-            String name = "<eval>";
-            if (globals instanceof PDict) {
-                Object nameObject = getNameNode.execute(globals, __NAME__);
-                if (nameObject instanceof String) {
-                    name = (String) nameObject;
+        private Object evalExpression(String expression, PythonObject globals, PythonObject locals, PCell[] closure, Frame callerFrame, String desiredName) {
+            String name = desiredName;
+            if (name == null) {
+                name = "<eval>";
+                if (globals instanceof PDict) {
+                    Object nameObject = getNameNode.execute(globals, __NAME__);
+                    if (nameObject instanceof String) {
+                        name = (String) nameObject;
+                    }
                 }
             }
             PythonParser parser = getCore().getParser();
@@ -606,12 +610,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = EXEC, fixedNumOfPositionalArgs = 1, parameterNames = {"source"}, keywordArguments = {"globals", "locals"})
+    @Builtin(name = EXEC, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, parameterNames = {"source"})
     @GenerateNodeFactory
     abstract static class ExecNode extends PythonBuiltinNode {
         private final BranchProfile hasFreeVars = BranchProfile.create();
-        @Child CompileNode compileNode = CompileNode.create();
-        @Child IndirectCallNode indirectCallNode = IndirectCallNode.create();
+        @Child private CompileNode compileNode = CompileNode.create();
+        @Child private IndirectCallNode indirectCallNode = IndirectCallNode.create();
+        @Child private IsMappingNode isMapping = IsMappingNode.create();
+
+        protected boolean isMapping(Object object) {
+            return isMapping.execute(object);
+        }
+
+        protected boolean isAnyNone(Object object) {
+            return object instanceof PNone;
+        }
 
         private void assertNoFreeVars(PCode code) {
             RootNode rootNode = code.getRootNode();
@@ -621,20 +634,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"isNoValue(globals) || isNone(globals)", "isNoValue(locals) || isNone(locals)"})
-        PNone execInheritGlobalsInheritLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
-                        @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
-            PCode code = createAndCheckCode(source);
-            Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            Object[] args = PArguments.create();
-            inheritGlobals(callerFrame, args);
-            inheritLocals(callerFrame, args);
-            indirectCallNode.call(code.getRootCallTarget(), args);
-            return PNone.NO_VALUE;
-        }
-
         private PCode createAndCheckCode(Object source) {
-            PCode code = compileNode.execute(source, "exec", "exec", 0, false, -1);
+            PCode code = compileNode.execute(source, "<string>", "exec", 0, false, -1);
             assertNoFreeVars(code);
             return code;
         }
@@ -653,17 +654,50 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setSpecialArgument(args, callerLocals);
         }
 
-        @Specialization(guards = {"isNoValue(locals) || isNone(locals)"})
-        PNone execCustomGlobalsGlobalLocals(Object source, PDict globals, @SuppressWarnings("unused") PNone locals) {
+        private void setBuiltinsInGlobals(PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
+            if (builtins != null) {
+                PHashingCollection builtinsDict = builtins.getDict();
+                if (builtinsDict == null) {
+                    builtinsDict = factory().createDictFixedStorage(builtins);
+                    builtins.setDict(builtinsDict);
+                }
+                setBuiltins.execute(globals, BuiltinNames.__BUILTINS__, builtinsDict);
+            } else {
+                // This happens during context initialization
+                return;
+            }
+        }
+
+        private void setCustomGlobals(PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, Object[] args) {
+            PythonModule builtins = getContext().getBuiltins();
+            setBuiltinsInGlobals(globals, setBuiltins, builtins);
+            PArguments.setGlobals(args, globals);
+        }
+
+        @Specialization
+        PNone execInheritGlobalsInheritLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
+                        @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
+            PCode code = createAndCheckCode(source);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
+            Object[] args = PArguments.create();
+            inheritGlobals(callerFrame, args);
+            inheritLocals(callerFrame, args);
+            indirectCallNode.call(code.getRootCallTarget(), args);
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization
+        PNone execCustomGlobalsGlobalLocals(Object source, PDict globals, @SuppressWarnings("unused") PNone locals,
+                        @Cached("create()") HashingCollectionNodes.SetItemNode setBuiltins) {
             PCode code = createAndCheckCode(source);
             Object[] args = PArguments.create();
-            PArguments.setGlobals(args, globals);
+            setCustomGlobals(globals, setBuiltins, args);
             PArguments.setSpecialArgument(args, globals);
             indirectCallNode.call(code.getRootCallTarget(), args);
             return PNone.NO_VALUE;
         }
 
-        @Specialization(guards = {"isNone(globals)", "!isNoValue(locals)", "!isNone(locals)"})
+        @Specialization(guards = {"isMapping(locals)"})
         PNone execInheritGlobalsCustomLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, Object locals,
                         @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
             PCode code = createAndCheckCode(source);
@@ -675,14 +709,25 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return PNone.NO_VALUE;
         }
 
-        @Specialization(guards = {"!isNoValue(locals)", "!isNone(locals)"})
-        PNone execCustomGlobalsCustomLocals(Object source, PDict globals, Object locals) {
+        @Specialization(guards = {"isMapping(locals)"})
+        PNone execCustomGlobalsCustomLocals(Object source, PDict globals, Object locals,
+                        @Cached("create()") HashingCollectionNodes.SetItemNode setBuiltins) {
             PCode code = createAndCheckCode(source);
             Object[] args = PArguments.create();
-            PArguments.setGlobals(args, globals);
+            setCustomGlobals(globals, setBuiltins, args);
             PArguments.setSpecialArgument(args, locals);
             indirectCallNode.call(code.getRootCallTarget(), args);
             return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = {"!isAnyNone(globals)", "!isDict(globals)"})
+        PNone badGlobals(@SuppressWarnings("unused") Object source, Object globals, @SuppressWarnings("unused") Object locals) {
+            throw raise(TypeError, "exec() globals must be a dict, not %p", globals);
+        }
+
+        @Specialization(guards = {"isAnyNone(globals) || isDict(globals)", "!isAnyNone(locals)", "!isMapping(locals)"})
+        PNone badLocals(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") PDict globals, Object locals) {
+            throw raise(TypeError, "exec() locals must be a mapping or None, not %p", locals);
         }
     }
 
