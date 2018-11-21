@@ -250,11 +250,6 @@ class ExecTests:
         assert ord(x[4]) == 0x0435
         assert ord(x[5]) == 0x043d
 
-    def test_eval_unicode(self):
-        u = "'%s'" % chr(0x1234)
-        v = eval(u)
-        assert v == chr(0x1234)
-
     def test_compile_bytes(self):
         s = b"x = '\xd0\xb9\xd1\x86\xd1\x83\xd0\xba\xd0\xb5\xd0\xbd'"
         c = compile(s, '<input>', 'exec')
