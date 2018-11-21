@@ -122,13 +122,37 @@ class AbstractPythonVm(Vm):
         return ret_code, out.data
 
 
-class CPythonVm(AbstractPythonVm):
+class AbstractPythonIterationsControlVm(AbstractPythonVm):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, config_name, options=None, iterations=None):
+        super(AbstractPythonIterationsControlVm, self).__init__(config_name, options)
+        self._iterations = iterations
+
+    def _override_iterations_args(self, args):
+        _args = []
+        i = 0
+        while i < len(args):
+            arg = args[i]
+            _args.append(arg)
+            if arg == '-i':
+                _args.append(str(self._iterations))
+                i += 1
+            i += 1
+        return _args
+
+    def run(self, cwd, args):
+        if isinstance(self._iterations, (int, long)):
+            args = self._override_iterations_args(args)
+        return super(AbstractPythonIterationsControlVm, self).run(cwd, args)
+
+
+class CPythonVm(AbstractPythonIterationsControlVm):
     PYTHON_INTERPRETER = "python3"
 
-    def __init__(self, config_name, options=None, virtualenv=None, no_warmup=False):
-        super(CPythonVm, self).__init__(config_name, options)
+    def __init__(self, config_name, options=None, virtualenv=None, iterations=False):
+        super(CPythonVm, self).__init__(config_name, options=options, iterations=iterations)
         self._virtualenv = virtualenv
-        self._no_warmup = no_warmup
 
     @property
     def interpreter(self):
@@ -139,35 +163,19 @@ class CPythonVm(AbstractPythonVm):
     def name(self):
         return VM_NAME_CPYTHON
 
-    @staticmethod
-    def remove_warmup_runs(args):
-        _args = []
-        i = 0
-        while i < len(args):
-            arg = args[i]
-            _args.append(arg)
-            if arg == '-i':
-                _args.append('0')
-                i += 1
-            i += 1
-        return _args
 
-    def run(self, cwd, args):
-        if self._no_warmup:
-            args = CPythonVm.remove_warmup_runs(args)
-        return super(CPythonVm, self).run(cwd, args)
+class PyPyVm(AbstractPythonIterationsControlVm):
+    PYPY_INTERPRETER = "pypy3"
 
-
-class PyPyVm(AbstractPythonVm):
-    def __init__(self, config_name, options=None):
-        super(PyPyVm, self).__init__(config_name, options=options)
+    def __init__(self, config_name, options=None, iterations=False):
+        super(PyPyVm, self).__init__(config_name, options=options, iterations=iterations)
 
     @property
     def interpreter(self):
         home = mx.get_env(ENV_PYPY_HOME)
         if not home:
             mx.abort("{} is not set!".format(ENV_PYPY_HOME))
-        return join(home, 'bin', 'pypy3')
+        return join(home, 'bin', PyPyVm.PYPY_INTERPRETER)
 
     def name(self):
         return VM_NAME_PYPY
