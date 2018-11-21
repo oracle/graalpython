@@ -81,7 +81,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         int index = token.getTokenIndex();
         // search for line start
         int tokenIndex = index;
-        int start = -1;
+        int start = 0;
         while (tokenIndex >= 0) {
             Token t = tokenStream.get(tokenIndex);
             if (t.getText().equals("\n")) {
