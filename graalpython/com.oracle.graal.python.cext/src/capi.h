@@ -163,14 +163,13 @@ extern cache_t cache;
 #define resolve_handle(__cache__, __addr__) (__cache__)(__addr__)
 
 __attribute__((always_inline))
-inline void* native_type_to_java(PyObject* obj) {
-	void* refcnt = ((PyObject*)obj)->ob_refcnt;
-	if (!truffle_cannot_be_handle(refcnt)) {
-		return resolve_handle(cache, refcnt);
-	} else if (IS_POINTER(refcnt)) {
-		return refcnt;
+inline void* native_type_to_java(PyTypeObject* type) {
+	if (IS_POINTER(((PyObject*)type)->ob_refcnt)) {
+		return (void*)((PyObject*)type)->ob_refcnt;
+	} else if (!truffle_cannot_be_handle(((PyObject*)type)->ob_refcnt)) {
+		return resolve_handle(cache, ((PyObject*)type)->ob_refcnt);
 	}
-	return obj;
+	return (void*)type;
 }
 
 __attribute__((always_inline))
@@ -186,16 +185,6 @@ inline void* native_to_java(PyObject* obj) {
     } else {
     	return native_type_to_java(obj);
     }
-}
-
-__attribute__((always_inline))
-inline void* native_type_to_java(PyTypeObject* type) {
-	if (IS_POINTER(((PyObject*)type)->ob_refcnt)) {
-		return (void*)((PyObject*)type)->ob_refcnt;
-	} else if (!truffle_cannot_be_handle(((PyObject*)type)->ob_refcnt)) {
-		return resolve_handle(cache, ((PyObject*)type)->ob_refcnt);
-	}
-	return (void*)type;
 }
 
 extern void* native_to_java_exported(PyObject* obj);

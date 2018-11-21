@@ -170,7 +170,6 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -1441,7 +1440,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     }
 
-
     @Builtin(name = "METH_DIRECT", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class MethDirectNode extends PythonBuiltinNode {
@@ -2291,41 +2289,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 transformToNative(e);
                 return getNativeNull(module);
             }
-        }
-    }
-
-    @Builtin(name = "PyObject_Size", fixedNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    @ImportStatic(SpecialMethodNames.class)
-    abstract static class PyObject_SizeNode extends PythonUnaryBuiltinNode {
-        @Child private CExtNodes.AsLong castToIntNode;
-
-        @Specialization
-        int doPSequence(PSequence sequence,
-                        @Cached("create()") SequenceNodes.LenNode seqLenNode) {
-            return seqLenNode.execute(sequence);
-        }
-
-        @Specialization(guards = "!isPSequence(obj)")
-        long doGenericUnboxed(Object obj,
-                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
-            Object result = callLenNode.executeObject(obj);
-            if (result == PNone.NO_VALUE) {
-                return -1;
-            }
-            return castToInt(result);
-        }
-
-        protected static boolean isPSequence(Object obj) {
-            return obj instanceof PSequence;
-        }
-
-        protected long castToInt(Object obj) {
-            if (castToIntNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIntNode = insert(CExtNodes.AsLong.create());
-            }
-            return castToIntNode.execute(obj);
         }
     }
 
