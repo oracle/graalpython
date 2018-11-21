@@ -524,6 +524,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             PDict callerLocals = pFrame.getLocals(factory());
             PArguments.setSpecialArgument(args, callerLocals);
+            PArguments.setPFrame(args, factory().createPFrame(callerLocals));
         }
 
         private void setBuiltinsInGlobals(PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
@@ -547,49 +548,45 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        PNone execInheritGlobalsInheritLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
+        Object execInheritGlobalsInheritLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
                         @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
             PCode code = createAndCheckCode(source);
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             inheritLocals(callerFrame, args);
-            indirectCallNode.call(code.getRootCallTarget(), args);
-            return PNone.NO_VALUE;
+            return indirectCallNode.call(code.getRootCallTarget(), args);
         }
 
         @Specialization
-        PNone execCustomGlobalsGlobalLocals(Object source, PDict globals, @SuppressWarnings("unused") PNone locals,
+        Object execCustomGlobalsGlobalLocals(Object source, PDict globals, @SuppressWarnings("unused") PNone locals,
                         @Cached("create()") HashingCollectionNodes.SetItemNode setBuiltins) {
             PCode code = createAndCheckCode(source);
             Object[] args = PArguments.create();
             setCustomGlobals(globals, setBuiltins, args);
             PArguments.setSpecialArgument(args, globals);
-            indirectCallNode.call(code.getRootCallTarget(), args);
-            return PNone.NO_VALUE;
+            return indirectCallNode.call(code.getRootCallTarget(), args);
         }
 
         @Specialization(guards = {"isMapping(locals)"})
-        PNone execInheritGlobalsCustomLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, Object locals,
+        Object execInheritGlobalsCustomLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, Object locals,
                         @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
             PCode code = createAndCheckCode(source);
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             PArguments.setSpecialArgument(args, locals);
-            indirectCallNode.call(code.getRootCallTarget(), args);
-            return PNone.NO_VALUE;
+            return indirectCallNode.call(code.getRootCallTarget(), args);
         }
 
         @Specialization(guards = {"isMapping(locals)"})
-        PNone execCustomGlobalsCustomLocals(Object source, PDict globals, Object locals,
+        Object execCustomGlobalsCustomLocals(Object source, PDict globals, Object locals,
                         @Cached("create()") HashingCollectionNodes.SetItemNode setBuiltins) {
             PCode code = createAndCheckCode(source);
             Object[] args = PArguments.create();
             setCustomGlobals(globals, setBuiltins, args);
             PArguments.setSpecialArgument(args, locals);
-            indirectCallNode.call(code.getRootCallTarget(), args);
-            return PNone.NO_VALUE;
+            return indirectCallNode.call(code.getRootCallTarget(), args);
         }
 
         @Specialization(guards = {"!isAnyNone(globals)", "!isDict(globals)"})
@@ -621,6 +618,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PCode code = compileNode.execute(source, "<string>", "exec", 0, false, -1);
             assertNoFreeVars(code);
             return code;
+        }
+
+        protected abstract Object executeInternal(VirtualFrame frame);
+
+        @Override
+        public final Object execute(VirtualFrame frame) {
+            executeInternal(frame);
+            return PNone.NONE;
         }
     }
 
@@ -1568,6 +1573,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         public String doIt(PMethod method) {
             return NodeUtil.printTreeToString(method.getCallTarget().getRootNode());
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public String doIt(PCode code) {
+            return NodeUtil.printTreeToString(code.getRootNode());
         }
 
         @Fallback

@@ -84,4 +84,8 @@ public abstract class WriteNameNode extends StatementNode implements WriteNode {
 
     public abstract void executeWithValue(VirtualFrame frame, Object value);
 
+    public Object getAttributeId() {
+        return attributeId;
+    }
+
 }
