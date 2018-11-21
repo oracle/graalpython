@@ -156,6 +156,29 @@ class TestObject(object):
             assert False
         assert True
 
+    def test_new(self):
+        TestNew = CPyExtType("TestNew", 
+                             '''static PyObject* testnew_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
+                                 PyObject* obj;
+                                 TestNewObject* typedObj;
+                                 obj = PyBaseObject_Type.tp_new(cls, a, b);
+                                 
+                                 typedObj = ((TestNewObject*)obj);
+                                 typedObj->none = Py_None;
+                                 Py_INCREF(Py_None);
+                                 return obj;
+                            }
+                            static PyObject* get_none(PyObject* self) {
+                                return ((TestNewObject*)self)->none;
+                            }
+                             ''',
+                             cmembers="PyObject* none;",
+                             tp_new="testnew_new",
+                             tp_methods='{"get_none", (PyCFunction)get_none, METH_NOARGS, ""}'
+                             )
+        tester = TestNew()
+        assert tester.get_none() is None
+
 
 class TestObjectFunctions(CPyExtTestCase):
     def compile_module(self, name):

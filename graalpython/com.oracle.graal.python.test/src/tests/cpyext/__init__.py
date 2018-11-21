@@ -423,6 +423,11 @@ def CPyExtType(name, code, **kwargs):
     template = """
     #include "Python.h"
 
+    typedef struct {{
+        PyObject_HEAD;
+        {cmembers}
+    }} {name}Object;
+
     {code}
 
     static PyNumberMethods {name}_number_methods = {{
@@ -471,10 +476,6 @@ def CPyExtType(name, code, **kwargs):
         {{NULL, NULL, 0, NULL}}
     }};
 
-    typedef struct {{
-        PyObject_HEAD
-    }} {name}Object;
-
     static PyTypeObject {name}Type = {{
         PyVarObject_HEAD_INIT(NULL, 0)
         "{name}.{name}",
@@ -513,7 +514,7 @@ def CPyExtType(name, code, **kwargs):
         0,                          /* tp_dictoffset */
         {tp_init},                  /* tp_init */
         PyType_GenericAlloc,        /* tp_alloc */
-        PyType_GenericNew,          /* tp_new */
+        {tp_new},                   /* tp_new */
         PyObject_Del,               /* tp_free */
     }};
 
@@ -550,6 +551,8 @@ def CPyExtType(name, code, **kwargs):
     kwargs.setdefault("ready_code", "")
     kwargs.setdefault("post_ready_code", "")
     kwargs.setdefault("tp_methods", "{NULL, NULL, 0, NULL}")
+    kwargs.setdefault("tp_new", "PyType_GenericNew")
+    kwargs.setdefault("cmembers", "")
     c_source = UnseenFormatter().format(template, **kwargs)
 
     source_file = "%s/%s.c" % (__dir__, name)
