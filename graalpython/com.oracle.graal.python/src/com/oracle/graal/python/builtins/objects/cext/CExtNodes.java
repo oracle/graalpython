@@ -1472,8 +1472,8 @@ public abstract class CExtNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 func = importCAPISymbol(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT);
                 exec = insert(Message.EXECUTE.createNode());
-                toSulong = ToSulongNode.create();
-                toJava = ToJavaNode.create();
+                toSulong = insert(ToSulongNode.create());
+                toJava = insert(ToJavaNode.create());
             }
             try {
                 return toJava.execute(ForeignAccess.sendExecute(exec, func, toSulong.execute(self)));

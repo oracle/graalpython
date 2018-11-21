@@ -93,7 +93,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -508,7 +507,6 @@ public class ObjectBuiltins extends PythonBuiltins {
     static abstract class DictNode extends PythonBinaryBuiltinNode {
         private final IsBuiltinClassProfile exactObjInstanceProfile = IsBuiltinClassProfile.create();
         private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
-        @Child private Node executeNode;
 
         protected boolean isExactObjectInstance(PythonObject self) {
             return exactObjInstanceProfile.profileObject(self, PythonBuiltinClassType.PythonObject);
