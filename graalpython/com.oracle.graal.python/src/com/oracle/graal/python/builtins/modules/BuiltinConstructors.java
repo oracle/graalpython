@@ -77,7 +77,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallBinaryCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -1273,8 +1273,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = OBJECT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonObject)
     @GenerateNodeFactory
     public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
-        @Child private PCallBinaryCapiFunction callNativeGenericNewNode;
-        @Child private CExtNodes.ToSulongNode toSulongNode;
+        @Child private PCallCapiFunction callNativeGenericNewNode;
+        @Children private CExtNodes.ToSulongNode[] toSulongNodes;
         @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode;
 
         @Override
@@ -1287,13 +1287,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createPythonObject((PythonClass) arguments[0]);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf", "!isNativeClass(self)"})
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf", "!self.needsNativeAllocation()"})
         Object doObjectDirect(@SuppressWarnings("unused") PythonClass self, Object[] varargs, PKeyword[] kwargs,
                         @Cached("self") PythonClass cachedSelf) {
             return doObjectIndirect(cachedSelf, varargs, kwargs);
         }
 
-        @Specialization(guards = "!isNativeClass(self)", replaces = "doObjectDirect")
+        @Specialization(guards = "!self.needsNativeAllocation()", replaces = "doObjectDirect")
         Object doObjectIndirect(PythonClass self, Object[] varargs, PKeyword[] kwargs) {
             if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
@@ -1301,28 +1301,45 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createPythonObject(self);
         }
 
-        @Specialization
-        Object doNativeObjectIndirect(PythonNativeClass self, Object[] varargs, PKeyword[] kwargs) {
+        @Specialization(guards = "self.needsNativeAllocation()")
+        Object doNativeObjectIndirect(PythonClass self, Object[] varargs, PKeyword[] kwargs) {
             if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
-            return callNativeGenericNewNode(self, 0);
+            PythonNativeClass nativeBaseClass = findFirstNativeBaseClass(self.getMethodResolutionOrder());
+            return callNativeGenericNewNode(nativeBaseClass, varargs, kwargs);
         }
 
-        private Object callNativeGenericNewNode(PythonNativeClass self, long nitems) {
+        private static PythonNativeClass findFirstNativeBaseClass(PythonClass[] methodResolutionOrder) {
+            for (PythonClass cls : methodResolutionOrder) {
+                if (cls instanceof PythonNativeClass) {
+                    return (PythonNativeClass) cls;
+                }
+            }
+            throw new IllegalStateException("class needs native allocation but has not native base class");
+        }
+
+        private Object callNativeGenericNewNode(PythonNativeClass self, Object[] varargs, PKeyword[] kwargs) {
             if (callNativeGenericNewNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNativeGenericNewNode = insert(PCallBinaryCapiFunction.create(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_NEW));
+                callNativeGenericNewNode = insert(PCallCapiFunction.create(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_NEW));
             }
-            if (toSulongNode == null) {
+            if (toSulongNodes == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(CExtNodes.ToSulongNode.create());
+                toSulongNodes = new CExtNodes.ToSulongNode[4];
+                for (int i = 0; i < toSulongNodes.length; i++) {
+                    toSulongNodes[i] = insert(CExtNodes.ToSulongNode.create());
+                }
             }
             if (asPythonObjectNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 asPythonObjectNode = insert(CExtNodes.AsPythonObjectNode.create());
             }
-            return asPythonObjectNode.execute(callNativeGenericNewNode.execute(toSulongNode.execute(self), nitems));
+            PKeyword[] kwarr = kwargs.length > 0 ? kwargs : null;
+            PTuple targs = factory().createTuple(varargs);
+            PDict dkwargs = factory().createDict(kwarr);
+            return asPythonObjectNode.execute(
+                            callNativeGenericNewNode.call(toSulongNodes[0].execute(self), toSulongNodes[1].execute(self), toSulongNodes[2].execute(targs), toSulongNodes[3].execute(dkwargs)));
         }
     }
 

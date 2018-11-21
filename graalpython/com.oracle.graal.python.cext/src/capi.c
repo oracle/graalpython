@@ -331,6 +331,13 @@ const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
 
 const char* PyTruffle_CstrToString(const char* o) {
     return polyglot_from_string(o, SRC_CS);
+
+PyObject* PyTruffle_Type_GenericNew(PyTypeObject* cls, PyTypeObject* dominatingNativeClass, PyObject* args, PyObject* kwds) {
+    PyObject* newInstance;
+    newInstance = dominatingNativeClass->tp_alloc(cls, 0);
+    newInstance->ob_refcnt = 0;
+    Py_TYPE(newInstance) = cls;
+    return newInstance;
 }
 
 #define PRIMITIVE_ARRAY_TO_NATIVE(__jtype__, __ctype__, __polyglot_type__, __element_cast__) \

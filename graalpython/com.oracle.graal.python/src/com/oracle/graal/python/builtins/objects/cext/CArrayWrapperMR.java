@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CArrayWrappe
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -120,7 +121,7 @@ public class CArrayWrapperMR {
     @ImportStatic(SpecialMethodNames.class)
     abstract static class GetTypeIDNode extends CExtBaseNode {
 
-        @Child private PCallNativeNode callUnaryNode = PCallNativeNode.create();
+        @Child private PCallCapiFunction callUnaryNode;
 
         @CompilationFinal private TruffleObject funGetByteArrayTypeID;
 
@@ -132,11 +133,11 @@ public class CArrayWrapperMR {
         }
 
         private Object callGetByteArrayTypeID(long len) {
-            if (funGetByteArrayTypeID == null) {
+            if (callUnaryNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                funGetByteArrayTypeID = importCAPISymbol(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID);
+                callUnaryNode = insert(PCallCapiFunction.create(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID));
             }
-            return callUnaryNode.execute(funGetByteArrayTypeID, new Object[]{len});
+            return callUnaryNode.call(funGetByteArrayTypeID, new Object[]{len});
         }
     }
 

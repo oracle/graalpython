@@ -51,7 +51,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallBinaryCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.AppendNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CastToByteNodeGen;
@@ -1121,32 +1121,32 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         NativeSequenceStorage doByte(byte[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Byte);
+                        @Cached("create(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE)") PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.call(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Byte);
         }
 
         @Specialization
         NativeSequenceStorage doInt(int[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Int);
+                        @Cached("create(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE)") PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.call(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Int);
         }
 
         @Specialization
         NativeSequenceStorage doLong(long[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Long);
+                        @Cached("create(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE)") PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.call(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Long);
         }
 
         @Specialization
         NativeSequenceStorage doDouble(double[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Double);
+                        @Cached("create(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE)") PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.call(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Double);
         }
 
         @Specialization
         NativeSequenceStorage doObject(Object[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Generic);
+                        @Cached("create(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE)") PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.call(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Generic);
         }
 
         private Object wrap(Object arr) {

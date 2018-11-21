@@ -1303,8 +1303,7 @@ public abstract class CExtNodes {
         }
     }
 
-    public static class PCallBinaryCapiFunction extends CExtBaseNode {
-
+    public static class PCallCapiFunction extends CExtBaseNode {
         @Child private Node callNode;
 
         private final String name;
@@ -1312,13 +1311,13 @@ public abstract class CExtNodes {
 
         @CompilationFinal TruffleObject receiver;
 
-        public PCallBinaryCapiFunction(String name) {
+        public PCallCapiFunction(String name) {
             this.name = name;
         }
 
-        public Object execute(Object arg0, Object arg1) {
+        public Object call(Object... args) {
             try {
-                return ForeignAccess.sendExecute(getCallNode(), getFunction(), arg0, arg1);
+                return ForeignAccess.sendExecute(getCallNode(), getFunction(), args);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 profile.enter();
                 throw e.raise();
@@ -1341,9 +1340,10 @@ public abstract class CExtNodes {
             return receiver;
         }
 
-        public static PCallBinaryCapiFunction create(String name) {
-            return new PCallBinaryCapiFunction(name);
+        public static PCallCapiFunction create(String name) {
+            return new PCallCapiFunction(name);
         }
+
     }
 
     public static class MayRaiseNodeFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
