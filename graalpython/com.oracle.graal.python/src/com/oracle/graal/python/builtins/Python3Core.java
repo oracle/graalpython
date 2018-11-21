@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -652,10 +653,14 @@ public final class Python3Core implements PythonCore {
             Env env = ctxt.getEnv();
             TruffleFile file = env.getTruffleFile(prefix + suffix);
             try {
-                return getLanguage().newSource(ctxt, file, basename);
+                if (file.exists()) {
+                    return getLanguage().newSource(ctxt, file, basename);
+                }
             } catch (SecurityException | IOException t) {
-                throw new RuntimeException("Could not read core library from " + file);
+                // fall through;
             }
+            PythonLanguage.getLogger().log(Level.SEVERE, "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.");
+            throw new RuntimeException();
         }
     }
 
