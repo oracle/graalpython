@@ -122,22 +122,12 @@ class AbstractPythonVm(Vm):
         return ret_code, out.data
 
 
-class CPythonVm(AbstractPythonVm):
-    PYTHON_INTERPRETER = "python3"
+class AbstractPythonNoWarmupVm(AbstractPythonVm):
+    __metaclass__ = ABCMeta
 
-    def __init__(self, config_name, options=None, virtualenv=None, no_warmup=False):
-        super(CPythonVm, self).__init__(config_name, options)
-        self._virtualenv = virtualenv
+    def __init__(self, config_name, options=None, no_warmup=False):
+        super(AbstractPythonNoWarmupVm, self).__init__(config_name, options)
         self._no_warmup = no_warmup
-
-    @property
-    def interpreter(self):
-        if self._virtualenv:
-            return os.path.join(self._virtualenv, CPythonVm.PYTHON_INTERPRETER)
-        return CPythonVm.PYTHON_INTERPRETER
-
-    def name(self):
-        return VM_NAME_CPYTHON
 
     @staticmethod
     def remove_warmup_runs(args):
@@ -154,20 +144,39 @@ class CPythonVm(AbstractPythonVm):
 
     def run(self, cwd, args):
         if self._no_warmup:
-            args = CPythonVm.remove_warmup_runs(args)
-        return super(CPythonVm, self).run(cwd, args)
+            args = AbstractPythonNoWarmupVm.remove_warmup_runs(args)
+        return super(AbstractPythonNoWarmupVm, self).run(cwd, args)
 
 
-class PyPyVm(AbstractPythonVm):
-    def __init__(self, config_name, options=None):
-        super(PyPyVm, self).__init__(config_name, options=options)
+class CPythonVm(AbstractPythonNoWarmupVm):
+    PYTHON_INTERPRETER = "python3"
+
+    def __init__(self, config_name, options=None, virtualenv=None, no_warmup=False):
+        super(CPythonVm, self).__init__(config_name, options=options, no_warmup=no_warmup)
+        self._virtualenv = virtualenv
+
+    @property
+    def interpreter(self):
+        if self._virtualenv:
+            return os.path.join(self._virtualenv, CPythonVm.PYTHON_INTERPRETER)
+        return CPythonVm.PYTHON_INTERPRETER
+
+    def name(self):
+        return VM_NAME_CPYTHON
+
+
+class PyPyVm(AbstractPythonNoWarmupVm):
+    PYPY_INTERPRETER = "pypy3"
+
+    def __init__(self, config_name, options=None, no_warmup=False):
+        super(PyPyVm, self).__init__(config_name, options=options, no_warmup=no_warmup)
 
     @property
     def interpreter(self):
         home = mx.get_env(ENV_PYPY_HOME)
         if not home:
             mx.abort("{} is not set!".format(ENV_PYPY_HOME))
-        return join(home, 'bin', 'pypy3')
+        return join(home, 'bin', PyPyVm.PYPY_INTERPRETER)
 
     def name(self):
         return VM_NAME_PYPY
