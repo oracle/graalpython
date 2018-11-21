@@ -722,7 +722,7 @@ def main(prog, args):
     # get cpython stats
     log(HR)
     log("[INFO] get cpython stats")
-    cpy_results = run_unittests(unittests, flags.timeout, with_cpython=True)
+    cpy_results = run_unittests(unittests, 60 * 5, with_cpython=True)
     cpy_stats = process_output('\n'.join(cpy_results))[-1]
 
     # get graalpython stats

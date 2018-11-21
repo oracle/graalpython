@@ -122,37 +122,36 @@ class AbstractPythonVm(Vm):
         return ret_code, out.data
 
 
-class AbstractPythonNoWarmupVm(AbstractPythonVm):
+class AbstractPythonIterationsControlVm(AbstractPythonVm):
     __metaclass__ = ABCMeta
 
-    def __init__(self, config_name, options=None, no_warmup=False):
-        super(AbstractPythonNoWarmupVm, self).__init__(config_name, options)
-        self._no_warmup = no_warmup
+    def __init__(self, config_name, options=None, iterations=None):
+        super(AbstractPythonIterationsControlVm, self).__init__(config_name, options)
+        self._iterations = iterations
 
-    @staticmethod
-    def remove_warmup_runs(args):
+    def _override_iterations_args(self, args):
         _args = []
         i = 0
         while i < len(args):
             arg = args[i]
             _args.append(arg)
             if arg == '-i':
-                _args.append('0')
+                _args.append(str(self._iterations))
                 i += 1
             i += 1
         return _args
 
     def run(self, cwd, args):
-        if self._no_warmup:
-            args = AbstractPythonNoWarmupVm.remove_warmup_runs(args)
-        return super(AbstractPythonNoWarmupVm, self).run(cwd, args)
+        if isinstance(self._iterations, (int, long)):
+            args = self._override_iterations_args(args)
+        return super(AbstractPythonIterationsControlVm, self).run(cwd, args)
 
 
-class CPythonVm(AbstractPythonNoWarmupVm):
+class CPythonVm(AbstractPythonIterationsControlVm):
     PYTHON_INTERPRETER = "python3"
 
-    def __init__(self, config_name, options=None, virtualenv=None, no_warmup=False):
-        super(CPythonVm, self).__init__(config_name, options=options, no_warmup=no_warmup)
+    def __init__(self, config_name, options=None, virtualenv=None, iterations=False):
+        super(CPythonVm, self).__init__(config_name, options=options, iterations=iterations)
         self._virtualenv = virtualenv
 
     @property
@@ -165,11 +164,11 @@ class CPythonVm(AbstractPythonNoWarmupVm):
         return VM_NAME_CPYTHON
 
 
-class PyPyVm(AbstractPythonNoWarmupVm):
+class PyPyVm(AbstractPythonIterationsControlVm):
     PYPY_INTERPRETER = "pypy3"
 
-    def __init__(self, config_name, options=None, no_warmup=False):
-        super(PyPyVm, self).__init__(config_name, options=options, no_warmup=no_warmup)
+    def __init__(self, config_name, options=None, iterations=False):
+        super(PyPyVm, self).__init__(config_name, options=options, iterations=iterations)
 
     @property
     def interpreter(self):
