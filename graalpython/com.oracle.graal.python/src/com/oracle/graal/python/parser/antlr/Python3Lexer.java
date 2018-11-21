@@ -175,8 +175,10 @@ public class Python3Lexer extends Lexer {
 
 	  @Override
 	  public Token nextToken() {
+	    Token next = super.nextToken();
+
 	    // Check if the end-of-file is ahead to insert any missing DEDENTS and a NEWLINE.
-	    if (_input.LA(1) == EOF && !expandedEOF) {
+	    if (next.getType() == EOF && !expandedEOF) {
 	      expandedEOF = true;
 
 	      // Remove any trailing EOF tokens from our buffer.
@@ -196,10 +198,10 @@ public class Python3Lexer extends Lexer {
 	      }
 
 	      // Put the EOF back on the token stream.
-	      this.emit(commonToken(Python3Parser.EOF, "<EOF>"));
-	    }
+	      this.emit(next);
 
-	    Token next = super.nextToken();
+	      next = super.nextToken();
+	    }
 
 	    if (next.getChannel() == Token.DEFAULT_CHANNEL) {
 	      // Keep track of the last token on the default channel.
