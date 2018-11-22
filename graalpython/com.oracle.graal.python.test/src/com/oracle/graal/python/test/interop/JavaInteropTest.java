@@ -46,9 +46,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.List;
-import java.io.UnsupportedEncodingException;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
