@@ -53,7 +53,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public abstract class DeleteNameNode extends StatementNode {
+public abstract class DeleteNameNode extends StatementNode implements AccessNameNode {
     @Child private DeleteGlobalNode deleteGlobalNode;
     protected final IsBuiltinClassProfile keyError = IsBuiltinClassProfile.create();
     protected final String attributeId;
@@ -64,17 +64,6 @@ public abstract class DeleteNameNode extends StatementNode {
 
     public static DeleteNameNode create(String attributeId) {
         return DeleteNameNodeGen.create(attributeId);
-    }
-
-    protected boolean hasLocals(VirtualFrame frame) {
-        // (tfel): This node will only ever be generated in a module scope
-        // where neither generator special args nor a ClassBodyRootNode can
-        // occur
-        return PArguments.getSpecialArgument(frame) != null;
-    }
-
-    protected boolean hasLocalsDict(VirtualFrame frame) {
-        return PArguments.getSpecialArgument(frame) instanceof PDict;
     }
 
     private DeleteGlobalNode getDeleteGlobalNode() {
@@ -113,5 +102,9 @@ public abstract class DeleteNameNode extends StatementNode {
     @Specialization(guards = "!hasLocals(frame)")
     protected void readFromLocals(VirtualFrame frame) {
         getDeleteGlobalNode().executeVoid(frame);
+    }
+
+    public String getAttributeId() {
+        return attributeId;
     }
 }

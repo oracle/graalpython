@@ -52,7 +52,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @NodeChild(value = "rhs", type = ExpressionNode.class)
-public abstract class WriteNameNode extends StatementNode implements WriteNode {
+public abstract class WriteNameNode extends StatementNode implements WriteNode, AccessNameNode {
     protected final String attributeId;
 
     protected WriteNameNode(String attributeId) {
@@ -61,17 +61,6 @@ public abstract class WriteNameNode extends StatementNode implements WriteNode {
 
     public static WriteNameNode create(String attributeId, ExpressionNode rhs) {
         return WriteNameNodeGen.create(attributeId, rhs);
-    }
-
-    protected boolean hasLocals(VirtualFrame frame) {
-        // (tfel): This node will only ever be generated in a module scope
-        // where neither generator special args nor a ClassBodyRootNode can
-        // occur
-        return PArguments.getSpecialArgument(frame) != null;
-    }
-
-    protected boolean hasLocalsDict(VirtualFrame frame) {
-        return PArguments.getSpecialArgument(frame) instanceof PDict;
     }
 
     @Specialization(guards = "hasLocalsDict(frame)")
@@ -124,8 +113,7 @@ public abstract class WriteNameNode extends StatementNode implements WriteNode {
 
     public abstract void executeWithValue(VirtualFrame frame, Object value);
 
-    public Object getAttributeId() {
+    public String getAttributeId() {
         return attributeId;
     }
-
 }

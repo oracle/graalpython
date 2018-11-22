@@ -54,7 +54,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public abstract class ReadNameNode extends ExpressionNode implements ReadNode {
+public abstract class ReadNameNode extends ExpressionNode implements ReadNode, AccessNameNode {
     @Child private ReadGlobalOrBuiltinNode readGlobalNode;
     protected final IsBuiltinClassProfile keyError = IsBuiltinClassProfile.create();
     protected final String attributeId;
@@ -65,17 +65,6 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode {
 
     public static ReadNameNode create(String attributeId) {
         return ReadNameNodeGen.create(attributeId);
-    }
-
-    protected boolean hasLocals(VirtualFrame frame) {
-        // (tfel): This node will only ever be generated in a module scope
-        // where neither generator special args nor a ClassBodyRootNode can
-        // occur
-        return PArguments.getSpecialArgument(frame) != null;
-    }
-
-    protected boolean hasLocalsDict(VirtualFrame frame) {
-        return PArguments.getSpecialArgument(frame) instanceof PDict;
     }
 
     private ReadGlobalOrBuiltinNode getReadGlobalNode() {
