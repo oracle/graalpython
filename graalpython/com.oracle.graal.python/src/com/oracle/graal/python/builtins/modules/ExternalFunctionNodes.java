@@ -261,7 +261,7 @@ public abstract class ExternalFunctionNodes {
             Object arg = readArgNode.execute(frame);
             Object[] arguments = PArguments.create(2);
             PArguments.setArgument(arguments, 0, self);
-            PArguments.setArgument(arguments, 1, factory.createTuple(new Object[]{arg}));
+            PArguments.setArgument(arguments, 1, arg);
             return directCallNode.call(arguments);
         }
     }
