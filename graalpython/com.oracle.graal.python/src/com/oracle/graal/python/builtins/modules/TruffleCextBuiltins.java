@@ -315,7 +315,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "CreateFunction", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
+    @Builtin(name = "CreateFunction", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CreateFunctionNode extends PythonBuiltinNode {
