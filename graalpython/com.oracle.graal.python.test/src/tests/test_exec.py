@@ -298,3 +298,6 @@ class ExecTests:
             assert locals()["x"] == 12\n""", None, m)
         assert eval("locals() is m", None, m)
         assert m["x"] == 12
+
+    def test_locals_is_globals(self):
+        exec("assert locals() is globals()", globals())

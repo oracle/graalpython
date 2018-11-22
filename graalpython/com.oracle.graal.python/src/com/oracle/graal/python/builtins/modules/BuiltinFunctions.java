@@ -1645,7 +1645,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject globals = PArguments.getGlobals(callerFrame);
             if (condProfile.profile(globals instanceof PythonModule)) {
-                return factory().createDictFixedStorage(globals);
+                PHashingCollection dict = globals.getDict();
+                if (dict == null) {
+                    CompilerDirectives.transferToInterpreter();
+                    globals.setDict(dict = factory().createDictFixedStorage(globals));
+                }
+                return dict;
             } else {
                 return globals;
             }

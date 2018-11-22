@@ -47,6 +47,7 @@ import java.io.IOException;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -212,11 +213,16 @@ public class TopLevelExceptionHandler extends RootNode {
 
     private Object run(VirtualFrame frame) {
         Object[] arguments = createArgs.execute(frame.getArguments());
+        PythonContext pythonContext = context.get();
         if (getSourceSection().getSource().isInternal()) {
             // internal sources are not run in the main module
-            PArguments.setGlobals(arguments, context.get().getCore().factory().createDict());
+            PArguments.setGlobals(arguments, pythonContext.getCore().factory().createDict());
         } else {
-            PArguments.setGlobals(arguments, context.get().getMainModule());
+            PythonModule mainModule = pythonContext.getMainModule();
+            PHashingCollection mainDict = mainModule.getDict();
+            PArguments.setGlobals(arguments, mainModule);
+            PArguments.setSpecialArgument(arguments, mainDict);
+            PArguments.setPFrame(arguments, pythonContext.getCore().factory().createPFrame(mainDict));
         }
         return innerCallTarget.call(arguments);
     }
