@@ -96,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -516,15 +517,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setGlobals(args, PArguments.getGlobals(callerFrame));
         }
 
-        private void inheritLocals(Frame callerFrame, Object[] args) {
+        private void inheritLocals(Frame callerFrame, Object[] args, GetLocalsNode getLocalsNode) {
             PFrame pFrame = PArguments.getPFrame(callerFrame);
             if (pFrame == null) {
                 pFrame = factory().createPFrame(callerFrame);
                 PArguments.setPFrame(callerFrame, pFrame);
             }
-            PDict callerLocals = pFrame.getLocals(factory());
-            PArguments.setSpecialArgument(args, callerLocals);
-            PArguments.setPFrame(args, factory().createPFrame(callerLocals));
+            Object callerLocals = getLocalsNode.execute(pFrame);
+            setCustomLocals(args, callerLocals);
+        }
+
+        private void setCustomLocals(Object[] args, Object locals) {
+            PArguments.setSpecialArgument(args, locals);
+            PArguments.setPFrame(args, factory().createPFrame(locals));
         }
 
         private void setBuiltinsInGlobals(PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
@@ -549,12 +554,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         Object execInheritGlobalsInheritLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
-                        @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
+                        @Cached("create()") ReadCallerFrameNode readCallerFrameNode,
+                        @Cached("create()") GetLocalsNode getLocalsNode) {
             PCode code = createAndCheckCode(source);
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
-            inheritLocals(callerFrame, args);
+            inheritLocals(callerFrame, args, getLocalsNode);
             return indirectCallNode.call(code.getRootCallTarget(), args);
         }
 
@@ -564,7 +570,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PCode code = createAndCheckCode(source);
             Object[] args = PArguments.create();
             setCustomGlobals(globals, setBuiltins, args);
-            PArguments.setSpecialArgument(args, globals);
+            setCustomLocals(args, globals);
             return indirectCallNode.call(code.getRootCallTarget(), args);
         }
 
@@ -575,7 +581,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
-            PArguments.setSpecialArgument(args, locals);
+            setCustomLocals(args, locals);
             return indirectCallNode.call(code.getRootCallTarget(), args);
         }
 
@@ -585,7 +591,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PCode code = createAndCheckCode(source);
             Object[] args = PArguments.create();
             setCustomGlobals(globals, setBuiltins, args);
-            PArguments.setSpecialArgument(args, locals);
+            setCustomLocals(args, locals);
             return indirectCallNode.call(code.getRootCallTarget(), args);
         }
 
@@ -1650,17 +1656,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LocalsNode extends PythonBuiltinNode {
         @Child ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
-        private final ConditionProfile condProfile = ConditionProfile.createBinaryProfile();
+        @Child GetLocalsNode getLocalsNode = GetLocalsNode.create();
+        private final ConditionProfile hasFrame = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile hasPFrame = ConditionProfile.createBinaryProfile();
 
         @Specialization
         public Object locals(VirtualFrame frame) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PFrame pFrame = PArguments.getPFrame(callerFrame);
-            if (condProfile.profile(pFrame == null)) {
+            if (hasPFrame.profile(pFrame == null)) {
                 pFrame = factory().createPFrame(callerFrame);
                 PArguments.setPFrame(callerFrame, pFrame);
+            } else if (hasFrame.profile(!pFrame.hasFrame())) {
+                pFrame = factory().createPFrame(callerFrame, pFrame.getLocalsDict());
+                PArguments.setPFrame(callerFrame, pFrame);
             }
-            return pFrame.getLocals(factory());
+            return getLocalsNode.execute(pFrame);
         }
     }
 }

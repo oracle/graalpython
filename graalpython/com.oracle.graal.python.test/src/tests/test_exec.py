@@ -277,3 +277,24 @@ class ExecTests:
             x = f(4)\n""")
         assert eval("locals() is l")
         assert l["x"] == 4
+
+    def test_custom_locals(self):
+        class M(object):
+            def __getitem__(self, key):
+                return self.result[key]
+            def __setitem__(self, key, value):
+                self.result[key] = value
+        m = M()
+        m.result = {"m": m, "M": M}
+        exec("""if 1:
+            assert locals() is m
+            def f(a):
+                exec('a=3')
+                return a
+            x = f(4)
+            assert locals()["x"] == 4
+            x = 12
+            assert isinstance(locals(), M)
+            assert locals()["x"] == 12\n""", None, m)
+        assert eval("locals() is m", None, m)
+        assert m["x"] == 12
