@@ -127,7 +127,10 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
 
     def __init__(self, config_name, options=None, iterations=None):
         super(AbstractPythonIterationsControlVm, self).__init__(config_name, options)
-        self._iterations = iterations
+        try:
+            self._iterations = int(iterations)
+        except Exception:
+            self._iterations = None
 
     def _override_iterations_args(self, args):
         _args = []
@@ -142,7 +145,7 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
         return _args
 
     def run(self, cwd, args):
-        if isinstance(self._iterations, (int, long)):
+        if self._iterations is not None:
             args = self._override_iterations_args(args)
         return super(AbstractPythonIterationsControlVm, self).run(cwd, args)
 
@@ -150,7 +153,7 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
 class CPythonVm(AbstractPythonIterationsControlVm):
     PYTHON_INTERPRETER = "python3"
 
-    def __init__(self, config_name, options=None, virtualenv=None, iterations=False):
+    def __init__(self, config_name, options=None, virtualenv=None, iterations=None):
         super(CPythonVm, self).__init__(config_name, options=options, iterations=iterations)
         self._virtualenv = virtualenv
 
@@ -167,7 +170,7 @@ class CPythonVm(AbstractPythonIterationsControlVm):
 class PyPyVm(AbstractPythonIterationsControlVm):
     PYPY_INTERPRETER = "pypy3"
 
-    def __init__(self, config_name, options=None, iterations=False):
+    def __init__(self, config_name, options=None, iterations=None):
         super(PyPyVm, self).__init__(config_name, options=options, iterations=iterations)
 
     @property
