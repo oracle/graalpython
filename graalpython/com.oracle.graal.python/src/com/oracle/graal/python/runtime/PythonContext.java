@@ -256,7 +256,7 @@ public final class PythonContext {
     }
 
     public void setCapiBaseLibrary(Object capiLibrary) {
-        this.capiLibrary = capiLibrary;
+        this.capiBaseLibrary = capiLibrary;
     }
 
     public HashingStorage.Equivalence getSlowPathEquivalence() {
