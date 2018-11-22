@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
@@ -41,6 +42,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.graalvm.launcher.AbstractLanguageLauncher;
+import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
@@ -78,6 +80,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     @Override
     protected List<String> preprocessArguments(List<String> arguments, Map<String, String> polyglotOptions) {
         ArrayList<String> unrecognized = new ArrayList<>();
+        List<String> inputArgs = new ArrayList<>(arguments);
+        List<String> subprocessArgs = new ArrayList<>();
         programArgs = new ArrayList<>();
         for (int i = 0; i < arguments.size(); i++) {
             String arg = arguments.get(i);
@@ -143,6 +147,21 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     runLD = true;
                     programArgs.addAll(arguments.subList(i + 1, arguments.size()));
                     return unrecognized;
+                case "-debug-perf":
+                    subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
+                    subprocessArgs.add("Dgraal.TraceTrufflePerformanceWarnings=true");
+                    subprocessArgs.add("Dgraal.TruffleCompilationExceptionsArePrinted=true");
+                    inputArgs.remove("-debug-perf");
+                    break;
+                case "-dump":
+                    subprocessArgs.add("Dgraal.Dump=");
+                    inputArgs.remove("-dump");
+                    break;
+                case "-compile-truffle-immediately":
+                    subprocessArgs.add("Dgraal.TruffleCompileImmediately=true");
+                    subprocessArgs.add("Dgraal.TruffleCompilationExceptionsAreThrown=true");
+                    inputArgs.remove("-compile-truffle-immediately");
+                    break;
                 default:
                     if (!arg.startsWith("-")) {
                         inputFile = arg;
@@ -165,6 +184,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         // According to CPython if no arguments are given, they contain an empty string.
         if (programArgs.isEmpty()) {
             programArgs.add("");
+        }
+
+        if (!subprocessArgs.isEmpty()) {
+            subExec(inputArgs, subprocessArgs);
         }
 
         return unrecognized;
@@ -486,7 +509,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         // " a defense against denial-of-service attacks\n" +
                         // "-Q arg : division options: -Qold (default), -Qwarn, -Qwarnall, -Qnew\n"
                         // +
-                        "-q     : don't print version and copyright messages on interactive startup" +
+                        "-q     : don't print version and copyright messages on interactive startup\n" +
                         "-s     : don't add user site directory to sys.path; also PYTHONNOUSERSITE\n" +
                         "-S     : don't imply 'import site' on initialization\n" +
                         // "-t : issue warnings about inconsistent tab usage (-tt: issue errors)\n"
@@ -496,7 +519,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "-v     : verbose (trace import statements); also PYTHONVERBOSE=x\n" +
                         "         can be supplied multiple times to increase verbosity\n" +
                         "-V     : print the Python version number and exit (also --version)\n" +
-                        "         when given twice, print more information about the build" +
+                        "         when given twice, print more information about the build\n" +
                         // "-W arg : warning control; arg is
                         // action:message:category:module:lineno\n" +
                         // " also PYTHONWARNINGS=arg\n" +
@@ -509,11 +532,14 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "arg ...: arguments passed to program in sys.argv[1:]\n" +
                         "\n" +
                         "Arguments specific to GraalPython.\n" +
-                        "--show-version : print the Python version number and continue.\n" +
-                        "-CC            : run the C compiler used for generating GraalPython C extensions.\n" +
-                        "                 All following arguments are passed to the compiler.\n" +
-                        "-LD            : run the linker used for generating GraalPython C extensions.\n" +
-                        "                 All following arguments are passed to the linker.\n" +
+                        "--show-version               : print the Python version number and continue.\n" +
+                        "-CC                          : run the C compiler used for generating GraalPython C extensions.\n" +
+                        "                               All following arguments are passed to the compiler.\n" +
+                        "-LD                          : run the linker used for generating GraalPython C extensions.\n" +
+                        "                               All following arguments are passed to the linker.\n" +
+                        "-debug-perf                  : Enable tracing of Truffle compilations and its warnings\n" +
+                        "-dump                        : Enable dumping of compilation graphs to IGV\n" +
+                        "-compile-truffle-immediately : Start compiling on first invocation and throw compilation exceptions\n" +
                         "\n" +
                         "Other environment variables:\n" +
                         "PYTHONSTARTUP: file executed on interactive startup (no default)\n" +
@@ -675,6 +701,51 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 }
                 return candidates;
             });
+        }
+    }
+
+    /**
+     * Some system properties have already been read at this point, so to change them, we just
+     * re-execute the process with the additional options.
+     */
+    private static void subExec(List<String> args, List<String> subProcessDefs) {
+        List<String> cmd = new ArrayList<>();
+        if (isAOT()) {
+            cmd.add(ProcessProperties.getExecutableName());
+            for (String subProcArg : subProcessDefs) {
+                assert subProcArg.startsWith("D");
+                cmd.add("--native." + subProcArg);
+            }
+        } else {
+            cmd.add(System.getProperty("java.home") + File.separator + "bin" + File.separator + "java");
+            switch (System.getProperty("java.vm.name")) {
+                case "Java HotSpot(TM) 64-Bit Server VM":
+                    cmd.add("-server");
+                    cmd.add("-d64");
+                    break;
+                case "Java HotSpot(TM) 64-Bit Client VM":
+                    cmd.add("-client");
+                    cmd.add("-d64");
+                    break;
+                default:
+                    break;
+            }
+            cmd.addAll(ManagementFactory.getRuntimeMXBean().getInputArguments());
+            cmd.add("-cp");
+            cmd.add(ManagementFactory.getRuntimeMXBean().getClassPath());
+            for (String subProcArg : subProcessDefs) {
+                assert subProcArg.startsWith("D");
+                cmd.add("-" + subProcArg);
+            }
+            cmd.add(GraalPythonMain.class.getName());
+        }
+
+        cmd.addAll(args);
+        try {
+            System.exit(new ProcessBuilder(cmd.toArray(new String[0])).inheritIO().start().waitFor());
+        } catch (IOException | InterruptedException e) {
+            System.err.println(e.getMessage());
+            System.exit(-1);
         }
     }
 
