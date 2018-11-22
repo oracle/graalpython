@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CAUSE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+import static com.oracle.graal.python.runtime.PythonCore.FILE_SEPARATOR;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
@@ -228,17 +229,15 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             if (!ctxt.capiWasLoaded()) {
                 Env env = ctxt.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                TruffleFile capiFile = env.getTruffleFile(PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "capi.bc");
-                Object capi = null;
-                try {
-                    SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
-                    if (!PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources)) {
-                        capiSrcBuilder.internal(true);
-                    }
-                    capi = ctxt.getEnv().parse(capiSrcBuilder.build()).call();
-                } catch (SecurityException | IOException e) {
-                    throw raise(PythonErrorType.ImportError, "cannot load capi from " + capiFile.getAbsoluteFile().getPath());
-                }
+
+                // load base functionality we might already need just to initialize the main C API
+                // library
+                TruffleFile capiBaseFile = env.getTruffleFile(PythonCore.getCoreHome(env) + FILE_SEPARATOR + "modules" + FILE_SEPARATOR + "capi_base.bc");
+                Object capiBase = loadBitcodeFile(ctxt, capiBaseFile);
+                ctxt.setCapiBaseLibrary(capiBase);
+
+                TruffleFile capiFile = env.getTruffleFile(PythonCore.getCoreHome(env) + FILE_SEPARATOR + "capi.bc");
+                Object capi = loadBitcodeFile(ctxt, capiFile);
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = insert(ReadAttributeFromObjectNode.create());
                 CallUnaryMethodNode callNode = insert(CallUnaryMethodNode.create());
@@ -249,6 +248,20 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // immediately
                 callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), IMPORT_NATIVE_MEMORYVIEW), capi);
             }
+        }
+
+        private Object loadBitcodeFile(PythonContext ctxt, TruffleFile capiFile) {
+            Object capi = null;
+            try {
+                SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
+                if (!PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources)) {
+                    capiSrcBuilder.internal(true);
+                }
+                capi = ctxt.getEnv().parse(capiSrcBuilder.build()).call();
+            } catch (SecurityException | IOException e) {
+                throw raise(PythonErrorType.ImportError, "cannot load C API file " + capiFile.getAbsoluteFile().getPath());
+            }
+            return capi;
         }
 
         private SetItemNode getSetItemNode() {

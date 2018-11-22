@@ -252,7 +252,15 @@ public abstract class CExtNodes {
         }
 
         protected TruffleObject importCAPISymbol(String name) {
-            TruffleObject capiLibrary = (TruffleObject) getContext().getCapiLibrary();
+            TruffleObject capiLibrary;
+
+            // This can happen if we receive 'TO_NATIVE' while loading our C API bitcode file.
+            if (!getContext().capiWasLoaded()) {
+                capiLibrary = (TruffleObject) getContext().getCapiBaseLibrary();
+
+            } else {
+                capiLibrary = (TruffleObject) getContext().getCapiLibrary();
+            }
             if (readSymbolNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readSymbolNode = insert(Message.READ.createNode());
