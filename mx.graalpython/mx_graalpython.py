@@ -64,100 +64,16 @@ def __get_svm_binary_from_graalvm():
 
 
 def _extract_graalpython_internal_options(args):
-    internal = []
     non_internal = []
     additional_dists = []
     for arg in args:
         # Class path extensions
         if arg.startswith('-add-dist='):
             additional_dists += [arg[10:]]
-
-        # Debug flags
-        elif arg == '-print-ast':
-            internal += ["-Dcom.oracle.graal.python.PrintAST=true"]  # false
-
-        elif arg == '-visualize-ast':
-            internal += ["-Dcom.oracle.graal.python.VisualizedAST=true"]  # false
-
-        elif arg.startswith('-print-ast='):
-            internal += ["-Dcom.oracle.graal.python.PrintASTFilter=" + arg.replace('-print-ast=')]  # null
-
-        elif arg == '-debug-trace':
-            internal += ["-Dcom.oracle.graal.python.TraceJythonRuntime=true"]  # false
-            internal += ["-Dcom.oracle.graal.python.TraceImports=true"]  # false
-            internal += ["-Dcom.oracle.graal.python.TraceSequenceStorageGeneralization=true"]  # false
-            internal += ["-Dcom.oracle.graal.python.TraceObjectLayoutCreation=true"]  # false
-            internal += ["-Dcom.oracle.graal.python.TraceNodesWithoutSourceSection=true"]  # false
-            internal += ["-Dcom.oracle.graal.python.TraceNodesUsingExistingProbe=true"]  # false
-
-        elif arg == '-debug-junit':
-            internal += ["-Dcom.oracle.graal.python.CatchGraalPythonExceptionForUnitTesting=true"]  # false
-
-        # Object storage allocation """
-        elif arg == '-instrument-storageAlloc':
-            internal += ["-Dcom.oracle.graal.python.InstrumentObjectStorageAllocation=true"]  # false
-
-        # Translation flags """
-        elif arg == '-print-function':
-            internal += ["-Dcom.oracle.graal.python.UsePrintFunction=true"]  # false
-
-        # Runtime flags
-        elif arg == '-no-sequence-unboxing':
-            internal += ["-Dcom.oracle.graal.python.disableUnboxSequenceStorage=true"]  # true
-            internal += ["-Dcom.oracle.graal.python.disableUnboxSequenceIteration=true"]  # true
-
-        elif arg == '-no-intrinsify-calls':
-            internal += ["-Dcom.oracle.graal.python.disableIntrinsifyBuiltinCalls=true"]  # true
-
-        elif arg == '-flexible-object-storage':
-            internal += ["-Dcom.oracle.graal.python.FlexibleObjectStorage=true"]  # false
-
-        elif arg == '-flexible-storage-evolution':
-            internal += ["-Dcom.oracle.graal.python.FlexibleObjectStorageEvolution=true"]  # false
-            internal += ["-Dcom.oracle.graal.python.FlexibleObjectStorage=true"]  # false
-
-        # Generators
-        elif arg == '-no-inline-generator':
-            internal += ["-Dcom.oracle.graal.python.disableInlineGeneratorCalls=true"]  # true
-        elif arg == '-no-optimize-genexp':
-            internal += ["-Dcom.oracle.graal.python.disableOptimizeGeneratorExpressions=true"]  # true
-        elif arg == '-no-generator-peeling':
-            internal += ["-Dcom.oracle.graal.python.disableInlineGeneratorCalls=true"]  # true
-            internal += ["-Dcom.oracle.graal.python.disableOptimizeGeneratorExpressions=true"]  # true
-
-        elif arg == '-trace-generator-peeling':
-            internal += ["-Dcom.oracle.graal.python.TraceGeneratorInlining=true"]  # false
-
-        # Other
-        elif arg == '-force-long':
-            internal += ["-Dcom.oracle.graal.python.forceLongType=true"]  # false
-
-        elif arg == '-debug-perf' and SUITE_COMPILER:
-            # internal += ['-Dgraal.InliningDepthError=500']
-            # internal += ['-Dgraal.EscapeAnalysisIterations=3']
-            # internal += ['-XX:JVMCINMethodSizeLimit=1000000']
-            # internal += ['-Xms10g', '-Xmx16g']
-            internal += ['-Dgraal.TraceTruffleCompilation=true']
-            internal += ['-Dgraal.Dump=']
-            # internal += ['-XX:CompileCommand=print,*OptimizedCallTarget.callRoot',
-            #            '-XX:CompileCommand=exclude,*OptimizedCallTarget.callRoot',
-            #            '-Dgraal.TruffleBackgroundCompilation=false']
-            # internal += ['-Dgraal.TruffleCompileImmediately=true']
-            internal += ['-Dgraal.TraceTrufflePerformanceWarnings=true']
-            internal += ['-Dgraal.TruffleCompilationExceptionsArePrinted=true']
-            # internal += ['-Dgraal.TruffleInliningMaxCallerSize=150']
-            # internal += ['-Dgraal.InliningDepthError=10']
-            # internal += ['-Dgraal.MaximumLoopExplosionCount=1000']
-            # internal += ['-Dgraal.TruffleCompilationThreshold=100000']
-
-        elif arg == '-compile-truffle-immediately' and SUITE_COMPILER:
-            internal += ['-Dgraal.TruffleCompileImmediately=true']
-            internal += ['-Dgraal.TruffleCompilationExceptionsAreThrown=true']
-
         else:
             non_internal += [arg]
 
-    return internal, non_internal, additional_dists
+    return non_internal, additional_dists
 
 
 def check_vm(vm_warning=True, must_be_jvmci=False):
@@ -197,7 +113,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
     dists = ['GRAALPYTHON']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
-    internal_graalpython_args, graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
+    graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
     dists += additional_dists
     if '--python.WithJavaStacktrace' not in graalpython_args:
         graalpython_args.insert(0, '--python.WithJavaStacktrace')
@@ -224,8 +140,6 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
                 vm_args.append("-Dpolyglot.llvm.enableLVI=true")
 
     vm_args += mx.get_runtime_jvm_args(dists, jdk=jdk)
-
-    vm_args += internal_graalpython_args
 
     if not jdk:
         jdk = get_jdk()
