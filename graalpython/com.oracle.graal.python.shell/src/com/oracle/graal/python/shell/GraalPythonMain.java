@@ -151,6 +151,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
                     subprocessArgs.add("Dgraal.TraceTrufflePerformanceWarnings=true");
                     subprocessArgs.add("Dgraal.TruffleCompilationExceptionsArePrinted=true");
+                    subprocessArgs.add("Dgraal.TraceTruffleInlining=true");
+                    subprocessArgs.add("Dgraal.TruffleTraceSplittingSummary=true");
                     inputArgs.remove("-debug-perf");
                     break;
                 case "-dump":
