@@ -533,15 +533,12 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         // "- : program read from stdin (default; interactive mode if a tty)\n" +
                         "arg ...: arguments passed to program in sys.argv[1:]\n" +
                         "\n" +
-                        "Arguments specific to GraalPython.\n" +
-                        "--show-version               : print the Python version number and continue.\n" +
-                        "-CC                          : run the C compiler used for generating GraalPython C extensions.\n" +
-                        "                               All following arguments are passed to the compiler.\n" +
-                        "-LD                          : run the linker used for generating GraalPython C extensions.\n" +
-                        "                               All following arguments are passed to the linker.\n" +
-                        "-debug-perf                  : Enable tracing of Truffle compilations and its warnings\n" +
-                        "-dump                        : Enable dumping of compilation graphs to IGV\n" +
-                        "-compile-truffle-immediately : Start compiling on first invocation and throw compilation exceptions\n" +
+                        "Arguments specific to GraalPython:\n" +
+                        "--show-version : print the Python version number and continue.\n" +
+                        "-CC            : run the C compiler used for generating GraalPython C extensions.\n" +
+                        "                 All following arguments are passed to the compiler.\n" +
+                        "-LD            : run the linker used for generating GraalPython C extensions.\n" +
+                        "                 All following arguments are passed to the linker.\n" +
                         "\n" +
                         "Other environment variables:\n" +
                         "PYTHONSTARTUP: file executed on interactive startup (no default)\n" +
@@ -555,6 +552,12 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "   as specifying the -R option: a random value is used to seed the hashes of\n" +
                         "   str, bytes and datetime objects.  It can also be set to an integer\n" +
                         "   in the range [0,4294967295] to get hash values with a predictable seed.");
+        if (maxCategory.compareTo(OptionCategory.DEBUG) >= 0) {
+            print("\nGraalPython performance debugging options:\n" +
+                            "-debug-perf                  : Enable tracing of Truffle compilations and its warnings\n" +
+                            "-dump                        : Enable dumping of compilation graphs to IGV\n" +
+                            "-compile-truffle-immediately : Start compiling on first invocation and throw compilation exceptions");
+        }
     }
 
     @Override
