@@ -55,6 +55,93 @@ ATTR_BENCHMARK = '__benchmark__'
 ATTR_TEARDOWN = '__teardown__'
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+#
+# the CUSUM method adapted for warmup detection within a given threshold (initial iterations)
+#
+# ----------------------------------------------------------------------------------------------------------------------
+def zeros(n):
+    return [0 for _ in range(n)]
+
+
+def append(arr, val):
+    if isinstance(arr, list):
+        return arr + [val]
+    else:
+        return [val] + arr
+
+
+def cusum(values, threshold=1.0, drift=0.0):
+    csum_pos, csum_neg = zeros(len(values)), zeros(len(values))
+    change_points = []
+    for i in range(1, len(values)):
+        diff = values[i] - values[i - 1]
+        csum_pos[i] = csum_pos[i-1] + diff - drift
+        csum_neg[i] = csum_neg[i-1] - diff - drift
+
+        if csum_pos[i] < 0:
+            csum_pos[i] = 0
+        if csum_neg[i] < 0:
+            csum_neg[i] = 0
+
+        if csum_pos[i] > threshold or csum_neg[i] > threshold:
+            change_points = append(change_points, i)
+            csum_pos[i], csum_neg[i] = 0, 0
+
+    return change_points
+
+
+def avg(values):
+    return float(sum(values)) / len(values)
+
+
+def norm(values):
+    _max, _min  = max(values), min(values)
+    return [float(v - _min) / (_max - _min) * 100.0 for v in values]
+
+
+def pairwise_slopes(values, cp):
+    return [abs(float(values[i+1] - values[i]) / float(cp[i+1] - cp[i])) for i in range(len(values)-1)]
+
+
+def detect_warmup(values, cp_threshold=0.03, stability_slope_grade=0.01):
+    """
+    detect the point of warmup point (iteration / run)
+
+    :param values: the durations for each run
+    :param cp_threshold:  the percent in value difference for a point to be considered a change point (percentage)
+    :param stability_slope_grade: the slope grade (percentage). A grade of 1% corresponds to a slope of 0.5 degrees
+    :return: the change point or -1 if not detected
+    """
+    # normalize all
+    stability_slope_grade *= 100.0
+    cp_threshold *= 100
+    values = norm(values)
+
+    try:
+        cp = cusum(values, threshold=cp_threshold)
+        rolling_avg = [avg(values[i:]) for i in cp]
+
+        # find the point where the duration avg is below the cp threshold
+        for i, d in enumerate(rolling_avg):
+            if d <= cp_threshold:
+                return cp[i] + 1
+
+        # could not find something below the CP threshold (noise in the data), use the stabilisation of slopes
+        end_runs_idx = len(values) - int(len(values) * 0.1)
+        end_runs_idx = len(values) - 1 if end_runs_idx >= len(values) else end_runs_idx
+        slopes = pairwise_slopes(rolling_avg + values[end_runs_idx:], cp + list(range(end_runs_idx, len(values))))
+
+        for i, d in enumerate(slopes):
+            if d <= stability_slope_grade:
+                return cp[i] + 1
+
+        return -1
+    except Exception as e:
+        print("exception occurred while detecting warmup: %s" % e)
+        return -1
+
+
 def ccompile(name, code):
     from importlib import invalidate_caches
     from distutils.core import setup, Extension
@@ -178,11 +265,18 @@ class BenchRunner(object):
         print(_HRULE)
         print("### teardown ... ")
         self._call_attr(ATTR_TEARDOWN)
+        warmup_iter = detect_warmup(durations)
         print("### benchmark complete")
         print(_HRULE)
-        print("### BEST     duration: %.3f s" % min(durations))
-        print("### WORST    duration: %.3f s" % max(durations))
-        print("### AVG      duration: %.3f" % (sum(durations) / len(durations)))
+        print("### BEST                duration: %.3f s" % min(durations))
+        print("### WORST               duration: %.3f s" % max(durations))
+        print("### AVG (with warmup)   duration: %.3f s" % (sum(durations) / len(durations)))
+        if warmup_iter > 0:
+            print("### WARMUP detected at iteration: %d" % warmup_iter)
+            no_warmup_durations = durations[warmup_iter:]
+            print("### AVG (no warmup)     duration: %.3f s" % (sum(no_warmup_durations) / len(no_warmup_durations)))
+        else:
+            print("### WARMUP could not be detected")
         print(_HRULE)
 
 
