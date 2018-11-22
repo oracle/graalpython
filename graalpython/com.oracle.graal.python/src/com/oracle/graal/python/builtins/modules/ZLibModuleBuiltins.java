@@ -238,7 +238,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public long doit(PIBytesLike data, PNone value) {
+        public long doit(PIBytesLike data, @SuppressWarnings("unused") PNone value) {
             CRC32 crc32 = new CRC32();
             crc32.update(getToArrayNode().execute(data.getSequenceStorage()));
             return crc32.getValue();
@@ -249,7 +249,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             // lost magnitude is ok here.
             int initValue = (int) value;
             byte[] array = getToArrayNode().execute(data.getSequenceStorage());
-            return ((long) computeCRC32(array, initValue) & 0xFFFFFFFFL);
+            return computeCRC32(array, initValue) & 0xFFFFFFFFL;
         }
 
         @Specialization
@@ -257,7 +257,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             // lost magnitude is ok here.
             int initValue = value.intValue();
             byte[] array = getToArrayNode().execute(data.getSequenceStorage());
-            return ((long) computeCRC32(array, initValue) & 0xFFFFFFFFL);
+            return computeCRC32(array, initValue) & 0xFFFFFFFFL;
         }
 
         @Specialization
@@ -267,7 +267,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public long doObject(Object data, Object value) {
+        public long doObject(Object data, @SuppressWarnings("unused") Object value) {
             throw raise(TypeError, "a bytes-like object is required, not '%p'", data);
         }
 
@@ -329,7 +329,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public long doit(PIBytesLike data, PNone value) {
+        public long doit(PIBytesLike data, @SuppressWarnings("unused") PNone value) {
             Adler32 adler32 = new Adler32();
             adler32.update(getToArrayNode().execute(data.getSequenceStorage()));
             return adler32.getValue();
@@ -340,7 +340,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             // lost magnitude is ok here.
             int initValue = (int) value;
             byte[] array = getToArrayNode().execute(data.getSequenceStorage());
-            return ((long) computeAdler32(array, initValue) & 0xFFFFFFFFL);
+            return computeAdler32(array, initValue) & 0xFFFFFFFFL;
         }
 
         @Specialization
@@ -348,7 +348,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             // lost magnitude is ok here.
             int initValue = value.intValue();
             byte[] array = getToArrayNode().execute(data.getSequenceStorage());
-            return ((long) computeAdler32(array, initValue) & 0xFFFFFFFFL);
+            return computeAdler32(array, initValue) & 0xFFFFFFFFL;
         }
 
         @Specialization
@@ -358,7 +358,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public long doObject(Object data, Object value) {
+        public long doObject(Object data, @SuppressWarnings("unused") Object value) {
             throw raise(TypeError, "a bytes-like object is required, not '%p'", data);
         }
 
@@ -399,7 +399,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes doit(PIBytesLike data, PNone level) {
+        public PBytes doit(PIBytesLike data, @SuppressWarnings("unused") PNone level) {
             byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(compress(array, -1));
         }
@@ -470,7 +470,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public PBytes doit(PIBytesLike data, PNone wbits, PNone bufsize) {
+        public PBytes doit(PIBytesLike data, @SuppressWarnings("unused") PNone wbits, @SuppressWarnings("unused") PNone bufsize) {
             byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(decompress(array, MAX_WBITS, DEF_BUF_SIZE));
         }
@@ -485,11 +485,9 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             // checking bufsize
             if (bufSizeProfile.profile(bufsize < 0)) {
                 throw raise(ZLibError, "bufsize must be non-negative");
-            } else if (bufsize == 0) {
-                bufsize = 1;
             }
             byte[] array = getToArrayNode().execute(data.getSequenceStorage());
-            return factory().createBytes(decompress(array, (int) wbits, bufsize));
+            return factory().createBytes(decompress(array, (int) wbits, bufsize == 0 ? 1 : bufsize));
         }
 
         @Specialization

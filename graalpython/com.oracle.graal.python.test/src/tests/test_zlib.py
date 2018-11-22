@@ -21,13 +21,12 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
-# Qunaibit 02/05/2014
-# With Statement
 
 import unittest
 import zlib
 import binascii
 import re
+import sys
 
 pintNumber = 98765432109876543210
 longNumber = 9876543210
@@ -165,14 +164,16 @@ class CompressTests(BaseCompressTestCase, unittest.TestCase):
         self.assertEqual(zlib.decompress(x), HAMLET_SCENE)
 
     def test_keywords(self):
-        x = zlib.compress(HAMLET_SCENE, level=3)
-        self.assertEqual(zlib.decompress(x), HAMLET_SCENE)
-        with self.assertRaises(TypeError):
-            zlib.compress(data=HAMLET_SCENE, level=3)
-        self.assertEqual(zlib.decompress(x,
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            # the keywords were added later
+            x = zlib.compress(HAMLET_SCENE, level=3)
+            self.assertEqual(zlib.decompress(x), HAMLET_SCENE)
+            with self.assertRaises(TypeError):
+                zlib.compress(data=HAMLET_SCENE, level=3)
+            self.assertEqual(zlib.decompress(x,
                                          wbits=zlib.MAX_WBITS,
                                          bufsize=zlib.DEF_BUF_SIZE),
-                         HAMLET_SCENE)
+                        HAMLET_SCENE)
 
     def test_speech128(self):
         # compress more data
