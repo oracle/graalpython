@@ -192,7 +192,7 @@ public class ErrnoModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("ENOTRECOVERABLE", 131);
         builtinConstants.put("ERFKILL", 132);
         builtinConstants.put("EHWPOISON", 133);
-        
+
         // added manually
         builtinConstants.put("EAGAIN", 11);
         builtinConstants.put("EWOULDBLOCK", 11);

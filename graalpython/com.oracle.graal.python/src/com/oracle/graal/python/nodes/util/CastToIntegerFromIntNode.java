@@ -58,22 +58,22 @@ import java.util.function.Function;
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
 public abstract class CastToIntegerFromIntNode extends PNodeWithContext {
-    
+
     @Child private LookupAndCallUnaryNode callIndexNode;
-    
+
     private final Function<Object, Byte> typeErrorHandler;
 
     public abstract Object execute(Object x);
 
-    public CastToIntegerFromIntNode (Function<Object, Byte> typeErrorHandler) {
-        super ();
+    public CastToIntegerFromIntNode(Function<Object, Byte> typeErrorHandler) {
+        super();
         this.typeErrorHandler = typeErrorHandler;
     }
-    
+
     public static CastToIntegerFromIntNode create() {
         return CastToIntegerFromIntNodeGen.create(null);
     }
-    
+
     public static CastToIntegerFromIntNode create(Function<Object, Byte> typeErrorHandler) {
         return CastToIntegerFromIntNodeGen.create(typeErrorHandler);
     }
