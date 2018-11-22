@@ -239,6 +239,7 @@ graalpython/com.oracle.graal.python.test/src/tests/test_tuple.py,python.copyrigh
 graalpython/com.oracle.graal.python.test/src/tests/test_with-test-2.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_with.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_zipimport.py,zippy.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_zlib.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/try-test.py,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/PythonLanguage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/Builtin.java,zippy.copyright

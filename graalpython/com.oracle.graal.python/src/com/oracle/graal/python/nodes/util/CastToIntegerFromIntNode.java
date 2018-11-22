@@ -53,18 +53,29 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.nodes.Node;
+import java.util.function.Function;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
 public abstract class CastToIntegerFromIntNode extends PNodeWithContext {
-
-    @Node.Child private LookupAndCallUnaryNode callIndexNode;
+    
+    @Child private LookupAndCallUnaryNode callIndexNode;
+    
+    private final Function<Object, Byte> typeErrorHandler;
 
     public abstract Object execute(Object x);
 
+    public CastToIntegerFromIntNode (Function<Object, Byte> typeErrorHandler) {
+        super ();
+        this.typeErrorHandler = typeErrorHandler;
+    }
+    
     public static CastToIntegerFromIntNode create() {
-        return CastToIntegerFromIntNodeGen.create();
+        return CastToIntegerFromIntNodeGen.create(null);
+    }
+    
+    public static CastToIntegerFromIntNode create(Function<Object, Byte> typeErrorHandler) {
+        return CastToIntegerFromIntNodeGen.create(typeErrorHandler);
     }
 
     @Specialization
@@ -79,7 +90,11 @@ public abstract class CastToIntegerFromIntNode extends PNodeWithContext {
 
     @Specialization
     public long toInt(double x) {
-        throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+        if (typeErrorHandler != null) {
+            return typeErrorHandler.apply(x);
+        } else {
+            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+        }
     }
 
     @Specialization(guards = "!isNumber(x)")
@@ -90,10 +105,14 @@ public abstract class CastToIntegerFromIntNode extends PNodeWithContext {
         }
         Object result = callIndexNode.executeObject(x);
         if (result == PNone.NO_VALUE) {
-            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+            if (typeErrorHandler != null) {
+                return typeErrorHandler.apply(x);
+            } else {
+                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+            }
         }
         if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
-            throw raise(TypeError, " __index__ returned non-int (type %p)", result);
+            throw raise(TypeError, " __int__ returned non-int (type %p)", result);
         }
         return result;
     }

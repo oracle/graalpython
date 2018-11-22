@@ -137,6 +137,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     ProcessLookupError("ProcessLookupError", "builtins"),
     TimeoutError("TimeoutError", "builtins"),
     ZipImportError("ZipImportError", "zipimport"),
+    ZLibError("error", "zlib"),
 
     // todo: all OS errors
 
@@ -267,6 +268,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         ProcessLookupError.base = OSError;
         TimeoutError.base = OSError;
         ZipImportError.base = ImportError;
+        ZLibError.base = Exception;
 
         ReferenceError.base = Exception;
         RuntimeError.base = Exception;

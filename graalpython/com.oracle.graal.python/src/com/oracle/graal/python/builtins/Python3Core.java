@@ -84,6 +84,7 @@ import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
@@ -312,7 +313,8 @@ public final class Python3Core implements PythonCore {
                         new PyExpatModuleBuiltins(),
                         new SysConfigModuleBuiltins(),
                         new ZipImporterBuiltins(),
-                        new ZipImportModuleBuiltins()));
+                        new ZipImportModuleBuiltins(),
+                        new ZLibModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
             for (PythonBuiltins builtin : providers) {
