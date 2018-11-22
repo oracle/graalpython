@@ -52,7 +52,6 @@ import java.util.List;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
-import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.junit.After;
@@ -434,20 +433,5 @@ public class JavaInteropTest extends PythonTests {
                         "6.0 <class 'float'>\n" +
                         "True <class 'bool'>\n" +
                         "c <class 'str'>\n", out.toString("UTF-8"));
-    }
-
-    @Test
-    public void testSharedEngineNoAccess() {
-        try (Engine engine = Engine.create()) {
-            Source source = Source.create("python", "21 + 21");
-            try (Context ctxt = Context.newBuilder().engine(engine).allowAllAccess(false).build()) {
-                int v = ctxt.eval(source).asInt();
-                assert v == 42;
-            }
-            try (Context ctxt = Context.newBuilder().engine(engine).allowAllAccess(false).build()) {
-                int v = ctxt.eval(source).asInt();
-                assert v == 42;
-            }
-        }
     }
 }
