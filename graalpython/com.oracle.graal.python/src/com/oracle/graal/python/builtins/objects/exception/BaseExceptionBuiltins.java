@@ -185,12 +185,12 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class TracebackNode extends PythonBuiltinNode {
 
         @Specialization(guards = "isNoValue(tb)")
-        public Object getTraceback(PBaseException self, Object tb) {
+        public Object getTraceback(PBaseException self, @SuppressWarnings("unused") Object tb) {
             return self.getTraceback(factory());
         }
 
         @Specialization
-        public Object setTraceback(PBaseException self, PNone tb) {
+        public Object setTraceback(PBaseException self, @SuppressWarnings("unused") PNone tb) {
             self.clearTraceback();
             return PNone.NONE;
         }
@@ -202,7 +202,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public Object setTraceback(Object self, Object tb) {
+        public Object setTraceback(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused")  Object tb) {
             throw raise(PythonErrorType.TypeError, "__traceback__ must be a traceback or None");
         }
     }
