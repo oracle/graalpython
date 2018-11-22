@@ -270,7 +270,7 @@ class BenchRunner(object):
         print(_HRULE)
         print("### BEST                duration: %.3f s" % min(durations))
         print("### WORST               duration: %.3f s" % max(durations))
-        print("### AVG (with warmup)   duration: %.3f s" % (sum(durations) / len(durations)))
+        print("### AVG (all runs)      duration: %.3f s" % (sum(durations) / len(durations)))
         if warmup_iter > 0:
             print("### WARMUP detected at iteration: %d" % warmup_iter)
             no_warmup_durations = durations[warmup_iter:]
