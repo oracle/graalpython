@@ -95,7 +95,6 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -506,12 +505,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         private void inheritLocals(Frame callerFrame, Object[] args, GetLocalsNode getLocalsNode) {
-            PFrame pFrame = PArguments.getPFrame(callerFrame);
-            if (pFrame == null) {
-                pFrame = factory().createPFrame(callerFrame);
-                PArguments.setPFrame(callerFrame, pFrame);
-            }
-            Object callerLocals = getLocalsNode.execute(pFrame);
+            Object callerLocals = getLocalsNode.execute(callerFrame);
             setCustomLocals(args, callerLocals);
         }
 
@@ -1653,21 +1647,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
     abstract static class LocalsNode extends PythonBuiltinNode {
         @Child ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
         @Child GetLocalsNode getLocalsNode = GetLocalsNode.create();
-        private final ConditionProfile hasFrame = ConditionProfile.createBinaryProfile();
-        private final ConditionProfile hasPFrame = ConditionProfile.createBinaryProfile();
 
         @Specialization
         public Object locals(VirtualFrame frame) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            PFrame pFrame = PArguments.getPFrame(callerFrame);
-            if (hasPFrame.profile(pFrame == null)) {
-                pFrame = factory().createPFrame(callerFrame);
-                PArguments.setPFrame(callerFrame, pFrame);
-            } else if (hasFrame.profile(!pFrame.hasFrame())) {
-                pFrame = factory().createPFrame(callerFrame, pFrame.getLocalsDict());
-                PArguments.setPFrame(callerFrame, pFrame);
-            }
-            return getLocalsNode.execute(pFrame);
+            return getLocalsNode.execute(callerFrame);
         }
     }
 }

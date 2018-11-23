@@ -44,12 +44,15 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFrame)
 public final class FrameBuiltins extends PythonBuiltins {
@@ -155,6 +158,22 @@ public final class FrameBuiltins extends PythonBuiltins {
                 }
             }
             return locals;
+        }
+
+        @Specialization
+        Object getFromFrame(Frame owner,
+                        @Cached("createBinaryProfile()") ConditionProfile noPFrame,
+                        @Cached("create()") BranchProfile noFrameOnPFrame) {
+            PFrame pFrame = PArguments.getPFrame(owner);
+            if (noPFrame.profile(pFrame == null)) {
+                pFrame = factory().createPFrame(owner);
+                PArguments.setPFrame(owner, pFrame);
+            } else if (!pFrame.hasFrame()) {
+                noFrameOnPFrame.enter();
+                pFrame = factory().createPFrame(owner, pFrame.getLocalsDict());
+                PArguments.setPFrame(owner, pFrame);
+            }
+            return get(pFrame);
         }
 
         public static GetLocalsNode create() {
