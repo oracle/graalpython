@@ -139,8 +139,12 @@ PyObject _Py_NotImplementedStruct = {
 };
 
 PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
-    PyObject* newObj = (PyObject*)PyObject_Malloc(cls->tp_basicsize + cls->tp_itemsize * nitems);
-    newObj->ob_refcnt = 0;
+	Py_ssize_t size = cls->tp_basicsize + cls->tp_itemsize * nitems;
+    PyObject* newObj = (PyObject*)PyObject_Malloc(size);
+    memset(newObj, 0, size);
+    if(cls->tp_dictoffset) {
+    	*((PyObject **) ((char *)newObj + cls->tp_dictoffset)) = NULL;
+    }
     Py_TYPE(newObj) = cls;
     if (nitems > 0) {
         ((PyVarObject*)newObj)->ob_size = nitems;
