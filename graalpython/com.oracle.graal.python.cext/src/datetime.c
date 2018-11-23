@@ -48,3 +48,7 @@ extern PyObject* set_PyDateTime_CAPI_typeid(PyTypeObject* type) {
     return Py_True;
 }
 
+BASICSIZE_GETTER(PyDateTime_Date);
+BASICSIZE_GETTER(PyDateTime_Time);
+BASICSIZE_GETTER(PyDateTime_DateTime);
+BASICSIZE_GETTER(PyDateTime_Delta);

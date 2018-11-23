@@ -1167,6 +1167,10 @@ def initialize_datetime_capi():
 
     import_c_func("set_PyDateTime_CAPI_typeid")(PyDateTime_CAPI)
     datetime.datetime_CAPI = PyCapsule("datetime.datetime_CAPI", PyDateTime_CAPI(), None)
+    datetime.date.__basicsize__ = import_c_func("get_PyDateTime_Date_basicsize")()
+    datetime.time.__basicsize__ = import_c_func("get_PyDateTime_Time_basicsize")()
+    datetime.datetime.__basicsize__ = import_c_func("get_PyDateTime_DateTime_basicsize")()
+    datetime.timedelta.__basicsize__ = import_c_func("get_PyDateTime_Delta_basicsize")()
 
 
 ReadMemberFunctions = []

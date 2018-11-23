@@ -285,6 +285,11 @@ void* wrap_unsupported(void *fun, ...);
     0,                                          /* tp_is_gc */\
 }
 
+/** to be used from Java code only; returns a type's basic size */
+#define BASICSIZE_GETTER(__typename__)extern Py_ssize_t get_ ## __typename__ ## _basicsize() { \
+	return sizeof(__typename__); \
+} \
+
 
 int PyTruffle_Debug(void *arg);
 void* PyObjectHandle_ForJavaType(void* jobj);
