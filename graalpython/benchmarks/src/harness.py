@@ -104,6 +104,19 @@ def pairwise_slopes(values, cp):
     return [abs(float(values[i+1] - values[i]) / float(cp[i+1] - cp[i])) for i in range(len(values)-1)]
 
 
+def last_n_percent_runs(values, n=0.1):
+    assert 0.0 < n <= 1.0
+    end_runs_idx = len(values) - int(len(values) * n)
+    end_runs_idx = len(values) - 1 if end_runs_idx >= len(values) else end_runs_idx
+    return values[end_runs_idx:], list(range(end_runs_idx, len(values)))
+
+
+def first_n_percent_runs(values, n=0.1):
+    assert 0.0 < n <= 1.0
+    first_run_idx = int(len(values) * n)
+    return first_run_idx -1 if first_run_idx == len(values) else first_run_idx
+
+
 def detect_warmup(values, cp_threshold=0.03, stability_slope_grade=0.01):
     """
     detect the point of warmup point (iteration / run)
@@ -122,19 +135,22 @@ def detect_warmup(values, cp_threshold=0.03, stability_slope_grade=0.01):
         cp = cusum(values, threshold=cp_threshold)
         rolling_avg = [avg(values[i:]) for i in cp]
 
+        def warmup(cp_index):
+            val_idx = cp[cp_index] + 1
+            return val_idx if val_idx < len(values) else -1
+
         # find the point where the duration avg is below the cp threshold
         for i, d in enumerate(rolling_avg):
             if d <= cp_threshold:
-                return cp[i] + 1
+                return warmup(i)
 
         # could not find something below the CP threshold (noise in the data), use the stabilisation of slopes
-        end_runs_idx = len(values) - int(len(values) * 0.1)
-        end_runs_idx = len(values) - 1 if end_runs_idx >= len(values) else end_runs_idx
-        slopes = pairwise_slopes(rolling_avg + values[end_runs_idx:], cp + list(range(end_runs_idx, len(values))))
+        last_n_vals, last_n_idx = last_n_percent_runs(values, 0.1)
+        slopes = pairwise_slopes(rolling_avg + last_n_vals, cp + last_n_idx)
 
         for i, d in enumerate(slopes):
             if d <= stability_slope_grade:
-                return cp[i] + 1
+                return warmup(i)
 
         return -1
     except Exception as e:
@@ -176,7 +192,14 @@ def _as_int(value):
 
 
 class BenchRunner(object):
-    def __init__(self, bench_file, bench_args=None, iterations=1, warmup=0):
+    def __init__(self, bench_file, bench_args=None, iterations=1, warmup=-1, warmup_runs=0):
+        assert isinstance(iterations, int), \
+            "BenchRunner iterations argument must be an int, got %s instead" % iterations
+        assert isinstance(warmup, int), \
+            "BenchRunner warmup argument must be an int, got %s instead" % warmup
+        assert isinstance(warmup_runs, int), \
+            "BenchRunner warmup_runs argument must be an int, got %s instead" % warmup_runs
+
         if bench_args is None:
             bench_args = []
         self.bench_module = BenchRunner.get_bench_module(bench_file)
@@ -185,10 +208,8 @@ class BenchRunner(object):
         _iterations = _as_int(iterations)
         self._run_once = _iterations <= 1
         self.iterations = 1 if self._run_once else _iterations
-
-        assert isinstance(self.iterations, int)
-        self.warmup = _as_int(warmup)
-        assert isinstance(self.warmup, int)
+        self.warmup_runs = warmup_runs if warmup_runs > 0 else 0
+        self.warmup = warmup if warmup > 0 else -1
 
     @staticmethod
     def get_bench_module(bench_file):
@@ -226,9 +247,10 @@ class BenchRunner(object):
 
     def run(self):
         if self._run_once:
-            print("### %s, exactly one iteration (no warmup curves)" % (self.bench_module.__name__))
+            print("### %s, exactly one iteration (no warmup curves)" % self.bench_module.__name__)
         else:
-            print("### %s, %s warmup iterations, %s bench iterations " % (self.bench_module.__name__, self.warmup, self.iterations))
+            print("### %s, %s warmup iterations, %s bench iterations " % (self.bench_module.__name__,
+                                                                          self.warmup_runs, self.iterations))
 
         # process the args if the processor function is defined
         args = self._call_attr(ATTR_PROCESS_ARGS, *self.bench_args)
@@ -246,9 +268,9 @@ class BenchRunner(object):
         bench_func = self._get_attr(ATTR_BENCHMARK)
         durations = []
         if bench_func and hasattr(bench_func, '__call__'):
-            if self.warmup:
-                print("### warming up for %s iterations ... " % self.warmup)
-                for _ in range(self.warmup):
+            if self.warmup_runs:
+                print("### (pre)warming up for %s iterations ... " % self.warmup_runs)
+                for _ in range(self.warmup_runs):
                     bench_func(*args)
 
             for iteration in range(self.iterations):
@@ -260,28 +282,37 @@ class BenchRunner(object):
                 if self._run_once:
                     print("@@@ name=%s, duration=%s" % (self.bench_module.__name__, duration_str))
                 else:
-                    print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__, duration_str))
+                    print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__,
+                                                                      duration_str))
 
         print(_HRULE)
         print("### teardown ... ")
         self._call_attr(ATTR_TEARDOWN)
-        warmup_iter = detect_warmup(durations)
+        warmup_iter = self.warmup if self.warmup > 0 else detect_warmup(durations)
+        # if we cannot detect a warmup starting point but we performed some pre runs, we take a starting point
+        # after the 10% of the first runs ...
+        if warmup_iter < 0 and self.warmup_runs > 0:
+            print("### warmup could not be detected, but %s pre-runs were executed.\n"
+                  "### we assume the benchmark is warmed up and pick an iteration "
+                  "in the first 10%% of the runs" % self.warmup_runs)
+            warmup_iter = first_n_percent_runs(durations, 0.1)
         print("### benchmark complete")
         print(_HRULE)
         print("### BEST                duration: %.3f s" % min(durations))
         print("### WORST               duration: %.3f s" % max(durations))
         print("### AVG (all runs)      duration: %.3f s" % (sum(durations) / len(durations)))
         if warmup_iter > 0:
-            print("### WARMUP detected at iteration: %d" % warmup_iter)
+            print("### WARMUP %s at iteration: %d" % ("specified" if self.warmup > 0 else "detected", warmup_iter))
             no_warmup_durations = durations[warmup_iter:]
             print("### AVG (no warmup)     duration: %.3f s" % (sum(no_warmup_durations) / len(no_warmup_durations)))
         else:
-            print("### WARMUP could not be detected")
+            print("### WARMUP iteration not specified or could not be detected")
         print(_HRULE)
 
 
 def run_benchmark(args):
-    warmup = 0
+    warmup = -1
+    warmup_runs = 0
     iterations = 1
     bench_file = None
     bench_args = []
@@ -301,6 +332,12 @@ def run_benchmark(args):
             warmup = _as_int(args[i])
         elif arg.startswith("--warmup"):
             warmup = _as_int(arg.split("=")[1])
+
+        elif arg == '-r':
+            i += 1
+            warmup_runs = _as_int(args[i])
+        elif arg.startswith("--warmup-runs"):
+            warmup_runs = _as_int(arg.split("=")[1])
 
         elif arg == '-p':
             i += 1
@@ -323,7 +360,7 @@ def run_benchmark(args):
     else:
         print("### no extra module search paths specified")
 
-    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup).run()
+    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup, warmup_runs=warmup_runs).run()
 
 
 if __name__ == '__main__':
