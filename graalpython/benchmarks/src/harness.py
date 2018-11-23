@@ -308,6 +308,8 @@ class BenchRunner(object):
         else:
             print("### WARMUP iteration not specified or could not be detected")
         print(_HRULE)
+        print("### RAW DURATIONS: %s" % str(durations))
+        print(_HRULE)
 
 
 def run_benchmark(args):
