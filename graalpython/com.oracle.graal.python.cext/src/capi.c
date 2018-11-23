@@ -331,6 +331,7 @@ const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
 
 const char* PyTruffle_CstrToString(const char* o) {
     return polyglot_from_string(o, SRC_CS);
+}
 
 PyObject* PyTruffle_Type_GenericNew(PyTypeObject* cls, PyTypeObject* dominatingNativeClass, PyObject* args, PyObject* kwds) {
     PyObject* newInstance;
