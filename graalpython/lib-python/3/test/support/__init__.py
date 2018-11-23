@@ -28,8 +28,7 @@ import struct
 # import subprocess
 import sys
 import sysconfig
-# TODO: Truffle reenable me once supported (GR-9142)
-# import tempfile
+import tempfile
 import time
 import types
 import unittest
