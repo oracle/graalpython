@@ -475,7 +475,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child protected CompileNode compileNode = CompileNode.create();
         @Child private IndirectCallNode indirectCallNode = IndirectCallNode.create();
         @Child private HasInheritedAttributeNode hasGetItemNode;
-        @Child private HasInheritedAttributeNode hasSetItemNode;
 
         private HasInheritedAttributeNode getHasGetItemNode() {
             if (hasGetItemNode == null) {
@@ -485,24 +484,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return hasGetItemNode;
         }
 
-        private HasInheritedAttributeNode getHasSetItemNode() {
-            if (hasSetItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                hasSetItemNode = insert(HasInheritedAttributeNode.create(SpecialMethodNames.__SETITEM__));
-            }
-            return hasSetItemNode;
-        }
-
         protected boolean isMapping(Object object) {
-            // tfel: it seems that CPython only checks that there is __getitem__ and __setitem__
+            // tfel: it seems that CPython only checks that there is __getitem__
             if (object instanceof PDict) {
                 return true;
             } else {
-                if (getHasGetItemNode().execute(object)) {
-                    return getHasSetItemNode().execute(object);
-                }
+                return getHasGetItemNode().execute(object);
             }
-            return false;
         }
 
         protected boolean isAnyNone(Object object) {

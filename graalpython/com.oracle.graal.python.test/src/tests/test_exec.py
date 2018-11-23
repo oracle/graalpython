@@ -301,3 +301,13 @@ class ExecTests:
 
     def test_locals_is_globals(self):
         exec("assert locals() is globals()", globals())
+
+    def test_custom_locals2(self):
+        class M(object):
+            def __getitem__(self, key):
+                return key
+        m = M()
+        ns = {}
+        exec("global x; x = y", ns, m)
+        assert ns["x"] == "y";
+        assert eval("x", None, m) == "x"
