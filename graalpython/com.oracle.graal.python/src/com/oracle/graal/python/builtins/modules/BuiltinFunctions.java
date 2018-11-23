@@ -570,7 +570,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PCode code = createAndCheckCode(source);
             Object[] args = PArguments.create();
             setCustomGlobals(globals, setBuiltins, args);
-            setCustomLocals(args, globals);
+            // here, we don't need to set any locals, since the {Write,Read,Delete}NameNodes will
+            // fall back (like their CPython counterparts) to writing to the globals. We only need
+            // to ensure that the `locals()` call still gives us the globals dict
+            PArguments.setPFrame(args, factory().createPFrame(globals));
             return indirectCallNode.call(code.getRootCallTarget(), args);
         }
 
