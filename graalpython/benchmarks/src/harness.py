@@ -288,25 +288,32 @@ class BenchRunner(object):
         print(_HRULE)
         print("### teardown ... ")
         self._call_attr(ATTR_TEARDOWN)
-        warmup_iter = self.warmup if self.warmup > 0 else detect_warmup(durations)
-        # if we cannot detect a warmup starting point but we performed some pre runs, we take a starting point
-        # after the 10% of the first runs ...
-        if warmup_iter < 0 and self.warmup_runs > 0:
-            print("### warmup could not be detected, but %s pre-runs were executed.\n"
-                  "### we assume the benchmark is warmed up and pick an iteration "
-                  "in the first 10%% of the runs" % self.warmup_runs)
-            warmup_iter = first_n_percent_runs(durations, 0.1)
         print("### benchmark complete")
         print(_HRULE)
-        print("### BEST                duration: %.3f s" % min(durations))
-        print("### WORST               duration: %.3f s" % max(durations))
-        print("### AVG (all runs)      duration: %.3f s" % (sum(durations) / len(durations)))
-        if warmup_iter > 0:
-            print("### WARMUP %s at iteration: %d" % ("specified" if self.warmup > 0 else "detected", warmup_iter))
-            no_warmup_durations = durations[warmup_iter:]
-            print("### AVG (no warmup)     duration: %.3f s" % (sum(no_warmup_durations) / len(no_warmup_durations)))
+
+        # summary
+        if self._run_once:
+            print("### SINGLE RUN        duration: %.3f s" % durations[0])
         else:
-            print("### WARMUP iteration not specified or could not be detected")
+            print("### BEST                duration: %.3f s" % min(durations))
+            print("### WORST               duration: %.3f s" % max(durations))
+            print("### AVG (all runs)      duration: %.3f s" % (sum(durations) / len(durations)))
+            warmup_iter = self.warmup if self.warmup > 0 else detect_warmup(durations)
+            # if we cannot detect a warmup starting point but we performed some pre runs, we take a starting point
+            # after the 10% of the first runs ...
+            if warmup_iter < 0 and self.warmup_runs > 0:
+                print("### warmup could not be detected, but %s pre-runs were executed.\n"
+                      "### we assume the benchmark is warmed up and pick an iteration "
+                      "in the first 10%% of the runs" % self.warmup_runs)
+                warmup_iter = first_n_percent_runs(durations, 0.1)
+
+            if warmup_iter > 0:
+                print("### WARMUP %s at iteration: %d" % ("specified" if self.warmup > 0 else "detected", warmup_iter))
+                no_warmup_durations = durations[warmup_iter:]
+                print("### AVG (no warmup)     duration: %.3f s" % (sum(no_warmup_durations) / len(no_warmup_durations)))
+            else:
+                print("### WARMUP iteration not specified or could not be detected")
+
         print(_HRULE)
         print("### RAW DURATIONS: %s" % str(durations))
         print(_HRULE)
