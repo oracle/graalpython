@@ -562,23 +562,19 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                             if (readAttrNode == null) {
                                 CompilerDirectives.transferToInterpreterAndInvalidate();
                                 readAttrNode = insert(ReadAttributeFromObjectNode.create());
-                                writeAttrNode = insert(WriteAttributeToObjectNode.create());
                             }
-                            long dictoffset = castToIntNode.execute(readAttrNode.execute(cls, __DICTOFFSET__));
-                            if (dictoffset == 0) {
-                                // add_dict
-                                if (itemsize != 0) {
-                                    dictoffset = -Long.BYTES;
-                                } else {
-                                    dictoffset = basicsize;
-                                }
+                            long dictoffset = 0;
+                            // add_dict
+                            if (itemsize != 0) {
+                                dictoffset = -Long.BYTES;
+                            } else {
+                                dictoffset = basicsize;
                             }
                             writeAttrNode.execute(cclass, __DICTOFFSET__, dictoffset);
                             writeAttrNode.execute(cclass, __BASICSIZE__, basicsize + Long.BYTES);
                             return;
                         } else if (!(cls instanceof PythonBuiltinClass)) {
-                            long doffset = basicsize + Long.BYTES;
-                            writeAttrNode.execute(cclass, __DICTOFFSET__, itemsize == 0 ? doffset : -doffset);
+                            writeAttrNode.execute(cclass, __DICTOFFSET__, itemsize == 0 ? basicsize : -Long.BYTES);
                             writeAttrNode.execute(cclass, __BASICSIZE__, basicsize + Long.BYTES);
                             return;
                         }
