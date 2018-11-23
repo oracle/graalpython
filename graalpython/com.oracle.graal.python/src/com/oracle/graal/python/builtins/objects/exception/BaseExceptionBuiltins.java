@@ -202,7 +202,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public Object setTraceback(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused")  Object tb) {
+        public Object setTraceback(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object tb) {
             throw raise(PythonErrorType.TypeError, "__traceback__ must be a traceback or None");
         }
     }
