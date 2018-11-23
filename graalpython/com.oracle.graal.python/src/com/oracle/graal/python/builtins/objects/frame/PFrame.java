@@ -41,8 +41,8 @@
 package com.oracle.graal.python.builtins.objects.frame;
 
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -60,7 +60,7 @@ public final class PFrame extends PythonBuiltinObject {
 
     private final PBaseException exception;
     private final int index;
-    private PDict localsDict;
+    private Object localsDict;
 
     private final boolean inClassScope;
     private final Frame frame;
@@ -74,6 +74,26 @@ public final class PFrame extends PythonBuiltinObject {
         this.frame = frame;
         this.location = null;
         this.inClassScope = PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
+    }
+
+    public PFrame(LazyPythonClass cls, Frame frame, Object locals) {
+        super(cls);
+        this.exception = null;
+        this.index = -1;
+        this.frame = frame;
+        this.localsDict = locals;
+        this.location = null;
+        this.inClassScope = PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
+    }
+
+    public PFrame(LazyPythonClass cls, Object locals) {
+        super(cls);
+        this.exception = null;
+        this.index = -1;
+        this.frame = null;
+        this.location = null;
+        this.inClassScope = false;
+        this.localsDict = locals;
     }
 
     public PFrame(LazyPythonClass cls, PBaseException exception, int index) {
@@ -99,9 +119,7 @@ public final class PFrame extends PythonBuiltinObject {
         this.inClassScope = code.getRootNode() instanceof ClassBodyRootNode;
         this.line = code.getRootNode() == null ? code.getFirstLineNo() : -2;
 
-        if (locals instanceof PDict) {
-            localsDict = (PDict) locals;
-        }
+        localsDict = locals;
     }
 
     public PBaseException getException() {
@@ -116,7 +134,7 @@ public final class PFrame extends PythonBuiltinObject {
         return frame;
     }
 
-    public PDict getLocalsDict() {
+    public Object getLocalsDict() {
         return localsDict;
     }
 
@@ -141,18 +159,21 @@ public final class PFrame extends PythonBuiltinObject {
         return location;
     }
 
-    public PDict getLocals(PythonObjectFactory factory) {
-        if (frame != null) {
-            if (localsDict == null) {
-                localsDict = factory.createDictLocals(frame, inClassScope);
-            } else {
-                if (!inClassScope) {
-                    localsDict.update(factory.createDictLocals(frame, false));
-                }
-            }
+    /**
+     * Prefer to use the {@link GetLocalsNode}.<br/>
+     * <br/>
+     *
+     * Returns a dictionary with the locals, possibly creating it from the frame. Note that the
+     * dictionary may have been modified and should then be updated with the current frame locals.
+     * To that end, use the {@link GetLocalsNode} instead of calling this method directly.
+     */
+    public Object getLocals(PythonObjectFactory factory) {
+        if (localsDict == null) {
+            assert frame != null;
+            return localsDict = factory.createDictLocals(frame, inClassScope);
+        } else {
             return localsDict;
         }
-        return factory.createDict();
     }
 
     /**
@@ -162,5 +183,13 @@ public final class PFrame extends PythonBuiltinObject {
      */
     public boolean isIncomplete() {
         return location == null;
+    }
+
+    public boolean hasFrame() {
+        return frame != null;
+    }
+
+    public boolean inClassScope() {
+        return inClassScope;
     }
 }

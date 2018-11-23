@@ -231,6 +231,7 @@ public final class PythonContext {
         builtinsModule = (PythonModule) sysModules.getItem("builtins");
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
+        mainModule.setDict(core.factory().createDictFixedStorage(mainModule));
         sysModules.setItem(__MAIN__, mainModule);
         OpaqueBytes.initializeForNewContext(this);
         currentException = null;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,57 +38,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.classes;
+package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.NodeFactory;
-import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
-import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeInfo;
 
-@NodeInfo(shortName = "delete_class_member")
-public abstract class DeleteClassAttributeNode extends StatementNode {
-    private final String identifier;
-
-    @Child private StatementNode deleteNsItem;
-
-    DeleteClassAttributeNode(String identifier) {
-        this.identifier = identifier;
-
-        NodeFactory factory = getNodeFactory();
-        ReadIndexedArgumentNode namespace = ReadIndexedArgumentNode.create(0);
-
-        this.deleteNsItem = factory.createDeleteItem(namespace.asExpression(), this.identifier);
+public interface AccessNameNode {
+    default boolean hasLocals(VirtualFrame frame) {
+        // (tfel): These nodes will only ever be generated in a module scope where
+        // neither generator special args nor a ClassBodyRootNode can occur
+        return PArguments.getSpecialArgument(frame) != null;
     }
 
-    public static DeleteClassAttributeNode create(String name) {
-        return DeleteClassAttributeNodeGen.create(name);
+    default boolean hasLocalsDict(VirtualFrame frame) {
+        return PArguments.getSpecialArgument(frame) instanceof PDict;
     }
 
-    Object getLocalsDict(VirtualFrame frame) {
-        PFrame pFrame = PArguments.getPFrame(frame);
-        if (pFrame != null) {
-            return pFrame.getLocalsDict();
-        }
-        return null;
-    }
-
-    @Specialization(guards = "localsDict != null")
-    void deleteFromLocals(@SuppressWarnings("unused") VirtualFrame frame,
-                    @Cached("getLocalsDict(frame)") Object localsDict,
-                    @Cached("create()") DeleteItemNode delItemNode) {
-        // class namespace overrides closure
-        delItemNode.executeWith(localsDict, identifier);
-    }
-
-    @Specialization
-    void delete(VirtualFrame frame) {
-        // delete attribute actual attribute
-        deleteNsItem.executeVoid(frame);
-    }
+    public abstract String getAttributeId();
 }
