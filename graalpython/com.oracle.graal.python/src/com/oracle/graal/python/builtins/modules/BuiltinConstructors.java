@@ -1658,7 +1658,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class TypeNode extends PythonBuiltinNode {
-        private static final long SIZEOF_PY_OBJECT_PTR = 8L;
+        private static final long SIZEOF_PY_OBJECT_PTR = Long.BYTES;
         @Child private ReadAttributeFromObjectNode readAttrNode;
         @Child private WriteAttributeToObjectNode writeAttrNode;
         @Child private CastToIndexNode castToInt;

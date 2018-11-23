@@ -252,6 +252,10 @@ int PyType_Ready(PyTypeObject* cls) {
         cls->tp_dict = javacls->tp_dict;
     }
 
+    // down-sync possibly re-computed attributes
+    cls->tp_dictoffset = javacls->tp_dictoffset;
+    cls->tp_basicsize = javacls->tp_basicsize;
+
     PyMethodDef* methods = cls->tp_methods;
     if (methods) {
         int idx = 0;

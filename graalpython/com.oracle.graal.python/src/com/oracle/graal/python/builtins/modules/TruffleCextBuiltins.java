@@ -42,6 +42,14 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_BASICSIZE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_DICTOFFSET;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_DOC;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_ITEMSIZE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_NAME;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
@@ -81,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBi
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
-import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
@@ -144,6 +151,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -490,8 +498,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyType_Ready", fixedNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class PyType_ReadyNode extends PythonBuiltinNode {
-        @Child WriteAttributeToObjectNode writeNode = WriteAttributeToObjectNode.create();
+        @Child private WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.create();
         @Child private HashingStorageNodes.GetItemNode getItemNode;
+        @Child private CastToIndexNode castToIntNode;
+        @Child private ReadAttributeFromObjectNode readAttrNode;
 
         private HashingStorageNodes.GetItemNode getGetItemNode() {
             if (getItemNode == null) {
@@ -516,21 +526,67 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 bases[i] = (PythonClass) array[i];
             }
 
+            if (castToIntNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToIntNode = insert(CastToIndexNode.create());
+            }
+
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String fqname = getStringItem(nativeMembers, NativeMemberNames.TP_NAME);
-            String doc = getStringItem(nativeMembers, NativeMemberNames.TP_DOC);
+            String fqname = getStringItem(nativeMembers, TP_NAME);
+            String doc = getStringItem(nativeMembers, TP_DOC);
             // the qualified name (i.e. without module name) like 'A.B...'
             String qualName = getQualName(fqname);
             PythonNativeClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, qualName, bases);
-            writeNode.execute(cclass, SpecialAttributeNames.__DOC__, doc);
-            writeNode.execute(cclass, SpecialAttributeNames.__BASICSIZE__, getLongItem(nativeMembers, NativeMemberNames.TP_BASICSIZE));
-            writeNode.execute(cclass, SpecialAttributeNames.__ITEMSIZE__, getLongItem(nativeMembers, NativeMemberNames.TP_ITEMSIZE));
-            writeNode.execute(cclass, SpecialAttributeNames.__DICTOFFSET__, getLongItem(nativeMembers, NativeMemberNames.TP_DICTOFFSET));
+            writeAttrNode.execute(cclass, SpecialAttributeNames.__DOC__, doc);
+
+            long basicsize = castToIntNode.execute(getLongItem(nativeMembers, TP_BASICSIZE));
+            long itemsize = castToIntNode.execute(getLongItem(nativeMembers, TP_ITEMSIZE));
+            writeAttrNode.execute(cclass, __BASICSIZE__, basicsize);
+            writeAttrNode.execute(cclass, __ITEMSIZE__, itemsize);
+            computeAndSetDictoffset(getLongItem(nativeMembers, TP_DICTOFFSET), cclass, basicsize, itemsize);
+
             String moduleName = getModuleName(fqname);
             if (moduleName != null) {
-                writeNode.execute(cclass, SpecialAttributeNames.__MODULE__, moduleName);
+                writeAttrNode.execute(cclass, SpecialAttributeNames.__MODULE__, moduleName);
             }
             return new PythonClassInitNativeWrapper(cclass);
+        }
+
+        // may also update '__basicsize__' if necessary
+        private void computeAndSetDictoffset(Object tpDictoffset, PythonNativeClass cclass, long basicsize, long itemsize) {
+            int initialDictoffset = castToIntNode.execute(tpDictoffset);
+            if (initialDictoffset == 0) {
+                for (Object cls : cclass.getMethodResolutionOrder()) {
+                    if (cls != cclass) {
+                        if (cls instanceof PythonNativeClass) {
+                            if (readAttrNode == null) {
+                                CompilerDirectives.transferToInterpreterAndInvalidate();
+                                readAttrNode = insert(ReadAttributeFromObjectNode.create());
+                                writeAttrNode = insert(WriteAttributeToObjectNode.create());
+                            }
+                            long dictoffset = castToIntNode.execute(readAttrNode.execute(cls, __DICTOFFSET__));
+                            if (dictoffset == 0) {
+                                // add_dict
+                                if (itemsize != 0) {
+                                    dictoffset = -Long.BYTES;
+                                } else {
+                                    dictoffset = basicsize;
+                                }
+                            }
+                            writeAttrNode.execute(cclass, __DICTOFFSET__, dictoffset);
+                            writeAttrNode.execute(cclass, __BASICSIZE__, basicsize + Long.BYTES);
+                            return;
+                        } else if (!(cls instanceof PythonBuiltinClass)) {
+                            long doffset = basicsize + Long.BYTES;
+                            writeAttrNode.execute(cclass, __DICTOFFSET__, itemsize == 0 ? doffset : -doffset);
+                            writeAttrNode.execute(cclass, __BASICSIZE__, basicsize + Long.BYTES);
+                            return;
+                        }
+                    }
+                }
+            }
+            writeAttrNode.execute(cclass, __DICTOFFSET__, 0);
+            return;
         }
 
         private static String getQualName(String fqname) {

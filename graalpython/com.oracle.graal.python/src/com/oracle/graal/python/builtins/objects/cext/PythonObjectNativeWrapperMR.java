@@ -107,6 +107,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
@@ -478,8 +479,17 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
         Object doTpDictoffset(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") CastToIndexNode castToIntNode,
                         @Cached("create(__DICTOFFSET__)") LookupAttributeInMRONode getAttrNode) {
-            return getAttrNode.execute(object);
+            if (object instanceof PythonBuiltinClass) {
+                return 0L;
+            }
+            Object dictoffset = getAttrNode.execute(object);
+            int idictoffset = castToIntNode.execute(dictoffset);
+            if (idictoffset != 0) {
+                return idictoffset;
+            }
+            return Long.BYTES;
         }
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
