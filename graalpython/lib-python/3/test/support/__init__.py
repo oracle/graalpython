@@ -18,8 +18,7 @@ import logging.handlers
 import os
 import platform
 import re
-# TODO: Truffle reenable me once supported (GR-9139)
-# import shutil
+import shutil
 # TODO: Truffle reenable me once supported (GR-9140)
 # import socket
 import stat
