@@ -52,11 +52,13 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic(PythonOptions.class)
+@ReportPolymorphism
 abstract class CallSpecialMethodNode extends Node {
     /**
      * Returns a new instanceof the builtin if it's a subclass of the given class, and null
