@@ -46,3 +46,5 @@ SOCK_STREAM = 2
 SOCK_RAW = 3
 SOCK_RDM = 4
 SOCK_SEQPACKET = 5
+
+has_ipv6 = False  #: TODO implement me

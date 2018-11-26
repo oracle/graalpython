@@ -19,12 +19,10 @@ import os
 import platform
 import re
 import shutil
-# TODO: Truffle reenable me once supported (GR-9140)
-# import socket
+import socket
 import stat
 import struct
-# TODO: Truffle reenable me once supported (GR-9141)
-# import subprocess
+import subprocess
 import sys
 import sysconfig
 import tempfile
@@ -628,9 +626,7 @@ HOST = "127.0.0.1"
 HOSTv6 = "::1"
 
 
-# TODO: revert me once socket is implemented (GR-9140)
-# def find_unused_port(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
-def find_unused_port(family, socktype):
+def find_unused_port(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
     """Returns an unused port that should be suitable for binding.  This is
     achieved by creating a temporary socket with the same family and type as
     the 'sock' parameter (default is AF_INET, SOCK_STREAM), and binding it to
@@ -738,24 +734,22 @@ def bind_unix_socket(sock, addr):
         sock.close()
         raise unittest.SkipTest('cannot bind AF_UNIX sockets')
 
-# TODO: reenable me once socket is implemented (GR-9140)
-# def _is_ipv6_enabled():
-#     """Check whether IPv6 is enabled on this host."""
-#     if socket.has_ipv6:
-#         sock = None
-#         try:
-#             sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-#             sock.bind((HOSTv6, 0))
-#             return True
-#         except OSError:
-#             pass
-#         finally:
-#             if sock:
-#                 sock.close()
-#     return False
-#
-# IPV6_ENABLED = _is_ipv6_enabled()
-IPV6_ENABLED = False
+def _is_ipv6_enabled():
+    """Check whether IPv6 is enabled on this host."""
+    if socket.has_ipv6:
+        sock = None
+        try:
+            sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+            sock.bind((HOSTv6, 0))
+            return True
+        except OSError:
+            pass
+        finally:
+            if sock:
+                sock.close()
+    return False
+
+IPV6_ENABLED = _is_ipv6_enabled()
 
 def system_must_validate_cert(f):
     """Skip the test on TLS certificate validation failures."""
