@@ -534,8 +534,18 @@ public class ObjectBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @Specialization(guards = "isNoValue(none)")
+        Object dict(PythonNativeObject self, @SuppressWarnings("unused") PNone none,
+                        @Cached("create()") CExtNodes.GetObjectDictNode getDictNode) {
+            Object dict = getDictNode.execute(self);
+            if (dict == PNone.NO_VALUE) {
+                raise(self, none);
+            }
+            return dict;
+        }
+
         @Fallback
-        Object dict(Object self, @SuppressWarnings("unused") Object dict) {
+        Object raise(Object self, @SuppressWarnings("unused") Object dict) {
             throw raise(AttributeError, "'%p' object has no attribute '__dict__'", self);
         }
 

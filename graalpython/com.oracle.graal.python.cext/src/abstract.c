@@ -136,6 +136,10 @@ PyObject * PyNumber_Invert(PyObject *o) {
 	return do_unaryop(o, INVERT);
 }
 
+PyObject * PyNumber_Power(PyObject *v, PyObject *w, PyObject *z) {
+    return UPCALL_O(PY_BUILTIN, polyglot_from_string("pow", SRC_CS), native_to_java(v), native_to_java(w), native_to_java(z));
+}
+
 UPCALL_ID(PyNumber_Index);
 PyObject * PyNumber_Index(PyObject *o) {
     if (o == NULL) {

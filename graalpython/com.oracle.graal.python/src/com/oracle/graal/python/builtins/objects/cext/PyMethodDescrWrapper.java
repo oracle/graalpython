@@ -38,48 +38,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import java.util.List;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
 
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
+/**
+ * Wraps a PythonObject to provide a native view with a shape like {@code PyMethodDescr}.
+ */
+public class PyMethodDescrWrapper extends PythonNativeWrapper {
 
-@CoreFunctions(defineModule = "ctypes")
-public class CtypesModuleBuiltins extends PythonBuiltins {
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return CtypesModuleBuiltinsFactory.getFactories();
+    public PyMethodDescrWrapper(PythonObject delegate) {
+        super(delegate);
     }
 
-    @Builtin(name = "c_char_p_", fixedNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class CCharP extends PythonUnaryBuiltinNode {
-        @Child CExtNodes.AsCharPointer asCharPointer = CExtNodes.AsCharPointer.create();
-        @Child CExtNodes.ToSulongNode toSulongNode = CExtNodes.ToSulongNode.create();
+    static boolean isInstance(TruffleObject o) {
+        return o instanceof PyMethodDescrWrapper;
+    }
 
-        @Specialization
-        Object defaultValue(@SuppressWarnings("unused") PNone noValue) {
-            return toSulongNode.execute(PNone.NO_VALUE); // NULL
-        }
-
-        @Specialization
-        Object withValue(String value) {
-            return asCharPointer.execute(value);
-        }
-
-        @Specialization
-        Object withValue(PString value) {
-            return asCharPointer.execute(value.getValue());
-        }
+    @Override
+    public ForeignAccess getForeignAccess() {
+        return PyMethodDescrWrapperMRForeign.ACCESS;
     }
 }

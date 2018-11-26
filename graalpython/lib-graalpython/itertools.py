@@ -62,12 +62,19 @@ class chain():
             return next(self._current)
         except (StopIteration, IndexError):
             self._idx += 1
+            if self._idx >= self._len:
+                raise StopIteration
             self._current = iter(self._iterables[self._idx])
             return self.__next__()
+
+    @classmethod
+    def from_iterable(cls, arg):
+        return cls(*iter(arg))
 
 
 class starmap():
     pass
+
 
 class islice(object):
     def __init__(self, iterable, *args):
@@ -419,12 +426,13 @@ class filterfalse(object):
             if not self.func(n):
                 return n
 
+
 class takewhile(object):
     """Make an iterator that returns elements from the iterable as
     long as the predicate is true.
 
     Equivalent to :
-    
+
     def takewhile(predicate, iterable):
         for x in iterable:
             if predicate(x):
@@ -446,6 +454,7 @@ class takewhile(object):
             raise StopIteration()
         return value
 
+
 class groupby(object):
     """Make an iterator that returns consecutive keys and groups from the
     iterable. The key is a function computing a key value for each
@@ -464,7 +473,7 @@ class groupby(object):
        for k, g in groupby(data, keyfunc):
            groups.append(list(g))      # Store group iterator as a list
            uniquekeys.append(k)
-    """    
+    """
     def __init__(self, iterable, key=None):
         if key is None:
             key = lambda x: x
@@ -487,3 +496,71 @@ class groupby(object):
             yield self._currvalue
             self._currvalue = next(self._iter) # Exit on StopIteration
             self._currkey = self._keyfunc(self._currvalue)
+
+
+class combinations():
+    """
+    combinations(iterable, r) --> combinations object
+
+    Return successive r-length combinations of elements in the iterable.
+
+    combinations(range(4), 3) --> (0,1,2), (0,1,3), (0,2,3), (1,2,3)
+    """
+
+    def __init__(self, pool, indices, r):
+        self.pool = pool
+        self.indices = range(indices)
+        if r < 0:
+            raise ValueError("r must be non-negative")
+        self.r = r
+        self.last_result = None
+        self.stopped = r > len(pool)
+
+    def get_maximum(self, i):
+        return i + len(self.pool) - self.r
+
+    def max_index(self, j):
+        return self.indices[j - 1] + 1
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.stopped:
+            raise StopIteration
+        if self.last_result is None:
+            # On the first pass, initialize result tuple using the indices
+            result = [None] * self.r
+            for i in range(self.r):
+                index = self.indices[i]
+                result[i] = self.pool[index]
+        else:
+            # Copy the previous result
+            result = self.last_result[:]
+            # Scan indices right-to-left until finding one that is not at its
+            # maximum
+            i = self.r - 1
+            while i >= 0 and self.indices[i] == self.get_maximum(i):
+                i -= 1
+
+            # If i is negative, then the indices are all at their maximum value
+            # and we're done
+            if i < 0:
+                self.stopped = True
+                raise StopIteration
+
+            # Increment the current index which we know is not at its maximum.
+            # Then move back to the right setting each index to its lowest
+            # possible value
+            self.indices[i] += 1
+            for j in range(i + 1, self.r):
+                self.indices[j] = self.max_index(j)
+
+            # Update the result for the new indices starting with i, the
+            # leftmost index that changed
+            for i in range(i, self.r):
+                index = self.indices[i]
+                elem = self.pool[index]
+                result[i] = elem
+        self.last_result = result
+        return tuple(result)

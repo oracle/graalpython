@@ -1460,4 +1460,31 @@ public abstract class CExtNodes {
             return IsPointerNodeGen.create();
         }
     }
+
+    public static class GetObjectDictNode extends CExtBaseNode {
+        @CompilationFinal private TruffleObject func;
+        @Child private Node exec;
+        @Child private ToSulongNode toSulong;
+        @Child private ToJavaNode toJava;
+
+        public Object execute(Object self) {
+            if (func == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                func = importCAPISymbol(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT);
+                exec = insert(Message.EXECUTE.createNode());
+                toSulong = insert(ToSulongNode.create());
+                toJava = insert(ToJavaNode.create());
+            }
+            try {
+                return toJava.execute(ForeignAccess.sendExecute(exec, func, toSulong.execute(self)));
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw e.raise();
+            }
+        }
+
+        public static GetObjectDictNode create() {
+            return new GetObjectDictNode();
+        }
+    }
 }
