@@ -374,9 +374,7 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     }
 
     private T visitGenerator(ParserRuleContext ctx, Python3Parser.Comp_forContext compctx, Function<ParserRuleContext, T> block) {
-        if (currentGeneratorScope == null) {
-            compctx.scope = environment.createScope(ctx, ScopeKind.Generator);
-        }
+        compctx.scope = environment.createScope(ctx, ScopeKind.Generator);
         try {
             return block.apply(ctx);
         } finally {
