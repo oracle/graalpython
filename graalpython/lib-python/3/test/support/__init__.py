@@ -31,8 +31,7 @@ import tempfile
 import time
 import types
 import unittest
-# TODO: Truffle reenable me once supported (GR-9143)
-# import urllib.error
+import urllib.error
 import warnings
 
 
