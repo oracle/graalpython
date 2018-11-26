@@ -540,19 +540,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 TruffleFile file = getContext().getEnv().getTruffleFile(path);
                 Collection<TruffleFile> listFiles = file.list();
-                Object[] filenames = listToArray(path, listFiles);
+                Object[] filenames = listToArray(listFiles);
                 return factory().createList(filenames);
-            } catch (IOException e) {
+            } catch (SecurityException | IOException e) {
                 gotException.enter();
                 throw raise(OSError, path);
             }
         }
 
         @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
-        private Object[] listToArray(String path, Collection<TruffleFile> listFiles) {
-            if (listFiles.isEmpty()) {
-                throw raise(OSError, path);
-            }
+        private static Object[] listToArray(Collection<TruffleFile> listFiles) {
             Object[] filenames = new Object[listFiles.size()];
             int i = 0;
             for (TruffleFile f : listFiles) {
