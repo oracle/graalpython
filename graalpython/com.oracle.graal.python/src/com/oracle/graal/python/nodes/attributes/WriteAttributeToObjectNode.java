@@ -41,9 +41,12 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -141,8 +144,21 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return true;
     }
 
+    @Specialization(guards = "!isPythonObject(object)")
+    protected boolean readNative(PythonNativeObject object, Object key, Object value,
+                    @Cached("create()") GetObjectDictNode getNativeDict,
+                    @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
+        Object d = getNativeDict.execute(object);
+        if (d instanceof PDict) {
+            setItemNode.execute(((PDict) d).getDictStorage(), key, value);
+            return true;
+        } else {
+            return raise(object, key, value);
+        }
+    }
+
     @Fallback
-    protected boolean write(Object object, Object key, @SuppressWarnings("unused") Object value) {
+    protected boolean raise(Object object, Object key, @SuppressWarnings("unused") Object value) {
         throw raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", object, key);
     }
 }

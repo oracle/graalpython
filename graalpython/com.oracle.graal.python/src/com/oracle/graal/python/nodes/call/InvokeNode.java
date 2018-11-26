@@ -106,6 +106,7 @@ abstract class AbstractInvokeNode extends Node {
     protected final void optionallySetClassBodySpecial(Object[] arguments, CallTarget callTarget) {
         RootNode rootNode = ((RootCallTarget) callTarget).getRootNode();
         if (isClassBodyProfile.profile(rootNode instanceof ClassBodyRootNode)) {
+            assert PArguments.getSpecialArgument(arguments) == null : "there cannot be a special argument in a class body";
             PArguments.setSpecialArgument(arguments, rootNode);
         }
     }

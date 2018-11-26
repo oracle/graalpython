@@ -57,6 +57,9 @@ public final class NativeMemberNames {
     public static final String TP_NAME = "tp_name";
     public static final String TP_BASE = "tp_base";
     public static final String TP_BASICSIZE = "tp_basicsize";
+    public static final String TP_ITEMSIZE = "tp_itemsize";
+    public static final String TP_DICTOFFSET = "tp_dictoffset";
+    public static final String TP_DOC = "tp_doc";
     public static final String TP_ALLOC = "tp_alloc";
     public static final String TP_AS_NUMBER = "tp_as_number";
     public static final String TP_HASH = "tp_hash";
@@ -110,6 +113,14 @@ public final class NativeMemberNames {
     public static final String SQ_REPEAT = "sq_repeat";
     public static final String MEMORYVIEW_FLAGS = "flags";
     public static final String D_COMMON = "d_common";
+    public static final String D_MEMBER = "d_member";
+    public static final String D_GETSET = "d_getset";
+    public static final String D_METHOD = "d_method";
+    public static final String D_BASE = "d_base";
+    public static final String D_QUALNAME = "d_qualname";
+    public static final String D_NAME = "d_name";
+    public static final String D_TYPE = "d_type";
+    public static final String M_ML = "m_ml";
 
     @CompilationFinal(dimensions = 1) public static final String[] values;
     static {

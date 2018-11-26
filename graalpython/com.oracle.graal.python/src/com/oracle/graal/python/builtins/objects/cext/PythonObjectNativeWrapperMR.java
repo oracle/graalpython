@@ -78,6 +78,8 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
@@ -96,7 +98,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -465,7 +466,19 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
         Object doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__BASICSIZE__)") LookupInheritedAttributeNode getAttrNode) {
+                        @Cached("create(__BASICSIZE__)") LookupAttributeInMRONode getAttrNode) {
+            return getAttrNode.execute(object);
+        }
+
+        @Specialization(guards = "eq(TP_ITEMSIZE, key)")
+        Object doTpItemsize(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create(__ITEMSIZE__)") LookupAttributeInMRONode getAttrNode) {
+            return getAttrNode.execute(object);
+        }
+
+        @Specialization(guards = "eq(TP_DICTOFFSET, key)")
+        Object doTpDictoffset(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create(__DICTOFFSET__)") LookupAttributeInMRONode getAttrNode) {
             return getAttrNode.execute(object);
         }
 
@@ -621,6 +634,47 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(object.getFunction());
         }
 
+        @Specialization(guards = "eq(D_MEMBER, key)")
+        Object doDMember(PythonObject object, @SuppressWarnings("unused") String key) {
+            return new PyMemberDefWrapper(object);
+        }
+
+        @Specialization(guards = "eq(D_GETSET, key)")
+        Object doDGetSet(PythonObject object, @SuppressWarnings("unused") String key) {
+            return new PyGetSetDefWrapper(object);
+        }
+
+        @Specialization(guards = "eq(D_METHOD, key)")
+        Object doDBase(PythonObject object, @SuppressWarnings("unused") String key) {
+            return new PyMethodDescrWrapper(object);
+        }
+
+        @Specialization(guards = "eq(M_ML, key)")
+        Object doDBase(PBuiltinFunction object, @SuppressWarnings("unused") String key) {
+            return new PyMethodDescrWrapper(object);
+        }
+
+        @Specialization(guards = "eq(M_ML, key)")
+        Object doDBase(PFunction object, @SuppressWarnings("unused") String key) {
+            return new PyMethodDescrWrapper(object);
+        }
+
+        @Specialization(guards = "eq(M_ML, key)")
+        Object doDBase(PBuiltinMethod object, @SuppressWarnings("unused") String key) {
+            return new PyMethodDescrWrapper(object);
+        }
+
+        @Specialization(guards = "eq(M_ML, key)")
+        Object doDBase(PMethod object, @SuppressWarnings("unused") String key) {
+            return new PyMethodDescrWrapper(object);
+        }
+
+        @Specialization(guards = "eq(D_QUALNAME, key)")
+        Object doDQualname(PythonObject object, @SuppressWarnings("unused") String key,
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getQualnameNode) {
+            return getToSulongNode().execute(getQualnameNode.executeObject(object, SpecialAttributeNames.__QUALNAME__));
+        }
+
         @Specialization
         Object doMemoryview(PMemoryView object, String key,
                         @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
@@ -629,7 +683,7 @@ public class PythonObjectNativeWrapperMR {
             Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
             if (isNativeObject.profile(delegateObj instanceof PythonNativeObject)) {
                 try {
-                    return ForeignAccess.sendRead(readNode, (TruffleObject) ((PythonNativeObject) delegateObj).object, key);
+                    return ForeignAccess.sendRead(readNode, ((PythonNativeObject) delegateObj).object, key);
                 } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                     throw e.raise();
                 }
@@ -815,7 +869,7 @@ public class PythonObjectNativeWrapperMR {
             Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
             if (isNativeObject.profile(delegateObj instanceof PythonNativeObject)) {
                 try {
-                    return ForeignAccess.sendWrite(writeNode, (TruffleObject) ((PythonNativeObject) delegateObj).object, key, value);
+                    return ForeignAccess.sendWrite(writeNode, ((PythonNativeObject) delegateObj).object, key, value);
                 } catch (UnsupportedMessageException | UnknownIdentifierException | UnsupportedTypeException e) {
                     throw e.raise();
                 }

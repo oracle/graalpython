@@ -38,48 +38,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.nodes.frame;
 
-import java.util.List;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
-
-@CoreFunctions(defineModule = "ctypes")
-public class CtypesModuleBuiltins extends PythonBuiltins {
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return CtypesModuleBuiltinsFactory.getFactories();
+public interface AccessNameNode {
+    default boolean hasLocals(VirtualFrame frame) {
+        // (tfel): These nodes will only ever be generated in a module scope where
+        // neither generator special args nor a ClassBodyRootNode can occur
+        return PArguments.getSpecialArgument(frame) != null;
     }
 
-    @Builtin(name = "c_char_p_", fixedNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class CCharP extends PythonUnaryBuiltinNode {
-        @Child CExtNodes.AsCharPointer asCharPointer = CExtNodes.AsCharPointer.create();
-        @Child CExtNodes.ToSulongNode toSulongNode = CExtNodes.ToSulongNode.create();
-
-        @Specialization
-        Object defaultValue(@SuppressWarnings("unused") PNone noValue) {
-            return toSulongNode.execute(PNone.NO_VALUE); // NULL
-        }
-
-        @Specialization
-        Object withValue(String value) {
-            return asCharPointer.execute(value);
-        }
-
-        @Specialization
-        Object withValue(PString value) {
-            return asCharPointer.execute(value.getValue());
-        }
+    default boolean hasLocalsDict(VirtualFrame frame) {
+        return PArguments.getSpecialArgument(frame) instanceof PDict;
     }
+
+    public abstract String getAttributeId();
 }

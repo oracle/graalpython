@@ -122,3 +122,47 @@ int PyDict_Update(PyObject *a, PyObject *b) {
         return 0;
     }
 }
+
+PyObject* _PyObject_GenericGetDict(PyObject* obj) {
+    PyObject** dictptr = _PyObject_GetDictPtr(obj);
+    if (dictptr == NULL) {
+        return NULL;
+    }
+    PyObject* dict = *dictptr;
+    if (dict == NULL) {
+        *dictptr = dict = PyDict_New();
+    }
+    return dict;
+}
+
+PyObject* PyObject_GenericGetDict(PyObject* obj, void* context) {
+    PyObject* d = _PyObject_GenericGetDict(obj);
+    if (d == NULL) {
+        PyErr_SetString(PyExc_AttributeError, "This object has no __dict__");
+    }
+    return d;
+}
+
+PyObject** _PyObject_GetDictPtr(PyObject* obj) {
+    Py_ssize_t dictoffset;
+    PyTypeObject *tp = Py_TYPE(obj);
+
+    dictoffset = tp->tp_dictoffset;
+    if (dictoffset == 0) {
+        return NULL;
+    }
+    if (dictoffset < 0) {
+        Py_ssize_t nitems = ((PyVarObject *)obj)->ob_size;
+        if (nitems < 0) {
+            nitems = -nitems;
+        }
+
+        size_t size = tp->tp_basicsize + nitems * tp->tp_itemsize;
+        if (size % SIZEOF_VOID_P != 0) {
+            // round to full pointer boundary
+            size += SIZEOF_VOID_P - (size % SIZEOF_VOID_P);
+        }
+        dictoffset += (long)size;
+    }
+    return (PyObject **) ((char *)obj + dictoffset);
+}

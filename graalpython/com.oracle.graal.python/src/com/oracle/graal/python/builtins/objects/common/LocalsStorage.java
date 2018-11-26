@@ -216,14 +216,16 @@ public class LocalsStorage extends HashingStorage {
             while (keysIterator().hasNext()) {
                 FrameSlot nextCandidate = keysIterator().next();
                 Object identifier = nextCandidate.getIdentifier();
-                if (!RETURN_SLOT_ID.equals(identifier) && !isTempLocal(identifier)) {
-                    Object nextValue = frame.getValue(nextCandidate);
-                    if (skipCells && nextValue instanceof PCell) {
-                        continue;
-                    }
-                    if (nextValue != null) {
-                        nextSlot = nextCandidate;
-                        return true;
+                if (identifier instanceof String) {
+                    if (!RETURN_SLOT_ID.equals(identifier) && !isTempLocal(identifier)) {
+                        Object nextValue = frame.getValue(nextCandidate);
+                        if (skipCells && nextValue instanceof PCell) {
+                            continue;
+                        }
+                        if (nextValue != null) {
+                            nextSlot = nextCandidate;
+                            return true;
+                        }
                     }
                 }
             }

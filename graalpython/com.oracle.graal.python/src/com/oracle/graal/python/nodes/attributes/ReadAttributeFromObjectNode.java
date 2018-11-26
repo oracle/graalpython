@@ -41,7 +41,10 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -119,6 +122,22 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // foreign Object
     protected Node createReadMessageNode() {
         return Message.READ.createNode();
+    }
+
+    @Specialization(guards = "!isPythonObject(object)")
+    protected Object readNative(PythonNativeObject object, Object key,
+                    @Cached("create()") GetObjectDictNode getNativeDict,
+                    @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+        Object d = getNativeDict.execute(object);
+        Object value = null;
+        if (d instanceof PDict) {
+            value = getItemNode.execute(((PDict) d).getDictStorage(), key);
+        }
+        if (value == null) {
+            return PNone.NO_VALUE;
+        } else {
+            return value;
+        }
     }
 
     @Specialization(guards = "isForeignObject(object)")

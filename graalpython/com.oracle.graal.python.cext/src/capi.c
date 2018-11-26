@@ -129,9 +129,13 @@ declare_type(PyFloat_Type, float, PyFloatObject);
 declare_type(PySlice_Type, slice, PySliceObject);
 declare_type(PyByteArray_Type, bytearray, PyByteArrayObject);
 declare_type(PyCFunction_Type, builtin_function_or_method, PyCFunctionObject);
+declare_type(PyWrapperDescr_Type, method_descriptor, PyWrapperDescrObject); // LS: previously wrapper_descriptor
+// tfel: Both method_descriptor maps to both PyWrapperDescr_Type and
+// PyMethodDescr_Type. This reflects our interpreter, but we need to make sure
+// that the dynamic type for method_descriptor is always going to be
+// PyMethodDescr_Type, so these two declarations cannot be in the wrong order
 declare_type(PyMethodDescr_Type, method_descriptor, PyMethodDescrObject);
 declare_type(PyGetSetDescr_Type, getset_descriptor, PyGetSetDescrObject);
-declare_type(PyWrapperDescr_Type, method_descriptor, PyWrapperDescrObject); // LS: previously wrapper_descriptor
 declare_type(PyMemberDescr_Type, property, PyMemberDescrObject); // LS: previously member_descriptor
 declare_type(_PyExc_BaseException, BaseException, PyBaseExceptionObject);
 declare_type(PyBuffer_Type, buffer, PyBufferDecorator);
@@ -296,6 +300,10 @@ const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
     free(buffer);
 
     return str;
+}
+
+const char* PyTruffle_CstrToString(const char* o) {
+    return polyglot_from_string(o, SRC_CS);
 }
 
 #define PRIMITIVE_ARRAY_TO_NATIVE(__jtype__, __ctype__, __polyglot_type__, __element_cast__) \

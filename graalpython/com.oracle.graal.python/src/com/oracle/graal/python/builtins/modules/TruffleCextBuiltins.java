@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -82,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBi
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
+import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
@@ -522,13 +522,15 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             }
 
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String fqname = getStringItem(nativeMembers, "tp_name");
-            String doc = getStringItem(nativeMembers, "tp_doc");
+            String fqname = getStringItem(nativeMembers, NativeMemberNames.TP_NAME);
+            String doc = getStringItem(nativeMembers, NativeMemberNames.TP_DOC);
             // the qualified name (i.e. without module name) like 'A.B...'
             String qualName = getQualName(fqname);
             PythonNativeClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, qualName, bases);
             writeNode.execute(cclass, SpecialAttributeNames.__DOC__, doc);
-            writeNode.execute(cclass, SpecialAttributeNames.__BASICSIZE__, getLongItem(nativeMembers, "tp_basicsize"));
+            writeNode.execute(cclass, SpecialAttributeNames.__BASICSIZE__, getLongItem(nativeMembers, NativeMemberNames.TP_BASICSIZE));
+            writeNode.execute(cclass, SpecialAttributeNames.__ITEMSIZE__, getLongItem(nativeMembers, NativeMemberNames.TP_ITEMSIZE));
+            writeNode.execute(cclass, SpecialAttributeNames.__DICTOFFSET__, getLongItem(nativeMembers, NativeMemberNames.TP_DICTOFFSET));
             String moduleName = getModuleName(fqname);
             if (moduleName != null) {
                 writeNode.execute(cclass, SpecialAttributeNames.__MODULE__, moduleName);
@@ -2003,7 +2005,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object doPointer(PythonNativeObject n, @SuppressWarnings("unused") int signed,
                         @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(factory().createNativeVoidPtr((TruffleObject) n.object));
+            return toSulongNode.execute(factory().createNativeVoidPtr(n.object));
         }
     }
 
@@ -2143,10 +2145,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         PBytes doGeneric(PythonNativeObject object) {
-            if (object.object instanceof TruffleObject) {
-                return factory().createBytes(getByteArray((TruffleObject) object.object));
-            }
-            throw raise(TypeError, "invalid pointer: %s", object.object);
+            return factory().createBytes(getByteArray(object.object));
         }
     }
 

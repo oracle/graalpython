@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.frame;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
@@ -53,19 +52,35 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @NodeChild(value = "rhs", type = ExpressionNode.class)
-public abstract class WriteGlobalNode extends StatementNode implements GlobalNode, WriteNode {
+public abstract class WriteNameNode extends StatementNode implements WriteNode, AccessNameNode {
     protected final String attributeId;
 
-    WriteGlobalNode(String attributeId) {
+    protected WriteNameNode(String attributeId) {
         this.attributeId = attributeId;
     }
 
-    public static WriteGlobalNode create(String attributeId) {
-        return create(attributeId, null);
+    public static WriteNameNode create(String attributeId, ExpressionNode rhs) {
+        return WriteNameNodeGen.create(attributeId, rhs);
     }
 
-    public static WriteGlobalNode create(String attributeId, ExpressionNode rhs) {
-        return WriteGlobalNodeGen.create(attributeId, rhs);
+    @Specialization(guards = "hasLocalsDict(frame)")
+    protected void writeLocalsDict(VirtualFrame frame, Object value,
+                    @Cached("create()") HashingCollectionNodes.SetItemNode setItem) {
+        PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
+        setItem.execute(frameLocals, attributeId, value);
+    }
+
+    @Specialization(guards = "hasLocals(frame)")
+    protected void writeLocal(VirtualFrame frame, Object value,
+                    @Cached("create()") SetItemNode setItem) {
+        Object frameLocals = PArguments.getSpecialArgument(frame);
+        setItem.executeWith(frameLocals, attributeId, value);
+    }
+
+    @Specialization(guards = "!hasLocals(frame)")
+    protected void writeGlobal(VirtualFrame frame, Object value,
+                    @Cached("create(attributeId)") WriteGlobalNode setItem) {
+        setItem.executeWithValue(frame, value);
     }
 
     public void doWrite(VirtualFrame frame, boolean value) {
@@ -98,53 +113,7 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
 
     public abstract void executeWithValue(VirtualFrame frame, Object value);
 
-    private static PDict getGlobalsDict(VirtualFrame frame) {
-        return (PDict) PArguments.getGlobals(frame);
-    }
-
-    @Specialization(guards = "isInBuiltinDict(frame)")
-    void writeDictBoolean(VirtualFrame frame, boolean value,
-                    @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
-        storeNode.execute(getGlobalsDict(frame), attributeId, value);
-    }
-
-    @Specialization(guards = "isInBuiltinDict(frame)")
-    void writeDictInt(VirtualFrame frame, int value,
-                    @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
-        storeNode.execute(getGlobalsDict(frame), attributeId, value);
-    }
-
-    @Specialization(guards = "isInBuiltinDict(frame)")
-    void writeDictLong(VirtualFrame frame, long value,
-                    @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
-        storeNode.execute(getGlobalsDict(frame), attributeId, value);
-    }
-
-    @Specialization(guards = "isInBuiltinDict(frame)")
-    void writeDictDouble(VirtualFrame frame, double value,
-                    @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
-        storeNode.execute(getGlobalsDict(frame), attributeId, value);
-    }
-
-    @Specialization(replaces = {"writeDictBoolean", "writeDictInt", "writeDictLong", "writeDictDouble"}, guards = "isInBuiltinDict(frame)")
-    void writeDictObject(VirtualFrame frame, Object value,
-                    @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
-        storeNode.execute(getGlobalsDict(frame), attributeId, value);
-    }
-
-    @Specialization(replaces = {"writeDictBoolean", "writeDictInt", "writeDictLong", "writeDictDouble", "writeDictObject"}, guards = "isInDict(frame)")
-    void writeGenericDict(VirtualFrame frame, Object value,
-                    @Cached("create()") SetItemNode storeNode) {
-        storeNode.executeWith(PArguments.getGlobals(frame), attributeId, value);
-    }
-
-    @Specialization(guards = "isInModule(frame)")
-    void writeModule(VirtualFrame frame, Object value,
-                    @Cached("create(attributeId)") SetAttributeNode storeNode) {
-        storeNode.executeVoid(PArguments.getGlobals(frame), value);
-    }
-
-    public Object getAttributeId() {
+    public String getAttributeId() {
         return attributeId;
     }
 }

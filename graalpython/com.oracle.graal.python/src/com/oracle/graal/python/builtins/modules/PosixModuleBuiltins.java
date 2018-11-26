@@ -356,7 +356,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StatNode extends PythonBinaryBuiltinNode {
-        private final ConditionProfile fileNotFound = ConditionProfile.createBinaryProfile();
+        private final BranchProfile fileNotFound = BranchProfile.create();
 
         private static final int S_IFIFO = 0010000;
         private static final int S_IFCHR = 0020000;
@@ -386,8 +386,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object stat(String path, boolean followSymlinks) {
             TruffleFile f = getContext().getEnv().getTruffleFile(path);
             LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
-            if (fileNotFound.profile(!f.exists(linkOptions))) {
-                throw raise(FileNotFoundError, "No such file or directory: '%s'", path);
+            try {
+                if (!f.exists(linkOptions)) {
+                    throw fileNoFound(path);
+                }
+            } catch (SecurityException e) {
+                throw fileNoFound(path);
             }
             int mode = 0;
             long size = 0;
@@ -473,6 +477,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                             mtime,
                             ctime,
             });
+        }
+
+        private PException fileNoFound(String path) {
+            fileNotFound.enter();
+            throw raise(FileNotFoundError, "No such file or directory: '%s'", path);
         }
 
         @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
@@ -977,7 +986,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 case 1:
                 case 2:
                     // TODO: XXX: actually check
-                    return consoleCheck();
+                    // TODO: We can only return true here once we
+                    // have at least basic subprocess module support,
+                    // because otherwise we break the REPL help
+                    // return consoleCheck();
+                    return false;
                 default:
                     return false;
             }
