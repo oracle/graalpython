@@ -82,23 +82,63 @@ def fspath(path):
     if __fspath__:
         return __fspath__()
     else:
-        raise TypeError("expected str, bytes or os.PathLike object, not object")
+        raise TypeError("expected str, bytes or os.PathLike object, not %r" % type(path))
 
 
 class ScandirIterator:
-    def __init__(self, it):
-        self.__delegate = it
+    def __init__(self, path):
+        self.path = path
+        self.__delegate = iter(listdir(path))
 
     def __iter__(self):
-        return self.__delegate.__iter__()
+        return self
 
     def __next__(self):
-        return self.__delegate.__next__()
+        return DirEntry(self.__delegate.__next__(), self.path)
+
+    def __enter__(self, *args):
+        return self
+
+    def __exit__(self, *args):
+        return
+
+
+class DirEntry:
+    def __init__(self, name, scandir_path):
+        self.name = name
+        self.path = "%s/%s" % (scandir_path, name)
+        self.stat_result = None
+
+    def __repr__(self):
+        return "<DirEntry '%s'>" % self.path
+
+    def __fspath__(self):
+        return self.path
+
+    def inode(self):
+        pass
+
+    def is_symlink(self):
+        return self.stat().st_mode & 0o120000 != 0
+
+    def is_dir(self):
+        return self.stat().st_mode & 0o040000 != 0
+
+    def is_file(self):
+        return self.stat().st_mode & 0o100000 != 0
+
+    def stat(self):
+        """
+        return stat_result object for the entry; cached per entry
+        """
+        if not self.stat_result:
+            self.stat_result = lstat(self.path)
+        return self.stat_result
 
 
 @__builtin__
 def scandir(path):
-    return ScandirIterator(iter(listdir(path)))
+    return ScandirIterator(path)
 
 
 @__builtin__
