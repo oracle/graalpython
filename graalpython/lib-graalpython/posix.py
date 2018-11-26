@@ -38,6 +38,8 @@
 # SOFTWARE.
 
 from _descriptor import make_named_tuple_class
+from sys import graal_python_is_native
+from sys import executable as graal_python_executable
 
 stat_result = make_named_tuple_class("stat_result", [
     "st_mode", "st_ino", "st_dev", "st_nlink",
@@ -54,6 +56,8 @@ def stat(filename):
 
 @__builtin__
 def lstat(filename):
+    if not graal_python_is_native and filename == graal_python_executable:
+        return stat_result((0,0,0,0,0,0,0,0,0,0))
     return stat_result(old_stat(filename, False))
 
 
