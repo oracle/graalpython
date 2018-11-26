@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -186,7 +187,8 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(tb)")
         public Object getTraceback(PBaseException self, @SuppressWarnings("unused") Object tb) {
-            return self.getTraceback(factory());
+            PTraceback traceback = self.getTraceback(factory());
+            return traceback == null ? PNone.NONE : traceback;
         }
 
         @Specialization
