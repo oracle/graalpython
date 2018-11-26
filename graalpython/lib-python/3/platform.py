@@ -113,9 +113,7 @@ __copyright__ = """
 __version__ = '1.0.8'
 
 import collections
-# TODO: Truffle reenable me once subprocess is supported (GR-9141)
-# import sys, os, re, subprocess
-import sys, os, re
+import sys, os, re, subprocess
 
 import warnings
 
