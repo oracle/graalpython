@@ -504,7 +504,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    static abstract class DictNode extends PythonBinaryBuiltinNode {
+    public static abstract class DictNode extends PythonBinaryBuiltinNode {
         private final IsBuiltinClassProfile exactObjInstanceProfile = IsBuiltinClassProfile.create();
         private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
 
