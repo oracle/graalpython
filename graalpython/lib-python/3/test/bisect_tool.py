@@ -17,6 +17,7 @@ Load an existing list of tests from a file using -i option:
     ./python -m test.bisect -i tests test_os
 """
 
+# TODO TRUFFLE: revert rename me back to bisect.py
 import argparse
 import datetime
 import os.path
