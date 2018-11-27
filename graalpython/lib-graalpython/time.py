@@ -76,9 +76,9 @@ del make_struct_time
 
 @__builtin__
 def gmtime(seconds):
-    return struct_time(*__truffle_gmtime_tuple__(seconds))
+    return struct_time(__truffle_gmtime_tuple__(seconds))
 
 
 @__builtin__
 def localtime(seconds):
-    return struct_time(*__truffle_localtime_tuple__(seconds))
+    return struct_time(__truffle_localtime_tuple__(seconds))
