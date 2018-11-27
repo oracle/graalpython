@@ -199,6 +199,7 @@ graalpython/com.oracle.graal.python.test/src/tests/test_compare.py,python.copyri
 graalpython/com.oracle.graal.python.test/src/tests/test_enumerate.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_euler11.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_euler31.py,benchmarks.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_exception.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-accumulator.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-continue.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-expression-next.py,zippy.copyright
