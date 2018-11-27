@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 import time
-
+import unittest
 
 def test_sleep():
     start = time.time()
@@ -56,3 +56,20 @@ def test_monotonic():
     times = [time.monotonic() for _ in range(100)]
     for t1, t2 in zip(times[:-1], times[1:]):
         assert t1 <= t2
+
+class StructTimeTests(unittest.TestCase):
+
+    def test_new_struct_time(self):
+        t = time.struct_time((2018, 11, 26, 17, 34, 12, 0, 340, -1))
+        self.assertEqual(t.tm_year,  2018)
+        self.assertEqual(t.tm_mon, 11)
+        self.assertEqual(t.tm_mday, 26)
+        self.assertEqual(t[2], 26)
+        self.assertEqual(t.tm_zone, None)
+        
+        self.assertRaises(TypeError, time.struct_time, (2018, 11, 26, 17, 34, 12, 0, 340))
+        self.assertRaises(TypeError, time.struct_time, (2018, 11, 26, 17, 34, 12, 0, 340, 9, 10, 11, 12))
+
+    
+
+    

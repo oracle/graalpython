@@ -38,30 +38,47 @@
 # SOFTWARE.
 
 
-@__builtin__
-def struct_time(*args, **kwargs):
-    from collections import namedtuple
+def make_struct_time():
+    from _descriptor import make_named_tuple_class
+    fields = ["tm_year", "tm_mon", "tm_mday", "tm_hour", "tm_min", "tm_sec", "tm_wday", "tm_yday", "tm_isdst", "tm_zone", "tm_gmtoff"]
+    struct_time_type = make_named_tuple_class("struct_time", fields)
 
-    nt = namedtuple("struct_time", [
-        "tm_year",
-        "tm_mon",
-        "tm_mday",
-        "tm_hour",
-        "tm_min",
-        "tm_sec",
-        "tm_wday",
-        "tm_yday",
-        "tm_isdst",
-    ])
+    class struct_time(struct_time_type):
 
-    return nt(*args, **kwargs)
+        def __new__(cls, iterable):
+            count = len(iterable)
+            if (count < 9):
+                raise TypeError("time.struct_time() takes an at least 9-sequence (%d-sequence given)" % count)
+            if (count > 11):
+                raise TypeError("time.struct_time() takes an at most 11-sequence (%d-sequence given)" % count)
+            if count == 11:
+                return tuple.__new__(cls, iterable)
+            if count == 10:
+                return tuple.__new__(cls, iterable + (None, ))
+            if count == 9:
+                return tuple.__new__(cls, iterable + (None,  None)) 
 
+        def __repr__(self):
+            text = "{}(".format(self.__class__.__name__)
+            n = len(self)
+            for i in range(n):
+                if self[i] != None:
+                    if i > 0 :
+                        text = text + ", "
+                    text = text + "{}={}".format(fields[i], str(self[i]))
+            text = text + ')'
+            return text
+    return struct_time
+
+
+struct_time = make_struct_time()
+del make_struct_time
 
 @__builtin__
 def gmtime(seconds):
-    return struct_time(*__truffle_gmtime_tuple__(seconds))
+    return struct_time(__truffle_gmtime_tuple__(seconds))
 
 
 @__builtin__
 def localtime(seconds):
-    return struct_time(*__truffle_localtime_tuple__(seconds))
+    return struct_time(__truffle_localtime_tuple__(seconds))
