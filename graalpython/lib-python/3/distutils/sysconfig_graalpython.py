@@ -65,8 +65,8 @@ def _init_posix():
     so_ext = _imp.extension_suffixes()[0]
 
     g = {}
-    g['CC'] = "%s -CC" % sys.executable
-    g['CXX'] = "%s -CC" % sys.executable
+    g['CC'] = "%s %s -CC" % (sys.executable, "-v" if sys.flags.verbose else "")
+    g['CXX'] = "%s %s -CC" % (sys.executable, "-v" if sys.flags.verbose else "")
     g['OPT'] = "-DNDEBUG -O1"
     g['CFLAGS'] = "-DNDEBUG -O1"
     g['CCSHARED'] = "-fPIC"

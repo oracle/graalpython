@@ -375,10 +375,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         return combined;
     }
 
-    private static void exec(String[] cmdarray) {
+    private void exec(String[] cmdarray) {
         try {
             ProcessBuilder processBuilder = new ProcessBuilder();
             processBuilder.inheritIO();
+            if (verboseFlag) {
+                System.err.print("[python] ");
+                for (String cmd : cmdarray) {
+                    System.err.print(cmd);
+                    System.err.print(" ");
+                }
+                System.err.println("");
+            }
             processBuilder.command(cmdarray);
             int status = processBuilder.start().waitFor();
             if (status != 0) {
