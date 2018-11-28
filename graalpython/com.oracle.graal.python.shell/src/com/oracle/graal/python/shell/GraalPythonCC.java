@@ -45,8 +45,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 public class GraalPythonCC extends GraalPythonCompiler {
@@ -194,7 +196,11 @@ public class GraalPythonCC extends GraalPythonCompiler {
         List<String> cmdline = GraalPythonMain.getCmdline(Arrays.asList(), Arrays.asList());
         cmdline.add("-LLI");
         cmdline.add(linkedBcFile);
-        Files.write(Paths.get(executableScript), ("#!" + String.join(" ", cmdline)).getBytes());
+        Path executablePath = Paths.get(executableScript);
+        Files.write(executablePath, ("#!" + String.join(" ", cmdline)).getBytes());
+        HashSet<PosixFilePermission> perms = new HashSet<>(Arrays.asList(new PosixFilePermission[]{PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.GROUP_EXECUTE}));
+        perms.addAll(Files.getPosixFilePermissions(executablePath));
+        Files.setPosixFilePermissions(executablePath, perms);
     }
 
     private void linkShared(List<String> bitcodeFiles) {
