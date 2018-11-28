@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.LEN;
 import static com.oracle.graal.python.nodes.BuiltinNames.MAX;
 import static com.oracle.graal.python.nodes.BuiltinNames.MIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.NEXT;
+import static com.oracle.graal.python.nodes.BuiltinNames.OCT;
 import static com.oracle.graal.python.nodes.BuiltinNames.ORD;
 import static com.oracle.graal.python.nodes.BuiltinNames.POW;
 import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
@@ -283,6 +284,60 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         protected static BinNode create() {
             return BuiltinFunctionsFactory.BinNodeFactory.create();
+        }
+    }
+
+    // oct(object)
+    @Builtin(name = OCT, fixedNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class OctNode extends PythonUnaryBuiltinNode {
+
+        public abstract String executeObject(Object x);
+
+        @TruffleBoundary
+        private static String buildString(boolean isNegative, String number) {
+            StringBuilder sb = new StringBuilder();
+            if (isNegative) {
+                sb.append('-');
+            }
+            sb.append("0o");
+            sb.append(number);
+            return sb.toString();
+        }
+
+        @Specialization
+        public String doL(long x) {
+            return buildString(x < 0, longToOctString(x));
+        }
+
+        @TruffleBoundary
+        private static String longToOctString(long x) {
+            return Long.toOctalString(Math.abs(x));
+        }
+
+        @Specialization
+        public String doD(double x) {
+            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public String doPI(PInt x) {
+            BigInteger value = x.getValue();
+            return buildString(value.compareTo(BigInteger.ZERO) == -1, value.abs().toString(8));
+        }
+
+        @Specialization
+        public String doO(Object x,
+                        @Cached("create()") CastToIntegerFromIndexNode toIntNode,
+                        @Cached("create()") OctNode recursiveNode) {
+            Object value = toIntNode.execute(x);
+            return recursiveNode.executeObject(value);
+        }
+
+        protected static OctNode create() {
+            return BuiltinFunctionsFactory.OctNodeFactory.create();
         }
     }
 
