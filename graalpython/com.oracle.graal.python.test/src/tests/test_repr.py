@@ -37,18 +37,32 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-class classmethod(object):
-    method = None
 
-    def __init__(self, func):
-        self.__func__ = func
-
-    def __get__(self, obj, instance=None, owner=None):
-        if owner is None:
-            return classmethod.method(type(instance), obj.__func__)
-        else:
-            return classmethod.method(owner, obj.__func__)
+def assert_not_raises(fnc, *args, **kwargs):
+    try:
+        fnc(*args, **kwargs)
+    except Exception:
+        assert False
+    assert True
 
 
-classmethod.method = type(classmethod(None).__init__)
-classmethod.__get__ = __builtin__(classmethod.__get__)
+def test_repr_no_failures():
+    class MyClass(dict):
+        pass
+
+    x = 100
+
+    def a_func():
+        return 20 * x
+
+    assert_not_raises(lambda: repr([1, 2, 3]))
+    assert_not_raises(lambda: repr({1, 2, 3}))
+    assert_not_raises(lambda: repr(2))
+    assert_not_raises(lambda: repr(2.0))
+    assert_not_raises(lambda: repr(range(0, 10)))
+    assert_not_raises(lambda: repr(MyClass()))
+    assert_not_raises(lambda: repr(MyClass))
+    assert_not_raises(lambda: repr(None))
+    assert_not_raises(lambda: repr(a_func))
+    assert_not_raises(lambda: repr(object()))
+    assert_not_raises(lambda: repr(x))

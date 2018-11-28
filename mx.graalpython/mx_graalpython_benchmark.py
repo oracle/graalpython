@@ -122,11 +122,39 @@ class AbstractPythonVm(Vm):
         return ret_code, out.data
 
 
-class CPythonVm(AbstractPythonVm):
+class AbstractPythonIterationsControlVm(AbstractPythonVm):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, config_name, options=None, iterations=None):
+        super(AbstractPythonIterationsControlVm, self).__init__(config_name, options)
+        try:
+            self._iterations = int(iterations)
+        except Exception:
+            self._iterations = None
+
+    def _override_iterations_args(self, args):
+        _args = []
+        i = 0
+        while i < len(args):
+            arg = args[i]
+            _args.append(arg)
+            if arg == '-i':
+                _args.append(str(self._iterations))
+                i += 1
+            i += 1
+        return _args
+
+    def run(self, cwd, args):
+        if self._iterations is not None:
+            args = self._override_iterations_args(args)
+        return super(AbstractPythonIterationsControlVm, self).run(cwd, args)
+
+
+class CPythonVm(AbstractPythonIterationsControlVm):
     PYTHON_INTERPRETER = "python3"
 
-    def __init__(self, config_name, options=None, virtualenv=None):
-        super(CPythonVm, self).__init__(config_name, options)
+    def __init__(self, config_name, options=None, virtualenv=None, iterations=None):
+        super(CPythonVm, self).__init__(config_name, options=options, iterations=iterations)
         self._virtualenv = virtualenv
 
     @property
@@ -139,16 +167,18 @@ class CPythonVm(AbstractPythonVm):
         return VM_NAME_CPYTHON
 
 
-class PyPyVm(AbstractPythonVm):
-    def __init__(self, config_name, options=None):
-        super(PyPyVm, self).__init__(config_name, options=options)
+class PyPyVm(AbstractPythonIterationsControlVm):
+    PYPY_INTERPRETER = "pypy3"
+
+    def __init__(self, config_name, options=None, iterations=None):
+        super(PyPyVm, self).__init__(config_name, options=options, iterations=iterations)
 
     @property
     def interpreter(self):
         home = mx.get_env(ENV_PYPY_HOME)
         if not home:
             mx.abort("{} is not set!".format(ENV_PYPY_HOME))
-        return join(home, 'bin', 'pypy3')
+        return join(home, 'bin', PyPyVm.PYPY_INTERPRETER)
 
     def name(self):
         return VM_NAME_PYPY
@@ -321,7 +351,8 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
     def failurePatterns(self):
         return [
-            re.compile(r"Exception")
+            # lookahead pattern for when truffle compilation details are enabled in the log
+            re.compile(r"^(?!(\[truffle\])).*Exception")
         ]
 
     def group(self):

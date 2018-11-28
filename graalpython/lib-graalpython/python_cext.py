@@ -215,13 +215,6 @@ def PyTruffle_Object_LEN(obj):
 
 ##################### BYTES
 
-def PyBytes_FromStringAndSize(string, size, encoding):
-    if string is not None and string is not Py_NoValue():
-        return bytes(string, encoding)
-    assert size >= 0;
-    return PyTruffle_Bytes_EmptyWithCapacity(size, native_null)
-
-
 def PyBytes_AsStringCheckEmbeddedNull(obj, encoding):
     if not PyBytes_Check(obj):
         raise TypeError('expected bytes, {!s} found'.format(type(obj)))
@@ -346,11 +339,6 @@ def PyLong_FromString(string, base, negative):
 
 @may_raise
 def PyFloat_FromDouble(n):
-    return float(n)
-
-
-@may_raise
-def PyFloat_FromObject(n):
     return float(n)
 
 
@@ -480,11 +468,6 @@ def PyNumber_Index(v):
 
 
 @may_raise
-def PyNumber_Float(v):
-    return float(v)
-
-
-@may_raise
 def PyNumber_Long(v):
     return int(v)
 
@@ -517,20 +500,8 @@ def PySequence_Tuple(obj):
 
 
 @may_raise
-def PySequence_Fast(obj, msg):
-    if isinstance(obj, tuple) or isinstance(obj, list):
-        return obj
-    try:
-        return list(obj)
-    except TypeError:
-        raise TypeError(msg)
-
-
-def PySequence_Check(obj):
-    # dictionaries are explicitly excluded
-    if isinstance(obj, dict):
-        return False
-    return hasattr(obj, '__getitem__')
+def PySequence_List(obj):
+    return list(obj)
 
 
 @may_raise
@@ -538,7 +509,7 @@ def PySequence_GetItem(obj, key):
     if not hasattr(obj, '__getitem__'):
         raise TypeError("'%s' object does not support indexing)" % repr(obj))
     if len(obj) < 0:
-        return error_marker
+        return native_null
     return obj[key]
 
 
@@ -700,7 +671,9 @@ def METH_DIRECT(fun):
     return fun
 
 
-methodtype = classmethod.method
+class _C:
+    def _m(self): pass
+methodtype = type(_C()._m)
 
 
 class modulemethod(methodtype):
@@ -808,20 +781,8 @@ def PyObject_Repr(o):
     return repr(o)
 
 
-@may_raise(-1)
-def PyType_IsSubtype(a, b):
-    return 1 if issubclass(a, b) else 0
-
-
 def PyTuple_New(size):
     return (None,) * size
-
-
-@may_raise
-def PyTuple_GetItem(t, n):
-    if not isinstance(t, tuple):
-        __bad_internal_call(None, None, t)
-    return t[n]
 
 
 @may_raise(-1)

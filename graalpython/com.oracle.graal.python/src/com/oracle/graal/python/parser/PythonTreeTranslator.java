@@ -71,6 +71,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
+import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
@@ -302,7 +303,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                         }
                     } else if (isStararg(argctx)) {
                         if (kwargs != null) {
-                            throw errors.raise(SyntaxError, "iterable argument unpacking follows keyword argument unpacking");
+                            throw errors.raiseInvalidSyntax(source, deriveSourceSection(argctx), "iterable argument unpacking follows keyword argument unpacking");
                         }
                         if (starargs != null) {
                             starargs = factory.createBinaryOperation("+", starargs, arg);
@@ -311,10 +312,10 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                         }
                     } else {
                         if (!keywords.isEmpty()) {
-                            throw errors.raise(SyntaxError, "positional argument follows keyword argument");
+                            throw errors.raiseInvalidSyntax(source, deriveSourceSection(argctx), "positional argument follows keyword argument");
                         }
                         if (kwargs != null) {
-                            throw errors.raise(SyntaxError, "positional argument follows keyword argument unpacking");
+                            throw errors.raiseInvalidSyntax(source, deriveSourceSection(argctx), "positional argument follows keyword argument unpacking");
                         }
                         argumentNodes.add(arg);
                     }
@@ -355,7 +356,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             // In CPython, ast.c ensures this
             String argName = ctx.test(0).accept(new ExtractNameVisitor());
             if (argName == null) {
-                throw errors.raise(SyntaxError, "Keyword can't be an expression");
+                throw errors.raiseInvalidSyntax(source, deriveSourceSection(ctx), "Keyword can't be an expression");
             }
             return factory.createKeywordLiteral((ExpressionNode) ctx.test(1).accept(this), argName);
         } else {
@@ -428,7 +429,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         } else if (ctx.NAME() != null) {
             return environment.findVariable(ctx.NAME().getText());
         } else if (ctx.getChildCount() == 1) {
-            return parseSpecialLiteral(ctx.getText());
+            return parseSpecialLiteral(ctx);
         } else if (ctx.dictorsetmaker() != null) {
             return super.visitAtom(ctx);
         } else if (ctx.getChild(0).getText().equals("{")) { // empty dict
@@ -487,7 +488,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
     private GeneratorExpressionNode createGeneratorExpressionDefinition(ExpressionNode body, int lineNum) {
         FrameDescriptor fd = environment.getCurrentFrame();
-        String generatorName = "generator_exp:" + lineNum;
+        String generatorName = source.getName() + ":generator_exp:" + lineNum;
         FunctionRootNode funcRoot = factory.createFunctionRoot(body.getSourceSection(), generatorName, true, fd, body, environment.getExecutionCellSlots());
         GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, true);
         RootCallTarget callTarget = gtran.translate();
@@ -540,23 +541,24 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
     private PNode visitDictmakerComprehension(Python3Parser.DictmakerContext ctx) {
         if (!ctx.expr().isEmpty()) {
-            throw errors.raise(SyntaxError, "dict unpacking cannot be used in dict comprehension");
+            throw errors.raiseInvalidSyntax(source, deriveSourceSection(ctx), "dict unpacking cannot be used in dict comprehension");
         }
         return factory.callBuiltin(DICT,
                         createComprehensionExpression(ctx, ctx.comp_for(), c -> factory.createTupleLiteral((ExpressionNode) ctx.test(0).accept(this), (ExpressionNode) ctx.test(1).accept(this))));
     }
 
-    private Object parseSpecialLiteral(String text) {
-        if (text.equals("...")) {
+    private Object parseSpecialLiteral(Python3Parser.AtomContext ctx) {
+        String txt = ctx.getText();
+        if (txt.equals("...")) {
             return factory.createObjectLiteral(PEllipsis.INSTANCE);
-        } else if (text.equals("None")) {
+        } else if (txt.equals("None")) {
             return factory.createObjectLiteral(PNone.NONE);
-        } else if (text.equals("True")) {
+        } else if (txt.equals("True")) {
             return factory.createBooleanLiteral(true);
-        } else if (text.equals("False")) {
+        } else if (txt.equals("False")) {
             return factory.createBooleanLiteral(false);
         } else {
-            throw errors.raise(SyntaxError, "Unknown literal %s", text);
+            throw errors.raiseInvalidSyntax(source, deriveSourceSection(ctx), "Unknown literal %s", txt);
         }
     }
 
@@ -975,7 +977,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             return factory.createImportFrom(sb.toString(), fromlist.toArray(new String[0]), asNodes.toArray(new WriteNode[0]), level);
         } else {
             if (!environment.atModuleLevel()) {
-                throw errors.raise(SyntaxError, "import * only allowed at module level");
+                throw errors.raiseInvalidSyntax(source, deriveSourceSection(ctx), "import * only allowed at module level");
             }
             return factory.createImportStar(sb.toString(), level);
         }
@@ -1092,12 +1094,15 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         } else if (target instanceof ReadGlobalOrBuiltinNode) {
             ReadGlobalOrBuiltinNode readGlobalOrBuiltin = (ReadGlobalOrBuiltinNode) target;
             blockList.add(factory.createDeleteGlobal(readGlobalOrBuiltin.getAttributeId()));
+        } else if (target instanceof ReadNameNode) {
+            ReadNameNode readName = (ReadNameNode) target;
+            blockList.add(factory.createDeleteName(readName.getAttributeId()));
         } else if (target instanceof TupleLiteralNode) {
             for (PNode targetValue : ((TupleLiteralNode) target).getValues()) {
                 delTarget(blockList, targetValue);
             }
         } else {
-            throw errors.raise(SyntaxError, "can't delete '%s'", target.getSourceSection().getCharacters());
+            throw errors.raiseInvalidSyntax(target.getSourceSection().getSource(), target.getSourceSection(), "can't delete '%s'", target.getSourceSection().getCharacters());
         }
     }
 
@@ -1156,7 +1161,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 return factory.createFrameReturn(factory.createWriteLocal((ExpressionNode) ctx.testlist().accept(this), environment.getReturnSlot()));
             }
         }
-        throw errors.raise(SyntaxError, "'return' outside function");
+        throw errors.raiseInvalidSyntax(source, deriveSourceSection(ctx), "'return' outside function");
     }
 
     private static boolean lastChildIsComma(ParserRuleContext ctx) {
@@ -1369,7 +1374,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 WriteNode exceptName = null;
                 if (excctx.test() != null) {
                     if (gotDefaultExcept) {
-                        throw errors.raise(SyntaxError, "default except: must be last");
+                        throw errors.raiseInvalidSyntax(source, deriveSourceSection(excctx), "default except: must be last");
                     }
                     exceptType = (ExpressionNode) excctx.test().accept(this);
                     if (excctx.NAME() != null) {
@@ -1770,46 +1775,42 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             List<PNode> inputList = (List<PNode>) accept;
             if (inputList.size() == 0) {
                 return factory.createBlock();
+            } else if (inputList.size() == 1) {
+                return asBlock(inputList.get(0));
+            } else {
+                StatementNode[] statements = new StatementNode[inputList.size()];
+                for (int i = 0; i < statements.length; i++) {
+                    statements[i] = asBlock(inputList.get(i));
+                }
+                return factory.createBlock(statements);
             }
-            List<StatementNode> list = new ArrayList<>();
-            for (PNode node : inputList) {
-                list.add(asBlock(node));
-            }
-            StatementNode block = factory.createBlock(list);
-            return block;
         } else {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("unexpected class: " + accept.getClass());
         }
     }
 
     private ExpressionNode asExpression(Object accept) {
-        StatementNode moduleBlock = null;
         if (accept instanceof List) {
             @SuppressWarnings("unchecked")
             List<PNode> list = (List<PNode>) accept;
-            if (list.size() > 0) {
+            if (list.size() == 0) {
+                return EmptyNode.create();
+            } else if (list.size() == 1) {
+                return asExpression(list.get(0));
+            } else {
                 ExpressionNode asExpression = asExpression(list.remove(list.size() - 1));
-                StatementNode writeReturnValue = factory.createWriteLocal(asExpression, environment.getReturnSlot());
-                writeReturnValue.assignSourceSection(asExpression.getSourceSection());
-                list.add(writeReturnValue);
+                return asExpression.withSideEffect(asBlock(list));
             }
-            moduleBlock = asBlock(accept);
         } else if (accept instanceof ExpressionNode.ExpressionStatementNode) {
-            moduleBlock = factory.createWriteLocal(((ExpressionNode.ExpressionStatementNode) accept).getExpression(), environment.getReturnSlot());
-            moduleBlock.assignSourceSection(((ExpressionNode.ExpressionStatementNode) accept).getSourceSection());
+            return ((ExpressionNode.ExpressionStatementNode) accept).getExpression();
         } else if (accept instanceof ExpressionNode) {
-            moduleBlock = factory.createWriteLocal((ExpressionNode) accept, environment.getReturnSlot());
-            moduleBlock.assignSourceSection(((ExpressionNode) accept).getSourceSection());
+            return (ExpressionNode) accept;
         } else if (accept instanceof StatementNode) {
-            moduleBlock = factory.createWriteLocal(EmptyNode.create().withSideEffect((StatementNode) accept), environment.getReturnSlot());
+            return EmptyNode.create().withSideEffect((StatementNode) accept);
         } else if (accept == null) {
             return EmptyNode.create();
-        }
-        ExpressionNode readReturn = factory.createReadLocal(environment.getReturnSlot());
-        if (moduleBlock != null) {
-            return readReturn.withSideEffect(moduleBlock);
         } else {
-            return readReturn;
+            throw new IllegalArgumentException("unexpected class: " + accept.getClass());
         }
     }
 

@@ -36,6 +36,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.DELATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.DIR;
 import static com.oracle.graal.python.nodes.BuiltinNames.DIVMOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.EVAL;
+import static com.oracle.graal.python.nodes.BuiltinNames.EXEC;
 import static com.oracle.graal.python.nodes.BuiltinNames.GETATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.HASH;
 import static com.oracle.graal.python.nodes.BuiltinNames.ID;
@@ -88,14 +89,13 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -114,11 +114,14 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
+import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
+import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -151,7 +154,6 @@ import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -159,7 +161,6 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -171,13 +172,14 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.Source;
 
 @CoreFunctions(defineModule = "builtins")
@@ -238,6 +240,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         public abstract String executeObject(Object x);
 
+        @TruffleBoundary
         private static String buildString(boolean isNegative, String number) {
             StringBuilder sb = new StringBuilder();
             if (isNegative) {
@@ -250,7 +253,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public String doL(long x) {
-            return buildString(x < 0, Long.toBinaryString(Math.abs(x)));
+            return buildString(x < 0, longToBinaryString(x));
+        }
+
+        @TruffleBoundary
+        private static String longToBinaryString(long x) {
+            return Long.toBinaryString(Math.abs(x));
         }
 
         @Specialization
@@ -273,7 +281,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return recursiveNode.executeObject(value);
         }
 
-        protected BinNode create() {
+        protected static BinNode create() {
             return BuiltinFunctionsFactory.BinNodeFactory.create();
         }
     }
@@ -462,135 +470,153 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = EVAL, fixedNumOfPositionalArgs = 1, keywordArguments = {"globals", "locals"})
     @GenerateNodeFactory
     public abstract static class EvalNode extends PythonBuiltinNode {
-        @Child private GetItemNode getNameNode = GetItemNode.create();
-        @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
-        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+        protected final String funcname = "eval";
+        @Child protected CompileNode compileNode = CompileNode.create();
+        @Child private IndirectCallNode indirectCallNode = IndirectCallNode.create();
+        @Child private HasInheritedAttributeNode hasGetItemNode;
 
-        @Specialization
-        public Object eval(VirtualFrame frame, String expression, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
-            Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
-            PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(expression, callerGlobals, callerGlobals, callerClosure, callerFrame);
-        }
-
-        @Specialization
-        public Object eval(VirtualFrame frame, String expression, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
-            Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            return evalExpression(expression, globals, globals, null, callerFrame);
-        }
-
-        @Specialization
-        public Object eval(VirtualFrame frame, String expression, PythonObject globals, PythonObject locals) {
-            Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            return evalExpression(expression, globals, locals, null, callerFrame);
-        }
-
-        @Specialization
-        public Object eval(VirtualFrame frame, String expression, @SuppressWarnings("unused") PNone globals, PythonObject locals) {
-            Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
-            PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(expression, callerGlobals, locals, callerClosure, callerFrame);
-        }
-
-        @Specialization
-        public Object eval(VirtualFrame frame, PCode code, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
-                        @Cached("createIdentityProfile()") ValueProfile constantCt) {
-            Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
-            PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(constantCt.profile(code.getRootCallTarget()), callerGlobals, callerGlobals, callerClosure);
-        }
-
-        @Specialization
-        public Object eval(VirtualFrame frame, PCode code, PythonObject globals, @SuppressWarnings("unused") PNone locals,
-                        @Cached("createIdentityProfile()") ValueProfile constantCt) {
-            Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(constantCt.profile(code.getRootCallTarget()), globals, globals, callerClosure);
-        }
-
-        @Specialization
-        public Object eval(VirtualFrame frame, PCode code, PythonObject globals, PythonObject locals,
-                        @Cached("createIdentityProfile()") ValueProfile constantCt) {
-            Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(constantCt.profile(code.getRootCallTarget()), globals, locals, callerClosure);
-        }
-
-        @Specialization
-        public Object eval(VirtualFrame frame, PCode code, @SuppressWarnings("unused") PNone globals, PythonObject locals,
-                        @Cached("createIdentityProfile()") ValueProfile constantCt) {
-            Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
-            PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(constantCt.profile(code.getRootCallTarget()), callerGlobals, locals, callerClosure);
-        }
-
-        @Specialization
-        public Object eval(VirtualFrame frame, PBytes expression, PNone globals, PNone locals) {
-            return eval(frame, getString(expression), globals, locals);
-        }
-
-        @Specialization
-        public Object eval(VirtualFrame frame, PBytes expression, PythonObject globals, PNone locals) {
-            return eval(frame, getString(expression), globals, locals);
-        }
-
-        @Specialization
-        public Object eval(VirtualFrame frame, PBytes expression, PythonObject globals, PythonObject locals) {
-            return eval(frame, getString(expression), globals, locals);
-        }
-
-        @Specialization
-        public Object eval(VirtualFrame frame, PBytes expression, PNone globals, PythonObject locals) {
-            return eval(frame, getString(expression), globals, locals);
-        }
-
-        @TruffleBoundary
-        private String getString(PBytes expression) {
-            return new String(getByteArray(expression));
-        }
-
-        private byte[] getByteArray(PIBytesLike pByteArray) {
-            if (toByteArrayNode == null) {
+        private HasInheritedAttributeNode getHasGetItemNode() {
+            if (hasGetItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+                hasGetItemNode = insert(HasInheritedAttributeNode.create(SpecialMethodNames.__GETITEM__));
             }
-            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
+            return hasGetItemNode;
         }
 
-        @TruffleBoundary
-        private static Object evalExpression(RootCallTarget ct, PythonObject globals, PythonObject locals, PCell[] closure) {
-            return evalNode(ct, globals, locals, closure);
+        protected boolean isMapping(Object object) {
+            // tfel: it seems that CPython only checks that there is __getitem__
+            if (object instanceof PDict) {
+                return true;
+            } else {
+                return getHasGetItemNode().execute(object);
+            }
         }
 
-        @TruffleBoundary
-        private Object evalExpression(String expression, PythonObject globals, PythonObject locals, PCell[] closure, Frame callerFrame) {
-            String name = "<eval>";
-            if (globals instanceof PDict) {
-                Object nameObject = getNameNode.execute(globals, __NAME__);
-                if (nameObject instanceof String) {
-                    name = (String) nameObject;
+        protected boolean isAnyNone(Object object) {
+            return object instanceof PNone;
+        }
+
+        protected PCode createAndCheckCode(Object source) {
+            return compileNode.execute(source, "<string>", "eval", 0, false, -1);
+        }
+
+        private static void inheritGlobals(Frame callerFrame, Object[] args) {
+            PArguments.setGlobals(args, PArguments.getGlobals(callerFrame));
+        }
+
+        private void inheritLocals(Frame callerFrame, Object[] args, GetLocalsNode getLocalsNode) {
+            Object callerLocals = getLocalsNode.execute(callerFrame);
+            setCustomLocals(args, callerLocals);
+        }
+
+        private void setCustomLocals(Object[] args, Object locals) {
+            PArguments.setSpecialArgument(args, locals);
+            PArguments.setPFrame(args, factory().createPFrame(locals));
+        }
+
+        private void setBuiltinsInGlobals(PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
+            if (builtins != null) {
+                PHashingCollection builtinsDict = builtins.getDict();
+                if (builtinsDict == null) {
+                    builtinsDict = factory().createDictFixedStorage(builtins);
+                    builtins.setDict(builtinsDict);
                 }
+                setBuiltins.execute(globals, BuiltinNames.__BUILTINS__, builtinsDict);
+            } else {
+                // This happens during context initialization
+                return;
             }
-            PythonParser parser = getCore().getParser();
-            Source source = PythonLanguage.newSource(getContext(), expression, name);
-            RootCallTarget parsed = Truffle.getRuntime().createCallTarget((RootNode) parser.parse(ParserMode.Eval, getCore(), source, callerFrame));
-            return evalNode(parsed, globals, locals, closure);
         }
 
-        /**
-         * @param locals TODO: support the locals dictionary in execution
-         */
-        @TruffleBoundary
-        private static Object evalNode(RootCallTarget callTarget, PythonObject globals, PythonObject locals, PCell[] closure) {
-            Object[] args = PArguments.create();
+        private void setCustomGlobals(PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, Object[] args) {
+            PythonModule builtins = getContext().getBuiltins();
+            setBuiltinsInGlobals(globals, setBuiltins, builtins);
             PArguments.setGlobals(args, globals);
-            PArguments.setClosure(args, closure);
-            // TODO: cache code and CallTargets and use Direct/IndirectCallNode
-            return callTarget.call(args);
+        }
+
+        @Specialization
+        Object execInheritGlobalsInheritLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
+                        @Cached("create()") ReadCallerFrameNode readCallerFrameNode,
+                        @Cached("create()") GetLocalsNode getLocalsNode) {
+            PCode code = createAndCheckCode(source);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
+            Object[] args = PArguments.create();
+            inheritGlobals(callerFrame, args);
+            inheritLocals(callerFrame, args, getLocalsNode);
+            return indirectCallNode.call(code.getRootCallTarget(), args);
+        }
+
+        @Specialization
+        Object execCustomGlobalsGlobalLocals(Object source, PDict globals, @SuppressWarnings("unused") PNone locals,
+                        @Cached("create()") HashingCollectionNodes.SetItemNode setBuiltins) {
+            PCode code = createAndCheckCode(source);
+            Object[] args = PArguments.create();
+            setCustomGlobals(globals, setBuiltins, args);
+            // here, we don't need to set any locals, since the {Write,Read,Delete}NameNodes will
+            // fall back (like their CPython counterparts) to writing to the globals. We only need
+            // to ensure that the `locals()` call still gives us the globals dict
+            PArguments.setPFrame(args, factory().createPFrame(globals));
+            return indirectCallNode.call(code.getRootCallTarget(), args);
+        }
+
+        @Specialization(guards = {"isMapping(locals)"})
+        Object execInheritGlobalsCustomLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, Object locals,
+                        @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
+            PCode code = createAndCheckCode(source);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
+            Object[] args = PArguments.create();
+            inheritGlobals(callerFrame, args);
+            setCustomLocals(args, locals);
+            return indirectCallNode.call(code.getRootCallTarget(), args);
+        }
+
+        @Specialization(guards = {"isMapping(locals)"})
+        Object execCustomGlobalsCustomLocals(Object source, PDict globals, Object locals,
+                        @Cached("create()") HashingCollectionNodes.SetItemNode setBuiltins) {
+            PCode code = createAndCheckCode(source);
+            Object[] args = PArguments.create();
+            setCustomGlobals(globals, setBuiltins, args);
+            setCustomLocals(args, locals);
+            return indirectCallNode.call(code.getRootCallTarget(), args);
+        }
+
+        @Specialization(guards = {"!isAnyNone(globals)", "!isDict(globals)"})
+        PNone badGlobals(@SuppressWarnings("unused") Object source, Object globals, @SuppressWarnings("unused") Object locals) {
+            throw raise(TypeError, "%s() globals must be a dict, not %p", funcname, globals);
+        }
+
+        @Specialization(guards = {"isAnyNone(globals) || isDict(globals)", "!isAnyNone(locals)", "!isMapping(locals)"})
+        PNone badLocals(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") PDict globals, Object locals) {
+            throw raise(TypeError, "%s() locals must be a mapping or None, not %p", funcname, locals);
+        }
+    }
+
+    @Builtin(name = EXEC, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, parameterNames = {"source"})
+    @GenerateNodeFactory
+    abstract static class ExecNode extends EvalNode {
+        private final BranchProfile hasFreeVars = BranchProfile.create();
+
+        private void assertNoFreeVars(PCode code) {
+            RootNode rootNode = code.getRootNode();
+            if (rootNode instanceof PClosureRootNode && ((PClosureRootNode) rootNode).hasFreeVars()) {
+                hasFreeVars.enter();
+                throw raise(PythonBuiltinClassType.TypeError, "code object passed to exec() may not contain free variables");
+            }
+        }
+
+        @Override
+        protected PCode createAndCheckCode(Object source) {
+            PCode code = compileNode.execute(source, "<string>", "exec", 0, false, -1);
+            assertNoFreeVars(code);
+            return code;
+        }
+
+        protected abstract Object executeInternal(VirtualFrame frame);
+
+        @Override
+        public final Object execute(VirtualFrame frame) {
+            executeInternal(frame);
+            return PNone.NONE;
         }
     }
 
@@ -599,23 +625,26 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class CompileNode extends PythonBuiltinNode {
+
+        public abstract PCode execute(Object source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize);
+
         @Specialization
         @TruffleBoundary
-        Object compile(PBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
+        PCode compile(PBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             return compile(new String(toBytesNode.execute(source)), filename, mode, kwFlags, kwDontInherit, kwOptimize);
         }
 
         @Specialization
         @TruffleBoundary
-        Object compile(OpaqueBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
+        PCode compile(OpaqueBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
             return compile(new String(source.getBytes()), filename, mode, kwFlags, kwDontInherit, kwOptimize);
         }
 
         @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        Object compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
+        PCode compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
             Source source = PythonLanguage.newSource(getContext(), expression, filename);
             ParserMode pm;
             if (mode.equals("exec")) {
@@ -637,8 +666,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        Object compile(PCode code, String filename, String mode, Object flags, Object dontInherit, Object optimize) {
+        PCode compile(PCode code, String filename, String mode, Object flags, Object dontInherit, Object optimize) {
             return code;
+        }
+
+        public static CompileNode create() {
+            return BuiltinFunctionsFactory.CompileNodeFactory.create(new ReadArgumentNode[]{});
         }
     }
 
@@ -706,7 +739,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public Object getAttr(Object object, PString name, Object defaultValue) {
+        public Object getAttr2(Object object, PString name, Object defaultValue) {
             return executeWithArgs(object, name.getValue(), defaultValue);
         }
 
@@ -1246,7 +1279,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         append(sb, " ");
                     }
                     append(sb, callStr.executeObject(getItemNode.execute(store, store.length() - 1)));
-                    sb.append(end);
+                    append(sb, end);
                     write(context, sb.toString());
                 }
             } catch (IOException e) {
@@ -1533,6 +1566,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return NodeUtil.printTreeToString(method.getCallTarget().getRootNode());
         }
 
+        @Specialization
+        @TruffleBoundary
+        public String doIt(PCode code) {
+            return NodeUtil.printTreeToString(code.getRootNode());
+        }
+
         @Fallback
         @TruffleBoundary
         public Object doit(Object object) {
@@ -1563,7 +1602,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 buf.rewind();
                 return buf.toString();
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.EOFError, e.getMessage());
+                throw raise(PythonBuiltinClassType.EOFError, e);
             }
         }
 
@@ -1577,6 +1616,42 @@ public final class BuiltinFunctions extends PythonBuiltins {
         String inputPrompt(String prompt) {
             new PrintStream(getContext().getStandardOut()).println(prompt);
             return input(null);
+        }
+    }
+
+    @Builtin(name = "globals", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GlobalsNode extends PythonBuiltinNode {
+        @Child ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
+        private final ConditionProfile condProfile = ConditionProfile.createBinaryProfile();
+
+        @Specialization
+        public Object globals(VirtualFrame frame) {
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
+            PythonObject globals = PArguments.getGlobals(callerFrame);
+            if (condProfile.profile(globals instanceof PythonModule)) {
+                PHashingCollection dict = globals.getDict();
+                if (dict == null) {
+                    CompilerDirectives.transferToInterpreter();
+                    globals.setDict(dict = factory().createDictFixedStorage(globals));
+                }
+                return dict;
+            } else {
+                return globals;
+            }
+        }
+    }
+
+    @Builtin(name = "locals", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class LocalsNode extends PythonBuiltinNode {
+        @Child ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
+        @Child GetLocalsNode getLocalsNode = GetLocalsNode.create();
+
+        @Specialization
+        public Object locals(VirtualFrame frame) {
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
+            return getLocalsNode.execute(callerFrame);
         }
     }
 }

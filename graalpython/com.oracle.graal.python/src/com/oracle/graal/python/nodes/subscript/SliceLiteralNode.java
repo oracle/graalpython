@@ -38,12 +38,13 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-@NodeChildren({@NodeChild(value = "first", type = ExpressionNode.class), @NodeChild(value = "second", type = ExpressionNode.class), @NodeChild(value = "third", type = ExpressionNode.class)})
+@NodeChild(value = "first", type = ExpressionNode.class)
+@NodeChild(value = "second", type = ExpressionNode.class)
+@NodeChild(value = "third", type = ExpressionNode.class)
 @TypeSystemReference(PythonArithmeticTypes.class) // because bool -> int works here
 public abstract class SliceLiteralNode extends ExpressionNode {
 

@@ -73,7 +73,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
             }
         }
         Token token = r.getOffendingToken();
-        return source.createSection(token.getStartIndex(), token.getStopIndex() - token.getStartIndex());
+        return source.createSection(token.getStartIndex(), Math.max(0, token.getStopIndex() - token.getStartIndex()));
     }
 
     private static String getTokeLineText(Parser recognizer, Token token) {
@@ -81,7 +81,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         int index = token.getTokenIndex();
         // search for line start
         int tokenIndex = index;
-        int start = -1;
+        int start = 0;
         while (tokenIndex >= 0) {
             Token t = tokenStream.get(tokenIndex);
             if (t.getText().equals("\n")) {

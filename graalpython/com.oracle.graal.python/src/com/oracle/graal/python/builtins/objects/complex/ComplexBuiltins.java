@@ -367,10 +367,39 @@ public class ComplexBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     static abstract class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
             return left.equals(right);
+        }
+
+        @Specialization
+        boolean doComplexInt(PComplex left, long right) {
+            if (left.getImag() == 0) {
+                return left.getReal() == right;
+            }
+            return false;
+        }
+
+        @Specialization
+        boolean doComplexInt(PComplex left, PInt right) {
+            if (left.getImag() == 0) {
+                try {
+                    return left.getReal() == right.getValue().longValueExact();
+                } catch (ArithmeticException e) {
+                    // do nothing -> return false;
+                }
+            }
+            return false;
+        }
+
+        @Specialization
+        boolean doComplexInt(PComplex left, double right) {
+            if (left.getImag() == 0) {
+                return left.getReal() == right;
+            }
+            return false;
         }
 
         @SuppressWarnings("unused")

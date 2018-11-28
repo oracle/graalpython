@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.NodeFactory;
@@ -50,6 +48,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -108,16 +107,19 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
 
     @Specialization
     Object read(VirtualFrame frame,
-                    @Cached("create()") HashingStorageNodes.ContainsKeyNode hasKey) {
+                    @Cached("create()") GetItemNode getItemNode) {
         try {
             return getNsItem.execute(frame);
         } catch (PException pe) {
             // class namespace overrides closure
             PFrame pFrame = PArguments.getPFrame(frame);
             if (pFrame != null) {
-                PDict localsDict = pFrame.getLocalsDict();
-                if (localsDict != null && hasKey.execute(localsDict.getDictStorage(), identifier)) {
-                    return localsDict.getItem(identifier);
+                Object localsDict = pFrame.getLocalsDict();
+                if (localsDict != null) {
+                    try {
+                        return getItemNode.execute(localsDict, identifier);
+                    } catch (PException e) {
+                    }
                 }
             }
 

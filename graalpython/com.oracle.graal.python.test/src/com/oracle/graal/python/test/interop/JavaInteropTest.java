@@ -46,7 +46,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Set;
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
@@ -98,7 +100,7 @@ public class JavaInteropTest extends PythonTests {
     }
 
     @Test
-    public void truffleMethodExport() throws Exception {
+    public void truffleMethodExport() {
         String source = "import polyglot\n" +
                         "@polyglot.export_value\n" +
                         "def foo():\n" +
@@ -110,7 +112,7 @@ public class JavaInteropTest extends PythonTests {
     }
 
     @Test
-    public void javaArraySet() throws Exception {
+    public void javaArraySet() {
         String source = "import java\n" +
                         "array = java.type(\"int[]\")(4)\n" +
                         "array[2] = 42\n" +
@@ -119,7 +121,7 @@ public class JavaInteropTest extends PythonTests {
     }
 
     @Test
-    public void testPassingFloats() throws Exception {
+    public void testPassingFloats() throws UnsupportedEncodingException {
         String source = "import polyglot\n" +
                         "@polyglot.export_value\n" +
                         "def foo(x, y):\n" +
@@ -132,7 +134,7 @@ public class JavaInteropTest extends PythonTests {
     }
 
     @Test
-    public void testAsFunction() throws Exception {
+    public void testAsFunction() throws UnsupportedEncodingException {
         String source = "import polyglot\n" +
                         "@polyglot.export_value\n" +
                         "def foo():\n" +
@@ -145,7 +147,7 @@ public class JavaInteropTest extends PythonTests {
     }
 
     @Test
-    public void testAsFunctionVarArgs() throws Exception {
+    public void testAsFunctionVarArgs() throws UnsupportedEncodingException {
         String source = "import polyglot\n" +
                         "@polyglot.export_value\n" +
                         "def foo(a, b):\n" +
@@ -158,7 +160,7 @@ public class JavaInteropTest extends PythonTests {
     }
 
     @Test
-    public void mainFunctionsAreImplicitlyImporteable() throws Exception {
+    public void mainFunctionsAreImplicitlyImporteable() throws UnsupportedEncodingException {
         String source = "def foo(a, b):\n" +
                         "    print(a, b)\n\n";
         Source script = Source.create("python", source);
@@ -169,7 +171,7 @@ public class JavaInteropTest extends PythonTests {
     }
 
     @Test
-    public void builtinFunctionsAreImporteable() throws Exception {
+    public void builtinFunctionsAreImporteable() throws UnsupportedEncodingException {
         String source = "pass";
         Source script = Source.create("python", source);
         context.eval(script);
@@ -179,7 +181,7 @@ public class JavaInteropTest extends PythonTests {
     }
 
     @Test
-    public void testMultipleInvocationsAreInSameScope() throws Exception {
+    public void testMultipleInvocationsAreInSameScope() throws UnsupportedEncodingException {
         String source = "def foo(a, b):\n" +
                         "    print(a, b)\n" +
                         "foo";
@@ -227,14 +229,14 @@ public class JavaInteropTest extends PythonTests {
 
         Value libraries = suite.getMember("libraries");
         assertNotNull("libraries found", libraries);
-        final Set<String> suiteKeys = suite.getMemberKeys();
+        final List<Object> suiteKeys = Arrays.asList(suite.invokeMember("keys").as(Object[].class));
         assertTrue("Libraries found among keys: " + suiteKeys, suiteKeys.contains("libraries"));
 
         Value dacapo = null;
-        for (String k : libraries.getMemberKeys()) {
+        for (Object k : libraries.invokeMember("keys").as(List.class)) {
             System.err.println("k " + k);
             if ("DACAPO".equals(k)) {
-                dacapo = libraries.getMember(k);
+                dacapo = libraries.getMember((String) k);
             }
         }
         assertNotNull("Dacapo found", dacapo);

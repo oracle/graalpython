@@ -55,9 +55,12 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
@@ -73,6 +76,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -80,6 +84,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -181,12 +186,13 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public boolean eq(PythonNativeObject self, PythonNativeObject other) {
-            return self.object.equals(other.object);
+        public boolean eq(PythonNativeObject self, PythonNativeObject other,
+                        @Cached("create()") CExtNodes.IsNode nativeIsNode) {
+            return nativeIsNode.execute(self, other);
         }
 
-        @Specialization
-        public boolean eq(Object self, Object other) {
+        @Fallback
+        public Object eq(Object self, Object other) {
             return self == other;
         }
     }
@@ -194,9 +200,31 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
+
+        @Child private LookupAndCallBinaryNode eqNode;
+        @Child private CastToBooleanNode ifFalseNode;
+
         @Specialization
-        public boolean eq(Object self, Object other) {
-            return self != other;
+        public boolean ne(PythonNativeObject self, PythonNativeObject other,
+                        @Cached("create()") CExtNodes.IsNode nativeIsNode) {
+            return !nativeIsNode.execute(self, other);
+        }
+
+        @Fallback
+        public Object ne(Object self, Object other) {
+            if (eqNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                eqNode = insert(LookupAndCallBinaryNode.create(__EQ__));
+            }
+            Object result = eqNode.executeObject(self, other);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                return result;
+            }
+            if (ifFalseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                ifFalseNode = insert(CastToBooleanNode.createIfFalseNode());
+            }
+            return ifFalseNode.executeWith(result);
         }
     }
 
@@ -402,7 +430,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class GetattrNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object getattr(Object object, Object key) {
-            throw raise(AttributeError, "'%p' object has no attribute %s", object, key);
+            throw raise(AttributeError, "'%p' object has no attribute '%s'", object, key);
         }
     }
 
@@ -469,22 +497,28 @@ public class ObjectBuiltins extends PythonBuiltins {
             if (descr != PNone.NO_VALUE) {
                 throw raise(AttributeError, "attribute % is read-only", key);
             } else {
-                throw raise(AttributeError, "%s object has no attribute %s", object, key);
+                throw raise(AttributeError, "%s object has no attribute '%s'", object, key);
             }
         }
     }
 
-    @Builtin(name = __DICT__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    static abstract class DictNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object dict(@SuppressWarnings("unused") PythonClass self) {
-            CompilerDirectives.transferToInterpreter();
-            throw new AssertionError();
+    static abstract class DictNode extends PythonBinaryBuiltinNode {
+        private final IsBuiltinClassProfile exactObjInstanceProfile = IsBuiltinClassProfile.create();
+        private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
+
+        protected boolean isExactObjectInstance(PythonObject self) {
+            return exactObjInstanceProfile.profileObject(self, PythonBuiltinClassType.PythonObject);
         }
 
-        @Specialization(guards = {"!isBuiltinObject(self)", "!isClass(self)"})
-        Object dict(PythonObject self) {
+        protected boolean isBuiltinObjectExact(PythonObject self) {
+            // any builtin class except Modules
+            return exactBuiltinInstanceProfile.profileIsOtherBuiltinObject(self, PythonBuiltinClassType.PythonModule);
+        }
+
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)", "isNoValue(none)"})
+        Object dict(PythonObject self, @SuppressWarnings("unused") PNone none) {
             PHashingCollection dict = self.getDict();
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
@@ -493,8 +527,25 @@ public class ObjectBuiltins extends PythonBuiltins {
             return dict;
         }
 
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self)", "!isExactObjectInstance(self)"})
+        Object dict(PythonObject self, PDict dict) {
+            self.getDictUnsetOrSameAsStorageAssumption().invalidate();
+            self.setDict(dict);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNoValue(none)")
+        Object dict(PythonNativeObject self, @SuppressWarnings("unused") PNone none,
+                        @Cached("create()") CExtNodes.GetObjectDictNode getDictNode) {
+            Object dict = getDictNode.execute(self);
+            if (dict == PNone.NO_VALUE) {
+                raise(self, none);
+            }
+            return dict;
+        }
+
         @Fallback
-        Object dict(Object self) {
+        Object raise(Object self, @SuppressWarnings("unused") Object dict) {
             throw raise(AttributeError, "'%p' object has no attribute '__dict__'", self);
         }
 

@@ -315,7 +315,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             } catch (IllegalArgumentException e) {
                 throw raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
-                throw raise(UnicodeEncodeError, "%s", e.getMessage());
+                throw raise(UnicodeEncodeError, e);
             }
         }
 
@@ -375,7 +375,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 // TODO(fa): bytes object creation should not be behind a TruffleBoundary
                 return new Object[]{factory().createBytes(data), codePoints};
             } catch (CharacterCodingException e) {
-                throw raise(UnicodeEncodeError, "%s", e.getMessage());
+                throw raise(UnicodeEncodeError, e);
             }
         }
 
@@ -443,7 +443,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             } catch (IllegalArgumentException e) {
                 throw raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
-                throw raise(UnicodeDecodeError, "%s", e.getMessage());
+                throw raise(UnicodeDecodeError, e);
             }
         }
     }
@@ -504,7 +504,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 CharBuffer decoded = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(buf);
                 return String.valueOf(decoded);
             } catch (CharacterCodingException e) {
-                throw raise(UnicodeDecodeError, "%s", e.getMessage());
+                throw raise(UnicodeDecodeError, e);
             }
         }
     }

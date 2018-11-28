@@ -57,7 +57,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
         } else if (value instanceof Double) {
             generalized = new DoubleSequenceStorage();
         } else if (value instanceof PList) {
-            generalized = new ListSequenceStorage(((PList) value).getSequenceStorage());
+            generalized = new ListSequenceStorage(0);
         } else if (value instanceof PTuple) {
             generalized = new TupleSequenceStorage();
         } else {

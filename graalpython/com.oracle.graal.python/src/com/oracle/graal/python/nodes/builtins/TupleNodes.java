@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -103,6 +104,7 @@ public abstract class TupleNodes {
             return iterable;
         }
 
+        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
         @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(cls, iterable)"})
         public PTuple tuple(LazyPythonClass cls, Object iterable,
                         @Cached("create()") GetIteratorNode getIterator,

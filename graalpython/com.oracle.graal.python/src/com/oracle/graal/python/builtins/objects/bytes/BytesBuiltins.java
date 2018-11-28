@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.CodingErrorAction;
 import java.util.List;
 
@@ -67,6 +68,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -244,7 +246,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         public Object add(PBytes left, PIBytesLike right,
                         @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
-            SequenceStorage res = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            ByteSequenceStorage res = (ByteSequenceStorage) concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
             return factory().createBytes(res);
         }
 
@@ -261,7 +263,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         public Object mul(PBytes self, int times,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
-            SequenceStorage res = repeatNode.execute(self.getSequenceStorage(), times);
+            ByteSequenceStorage res = (ByteSequenceStorage) repeatNode.execute(self.getSequenceStorage(), times);
             return factory().createBytes(res);
         }
 
@@ -540,6 +542,30 @@ public class BytesBuiltins extends PythonBuiltins {
             }
 
             return translation;
+        }
+    }
+
+    @Builtin(name = "replace", fixedNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class ReplaceNode extends PythonTernaryBuiltinNode {
+        @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+
+        @Specialization
+        @TruffleBoundary
+        PBytes replace(PBytes self, PBytes substr, PBytes replacement) {
+            byte[] bytes = toBytes.execute(self);
+            byte[] subBytes = toBytes.execute(substr);
+            byte[] replacementBytes = toBytes.execute(replacement);
+            try {
+                String string = new String(bytes, "ASCII");
+                String subString = new String(subBytes, "ASCII");
+                String replacementString = new String(replacementBytes, "ASCII");
+                byte[] newBytes = string.replace(subString, replacementString).getBytes("ASCII");
+                return factory().createBytes(newBytes);
+            } catch (UnsupportedEncodingException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException();
+            }
         }
     }
 }

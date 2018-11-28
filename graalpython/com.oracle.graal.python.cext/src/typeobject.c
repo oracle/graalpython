@@ -54,7 +54,7 @@ PyTypeObject PySuper_Type = PY_TRUFFLE_TYPE("super", &PyType_Type, Py_TPFLAGS_DE
 
 UPCALL_ID(PyType_IsSubtype);
 int PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
-    return UPCALL_CEXT_I(_jls_PyType_IsSubtype, native_to_java((PyObject*)a), native_to_java((PyObject*)b));
+    return ((int (*)(void* a, void* b))_jls_PyType_IsSubtype)(native_type_to_java(a), native_type_to_java(b));
 }
 
 static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
@@ -232,6 +232,8 @@ int PyType_Ready(PyTypeObject* cls) {
     PyDict_SetItemString(native_members, "tp_name", polyglot_from_string(cls->tp_name, SRC_CS));
     PyDict_SetItemString(native_members, "tp_doc", polyglot_from_string(cls->tp_doc ? cls->tp_doc : "", SRC_CS));
     PyDict_SetItemString(native_members, "tp_basicsize", PyLong_FromSsize_t(cls->tp_basicsize));
+    PyDict_SetItemString(native_members, "tp_itemsize", PyLong_FromSsize_t(cls->tp_itemsize));
+    PyDict_SetItemString(native_members, "tp_dictoffset", PyLong_FromSsize_t(cls->tp_dictoffset));
     const char* class_name = cls->tp_name;
     PyTypeObject* javacls = polyglot_invoke(PY_TRUFFLE_CEXT,
                                             "PyType_Ready",

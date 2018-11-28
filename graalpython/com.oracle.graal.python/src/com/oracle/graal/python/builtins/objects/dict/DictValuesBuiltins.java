@@ -42,6 +42,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -61,7 +62,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonBuiltinNode {
         @Specialization
         Object run(PDictView self) {
-            return self.getDict().size();
+            return self.getWrappedDict().size();
         }
     }
 
@@ -70,8 +71,8 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doPDictValuesView(PDictValuesView self) {
-            if (self.getDict() != null) {
-                return factory().createDictValuesIterator(self.getDict());
+            if (self.getWrappedDict() != null) {
+                return factory().createDictValuesIterator(self.getWrappedDict());
             }
             return PNone.NONE;
         }
@@ -81,11 +82,12 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         boolean doItemsView(PDictValuesView self, PDictValuesView other,
                         @Cached("create()") HashingStorageNodes.ContainsKeyNode containsKeyNode) {
 
-            for (Object selfKey : self.getDict().keys()) {
-                if (!containsKeyNode.execute(other.getDict().getDictStorage(), selfKey)) {
+            for (Object selfKey : self.getWrappedDict().keys()) {
+                if (!containsKeyNode.execute(other.getWrappedDict().getDictStorage(), selfKey)) {
                     return false;
                 }
             }

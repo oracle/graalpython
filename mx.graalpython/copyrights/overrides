@@ -195,9 +195,11 @@ graalpython/com.oracle.graal.python.test/src/tests/test_call-staticmethod.py,zip
 graalpython/com.oracle.graal.python.test/src/tests/test_call-variable-function.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_class-chain-check.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_codecs.py,python.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_compare.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_enumerate.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_euler11.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_euler31.py,benchmarks.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_exception.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-accumulator.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-continue.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_generator-expression-next.py,zippy.copyright
@@ -237,6 +239,8 @@ graalpython/com.oracle.graal.python.test/src/tests/test_string.py,python.copyrig
 graalpython/com.oracle.graal.python.test/src/tests/test_tuple.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_with-test-2.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_with.py,zippy.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_zipimport.py,python.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_zlib.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/try-test.py,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/PythonLanguage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/Builtin.java,zippy.copyright
@@ -345,6 +349,8 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/type/PythonBuiltinClass.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/type/PythonClass.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/type/TypeBuiltins.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/zipimporter/PZipImporter.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/zipimporter/ZipImporterBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/EmptyNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/GraalPythonTranslationErrorNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/ModuleRootNode.java,zippy.copyright

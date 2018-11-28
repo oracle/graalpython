@@ -68,4 +68,6 @@ public abstract class PythonErrorType {
     public static final PythonBuiltinClassType ZeroDivisionError = PythonBuiltinClassType.ZeroDivisionError;
     public static final PythonBuiltinClassType BufferError = PythonBuiltinClassType.BufferError;
     public static final PythonBuiltinClassType FileNotFoundError = PythonBuiltinClassType.FileNotFoundError;
+    public static final PythonBuiltinClassType ZipImportError = PythonBuiltinClassType.ZipImportError;
+    public static final PythonBuiltinClassType ZLibError = PythonBuiltinClassType.ZLibError;
 }

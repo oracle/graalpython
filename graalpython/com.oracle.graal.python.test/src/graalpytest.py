@@ -158,6 +158,15 @@ class TestCase(object):
         for expected_value in expected:
             assert expected_value == next(actual_iter), msg
 
+    def assertIsInstance(self, obj, cls, msg=None):
+        """Same as self.assertTrue(isinstance(obj, cls)), with a nicer
+        default message."""
+        if not isinstance(obj, cls):
+            message = msg
+            if msg is None:
+                message = '%s is not an instance of %r' % (obj, cls)
+            assert False, message
+
     class assertRaises():
         def __init__(self, exc_type, function=None, *args, **kwargs):
             self.function = function

@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
@@ -62,6 +63,11 @@ public final class PythonContext {
     private final PythonCore core;
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
+    private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
+
+    // if set to 0 the VM will set it to whatever it likes
+    private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
+    private final Assumption nativeObjectsAllManagedAssumption = Truffle.getRuntime().createAssumption("all C API objects are managed");
 
     @CompilationFinal private TruffleLanguage.Env env;
 
@@ -78,25 +84,42 @@ public final class PythonContext {
     private InputStream in;
     @CompilationFinal private Object capiLibrary = null;
     private final static Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
+    private final static Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
 
     /** A thread-local dictionary for custom user state. */
     private ThreadLocal<PDict> customThreadState;
+    private final PosixResources resources;
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
         this.core = core;
         this.env = env;
+        this.resources = new PosixResources();
         if (env == null) {
             this.in = System.in;
             this.out = System.out;
             this.err = System.err;
         } else {
+            this.resources.setEnv(env);
             this.in = env.in();
             this.out = env.out();
             this.err = env.err();
         }
+    }
+
+    public ThreadGroup getThreadGroup() {
+        return threadGroup;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public long getPythonThreadStackSize() {
+        return pythonThreadStackSize.get();
+    }
+
+    public long getAndSetPythonsThreadStackSize(long value) {
+        return pythonThreadStackSize.getAndSet(value);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -135,6 +158,24 @@ public final class PythonContext {
     public void setEnv(TruffleLanguage.Env newEnv) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         env = newEnv;
+        in = env.in();
+        out = env.out();
+        err = env.err();
+        resources.setEnv(env);
+    }
+
+    /**
+     * Just for testing
+     */
+    public void setOut(OutputStream out) {
+        this.out = out;
+    }
+
+    /**
+     * Just for testing
+     */
+    public void setErr(OutputStream err) {
+        this.err = err;
     }
 
     public PythonModule getMainModule() {
@@ -157,14 +198,6 @@ public final class PythonContext {
         return out;
     }
 
-    public void setOut(OutputStream out) {
-        this.out = out;
-    }
-
-    public void setErr(OutputStream err) {
-        this.err = err;
-    }
-
     public void setCurrentException(PException e) {
         currentException = e;
     }
@@ -185,8 +218,6 @@ public final class PythonContext {
 
     public void patch(Env newEnv) {
         setEnv(newEnv);
-        setOut(newEnv.out());
-        setErr(newEnv.err());
         setupRuntimeInformation();
         core.postInitialize();
     }
@@ -200,6 +231,7 @@ public final class PythonContext {
         builtinsModule = (PythonModule) sysModules.getItem("builtins");
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
+        mainModule.setDict(core.factory().createDictFixedStorage(mainModule));
         sysModules.setItem(__MAIN__, mainModule);
         OpaqueBytes.initializeForNewContext(this);
         currentException = null;
@@ -263,7 +295,19 @@ public final class PythonContext {
         return singleNativeContext;
     }
 
+    public static Assumption getSingleThreadedAssumption() {
+        return singleThreaded;
+    }
+
+    public Assumption getNativeObjectsAllManagedAssumption() {
+        return nativeObjectsAllManagedAssumption;
+    }
+
     public boolean isExecutableAccessAllowed() {
         return getEnv().isHostLookupAllowed() || getEnv().isNativeAccessAllowed();
+    }
+
+    public PosixResources getResources() {
+        return resources;
     }
 }

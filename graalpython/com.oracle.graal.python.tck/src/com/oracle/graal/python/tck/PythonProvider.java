@@ -165,7 +165,7 @@ public class PythonProvider implements LanguageProvider {
 
         // dictionaries
         addExpressionSnippet(context, snippets, "dict", "lambda: { 'x': 4 }", OBJECT);
-        addExpressionSnippet(context, snippets, "dict", "lambda: { 'a': 1, 'b': 2, 'c': 3 }", OBJECT, new PDictMemberVerifier(arr("a", "b", "c"), arr("x", "y", "z")));
+        addExpressionSnippet(context, snippets, "dict", "lambda: { 'a': 1, 'b': 2, 'c': 3 }", OBJECT, new PDictMemberVerifier(arr("get", "keys", "update"), arr("a", "b", "c")));
 
         // @formatter:on
         return snippets;

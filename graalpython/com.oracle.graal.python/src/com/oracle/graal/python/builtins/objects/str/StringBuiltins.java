@@ -516,6 +516,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Fallback
         public Object endsWith(Object self, Object prefix) {
+            CompilerDirectives.transferToInterpreter();
             throw new RuntimeException("endsWith is not supported for " + self + " " + self.getClass() + " prefix " + prefix);
         }
     }
@@ -830,24 +831,29 @@ public final class StringBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         public PList doSplit(String self, String sep, PNone maxsplit) {
-            PList list = factory().createList();
-            String[] strs = self.split(Pattern.quote(sep));
-            for (String s : strs) {
-                getAppendNode().execute(list, s);
-            }
-            return list;
+            return doSplit(self, sep, -1);
         }
 
         @Specialization
         @TruffleBoundary
         public PList doSplit(String self, String sep, int maxsplit) {
-            PList list = factory().createList();
-            // Python gives the maximum number of splits, Java wants the max number of resulting
-            // parts
-            String[] strs = self.split(Pattern.quote(sep), maxsplit + 1);
-            for (String s : strs) {
-                getAppendNode().execute(list, s);
+            if (sep.isEmpty()) {
+                throw raise(ValueError, "empty separator");
             }
+            int splits = maxsplit == -1 ? Integer.MAX_VALUE : maxsplit;
+
+            PList list = factory().createList();
+            int lastEnd = 0;
+            while (splits > 0) {
+                int nextIndex = self.indexOf(sep, lastEnd);
+                if (nextIndex == -1) {
+                    break;
+                }
+                splits--;
+                getAppendNode().execute(list, self.substring(lastEnd, nextIndex));
+                lastEnd = nextIndex + sep.length();
+            }
+            getAppendNode().execute(list, self.substring(lastEnd, self.length()));
             return list;
         }
 
@@ -862,6 +868,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         // See {@link PyString}
+        @TruffleBoundary
         private PList splitfields(String s, int maxsplit) {
             /*
              * Result built here is a list of split parts, exactly as required for s.split(None,
@@ -1237,7 +1244,7 @@ public final class StringBuiltins extends PythonBuiltins {
             } catch (IllegalArgumentException e) {
                 throw raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
-                throw raise(UnicodeEncodeError, "%s", e.getMessage());
+                throw raise(UnicodeEncodeError, e);
             }
         }
     }
@@ -1705,6 +1712,7 @@ public final class StringBuiltins extends PythonBuiltins {
             throw raise(TypeError, "The fill character must be exactly one character long");
         }
 
+        @TruffleBoundary
         protected String make(String self, int width, String fill) {
             int fillChar = parseCodePoint(fill);
             int len = width - self.length();
@@ -1719,6 +1727,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return padding(half, fillChar) + self + padding(len - half, fillChar);
         }
 
+        @TruffleBoundary
         protected static String padding(int len, int codePoint) {
             int[] result = new int[len];
             for (int i = 0; i < len; i++) {
@@ -1741,6 +1750,7 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class LJustNode extends CenterNode {
 
         @Override
+        @TruffleBoundary
         protected String make(String self, int width, String fill) {
             int fillChar = parseCodePoint(fill);
             int len = width - self.length();
@@ -1757,6 +1767,7 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class RJustNode extends CenterNode {
 
         @Override
+        @TruffleBoundary
         protected String make(String self, int width, String fill) {
             int fillChar = parseCodePoint(fill);
             int len = width - self.length();
@@ -1812,8 +1823,15 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String doString(String primary, PInt idx) {
-            return doString(primary, idx.intValue());
+        public String doString(String primary, long idx,
+                        @Cached("create()") CastToIndexNode castToIndex) {
+            return doString(primary, castToIndex.execute(idx));
+        }
+
+        @Specialization
+        public String doString(String primary, PInt idx,
+                        @Cached("create()") CastToIndexNode castToIndex) {
+            return doString(primary, castToIndex.execute(idx));
         }
 
         @SuppressWarnings("unused")

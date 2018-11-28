@@ -49,10 +49,9 @@ PyObject* PyImport_Import(PyObject *name) {
     return UPCALL_CEXT_O(_jls_PyImport_ImportModule, native_to_java(name));
 }
 
-UPCALL_ID(__import__);
 PyObject* PyImport_ImportModuleLevelObject(PyObject* name, PyObject* globals, PyObject* locals,
                                            PyObject* fromlist, int level) {
-    return UPCALL_O(PY_BUILTIN, _jls___import__, native_to_java(name), native_to_java(globals),
+    return UPCALL_O(PY_BUILTIN, polyglot_from_string("__import__", SRC_CS), native_to_java(name), native_to_java(globals),
                     native_to_java(locals), native_to_java(fromlist), level);
 }
 

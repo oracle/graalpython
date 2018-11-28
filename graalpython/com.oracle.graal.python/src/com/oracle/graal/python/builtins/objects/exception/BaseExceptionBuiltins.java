@@ -49,10 +49,12 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -178,13 +180,31 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __TRACEBACK__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __TRACEBACK__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class TracebackNode extends PythonBuiltinNode {
 
+        @Specialization(guards = "isNoValue(tb)")
+        public Object getTraceback(PBaseException self, @SuppressWarnings("unused") Object tb) {
+            PTraceback traceback = self.getTraceback(factory());
+            return traceback == null ? PNone.NONE : traceback;
+        }
+
         @Specialization
-        public Object traceback(PBaseException self) {
-            return self.getTraceback(factory());
+        public Object setTraceback(PBaseException self, @SuppressWarnings("unused") PNone tb) {
+            self.clearTraceback();
+            return PNone.NONE;
+        }
+
+        @Specialization
+        public Object setTraceback(PBaseException self, PTraceback tb) {
+            self.setTraceback(tb);
+            return PNone.NONE;
+        }
+
+        @Fallback
+        public Object setTraceback(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object tb) {
+            throw raise(PythonErrorType.TypeError, "__traceback__ must be a traceback or None");
         }
     }
 
@@ -193,15 +213,15 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class WithTracebackNode extends PythonBuiltinNode {
 
         @Specialization
-        public Object withTraceback(PBaseException self, @SuppressWarnings("unused") PNone tb) {
+        public PBaseException withTraceback(PBaseException self, @SuppressWarnings("unused") PNone tb) {
             self.clearTraceback();
-            return PNone.NONE;
+            return self;
         }
 
         @Specialization
-        public Object withTraceback(PBaseException self, PTraceback tb) {
+        public PBaseException withTraceback(PBaseException self, PTraceback tb) {
             self.setTraceback(tb);
-            return PNone.NONE;
+            return self;
         }
     }
 }

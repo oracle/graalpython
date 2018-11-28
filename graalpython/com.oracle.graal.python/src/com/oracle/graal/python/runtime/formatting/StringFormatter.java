@@ -17,13 +17,13 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.function.BiFunction;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
@@ -120,7 +120,7 @@ public class StringFormatter {
         } else if (arg instanceof Double) {
             // A common case where it is safe to return arg.__int__()
             return ((Double) arg).intValue();
-        } else if (arg instanceof PythonObject) {
+        } else if (arg instanceof PythonAbstractObject) {
             // Try again with arg.__int__()
             try {
                 // Result is the result of arg.__int__() if that works
@@ -345,7 +345,7 @@ public class StringFormatter {
                         ft.format(((PString) arg).toString());
                     } else if (arg instanceof PBytes) {
                         ft.format(((PBytes) arg).toString());
-                    } else if (arg instanceof PythonObject && ((bytesAttribute = lookupAttribute.apply(arg, __BYTES__)) != PNone.NO_VALUE)) {
+                    } else if (arg instanceof PythonAbstractObject && ((bytesAttribute = lookupAttribute.apply(arg, __BYTES__)) != PNone.NO_VALUE)) {
                         Object result = callNode.executeCall(null, bytesAttribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
                         ft.format(result.toString());
                     } else {

@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -76,11 +77,15 @@ import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SysConfigModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
@@ -122,7 +127,10 @@ import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
 import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinMethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -135,11 +143,15 @@ import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -151,8 +163,8 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -163,44 +175,52 @@ import com.oracle.truffle.api.source.SourceSection;
  * types.
  */
 public final class Python3Core implements PythonCore {
-    // Order matters!
-    private static final String[] CORE_FILES = new String[]{
-                    "_descriptor",
-                    "object",
-                    "sys",
-                    "dict",
-                    "_mappingproxy",
-                    "str",
-                    "type",
-                    "_imp",
-                    "function",
-                    "_functools",
-                    "method",
-                    "code",
-                    "_warnings",
-                    "posix",
-                    "_io",
-                    "_frozen_importlib",
-                    "classes",
-                    "_weakref",
-                    "set",
-                    "itertools",
-                    "base_exception",
-                    "python_cext",
-                    "_collections",
-                    "memoryview",
-                    "list",
-                    "_codecs",
-                    "bytes",
-                    "bytearray",
-                    "float",
-                    "time",
-                    "unicodedata",
-                    "_locale",
-                    "_sre",
-                    "function",
-                    "_socket",
-    };
+    private final String[] coreFiles;
+
+    private static final String[] initializeCoreFiles() {
+        // Order matters!
+        List<String> coreFiles = new ArrayList<>(Arrays.asList(
+                        "_descriptor",
+                        "object",
+                        "sys",
+                        "dict",
+                        "_mappingproxy",
+                        "str",
+                        "type",
+                        "_imp",
+                        "function",
+                        "_functools",
+                        "method",
+                        "code",
+                        "_warnings",
+                        "posix",
+                        "_io",
+                        "_frozen_importlib",
+                        "classes",
+                        "_weakref",
+                        "set",
+                        "itertools",
+                        "base_exception",
+                        "python_cext",
+                        "_collections",
+                        "memoryview",
+                        "list",
+                        "_codecs",
+                        "bytes",
+                        "bytearray",
+                        "time",
+                        "unicodedata",
+                        "_locale",
+                        "_sre",
+                        "function",
+                        "_sysconfig",
+                        "_socket",
+                        "_thread",
+                        "ctypes",
+                        "zipimport"));
+
+        return coreFiles.toArray(new String[coreFiles.size()]);
+    }
 
     private final PythonBuiltins[] builtins;
 
@@ -208,6 +228,9 @@ public final class Python3Core implements PythonCore {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
                         new BuiltinConstructors(),
                         new BuiltinFunctions(),
+                        new DecoratedMethodBuiltins(),
+                        new ClassmethodBuiltins(),
+                        new StaticmethodBuiltins(),
                         new InteropModuleBuiltins(),
                         new ObjectBuiltins(),
                         new CellBuiltins(),
@@ -289,12 +312,24 @@ public final class Python3Core implements PythonCore {
                         new PosixSubprocessModuleBuiltins(),
                         new CtypesModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
-                        new PyExpatModuleBuiltins()));
+                        new PyExpatModuleBuiltins(),
+                        new SysConfigModuleBuiltins(),
+                        new ZipImporterBuiltins(),
+                        new ZipImportModuleBuiltins(),
+                        new ZLibModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
             for (PythonBuiltins builtin : providers) {
                 builtins.add(builtin);
             }
+        }
+        // threads
+        if (PythonLanguage.WITH_THREADS) {
+            builtins.addAll(new ArrayList<>(Arrays.asList(
+                            new ThreadModuleBuiltins(),
+                            new ThreadBuiltins(),
+                            new LockBuiltins(),
+                            new RLockBuiltins())));
         }
         return builtins.toArray(new PythonBuiltins[builtins.size()]);
     }
@@ -323,6 +358,7 @@ public final class Python3Core implements PythonCore {
     public Python3Core(PythonParser parser) {
         this.parser = parser;
         this.builtins = initializeBuiltins();
+        this.coreFiles = initializeCoreFiles();
     }
 
     @Override
@@ -363,7 +399,7 @@ public final class Python3Core implements PythonCore {
     private void initializePythonCore() {
         String coreHome = PythonCore.getCoreHomeOrFail();
         loadFile("builtins", coreHome);
-        for (String s : CORE_FILES) {
+        for (String s : coreFiles) {
             loadFile(s, coreHome);
         }
         exportCInterface(getContext());
@@ -526,7 +562,10 @@ public final class Python3Core implements PythonCore {
         for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
             String module = builtinClass.getPublicInModule();
             if (module != null) {
-                lookupBuiltinModule(module).setAttribute(builtinClass.getName(), lookupType(builtinClass));
+                PythonModule pythonModule = lookupBuiltinModule(module);
+                if (pythonModule != null) {
+                    pythonModule.setAttribute(builtinClass.getName(), lookupType(builtinClass));
+                }
             }
         }
         // now initialize well-known objects
@@ -617,10 +656,14 @@ public final class Python3Core implements PythonCore {
             Env env = ctxt.getEnv();
             TruffleFile file = env.getTruffleFile(prefix + suffix);
             try {
-                return getLanguage().newSource(ctxt, file, basename);
+                if (file.exists()) {
+                    return getLanguage().newSource(ctxt, file, basename);
+                }
             } catch (SecurityException | IOException t) {
-                throw new RuntimeException("Could not read core library from " + file);
+                // fall through;
             }
+            PythonLanguage.getLogger().log(Level.SEVERE, "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.");
+            throw new RuntimeException();
         }
     }
 
@@ -663,7 +706,7 @@ public final class Python3Core implements PythonCore {
         return pyFalse;
     }
 
-    public RuntimeException raiseInvalidSyntax(Source source, SourceSection section) {
+    public RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {
         Node location = new Node() {
             @Override
             public SourceSection getSourceSection() {
@@ -671,7 +714,7 @@ public final class Python3Core implements PythonCore {
             }
         };
         PBaseException instance;
-        instance = factory().createBaseException(SyntaxError, "invalid syntax", new Object[0]);
+        instance = factory().createBaseException(SyntaxError, message, arguments);
         String path = source.getPath();
         instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
         instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : "");

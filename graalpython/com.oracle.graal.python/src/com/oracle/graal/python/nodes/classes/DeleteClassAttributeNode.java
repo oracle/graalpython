@@ -40,13 +40,12 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -71,7 +70,7 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
         return DeleteClassAttributeNodeGen.create(name);
     }
 
-    PDict getLocalsDict(VirtualFrame frame) {
+    Object getLocalsDict(VirtualFrame frame) {
         PFrame pFrame = PArguments.getPFrame(frame);
         if (pFrame != null) {
             return pFrame.getLocalsDict();
@@ -81,13 +80,10 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
 
     @Specialization(guards = "localsDict != null")
     void deleteFromLocals(@SuppressWarnings("unused") VirtualFrame frame,
-                    @Cached("getLocalsDict(frame)") PDict localsDict,
-                    @Cached("create()") HashingStorageNodes.ContainsKeyNode hasKey,
-                    @Cached("create()") HashingStorageNodes.DelItemNode delItem) {
+                    @Cached("getLocalsDict(frame)") Object localsDict,
+                    @Cached("create()") DeleteItemNode delItemNode) {
         // class namespace overrides closure
-        if (hasKey.execute(localsDict.getDictStorage(), identifier)) {
-            delItem.execute(localsDict, localsDict.getDictStorage(), identifier);
-        }
+        delItemNode.executeWith(localsDict, identifier);
     }
 
     @Specialization

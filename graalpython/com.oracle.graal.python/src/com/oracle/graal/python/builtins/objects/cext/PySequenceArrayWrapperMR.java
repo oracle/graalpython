@@ -53,6 +53,9 @@ import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFac
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.WriteArrayItemNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
@@ -85,6 +88,7 @@ import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -235,20 +239,32 @@ public class PySequenceArrayWrapperMR {
     abstract static class WriteArrayItemNode extends Node {
         @Child private CExtNodes.ToJavaNode toJavaNode;
         @Child private LookupAndCallTernaryNode setItemNode;
+        @Child private SequenceNodes.GetSequenceStorageNode getSequenceStorageNode;
+        @Child private SequenceStorageNodes.SetItemNode setByteItemNode;
 
         public abstract Object execute(Object arrayObject, Object idx, Object value);
 
         @Specialization
-        Object doBytes(PBytes s, long idx, byte value,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setBytesItemNode) {
-            setBytesItemNode.executeLong(s.getSequenceStorage(), idx, value);
+        Object doBytes(PIBytesLike s, long idx, byte value) {
+            getSetByteItemNode().executeLong(getSequenceStorage(s), idx, value);
             return value;
         }
 
         @Specialization
-        Object doByteArray(PByteArray s, long idx, byte value,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setByteArrayItemNode) {
-            setByteArrayItemNode.executeLong(s.getSequenceStorage(), idx, value);
+        @ExplodeLoop
+        Object doBytes(PIBytesLike s, long idx, int value) {
+            for (int offset = 0; offset < Integer.BYTES; offset++) {
+                getSetByteItemNode().executeLong(getSequenceStorage(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+            }
+            return value;
+        }
+
+        @Specialization
+        @ExplodeLoop
+        Object doBytes(PIBytesLike s, long idx, long value) {
+            for (int offset = 0; offset < Long.BYTES; offset++) {
+                getSetByteItemNode().executeLong(getSequenceStorage(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+            }
             return value;
         }
 
@@ -293,6 +309,22 @@ public class PySequenceArrayWrapperMR {
             return toJavaNode;
         }
 
+        private SequenceStorage getSequenceStorage(PIBytesLike seq) {
+            if (getSequenceStorageNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getSequenceStorageNode = insert(GetSequenceStorageNode.create());
+            }
+            return getSequenceStorageNode.execute(seq);
+        }
+
+        private SequenceStorageNodes.SetItemNode getSetByteItemNode() {
+            if (setByteItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                setByteItemNode = insert(createSetItem());
+            }
+            return setByteItemNode;
+        }
+
         private LookupAndCallTernaryNode setItemNode() {
             if (setItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -309,8 +341,10 @@ public class PySequenceArrayWrapperMR {
     @Resolve(message = "TO_NATIVE")
     abstract static class ToNativeNode extends Node {
         @Child private ToNativeArrayNode toPyObjectNode = ToNativeArrayNode.create();
+        @Child private InvalidateNativeObjectsAllManagedNode invalidateNode = InvalidateNativeObjectsAllManagedNode.create();
 
         Object access(PySequenceArrayWrapper obj) {
+            invalidateNode.execute();
             if (!obj.isNative()) {
                 obj.setNativePointer(toPyObjectNode.execute(obj));
             }
@@ -378,8 +412,10 @@ public class PySequenceArrayWrapperMR {
 
     @Resolve(message = "IS_POINTER")
     abstract static class IsPointerNode extends Node {
+        @Child private CExtNodes.IsPointerNode pIsPointerNode = CExtNodes.IsPointerNode.create();
+
         boolean access(PySequenceArrayWrapper obj) {
-            return obj.isNative();
+            return pIsPointerNode.execute(obj);
         }
     }
 

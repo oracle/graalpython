@@ -40,28 +40,33 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.object.FinalLocationException;
-import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.object.IncompatibleLocationException;
-import com.oracle.truffle.api.object.Location;
-import com.oracle.truffle.api.object.Property;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PythonOptions.class)
-public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
+public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
+
+    private final ConditionProfile isClassProfile = ConditionProfile.createBinaryProfile();
+    private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
 
     public abstract boolean execute(Object primary, Object key, Object value);
 
@@ -71,19 +76,12 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
         return WriteAttributeToObjectNodeGen.create();
     }
 
-    protected Location getLocationOrNull(Property prop) {
-        return prop == null ? null : prop.getLocation();
-    }
-
-    protected Object attrKey(Object key) {
-        if (key instanceof PString) {
-            return ((PString) key).getValue();
-        } else {
-            return key;
+    protected boolean isAttrWritable(PythonObject self) {
+        if (self instanceof PythonClass || self instanceof PFunction || self instanceof PMethod || self instanceof PythonModule || self instanceof PBaseException) {
+            return true;
         }
+        return !exactBuiltinInstanceProfile.profileIsAnyBuiltinObject(self);
     }
-
-    private final ConditionProfile isClassProfile = ConditionProfile.createBinaryProfile();
 
     private void handlePythonClass(PythonObject object, Object key) {
         if (isClassProfile.profile(object instanceof PythonClass)) {
@@ -93,109 +91,74 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
         }
     }
 
-    protected static boolean isHiddenKey(Object key) {
-        return key instanceof HiddenKey;
-    }
-
-    protected static boolean isBuiltinObject(Object object) {
-        return object instanceof PythonBuiltinObject;
-    }
-
-    @SuppressWarnings("unused")
+    // write to the DynamicObject
     @Specialization(guards = {
-                    "!isBuiltinObject(object) || isHiddenKey(key)",
-                    "object.getStorage().getShape() == cachedShape",
-                    "!layoutAssumption.isValid()"
+                    "isAttrWritable(object) || isHiddenKey(key)",
+                    "object == cachedObject"
+    }, assumptions = {
+                    "dictUnsetOrSameAsStorageAssumption"
     })
-    protected boolean updateShapeAndWrite(PythonObject object, Object key, Object value,
-                    @Cached("object.getStorage().getShape()") Shape cachedShape,
-                    @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("create()") WriteAttributeToObjectNode nextNode) {
-        object.getStorage().updateShape();
-        return nextNode.execute(object, key, value);
+    protected boolean writeToDynamicStorageCached(PythonObject object, Object key, Object value,
+                    @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
+                    @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
+                    @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
+        handlePythonClass(object, key);
+        return writeAttributeToDynamicObjectNode.execute(object.getStorage(), key, value);
     }
 
-    protected static boolean compareKey(Object cachedKey, Object key) {
-        return cachedKey == key;
+    @Specialization(guards = {
+                    "isAttrWritable(object) || isHiddenKey(key)",
+                    "isDictUnsetOrSameAsStorage(object)"
+    }, replaces = "writeToDynamicStorageCached")
+    protected boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
+                    @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
+        handlePythonClass(object, key);
+        return writeAttributeToDynamicObjectNode.execute(object.getStorage(), key, value);
     }
 
-    @SuppressWarnings("unused")
-    @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
-                    guards = {
-                                    "!isBuiltinObject(object) || isHiddenKey(key)",
-                                    "object.getStorage().getShape() == cachedShape",
-                                    "compareKey(cachedKey, key)",
-                                    "loc != null",
-                                    "loc.canSet(value)"
-                    }, //
-                    assumptions = {
-                                    "layoutAssumption"
+    // write to the dict
+    @Specialization(guards = {
+                    "object == cachedObject",
+                    "!dictUnsetOrSameAsStorageAssumption.isValid()"
+    })
+    protected boolean writeToDictCached(PythonObject object, Object key, Object value,
+                    @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
+                    @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
+                    @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
+        handlePythonClass(object, key);
+        PHashingCollection dict = object.getDict();
+        HashingStorage hashingStorage = setItemNode.execute(dict.getDictStorage(), key, value);
+        dict.setDictStorage(hashingStorage);
+        return true;
+    }
 
-                    })
-    protected boolean doDirect(PythonObject object, Object key, Object value,
-                    @Cached("key") Object cachedKey,
-                    @Cached("attrKey(cachedKey)") Object attrKey,
-                    @Cached("object.getStorage().getShape()") Shape cachedShape,
-                    @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc) {
-        try {
-            handlePythonClass(object, attrKey);
-            loc.set(object.getStorage(), value);
-        } catch (IncompatibleLocationException | FinalLocationException e) {
-            CompilerDirectives.transferToInterpreter();
-            // cannot happen due to guard
-            throw new RuntimeException("Location.canSet is inconsistent with Location.set");
+    @Specialization(guards = {
+                    "!isDictUnsetOrSameAsStorage(object)"
+    }, replaces = "writeToDictCached")
+    protected boolean writeToDict(PythonObject object, Object key, Object value,
+                    @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
+        handlePythonClass(object, key);
+        PHashingCollection dict = object.getDict();
+        HashingStorage hashingStorage = setItemNode.execute(dict.getDictStorage(), key, value);
+        dict.setDictStorage(hashingStorage);
+        return true;
+    }
+
+    @Specialization(guards = "!isPythonObject(object)")
+    protected boolean readNative(PythonNativeObject object, Object key, Object value,
+                    @Cached("create()") GetObjectDictNode getNativeDict,
+                    @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
+        Object d = getNativeDict.execute(object);
+        if (d instanceof PDict) {
+            setItemNode.execute(((PDict) d).getDictStorage(), key, value);
+            return true;
+        } else {
+            return raise(object, key, value);
         }
-        return true;
     }
 
-    @SuppressWarnings("unused")
-    @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
-                    guards = {
-                                    "!isBuiltinObject(object) || isHiddenKey(key)",
-                                    "object.getStorage().getShape() == cachedShape",
-                                    "compareKey(cachedKey, key)",
-                                    "loc == null || !loc.canSet(value)",
-                                    "newLoc.canSet(value)"
-                    }, //
-                    assumptions = {
-                                    "layoutAssumption",
-                                    "newLayoutAssumption"
-                    })
-    protected boolean defineDirect(PythonObject object, Object key, Object value,
-                    @Cached("key") Object cachedKey,
-                    @Cached("attrKey(key)") Object attrKey,
-                    @Cached("object.getStorage().getShape()") Shape cachedShape,
-                    @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc,
-                    @Cached("cachedShape.defineProperty(attrKey, value, 0)") Shape newShape,
-                    @Cached("newShape.getValidAssumption()") Assumption newLayoutAssumption,
-                    @Cached("getLocationOrNull(newShape.getProperty(attrKey))") Location newLoc) {
-        try {
-            handlePythonClass(object, attrKey);
-            newLoc.set(object.getStorage(), value, cachedShape, newShape);
-        } catch (IncompatibleLocationException e) {
-            CompilerDirectives.transferToInterpreter();
-            // cannot happen due to guard
-            throw new RuntimeException("Location.canSet is inconsistent with Location.set");
-        }
-        return true;
-    }
-
-    @TruffleBoundary
-    @Specialization(replaces = {"doDirect", "defineDirect"}, guards = {"object.getStorage().getShape().isValid()"})
-    protected boolean doIndirect(PythonObject object, Object key, Object value) {
-        Object attrKey = attrKey(key);
-        handlePythonClass(object, attrKey);
-        object.setAttribute(attrKey, value);
-        return true;
-    }
-
-    @Specialization(guards = "!object.getStorage().getShape().isValid()")
-    protected boolean defineDirect(PythonObject object, Object key, Object value) {
-        CompilerDirectives.transferToInterpreter();
-
-        object.getStorage().updateShape();
-        return doIndirect(object, key, value);
+    @Fallback
+    protected boolean raise(Object object, Object key, @SuppressWarnings("unused") Object value) {
+        throw raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", object, key);
     }
 }

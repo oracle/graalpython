@@ -32,19 +32,27 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.frame.FrameBuiltinsFactory.GetLocalsNodeFactory;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.subscript.SetItemNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFrame)
 public final class FrameBuiltins extends PythonBuiltins {
@@ -132,10 +140,44 @@ public final class FrameBuiltins extends PythonBuiltins {
 
     @Builtin(name = "f_locals", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public abstract static class GetLocalsNode extends PythonBuiltinNode {
+    public abstract static class GetLocalsNode extends PythonUnaryBuiltinNode {
+        @Child SetItemNode setItemNode;
+
         @Specialization
-        PDict get(PFrame self) {
-            return self.getLocals(factory());
+        Object get(PFrame self) {
+            Frame frame = self.getFrame();
+            Object locals = self.getLocals(factory());
+            if (!self.inClassScope()) {
+                if (setItemNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    setItemNode = insert(SetItemNode.create());
+                }
+                PDict currentDictLocals = factory().createDictLocals(frame, false);
+                for (DictEntry entry : currentDictLocals.entries()) {
+                    setItemNode.executeWith(locals, entry.getKey(), entry.getValue());
+                }
+            }
+            return locals;
+        }
+
+        @Specialization
+        Object getFromFrame(Frame owner,
+                        @Cached("createBinaryProfile()") ConditionProfile noPFrame,
+                        @Cached("create()") BranchProfile noFrameOnPFrame) {
+            PFrame pFrame = PArguments.getPFrame(owner);
+            if (noPFrame.profile(pFrame == null)) {
+                pFrame = factory().createPFrame(owner);
+                PArguments.setPFrame(owner, pFrame);
+            } else if (!pFrame.hasFrame()) {
+                noFrameOnPFrame.enter();
+                pFrame = factory().createPFrame(owner, pFrame.getLocalsDict());
+                PArguments.setPFrame(owner, pFrame);
+            }
+            return get(pFrame);
+        }
+
+        public static GetLocalsNode create() {
+            return GetLocalsNodeFactory.create();
         }
     }
 

@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -97,10 +98,14 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
+import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.builtins.objects.thread.PRLock;
+import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -111,6 +116,7 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
@@ -139,6 +145,7 @@ public final class PythonObjectFactory extends Node {
     @SuppressWarnings("static-method")
     public final <T> T trace(T allocatedObject) {
         if (reportAllocations()) {
+            CompilerAsserts.partialEvaluationConstant(this);
             allocationReporter.onEnter(null, 0, AllocationReporter.SIZE_UNKNOWN);
             allocationReporter.onReturnValue(allocatedObject, 0, AllocationReporter.SIZE_UNKNOWN);
         }
@@ -192,7 +199,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PythonObject(cls, cls.getInstanceShape()));
     }
 
-    public PythonNativeObject createNativeObjectWrapper(Object obj) {
+    public PythonNativeObject createNativeObjectWrapper(TruffleObject obj) {
         return trace(new PythonNativeObject(obj));
     }
 
@@ -268,7 +275,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PBytes(cls, array));
     }
 
-    public PBytes createBytes(SequenceStorage storage) {
+    public PBytes createBytes(ByteSequenceStorage storage) {
         return trace(new PBytes(PythonBuiltinClassType.PBytes, storage));
     }
 
@@ -389,6 +396,22 @@ public final class PythonObjectFactory extends Node {
         return trace(new GetSetDescriptor(PythonBuiltinClassType.GetSetDescriptor, get, set, name, type));
     }
 
+    public PDecoratedMethod createClassmethod(LazyPythonClass cls) {
+        return trace(new PDecoratedMethod(cls));
+    }
+
+    public PDecoratedMethod createClassmethod(Object callable) {
+        return trace(new PDecoratedMethod(PythonBuiltinClassType.PClassmethod, callable));
+    }
+
+    public PDecoratedMethod createStaticmethod(LazyPythonClass cls) {
+        return trace(new PDecoratedMethod(cls));
+    }
+
+    public PDecoratedMethod createStaticmethod(Object callable) {
+        return trace(new PDecoratedMethod(PythonBuiltinClassType.PStaticmethod, callable));
+    }
+
     /*
      * Lists, sets and dicts
      */
@@ -476,7 +499,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PDict createDictFixedStorage(PythonObject pythonObject) {
-        return createDict(new PythonObjectDictStorage(pythonObject.getStorage()));
+        return createDict(new PythonObjectDictStorage(pythonObject.getStorage(), pythonObject.getDictUnsetOrSameAsStorageAssumption()));
     }
 
     public PDict createDict(HashingStorage storage) {
@@ -510,7 +533,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {
-        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, new PythonObjectDictStorage(object.getStorage())));
+        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, new PythonObjectDictStorage(object.getStorage(), object.getDictUnsetOrSameAsStorageAssumption())));
     }
 
     public PMappingproxy createMappingproxy(HashingStorage storage) {
@@ -518,7 +541,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonClass cls, PythonObject object) {
-        return trace(new PMappingproxy(cls, new PythonObjectDictStorage(object.getStorage())));
+        return trace(new PMappingproxy(cls, new PythonObjectDictStorage(object.getStorage(), object.getDictUnsetOrSameAsStorageAssumption())));
     }
 
     public PMappingproxy createMappingproxy(LazyPythonClass cls, HashingStorage storage) {
@@ -536,6 +559,18 @@ public final class PythonObjectFactory extends Node {
     /*
      * Frames, traces and exceptions
      */
+
+    public PFrame createPFrame(Object locals) {
+        return trace(new PFrame(PythonBuiltinClassType.PFrame, locals));
+    }
+
+    public PFrame createPFrame(Frame frame) {
+        return trace(new PFrame(PythonBuiltinClassType.PFrame, frame));
+    }
+
+    public PFrame createPFrame(Frame frame, Object locals) {
+        return trace(new PFrame(PythonBuiltinClassType.PFrame, frame, locals));
+    }
 
     public PFrame createPFrame(PBaseException exception, int index) {
         return trace(new PFrame(PythonBuiltinClassType.PFrame, exception, index));
@@ -733,6 +768,10 @@ public final class PythonObjectFactory extends Node {
                         filename, name, firstlineno, lnotab));
     }
 
+    public PZipImporter createZipImporter(LazyPythonClass cls, PDict zipDirectoryCache) {
+        return trace(new PZipImporter(cls, zipDirectoryCache));
+    }
+
     /*
      * Socket
      */
@@ -743,5 +782,33 @@ public final class PythonObjectFactory extends Node {
 
     public PSocket createSocket(PythonClass cls, int family, int type, int proto) {
         return trace(new PSocket(cls, family, type, proto));
+    }
+
+    /*
+     * Threading
+     */
+
+    public PLock createLock() {
+        return trace(new PLock(PythonBuiltinClassType.PLock));
+    }
+
+    public PLock createLock(PythonClass cls) {
+        return trace(new PLock(cls));
+    }
+
+    public PRLock createRLock() {
+        return trace(new PRLock(PythonBuiltinClassType.PRLock));
+    }
+
+    public PRLock createRLock(PythonClass cls) {
+        return trace(new PRLock(cls));
+    }
+
+    public PThread createPythonThread(Thread thread) {
+        return trace(new PThread(PythonBuiltinClassType.PThread, thread));
+    }
+
+    public PThread createPythonThread(PythonClass cls, Thread thread) {
+        return trace(new PThread(cls, thread));
     }
 }

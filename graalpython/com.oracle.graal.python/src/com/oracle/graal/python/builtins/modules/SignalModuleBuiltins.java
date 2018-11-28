@@ -147,7 +147,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             try {
                 retval = Signals.setSignalHandler(signum, id);
             } catch (IllegalArgumentException e) {
-                throw raise(PythonErrorType.ValueError, e.getMessage());
+                throw raise(PythonErrorType.ValueError, e);
             }
             if ((int) retval == Signals.SIG_UNKNOWN) {
                 if (signalHandlers.containsKey(signum)) {
@@ -167,7 +167,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
                     callTarget.call(arguments);
                 });
             } catch (IllegalArgumentException e) {
-                throw raise(PythonErrorType.ValueError, e.getMessage());
+                throw raise(PythonErrorType.ValueError, e);
             }
             if ((int) retval == Signals.SIG_UNKNOWN) {
                 if (signalHandlers.containsKey(signum)) {

@@ -38,6 +38,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
+import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.debug.DebuggerTags;
@@ -91,6 +92,8 @@ public abstract class PythonCallNode extends ExpressionNode {
 
         if (calleeNode instanceof ReadGlobalOrBuiltinNode) {
             calleeName = ((ReadGlobalOrBuiltinNode) calleeNode).getAttributeId();
+        } else if (calleeNode instanceof ReadNameNode) {
+            calleeName = ((ReadNameNode) calleeNode).getAttributeId();
         } else if (calleeNode instanceof GetAttributeNode) {
             getCallableNode = GetCallAttributeNodeGen.create(((GetAttributeNode) calleeNode).getKey(), ((GetAttributeNode) calleeNode).getObject());
         }
@@ -244,10 +247,10 @@ public abstract class PythonCallNode extends ExpressionNode {
             return fromForeign.executeConvert(ForeignAccess.sendInvoke(invokeNode, callable.receiver, callable.identifier, arguments));
         } catch (UnknownIdentifierException e) {
             nameError.enter();
-            throw raise(PythonErrorType.NameError, e.getMessage());
+            throw raise(PythonErrorType.NameError, e);
         } catch (ArityException | UnsupportedTypeException e) {
             typeError.enter();
-            throw raise(PythonErrorType.TypeError, e.getMessage());
+            throw raise(PythonErrorType.TypeError, e);
         } catch (UnsupportedMessageException e) {
             invokeError.enter();
             // the interop contract is to revert to READ and then EXECUTE

@@ -59,6 +59,10 @@ public @interface Builtin {
 
     boolean isPublic() default true;
 
+    boolean isClassmethod() default false;
+
+    boolean isStaticmethod() default false;
+
     /**
      * By default the caller frame bit is set on-demand, but for some builtins it might be useful to
      * always force passing the caller frame.

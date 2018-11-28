@@ -506,8 +506,30 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+        @Child private SequenceStorageNodes.LenNode lenNode;
+
         @Specialization
-        boolean contains(PSequence self, Object other,
+        boolean contains(PByteArray self, PBytes other,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
+        }
+
+        @Specialization
+        boolean contains(PByteArray self, PByteArray other,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
+        }
+
+        private int getLength(SequenceStorage s) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return lenNode.execute(s);
+        }
+
+        @Specialization(guards = {"!isBytes(other)"})
+        boolean contains(PByteArray self, Object other,
                         @Cached("create()") BranchProfile errorProfile,
                         @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
 
@@ -706,6 +728,127 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Fallback
         Object doGeneric(@SuppressWarnings("unused") Object self) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    abstract static class AStripNode extends PythonBinaryBuiltinNode {
+        int mod() {
+            throw new RuntimeException();
+        }
+
+        int stop(@SuppressWarnings("unused") byte[] bs) {
+            throw new RuntimeException();
+        }
+
+        int start(@SuppressWarnings("unused") byte[] bs) {
+            throw new RuntimeException();
+        }
+
+        PByteArray newBytesFrom(@SuppressWarnings("unused") byte[] bs, @SuppressWarnings("unused") int i) {
+            throw new RuntimeException();
+        }
+
+        @Specialization
+        PByteArray strip(PByteArray self, @SuppressWarnings("unused") PNone bytes,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            byte[] bs = toBytesNode.execute(self);
+            int i = start(bs);
+            int stop = stop(bs);
+            for (; i != stop; i += mod()) {
+                if (!isWhitespace(bs[i])) {
+                    break;
+                }
+            }
+            return newBytesFrom(bs, i);
+        }
+
+        @TruffleBoundary
+        private static boolean isWhitespace(byte b) {
+            return Character.isWhitespace(b);
+        }
+
+        @Specialization
+        PByteArray strip(PByteArray self, PBytes bytes,
+                        @Cached("create()") BytesNodes.ToBytesNode selfToBytesNode,
+                        @Cached("create()") BytesNodes.ToBytesNode otherToBytesNode) {
+            byte[] stripBs = selfToBytesNode.execute(bytes);
+            byte[] bs = otherToBytesNode.execute(self);
+            int i = start(bs);
+            int stop = stop(bs);
+            outer: for (; i != stop; i += mod()) {
+                for (byte b : stripBs) {
+                    if (b == bs[i]) {
+                        continue outer;
+                    }
+                }
+                break;
+            }
+            return newBytesFrom(bs, i);
+        }
+
+    }
+
+    @Builtin(name = "lstrip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"bytes"})
+    @GenerateNodeFactory
+    abstract static class LStripNode extends AStripNode {
+        @Override
+        PByteArray newBytesFrom(byte[] bs, int i) {
+            byte[] out;
+            if (i != 0) {
+                int len = bs.length - i;
+                out = new byte[len];
+                System.arraycopy(bs, i, out, 0, len);
+            } else {
+                out = bs;
+            }
+            return factory().createByteArray(out);
+        }
+
+        @Override
+        int mod() {
+            return 1;
+        }
+
+        @Override
+        int stop(byte[] bs) {
+            return bs.length;
+        }
+
+        @Override
+        int start(byte[] bs) {
+            return 0;
+        }
+    }
+
+    @Builtin(name = "rstrip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"bytes"})
+    @GenerateNodeFactory
+    abstract static class RStripNode extends AStripNode {
+        @Override
+        PByteArray newBytesFrom(byte[] bs, int i) {
+            byte[] out;
+            int len = i + 1;
+            if (len != bs.length) {
+                out = new byte[len];
+                System.arraycopy(bs, 0, out, 0, len);
+            } else {
+                out = bs;
+            }
+            return factory().createByteArray(out);
+        }
+
+        @Override
+        int mod() {
+            return -1;
+        }
+
+        @Override
+        int stop(byte[] bs) {
+            return -1;
+        }
+
+        @Override
+        int start(byte[] bs) {
+            return bs.length - 1;
         }
     }
 }

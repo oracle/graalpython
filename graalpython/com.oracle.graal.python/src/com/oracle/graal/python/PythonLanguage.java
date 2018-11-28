@@ -37,7 +37,9 @@ import org.graalvm.options.OptionDescriptors;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -50,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NodeFactory;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.interop.InteropMap;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -100,6 +102,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int MINOR = 7;
     public static final int MICRO = 0;
     public static final String VERSION = MAJOR + "." + MINOR + "." + MICRO;
+
+    public static boolean WITH_THREADS = false;
 
     public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
@@ -218,12 +222,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
-    protected void initializeContext(PythonContext context) throws Exception {
+    protected void initializeContext(PythonContext context) {
         context.initialize();
     }
 
     @Override
-    protected CallTarget parse(ParsingRequest request) throws Exception {
+    protected CallTarget parse(ParsingRequest request) {
         PythonContext context = this.getContextReference().get();
         PythonCore core = context.getCore();
         Source source = request.getSource();
@@ -250,7 +254,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
-    protected ExecutableNode parse(InlineParsingRequest request) throws Exception {
+    protected ExecutableNode parse(InlineParsingRequest request) {
         CompilerDirectives.transferToInterpreter();
         final Source source = request.getSource();
         final MaterializedFrame requestFrame = request.getFrame();
@@ -302,7 +306,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean isObjectOfLanguage(Object object) {
-        return object instanceof PNode || object instanceof PythonObject;
+        return object instanceof PythonAbstractObject;
     }
 
     @Override
@@ -310,6 +314,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (value != null) {
             if (value instanceof PythonObject) {
                 return ((PythonObject) value).asPythonClass();
+            } else if (value instanceof PythonNativeObject) {
+                return null;
             } else if (value instanceof PythonAbstractObject ||
                             value instanceof Number ||
                             value instanceof String ||
@@ -338,6 +344,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
+    @TruffleBoundary
     protected Iterable<Scope> findLocalScopes(PythonContext context, Node node, Frame frame) {
         ArrayList<Scope> scopes = new ArrayList<>();
         for (Scope s : super.findLocalScopes(context, node, frame)) {
@@ -346,7 +353,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (frame != null) {
             PythonObject globals = PArguments.getGlobalsSafe(frame);
             if (globals != null) {
-                scopes.add(Scope.newBuilder("globals()", globals).build());
+                scopes.add(Scope.newBuilder("globals()", scopeFromObject(globals)).build());
             }
             Frame generatorFrame = PArguments.getGeneratorFrameSafe(frame);
             if (generatorFrame != null) {
@@ -358,13 +365,21 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return scopes;
     }
 
+    private static InteropMap scopeFromObject(PythonObject globals) {
+        if (globals instanceof PDict) {
+            return InteropMap.fromPDict((PDict) globals);
+        } else {
+            return InteropMap.fromPythonObject(globals);
+        }
+    }
+
     @Override
     protected Iterable<Scope> findTopScopes(PythonContext context) {
         ArrayList<Scope> scopes = new ArrayList<>();
         if (context.getBuiltins() != null) {
             // false during initialization
-            scopes.add(Scope.newBuilder("__main__", context.getMainModule()).build());
-            scopes.add(Scope.newBuilder("builtins", context.getBuiltins()).build());
+            scopes.add(Scope.newBuilder("__main__", scopeFromObject(context.getMainModule())).build());
+            scopes.add(Scope.newBuilder("builtins", scopeFromObject(context.getBuiltins())).build());
         }
         return scopes;
     }
@@ -469,5 +484,23 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public static Shape freshShape() {
         return freshShape;
+    }
+
+    @Override
+    protected boolean isThreadAccessAllowed(Thread thread, boolean singleThreaded) {
+        if (singleThreaded) {
+            return super.isThreadAccessAllowed(thread, singleThreaded);
+        }
+        return WITH_THREADS;
+    }
+
+    @Override
+    protected void initializeMultiThreading(PythonContext context) {
+        PythonContext.getSingleThreadedAssumption().invalidate();
+    }
+
+    @Override
+    protected void initializeThread(PythonContext context, Thread thread) {
+        super.initializeThread(context, thread);
     }
 }

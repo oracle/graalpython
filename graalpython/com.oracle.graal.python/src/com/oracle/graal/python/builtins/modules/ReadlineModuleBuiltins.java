@@ -258,7 +258,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
                 }
                 reader.close();
             } catch (IOException e) {
-                throw raise(PythonErrorType.IOError, e.getMessage());
+                throw raise(PythonErrorType.IOError, e);
             }
             return PNone.NONE;
         }
@@ -286,7 +286,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
                 }
                 writer.close();
             } catch (IOException e) {
-                throw raise(PythonErrorType.IOError, e.getMessage());
+                throw raise(PythonErrorType.IOError, e);
             }
             return PNone.NONE;
         }
@@ -296,6 +296,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ClearNode extends PythonUnaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         PNone setCompleter(PythonModule self,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);

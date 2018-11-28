@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -44,11 +46,10 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@NodeChildren({@NodeChild(value = "withContext", type = ExpressionNode.class)})
+@NodeChild(value = "withContext", type = ExpressionNode.class)
 public abstract class WithNode extends StatementNode {
 
     @Child private StatementNode body;
@@ -97,8 +98,8 @@ public abstract class WithNode extends StatementNode {
         PException exceptionState = getContext().getCurrentException();
         boolean gotException = false;
         // CPython first looks up '__exit__
-        Object exitCallable = exitGetter.executeObject(withObject, "__exit__");
-        Object enterCallable = enterGetter.executeObject(withObject, "__enter__");
+        Object exitCallable = exitGetter.executeObject(withObject, __EXIT__);
+        Object enterCallable = enterGetter.executeObject(withObject, __ENTER__);
 
         if (isCallableNode.execute(enterCallable)) {
             applyValues(frame, enterDispatch.executeCall(frame, enterCallable, createArgs.execute(withObject), new PKeyword[0]));

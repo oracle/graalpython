@@ -37,12 +37,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-class staticmethod(object):
-    def __init__(self, func):
-        self.__func__ = func
+import _sysconfig
+if _sysconfig.get_config_var('WITH_THREAD'):
+    error = RuntimeError
+    TIMEOUT_MAX = __truffle_get_timeout_max__()
 
-    def __get__(self, instance, owner=None):
-        return self.__func__
 
-    def __call__(self, *args, **kwargs):
-        return self.__func__(*args, **kwargs)
+    @__builtin__
+    def allocate_lock():
+        return LockType()
+
+
+    def _set_sentinel():
+        """Dummy implementation of _thread._set_sentinel()."""
+        return LockType()

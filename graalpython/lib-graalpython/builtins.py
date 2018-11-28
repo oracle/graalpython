@@ -51,13 +51,11 @@ def __import__(filename, module_name):
     content = posix.read(fd, sys.maxsize)
     posix.close(fd)
     code = compile(content, filename, "exec")
-    eval(code, module.__dict__)
+    exec(code, module.__dict__)
     return module
 
 
 __import__("%s/functions.py", "builtins")
-__import__("%s/staticmethod.py", "builtins")
-__import__("%s/classmethod.py", "builtins")
 __import__("%s/exceptions.py", "builtins")
 __import__("%s/super.py", "builtins")
 __import__("%s/property.py", "builtins")

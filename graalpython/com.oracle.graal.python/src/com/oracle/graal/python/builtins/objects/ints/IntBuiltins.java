@@ -51,15 +51,28 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
+import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.datamodel.IsIterableNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -67,6 +80,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -77,6 +91,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PInt)
 public class IntBuiltins extends PythonBuiltins {
@@ -1614,49 +1629,474 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "from_bytes", fixedNumOfPositionalArgs = 2, takesVarArgs = true, keywordArguments = {"signed"})
+    // to_bytes
+    @Builtin(name = "to_bytes", fixedNumOfPositionalArgs = 3, keywordArguments = {"signed"})
+    @GenerateNodeFactory
+    @SuppressWarnings("unused")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class ToBytesNode extends PythonBuiltinNode {
+
+        private static final String MESSAGE_INT_TO_BIG = "int too big to convert";
+        private static final String MESSAGE_LENGTH_ARGUMENT = "length argument must be non-negative";
+        private static final String MESSAGE_CONVERT_NEGATIVE = "can't convert negative int to unsigned";
+
+        public abstract PBytes execute(Object self, Object byteCount, Object StringOrder, Object signed);
+
+        // used for obtaining int, which will be the size of craeted array
+        @Child private CastToIndexNode castToIndexNode;
+        @Child private ToBytesNode recursiveNode;
+
+        protected CastToIndexNode getCastToIndexNode() {
+            if (castToIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToIndexNode = insert(CastToIndexNode.createOverflow());
+            }
+            return castToIndexNode;
+        }
+
+        @TruffleBoundary
+        private boolean isBigEndian(String order) {
+            if (order.equals("big")) {
+                return true;
+            }
+            if (order.equals("little")) {
+                return false;
+            }
+            throw raise(PythonErrorType.ValueError, "byteorder must be either 'little' or 'big'");
+        }
+
+        @Specialization
+        public PBytes fromLong(long self, int byteCount, String byteorder, PNone signed) {
+            return fromLong(self, byteCount, byteorder, false);
+        }
+
+        private final ConditionProfile negativeByteCountProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile negativeNumberProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile overflowProfile = ConditionProfile.createBinaryProfile();
+
+        @Specialization
+        public PBytes fromLong(long self, int byteCount, String byteorder, boolean signed) {
+            if (negativeByteCountProfile.profile(byteCount < 0)) {
+                throw raise(PythonErrorType.ValueError, MESSAGE_LENGTH_ARGUMENT);
+            }
+            byte signByte = 0;
+            if (self < 0) {
+                if (negativeNumberProfile.profile(!signed)) {
+                    throw raise(PythonErrorType.OverflowError, MESSAGE_CONVERT_NEGATIVE);
+                }
+                signByte = -1;
+            }
+            int index;
+            int delta;
+            if (isBigEndian(byteorder)) {
+                index = byteCount - 1;
+                delta = -1;
+            } else {
+                index = 0;
+                delta = 1;
+            }
+
+            byte[] bytes = new byte[byteCount];
+            long number = self;
+
+            while (number != 0 && 0 <= index && index <= (byteCount - 1)) {
+                bytes[index] = (byte) (number & 0xFF);
+                if (number == signByte) {
+                    number = 0;
+                }
+                number >>= 8;
+                index += delta;
+            }
+            if (overflowProfile.profile((number != 0 && bytes.length == 1 && bytes[0] != self) || (signed && bytes.length == 1 && bytes[0] != self) || (byteCount == 0 && self != 0))) {
+
+                throw raise(PythonErrorType.OverflowError, MESSAGE_INT_TO_BIG);
+            }
+            if (signed) {
+                while (0 <= index && index <= (byteCount - 1)) {
+                    bytes[index] = signByte;
+                    index += delta;
+                }
+            }
+            return factory().createBytes(bytes);
+        }
+
+        @Specialization
+        public PBytes fromLongLong(long self, long byteCount, String byteorder, PNone signed) {
+            return fromLongLong(self, byteCount, byteorder, false);
+        }
+
+        @Specialization
+        public PBytes fromLongLong(long self, long byteCount, String byteorder, boolean signed) {
+            int count = getCastToIndexNode().execute(byteCount);
+            return fromLong(self, count, byteorder, signed);
+        }
+
+        @Specialization
+        public PBytes fromLongPInt(long self, PInt byteCount, String byteorder, PNone signed) {
+            return fromLongPInt(self, byteCount, byteorder, false);
+        }
+
+        @Specialization
+        public PBytes fromLongPInt(long self, PInt byteCount, String byteorder, boolean signed) {
+            int count = getCastToIndexNode().execute(byteCount);
+            return fromLong(self, count, byteorder, signed);
+        }
+
+        @Specialization
+        public PBytes fromPIntInt(PInt self, int byteCount, String byteorder, PNone signed) throws ArithmeticException {
+            return fromPIntInt(self, byteCount, byteorder, false);
+        }
+
+        @TruffleBoundary
+        private byte getSingByte(BigInteger value, boolean signed) {
+            if (value.compareTo(BigInteger.ZERO) == -1) {
+                if (!signed) {
+                    throw raise(PythonErrorType.OverflowError, MESSAGE_CONVERT_NEGATIVE);
+                }
+                return -1;
+            }
+            return 0;
+        }
+
+        @TruffleBoundary
+        private static byte[] getBytes(BigInteger value) {
+            return value.toByteArray();
+        }
+
+        @Specialization
+        public PBytes fromPIntInt(PInt self, int byteCount, String byteorder, boolean signed) {
+            if (negativeByteCountProfile.profile(byteCount < 0)) {
+                throw raise(PythonErrorType.ValueError, MESSAGE_LENGTH_ARGUMENT);
+            }
+            BigInteger value = self.getValue();
+            byte signByte = getSingByte(value, signed);
+            byte[] bytes = getBytes(value);
+            if (bytes.length > byteCount) {
+                // Check, whether we need to cut unneeded sign bytes.
+                int len = bytes.length;
+                int startIndex = 0;
+                if (!signed) {
+                    for (startIndex = 0; startIndex < bytes.length; startIndex++) {
+                        if (bytes[startIndex] != 0) {
+                            break;
+                        }
+                    }
+                    len = Math.max(bytes.length - startIndex, byteCount);
+                }
+                if (overflowProfile.profile(len > byteCount)) {
+                    // the corrected len is still bigger then we need.
+                    throw raise(PythonErrorType.OverflowError, MESSAGE_INT_TO_BIG);
+                }
+                if (bytes.length > byteCount) {
+                    // the array starts with sign bytes and has to be truncated to the requested
+                    // size
+                    byte[] tmp = bytes;
+                    bytes = new byte[len];
+                    System.arraycopy(tmp, startIndex, bytes, 0, len);
+                }
+            }
+
+            if (isBigEndian(byteorder)) {
+                if (byteCount > bytes.length) {
+                    // requested array is bigger then we obtained from BigInteger
+                    byte[] resultBytes = new byte[byteCount];
+                    System.arraycopy(bytes, 0, resultBytes, resultBytes.length - bytes.length, bytes.length);
+                    if (signed && signByte == -1) {
+                        // add sign bytes
+                        for (int i = 0; i < resultBytes.length - bytes.length; i++) {
+                            resultBytes[i] = signByte;
+                        }
+                    }
+                    return factory().createBytes(resultBytes);
+                } else {
+                    return factory().createBytes(bytes);
+                }
+            } else {
+                // little endian -> need to switch bytes
+                byte[] resultBytes = new byte[byteCount];
+                for (int i = 0; i < bytes.length; i++) {
+                    resultBytes[i] = bytes[bytes.length - 1 - i];
+                }
+                if (byteCount > bytes.length && signed && signByte == -1) {
+                    // add sign negative bytes
+                    for (int i = bytes.length; i < resultBytes.length; i++) {
+                        resultBytes[i] = signByte;
+                    }
+                }
+                return factory().createBytes(resultBytes);
+            }
+        }
+
+        @Specialization
+        public PBytes fromPIntLong(PInt self, long byteCount, String byteorder, PNone signed) {
+            return fromPIntLong(self, byteCount, byteorder, false);
+        }
+
+        @Specialization
+        public PBytes fromPIntLong(PInt self, long byteCount, String byteorder, boolean signed) {
+            int count = getCastToIndexNode().execute(byteCount);
+            return fromPIntInt(self, count, byteorder, signed);
+        }
+
+        @Specialization
+        public PBytes fromPIntPInt(PInt self, PInt byteCount, String byteorder, PNone signed) {
+            return fromPIntPInt(self, byteCount, byteorder, false);
+        }
+
+        @Specialization
+        public PBytes fromPIntPInt(PInt self, PInt byteCount, String byteorder, boolean signed) {
+            int count = getCastToIndexNode().execute(byteCount);
+            return fromPIntInt(self, count, byteorder, signed);
+        }
+
+        public static boolean isNumber(Object value) {
+            return value instanceof Integer || value instanceof Long || value instanceof PInt;
+        }
+
+        @Fallback
+        PBytes general(Object self, Object byteCount, Object byteorder, Object oSigned) {
+            int count = getCastToIndexNode().execute(byteCount);
+            if (!PGuards.isString(byteorder)) {
+                throw raise(PythonErrorType.TypeError, "to_bytes() argument 2 must be str, not %p", byteorder);
+            }
+            boolean signed = oSigned instanceof Boolean ? (boolean) oSigned : false;
+            if (recursiveNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                recursiveNode = insert(create());
+            }
+            return recursiveNode.execute(self, count, byteorder, signed);
+        }
+
+        protected static ToBytesNode create() {
+            return IntBuiltinsFactory.ToBytesNodeFactory.create(null);
+        }
+    }
+
+    @Builtin(name = "from_bytes", fixedNumOfPositionalArgs = 3, takesVarArgs = true, keywordArguments = {"signed"}, isClassmethod = true)
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class FromBytesNode extends PythonBuiltinNode {
-        private static byte[] littleToBig(byte[] bytes, String byteorder) {
+
+        @Child private GetLazyClassNode getClassNode;
+
+        @Child private LookupAndCallVarargsNode constructNode;
+        @Child private BytesNodes.FromSequenceNode fromSequenceNode;
+        @Child private BytesNodes.FromIteratorNode fromIteratorNode;
+        @Child private GetIteratorNode getIteratorNode;
+
+        @Child private IsIterableNode isIterableNode;
+        @Child private BytesNodes.ToBytesNode toBytesNode;
+        @Child private LookupAndCallUnaryNode callBytesNode;
+
+        protected LazyPythonClass getClass(Object value) {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetLazyClassNode.create());
+            }
+            return getClassNode.execute(value);
+        }
+
+        protected BytesNodes.FromSequenceNode getFromSequenceNode() {
+            if (fromSequenceNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                fromSequenceNode = insert(BytesNodes.FromSequenceNode.create());
+            }
+            return fromSequenceNode;
+        }
+
+        protected BytesNodes.FromIteratorNode getFromIteratorNode() {
+            if (fromIteratorNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                fromIteratorNode = insert(BytesNodes.FromIteratorNode.create());
+            }
+            return fromIteratorNode;
+        }
+
+        protected GetIteratorNode getGetIteratorNode() {
+            if (getIteratorNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getIteratorNode = insert(GetIteratorNode.create());
+            }
+            return getIteratorNode;
+        }
+
+        protected BytesNodes.ToBytesNode getToBytesNode() {
+            if (toBytesNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toBytesNode = insert(BytesNodes.ToBytesNode.create());
+            }
+            return toBytesNode;
+        }
+
+        private static byte[] littleToBig(byte[] bytes) {
             // PInt uses Java BigInteger which are big-endian
-            if (byteorder.equals("big")) {
-                return bytes;
-            }
-            byte[] bigEndianBytes = new byte[bytes.length + 1];
-            bigEndianBytes[0] = 0;
+            byte[] bigEndianBytes = new byte[bytes.length];
             for (int i = 0; i < bytes.length; i++) {
-                bigEndianBytes[bytes.length - i] = bytes[i];
+                bigEndianBytes[bytes.length - i - 1] = bytes[i];
             }
-            return bytes;
+            return bigEndianBytes;
         }
 
-        @Specialization
         @TruffleBoundary
-        public PInt frombytesSignedOrNot(String str, String byteorder, Object[] args, boolean keywordArg) {
-            byte[] bytes = littleToBig(str.getBytes(), byteorder);
-            BigInteger integer = new BigInteger(bytes);
-            if (keywordArg) {
-                return factory().createInt(NegNode.negate(integer));
-            } else {
-                return factory().createInt(integer);
+        private static BigInteger createBigInteger(byte[] bytes, boolean isBigEndian, boolean signed) {
+            if (bytes.length == 0) {
+                // in case of empty byte array
+                return BigInteger.ZERO;
             }
+            BigInteger result;
+            if (isBigEndian) { // big byteorder
+                result = signed ? new BigInteger(bytes) : new BigInteger(1, bytes);
+            } else { // little byteorder
+                byte[] converted = littleToBig(bytes);
+                result = signed ? new BigInteger(converted) : new BigInteger(1, converted);
+            }
+            return result;
+        }
+
+        @TruffleBoundary
+        private boolean isBigEndian(String order) {
+            if (order.equals("big")) {
+                return true;
+            }
+            if (order.equals("little")) {
+                return false;
+            }
+            throw raise(PythonErrorType.ValueError, "byteorder must be either 'little' or 'big'");
+        }
+
+        private Object createIntObject(PythonClass cl, BigInteger number) {
+            if (PGuards.isPythonBuiltinClass(cl)) {
+                return factory().createInt(number);
+            }
+            if (constructNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                constructNode = insert(LookupAndCallVarargsNode.create(SpecialMethodNames.__CALL__));
+            }
+            return constructNode.execute(null, cl, new Object[]{cl, factory().createInt(number)});
+        }
+
+        private Object compute(PythonClass cl, byte[] bytes, String byteorder, boolean signed) {
+            BigInteger bi = createBigInteger(bytes, isBigEndian(byteorder), signed);
+            return createIntObject(cl, bi);
+        }
+
+        // from String / PString
+        // TODO these specialization shouldn't be there. The CPython ends up with TypeError in such
+        // case. See GR-12453
+        @Specialization
+        @TruffleBoundary
+        public Object fromString(PythonClass cl, String str, String byteorder, Object[] args, boolean signed) {
+            return compute(cl, str.getBytes(), byteorder, signed);
         }
 
         @Specialization
-        @TruffleBoundary
-        public PInt frombytes(String str, String byteorder, Object[] args, PNone keywordArg) {
-            byte[] bytes = littleToBig(str.getBytes(), byteorder);
-            return factory().createInt(new BigInteger(bytes));
+        public Object fromString(PythonClass cl, String str, String byteorder, Object[] args, PNone keywordArg) {
+            return fromString(cl, str, byteorder, args, false);
+        }
+
+        // from PBytes
+        @Specialization
+        public Object fromPBytes(PythonClass cl, PBytes bytes, String byteorder, Object[] args, boolean signed) {
+            return compute(cl, getToBytesNode().execute(bytes), byteorder, signed);
         }
 
         @Specialization
-        @TruffleBoundary
-        public PInt fromPBytes(PBytes str, String byteorder, Object[] args, PNone keywordArg,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            byte[] bytes = littleToBig(toBytesNode.execute(str), byteorder);
-            return factory().createInt(new BigInteger(bytes));
+        public Object fromPBytes(PythonClass cl, PBytes bytes, String byteorder, Object[] args, PNone signed) {
+            return fromPBytes(cl, bytes, byteorder, args, false);
+        }
+
+        // from PByteArray
+        @Specialization
+        public Object fromPByteArray(PythonClass cl, PByteArray bytes, String byteorder, Object[] args, boolean signed) {
+            return compute(cl, getToBytesNode().execute(bytes), byteorder, signed);
+        }
+
+        @Specialization
+        public Object fromPByteArray(PythonClass cl, PByteArray bytes, String byteorder, Object[] args, PNone signed) {
+            return fromPByteArray(cl, bytes, byteorder, args, false);
+        }
+
+        // from PArray
+        @Specialization
+        public Object fromPArray(PythonClass cl, PArray array, String byteorder, Object[] args, boolean signed,
+                        @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
+            return compute(cl, fromSequenceStorageNode.execute(array.getSequenceStorage()), byteorder, signed);
+        }
+
+        @Specialization
+        public Object fromPArray(PythonClass cl, PArray array, String byteorder, Object[] args, PNone signed,
+                        @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
+            return fromPArray(cl, array, byteorder, args, false, fromSequenceStorageNode);
+        }
+
+        // from PMemoryView
+        @Specialization
+        public Object fromPMemoryView(PythonClass cl, PMemoryView view, String byteorder, Object[] args, boolean signed) {
+            return compute(cl, getToBytesNode().execute(view), byteorder, signed);
+        }
+
+        @Specialization
+        public Object fromPMemoryView(PythonClass cl, PMemoryView view, String byteorder, Object[] args, PNone signed) {
+            return fromPMemoryView(cl, view, byteorder, args, false);
+        }
+
+        // from PList, only if it is not extended
+        @Specialization(guards = "cannotBeOverridden(getClass(list))")
+        public Object fromPList(PythonClass cl, PList list, String byteorder, Object[] args, boolean signed) {
+            return compute(cl, getFromSequenceNode().execute(list), byteorder, signed);
+        }
+
+        @Specialization(guards = "cannotBeOverridden(getClass(list))")
+        public Object fromPList(PythonClass cl, PList list, String byteorder, Object[] args, PNone signed) {
+            return fromPList(cl, list, byteorder, args, false);
+        }
+
+        // from PTuple, only if it is not extended
+        @Specialization(guards = "cannotBeOverridden(getClass(tuple))")
+        public Object fromPTuple(PythonClass cl, PTuple tuple, String byteorder, Object[] args, boolean signed) {
+            return compute(cl, getFromSequenceNode().execute(tuple), byteorder, signed);
+        }
+
+        @Specialization(guards = "cannotBeOverridden(getClass(tuple))")
+        public Object fromPTuple(PythonClass cl, PTuple tuple, String byteorder, Object[] args, PNone signed) {
+            return fromPTuple(cl, tuple, byteorder, args, false);
+        }
+
+        // rest objects
+        @Specialization
+        public Object fromObject(PythonClass cl, PythonObject object, String byteorder, Object[] args, PNone signed) {
+            return fromObject(cl, object, byteorder, args, false);
+        }
+
+        @Specialization
+        public Object fromObject(PythonClass cl, PythonObject object, String byteorder, Object[] args, boolean signed) {
+            if (callBytesNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callBytesNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__BYTES__));
+            }
+            Object result = callBytesNode.executeObject(object);
+            if (result != PNone.NO_VALUE) { // first try o use __bytes__ call result
+                if (!(result instanceof PIBytesLike)) {
+                    raise(PythonErrorType.TypeError, "__bytes__ returned non-bytes (type %p)", result);
+                }
+                BigInteger bi = createBigInteger(getToBytesNode().execute(result), isBigEndian(byteorder), false);
+                return createIntObject(cl, bi);
+            }
+            if (isIterableNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isIterableNode = insert(IsIterableNode.create());
+            }
+            if (isIterableNode.execute(object)) {
+                byte[] bytes = getFromIteratorNode().execute(getGetIteratorNode().executeWith(object));
+                return compute(cl, bytes, byteorder, signed);
+            }
+            return general(cl, object, byteorder, args, signed);
+        }
+
+        @Fallback
+        public Object general(Object cl, Object object, Object byteorder, Object args, Object signed) {
+            throw raise(PythonErrorType.TypeError, "cannot convert '%p' object to bytes", object);
         }
     }
 

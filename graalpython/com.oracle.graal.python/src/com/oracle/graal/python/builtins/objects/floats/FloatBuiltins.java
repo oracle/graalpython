@@ -142,6 +142,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class FormatNode extends PythonBinaryBuiltinNode {
 
         @Specialization
+        @TruffleBoundary
         String format(double self, String formatString,
                         @Cached("create()") StrNode strNode,
                         @Cached("createBinaryProfile()") ConditionProfile strProfile,
@@ -515,7 +516,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "fromhex", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "fromhex", fixedNumOfPositionalArgs = 2, isClassmethod = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class FromHexNode extends PythonBuiltinNode {
@@ -1154,7 +1155,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __GETFORMAT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETFORMAT__, fixedNumOfPositionalArgs = 2, isClassmethod = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class GetFormatNode extends PythonBinaryBuiltinNode {

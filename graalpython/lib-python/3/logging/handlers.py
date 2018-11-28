@@ -22,9 +22,7 @@ Copyright (C) 2001-2016 Vinay Sajip. All Rights Reserved.
 
 To use, simply 'import logging.handlers' and log away!
 """
-# TODO: Truffle reenable me once socket is supported (GR-9140)
-# import logging, socket, os, pickle, struct, time, re
-import logging, os, pickle, struct, time, re
+import logging, socket, os, pickle, struct, time, re
 from stat import ST_DEV, ST_INO, ST_MTIME
 # TODO: Truffle reenable me once queue and threading is supported (GR-9144)
 # import queue

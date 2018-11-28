@@ -111,9 +111,9 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         public String repr(PythonClass self,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode readModuleNode,
+                        @Cached("create()") ReadAttributeFromObjectNode readModuleNode,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode readQualNameNode) {
-            Object moduleName = readModuleNode.executeObject(self, __MODULE__);
+            Object moduleName = readModuleNode.execute(self, __MODULE__);
             Object qualName = readQualNameNode.executeObject(self, __QUALNAME__);
             return concat(moduleName, qualName);
         }
@@ -212,7 +212,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         // https://github.com/python/cpython/blob/2102c789035ccacbac4362589402ac68baa2cd29/Objects/typeobject.c#L3538
                     } else {
                         Object initMethod = lookupInit.execute(newInstanceKlass);
-                        if (newMethod != PNone.NO_VALUE) {
+                        if (initMethod != PNone.NO_VALUE) {
                             Object[] initArgs;
                             if (doCreateArgs) {
                                 initArgs = PositionalArgumentsNode.prependArgument(newInstance, arguments, arguments.length);

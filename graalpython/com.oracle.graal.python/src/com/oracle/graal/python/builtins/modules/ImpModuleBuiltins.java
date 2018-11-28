@@ -267,6 +267,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             return checkResultNode;
         }
 
+        @TruffleBoundary
         private PException reportImportError(RuntimeException e, String path) {
             StringBuilder sb = new StringBuilder();
             sb.append(e.getMessage());

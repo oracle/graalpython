@@ -136,6 +136,10 @@ PyObject * PyNumber_Invert(PyObject *o) {
 	return do_unaryop(o, INVERT);
 }
 
+PyObject * PyNumber_Power(PyObject *v, PyObject *w, PyObject *z) {
+    return UPCALL_O(PY_BUILTIN, polyglot_from_string("pow", SRC_CS), native_to_java(v), native_to_java(w), native_to_java(z));
+}
+
 UPCALL_ID(PyNumber_Index);
 PyObject * PyNumber_Index(PyObject *o) {
     if (o == NULL) {
@@ -197,7 +201,7 @@ PyObject * PyNumber_Long(PyObject *o) {
 
 UPCALL_ID(PyNumber_Float);
 PyObject * PyNumber_Float(PyObject *o) {
-    return UPCALL_CEXT_O(_jls_PyNumber_Float, native_to_java(o));
+    return ((PyObject* (*)(void*))_jls_PyNumber_Float)(native_to_java(o));
 }
 
 UPCALL_ID(PyNumber_Absolute);
@@ -256,9 +260,26 @@ PyObject* PySequence_Tuple(PyObject *v) {
     return UPCALL_CEXT_O(_jls_PySequence_Tuple, native_to_java(v));
 }
 
-UPCALL_ID(PySequence_Fast);
+UPCALL_ID(PySequence_List);
+PyObject* PySequence_List(PyObject *v) {
+    return UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
+}
+
 PyObject * PySequence_Fast(PyObject *v, const char *m) {
-    return UPCALL_CEXT_O(_jls_PySequence_Fast, native_to_java(v), polyglot_from_string(m, SRC_CS));
+    if (v == NULL) {
+        return null_error();
+    }
+
+    if (PyList_CheckExact(v) || PyTuple_CheckExact(v)) {
+        Py_INCREF(v);
+        return v;
+    }
+
+	PyObject* result = UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
+	if (result == NULL) {
+		PyErr_SetString(PyExc_TypeError, m);
+	}
+	return result;
 }
 
 UPCALL_ID(PyObject_GetItem);

@@ -90,6 +90,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -240,6 +241,10 @@ public abstract class HashingStorageNodes {
         }
 
         protected static PythonObjectHybridDictStorage switchToHybridDictStorage(PythonObjectDictStorage dictStorage) {
+            Assumption dictUnsetOrSameAsStorage = dictStorage.getDictUnsetOrSameAsStorage();
+            if (dictUnsetOrSameAsStorage != null) {
+                dictUnsetOrSameAsStorage.invalidate();
+            }
             return new PythonObjectHybridDictStorage(dictStorage);
         }
 
@@ -353,6 +358,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"})
+        @TruffleBoundary
         public HashingStorage doSequence(PythonObject iterable, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") FastConstructListNode createListNode,
@@ -1088,6 +1094,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "selfStorage.length() == other.length()")
+        @TruffleBoundary
         boolean doKeywordsString(DynamicObjectStorage selfStorage, DynamicObjectStorage other) {
             if (selfStorage.length() == other.length()) {
                 Iterable<Object> keys = selfStorage.keys();
@@ -1104,6 +1111,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "selfStorage.length() == other.length()")
+        @TruffleBoundary
         boolean doGeneric(HashingStorage selfStorage, HashingStorage other) {
             if (selfStorage.length() == other.length()) {
                 Iterable<Object> keys = selfStorage.keys();

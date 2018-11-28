@@ -184,6 +184,7 @@ class BaseQueueTestMixin(BlockingTestMixin):
         else:
             self.fail("Did not detect task count going negative")
 
+    @unittest.skipIfGraalPythonWitoutThreads
     def test_queue_join(self):
         # Test that a queue join()s successfully, and before anything else
         # (done twice for insurance).

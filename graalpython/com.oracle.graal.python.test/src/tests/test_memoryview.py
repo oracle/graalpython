@@ -46,3 +46,7 @@ def test_tobytes():
     b = b"hello"
     v = memoryview(b)
     assert v.tobytes() == b
+
+    b = b"\xff\x00\x00"
+    v = memoryview(b)
+    assert v.tobytes() == b

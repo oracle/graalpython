@@ -190,6 +190,7 @@ public abstract class HashingStorage {
     protected static <T> Iterable<T> wrapJavaIterable(Iterable<T> values) {
         return new Iterable<T>() {
 
+            @TruffleBoundary
             public Iterator<T> iterator() {
                 return new WrappedIterator<>(values.iterator());
             }
@@ -244,6 +245,7 @@ public abstract class HashingStorage {
 
     public abstract Iterable<Object> keys();
 
+    @TruffleBoundary
     private Object[] iteratorAsArray(Iterable<Object> iterable) {
         Object[] items = new Object[this.length()];
         int i = 0;

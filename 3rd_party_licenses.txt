@@ -2186,10 +2186,6 @@ install-sh
 
 PyPy
 
-No clear Copyright owner mentioned in the package but references on the web site mention 'The PyPy Project'
-
-LICENSE file from download package from https://bitbucket.org/pypy/pypy/downloads/pypy2-v5.3.1-src.tar.bz2:
-
 License
 =======
 
@@ -2220,7 +2216,7 @@ the 'rpython', 'pypy', 'ctype_configure', 'dotviewer', 'demo', 'lib_pypy',
     DEALINGS IN THE SOFTWARE.
 
 
-PyPy Copyright holders 2003-2016
+PyPy Copyright holders 2003-2017
 ----------------------------------- 
 
 Except when otherwise stated (look for LICENSE files or information at
@@ -2229,30 +2225,30 @@ copyrighted by one or more of the following people and organizations:
 
   Armin Rigo
   Maciej Fijalkowski
-  Carl Friedrich Bolz
+  Carl Friedrich Bolz-Tereick
   Amaury Forgeot d'Arc
   Antonio Cuni
-  Samuele Pedroni
   Matti Picus
+  Samuele Pedroni
+  Ronan Lamy
   Alex Gaynor
   Philip Jenvey
   Brian Kearns
-  Ronan Lamy
+  Richard Plangger
   Michael Hudson
   Manuel Jacob
   David Schneider
   Holger Krekel
   Christian Tismer
   Hakan Ardo
-  Richard Plangger
   Benjamin Peterson
   Anders Chrigstrom
-  Eric van Riet Paap
   Wim Lavrijsen
+  Eric van Riet Paap
   Richard Emslie
   Alexander Schremmer
-  Dan Villiom Podlaski Christiansen
   Remi Meier
+  Dan Villiom Podlaski Christiansen
   Lukas Diekmann
   Sven Hager
   Anders Lehmann
@@ -2260,12 +2256,13 @@ copyrighted by one or more of the following people and organizations:
   Niklaus Haldimann
   Camillo Bruni
   Laura Creighton
-  Toon Verwaest
   Romain Guillebert
+  Toon Verwaest
   Leonardo Santagada
   Seo Sanghyeon
   Ronny Pfannschmidt
   Justin Peel
+  Raffael Tfirst
   David Edelsohn
   Anders Hammarquist
   Jakub Gustak
@@ -2274,13 +2271,15 @@ copyrighted by one or more of the following people and organizations:
   Lawrence Oluyede
   Bartosz Skowron
   Daniel Roberts
-  Niko Matsakis
   Adrien Di Mascio
+  Niko Matsakis
   Alexander Hesse
   Ludovic Aubry
   Jacob Hallen
   Jason Creighton
+  Mark Young
   Alex Martelli
+  Spenser Bauman
   Michal Bendowski
   stian
   Jan de Mooij
@@ -2288,271 +2287,288 @@ copyrighted by one or more of the following people and organizations:
   Vincent Legoll
   Michael Foord
   Stephan Diehl
+  Stefano Rivera
   Stefan Schwarzer
-  Valentino Volonghi
   Tomek Meka
+  Valentino Volonghi
   Patrick Maupin
+  Devin Jeanpierre
   Bob Ippolito
   Bruno Gola
   David Malcolm
   Jean-Paul Calderone
-  Mark Young
-  Timo Paulssen
   Squeaky
-  Devin Jeanpierre
+  Edd Barrett
+  Timo Paulssen
   Marius Gedminas
   Alexandre Fayolle
   Simon Burton
-  Stefano Rivera
+  Nicolas Truessel
   Martin Matusiak
-  Konstantin Lopuhin
-  Wenzhu Man
-  John Witulski
   Laurence Tratt
-  Raffael Tfirst
-  Ivan Sichmann Freitas
+  Wenzhu Man
+  Konstantin Lopuhin
+  John Witulski
   Greg Price
+  Ivan Sichmann Freitas
   Dario Bertini
+  Jeremy Thurgood
   Mark Pearse
   Simon Cross
-  Edd Barrett
-  Andreas Stahrk
   Tobias Pape
+  Andreas Stührk
   Jean-Philippe St. Pierre
   Guido van Rossum
   Pavel Vinogradov
-  Spenser Bauman
-  Jeremy Thurgood
-  Pawea‚ Piotr Przeradowski
-  Paul deGrandis
-  Ilya Osadchiy
+  Paweł Piotr Przeradowski
+  William Leslie
   marky1991
+  Ilya Osadchiy
   Tobias Oberstein
-  Adrian Kuhn
+  Paul deGrandis
   Boris Feigin
-  tav
   Taavi Burns
+  Adrian Kuhn
+  tav
   Georg Brandl
   Bert Freudenberg
   Stian Andreassen
   Wanja Saatkamp
-  Gerald Klix
   Mike Blume
+  Joannah Nanjekye
+  Gerald Klix
   Oscar Nierstrasz
-  Stefan H. Muller
   Rami Chowdhury
+  Stefan H. Muller
+  Tim Felgentreff
   Eugene Oden
+  Jeff Terrace
   Henry Mason
   Vasily Kuznetsov
   Preston Timmons
   David Ripton
-  Jeff Terrace
   Dusty Phillips
   Lukas Renggli
   Guenter Jantzen
-  William Leslie
+  Jasper Schulz
   Ned Batchelder
-  Tim Felgentreff
-  Anton Gulenko
   Amit Regmi
-  Ben Young
+  Anton Gulenko
   Sergey Matyunin
+  Andrew Chambers
   Nicolas Chauvat
   Andrew Durdin
-  Andrew Chambers
+  Ben Young
   Michael Schneider
   Nicholas Riley
   Jason Chu
   Igor Trindade Oliveira
   Yichao Yu
+  Michael Twomey
   Rocco Moretti
   Gintautas Miliauskas
-  Michael Twomey
   Lucian Branescu Mihaila
   anatoly techtonik
-  Gabriel Lavoie
-  Olivier Dormond
-  Jared Grubb
+  Dodan Mihai
   Karl Bartel
+  Gabriel Lavoie
+  Jared Grubb
+  Olivier Dormond
   Wouter van Heyst
-  Sebastian Pawlua
+  Sebastian Pawluś
   Brian Dorsey
   Victor Stinner
   Andrews Medina
-  Stuart Williams
-  Jasper Schulz
-  Christian Hudon
-  Toby Watson
-  Antoine Pitrou
   Aaron Iles
-  Michael Cheng
+  Toby Watson
+  Daniel Patrick
+  Stuart Williams
+  Antoine Pitrou
+  Christian Hudon
   Justas Sadzevicius
-  Gasper Zejn
   Neil Shepperd
+  Michael Cheng
+  Mikael Schönenberg
   Stanislaw Halik
-  Mikael Schaenenberg
   Berkin Ilbeyi
-  Elmo Mantynen
+  Gasper Zejn
   Faye Zhao
-  Jonathan David Riehl
+  Elmo Mäntynen
   Anders Qvist
   Corbin Simpson
   Chirag Jadwani
+  Jonathan David Riehl
   Beatrice During
   Alex Perry
-  Vaibhav Sood
+  p_zieschang@yahoo.de
+  Robert Zaremba
   Alan McIntyre
   Alexander Sedov
+  Vaibhav Sood
+  Reuben Cummings
   Attila Gobi
-  Jasper.Schulz
+  Alecsandru Patrascu
   Christopher Pope
-  Florin Papa
+  Tristan Arthur
   Christian Tismer 
-  Marc Abramowitz
   Dan Stromberg
-  Arjun Naik
+  Carl Meyer
+  Florin Papa
+  Jens-Uwe Mager
   Valentina Mukhamedzhanova
   Stefano Parmesan
+  touilleMan
+  Marc Abramowitz
+  Arjun Naik
+  Aaron Gallagher
   Alexis Daboville
-  Jens-Uwe Mager
-  Carl Meyer
-  Karl Ramm
   Pieter Zieschang
-  Gabriel
+  Karl Ramm
   Lukas Vacek
-  Kunal Grover
-  Andrew Dalke
-  Sylvain Thenault
-  Jakub Stasiak
-  Nathan Taylor
-  Vladimir Kryachko
   Omer Katz
   Jacek Generowicz
+  Sylvain Thenault
+  Jakub Stasiak
+  Stefan Beyer
+  Andrew Dalke
   Alejandro J. Cura
-  Jacob Oscarson
+  Vladimir Kryachko
+  Gabriel
+  Mark Williams
+  Kunal Grover
+  Nathan Taylor
   Travis Francis Athougies
-  Ryan Gonzalez
-  Ian Foote
-  Kristjan Valur Jonsson
-  David Lievens
-  Neil Blakey-Milner
+  Yasir Suhail
+  Sergey Kishchenko
+  Martin Blais
   Lutz Paelike
-  Lucio Torre
-  Lars Wassermann
+  Ian Foote
   Philipp Rustemeuer
-  Henrik Vendelbo
+  Catalin Gabriel Manciu
+  Jacob Oscarson
+  Ryan Gonzalez
+  Kristjan Valur Jonsson
+  Lucio Torre
   Richard Lancaster
   Dan Buch
+  Lene Wagner
+  Tomo Cocoa
+  David Lievens
+  Neil Blakey-Milner
+  Henrik Vendelbo
+  Lars Wassermann
+  Ignas Mikalajunas
+  Christoph Gerum
   Miguel de Val Borro
   Artur Lisiecki
-  Sergey Kishchenko
-  Ignas Mikalajunas
-  Alecsandru Patrascu
-  Christoph Gerum
-  Martin Blais
-  Lene Wagner
-  Catalin Gabriel Manciu
-  Tomo Cocoa
-  Kim Jin Su
   Toni Mattis
-  Amber Brown
-  Lucas Stadler
-  Julian Berman
-  Markus Holtermann
-  roberto@goyle
-  Yury V. Zaytsev
-  Anna Katrina Dominguez
-  Bobby Impollonia
-  Vasantha Ganesh K
-  Andrew Thompson
-  florinpapa
-  Yusei Tahara
-  Aaron Tubbs
-  Ben Darnell
-  Roberto De Ioris
-  Logan Chien
-  Juan Francisco Cantero Hurtado
-  Ruochen Huang
-  Jeong YunWon
-  Godefroid Chappelle
-  Joshua Gilbert
-  Dan Colish
-  Christopher Armstrong
-  Michael Hudson-Doyle
-  Anders Sigfridsson
-  Nikolay Zinov
-  Yasir Suhail
-  Jason Michalski
-  rafalgalczynski@gmail.com
-  Floris Bruynooghe
   Laurens Van Houtven
+  Bobby Impollonia
+  Roberto De Ioris
+  Jeong YunWon
+  Christopher Armstrong
+  Aaron Tubbs
+  Vasantha Ganesh K
+  Jason Michalski
+  Markus Holtermann
+  Andrew Thompson
+  Yusei Tahara
+  Ruochen Huang
+  Fabio Niephaus
   Akira Li
   Gustavo Niemeyer
-  Stephan Busemann
-  Rafaa‚ Gaczyski
+  Rafał Gałczyński
+  Logan Chien
+  Lucas Stadler
+  roberto@goyle
   Matt Bogosian
+  Yury V. Zaytsev
+  florinpapa
+  Anders Sigfridsson
+  Nikolay Zinov
+  rafalgalczynski@gmail.com
+  Joshua Gilbert
+  Anna Katrina Dominguez
+  Kim Jin Su
+  Amber Brown
+  Nate Bragg
+  Ben Darnell
+  Juan Francisco Cantero Hurtado
+  Godefroid Chappelle
+  Julian Berman
+  Michael Hudson-Doyle
+  Floris Bruynooghe
+  Stephan Busemann
+  Dan Colish
   timo
-  Christian Muirhead
-  Berker Peksag
-  James Lan
   Volodymyr Vladymyrov
-  shoma hosaka
-  Daniel Neuhauser
-  Ben Mather
-  Niclas Olofsson
+  Daniel Neuhäuser
+  Flavio Percoco
   halgari
-  Boglarka Vezer
-  Chris Pressey
-  Buck Golemon
-  Diana Popa
-  Konrad Delong
-  Dinu Gherman
+  Jim Baker
   Chris Lambacher
   coolbutuseless@gmail.com
-  Jim Baker
-  Rodrigo Araajo
-  Nikolaos-Digenis Karagiannis
-  James Robert
-  Armin Ronacher
-  Brett Cannon
-  Donald Stufft
-  yrttyr
-  aliceinwire
+  Mike Bayer
+  Rodrigo Araújo
+  Daniil Yarancev
   OlivierBlanvillain
-  Dan Sanders
-  Zooko Wilcox-O Hearn
+  Jonas Pfannschmidt
+  Zearin
+  Andrey Churin
+  Dan Crosta
+  reubano@gmail.com
+  Julien Phalip
+  Roman Podoliaka
+  Eli Stevens
+  Boglarka Vezer
+  PavloKapyshin
   Tomer Chachamu
   Christopher Groskopf
   Asmo Soinio
-  Stefan Marr
-  jiaaro
-  Mads Kiilerich
-  opassembler.py
   Antony Lee
-  Jason Madden
-  Yaroslav Fedevych
   Jim Hunziker
-  Markus Unterwaditzer
-  Even Wiik Thomassen
-  jbs
-  squeaky
-  Zearin
-  soareschen
-  Jonas Pfannschmidt
-  Kurt Griffiths
-  Mike Bayer
-  Matthew Miller
-  Flavio Percoco
-  Kristoffer Kleine
-  yasirs
+  shoma hosaka
+  Buck Golemon
+  Iraklis D.
+  JohnDoe
+  yrttyr
   Michael Chermside
   Anna Ravencroft
-  Andrey Churin
-  Dan Crosta
-  Tobias Diaz
-  Julien Phalip
-  Roman Podoliaka
+  remarkablerocket
+  Petre Vijiac
+  Berker Peksag
+  Christian Muirhead
+  soareschen
+  Matthew Miller
+  Konrad Delong
+  Dinu Gherman
+  pizi
+  James Robert
+  Armin Ronacher
+  Diana Popa
+  Mads Kiilerich
+  Brett Cannon
+  aliceinwire
+  Zooko Wilcox-O Hearn
+  James Lan
+  jiaaro
+  Markus Unterwaditzer
+  Kristoffer Kleine
+  Graham Markall
   Dan Loewenherz
+  werat
+  Niclas Olofsson
+  Chris Pressey
+  Tobias Diaz
+  Nikolaos-Digenis Karagiannis
+  Kurt Griffiths
+  Ben Mather
+  Donald Stufft
+  Dan Sanders
+  Jason Madden
+  Yaroslav Fedevych
+  Even Wiik Thomassen
+  Stefan Marr
 
   Heinrich-Heine University, Germany 
   Open End AB (formerly AB Strakt), Sweden
@@ -2645,12 +2661,12 @@ openssl library.  You may see a copy of the License for OpenSSL at
 
     https://www.openssl.org/source/license.html
 
-License for 'gdbm'
+License for '_gdbm'
 ------------------
 
-The gdbm module includes code from gdbm.h, which is distributed under
+The _gdbm module includes code from gdbm.h, which is distributed under
 the terms of the GPL license version 2 or any later version.  Thus the
-gdbm module, provided in the file lib_pypy/gdbm.py, is redistributed
+_gdbm module, provided in the file lib_pypy/_gdbm.py, is redistributed
 under the terms of the GPL license as well.
 
 License for 'rpython/rlib/rvmprof/src'
@@ -2660,21 +2676,19 @@ The code is based on gperftools. You may see a copy of the License for it at
 
     https://github.com/gperftools/gperftools/blob/master/COPYING
 
-=============================================================
+License for 'liblzma and 'lzmaffi'
+----------------------------------
 
-In addition to the above, various files in the following directories of the package are under open source licenses
-./dotviewer - Apache
-./lib-python - PSF 
-./lib-python/2.7/bsddb - MIT like
-./lib-python/2.7/code.py - BSD like
-./lib_pypy/cffi - BSD
-./rpython\translator\c\src\libffi_msvc - MIT
-./lib-python/2.7/compiler PSF or MIT
-./lib_pypy/cffi - BSD
-./rpython/rlib/rvmprof/src/ - BSD
-./rpython/tool/ - BSD
-./pypy/module/cppyy/src - LGPL v2.1
-./pypy/interpreter/astcompiler/tools - LGPL v2.1
+This copy of PyPy may be linked (dynamically or statically) with the
+liblzma library, which was put in the "public domain":
+
+    http://tukaani.org/xz/
+
+The cffi bindings to liblzma (in lib_pypy/_lzma.py) are derived from
+the lzmaffi project which is distributed under a BSD license:
+
+    https://pypi.python.org/pypi/lzmaffi/0.3.0
+
 
 ===================================================================
 

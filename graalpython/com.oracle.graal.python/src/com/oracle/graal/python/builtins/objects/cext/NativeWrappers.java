@@ -43,8 +43,10 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -113,8 +115,12 @@ public abstract class NativeWrappers {
         }
 
         public PythonObjectDictStorage createNativeMemberStore() {
+            return createNativeMemberStore(null);
+        }
+
+        public PythonObjectDictStorage createNativeMemberStore(Assumption dictStableAssumption) {
             if (nativeMemberStore == null) {
-                nativeMemberStore = new PythonObjectDictStorage(SHAPE.newInstance());
+                nativeMemberStore = new PythonObjectDictStorage(SHAPE.newInstance(), dictStableAssumption);
             }
             return nativeMemberStore;
         }
@@ -155,9 +161,78 @@ public abstract class NativeWrappers {
         }
     }
 
-    public abstract static class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
+    public static class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
 
-        protected abstract Object getBoxedValue();
+        public static final byte PRIMITIVE_STATE_BOOL = 1 << 0;
+        public static final byte PRIMITIVE_STATE_BYTE = 1 << 1;
+        public static final byte PRIMITIVE_STATE_INT = 1 << 2;
+        public static final byte PRIMITIVE_STATE_LONG = 1 << 3;
+        public static final byte PRIMITIVE_STATE_DOUBLE = 1 << 4;
+
+        private final byte state;
+        private final long value;
+        private final double dvalue;
+
+        private PrimitiveNativeWrapper(byte state, long value) {
+            assert state != PRIMITIVE_STATE_DOUBLE;
+            this.state = state;
+            this.value = value;
+            this.dvalue = 0.0;
+        }
+
+        private PrimitiveNativeWrapper(double dvalue) {
+            this.state = PRIMITIVE_STATE_DOUBLE;
+            this.value = 0;
+            this.dvalue = dvalue;
+        }
+
+        public byte getState() {
+            return state;
+        }
+
+        public boolean getBool() {
+            return value != 0;
+        }
+
+        public byte getByte() {
+            return (byte) value;
+        }
+
+        public int getInt() {
+            return (int) value;
+        }
+
+        public long getLong() {
+            return value;
+        }
+
+        public double getDouble() {
+            return dvalue;
+        }
+
+        public boolean isBool() {
+            return state == PRIMITIVE_STATE_BOOL;
+        }
+
+        public boolean isByte() {
+            return state == PRIMITIVE_STATE_BYTE;
+        }
+
+        public boolean isInt() {
+            return state == PRIMITIVE_STATE_INT;
+        }
+
+        public boolean isLong() {
+            return state == PRIMITIVE_STATE_LONG;
+        }
+
+        public boolean isDouble() {
+            return state == PRIMITIVE_STATE_DOUBLE;
+        }
+
+        public boolean isIntLike() {
+            return (state & (PRIMITIVE_STATE_BYTE | PRIMITIVE_STATE_INT | PRIMITIVE_STATE_LONG)) != 0;
+        }
 
         // this method exists just for readability
         public Object getMaterializedObject() {
@@ -168,140 +243,25 @@ public abstract class NativeWrappers {
         public void setMaterializedObject(Object materializedPrimitive) {
             setDelegate(materializedPrimitive);
         }
-    }
 
-    public static class BoolNativeWrapper extends PrimitiveNativeWrapper {
-        private final boolean value;
-
-        private BoolNativeWrapper(boolean value) {
-            this.value = value;
+        public static PrimitiveNativeWrapper createBool(boolean val) {
+            return new PrimitiveNativeWrapper(PRIMITIVE_STATE_BOOL, PInt.intValue(val));
         }
 
-        public boolean getValue() {
-            return value;
+        public static PrimitiveNativeWrapper createByte(byte val) {
+            return new PrimitiveNativeWrapper(PRIMITIVE_STATE_BYTE, val);
         }
 
-        @Override
-        public Boolean getBoxedValue() {
-            return value;
+        public static PrimitiveNativeWrapper createInt(int val) {
+            return new PrimitiveNativeWrapper(PRIMITIVE_STATE_INT, val);
         }
 
-        @Override
-        public String toString() {
-            CompilerAsserts.neverPartOfCompilation();
-            return String.format("BoolNativeWrapper(%s, isNative=%s)", value, isNative());
+        public static PrimitiveNativeWrapper createLong(long val) {
+            return new PrimitiveNativeWrapper(PRIMITIVE_STATE_LONG, val);
         }
 
-        public static BoolNativeWrapper create(boolean value) {
-            return new BoolNativeWrapper(value);
-        }
-    }
-
-    public static class ByteNativeWrapper extends PrimitiveNativeWrapper {
-        private final byte value;
-
-        private ByteNativeWrapper(byte value) {
-            this.value = value;
-        }
-
-        public byte getValue() {
-            return value;
-        }
-
-        @Override
-        public Byte getBoxedValue() {
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            CompilerAsserts.neverPartOfCompilation();
-            return String.format("ByteNativeWrapper(%s, isNative=%s)", value, isNative());
-        }
-
-        public static ByteNativeWrapper create(byte value) {
-            return new ByteNativeWrapper(value);
-        }
-    }
-
-    public static class IntNativeWrapper extends PrimitiveNativeWrapper {
-        private final int value;
-
-        private IntNativeWrapper(int value) {
-            this.value = value;
-        }
-
-        public int getValue() {
-            return value;
-        }
-
-        @Override
-        public Integer getBoxedValue() {
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            CompilerAsserts.neverPartOfCompilation();
-            return String.format("IntNativeWrapper(%s, isNative=%s)", value, isNative());
-        }
-
-        public static IntNativeWrapper create(int value) {
-            return new IntNativeWrapper(value);
-        }
-    }
-
-    public static class LongNativeWrapper extends PrimitiveNativeWrapper {
-        private final long value;
-
-        private LongNativeWrapper(long value) {
-            this.value = value;
-        }
-
-        public long getValue() {
-            return value;
-        }
-
-        @Override
-        public Long getBoxedValue() {
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            CompilerAsserts.neverPartOfCompilation();
-            return String.format("LongNativeWrapper(%s, isNative=%s)", value, isNative());
-        }
-
-        public static LongNativeWrapper create(long value) {
-            return new LongNativeWrapper(value);
-        }
-    }
-
-    public static class DoubleNativeWrapper extends PrimitiveNativeWrapper {
-        private final double value;
-
-        private DoubleNativeWrapper(double value) {
-            this.value = value;
-        }
-
-        public double getValue() {
-            return value;
-        }
-
-        @Override
-        public Double getBoxedValue() {
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            CompilerAsserts.neverPartOfCompilation();
-            return String.format("DoubleNativeWrapper(%s, isNative=%s)", value, isNative());
-        }
-
-        public static DoubleNativeWrapper create(double value) {
-            return new DoubleNativeWrapper(value);
+        public static PrimitiveNativeWrapper createDouble(double val) {
+            return new PrimitiveNativeWrapper(val);
         }
     }
 

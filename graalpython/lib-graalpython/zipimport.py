@@ -37,5 +37,5 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-float.fromhex = classmethod(float.fromhex)
-float.__getformat__ = classmethod(float.__getformat__)
+import sys
+sys.path_hooks.append(zipimporter)

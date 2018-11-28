@@ -29,6 +29,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -127,8 +128,22 @@ public final class PArguments {
         arguments[INDEX_SPECIAL_ARGUMENT] = value;
     }
 
+    /**
+     * The special argument is used for various purposes, none of which can occur at the same time:
+     * <ul>
+     * <li>The value sent to a generator via <code>send</code></li>
+     * <li>An exception thrown through a generator via <code>throw</code></li>
+     * <li>The {@link ClassBodyRootNode} when we are executing a class body</li>
+     * <li>The custom locals mapping when executing through <code>exec</code> with a
+     * <code>locals</code> keyword argument</li>
+     * </ul>
+     */
     public static Object getSpecialArgument(Frame frame) {
-        return frame.getArguments()[INDEX_SPECIAL_ARGUMENT];
+        return getSpecialArgument(frame.getArguments());
+    }
+
+    public static Object getSpecialArgument(Object[] arguments) {
+        return arguments[INDEX_SPECIAL_ARGUMENT];
     }
 
     public static void setGlobals(Object[] arguments, PythonObject globals) {
@@ -148,7 +163,11 @@ public final class PArguments {
     }
 
     public static void setPFrame(Frame frame, PFrame pFrame) {
-        ((PFrame[]) frame.getArguments()[INDEX_PFRAME_ARGUMENT])[0] = pFrame;
+        setPFrame(frame.getArguments(), pFrame);
+    }
+
+    public static void setPFrame(Object[] args, PFrame pFrame) {
+        ((PFrame[]) args[INDEX_PFRAME_ARGUMENT])[0] = pFrame;
     }
 
     public static PFrame getPFrame(Frame frame) {

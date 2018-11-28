@@ -66,7 +66,6 @@ import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
-import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -77,12 +76,12 @@ import com.oracle.graal.python.nodes.expression.IsNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
-import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
+import com.oracle.graal.python.nodes.frame.DeleteNameNode;
 import com.oracle.graal.python.nodes.frame.DestructuringAssignmentNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
-import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
-import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
+import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.frame.WriteLocalVariableNode;
+import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
@@ -149,7 +148,7 @@ public class TestParserTranslator {
         Node actual = n;
         if (n instanceof ExpressionNode.ExpressionStatementNode) {
             actual = n.getChildren().iterator().next();
-        } else if (n instanceof ExpressionNode.ExpressionWithSideEffects) {
+        } else if (n instanceof ExpressionNode.ExpressionWithSideEffects || n instanceof ExpressionNode.ExpressionWithSideEffect) {
             actual = n.getChildren().iterator().next();
         } else if (n instanceof WriteLocalVariableNode) {
             if (((WriteLocalVariableNode) n).getIdentifier().equals(FrameSlotIDs.RETURN_SLOT_ID)) {
@@ -266,7 +265,7 @@ public class TestParserTranslator {
 
     @Test
     public void parseGlobalVariable() {
-        parseAs("foobar13_ddsA", ReadGlobalOrBuiltinNode.class);
+        parseAs("foobar13_ddsA", ReadNameNode.class);
     }
 
     @Test
@@ -274,13 +273,13 @@ public class TestParserTranslator {
         parseAs("foobar13_ddsA.property", GetAttributeNode.class);
         GetAttributeNode anotherProperty = parseAs("foobar13_ddsA.property.anotherProperty", GetAttributeNode.class);
         GetAttributeNode property = assertInstanceOf(anotherProperty.getObject(), GetAttributeNode.class);
-        assertInstanceOf(property.getObject(), ReadGlobalOrBuiltinNode.class);
+        assertInstanceOf(property.getObject(), ReadNameNode.class);
     }
 
     @Test
     public void parseSubscript() {
         GetItemNode node = parseAs("foobar[1]", GetItemNode.class);
-        assertInstanceOf(node.getLeftNode(), ReadGlobalOrBuiltinNode.class);
+        assertInstanceOf(node.getLeftNode(), ReadNameNode.class);
         parseAs("foobar[:]", GetItemNode.class);
         parseAs("foobar[::]", GetItemNode.class);
         parseAs("foobar[1:2:3]", GetItemNode.class);
@@ -313,17 +312,14 @@ public class TestParserTranslator {
 
     @Test
     public void parseDelStatement() {
-        parseAs("del world", DeleteGlobalNode.class);
+        parseAs("del world", DeleteNameNode.class);
         parseAs("del world[0]", DeleteItemNode.class);
         parseAs("del world.field", DeleteAttributeNode.class);
-        BlockNode parseAs = parseAs("del world.field, world[0]", BlockNode.class);
-        getChild(parseAs, 0, DeleteAttributeNode.class);
-        getChild(parseAs, 1, DeleteItemNode.class);
     }
 
     @Test
     public void parseAssignments() {
-        WriteGlobalNode parseAs = parseAs("a = 1", WriteGlobalNode.class);
+        WriteNameNode parseAs = parseAs("a = 1", WriteNameNode.class);
         assertEquals("a", parseAs.getAttributeId());
 
         SetAttributeNode parseAsField = parseAs("a.b = 1", SetAttributeNode.class);
@@ -331,13 +327,8 @@ public class TestParserTranslator {
 
         parseAs("a[1] = 1", SetItemNode.class);
 
-        parseAs = parseAs("a = 1,2", WriteGlobalNode.class);
+        parseAs = parseAs("a = 1,2", WriteNameNode.class);
         assert parseAs.getRhs() instanceof TupleLiteralNode;
-
-        BlockNode parseAs2 = parseAs("a = b = 1", BlockNode.class);
-        getChild(parseAs2, 0, WriteNode.class); // write tmp
-        getChild(parseAs2, 1, WriteNode.class); // write a
-        getChild(parseAs2, 2, WriteNode.class); // write b
 
         parseAs("a,b = 1,2", DestructuringAssignmentNode.class);
         parseAs("a,*b,c = 1,2", DestructuringAssignmentNode.class);
@@ -346,11 +337,11 @@ public class TestParserTranslator {
 
     @Test
     public void parseImport() {
-        WriteGlobalNode importSet = parseAs("import foo", WriteGlobalNode.class);
+        WriteNameNode importSet = parseAs("import foo", WriteNameNode.class);
         assertEquals("foo", importSet.getAttributeId());
         assert importSet.getRhs() instanceof ImportNode.ImportExpression;
 
-        importSet = parseAs("import foo as bar", WriteGlobalNode.class);
+        importSet = parseAs("import foo as bar", WriteNameNode.class);
         assertEquals("bar", importSet.getAttributeId());
         assert importSet.getRhs() instanceof ImportNode.ImportExpression;
 
@@ -375,7 +366,7 @@ public class TestParserTranslator {
 
         AndNode parseAs = parseAs("x < y() <= z", AndNode.class);
         PNode leftNode = parseAs.getLeftNode();
-        assert leftNode instanceof ExpressionNode.ExpressionWithSideEffects;
+        assert leftNode instanceof ExpressionNode.ExpressionWithSideEffect;
         WriteNode tmpWrite = getChild(leftNode, 0, WriteNode.class);
         assert tmpWrite.getRhs() instanceof PythonCallNode;
         PythonCallNode rhs = (PythonCallNode) tmpWrite.getRhs();
@@ -419,27 +410,27 @@ public class TestParserTranslator {
 
     @Test
     public void parseFuncdef() {
-        WriteGlobalNode parseAs = parseAs("def fun(): pass", WriteGlobalNode.class);
+        WriteNameNode parseAs = parseAs("def fun(): pass", WriteNameNode.class);
         assertEquals("fun", parseAs.getAttributeId());
         assert parseAs.getRhs() instanceof FunctionDefinitionNode;
 
-        parseAs = parseAs("def fun(a): pass", WriteGlobalNode.class);
+        parseAs = parseAs("def fun(a): pass", WriteNameNode.class);
         assertEquals("fun", parseAs.getAttributeId());
         assert parseAs.getRhs() instanceof FunctionDefinitionNode;
 
-        parseAs = parseAs("def fun(a,b=1): pass", WriteGlobalNode.class);
+        parseAs = parseAs("def fun(a,b=1): pass", WriteNameNode.class);
         assertEquals("fun", parseAs.getAttributeId());
         assert parseAs.getRhs() instanceof FunctionDefinitionNode;
 
-        parseAs = parseAs("def fun(a,b=1,*c): pass", WriteGlobalNode.class);
+        parseAs = parseAs("def fun(a,b=1,*c): pass", WriteNameNode.class);
         assertEquals("fun", parseAs.getAttributeId());
         assert parseAs.getRhs() instanceof FunctionDefinitionNode;
 
-        parseAs = parseAs("def fun(a,b=1,*c,d=2): pass", WriteGlobalNode.class);
+        parseAs = parseAs("def fun(a,b=1,*c,d=2): pass", WriteNameNode.class);
         assertEquals("fun", parseAs.getAttributeId());
         assert parseAs.getRhs() instanceof FunctionDefinitionNode;
 
-        parseAs = parseAs("def fun(a,b=1,*c,d=2,**kwargs): pass", WriteGlobalNode.class);
+        parseAs = parseAs("def fun(a,b=1,*c,d=2,**kwargs): pass", WriteNameNode.class);
         assertEquals("fun", parseAs.getAttributeId());
         assert parseAs.getRhs() instanceof FunctionDefinitionNode;
     }

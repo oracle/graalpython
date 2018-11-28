@@ -163,13 +163,9 @@ public abstract class IsNode extends BinaryOpNode {
         return left == right;
     }
 
-    protected static CExtNodes.IsNode getNativeIsNode() {
-        return new CExtNodes.IsNode();
-    }
-
     @Specialization
     boolean doNative(PythonNativeObject left, PythonNativeObject right,
-                    @Cached("getNativeIsNode()") CExtNodes.IsNode isNode) {
+                    @Cached("create()") CExtNodes.IsNode isNode) {
         return isNode.execute(left, right);
     }
 

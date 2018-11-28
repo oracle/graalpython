@@ -29,6 +29,7 @@ import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDE
 import static com.oracle.graal.python.nodes.BuiltinNames.BOOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTES;
+import static com.oracle.graal.python.nodes.BuiltinNames.CLASSMETHOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.COMPLEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.ENUMERATE;
@@ -42,6 +43,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.OBJECT;
 import static com.oracle.graal.python.nodes.BuiltinNames.RANGE;
 import static com.oracle.graal.python.nodes.BuiltinNames.REVERSED;
 import static com.oracle.graal.python.nodes.BuiltinNames.SET;
+import static com.oracle.graal.python.nodes.BuiltinNames.STATICMETHOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.STR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
@@ -68,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -105,9 +108,11 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
@@ -134,6 +139,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -162,9 +168,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         builtinConstants.put("NotImplemented", PNotImplemented.NOT_IMPLEMENTED);
     }
 
+    @TypeSystemReference(PythonArithmeticTypes.class)
     protected abstract static class CreateByteOrByteArrayNode extends PythonBuiltinNode {
         @Child private IsIndexNode isIndexNode;
         @Child private CastToIndexNode castToIndexNode;
+
+        private final IsBuiltinClassProfile isClassProfile = IsBuiltinClassProfile.create();
 
         @SuppressWarnings("unused")
         protected Object create(PythonClass cls, byte[] barr) {
@@ -191,6 +200,24 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         public Object fromString(PythonClass cls, String source, PNone encoding, PNone errors) {
             throw raise(PythonErrorType.TypeError, "string argument without an encoding");
+        }
+
+        protected boolean isSimpleBytes(PBytes iterable) {
+            return isClassProfile.profileObject(iterable, PythonBuiltinClassType.PBytes) && iterable.getSequenceStorage() instanceof ByteSequenceStorage;
+        }
+
+        @Specialization(guards = {"isSimpleBytes(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
+        public Object bytearray(PythonClass cls, PBytes iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+            return create(cls, (byte[]) ((ByteSequenceStorage) iterable.getSequenceStorage()).getCopyOfInternalArrayObject());
+        }
+
+        protected boolean isSimpleBytes(PByteArray iterable) {
+            return isClassProfile.profileObject(iterable, PythonBuiltinClassType.PByteArray) && iterable.getSequenceStorage() instanceof ByteSequenceStorage;
+        }
+
+        @Specialization(guards = {"isSimpleBytes(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
+        public Object bytearray(PythonClass cls, PByteArray iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+            return create(cls, (byte[]) ((ByteSequenceStorage) iterable.getSequenceStorage()).getCopyOfInternalArrayObject());
         }
 
         @Specialization(guards = {"!isInt(iterable)", "!isNoValue(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
@@ -564,12 +591,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
 
-        protected final boolean isPrimitiveFloat(PythonClass cls) {
+        public abstract Object executeWith(Object cls, Object arg);
+
+        protected final boolean isPrimitiveFloat(LazyPythonClass cls) {
             return isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PFloat);
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromInt(PythonClass cls, int arg) {
+        public Object floatFromInt(LazyPythonClass cls, int arg) {
             if (isPrimitiveFloat(cls)) {
                 return (double) arg;
             }
@@ -577,7 +606,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromBoolean(PythonClass cls, boolean arg) {
+        public Object floatFromBoolean(LazyPythonClass cls, boolean arg) {
             if (isPrimitiveFloat(cls)) {
                 return arg ? 1d : 0d;
             }
@@ -585,7 +614,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromLong(PythonClass cls, long arg) {
+        public Object floatFromLong(LazyPythonClass cls, long arg) {
             if (isPrimitiveFloat(cls)) {
                 return (double) arg;
             }
@@ -593,7 +622,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromPInt(PythonClass cls, PInt arg) {
+        public Object floatFromPInt(LazyPythonClass cls, PInt arg) {
             if (isPrimitiveFloat(cls)) {
                 return arg.doubleValue();
             }
@@ -601,7 +630,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromFloat(PythonClass cls, double arg) {
+        public Object floatFromFloat(LazyPythonClass cls, double arg) {
             if (isPrimitiveFloat(cls)) {
                 return arg;
             }
@@ -609,7 +638,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromString(PythonClass cls, String arg) {
+        public Object floatFromString(LazyPythonClass cls, String arg) {
             double value = convertStringToDouble(arg);
             if (isPrimitiveFloat(cls)) {
                 return value;
@@ -619,7 +648,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "!isNativeClass(cls)")
         @TruffleBoundary
-        public Object floatFromBytes(PythonClass cls, PIBytesLike arg) {
+        public Object floatFromBytes(LazyPythonClass cls, PIBytesLike arg) {
             double value = convertStringToDouble(new String(getByteArray(arg)));
             if (isPrimitiveFloat(cls)) {
                 return value;
@@ -669,7 +698,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        public Object floatFromNone(PythonClass cls, @SuppressWarnings("unused") PNone arg) {
+        public Object floatFromNone(LazyPythonClass cls, @SuppressWarnings("unused") PNone arg) {
             if (isPrimitiveFloat(cls)) {
                 return 0.0;
             }
@@ -677,7 +706,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPrimitiveFloat(cls)")
-        double doubleFromObject(@SuppressWarnings("unused") PythonClass cls, Object obj,
+        double doubleFromObject(@SuppressWarnings("unused") LazyPythonClass cls, Object obj,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode callFloatNode,
                         @Cached("create()") BranchProfile gotException) {
             if (obj instanceof String) {
@@ -704,7 +733,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        Object doPythonObject(PythonClass cls, Object obj,
+        Object doPythonObject(LazyPythonClass cls, Object obj,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode callFloatNode,
                         @Cached("create()") BranchProfile gotException) {
             return floatFromFloat(cls, doubleFromObject(cls, obj, callFloatNode, gotException));
@@ -1097,6 +1126,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     return factory().createInt(cls, (int) value);
                 }
             } else {
+                CompilerDirectives.transferToInterpreter();
                 throw new RuntimeException("Not implemented integer with base: " + keywordArg);
             }
         }
@@ -1166,6 +1196,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
+
         @Specialization
         public boolean boolB(Object cls, boolean arg) {
             return arg;
@@ -1200,6 +1231,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw raise(PythonErrorType.TypeError, "__bool__ should return bool, returned %p", ex.getResult());
             }
         }
+
     }
 
     // list([iterable])
@@ -1560,6 +1592,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonClass)
     @GenerateNodeFactory
     public abstract static class TypeNode extends PythonBuiltinNode {
+        private static final long SIZEOF_PY_OBJECT_PTR = 8L;
+        @Child private ReadAttributeFromObjectNode readAttrNode;
+        @Child private WriteAttributeToObjectNode writeAttrNode;
+        @Child private CastToIndexNode castToInt;
+
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
         public Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
@@ -1610,7 +1647,37 @@ public final class BuiltinConstructors extends PythonBuiltins {
             for (DictEntry entry : namespace.entries()) {
                 pythonClass.setAttribute(entry.getKey(), entry.getValue());
             }
+            addDictIfNative(pythonClass);
             return pythonClass;
+        }
+
+        private void addDictIfNative(PythonClass pythonClass) {
+            for (Object cls : pythonClass.getMethodResolutionOrder()) {
+                if (cls instanceof PythonNativeClass) {
+                    if (readAttrNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        readAttrNode = insert(ReadAttributeFromObjectNode.create());
+                        writeAttrNode = insert(WriteAttributeToObjectNode.create());
+                        castToInt = insert(CastToIndexNode.create());
+                    }
+                    long dictoffset = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__DICTOFFSET__));
+                    long basicsize = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__BASICSIZE__));
+                    long itemsize = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__ITEMSIZE__));
+                    if (dictoffset == 0) {
+                        // add_dict
+                        if (itemsize != 0) {
+                            dictoffset = -SIZEOF_PY_OBJECT_PTR;
+                        } else {
+                            dictoffset = basicsize;
+                            basicsize += SIZEOF_PY_OBJECT_PTR;
+                        }
+                    }
+                    writeAttrNode.execute(pythonClass, SpecialAttributeNames.__DICTOFFSET__, dictoffset);
+                    writeAttrNode.execute(pythonClass, SpecialAttributeNames.__BASICSIZE__, basicsize);
+                    writeAttrNode.execute(pythonClass, SpecialAttributeNames.__ITEMSIZE__, itemsize);
+                    break;
+                }
+            }
         }
 
         private PythonClass calculate_metaclass(PythonClass cls, PTuple bases, GetClassNode getMetaclassNode) {
@@ -2112,6 +2179,43 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object doObjectIndirect(PythonClass self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object object) {
             return factory().createSuperObject(self);
+        }
+    }
+
+    @Builtin(name = CLASSMETHOD, fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PClassmethod, doc = "classmethod(function) -> method\n" +
+                    "\n" +
+                    "Convert a function to be a class method.\n" +
+                    "\n" +
+                    "A class method receives the class as implicit first argument,\n" +
+                    "just like an instance method receives the instance.\n" +
+                    "To declare a class method, use this idiom:\n" +
+                    "\n" +
+                    "  class C:\n" +
+                    "      @classmethod\n" +
+                    "      def f(cls, arg1, arg2, ...):\n" +
+                    "          ...\n" +
+                    "\n" +
+                    "It can be called either on the class (e.g. C.f()) or on an instance\n" +
+                    "(e.g. C().f()).  The instance is ignored except for its class.\n" +
+                    "If a class method is called for a derived class, the derived class\n" +
+                    "object is passed as the implied first argument.\n" +
+                    "\n" +
+                    "Class methods are different than C++ or Java static methods.\n" +
+                    "If you want those, see the staticmethod builtin.")
+    @GenerateNodeFactory
+    public abstract static class ClassmethodNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object doObjectIndirect(PythonClass self, @SuppressWarnings("unused") Object callable) {
+            return factory().createClassmethod(self);
+        }
+    }
+
+    @Builtin(name = STATICMETHOD, fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PStaticmethod)
+    @GenerateNodeFactory
+    public abstract static class StaticmethodNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object doObjectIndirect(PythonClass self, @SuppressWarnings("unused") Object callable) {
+            return factory().createStaticmethod(self);
         }
     }
 }

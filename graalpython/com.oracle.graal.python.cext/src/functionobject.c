@@ -42,7 +42,6 @@
 
 PyTypeObject PyFunction_Type = PY_TRUFFLE_TYPE("function", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyFunctionObject));
 
-UPCALL_ID(classmethod);
 PyObject* PyClassMethod_New(PyObject* method) {
-    return UPCALL_O(PY_BUILTIN, _jls_classmethod, native_to_java(method));
+    return UPCALL_O(PY_BUILTIN, polyglot_from_string("classmethod", SRC_CS), native_to_java(method));
 }

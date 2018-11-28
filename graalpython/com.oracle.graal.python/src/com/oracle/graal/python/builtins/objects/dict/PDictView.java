@@ -55,8 +55,7 @@ public abstract class PDictView extends PythonBuiltinObject {
         this.dict = dict;
     }
 
-    @Override
-    public final PHashingCollection getDict() {
+    public final PHashingCollection getWrappedDict() {
         return dict;
     }
 
