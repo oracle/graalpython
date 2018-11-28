@@ -31,13 +31,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
-import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -75,8 +70,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean noUserSite = false;
     private boolean noSite = false;
     private boolean stdinIsInteractive = System.console() != null;
-    private boolean runCC = false;
-    private boolean runLD = false;
     private boolean runLLI = false;
     private VersionAction versionAction = VersionAction.None;
 
@@ -143,13 +136,17 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     versionAction = VersionAction.PrintAndContinue;
                     break;
                 case "-CC":
-                    runCC = true;
-                    programArgs.addAll(arguments.subList(i + 1, arguments.size()));
-                    return unrecognized;
+                    if (i != 0) {
+                        throw new IllegalArgumentException("-CC must be the first argument");
+                    }
+                    GraalPythonCC.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
+                    System.exit(0);
                 case "-LD":
-                    runLD = true;
-                    programArgs.addAll(arguments.subList(i + 1, arguments.size()));
-                    return unrecognized;
+                    if (i != 0) {
+                        throw new IllegalArgumentException("-LD must be the first argument");
+                    }
+                    GraalPythonLD.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
+                    System.exit(0);
                 case "-LLI":
                     runLLI = true;
                     break;
@@ -212,13 +209,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected void launch(Builder contextBuilder) {
-        if (runLD) {
-            launchLD();
-            return;
-        } else if (runCC) {
-            launchCC();
-            return;
-        } else if (runLLI) {
+        if (runLLI) {
             assert inputFile != null : "lli needs an input file";
             try (Context context = contextBuilder.build()) {
                 try {
@@ -353,215 +344,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             src = Source.newBuilder(getLanguageId(), new File(inputFile)).mimeType(MIME_TYPE).build();
         }
         context.eval(src);
-    }
-
-    private static String[] clangPrefix = {
-                    "clang",
-                    "-emit-llvm",
-                    "-fPIC",
-                    "-Wno-int-to-void-pointer-cast",
-                    "-Wno-int-conversion",
-                    "-Wno-incompatible-pointer-types-discards-qualifiers",
-                    "-ggdb",
-                    "-O1",
-    };
-    private static String[] optPrefix = {
-                    "opt",
-                    "-mem2reg",
-                    "-globalopt",
-                    "-simplifycfg",
-                    "-constprop",
-                    "-always-inline",
-                    "-instcombine",
-                    "-dse",
-                    "-loop-simplify",
-                    "-reassociate",
-                    "-licm",
-                    "-gvn",
-                    "-o",
-    };
-    private static String[] linkPrefix = {
-                    "llvm-link",
-                    "-o",
-    };
-
-    private static String[] combine(String[] prefix, String[] args) {
-        String[] combined = Arrays.copyOf(prefix, prefix.length + args.length);
-        System.arraycopy(args, 0, combined, prefix.length, args.length);
-        return combined;
-    }
-
-    private void exec(String[] cmdarray) {
-        try {
-            ProcessBuilder processBuilder = new ProcessBuilder();
-            processBuilder.inheritIO();
-            if (verboseFlag) {
-                System.err.print("[python] ");
-                for (String cmd : cmdarray) {
-                    System.err.print(cmd);
-                    System.err.print(" ");
-                }
-                System.err.println();
-            }
-            processBuilder.command(cmdarray);
-            int status = processBuilder.start().waitFor();
-            if (status != 0) {
-                System.exit(status);
-            }
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void launchCC() {
-        String targetFlags = System.getenv("LLVM_TARGET_FLAGS");
-
-        // if we are started without -c, we need to run the linker later
-        boolean runLinker = false;
-        boolean linkExecutable = false;
-        if (!programArgs.contains("-c")) {
-            runLinker = true;
-            programArgs.add(0, "-c");
-            if (!programArgs.contains("-shared")) {
-                assert !programArgs.contains("-static") : "static linking is not supported";
-                linkExecutable = true;
-            }
-        }
-
-        if (verboseFlag) {
-            System.err.print("[python] [CC] ");
-            if (runLinker) {
-                System.err.print("Running linker.");
-            }
-            System.err.println();
-        }
-
-        // run the clang compiler to generate bc files
-        String[] args = programArgs.toArray(new String[0]);
-        if (targetFlags != null && !targetFlags.isEmpty()) {
-            String[] flags = targetFlags.split(" ");
-            args = combine(flags, args);
-        }
-        String[] combine = combine(clangPrefix, args);
-
-        String output = getOutputFilename();
-
-        if (output != null && Files.exists(Paths.get(output))) {
-            try {
-                Files.delete(Paths.get(output));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        exec(combine);
-
-        ArrayList<String> outputFiles = new ArrayList<>();
-        if (output == null || !Files.exists(Paths.get(output))) {
-            // if no explicit output filename was given or produced, we search the commandline for
-            // files for which now have a bc file and optimize those
-            for (String f : programArgs) {
-                if (Files.exists(Paths.get(f))) {
-                    String bcFile = bcFileFromFilename(f);
-                    if (Files.exists(Paths.get(bcFile))) {
-                        outputFiles.add(bcFile);
-                        exec(combine(optPrefix, new String[]{bcFile, bcFile}));
-                    } else {
-                        outputFiles.add(f);
-                    }
-                }
-            }
-        } else {
-            // if an explicit output filename was given, just optimize it
-            if (Files.exists(Paths.get(output))) {
-                outputFiles.add(output);
-                exec(combine(optPrefix, new String[]{output, output}));
-            }
-        }
-        if (runLinker) {
-            if (linkExecutable) {
-                assert !outputFiles.contains(getOutputFilename());
-                String linkOutput = linkShared(outputFiles);
-                try {
-                    Path linkedBCfile = Files.move(Paths.get(linkOutput), Paths.get(bcFileFromFilename(linkOutput)), StandardCopyOption.REPLACE_EXISTING);
-                    linkExecutable(linkOutput, linkedBCfile.toString());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            } else {
-                linkShared(outputFiles);
-            }
-        }
-    }
-
-    private static void linkExecutable(String output, String bc) throws IOException {
-        List<String> cmdline = getCmdline(Arrays.asList(), Arrays.asList());
-        cmdline.add(bc);
-        Files.write(Paths.get(output), ("#!" + String.join(" ", cmdline)).getBytes());
-    }
-
-    private static String bcFileFromFilename(String f) {
-        int dotIdx = f.lastIndexOf('.');
-        if (dotIdx > 1) {
-            return f.substring(0, dotIdx + 1) + "bc";
-        } else {
-            return f + ".bc";
-        }
-    }
-
-    private void launchLD() {
-        ArrayList<String> objectFiles = new ArrayList<>();
-        StringBuilder droppedArgs = new StringBuilder();
-        // we only use llvm-link, which doesn't support any ld flags,
-        // so we only parse out the object files given on the commandline
-        // and see if these are bytecode files we can work with
-        for (int i = 0; i < programArgs.size(); i++) {
-            String f = programArgs.get(i);
-            if (f.endsWith(".o")) {
-                String bcFile = bcFileFromFilename(f);
-                if (Files.exists(Paths.get(bcFile))) {
-                    objectFiles.add(bcFile);
-                } else {
-                    objectFiles.add(f);
-                }
-            } else if (f.endsWith(".bc")) {
-                objectFiles.add(f);
-            } else if (f.equals("-o")) {
-                i++; // skip output file
-            } else {
-                droppedArgs.append(' ').append(f);
-            }
-        }
-        if (droppedArgs.length() > 0) {
-            System.err.print("Dropped linker arguments because we're using llvm-link:");
-            System.err.println(droppedArgs.toString());
-        }
-        if (verboseFlag) {
-            System.err.print("[python] [LD]");
-            System.err.println();
-        }
-        linkShared(objectFiles);
-    }
-
-    private String linkShared(ArrayList<String> objectFiles) {
-        String output = getOutputForLinking();
-        exec(combine(combine(linkPrefix, new String[]{output}), objectFiles.toArray(new String[0])));
-        return output;
-    }
-
-    private String getOutputForLinking() {
-        String output = getOutputFilename();
-        if (output == null) {
-            output = "a.out";
-        }
-        return output;
-    }
-
-    private String getOutputFilename() {
-        int idx = programArgs.indexOf("-o");
-        if (idx >= 0) {
-            return programArgs.get(idx + 1);
-        }
-        return null;
     }
 
     @Override
@@ -801,7 +583,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
     }
 
-    private static List<String> getCmdline(List<String> args, List<String> subProcessDefs) {
+    static List<String> getCmdline(List<String> args, List<String> subProcessDefs) {
         List<String> cmd = new ArrayList<>();
         if (isAOT()) {
             cmd.add(ProcessProperties.getExecutableName());
