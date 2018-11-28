@@ -181,7 +181,7 @@ public class GraalPythonCC extends GraalPythonCompiler {
 
         if (link) {
             linkShared(fileInputs);
-            if (!linkExecutable) {
+            if (linkExecutable) {
                 try {
                     Path linkedBCfile = Files.move(Paths.get(outputFilename), Paths.get(bcFileFromFilename(outputFilename)), StandardCopyOption.REPLACE_EXISTING);
                     linkExecutable(outputFilename, linkedBCfile.toString());
@@ -197,14 +197,14 @@ public class GraalPythonCC extends GraalPythonCompiler {
         cmdline.add("-LLI");
         cmdline.add(linkedBcFile);
         Path executablePath = Paths.get(executableScript);
-        Files.write(executablePath, ("#!" + String.join(" ", cmdline)).getBytes());
+        Files.write(executablePath, String.join(" ", cmdline).getBytes());
         HashSet<PosixFilePermission> perms = new HashSet<>(Arrays.asList(new PosixFilePermission[]{PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.GROUP_EXECUTE}));
         perms.addAll(Files.getPosixFilePermissions(executablePath));
         Files.setPosixFilePermissions(executablePath, perms);
     }
 
     private void linkShared(List<String> bitcodeFiles) {
-        if (fileInputs.size() > 1) {
+        if (fileInputs.size() > 0) {
             ArrayList<String> ldCmd = new ArrayList<>(bitcodeFiles);
             if (verbose) {
                 ldCmd.add("-v");
