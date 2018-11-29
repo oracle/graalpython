@@ -38,7 +38,7 @@ import mx_urlrewrites
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, GraalPythonVm, \
-    CONFIGURATION_DEFAULT
+    CONFIGURATION_DEFAULT, CONFIGURATION_EXPERIMENTAL_SPLITTING
 from mx_unittest import unittest
 
 SUITE = mx.suite('graalpython')
@@ -826,6 +826,10 @@ def _register_vms(namespace):
     python_vm_registry.add_vm(CPythonVm(CONFIGURATION_DEFAULT), SUITE)
     python_vm_registry.add_vm(PyPyVm(CONFIGURATION_DEFAULT), SUITE)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_EXPERIMENTAL_SPLITTING, extra_vm_args=[
+        '-Dgraal.TruffleExperimentalSplitting=true',
+        '-Dgraal.TruffleExperimentalSplittingAllowForcedSplits=false'
+    ]), SUITE, 10)
 
 
 def _register_bench_suites(namespace):

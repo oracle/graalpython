@@ -54,6 +54,7 @@ GROUP_GRAAL = "Graal"
 SUBGROUP_GRAAL_PYTHON = "graalpython"
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
+CONFIGURATION_EXPERIMENTAL_SPLITTING = "experimental_splitting"
 
 DEFAULT_ITERATIONS = 10
 
@@ -186,12 +187,13 @@ class PyPyVm(AbstractPythonIterationsControlVm):
 
 class GraalPythonVm(GuestVm):
     def __init__(self, config_name=CONFIGURATION_DEFAULT, distributions=None, cp_suffix=None, cp_prefix=None,
-                 host_vm=None):
+                 host_vm=None, extra_vm_args=None):
         super(GraalPythonVm, self).__init__(host_vm=host_vm)
         self._config_name = config_name
         self._distributions = distributions
         self._cp_suffix = cp_suffix
         self._cp_prefix = cp_prefix
+        self._extra_vm_args = extra_vm_args
 
     def hosting_registry(self):
         return java_vm_registry
@@ -215,6 +217,8 @@ class GraalPythonVm(GuestVm):
                 dists.append('SULONG_MANAGED')
 
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
+        if isinstance(self._extra_vm_args, list):
+            vm_args += self._extra_vm_args
         vm_args += [
             "-Dpython.home=%s" % join(SUITE.dir, "graalpython"),
             "com.oracle.graal.python.shell.GraalPythonMain"
