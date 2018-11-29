@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.zip.CRC32;
 
@@ -48,7 +51,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -88,9 +93,28 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     static abstract class A2bBase64Node extends PythonUnaryBuiltinNode {
         @Specialization
+        PBytes doString(String data) {
+            return factory().createBytes(b64decode(data));
+        }
+
+        @Specialization
+        PBytes doBytesLike(PIBytesLike data,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            return factory().createBytes(b64decode(toBytesNode.execute(data)));
+        }
+
         @TruffleBoundary
-        PBytes a2b(String data) {
-            return factory().createBytes(Base64.decode(data));
+        private static byte[] b64decode(String data) {
+            return Base64.decode(data);
+        }
+
+        @TruffleBoundary
+        private byte[] b64decode(byte[] data) {
+            try {
+                return Base64.decode(new String(data, "ascii"));
+            } catch (UnsupportedEncodingException e) {
+                throw raise(ValueError);
+            }
         }
     }
 

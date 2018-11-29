@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -51,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -72,6 +75,20 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 return factory().createSocket(cls, family, type, proto);
             } else {
                 throw raise(PythonErrorType.OSError, "creating sockets not allowed");
+            }
+        }
+    }
+
+    @Builtin(name = "gethostname", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class GetHostnameNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        String doGeneric() {
+            try {
+                return InetAddress.getLocalHost().getHostName();
+            } catch (UnknownHostException e) {
+                throw raise(PythonBuiltinClassType.OSError);
             }
         }
     }
