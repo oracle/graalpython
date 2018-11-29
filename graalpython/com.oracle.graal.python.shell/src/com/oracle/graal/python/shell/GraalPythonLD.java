@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.shell;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -84,14 +82,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
                     verbose = true;
                     break;
                 default:
-                    if (arg.endsWith(".o")) {
-                        String bc = bcFileFromFilename(arg);
-                        if (Files.exists(Paths.get(bc))) {
-                            fileInputs.add(bc);
-                        } else {
-                            fileInputs.add(arg);
-                        }
-                    } else if (arg.endsWith(".bc")) {
+                    if (arg.endsWith(".o") || arg.endsWith(".bc")) {
                         fileInputs.add(arg);
                     } else {
                         droppedArgs.add(arg);
