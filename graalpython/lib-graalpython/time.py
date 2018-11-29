@@ -80,5 +80,5 @@ def gmtime(seconds):
 
 
 @__builtin__
-def localtime(seconds):
+def localtime(seconds=None):
     return struct_time(__truffle_localtime_tuple__(seconds))
