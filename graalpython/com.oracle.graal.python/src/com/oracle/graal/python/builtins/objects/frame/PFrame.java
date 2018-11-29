@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.frame;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
@@ -105,6 +106,11 @@ public final class PFrame extends PythonBuiltinObject {
         this.frame = truffleStackTraceElement.getFrame();
         this.location = truffleStackTraceElement.getLocation();
         this.inClassScope = truffleStackTraceElement.getTarget().getRootNode() instanceof ClassBodyRootNode;
+    }
+
+    public PFrame(PythonBuiltinClassType cls, PBaseException exception, int index, Object locals) {
+        this(cls, exception, index);
+        this.localsDict = locals;
     }
 
     public PFrame(LazyPythonClass cls, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object locals) {

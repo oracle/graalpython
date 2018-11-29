@@ -78,3 +78,7 @@ def ModuleNotFoundError__str__(self):
 
 ModuleNotFoundError__str__.__init__ = ModuleNotFoundError__str__
 del ModuleNotFoundError__str__
+
+# EnvironmentError is just an alias of OSError (i.e. 'EnvironmentError is OSError == True')
+EnvironmentError = OSError
+

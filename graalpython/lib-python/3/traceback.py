@@ -588,12 +588,12 @@ class TracebackException:
         """
         if chain:
             if self.__cause__ is not None:
-                # TODO(ls): revert this loop to "yield from"
+                # TRUFFLE TODO(ls): revert this loop to "yield from"
                 for __x in self.__cause__.format(chain=chain): yield __x
                 yield _cause_message
             elif (self.__context__ is not None and
                 not self.__suppress_context__):
-                # TODO(ls): revert this loop to "yield from"
+                # TRUFFLE TODO(ls): revert this loop to "yield from"
                 for __x in self.__context__.format(chain=chain): yield __x
                 yield _context_message
         if self.exc_traceback is not None:
@@ -602,4 +602,3 @@ class TracebackException:
         for __x in self.stack.format(): yield __x
         # TODO(ls): revert this loop to "yield from"
         for __x in self.format_exception_only(): yield __x
-

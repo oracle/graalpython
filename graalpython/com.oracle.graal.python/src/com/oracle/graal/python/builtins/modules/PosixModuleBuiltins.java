@@ -37,6 +37,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ProcessBuilder.Redirect;
 import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.nio.channels.NonWritableChannelException;
@@ -62,7 +64,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.CastToPathNodeGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.ConvertPathlikeObjectNodeGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.ReadFromChannelNodeGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
@@ -140,6 +144,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     private static final int F_OK = 0;
     private static final int X_OK = 1;
+    private static final int W_OK = 2;
+    private static final int R_OK = 4;
 
     private static PosixFilePermission[][] otherBitsToPermission = new PosixFilePermission[][]{
                     new PosixFilePermission[]{},
@@ -184,7 +190,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     public PosixModuleBuiltins() {
-        super();
         builtinConstants.put("O_RDONLY", RDONLY);
         builtinConstants.put("O_WRONLY", WRONLY);
         builtinConstants.put("O_RDWR", RDWR);
@@ -209,6 +214,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         builtinConstants.put("F_OK", F_OK);
         builtinConstants.put("X_OK", X_OK);
+        builtinConstants.put("W_OK", W_OK);
+        builtinConstants.put("R_OK", R_OK);
     }
 
     @Override
@@ -538,19 +545,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 TruffleFile file = getContext().getEnv().getTruffleFile(path);
                 Collection<TruffleFile> listFiles = file.list();
-                Object[] filenames = listToArray(path, listFiles);
+                Object[] filenames = listToArray(listFiles);
                 return factory().createList(filenames);
-            } catch (IOException e) {
+            } catch (SecurityException | IOException e) {
                 gotException.enter();
                 throw raise(OSError, path);
             }
         }
 
         @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
-        private Object[] listToArray(String path, Collection<TruffleFile> listFiles) {
-            if (listFiles.isEmpty()) {
-                throw raise(OSError, path);
-            }
+        private static Object[] listToArray(Collection<TruffleFile> listFiles) {
             Object[] filenames = new Object[listFiles.size()];
             int i = 0;
             for (TruffleFile f : listFiles) {
@@ -1166,8 +1170,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WaitpidNode extends PythonFileNode {
         @SuppressWarnings("unused")
-        @Specialization
+        @Specialization(guards = {"options == 0"})
+        @TruffleBoundary
         PTuple waitpid(int pid, int options) {
+            try {
+                int exitStatus = getResources().waitpid(pid);
+                return factory().createTuple(new Object[]{pid, exitStatus});
+            } catch (ArrayIndexOutOfBoundsException | InterruptedException e) {
+                throw raise(OSError, "not a valid child pid");
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        PTuple waitpid(Object pid, Object options) {
             throw raise(NotImplementedError, "waitpid");
         }
     }
@@ -1253,6 +1269,25 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (IOException | InterruptedException e) {
                 return -1;
             }
+        }
+    }
+
+    @Builtin(name = "pipe", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class PipeNode extends PythonFileNode {
+        private final BranchProfile gotException = BranchProfile.create();
+
+        @Specialization
+        PTuple pipe() {
+            int[] pipe;
+            try {
+                pipe = getResources().pipe();
+            } catch (IOException e) {
+                gotException.enter();
+                throw raise(OSError, e);
+            }
+            return factory().createTuple(new Object[]{pipe[0], pipe[1]});
         }
     }
 
@@ -1364,6 +1399,136 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             // sign may introduce an extra byte
             byte[] range = Arrays.copyOfRange(bigInteger.toByteArray(), 0, size);
             return factory().createBytes(range);
+        }
+    }
+
+    @Builtin(name = "uname", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class UnameNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary(allowInlining = true)
+        PTuple uname() {
+            String sysname = SysModuleBuiltins.getPythonOSName();
+            String nodename = "";
+            try {
+                InetAddress addr;
+                addr = InetAddress.getLocalHost();
+                nodename = addr.getHostName();
+            } catch (UnknownHostException | SecurityException ex) {
+            }
+            String release = System.getProperty("os.version", "");
+            String version = "";
+            String machine = SysModuleBuiltins.getPythonArch();
+            return factory().createTuple(new Object[]{sysname, nodename, release, version, machine});
+        }
+    }
+
+    @Builtin(name = "access", fixedNumOfPositionalArgs = 2, takesVarArgs = true, keywordArguments = {"dir_fd", "effective_ids", "follow_symlinks"})
+    @GenerateNodeFactory
+    public abstract static class AccessNode extends PythonBuiltinNode {
+
+        @Child private CastToIndexNode castToIntNode;
+        @Child private CastToPathNode castToPathNode;
+
+        private final BranchProfile notImplementedBranch = BranchProfile.create();
+
+        @Specialization(guards = "isNoValue(kwargs)")
+        boolean doGeneric(Object path, Object mode, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PNone kwargs) {
+            return access(castToPath(path), castToInt(mode), PNone.NONE, false, true);
+        }
+
+        @Specialization
+        boolean doGeneric(Object path, Object mode, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs) {
+            boolean effectiveIds = false;
+            boolean followSymlinks = true;
+            Object dirFd = PNone.NONE;
+            for (int i = 0; i < kwargs.length; i++) {
+                if ("dir_fd".equals(kwargs[i].getName())) {
+                    dirFd = kwargs[i].getValue();
+                } else if ("effective_ids".equals(kwargs[i].getName())) {
+                    effectiveIds = (boolean) kwargs[i].getValue();
+                } else if ("follow_symlinks".equals(kwargs[i].getName())) {
+                    followSymlinks = (boolean) kwargs[i].getValue();
+                }
+            }
+            return access(castToPath(path), castToInt(mode), dirFd, effectiveIds, followSymlinks);
+        }
+
+        private String castToPath(Object path) {
+            if (castToPathNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToPathNode = insert(CastToPathNode.create());
+            }
+            return castToPathNode.execute(path);
+        }
+
+        private int castToInt(Object mode) {
+            if (castToIntNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToIntNode = insert(CastToIndexNode.createOverflow());
+            }
+            return castToIntNode.execute(mode);
+        }
+
+        private boolean access(String path, int mode, Object dirFd, boolean effectiveIds, boolean followSymlinks) {
+            if (dirFd != PNone.NONE || effectiveIds) {
+                // TODO implement
+                notImplementedBranch.enter();
+                throw raise(NotImplementedError);
+            }
+            TruffleFile f = getContext().getEnv().getTruffleFile(path);
+            LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
+            if (!f.exists(linkOptions)) {
+                return false;
+            }
+
+            boolean result = true;
+            if ((mode & X_OK) != 0) {
+                result = result && f.isExecutable();
+            }
+            if ((mode & R_OK) != 0) {
+                result = result && f.isReadable();
+            }
+            if ((mode & W_OK) != 0) {
+                result = result && f.isWritable();
+            }
+            return result;
+        }
+    }
+
+    abstract static class CastToPathNode extends PNodeWithContext {
+
+        @Child private BuiltinConstructors.StrNode strNode;
+        @Child private CastToPathNode recursive;
+
+        public abstract String execute(Object x);
+
+        public static CastToPathNode create() {
+            return CastToPathNodeGen.create();
+        }
+
+        @Specialization
+        protected String doString(String x) {
+            return x;
+        }
+
+        @Specialization
+        protected String doPString(PString x) {
+            return x.getValue();
+        }
+
+        @Fallback
+        protected String doGeneric(Object x) {
+            if (strNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                strNode = insert(BuiltinConstructorsFactory.StrNodeFactory.create(null));
+            }
+            if (recursive == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                recursive = insert(CastToPathNode.create());
+            }
+            return recursive.execute(strNode.executeWith(PythonBuiltinClassType.PString, x, PNone.NO_VALUE, PNone.NO_VALUE));
         }
     }
 }

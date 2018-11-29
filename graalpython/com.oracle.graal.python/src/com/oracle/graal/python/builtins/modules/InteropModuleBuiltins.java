@@ -187,9 +187,11 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary(transferToInterpreterOnException = false)
         private static String findLanguageByMimeType(Env env, String mimeType) {
             Map<String, LanguageInfo> languages = env.getLanguages();
-            for (String registeredMimeType : languages.keySet()) {
-                if (mimeType.equals(registeredMimeType)) {
-                    return languages.get(registeredMimeType).getId();
+            for (String language : languages.keySet()) {
+                for (String registeredMimeType : languages.get(language).getMimeTypes()) {
+                    if (mimeType.equals(registeredMimeType)) {
+                        return language;
+                    }
                 }
             }
             return null;

@@ -37,3 +37,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import unittest
+
+
+class PosixTests(unittest.TestCase):
+    def test_uname(self):
+        # just like cpython, a simple smoke test
+        import posix
+        uname = posix.uname()
+        self.assertRaises(TypeError, lambda: posix.uname(1))
+        self.assertIsNotNone(uname.sysname)
+        self.assertIsNotNone(uname.nodename)
+        self.assertIsNotNone(uname.release)
+        self.assertIsNotNone(uname.version)
+        self.assertIsNotNone(uname.machine)

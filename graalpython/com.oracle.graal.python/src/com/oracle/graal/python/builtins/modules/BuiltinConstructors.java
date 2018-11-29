@@ -1439,6 +1439,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
+        public abstract Object executeWith(Object strClass, Object arg, Object encoding, Object errors);
+
         @SuppressWarnings("unused")
         @Specialization
         public Object str(PythonClass strClass, PNone arg, PNone encoding, PNone errors) {
