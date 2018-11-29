@@ -295,10 +295,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return padInt(i, 2, '0');
         }
 
-        private static String twoDigitWithSpace(int i) {
-            return padInt(i, 2, ' ');
-        }
-
         public int[] checkStructtime(PTuple time) {
             Object[] date = time.getArray();
             if(date.length < 9) {
