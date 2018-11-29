@@ -236,7 +236,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StrfTimeNode extends PythonBuiltinNode {
-        private static int IMPOSSIBLE = -2;
+        private static final int IMPOSSIBLE = -2;
         @Child private CastToIntegerFromIntNode castIntNode;
 
         @CompilationFinal private ConditionProfile outOfRangeProfile;
@@ -371,6 +371,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         // This taken from JPython + some switches were corrected to provide the
         // same result as CPython
+        @TruffleBoundary
         private String format(String format, PTuple date) {
 
             int[] items = checkStructtime(date);
