@@ -1409,7 +1409,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary(allowInlining = true)
         PTuple uname() {
-            String sysname = System.getProperty("os.name", "");
+            String sysname = SysModuleBuiltins.getPythonOSName();
             String nodename = "";
             try {
                 InetAddress addr;
@@ -1419,11 +1419,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
             String release = System.getProperty("os.version", "");
             String version = "";
-            String machine = System.getProperty("os.arch", "");
-            if (machine.equals("amd64")) {
-                // be compatible with CPython's designation
-                machine = "x86_64";
-            }
+            String machine = SysModuleBuiltins.getPythonArch();
             return factory().createTuple(new Object[]{sysname, nodename, release, version, machine});
         }
     }
