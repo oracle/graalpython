@@ -141,12 +141,14 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     }
                     GraalPythonCC.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
                     System.exit(0);
+                    break;
                 case "-LD":
                     if (i != 0) {
                         throw new IllegalArgumentException("-LD must be the first argument");
                     }
                     GraalPythonLD.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
                     System.exit(0);
+                    break;
                 case "-LLI":
                     runLLI = true;
                     break;
