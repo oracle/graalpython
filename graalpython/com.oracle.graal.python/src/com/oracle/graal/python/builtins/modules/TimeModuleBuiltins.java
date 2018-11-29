@@ -240,7 +240,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Child private CastToIntegerFromIntNode castIntNode;
 
         @CompilationFinal private ConditionProfile outOfRangeProfile;
-        
+
         private CastToIntegerFromIntNode getCastIntNode() {
             if (castIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -250,7 +250,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             }
             return castIntNode;
         }
-        
+
         private ConditionProfile getOutOfRangeProfile() {
             if (outOfRangeProfile == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -297,8 +297,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         public int[] checkStructtime(PTuple time) {
             Object[] date = time.getArray();
-            if(date.length < 9) {
-                throw raise(PythonBuiltinClassType.TypeError, "function takes at least 9 arguments (%d given)", date.length); 
+            if (date.length < 9) {
+                throw raise(PythonBuiltinClassType.TypeError, "function takes at least 9 arguments (%d given)", date.length);
             }
             int year = getIntValue(getCastIntNode().execute(date[0]), Integer.MIN_VALUE, Integer.MAX_VALUE, "year");
             int mon = getIntValue(getCastIntNode().execute(date[1]), 0, 12, "month out of range");
@@ -312,7 +312,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             int hour = getIntValue(getCastIntNode().execute(date[3]), 0, 23, "hour out of range");
             int min = getIntValue(getCastIntNode().execute(date[4]), 0, 59, "minute out of range");
             int sec = getIntValue(getCastIntNode().execute(date[5]), 0, 61, "seconds out of range");
-            int wday = getIntValue(getCastIntNode().execute(date[6]), -1, Integer.MAX_VALUE, "1 when daylight savings time is in effect, and 0 when it is not. A value of -1 indicates that this is not known");
+            int wday = getIntValue(getCastIntNode().execute(date[6]), -1, Integer.MAX_VALUE,
+                            "1 when daylight savings time is in effect, and 0 when it is not. A value of -1 indicates that this is not known");
             if (wday == -1) {
                 wday = 6;
             } else if (wday > 6) {
@@ -567,12 +568,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         public String formatTime(String format, PTuple time) {
             return format(format, time);
         }
-                
+
         @Specialization
         public String formatTime(@SuppressWarnings("unused") String format, @SuppressWarnings("unused") Object time) {
             throw raise(PythonBuiltinClassType.TypeError, "Tuple or struct_time argument required");
         }
-        
+
         @Fallback
         public String formatTime(Object format, @SuppressWarnings("unused") Object time) {
             throw raise(PythonBuiltinClassType.TypeError, "strftime() argument 1 must be str, not %p", format);
