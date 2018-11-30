@@ -99,7 +99,7 @@ def setup(sre_compiler, error_class, flags_table):
 
         return fallback_compiler
 
-    engine_builder = _interop.eval(string="", language="regex")
+    engine_builder = _build_regex_engine("")
 
     global TREGEX_ENGINE_STR
     global TREGEX_ENGINE_BYTES
