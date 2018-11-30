@@ -55,13 +55,22 @@ public class GraalPythonCC extends GraalPythonCompiler {
     private String outputFilename;
     private boolean linkExecutable;
     private boolean link;
+    private boolean linkLLI;
     private Boolean compile;
     private List<String> clangArgs;
+    private List<String> execLinkArgs;
     private List<String> fileInputs;
 
     GraalPythonCC() {
     }
 
+    private static List<String> execLinkPrefix = Arrays.asList(new String[]{
+                    "clang",
+                    "-fembed-bitcode",
+                    "-fPIC",
+                    "-ggdb",
+                    "-O1",
+    });
     private static List<String> clangPrefix = Arrays.asList(new String[]{
                     "clang",
                     "-emit-llvm",
@@ -100,10 +109,12 @@ public class GraalPythonCC extends GraalPythonCompiler {
     private void parseOptions(String[] args) {
         outputFilename = A_OUT;
         linkExecutable = true;
+        linkLLI = false;
         link = true;
         verbose = false;
         compile = null;
         clangArgs = new ArrayList<>(clangPrefix);
+        execLinkArgs = new ArrayList<>(execLinkPrefix);
         fileInputs = new ArrayList<>();
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
@@ -123,6 +134,9 @@ public class GraalPythonCC extends GraalPythonCompiler {
                     link = false;
                     linkExecutable = false;
                     break;
+                case "--link-lli-scripts":
+                    linkLLI = true;
+                    continue; // skip adding this to clang args
                 case "-v":
                     if (!verbose) {
                         verbose = true;
@@ -144,6 +158,8 @@ public class GraalPythonCC extends GraalPythonCompiler {
                             throw new RuntimeException("cannot mix source and compiled sources");
                         }
                         fileInputs.add(arg);
+                    } else {
+                        execLinkArgs.add(arg);
                     }
             }
             clangArgs.add(arg);
@@ -173,6 +189,13 @@ public class GraalPythonCC extends GraalPythonCompiler {
                     String bcFile = bcFileFromFilename(f);
                     assert Files.exists(Paths.get(bcFile));
                     optFile(bcFile);
+                    try {
+                        String objFile = objectFileFromFilename(f);
+                        logV("Optimized:", bcFile, "->", objFile);
+                        Files.move(Paths.get(bcFile), Paths.get(objFile));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             } else {
                 optFile(outputFilename);
@@ -192,15 +215,21 @@ public class GraalPythonCC extends GraalPythonCompiler {
         }
     }
 
-    private static void linkExecutable(String executableScript, String linkedBcFile) throws IOException {
-        List<String> cmdline = GraalPythonMain.getCmdline(Arrays.asList(), Arrays.asList());
-        cmdline.add("-LLI");
-        cmdline.add(linkedBcFile);
-        Path executablePath = Paths.get(executableScript);
-        Files.write(executablePath, String.join(" ", cmdline).getBytes());
-        HashSet<PosixFilePermission> perms = new HashSet<>(Arrays.asList(new PosixFilePermission[]{PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.GROUP_EXECUTE}));
-        perms.addAll(Files.getPosixFilePermissions(executablePath));
-        Files.setPosixFilePermissions(executablePath, perms);
+    private void linkExecutable(String executableScript, String linkedBcFile) throws IOException {
+        if (linkLLI) {
+            List<String> cmdline = GraalPythonMain.getCmdline(Arrays.asList(), Arrays.asList());
+            cmdline.add("-LLI");
+            cmdline.add(linkedBcFile);
+            Path executablePath = Paths.get(executableScript);
+            Files.write(executablePath, String.join(" ", cmdline).getBytes());
+            HashSet<PosixFilePermission> perms = new HashSet<>(Arrays.asList(new PosixFilePermission[]{PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.GROUP_EXECUTE}));
+            perms.addAll(Files.getPosixFilePermissions(executablePath));
+        } else {
+            execLinkArgs.add(linkedBcFile);
+            execLinkArgs.add("-o");
+            execLinkArgs.add(executableScript);
+            exec(execLinkArgs);
+        }
     }
 
     private void linkShared(List<String> bitcodeFiles) {
@@ -220,5 +249,18 @@ public class GraalPythonCC extends GraalPythonCompiler {
         opt.add(bcFile);
         opt.add(bcFile);
         exec(opt);
+    }
+
+    private static String bcFileFromFilename(String f) {
+        int dotIdx = f.lastIndexOf('.');
+        if (dotIdx > 1) {
+            return f.substring(0, dotIdx + 1) + "bc";
+        } else {
+            return f + ".bc";
+        }
+    }
+
+    private static String objectFileFromFilename(String f) {
+        return bcFileFromFilename(f).replaceAll("\\.bc$", ".o");
     }
 }

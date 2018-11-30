@@ -41,19 +41,11 @@
 package com.oracle.graal.python.shell;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 public class GraalPythonCompiler {
     protected static final String A_OUT = "a.out";
-
-    protected static String bcFileFromFilename(String f) {
-        int dotIdx = f.lastIndexOf('.');
-        if (dotIdx > 1) {
-            return f.substring(0, dotIdx + 1) + "bc";
-        } else {
-            return f + ".bc";
-        }
-    }
 
     protected boolean verbose;
 
@@ -91,4 +83,7 @@ public class GraalPythonCompiler {
         logV(null, args);
     }
 
+    protected void logV(String... args) {
+        logV(null, Arrays.asList(args));
+    }
 }
