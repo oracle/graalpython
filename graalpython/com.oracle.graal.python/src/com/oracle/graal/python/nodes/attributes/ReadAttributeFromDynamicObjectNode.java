@@ -108,7 +108,6 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
                     guards = {
                                     "dynamicObject.getShape() == cachedShape",
                                     "key == cachedKey",
-                                    "loc == null || !loc.isAssumedFinal()",
                     }, //
                     assumptions = {
                                     "layoutAssumption"
