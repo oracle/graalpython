@@ -247,7 +247,7 @@ def utf_32_ex_decode(data, errors=None, byteorder=0, final=False):
 
 @__builtin__
 def unicode_escape_encode(string, errors=None):
-    raise NotImplementedError("unicode_escape_encode")
+    return __truffle_encode(repr(string)[1:-1], "latin-1", errors)
 
 
 @__builtin__
