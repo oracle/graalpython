@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.nodes.call;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.Arity;
@@ -38,7 +36,6 @@ import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ApplyKeywordsNode;
 import com.oracle.graal.python.nodes.argument.ArityCheckNode;
@@ -82,9 +79,6 @@ abstract class AbstractInvokeNode extends Node {
             PBuiltinMethod method = (PBuiltinMethod) callee;
             PBuiltinFunction internalFunc = method.getFunction();
             callTarget = internalFunc.getCallTarget();
-        } else if (actualCallee instanceof PythonBuiltinClass) {
-            actualCallee = (PythonCallable) ((PythonBuiltinClass) actualCallee).getAttribute(__NEW__);
-            callTarget = actualCallee.getCallTarget();
         } else {
             throw new UnsupportedOperationException("Unsupported callee type " + actualCallee);
         }
@@ -113,15 +107,11 @@ abstract class AbstractInvokeNode extends Node {
 
     @TruffleBoundary
     protected static Arity getArity(PythonCallable callee) {
-        if (callee instanceof PythonBuiltinClass) {
-            return ((PythonCallable) ((PythonBuiltinClass) callee).getAttribute(__NEW__)).getArity();
-        } else {
-            return callee.getArity();
-        }
+        return callee.getArity();
     }
 
     protected static boolean isBuiltin(PythonCallable callee) {
-        return callee instanceof PBuiltinFunction || callee instanceof PBuiltinMethod || callee instanceof PythonBuiltinClass;
+        return callee instanceof PBuiltinFunction || callee instanceof PBuiltinMethod;
     }
 }
 

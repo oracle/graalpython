@@ -25,20 +25,17 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.function.Arity;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.object.HiddenKey;
 
 /**
  * A Python built-in class that is immutable.
  */
-public final class PythonBuiltinClass extends PythonClass implements PythonCallable {
+public final class PythonBuiltinClass extends PythonClass {
     private final PythonBuiltinClassType type;
 
     public PythonBuiltinClass(PythonBuiltinClassType builtinClass, PythonClass base) {
@@ -62,12 +59,6 @@ public final class PythonBuiltinClass extends PythonClass implements PythonCalla
      */
     public void setAttributeUnsafe(Object name, Object value) {
         super.setAttribute(name, value);
-    }
-
-    @Override
-    public Arity getArity() {
-        PythonCallable init = (PythonCallable) getAttribute(__NEW__);
-        return init.getArity();
     }
 
     public PythonBuiltinClassType getType() {
