@@ -94,6 +94,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BuildRegexEngine extends PythonUnaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         Object run(String code) {
             return getContext().getEnv().parse(Source.newBuilder("regex", code, "build-regex-engine").build()).call();
         }
