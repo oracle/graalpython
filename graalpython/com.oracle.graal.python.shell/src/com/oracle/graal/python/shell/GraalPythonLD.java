@@ -40,9 +40,19 @@
  */
 package com.oracle.graal.python.shell;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.lang.ProcessBuilder.Redirect;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+
+import jline.internal.InputStreamReader;
 
 public class GraalPythonLD extends GraalPythonCompiler {
     private static List<String> linkPrefix = Arrays.asList(new String[]{
@@ -68,6 +78,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
         ldArgs = new ArrayList<>(linkPrefix);
         fileInputs = new ArrayList<>();
         List<String> droppedArgs = new ArrayList<>();
+        List<String> libraryDirs = new ArrayList<>();
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             switch (arg) {
@@ -84,6 +95,22 @@ public class GraalPythonLD extends GraalPythonCompiler {
                 default:
                     if (arg.endsWith(".o") || arg.endsWith(".bc")) {
                         fileInputs.add(arg);
+                    } else if (arg.startsWith("-L")) {
+                        libraryDirs.add(arg.substring(2));
+                    } else if (arg.startsWith("-l")) {
+                        List<String> bcFiles = searchLib(libraryDirs, arg.substring(2));
+                        for (String bcFile : bcFiles) {
+                            try {
+                                if (Files.probeContentType(Paths.get(bcFile)).contains("llvm-ir-bitcode")) {
+                                    logV("library input:", bcFile);
+                                    fileInputs.add(bcFile);
+                                } else {
+                                    droppedArgs.add(bcFile + "(dropped as library input)");
+                                }
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
                     } else {
                         droppedArgs.add(arg);
                     }
@@ -93,6 +120,66 @@ public class GraalPythonLD extends GraalPythonCompiler {
         // object files given on the commandline and see if these are bytecode files we can work
         // with
         logV("Dropped args: ", droppedArgs);
+    }
+
+    private List<String> searchLib(List<String> libraryDirs, String lib) {
+        List<String> bcFiles = new ArrayList<>();
+        String[] suffixes = new String[]{".bc", ".o", ".a", ".so"};
+        String[] prefixes = new String[]{"lib", ""};
+        for (String libdir : libraryDirs) {
+            for (String prefix : prefixes) {
+                for (String suffix : suffixes) {
+                    Path path = Paths.get(libdir, prefix + lib + suffix);
+                    String pathString = path.toAbsolutePath().toString();
+                    logV("Checking for library:", pathString);
+                    if (Files.exists(path)) {
+                        if (suffix.equals(".a")) {
+                            // extract members
+                            try {
+                                bcFiles.addAll(arMembers(pathString));
+                            } catch (IOException | InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        } else {
+                            bcFiles.add(pathString);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        logV("Found bitcode files for library:", bcFiles);
+        return bcFiles;
+    }
+
+    private Collection<? extends String> arMembers(String path) throws IOException, InterruptedException {
+        List<String> members = new ArrayList<>();
+        File temp = File.createTempFile(path, Long.toString(System.nanoTime()));
+        temp.delete();
+        temp.mkdir();
+        temp.deleteOnExit();
+
+        ProcessBuilder extractAr = new ProcessBuilder();
+        extractAr.redirectInput(Redirect.INHERIT);
+        extractAr.redirectError(Redirect.INHERIT);
+        extractAr.redirectOutput(Redirect.PIPE);
+        extractAr.directory(temp);
+        logV("ar", path);
+        // "ar t" lists the members one per line
+        extractAr.command("ar", "t", path);
+        Process start = extractAr.start();
+        try (BufferedReader buffer = new BufferedReader(new InputStreamReader(start.getInputStream()))) {
+            String line = null;
+            while ((line = buffer.readLine()) != null) {
+                members.add(temp.getAbsolutePath() + File.separator + line);
+            }
+        }
+        start.waitFor();
+        // actually extract them now
+        extractAr.redirectOutput(Redirect.INHERIT);
+        extractAr.command("ar", "xv", path);
+        extractAr.start().waitFor();
+        return members;
     }
 
     private void launchLD() {
