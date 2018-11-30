@@ -37,10 +37,12 @@ import org.junit.Test;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.test.PythonTests;
@@ -75,7 +77,8 @@ public class PythonModuleTests {
     public void builtinsIntTest() {
         final PythonModule builtins = context.getBuiltins();
         PythonBuiltinClass intClass = (PythonBuiltinClass) builtins.getAttribute(BuiltinNames.INT);
-        Object returnValue = InvokeNode.create(intClass).execute(null, createWithUserArguments(intClass, "42"), PKeyword.EMPTY_KEYWORDS);
+        PythonCallable intNew = (PythonCallable) intClass.getAttribute(SpecialAttributeNames.__NEW__);
+        Object returnValue = InvokeNode.create(intNew).execute(null, createWithUserArguments(intClass, "42"), PKeyword.EMPTY_KEYWORDS);
         assertEquals(42, returnValue);
     }
 
