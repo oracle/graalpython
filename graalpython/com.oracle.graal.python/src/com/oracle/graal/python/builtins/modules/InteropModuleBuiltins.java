@@ -130,6 +130,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             try {
                 boolean mimeType = isMimeType(langOrMimeType);
                 String lang = mimeType ? findLanguageByMimeType(env, langOrMimeType) : langOrMimeType;
+                raiseIfInternal(env, lang);
                 LiteralBuilder newBuilder = Source.newBuilder(lang, value, value);
                 if (mimeType) {
                     newBuilder = newBuilder.mimeType(langOrMimeType);
@@ -140,6 +141,13 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        private void raiseIfInternal(Env env, String lang) {
+            LanguageInfo languageInfo = env.getLanguages().get(lang);
+            if (languageInfo != null && languageInfo.isInternal()) {
+                throw raise(NotImplementedError, "access to internal language %s is not permitted", lang);
+            }
+        }
+
         @TruffleBoundary
         @Specialization
         Object evalFile(String path, @SuppressWarnings("unused") PNone string, String langOrMimeType) {
@@ -147,6 +155,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             try {
                 boolean mimeType = isMimeType(langOrMimeType);
                 String lang = mimeType ? findLanguageByMimeType(env, langOrMimeType) : langOrMimeType;
+                raiseIfInternal(env, lang);
                 SourceBuilder newBuilder = Source.newBuilder(lang, env.getTruffleFile(path));
                 if (mimeType) {
                     newBuilder = newBuilder.mimeType(langOrMimeType);

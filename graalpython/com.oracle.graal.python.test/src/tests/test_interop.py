@@ -250,3 +250,11 @@ if sys.implementation.name == "graalpython":
             assert True
         else:
             assert False, "requesting a non-existing host symbol should raise KeyError"
+
+    def test_internal_languages_dont_eval():
+        try:
+            polyglot.eval(language="nfi", string="default")
+        except NotImplementedError as e:
+            assert "internal language" in str(e)
+
+        assert polyglot.eval(language="python", string="21 * 2") == 42

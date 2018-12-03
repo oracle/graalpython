@@ -80,6 +80,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.regex.RegexSyntaxException;
 
 @CoreFunctions(defineModule = "_sre")
@@ -87,6 +88,16 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SREModuleBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = "_build_regex_engine", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class BuildRegexEngine extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object run(String code) {
+            return getContext().getEnv().parse(Source.newBuilder("regex", code, "build-regex-engine").build()).call();
+        }
     }
 
     /**
