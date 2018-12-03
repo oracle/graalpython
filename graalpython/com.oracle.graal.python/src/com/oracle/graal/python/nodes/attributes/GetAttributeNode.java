@@ -73,6 +73,12 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
         return key;
     }
 
+    public abstract int executeInt(Object object);
+
+    public abstract boolean executeBoolean(Object object);
+
+    public abstract Object executeObject(Object object);
+
     public final StatementNode makeWriteNode(ExpressionNode rhs) {
         return SetAttributeNode.create(key, getObject(), rhs);
     }

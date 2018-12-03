@@ -1316,7 +1316,13 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         environment.setToGeneratorScope();
         ExpressionNode right;
         if (ctx.yield_arg() != null) {
-            right = (ExpressionNode) ctx.yield_arg().accept(this);
+            if (ctx.yield_arg().testlist() != null) {
+                right = (ExpressionNode) ctx.yield_arg().testlist().accept(this);
+            } else {
+                assert ctx.yield_arg().test() != null;
+                right = (ExpressionNode) ctx.yield_arg().test().accept(this);
+                return factory.createYieldFrom(right, environment.getReturnSlot());
+            }
         } else {
             right = EmptyNode.create();
         }
