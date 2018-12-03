@@ -175,6 +175,9 @@ class TestCase(object):
                 message = '%s is not an instance of %r' % (obj, cls)
             assert False, message
 
+    def fail(self, msg):
+        assert False, msg
+
     class assertRaises():
         def __init__(self, exc_type, function=None, *args, **kwargs):
             self.function = function

@@ -83,7 +83,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 iterator.markSentinelReached();
-                throw raise(StopIteration);
+                throw e;
             }
             if (equalNode.executeBool(nextValue, iterator.getSentinel())) {
                 iterator.markSentinelReached();
