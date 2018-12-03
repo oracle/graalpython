@@ -406,15 +406,11 @@ def walk(top, topdown=True, onerror=None, followlinks=False):
             # the caller can replace the directory entry during the "yield"
             # above.
             if followlinks or not islink(new_path):
-                # TRUFFLE TODO: revert
-                # yield from walk(new_path, topdown, onerror, followlinks)
-                for __x, __y, __z in walk(new_path, topdown, onerror, followlinks): yield __x, __y, __z
+                yield from walk(new_path, topdown, onerror, followlinks)
     else:
         # Recurse into sub-directories
         for new_path in walk_dirs:
-            # TRUFFLE TODO: revert
-            # yield from walk(new_path, topdown, onerror, followlinks)
-            for __x, __y, __z in walk(new_path, topdown, onerror, followlinks): yield __x, __y, __z
+            yield from walk(new_path, topdown, onerror, followlinks)
         # Yield after recursion if going bottom up
         yield top, dirs, nondirs
 
