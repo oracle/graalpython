@@ -79,11 +79,11 @@ def _extract_graalpython_internal_options(args):
 def check_vm(vm_warning=True, must_be_jvmci=False):
     if not SUITE_COMPILER:
         if must_be_jvmci:
-            print '** Error ** : graal compiler was not found!'
+            print('** Error ** : graal compiler was not found!')
             sys.exit(1)
 
         if vm_warning:
-            print '** warning ** : graal compiler was not found!! Executing using standard VM..'
+            print('** warning ** : graal compiler was not found!! Executing using standard VM..')
 
 
 def get_jdk():
@@ -191,7 +191,6 @@ class GraalPythonTags(object):
     svmunit = 'python-svm-unittest'
     downstream = 'python-downstream'
     graalvm = 'python-graalvm'
-    apptests = 'python-apptests'
     license = 'python-license'
 
 
@@ -337,17 +336,6 @@ def graalpython_gate_runner(args, tasks):
                     "--python.StdLibHome=%s" % os.path.join(SUITE.dir, "graalpython", "lib-python/3"),
                     llvm_home]
             run_python_unittests(svm_image_name, args)
-
-    with Task('GraalPython apptests', tasks, tags=[GraalPythonTags.apptests]) as task:
-        if task:
-            apprepo = os.environ["GRAALPYTHON_APPTESTS_REPO_URL"]
-            _apptest_suite = SUITE.import_suite(
-                "graalpython-apptests",
-                version="1fc0e86a54cbe090d36f262c062d8f4eee8f2e6d",
-                urlinfos=[mx.SuiteImportURLInfo(mx_urlrewrites.rewriteurl(apprepo), "git", mx.vc_system("git"))]
-            )
-            mx.log(" ".join(["Running", "mx"] + ["-p", _apptest_suite.dir, "graalpython-apptests"]))
-            mx.run_mx(["-p", _apptest_suite.dir, "graalpython-apptests"])
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
