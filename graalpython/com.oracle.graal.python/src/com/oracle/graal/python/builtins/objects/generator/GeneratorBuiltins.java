@@ -116,7 +116,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 self.markAsFinished();
-                throw raise(StopIteration);
+                throw e;
             }
         }
 
@@ -131,7 +131,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 self.markAsFinished();
-                throw raise(StopIteration);
+                throw e;
             }
         }
     }

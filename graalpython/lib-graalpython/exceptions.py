@@ -82,3 +82,24 @@ del ModuleNotFoundError__str__
 # EnvironmentError is just an alias of OSError (i.e. 'EnvironmentError is OSError == True')
 EnvironmentError = OSError
 
+
+def StopIteration__value__get(self):
+    if not hasattr(self, "__value__"):
+        if self.args:
+            self.__value__ = self.args[0]
+        else:
+            self.__value__ = None
+    return self.__value__
+
+
+def StopIteration__value__set(self, arg):
+    self.__value__ = arg
+
+
+def StopIteration__repr__(self):
+    return "StopIteration%s" % repr(self.args)
+
+
+StopIteration.value = property(StopIteration__value__get)
+StopIteration.value.setter(StopIteration__value__set)
+StopIteration.__repr__ = StopIteration__repr__
