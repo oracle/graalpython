@@ -273,6 +273,11 @@ suite = {
             "description": "GraalPython launcher",
         },
 
+        "GRAALPYTHON-ZIP": {
+            "description": "GraalPython launcher",
+            "maven": False,
+        },
+
         "GRAALPYTHON": {
             "dependencies": [
                 "com.oracle.graal.python",
