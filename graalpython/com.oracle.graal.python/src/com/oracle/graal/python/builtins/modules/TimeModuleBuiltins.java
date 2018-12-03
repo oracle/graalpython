@@ -135,12 +135,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        public PTuple localtime(@SuppressWarnings("unused") PNone seconds) {
-            return factory().createTuple(getTimeStruct(System.currentTimeMillis() / 1000.0, true));
-        }
-
-        @Specialization
         public PTuple localtime(double seconds) {
             return factory().createTuple(getTimeStruct(seconds, true));
         }
