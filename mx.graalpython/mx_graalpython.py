@@ -346,6 +346,7 @@ def graalpython_gate_runner(args, tasks):
                 version="0008fbe8fe77d3ad93d0f7f05176116937375f45",
                 urlinfos=[mx.SuiteImportURLInfo(mx_urlrewrites.rewriteurl(apprepo), "git", mx.vc_system("git"))]
             )
+            mx.run_mx(["-p", _apptest_suite.dir, "sforceimports"])
             mx.log(" ".join(["Running", "mx"] + ["-p", _apptest_suite.dir, "graalpython-apptests"]))
             mx.run_mx(["-p", _apptest_suite.dir, "graalpython-apptests"])
 
