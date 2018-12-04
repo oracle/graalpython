@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.builtins;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -104,7 +103,6 @@ public abstract class TupleNodes {
             return iterable;
         }
 
-        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
         @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(cls, iterable)"})
         public PTuple tuple(LazyPythonClass cls, Object iterable,
                         @Cached("create()") GetIteratorNode getIterator,
@@ -112,15 +110,30 @@ public abstract class TupleNodes {
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
 
             Object iterator = getIterator.executeWith(iterable);
-            List<Object> internalStorage = new ArrayList<>();
+            ArrayList<Object> internalStorage = makeList();
             while (true) {
                 try {
-                    internalStorage.add(next.execute(iterator));
+                    addToList(internalStorage, next.execute(iterator));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
-                    return factory().createTuple(cls, internalStorage.toArray());
+                    return factory().createTuple(cls, listToArray(internalStorage));
                 }
             }
+        }
+
+        @TruffleBoundary
+        private static ArrayList<Object> makeList() {
+            return new ArrayList<>();
+        }
+
+        @TruffleBoundary
+        private static void addToList(ArrayList<Object> list, Object obj) {
+            list.add(obj);
+        }
+
+        @TruffleBoundary
+        private static Object[] listToArray(ArrayList<Object> list) {
+            return list.toArray();
         }
 
         @Fallback
