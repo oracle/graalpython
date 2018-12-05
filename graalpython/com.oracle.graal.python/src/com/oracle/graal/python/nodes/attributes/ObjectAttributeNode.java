@@ -72,4 +72,10 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
     protected static boolean isHiddenKey(Object key) {
         return key instanceof HiddenKey;
     }
+
+    @Override
+    public NodeCost getCost() {
+        // really just a few guards and delegation
+        return NodeCost.NONE;
+    }
 }
