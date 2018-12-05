@@ -89,7 +89,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     private GetLazyClassNode getClassNode() {
         if (getClass == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getClass = GetLazyClassNode.create();
+            getClass = insert(GetLazyClassNode.create());
         }
         return getClass;
     }

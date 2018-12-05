@@ -72,10 +72,12 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {
                     "object == cachedObject"
     }, assumptions = {
+                    "singleContextAssumption",
                     "dictUnsetOrSameAsStorageAssumption"
     })
     protected Object readFromDynamicStorageCached(PythonObject object, Object key,
                     @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
+                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
                     @Cached("create()") ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
         return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
@@ -93,9 +95,12 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {
                     "object == cachedObject",
                     "!dictUnsetOrSameAsStorageAssumption.isValid()"
+    }, assumptions = {
+                    "singleContextAssumption"
     })
     protected Object readFromDictCached(PythonObject object, Object key,
                     @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
+                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
         Object value = getItemNode.execute(object.getDict().getDictStorage(), key);

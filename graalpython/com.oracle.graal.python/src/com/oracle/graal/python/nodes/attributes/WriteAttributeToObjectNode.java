@@ -98,10 +98,12 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     "object == cachedObject",
                     "isAttrWritable(object) || isHiddenKey(key)"
     }, assumptions = {
+                    "singleContextAssumption",
                     "dictUnsetOrSameAsStorageAssumption"
     })
     protected boolean writeToDynamicStorageCached(PythonObject object, Object key, Object value,
                     @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
+                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
                     @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
         handlePythonClass(object, key);
@@ -122,9 +124,12 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {
                     "object == cachedObject",
                     "!dictUnsetOrSameAsStorageAssumption.isValid()"
+    }, assumptions = {
+                    "singleContextAssumption"
     })
     protected boolean writeToDictCached(PythonObject object, Object key, Object value,
                     @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
+                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
                     @Cached("create()") BranchProfile updateStorage,
                     @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {

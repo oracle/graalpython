@@ -87,6 +87,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
                                     "loc.isAssumedFinal()",
                     }, //
                     assumptions = {
+                                    "singleContextAssumption",
                                     "layoutAssumption",
                                     "finalAssumption"
                     })
@@ -98,6 +99,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
                     @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc,
                     @Cached("loc.getFinalAssumption()") Assumption finalAssumption,
+                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @Cached("readFinalValue(dynamicObject, loc)") Object cachedValue) {
         assert assertFinal(dynamicObject, attrKey, cachedValue);
         return cachedValue;
