@@ -724,6 +724,14 @@ def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
     return method
 
 
+def PyMethod_New(func, self):
+    # TODO we should use the method constructor
+    # e.g. methodtype(func, self)
+    def bound_function(*args, **kwargs):
+        return func(self, *args, **kwargs)
+    return bound_function
+
+
 def AddMember(primary, name, memberType, offset, canSet, doc):
     # the ReadMemberFunctions and WriteMemberFunctions don't have a wrapper to
     # convert arguments to Sulong, so we can avoid boxing the offsets into PInts

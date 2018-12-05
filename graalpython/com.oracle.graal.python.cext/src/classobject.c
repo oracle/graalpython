@@ -60,3 +60,13 @@ PyObject* PyMethod_Self(PyObject* obj) {
         return NULL;
     }
 }
+
+UPCALL_ID(PyMethod_New)
+PyObject * PyMethod_New(PyObject *func, PyObject *self) {
+    PyMethodObject *im;
+    if (self == NULL) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    return UPCALL_CEXT_O(_jls_PyMethod_New, native_to_java(func), native_to_java(self));
+}
