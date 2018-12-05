@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.TimeZone;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -68,6 +70,23 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TimeModuleBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        TimeZone defaultTimeZone = TimeZone.getDefault();
+        String noDaylightSavingZone = defaultTimeZone.getDisplayName(false, TimeZone.SHORT);
+        String daylightSavingZone = defaultTimeZone.getDisplayName(true, TimeZone.SHORT);
+
+        boolean hasDaylightSaving = !noDaylightSavingZone.equals(daylightSavingZone);
+        if (hasDaylightSaving) {
+            builtinConstants.put("tzname", core.factory().createTuple(new Object[]{noDaylightSavingZone, daylightSavingZone}));
+        } else {
+            builtinConstants.put("tzname", core.factory().createTuple(new Object[]{noDaylightSavingZone}));
+        }
+
+        builtinConstants.put("daylight", PInt.intValue(hasDaylightSaving));
     }
 
     @TruffleBoundary
@@ -114,6 +133,16 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PTuple gmtime(double seconds) {
+            return factory().createTuple(getTimeStruct(seconds, false));
+        }
+
+        @Specialization
+        public PTuple gmtime(@SuppressWarnings("unused") PNone seconds) {
+            return factory().createTuple(getTimeStruct(timeSeconds(), false));
+        }
+
+        @Specialization
+        public PTuple gmtime(long seconds) {
             return factory().createTuple(getTimeStruct(seconds, false));
         }
     }
