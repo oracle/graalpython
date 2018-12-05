@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -409,5 +410,27 @@ public abstract class NativeWrappers {
             super(delegate);
         }
 
+    }
+
+    public static class PThreadState extends PythonNativeWrapper {
+
+        private PDict dict;
+
+        static boolean isInstance(TruffleObject obj) {
+            return obj instanceof PThreadState;
+        }
+
+        @Override
+        public ForeignAccess getForeignAccess() {
+            return PThreadStateMRForeign.ACCESS;
+        }
+
+        public PDict getThreadStateDict() {
+            return dict;
+        }
+
+        public void setThreadStateDict(PDict dict) {
+            this.dict = dict;
+        }
     }
 }

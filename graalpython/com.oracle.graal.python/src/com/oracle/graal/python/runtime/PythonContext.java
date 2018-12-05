@@ -42,11 +42,11 @@ import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PThreadState;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -71,7 +71,11 @@ public final class PythonContext {
 
     @CompilationFinal private TruffleLanguage.Env env;
 
+    /* corresponds to 'PyThreadState.curexc_*' */
     private PException currentException;
+
+    /* corresponds to 'PyThreadState.exc_*' */
+    private PException caughtException;
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
@@ -88,8 +92,8 @@ public final class PythonContext {
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
 
-    /** A thread-local dictionary for custom user state. */
-    private ThreadLocal<PDict> customThreadState;
+    /** The thread-local state object. */
+    private ThreadLocal<PThreadState> customThreadState;
     private final PosixResources resources;
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
@@ -206,6 +210,14 @@ public final class PythonContext {
         return currentException;
     }
 
+    public void setCaughtException(PException e) {
+        caughtException = e;
+    }
+
+    public PException getCaughtException() {
+        return caughtException;
+    }
+
     public boolean isInitialized() {
         return isInitialized;
     }
@@ -276,10 +288,10 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
-    public PDict getCustomThreadState() {
+    public PThreadState getCustomThreadState() {
         if (customThreadState == null) {
-            ThreadLocal<PDict> threadLocal = new ThreadLocal<>();
-            threadLocal.set(PythonObjectFactory.create().createDict());
+            ThreadLocal<PThreadState> threadLocal = new ThreadLocal<>();
+            threadLocal.set(new PThreadState());
             customThreadState = threadLocal;
         }
         return customThreadState.get();

@@ -80,8 +80,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     }
 
     public void executeExcept(VirtualFrame frame, PException e) {
-        PythonContext context = getContext();
-        context.setCurrentException(e);
+        getContext().setCaughtException(e);
         body.executeVoid(frame);
         throw ExceptionHandledException.INSTANCE;
     }

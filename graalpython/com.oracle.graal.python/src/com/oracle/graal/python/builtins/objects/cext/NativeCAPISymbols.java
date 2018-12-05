@@ -65,4 +65,5 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE = "PyTruffle_ObjectArrayToNative";
     public static final String FUN_PY_OBJECT_GENERIC_GET_DICT = "_PyObject_GenericGetDict";
     public static final String FUN_PY_OBJECT_GENERIC_NEW = "PyTruffle_Type_GenericNew";
+    public static final String FUN_GET_THREAD_STATE_TYPE_ID = "get_thread_state_typeid";
 }

@@ -154,6 +154,8 @@ initialize_type(_PyNotImplemented_Type, NotImplementedType, _object);
 initialize_type(PyDictProxy_Type, mappingproxy, _object);
 initialize_type(PyEllipsis_Type, ellipsis, _object);
 
+POLYGLOT_DECLARE_TYPE(PyThreadState);
+
 typedef PyObject* PyObjectPtr;
 POLYGLOT_DECLARE_TYPE(PyObjectPtr);
 
@@ -281,6 +283,11 @@ polyglot_typeid get_byte_array_typeid(uint64_t len) {
 /** to be used from Java code only; returns the type ID for a 'PyObject*' array */
 polyglot_typeid get_ptr_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_PyObjectPtr_typeid(), len);
+}
+
+/** to be used from Java code only; returns the type ID PyThreadState */
+polyglot_typeid get_thread_state_typeid() {
+    return polyglot_PyThreadState_typeid();
 }
 
 typedef struct PyObjectHandle {

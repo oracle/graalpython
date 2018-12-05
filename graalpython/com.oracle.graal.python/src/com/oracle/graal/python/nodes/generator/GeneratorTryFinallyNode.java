@@ -58,7 +58,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        PException exceptionState = getContext().getCurrentException();
+        PException exceptionState = getContext().getCaughtException();
         PException exception = null;
         if (gen.isActive(frame, finallyFlag)) {
             getFinalbody().executeVoid(frame);
@@ -75,7 +75,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
         if (exception != null) {
             throw exception;
         }
-        getContext().setCurrentException(exceptionState);
+        getContext().setCaughtException(exceptionState);
     }
 
     public void reset(VirtualFrame frame) {

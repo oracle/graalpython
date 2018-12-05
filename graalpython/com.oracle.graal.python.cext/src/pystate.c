@@ -42,12 +42,11 @@
 #include "capi.h"
 
 PyObject * PyThreadState_GetDict() {
-    return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_ThreadState_GetDict"));
+	return PyThreadState_Get()->dict;
 }
 
 PyThreadState * PyThreadState_Get() {
-    // TODO: (tfel) how much ThreadState will we actually support?
-    return (PyThreadState*)PyThreadState_GetDict();
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyThreadState_Get");
 }
 
 PyGILState_STATE PyGILState_Ensure() {

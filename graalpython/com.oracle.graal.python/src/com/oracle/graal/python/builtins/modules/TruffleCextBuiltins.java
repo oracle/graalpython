@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBi
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
@@ -192,7 +193,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public class TruffleCextBuiltins extends PythonBuiltins {
 
     private static final String ERROR_HANDLER = "error_handler";
-    private static final String NATIVE_NULL = "native_null";
+    public static final String NATIVE_NULL = "native_null";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -374,6 +375,27 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyErr_Fetch", fixedNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class PyErrFetchNode extends NativeBuiltin {
+        @Specialization
+        public Object run(Object module,
+                        @Cached("create()") GetClassNode getClassNode) {
+            PythonContext context = getContext();
+            PException currentException = context.getCurrentException();
+            Object result;
+            if (currentException == null) {
+                result = getNativeNull(module);
+            } else {
+                PBaseException exception = currentException.getExceptionObject();
+                exception.reifyException();
+                result = factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback(factory())});
+                context.setCurrentException(null);
+            }
+            return result;
+        }
+    }
+
     @Builtin(name = "PyErr_Occurred", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyErrOccurred extends PythonUnaryBuiltinNode {
@@ -387,6 +409,29 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 return getClass.execute(exceptionObject);
             }
             return errorMarker;
+        }
+    }
+
+    @Builtin(name = "PyErr_SetExcInfo", fixedNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class PyErrSetExcInfo extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object run(PNone typ, PNone val, PNone tb) {
+            getContext().setCaughtException(null);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object run(@SuppressWarnings("unused") PythonClass typ, PBaseException val, @SuppressWarnings("unused") PTraceback tb) {
+            val.reifyException();
+            if (val.getException() != null) {
+                getContext().setCaughtException(val.getException());
+            } else {
+                PException pException = PException.fromObject(val, this);
+                getContext().setCaughtException(pException);
+            }
+            return PNone.NONE;
         }
     }
 
@@ -762,7 +807,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 return result;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();
-                throw new RuntimeException(e.toString());
+                throw e.raise();
             }
         }
 
@@ -1440,12 +1485,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_ThreadState_GetDict", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "PyThreadState_Get", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    abstract static class PyTruffle_ThreadState_GetDict extends NativeBuiltin {
+    abstract static class PyThreadState_Get extends NativeBuiltin {
 
         @Specialization
-        Object get() {
+        PThreadState get() {
+            // does not require a 'to_sulong' since it is already a native wrapper type
             return getContext().getCustomThreadState();
         }
     }
