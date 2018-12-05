@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
@@ -73,6 +74,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -208,7 +210,67 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doAnd(Object self, Object other) {
-            throw raise(PythonErrorType.TypeError, "unsupported operand type(s) for &=: '%p' and '%p'", self, other);
+            throw raise(PythonErrorType.TypeError, "unsupported operand type(s) for &: '%p' and '%p'", self, other);
+        }
+    }
+
+    @Builtin(name = __OR__, fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class OrNode extends PythonBinaryBuiltinNode {
+        @Node.Child private HashingStorageNodes.UnionNode unionNode;
+        @Node.Child private HashingStorageNodes.SetItemNode setItemNode;
+
+        private HashingStorageNodes.SetItemNode getSetItemNode() {
+            if (setItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
+            }
+            return setItemNode;
+        }
+
+        @TruffleBoundary
+        private HashingStorage getStringAsHashingStorage(String str) {
+            HashingStorage storage = EconomicMapStorage.create(str.length(), true);
+            for (int i = 0; i < str.length(); i++) {
+                String key = String.valueOf(str.charAt(i));
+                getSetItemNode().execute(storage, key, PNone.NO_VALUE);
+            }
+            return storage;
+        }
+
+        @Specialization
+        PBaseSet doPBaseSet(PSet left, String right) {
+            return factory().createSet(getUnionNode().execute(left.getDictStorage(), getStringAsHashingStorage(right)));
+        }
+
+        @Specialization
+        PBaseSet doPBaseSet(PFrozenSet left, String right) {
+            return factory().createFrozenSet(getUnionNode().execute(left.getDictStorage(), getStringAsHashingStorage(right)));
+        }
+
+        private HashingStorageNodes.UnionNode getUnionNode() {
+            if (unionNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                unionNode = insert(HashingStorageNodes.UnionNode.create());
+            }
+            return unionNode;
+        }
+
+        @Specialization
+        PBaseSet doPBaseSet(PSet left, PBaseSet right) {
+            HashingStorage intersectedStorage = getUnionNode().execute(left.getDictStorage(), right.getDictStorage());
+            return factory().createSet(intersectedStorage);
+        }
+
+        @Specialization
+        PBaseSet doPBaseSet(PFrozenSet left, PBaseSet right) {
+            HashingStorage intersectedStorage = getUnionNode().execute(left.getDictStorage(), right.getDictStorage());
+            return factory().createFrozenSet(intersectedStorage);
+        }
+
+        @Fallback
+        Object doAnd(Object self, Object other) {
+            throw raise(PythonErrorType.TypeError, "unsupported operand type(s) for |: '%p' and '%p'", self, other);
         }
     }
 
