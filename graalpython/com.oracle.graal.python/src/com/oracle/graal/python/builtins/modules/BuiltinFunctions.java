@@ -95,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.Arity;
@@ -502,6 +503,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public PTuple doDouble(double a, double b) {
             double q = Math.floor(a / b);
             return factory().createTuple(new Object[]{q, a % b});
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        public PTuple doComplex(PComplex c, Object o) {
+            throw raise(PythonErrorType.TypeError, "can't take floor or mod of complex number.");
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        public PTuple doComplex(Object o, PComplex c) {
+            throw raise(PythonErrorType.TypeError, "can't take floor or mod of complex number.");
         }
 
         @Specialization
