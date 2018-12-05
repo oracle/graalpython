@@ -80,6 +80,12 @@ def test_set_or_union():
     assert or_result == {1, 2, 3}
     assert union_result == {1, 2, 3}
 
+    assert frozenset((1,2)) | {1:2}.items() == {1, 2, (1, 2)}
+    assert frozenset((1,2)) | {1:2}.keys() == {1, 2}
+
+def test_set_and():
+    assert frozenset((1,2)) & {1:2}.items() == set()
+    assert frozenset((1,2)) & {1:2}.keys() == {1}
 
 def test_set_union():
     assert {1, 2, 3}.union({1: 'a', 2: 'b', 4: 'd'}) == {1, 2, 3, 4}
