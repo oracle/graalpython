@@ -58,12 +58,14 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -248,6 +250,26 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     break;
             }
             return errorAction;
+        }
+    }
+
+    @Builtin(name = "unicode_escape_decode", fixedNumOfPositionalArgs = 1, keywordArguments = {"errors"})
+    @GenerateNodeFactory
+    abstract static class UnicodeEscapeDecode extends PythonBuiltinNode {
+        @Specialization(guards = "isBytes(bytes)")
+        Object encode(Object bytes, @SuppressWarnings("unused") PNone errors,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytes) {
+            // this is basically just parsing as a String
+            PythonCore core = getCore();
+            byte[] byteArray = toBytes.execute(bytes);
+            String string = strFromBytes(byteArray);
+            String unescapedString = core.getParser().unescapeJavaString(string);
+            return factory().createTuple(new Object[]{unescapedString, byteArray.length});
+        }
+
+        @TruffleBoundary
+        private static String strFromBytes(byte[] execute) {
+            return new String(execute);
         }
     }
 

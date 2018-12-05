@@ -94,6 +94,11 @@ public interface PythonParser {
     boolean isIdentifier(PythonCore core, String snippet);
 
     /**
+     * Unescape Python escapes from a Java string
+     */
+    public abstract String unescapeJavaString(String str);
+
+    /**
      * Runtime exception used to indicate incomplete source code during parsing.
      */
     public static class PIncompleteSourceException extends RuntimeException implements TruffleException {

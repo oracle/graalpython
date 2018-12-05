@@ -253,11 +253,6 @@ def unicode_escape_encode(string, errors=None):
 
 
 @__builtin__
-def unicode_escape_decode(string, errors=None):
-    raise NotImplementedError("unicode_escape_decode")
-
-
-@__builtin__
 def unicode_internal_encode(obj, errors=None):
     raise NotImplementedError("unicode_internal_encode")
 
