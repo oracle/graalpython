@@ -32,7 +32,6 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -55,9 +54,9 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object collect() {
+        int collect() {
             System.gc();
-            return PNone.NONE;
+            return 0;
         }
     }
 
