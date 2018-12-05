@@ -148,12 +148,10 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         return PythonBuiltinClassType.PInt;
     }
 
-    /*
-     * We don't cache the object in the AST, but its classStable assumption
-     */
-    @Specialization(guards = "object.getClassStableAssumption() == classStable", assumptions = "classStable", limit = "1")
+    @Specialization(guards = "object == cachedObject", assumptions = "classStable", limit = "1")
     protected static LazyPythonClass getPythonClassCached(@SuppressWarnings("unused") PythonObject object,
-                    @SuppressWarnings("unused") @Cached("object.getClassStableAssumption()") Assumption classStable,
+                    @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
+                    @SuppressWarnings("unused") @Cached("cachedObject.getClassStableAssumption()") Assumption classStable,
                     @Cached("object.getLazyPythonClass()") LazyPythonClass klass) {
         return klass;
     }
