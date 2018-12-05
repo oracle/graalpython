@@ -330,6 +330,7 @@ public class TestParserTranslator {
         parseAs = parseAs("a = 1,2", WriteNameNode.class);
         assert parseAs.getRhs() instanceof TupleLiteralNode;
 
+        parseAs("a, = 1,", DestructuringAssignmentNode.class);
         parseAs("a,b = 1,2", DestructuringAssignmentNode.class);
         parseAs("a,*b,c = 1,2", DestructuringAssignmentNode.class);
         parseAs("[[a],*b],c = 1,2", DestructuringAssignmentNode.class);
