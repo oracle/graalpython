@@ -84,3 +84,8 @@ UPCALL_ID(PyList_Size);
 Py_ssize_t PyList_Size(PyObject *op) {
     return UPCALL_CEXT_I(_jls_PyList_Size, native_to_java(op));
 }
+
+UPCALL_ID(PyList_SetSlice);
+int PyList_SetSlice(PyObject *a, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v) {
+    return UPCALL_CEXT_I(_jls_PyList_SetSlice, native_to_java(a), ilow, ihigh, native_to_java(v));
+}

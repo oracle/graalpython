@@ -299,6 +299,14 @@ def PyList_GetSlice(listObj, ilow, ihigh):
 
 
 @may_raise(-1)
+def PyList_SetSlice(listObj, ilow, ihigh, s):
+    if not isinstance(listObj, list):
+        __bad_internal_call(None, None, listObj)
+    listObj[ilow:ihigh] = s
+    return 0
+
+
+@may_raise(-1)
 def PyList_Size(listObj):
     if not isinstance(listObj, list):
         __bad_internal_call(None, None, listObj)
