@@ -258,3 +258,13 @@ if sys.implementation.name == "graalpython":
             assert "internal language" in str(e)
 
         assert polyglot.eval(language="python", string="21 * 2") == 42
+
+    def test_non_index_array_access():
+        import java
+        try:
+            al = java.type("java.util.ArrayList")()
+            assert al.size() == al["size"]()
+        except IndexError:
+            assert False, "using __getitem__ to access keys of an array-like foreign object should work"
+        except NotImplementedError as e:
+            assert "host lookup is not allowed" in str(e)
