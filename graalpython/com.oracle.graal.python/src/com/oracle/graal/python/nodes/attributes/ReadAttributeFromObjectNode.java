@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -103,7 +103,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
-        Object value = getItemNode.execute(object.getDict().getDictStorage(), key);
+        Object value = getItemNode.execute(getDictStorage(object.getDict()), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -116,7 +116,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }, replaces = "readFromDictCached")
     protected Object readFromDict(PythonObject object, Object key,
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
-        Object value = getItemNode.execute(object.getDict().getDictStorage(), key);
+        Object value = getItemNode.execute(getDictStorage(object.getDict()), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -135,8 +135,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
         Object d = getNativeDict.execute(object);
         Object value = null;
-        if (d instanceof PDict) {
-            value = getItemNode.execute(((PDict) d).getDictStorage(), key);
+        if (d instanceof PHashingCollection) {
+            value = getItemNode.execute(getDictStorage((PHashingCollection) d), key);
         }
         if (value == null) {
             return PNone.NO_VALUE;

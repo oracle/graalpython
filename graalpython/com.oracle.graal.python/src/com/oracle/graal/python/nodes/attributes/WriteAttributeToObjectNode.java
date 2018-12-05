@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -135,7 +134,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
         handlePythonClass(object, key);
         PHashingCollection dict = object.getDict();
-        HashingStorage dictStorage = dict.getDictStorage();
+        HashingStorage dictStorage = getDictStorage(dict);
         HashingStorage hashingStorage = setItemNode.execute(dictStorage, key, value);
         if (dictStorage != hashingStorage) {
             updateStorage.enter();
@@ -152,7 +151,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
         handlePythonClass(object, key);
         PHashingCollection dict = object.getDict();
-        HashingStorage dictStorage = dict.getDictStorage();
+        HashingStorage dictStorage = getDictStorage(dict);
         HashingStorage hashingStorage = setItemNode.execute(dictStorage, key, value);
         if (dictStorage != hashingStorage) {
             updateStorage.enter();
@@ -166,8 +165,8 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @Cached("create()") GetObjectDictNode getNativeDict,
                     @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
         Object d = getNativeDict.execute(object);
-        if (d instanceof PDict) {
-            setItemNode.execute(((PDict) d), key, value);
+        if (d instanceof PHashingCollection) {
+            setItemNode.execute(((PHashingCollection) d), key, value);
             return true;
         } else {
             return raise(object, key, value);
