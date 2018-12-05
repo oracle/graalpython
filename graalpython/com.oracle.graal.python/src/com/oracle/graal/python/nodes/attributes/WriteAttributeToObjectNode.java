@@ -93,8 +93,8 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     // write to the DynamicObject
     @Specialization(guards = {
-                    "isAttrWritable(object) || isHiddenKey(key)",
-                    "object == cachedObject"
+                    "object == cachedObject",
+                    "isAttrWritable(object) || isHiddenKey(key)"
     }, assumptions = {
                     "dictUnsetOrSameAsStorageAssumption"
     })
