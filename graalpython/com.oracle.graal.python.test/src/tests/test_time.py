@@ -71,6 +71,32 @@ class StructTimeTests(unittest.TestCase):
         self.assertRaises(TypeError, time.struct_time, (2018, 11, 26, 17, 34, 12, 0, 340))
         self.assertRaises(TypeError, time.struct_time, (2018, 11, 26, 17, 34, 12, 0, 340, 9, 10, 11, 12))
 
+    def test_from_times(self):
+        gt = time.gmtime()
+        self.assertNotEqual(gt.tm_zone, None)
+        self.assertNotEqual(gt.tm_gmtoff, None)
+        
+        lt = time.localtime()
+        self.assertNotEqual(lt.tm_zone, None)
+        self.assertNotEqual(lt.tm_gmtoff, None)
+        
+    def test_destructuring_assignment(self):
+        t = time.struct_time((1,2,3,4,5,6,7,8,9))
+        y,m,d,h,mi,s,wd,yd,dst = t
+        self.assertEqual(y, 1)
+        self.assertEqual(mi, 5)
+        self.assertEqual(dst, 9)
+        self.assertEqual(t.tm_zone, None)
+        self.assertEqual(t.tm_gmtoff, None)
+        
+        t = time.struct_time((11,12,13,14,15,16,17,18,19,20, 21))
+        y,m,d,h,mi,s,wd,yd,dst = t
+        self.assertEqual(y, 11)
+        self.assertEqual(mi, 15)
+        self.assertEqual(dst, 19)
+        self.assertEqual(t.tm_zone, 20)
+        self.assertEqual(t.tm_gmtoff, 21)
+
 class StrftimeTests(unittest.TestCase):
 
     def check_format(self, format, date, expectedStr):

@@ -40,23 +40,30 @@
 
 def make_struct_time():
     from _descriptor import make_named_tuple_class
-    fields = ["tm_year", "tm_mon", "tm_mday", "tm_hour", "tm_min", "tm_sec", "tm_wday", "tm_yday", "tm_isdst", "tm_zone", "tm_gmtoff"]
+    fields = ["tm_year", "tm_mon", "tm_mday", "tm_hour", "tm_min", "tm_sec", "tm_wday", "tm_yday", "tm_isdst"]
     struct_time_type = make_named_tuple_class("struct_time", fields)
 
     class struct_time(struct_time_type):
-
+        
         def __new__(cls, iterable):
+            def create_struct(iter, zone, gmtoff):
+                result = tuple.__new__(cls, iter)
+                result.tm_zone = zone
+                result.tm_gmtoff = gmtoff
+                return result
+
             count = len(iterable)
             if (count < 9):
                 raise TypeError("time.struct_time() takes an at least 9-sequence (%d-sequence given)" % count)
             if (count > 11):
                 raise TypeError("time.struct_time() takes an at most 11-sequence (%d-sequence given)" % count)
             if count == 11:
-                return tuple.__new__(cls, iterable)
+                return create_struct(iterable[0:9], iterable[9], iterable[10])
             if count == 10:
-                return tuple.__new__(cls, iterable + (None, ))
+                return create_struct(iterable[0:9], iterable[9], None)
             if count == 9:
-                return tuple.__new__(cls, iterable + (None,  None)) 
+                return create_struct(iterable, None, None)
+                
 
         def __repr__(self):
             text = "{}(".format(self.__class__.__name__)
@@ -74,8 +81,10 @@ def make_struct_time():
 struct_time = make_struct_time()
 del make_struct_time
 
+_STRUCT_TM_ITEMS = 11
+
 @__builtin__
-def gmtime(seconds):
+def gmtime(seconds=None):
     return struct_time(__truffle_gmtime_tuple__(seconds))
 
 
