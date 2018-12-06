@@ -61,6 +61,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
 
 import java.util.List;
 
@@ -76,6 +77,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -303,6 +305,16 @@ public class ComplexBuiltins extends PythonBuiltins {
         @Fallback
         PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = __DIVMOD__, fixedNumOfPositionalArgs = 2)
+    static abstract class DivModNode extends PythonBinaryBuiltinNode {
+        
+        @Specialization
+        PComplex doComplexDouble(Object right, Object left) {
+            throw raise(PythonErrorType.TypeError, "can't take floor or mod of complex number.");
         }
     }
 
