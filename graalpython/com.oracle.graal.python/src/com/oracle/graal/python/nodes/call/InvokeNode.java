@@ -214,7 +214,7 @@ public abstract class InvokeNode extends AbstractInvokeNode {
 
     protected InvokeNode(CallTarget callTarget, Arity calleeArity, PythonObject globals, PCell[] closure, boolean isBuiltin, boolean isGenerator) {
         this.callNode = Truffle.getRuntime().createDirectCallNode(callTarget);
-        if (isBuiltin) {
+        if (isBuiltin && PythonOptions.getEnableForcedSplits()) {
             callNode.cloneCallTarget();
         }
         if (isGenerator && shouldInlineGenerators()) {

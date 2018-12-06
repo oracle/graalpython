@@ -116,6 +116,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.DEBUG, help = "Minimal size of string, when lazy strings are used. Default 20") //
     public static final OptionKey<Integer> MinLazyStringLength = new OptionKey<>(20);
 
+    @Option(category = OptionCategory.EXPERT, help = "Enable forced splitting (of builtins). Default true.") //
+    public static final OptionKey<Boolean> EnableForcedSplits = new OptionKey<>(true);
+
     public static OptionDescriptors createDescriptors() {
         return new PythonOptionsOptionDescriptors();
     }
@@ -162,5 +165,9 @@ public final class PythonOptions {
 
     public static boolean isWithThread() {
         return getOption(PythonLanguage.getContextRef().get(), WithThread);
+    }
+
+    public static boolean getEnableForcedSplits() {
+        return getOption(PythonLanguage.getContextRef().get(), EnableForcedSplits);
     }
 }
