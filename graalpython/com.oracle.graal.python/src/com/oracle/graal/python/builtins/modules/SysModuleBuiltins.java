@@ -45,6 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -218,7 +219,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         public Object run(
                         @Cached("create()") GetClassNode getClassNode) {
             PythonContext context = getContext();
-            PException currentException = context.getCurrentException();
+            PException currentException = context.getCaughtException();
             if (currentException == null) {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
@@ -354,4 +355,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return factory().createString(s.intern());
         }
     }
+
+    @Builtin(name = "getdefaultencoding", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public static abstract class GetDefaultEncodingNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        protected String getFileSystemEncoding() {
+            return Charset.defaultCharset().name();
+        }
+    }
+
 }
