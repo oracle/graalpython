@@ -198,13 +198,13 @@ int PyType_Ready(PyTypeObject* cls) {
     PyTypeObject* metaclass = Py_TYPE(cls);
     if (!base) {
         base = &PyBaseObject_Type;
-        if (!metaclass) {
-            metaclass = &PyType_Type;
-        }
     } else {
         if (!metaclass) {
             metaclass = Py_TYPE(base);
         }
+    }
+    if (!metaclass) {
+        metaclass = &PyType_Type;
     }
     cls->tp_base = base;
     Py_TYPE(cls) = metaclass;
