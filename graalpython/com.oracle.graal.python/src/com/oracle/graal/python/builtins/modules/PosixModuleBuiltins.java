@@ -1531,4 +1531,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return recursive.execute(strNode.executeWith(PythonBuiltinClassType.PString, x, PNone.NO_VALUE, PNone.NO_VALUE));
         }
     }
+
+    @Builtin(name = "cpu_count", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class CpuCountNode extends PythonBuiltinNode {
+        @Specialization
+        int getCpuCount() {
+            return Runtime.getRuntime().availableProcessors();
+        }
+    }
 }
