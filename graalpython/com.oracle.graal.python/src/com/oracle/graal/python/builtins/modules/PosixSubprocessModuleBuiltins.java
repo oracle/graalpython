@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.nio.ByteBuffer;
@@ -60,13 +61,17 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleOptions;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -86,25 +91,12 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
 
         @Specialization
-        synchronized int forkExecNoEnv(PList args, PTuple executable_list, boolean close_fds,
-                        PTuple fdsToKeep, PNone cwd, @SuppressWarnings("unused") PNone env,
-                        int p2cread, int p2cwrite, int c2pread, int c2pwrite,
-                        int errread, int errwrite, int errpipe_read, int errpipe_write,
-                        boolean restore_signals, boolean call_setsid, PNone preexec_fn) {
-            return forkExec(args, executable_list, close_fds, fdsToKeep, cwd, factory().createList(),
-                            p2cread, p2cwrite, c2pread, c2pwrite,
-                            errread, errwrite, errpipe_read, errpipe_write,
-                            restore_signals, call_setsid, preexec_fn);
-        }
-
-        @SuppressWarnings("unused")
         @TruffleBoundary
-        @Specialization
-        synchronized int forkExec(PList args, PTuple executable_list, boolean close_fds,
-                        PTuple fdsToKeep, PNone cwd, PList env,
+        synchronized int forkExec(PList args, @SuppressWarnings("unused") PList execList, @SuppressWarnings("unused") boolean closeFds,
+                        @SuppressWarnings("unused") PList fdsToKeep, String cwd, PList env,
                         int p2cread, int p2cwrite, int c2pread, int c2pwrite,
-                        int errread, int errwrite, int errpipe_read, int errpipe_write,
-                        boolean restore_signals, boolean call_setsid, PNone preexec_fn) {
+                        int errread, int errwrite, @SuppressWarnings("unused") int errpipe_read, int errpipe_write,
+                        @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn) {
             PythonContext context = getContext();
             PosixResources resources = context.getResources();
             if (!context.isExecutableAccessAllowed()) {
@@ -136,10 +128,6 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            Channel stdin = null;
-            Channel stdout = null;
-            Channel stderr = null;
-
             ProcessBuilder pb = new ProcessBuilder(argStrings);
             if (p2cread != -1 && p2cwrite != -1) {
                 pb.redirectInput(Redirect.PIPE);
@@ -157,6 +145,16 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 pb.redirectError(Redirect.PIPE);
             } else {
                 pb.redirectError(Redirect.INHERIT);
+            }
+
+            try {
+                if (getContext().getEnv().getTruffleFile(cwd).exists()) {
+                    pb.directory(new File(cwd));
+                } else {
+                    throw raise(PythonBuiltinClassType.OSError, "working directory %s is not accessible", cwd);
+                }
+            } catch (SecurityException e) {
+                throw raise(PythonBuiltinClassType.OSError, e.getMessage());
             }
 
             Map<String, String> environment = pb.environment();
@@ -203,6 +201,50 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 }
                 return -1;
             }
+        }
+
+        @Specialization(replaces = "forkExec")
+        int forkExecDefault(Object args, Object executable_list, Object close_fds,
+                        Object fdsToKeep, Object cwd, Object env,
+                        Object p2cread, Object p2cwrite, Object c2pread, Object c2pwrite,
+                        Object errread, Object errwrite, Object errpipe_read, Object errpipe_write,
+                        Object restore_signals, Object call_setsid, PNone preexec_fn,
+                        @Cached("create()") CastToListNode castArgs,
+                        @Cached("create()") CastToListNode castExecList,
+                        @Cached("createIfTrueNode()") CastToBooleanNode castCloseFds,
+                        @Cached("create()") CastToListNode castFdsToKeep,
+                        @Cached("create()") CastToStringNode castCwd,
+                        @Cached("create()") CastToListNode castEnv,
+                        @Cached("create()") CastToIndexNode castP2cread,
+                        @Cached("create()") CastToIndexNode castP2cwrite,
+                        @Cached("create()") CastToIndexNode castC2pread,
+                        @Cached("create()") CastToIndexNode castC2pwrite,
+                        @Cached("create()") CastToIndexNode castErrread,
+                        @Cached("create()") CastToIndexNode castErrwrite,
+                        @Cached("create()") CastToIndexNode castErrpipeRead,
+                        @Cached("create()") CastToIndexNode castErrpipeWrite,
+                        @Cached("createIfTrueNode()") CastToBooleanNode castRestoreSignals,
+                        @Cached("createIfTrueNode()") CastToBooleanNode castSetsid) {
+
+            String actualCwd;
+            if (cwd instanceof PNone) {
+                actualCwd = getContext().getEnv().getCurrentWorkingDirectory().getPath();
+            } else {
+                actualCwd = castCwd.execute(cwd);
+            }
+
+            PList actualEnv;
+            if (env instanceof PNone) {
+                actualEnv = factory().createList();
+            } else {
+                actualEnv = castEnv.executeWith(env);
+            }
+
+            return forkExec(castArgs.executeWith(args), castExecList.executeWith(executable_list), castCloseFds.executeWith(close_fds),
+                            castFdsToKeep.executeWith(fdsToKeep), actualCwd, actualEnv,
+                            castP2cread.execute(p2cread), castP2cwrite.execute(p2cwrite), castC2pread.execute(c2pread), castC2pwrite.execute(c2pwrite),
+                            castErrread.execute(errread), castErrwrite.execute(errwrite), castErrpipeRead.execute(errpipe_read), castErrpipeWrite.execute(errpipe_write),
+                            castRestoreSignals.executeWith(restore_signals), castSetsid.executeWith(call_setsid), preexec_fn);
         }
     }
 }
