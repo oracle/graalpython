@@ -211,20 +211,20 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization
         PBaseSet doPBaseSet(PSet left, PDictView right,
-                @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
             PSet rightSet = constructSetNode.executeWith(right);
             HashingStorage intersectedStorage = getIntersectNode().execute(left.getDictStorage(), rightSet.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
-        
+
         @Specialization
         PBaseSet doPBaseSet(PFrozenSet left, PDictView right,
-                @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
             PSet rightSet = constructSetNode.executeWith(right);
             HashingStorage intersectedStorage = getIntersectNode().execute(left.getDictStorage(), rightSet.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
-        
+
         @Fallback
         Object doAnd(Object self, Object other) {
             throw raise(PythonErrorType.TypeError, "unsupported operand type(s) for &: '%p' and '%p'", self, other);
@@ -284,23 +284,23 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             HashingStorage intersectedStorage = getUnionNode().execute(left.getDictStorage(), right.getDictStorage());
             return factory().createFrozenSet(intersectedStorage);
         }
-        
+
         @Specialization
         PBaseSet doPBaseSet(PSet left, PDictView right,
-                @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
             PSet rightSet = constructSetNode.executeWith(right);
             HashingStorage intersectedStorage = getUnionNode().execute(left.getDictStorage(), rightSet.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
-        
+
         @Specialization
         PBaseSet doPBaseSet(PFrozenSet left, PDictView right,
-                @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
             PSet rightSet = constructSetNode.executeWith(right);
             HashingStorage intersectedStorage = getUnionNode().execute(left.getDictStorage(), rightSet.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
-        
+
         @Fallback
         Object doOr(Object self, Object other) {
             throw raise(PythonErrorType.TypeError, "unsupported operand type(s) for |: '%p' and '%p'", self, other);
