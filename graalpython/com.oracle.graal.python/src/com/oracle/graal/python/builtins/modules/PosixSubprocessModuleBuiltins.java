@@ -48,12 +48,15 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -80,11 +83,25 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     "errpipe_read", "errpipe_write", "restore_signals", "call_setsid", "preexec_fn"})
     @GenerateNodeFactory
     abstract static class ForkExecNode extends PythonBuiltinNode {
+        @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+
+        @Specialization
+        synchronized int forkExecNoEnv(PList args, PTuple executable_list, boolean close_fds,
+                        PTuple fdsToKeep, PNone cwd, @SuppressWarnings("unused") PNone env,
+                        int p2cread, int p2cwrite, int c2pread, int c2pwrite,
+                        int errread, int errwrite, int errpipe_read, int errpipe_write,
+                        boolean restore_signals, boolean call_setsid, PNone preexec_fn) {
+            return forkExec(args, executable_list, close_fds, fdsToKeep, cwd, factory().createList(),
+                            p2cread, p2cwrite, c2pread, c2pwrite,
+                            errread, errwrite, errpipe_read, errpipe_write,
+                            restore_signals, call_setsid, preexec_fn);
+        }
+
         @SuppressWarnings("unused")
         @TruffleBoundary
         @Specialization
         synchronized int forkExec(PList args, PTuple executable_list, boolean close_fds,
-                        PTuple fdsToKeep, PNone cwd, PNone env,
+                        PTuple fdsToKeep, PNone cwd, PList env,
                         int p2cread, int p2cwrite, int c2pread, int c2pwrite,
                         int errread, int errwrite, int errpipe_read, int errpipe_write,
                         boolean restore_signals, boolean call_setsid, PNone preexec_fn) {
@@ -140,6 +157,16 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 pb.redirectError(Redirect.PIPE);
             } else {
                 pb.redirectError(Redirect.INHERIT);
+            }
+
+            Map<String, String> environment = pb.environment();
+            for (Object keyValue : env.getSequenceStorage().getInternalArray()) {
+                if (keyValue instanceof PBytes) {
+                    String[] string = new String(toBytes.execute(keyValue)).split("=", 2);
+                    if (string.length == 2) {
+                        environment.put(string[0], string[1]);
+                    }
+                }
             }
 
             try {
