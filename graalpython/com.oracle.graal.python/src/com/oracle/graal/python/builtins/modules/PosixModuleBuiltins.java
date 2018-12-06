@@ -246,7 +246,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone chdir(String spath) {
             Env env = getContext().getEnv();
             try {
-                TruffleFile dir = env.getTruffleFile(spath);
+                TruffleFile dir = env.getTruffleFile(spath).getAbsoluteFile();
                 env.setCurrentWorkingDirectory(dir);
                 return PNone.NONE;
             } catch (UnsupportedOperationException | IllegalArgumentException | SecurityException e) {
