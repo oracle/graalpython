@@ -313,7 +313,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     static abstract class DivModNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        @SuppressWarnings("unused")        
+        @SuppressWarnings("unused")
         PComplex doComplexDouble(Object right, Object left) {
             throw raise(PythonErrorType.TypeError, "can't take floor or mod of complex number.");
         }
