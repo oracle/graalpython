@@ -121,3 +121,8 @@ def test_imp_fix_co_filename():
     old_name = code.co_filename
     _imp._fix_co_filename(code, old_name + '_more_path')
     assert code.co_filename == old_name + '_more_path'
+
+
+def test_recursive_import_from():
+    import package.recpkg
+    assert package.recpkg.context is package.recpkg.reduction.context
