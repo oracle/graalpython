@@ -1064,7 +1064,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "!compatibleAssign(self, sequence)")
         void doError(@SuppressWarnings("unused") SequenceStorage self, @SuppressWarnings("unused") SliceInfo info, SequenceStorage sequence) {
-            throw new SequenceStoreException(sequence);
+            throw new SequenceStoreException(sequence.getIndicativeValue());
         }
 
         protected static boolean isValidReplacement(Class<? extends SequenceStorage> cachedClass, SequenceStorage s, SliceInfo info) {
