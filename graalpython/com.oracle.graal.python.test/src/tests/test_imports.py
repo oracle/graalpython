@@ -124,5 +124,6 @@ def test_imp_fix_co_filename():
 
 
 def test_recursive_import_from():
-    import package.recpkg
-    assert package.recpkg.context is package.recpkg.reduction.context
+    if sys.version_info.minor >= 6:
+        import package.recpkg
+        assert package.recpkg.context is package.recpkg.reduction.context
