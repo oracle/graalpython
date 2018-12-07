@@ -1153,11 +1153,11 @@ def initialize_datetime_capi():
     import datetime
 
     class PyDateTime_CAPI:
-        DateType = type(datetime.date)
-        DateTimeType = type(datetime.datetime)
-        TimeType = type(datetime.time)
-        DeltaType = type(datetime.timedelta)
-        TZInfoType = type(datetime.tzinfo)
+        DateType = datetime.date
+        DateTimeType = datetime.datetime
+        TimeType = datetime.time
+        DeltaType = datetime.timedelta
+        TZInfoType = datetime.tzinfo
 
         @staticmethod
         def Date_FromDate(y, m, d, typ):
