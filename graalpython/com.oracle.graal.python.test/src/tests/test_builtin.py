@@ -31,3 +31,9 @@ class BuiltinTest(unittest.TestCase):
         code = 'a' + ' = ' + '8.01234567890123'
         exec(code, globs)
         self.assertEqual(globs['a'], 8.01234567890123)
+
+    def test_divmod_complex(self):
+        c1, c2 = complex(3, 2), complex(4,1)
+        self.assertRaises(TypeError, divmod, c1, c2)
+        self.assertRaises(TypeError, divmod, 10, c2)
+        self.assertRaises(TypeError, divmod, c1, 10)
