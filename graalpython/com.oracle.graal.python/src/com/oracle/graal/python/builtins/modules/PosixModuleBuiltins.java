@@ -246,7 +246,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone chdir(String spath) {
             Env env = getContext().getEnv();
             try {
-                TruffleFile dir = env.getTruffleFile(spath);
+                TruffleFile dir = env.getTruffleFile(spath).getAbsoluteFile();
                 env.setCurrentWorkingDirectory(dir);
                 return PNone.NONE;
             } catch (UnsupportedOperationException | IllegalArgumentException | SecurityException e) {
@@ -1529,6 +1529,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 recursive = insert(CastToPathNode.create());
             }
             return recursive.execute(strNode.executeWith(PythonBuiltinClassType.PString, x, PNone.NO_VALUE, PNone.NO_VALUE));
+        }
+    }
+
+    @Builtin(name = "cpu_count", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class CpuCountNode extends PythonBuiltinNode {
+        @Specialization
+        int getCpuCount() {
+            return Runtime.getRuntime().availableProcessors();
         }
     }
 }
