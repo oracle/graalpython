@@ -313,6 +313,14 @@ def PyList_Size(listObj):
     return len(listObj)
 
 
+@may_raise(-1)
+def PyList_Sort(listObj):
+    if not isinstance(listObj, list):
+        __bad_internal_call(None, None, listObj)
+    listObj.sort()
+    return 0
+
+
 ##################### LONG
 
 @may_raise(-1)
