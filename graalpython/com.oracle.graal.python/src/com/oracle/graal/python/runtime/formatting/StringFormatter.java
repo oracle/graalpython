@@ -370,7 +370,6 @@ public class StringFormatter {
                 case 'u': // Obsolete type identical to 'd'.
                 case 'i': // Compatibility with scanf().
                     // Format the argument using this Spec.
-                    f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
 
                     arg = getarg(getItemNode);
 
@@ -379,14 +378,23 @@ public class StringFormatter {
 
                     // We have to check what we got back.
                     if (argAsNumber instanceof Integer) {
+                        f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
                         fi.format((Integer) argAsNumber);
                     } else if (argAsNumber instanceof Long) {
+                        f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
                         fi.format(((Long) argAsNumber).intValue());
                     } else if (argAsNumber instanceof PInt) {
+                        f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
                         fi.format(((PInt) argAsNumber).intValue());
+                    } else if (arg instanceof String && ((String) arg).length() == 1) {
+                        f = ft = new TextFormatter(core, buffer, spec);
+                        ft.format((String) arg);
+                    } else if (arg instanceof PString && ((PString) arg).getValue().length() == 1) {
+                        f = ft = new TextFormatter(core, buffer, spec);
+                        ft.format(((PString) arg).getCharSequence());
                     } else {
                         // It couldn't be converted, raise the error here
-                        throw core.raise(TypeError, "%%%c format: a number is required, not %p", spec.type, arg);
+                        throw core.raise(TypeError, "%%%c requires int or char");
                     }
 
                     break;
