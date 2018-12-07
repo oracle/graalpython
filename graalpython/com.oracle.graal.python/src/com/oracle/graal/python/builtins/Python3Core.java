@@ -88,6 +88,7 @@ import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
@@ -239,6 +240,7 @@ public final class Python3Core implements PythonCore {
                         new BytesBuiltins(),
                         new ComplexBuiltins(),
                         new ByteArrayBuiltins(),
+                        new AbstractBytesBuiltins(),
                         new TypeBuiltins(),
                         new IntBuiltins(),
                         new TruffleObjectBuiltins(),
