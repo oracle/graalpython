@@ -71,9 +71,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     private static Object[] getTimeStruct(double seconds, boolean local) {
-        Object[] timeStruct = new Object[9];
+        Object[] timeStruct = new Object[11];
         Instant instant = Instant.ofEpochSecond((long) seconds);
-
         ZoneId zone = (local) ? ZoneId.systemDefault() : ZoneId.of("GMT");
         ZonedDateTime zonedDateTime = LocalDateTime.ofInstant(instant, zone).atZone(zone);
         timeStruct[0] = zonedDateTime.getYear();
@@ -85,6 +84,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         timeStruct[6] = zonedDateTime.getDayOfWeek().getValue();
         timeStruct[7] = zonedDateTime.getDayOfYear();
         timeStruct[8] = (zonedDateTime.getZone().getRules().isDaylightSavings(instant)) ? 1 : 0;
+        timeStruct[9] = zone.getId();
+        timeStruct[10] = zonedDateTime.getOffset().getTotalSeconds();
 
         return timeStruct;
     }
@@ -94,6 +95,17 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonGMTimeNode extends PythonBuiltinNode {
+
+        @Specialization
+        public PTuple gmtime(@SuppressWarnings("unused") PNone seconds) {
+            return factory().createTuple(getTimeStruct(timeSeconds(), false));
+        }
+
+        @Specialization
+        public PTuple gmtime(long seconds) {
+            return factory().createTuple(getTimeStruct(seconds, false));
+        }
+
         @Specialization
         public PTuple gmtime(double seconds) {
             return factory().createTuple(getTimeStruct(seconds, false));
