@@ -246,18 +246,6 @@ def utf_32_ex_decode(data, errors=None, byteorder=0, final=False):
 
 
 @__builtin__
-def unicode_escape_encode(string, errors=None):
-    if not isinstance(string, str):
-        raise TypeError("unicode_escape_encode() argument 1 must be str, not %s", type(string))
-    return __truffle_encode(repr(string)[1:-1], "latin-1", errors)
-
-
-@__builtin__
-def unicode_escape_decode(string, errors=None):
-    raise NotImplementedError("unicode_escape_decode")
-
-
-@__builtin__
 def unicode_internal_encode(obj, errors=None):
     raise NotImplementedError("unicode_internal_encode")
 

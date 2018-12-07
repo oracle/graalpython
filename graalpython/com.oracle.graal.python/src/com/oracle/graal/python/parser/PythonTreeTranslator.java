@@ -658,7 +658,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         }
     }
 
-    private static String unescapeJavaString(String st) {
+    public static String unescapeJavaString(String st) {
         if (st.indexOf("\\") == -1) {
             return st;
         }

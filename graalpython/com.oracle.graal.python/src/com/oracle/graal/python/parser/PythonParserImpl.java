@@ -114,6 +114,12 @@ public final class PythonParserImpl implements PythonParser {
         return input.NAME() != null;
     }
 
+    @Override
+    @TruffleBoundary
+    public String unescapeJavaString(String str) {
+        return PythonTreeTranslator.unescapeJavaString(str);
+    }
+
     private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
         SourceSection section = PythonErrorStrategy.getPosition(source, e);
         throw errors.raiseInvalidSyntax(source, section);
