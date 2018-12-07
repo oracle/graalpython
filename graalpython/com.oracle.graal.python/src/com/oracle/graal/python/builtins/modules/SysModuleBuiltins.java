@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -58,9 +60,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -316,7 +322,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
 
         private PException raiseCallStackDepth() {
-            return raise(PythonErrorType.ValueError, "call stack is not deep enough");
+            return raise(ValueError, "call stack is not deep enough");
         }
 
     }
@@ -363,6 +369,59 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         protected String getFileSystemEncoding() {
             return Charset.defaultCharset().name();
+        }
+    }
+
+    @Builtin(name = "getsizeof", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public static abstract class GetsizeofNode extends PythonBinaryBuiltinNode {
+        @Child private CastToIntegerFromIntNode castToIntNode = CastToIntegerFromIntNode.create();
+
+        @Specialization(guards = "isNoValue(dflt)")
+        protected Object doGeneric(Object object, @SuppressWarnings("unused") PNone dflt,
+                        @Cached("createWithError()") LookupAndCallUnaryNode callSizeofNode) {
+            Object result = castToIntNode.execute(callSizeofNode.executeObject(object));
+            return checkResult(result);
+        }
+
+        @Specialization(guards = "!isNoValue(dflt)")
+        protected Object doGeneric(Object object, Object dflt,
+                        @Cached("createWithoutError()") LookupAndCallUnaryNode callSizeofNode) {
+            Object result = castToIntNode.execute(callSizeofNode.executeObject(object));
+            if (result == PNone.NO_VALUE) {
+                return dflt;
+            }
+            return checkResult(result);
+        }
+
+        private Object checkResult(Object result) {
+            long value = -1;
+            if (result instanceof Number) {
+                value = ((Number) result).longValue();
+            } else if (result instanceof PInt) {
+                try {
+                    value = ((PInt) result).longValueExact();
+                } catch (ArithmeticException e) {
+                    // fall through
+                }
+            }
+            if (value < 0) {
+                throw raise(ValueError, "__sizeof__() should return >= 0");
+            }
+            return value;
+        }
+
+        protected LookupAndCallUnaryNode createWithError() {
+            return LookupAndCallUnaryNode.create(__SIZEOF__, () -> new NoAttributeHandler() {
+                @Override
+                public Object execute(Object receiver) {
+                    throw raise(TypeError, "Type %p doesn't define %s", receiver, __SIZEOF__);
+                }
+            });
+        }
+
+        protected LookupAndCallUnaryNode createWithoutError() {
+            return LookupAndCallUnaryNode.create(__SIZEOF__);
         }
     }
 
