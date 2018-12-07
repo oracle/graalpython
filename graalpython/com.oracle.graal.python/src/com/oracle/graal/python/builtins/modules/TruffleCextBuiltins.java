@@ -1723,7 +1723,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 if (readErrorHandlerNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    readErrorHandlerNode = ReadAttributeFromObjectNode.create();
+                    readErrorHandlerNode = insert(ReadAttributeFromObjectNode.create());
                 }
                 getContext().setCurrentException(e);
                 return toSulongNode.execute(readErrorHandlerNode.execute(cextModule, NATIVE_NULL));
