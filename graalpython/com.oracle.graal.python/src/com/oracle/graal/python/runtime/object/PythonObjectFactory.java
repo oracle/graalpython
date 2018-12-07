@@ -26,6 +26,7 @@
 package com.oracle.graal.python.runtime.object;
 
 import java.math.BigInteger;
+import java.nio.file.DirectoryStream;
 import java.util.Map;
 import java.util.Optional;
 
@@ -86,6 +87,8 @@ import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
+import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.random.PRandom;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
@@ -120,6 +123,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -814,5 +818,17 @@ public final class PythonObjectFactory extends Node {
 
     public PThread createPythonThread(PythonClass cls, Thread thread) {
         return trace(new PThread(cls, thread));
+    }
+
+    public PScandirIterator createScandirIterator(PythonClass cls, String path, DirectoryStream<TruffleFile> next) {
+        return trace(new PScandirIterator(cls, path, next));
+    }
+
+    public PDirEntry createDirEntry(String name, TruffleFile file) {
+        return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, name, file));
+    }
+
+    public Object createDirEntry(PythonClass cls, String name, TruffleFile file) {
+        return trace(new PDirEntry(cls, name, file));
     }
 }

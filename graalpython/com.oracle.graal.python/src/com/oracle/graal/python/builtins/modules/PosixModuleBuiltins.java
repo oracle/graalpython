@@ -45,6 +45,7 @@ import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
@@ -85,11 +86,13 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.PosixResources;
@@ -529,7 +532,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return mode;
         }
 
-        protected static StatNode create() {
+        public static StatNode create() {
             return StatNodeFactory.create();
         }
     }
@@ -562,6 +565,43 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 i += 1;
             }
             return filenames;
+        }
+    }
+
+    @Builtin(name = "ScandirIterator", fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PScandirIterator, isPublic = true)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class ScandirIterNode extends PythonBinaryBuiltinNode {
+        private final BranchProfile gotException = BranchProfile.create();
+
+        @Specialization
+        Object doit(PythonClass cls, String path) {
+            try {
+                TruffleFile file = getContext().getEnv().getTruffleFile(path);
+                return factory().createScandirIterator(cls, path, file.newDirectoryStream());
+            } catch (SecurityException | IOException e) {
+                gotException.enter();
+                throw raise(OSError, path);
+            }
+        }
+    }
+
+    @Builtin(name = "DirEntry", fixedNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PDirEntry, isPublic = true)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class DirEntryNode extends PythonTernaryBuiltinNode {
+        private final BranchProfile gotException = BranchProfile.create();
+
+        @Specialization
+        Object doit(PythonClass cls, String name, String path) {
+            try {
+                TruffleFile dir = getContext().getEnv().getTruffleFile(path);
+                TruffleFile file = dir.resolve(name);
+                return factory().createDirEntry(cls, name, file);
+            } catch (SecurityException | InvalidPathException e) {
+                gotException.enter();
+                throw raise(OSError, path);
+            }
         }
     }
 

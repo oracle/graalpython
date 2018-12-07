@@ -93,6 +93,8 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PSocket("socket", "_socket"),
     PStaticmethod("staticmethod", "builtins"),
     PClassmethod("classmethod", "builtins"),
+    PScandirIterator("ScandirIterator", "posix"),
+    PDirEntry("DirEntry", "posix"),
 
     // Errors and exceptions:
 
