@@ -173,6 +173,7 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
     }
 
     private PNode visitTargetlist(ParserRuleContext ctx, int starSize) {
+        boolean endsWithComma = false;
         if (starSize > 0) {
             if (starSize > 1) {
                 throw errors.raise(SyntaxError, "%d starred expressions in assigment", starSize);
@@ -181,7 +182,11 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
         List<ExpressionNode> targets = new ArrayList<>();
         for (int i = 0; i < ctx.getChildCount(); i++) {
             ParseTree child = ctx.getChild(i);
+            endsWithComma = false;
             if (child instanceof TerminalNode) {
+                if (child.getText().equals(",")) {
+                    endsWithComma = true;
+                }
                 continue;
             } else if (child instanceof Python3Parser.TestContext ||
                             child instanceof Python3Parser.Star_exprContext ||
@@ -191,7 +196,7 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
                 assert false;
             }
         }
-        if (targets.size() == 1) {
+        if (targets.size() == 1 && !endsWithComma) {
             PNode pNode = targets.get(0);
             if (pNode instanceof ReadNode) {
                 return pNode;
