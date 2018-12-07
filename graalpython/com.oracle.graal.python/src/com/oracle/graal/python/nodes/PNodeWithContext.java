@@ -51,11 +51,13 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class PNodeWithContext extends Node {
@@ -121,7 +123,14 @@ public abstract class PNodeWithContext extends Node {
     }
 
     protected Assumption singleContextAssumption() {
-        PythonLanguage language = getRootNode().getLanguage(PythonLanguage.class);
+        CompilerAsserts.neverPartOfCompilation("the singleContextAssumption should only be retrieved in the interpreter");
+        PythonLanguage language = null;
+        RootNode rootNode = getRootNode();
+        if (rootNode != null) {
+            language = rootNode.getLanguage(PythonLanguage.class);
+        } else {
+            throw new IllegalStateException("a python node was executed without being adopted!");
+        }
         if (language == null) {
             language = PythonLanguage.getCurrent();
         }
