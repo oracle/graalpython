@@ -209,6 +209,14 @@ int PyType_Ready(PyTypeObject* cls) {
     cls->tp_base = base;
     Py_TYPE(cls) = metaclass;
 
+    /* Initialize the base class */
+    if (base != NULL && !(base->tp_flags % Py_TPFLAGS_READY)) {
+        if (PyType_Ready(base) < 0) {
+        	cls->tp_flags &= ~Py_TPFLAGS_READYING;
+        	return -1;
+        }
+    }
+
     if (!(cls->tp_doc)) {
         cls->tp_doc = "";
     }
