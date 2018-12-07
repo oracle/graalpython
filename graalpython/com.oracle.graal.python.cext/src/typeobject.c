@@ -219,14 +219,16 @@ int PyType_Ready(PyTypeObject* cls) {
         if (base == NULL) {
             bases = PyTuple_New(0);
         } else {
-            bases = PyTuple_Pack(1, base);
+            bases = PyTuple_Pack(1, native_to_java(base));
         }
-        if (bases == NULL) {
-        	cls->tp_flags &= ~Py_TPFLAGS_READYING;
-        	return -1;
-        }
-        cls->tp_bases = bases;
+    } else {
+    	// we need to resolve pointers to Python classes
+    	Py_ssize_t n_bases = PyObject_Length(bases);
+    	for(Py_ssize_t i=0; i < n_bases; i++) {
+    		PyTuple_SetItem(bases, i, native_to_java(PyTuple_GetItem(bases, i)));
+    	}
     }
+    cls->tp_bases = bases;
 
     PyObject* native_members = PyDict_New();
     PyDict_SetItemString(native_members, "tp_name", polyglot_from_string(cls->tp_name, SRC_CS));
