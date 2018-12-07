@@ -34,7 +34,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -44,16 +43,12 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@NodeChild(value = "withContext", type = ExpressionNode.class)
-public abstract class WithNode extends StatementNode {
-
+public class WithNode extends StatementNode {
     @Child private StatementNode body;
     @Child private WriteNode targetNode;
+    @Child private ExpressionNode withContext;
     @Child private LookupAndCallBinaryNode enterGetter = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
     @Child private LookupAndCallBinaryNode exitGetter = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
     @Child private CallDispatchNode enterDispatch = CallDispatchNode.create();
@@ -61,13 +56,18 @@ public abstract class WithNode extends StatementNode {
     @Child private CastToBooleanNode toBooleanNode = CastToBooleanNode.createIfTrueNode();
     @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
 
-    protected WithNode(WriteNode targetNode, StatementNode body) {
+    GetClassNode getClassNode = GetClassNode.create();
+    IsCallableNode isCallableNode = IsCallableNode.create();
+    IsCallableNode isExitCallableNode = IsCallableNode.create();
+
+    protected WithNode(WriteNode targetNode, StatementNode body, ExpressionNode withContext) {
         this.targetNode = targetNode;
         this.body = body;
+        this.withContext = withContext;
     }
 
     public static WithNode create(ExpressionNode withContext, WriteNode targetNode, StatementNode body) {
-        return WithNodeGen.create(targetNode, body, withContext);
+        return new WithNode(targetNode, body, withContext);
     }
 
     private void applyValues(VirtualFrame frame, Object asNameValue) {
@@ -79,8 +79,6 @@ public abstract class WithNode extends StatementNode {
         }
     }
 
-    public abstract PNode getWithContext();
-
     public StatementNode getBody() {
         return body;
     }
@@ -89,42 +87,71 @@ public abstract class WithNode extends StatementNode {
         return targetNode;
     }
 
-    @Specialization
-    protected void runWith(VirtualFrame frame, Object withObject,
-                    @Cached("create()") GetClassNode getClassNode,
-                    @Cached("create()") IsCallableNode isCallableNode,
-                    @Cached("create()") IsCallableNode isExitCallableNode) {
-
-        PException exceptionState = getContext().getCurrentException();
+    @Override
+    public void executeVoid(VirtualFrame frame) {
         boolean gotException = false;
+        Object withObject = getWithObject(frame);
         // CPython first looks up '__exit__
         Object exitCallable = exitGetter.executeObject(withObject, __EXIT__);
         Object enterCallable = enterGetter.executeObject(withObject, __ENTER__);
+        PException exceptionState = doEnter(frame, withObject, enterCallable);
+        try {
+            doBody(frame);
+        } catch (PException exception) {
+            gotException = true;
+            handleException(frame, withObject, exitCallable, exception);
+        } finally {
+            doLeave(frame, withObject, exceptionState, gotException, exitCallable);
+        }
+    }
 
+    /**
+     * Execute the nodes to get the with object.
+     */
+    protected Object getWithObject(VirtualFrame frame) {
+        return withContext.execute(frame);
+    }
+
+    /**
+     * Execute the body
+     */
+    protected void doBody(VirtualFrame frame) {
+        body.executeVoid(frame);
+    }
+
+    /**
+     * Leave the with-body. Call __exit__ if it hasn't already happened because of an exception, and
+     * reset the exception state.
+     */
+    protected void doLeave(VirtualFrame frame, Object withObject, PException exceptionState, boolean gotException, Object exitCallable) {
+        if (!gotException) {
+            if (isExitCallableNode.execute(exitCallable)) {
+                exitDispatch.executeCall(frame, exitCallable, createArgs.execute(withObject, PNone.NONE, PNone.NONE, PNone.NONE), new PKeyword[0]);
+            } else {
+                throw raise(TypeError, "%p is not callable", exitCallable);
+            }
+        }
+        getContext().setCurrentException(exceptionState);
+    }
+
+    /**
+     * Call the __enter__ method and return the exception state as it was before starting the with
+     * statement
+     */
+    protected PException doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
+        PException currentException = getContext().getCurrentException();
         if (isCallableNode.execute(enterCallable)) {
             applyValues(frame, enterDispatch.executeCall(frame, enterCallable, createArgs.execute(withObject), new PKeyword[0]));
         } else {
             throw raise(TypeError, "%p is not callable", enterCallable);
         }
-
-        try {
-            body.executeVoid(frame);
-        } catch (PException exception) {
-            gotException = true;
-            handleException(frame, withObject, exitCallable, exception, isExitCallableNode, getClassNode);
-        } finally {
-            if (!gotException) {
-                if (isExitCallableNode.execute(exitCallable)) {
-                    exitDispatch.executeCall(frame, exitCallable, createArgs.execute(withObject, PNone.NONE, PNone.NONE, PNone.NONE), new PKeyword[0]);
-                } else {
-                    throw raise(TypeError, "%p is not callable", exitCallable);
-                }
-            }
-            getContext().setCurrentException(exceptionState);
-        }
+        return currentException;
     }
 
-    private void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException e, IsCallableNode isExitCallableNode, GetClassNode getClassNode) {
+    /**
+     * Call __exit__ to handle the exception
+     */
+    protected void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException e) {
         if (!isExitCallableNode.execute(exitCallable)) {
             throw raise(TypeError, "%p is not callable", exitCallable);
         }
@@ -141,5 +168,9 @@ public abstract class WithNode extends StatementNode {
             // else re-raise exception
             throw e;
         }
+    }
+
+    public ExpressionNode getWithContext() {
+        return withContext;
     }
 }
