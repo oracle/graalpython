@@ -64,6 +64,7 @@ public final class TupleLiteralNode extends LiteralNode {
         }
     }
 
+    @ExplodeLoop
     private Object expandingTuple(VirtualFrame frame) {
         List<Object> elements = makeList();
         for (ExpressionNode n : values) {
