@@ -605,6 +605,11 @@ def PyUnicode_Join(separator, seq):
     return separator.join(seq)
 
 
+@may_raise
+def PyUnicode_Compare(left, right):
+    return left == right
+
+
 ##################### CAPSULE
 
 
