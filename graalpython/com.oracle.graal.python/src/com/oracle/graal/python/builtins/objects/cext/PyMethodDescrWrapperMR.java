@@ -46,9 +46,12 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromCharPointerNo
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.PyMethodDescrWrapperMRFactory.ReadFieldNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PyMethodDescrWrapperMRFactory.WriteFieldNodeGen;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -125,9 +128,9 @@ public class PyMethodDescrWrapperMR {
         @Specialization(guards = {"eq(DOC, key)"})
         Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttrNode) {
-            Object doc = getAttrNode.executeObject(object, SpecialAttributeNames.__DOC__);
-            if (doc == PNone.NONE) {
+                        @Cached("create()") ReadAttributeFromObjectNode getAttrNode) {
+            Object doc = getAttrNode.execute(object, SpecialAttributeNames.__DOC__);
+            if (doc instanceof PNone) {
                 return getToSulongNode().execute(PNone.NO_VALUE);
             } else {
                 return getAsCharPointer().execute(doc);
