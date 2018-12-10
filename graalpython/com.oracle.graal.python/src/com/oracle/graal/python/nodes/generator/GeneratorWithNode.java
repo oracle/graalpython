@@ -74,10 +74,13 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     @Override
     protected PException doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
         if (!gen.isActive(frame, enterSlot)) {
-            super.doEnter(frame, withObject, enterCallable);
+            PException activeException = super.doEnter(frame, withObject, enterCallable);
+            gen.setActiveException(frame, activeException);
             gen.setActive(frame, enterSlot, true);
+            return activeException;
+        } else {
+            return gen.getActiveException(frame);
         }
-        return gen.getActiveException(frame);
     }
 
     @Override
