@@ -1475,8 +1475,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
          * Function root
          */
         FrameDescriptor fd = environment.getCurrentFrame();
-        String fullName = enclosingClassName == null ? funcName : enclosingClassName + '.' + funcName;
-        FunctionRootNode funcRoot = factory.createFunctionRoot(deriveSourceSection(ctx), fullName, environment.isInGeneratorScope(), fd, returnTarget, environment.getExecutionCellSlots());
+        FunctionRootNode funcRoot = factory.createFunctionRoot(deriveSourceSection(ctx), funcName, environment.isInGeneratorScope(), fd, returnTarget, environment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
 
         /**
