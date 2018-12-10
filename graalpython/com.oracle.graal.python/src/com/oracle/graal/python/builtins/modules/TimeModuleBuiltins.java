@@ -135,16 +135,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         public PTuple gmtime(double seconds) {
             return factory().createTuple(getTimeStruct(seconds, false));
         }
-
-        @Specialization
-        public PTuple gmtime(@SuppressWarnings("unused") PNone seconds) {
-            return factory().createTuple(getTimeStruct(timeSeconds(), false));
-        }
-
-        @Specialization
-        public PTuple gmtime(long seconds) {
-            return factory().createTuple(getTimeStruct(seconds, false));
-        }
     }
 
     // time.localtime([seconds])
