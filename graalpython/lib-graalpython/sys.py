@@ -44,7 +44,7 @@ def make_implementation_info():
     )
     return SimpleNamespace(
         name="graalpython",
-        cache_tag=None,
+        cache_tag="graalpython",
         version_info=version_info_type(version_info),
         _multiarch=__gmultiarch
     )
