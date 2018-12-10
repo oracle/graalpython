@@ -73,7 +73,9 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListReverseNod
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.TranslateNodeFactory.SpliceNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.JoinInternalNode;
@@ -99,6 +101,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
@@ -723,9 +726,11 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         public String translate(String self, PDict table,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+                        @Cached("create()") IsBuiltinClassProfile errorProfile,
+                        @Cached("create()") SpliceNode spliceNode) {
             char[] translatedChars = new char[self.length()];
 
+            int offset = 0;
             for (int i = 0; i < self.length(); i++) {
                 char original = self.charAt(i);
                 Object translated = null;
@@ -734,11 +739,104 @@ public final class StringBuiltins extends PythonBuiltins {
                 } catch (PException e) {
                     e.expect(KeyError, errorProfile);
                 }
-                int ord = translated == null ? original : (int) translated;
-                translatedChars[i] = (char) ord;
+                if (translated != null) {
+                    int oldlen = translatedChars.length;
+                    translatedChars = spliceNode.execute(translatedChars, i + offset, translated);
+                    offset = translatedChars.length - oldlen;
+                } else {
+                    translatedChars[i + offset] = original;
+                }
             }
 
             return new String(translatedChars);
+        }
+
+        protected abstract static class SpliceNode extends PNodeWithContext {
+            private static final String MAX_CODE_POINT_HEX_RANGE = Integer.toHexString(Character.MAX_CODE_POINT + 1);
+
+            public static SpliceNode create() {
+                return SpliceNodeGen.create();
+            }
+
+            protected abstract char[] execute(char[] translatedChars, int i, Object translated);
+
+            @Specialization
+            char[] doInt(char[] translatedChars, int i, int translated,
+                            @Cached("create()") BranchProfile ovf) {
+                char t = (char) translated;
+                if (t != translated) {
+                    ovf.enter();
+                    throw raiseError();
+                }
+                translatedChars[i] = t;
+                return translatedChars;
+            }
+
+            @Specialization
+            char[] doLong(char[] translatedChars, int i, long translated,
+                            @Cached("create()") BranchProfile ovf) {
+                char t = (char) translated;
+                if (t != translated) {
+                    ovf.enter();
+                    throw raiseError();
+                }
+                translatedChars[i] = t;
+                return translatedChars;
+            }
+
+            private PException raiseError() {
+                return raise(ValueError, "character mapping must be in range(0x%s)", MAX_CODE_POINT_HEX_RANGE);
+            }
+
+            @Specialization
+            char[] doPInt(char[] translatedChars, int i, PInt translated,
+                            @Cached("create()") BranchProfile ovf) {
+                double doubleValue = translated.doubleValue();
+                char t = (char) doubleValue;
+                if (t != doubleValue) {
+                    ovf.enter();
+                    throw raiseError();
+                }
+                translatedChars[i] = t;
+                return translatedChars;
+            }
+
+            @Specialization(guards = "translated.length() == 1")
+            @TruffleBoundary
+            char[] doStringChar(char[] translatedChars, int i, String translated) {
+                translatedChars[i] = translated.charAt(0);
+                return translatedChars;
+            }
+
+            @Specialization(guards = "translated.getValue().length() == 1")
+            @TruffleBoundary
+            char[] doPStringChar(char[] translatedChars, int i, PString translated) {
+                translatedChars[i] = translated.getValue().charAt(0);
+                return translatedChars;
+            }
+
+            @Specialization(replaces = "doStringChar")
+            @TruffleBoundary
+            char[] doString(char[] translatedChars, int i, String translated) {
+                int transLen = translated.length();
+                if (transLen == 1) {
+                    translatedChars[i] = translated.charAt(0);
+                } else if (transLen == 0) {
+                    int len = translatedChars.length;
+                    return Arrays.copyOf(translatedChars, len - 1);
+                } else {
+                    int len = translatedChars.length;
+                    char[] copy = Arrays.copyOf(translatedChars, len + transLen - 1);
+                    translated.getChars(0, transLen, copy, i);
+                    return copy;
+                }
+                return translatedChars;
+            }
+
+            @Specialization(replaces = "doPStringChar")
+            char[] doPString(char[] translatedChars, int i, PString translated) {
+                return doString(translatedChars, i, translated.getValue());
+            }
         }
     }
 
