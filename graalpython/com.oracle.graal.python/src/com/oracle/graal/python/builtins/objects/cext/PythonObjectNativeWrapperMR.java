@@ -485,11 +485,7 @@ public class PythonObjectNativeWrapperMR {
                 return 0L;
             }
             Object dictoffset = getAttrNode.execute(object);
-            int idictoffset = castToIntNode.execute(dictoffset);
-            if (idictoffset != 0) {
-                return idictoffset;
-            }
-            return Long.BYTES;
+            return castToIntNode.execute(dictoffset);
         }
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
