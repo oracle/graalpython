@@ -129,3 +129,6 @@ old_uname = uname
 @__builtin__
 def uname():
     return uname_result(old_uname())
+
+
+error = OSError
