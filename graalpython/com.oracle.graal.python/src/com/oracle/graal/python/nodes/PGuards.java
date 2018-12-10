@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.range.PRange;
@@ -267,6 +268,10 @@ public abstract class PGuards {
 
     public static boolean isBuiltinFunction(Object obj) {
         return obj instanceof PBuiltinFunction;
+    }
+
+    public static boolean isBuiltinMethod(Object obj) {
+        return obj instanceof PBuiltinMethod;
     }
 
     public static boolean isBuiltinObject(Object obj) {
