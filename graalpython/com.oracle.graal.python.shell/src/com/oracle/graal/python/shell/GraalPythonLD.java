@@ -57,6 +57,8 @@ import java.util.Set;
 import jline.internal.InputStreamReader;
 
 public class GraalPythonLD extends GraalPythonCompiler {
+    private static final String LLVM_IR_BITCODE = "llvm-ir-bitcode";
+    private static final String LLVM_NM = "llvm-nm";
     private static List<String> linkPrefix = Arrays.asList(new String[]{
                     "llvm-link",
                     "-o",
@@ -106,7 +108,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
                         List<String> bcFiles = searchLib(libraryDirs, arg.substring(2));
                         for (String bcFile : bcFiles) {
                             try {
-                                if (Files.probeContentType(Paths.get(bcFile)).contains("llvm-ir-bitcode")) {
+                                if (Files.probeContentType(Paths.get(bcFile)).contains(LLVM_IR_BITCODE)) {
                                     logV("library input:", bcFile);
                                     addFile(bcFile);
                                 } else {
@@ -133,7 +135,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
         try {
             // symbols defined up to here
             ProcessBuilder nm = new ProcessBuilder();
-            nm.command("llvm-nm", "-g", "--defined-only", f);
+            nm.command(LLVM_NM, "-g", "--defined-only", f);
             nm.redirectInput(Redirect.INHERIT);
             nm.redirectError(Redirect.INHERIT);
             nm.redirectOutput(Redirect.PIPE);
@@ -153,7 +155,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
             undefinedSymbols.removeAll(definedSymbols);
 
             // add symbols undefined now
-            nm.command("llvm-nm", "-u", f);
+            nm.command(LLVM_NM, "-u", f);
             nm.redirectInput(Redirect.INHERIT);
             nm.redirectError(Redirect.INHERIT);
             nm.redirectOutput(Redirect.PIPE);
@@ -235,13 +237,18 @@ public class GraalPythonLD extends GraalPythonCompiler {
         extractAr.start().waitFor();
 
         // ar has special semantics w.r.t ordering of included symbols. we try to emulate the smarts
-        // of GNU ld by listing all undefined symbols until here, extracting only those, and adding
-        // only these
+        // of GNU ld by listing all undefined symbols until here, extracting only those that we are
+        // still missing, and adding them to a bitcode file that will only add these to the linked
+        // product.
+        // According to some emscripten documentation and ML discussions, this is actually an error
+        // in the build process, because such a smart linker should not be assumed for POSIX, but it
+        // seems ok to emulate this at least for the very common case of ar archives with symbol
+        // definitions that overlap what's defined in explicitly include .o files
         for (String f : members) {
-            if (Files.probeContentType(Paths.get(f)).contains("llvm-ir-bitcode")) {
+            if (Files.probeContentType(Paths.get(f)).contains(LLVM_IR_BITCODE)) {
                 HashSet<String> definedHere = new HashSet<>();
                 ProcessBuilder nm = new ProcessBuilder();
-                nm.command("llvm-nm", "-g", "--defined-only", f);
+                nm.command(LLVM_NM, "-g", "--defined-only", f);
                 nm.redirectInput(Redirect.INHERIT);
                 nm.redirectError(Redirect.INHERIT);
                 nm.redirectOutput(Redirect.PIPE);
