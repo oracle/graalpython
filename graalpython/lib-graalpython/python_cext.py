@@ -894,6 +894,13 @@ def PyObject_IsInstance(obj, typ):
         return 0
 
 
+def PyObject_IsSubclass(derived, cls):
+    if issubclass(derived, cls):
+        return 1
+    else:
+        return 0
+
+
 @may_raise
 def PyObject_RichCompare(left, right, op):
     return do_richcompare(left, right, op)

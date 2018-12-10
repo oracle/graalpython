@@ -295,6 +295,11 @@ int PyObject_IsInstance(PyObject* obj, PyObject* typ) {
     return UPCALL_CEXT_I(_jls_PyObject_IsInstance, native_to_java(obj), native_to_java(typ));
 }
 
+UPCALL_ID(PyObject_IsSubclass);
+int PyObject_IsSubclass(PyObject *derived, PyObject *cls) {
+    return UPCALL_CEXT_I(_jls_PyObject_IsSubclass, native_to_java(derived), native_to_java(cls));
+}
+
 UPCALL_ID(PyObject_AsFileDescriptor);
 int PyObject_AsFileDescriptor(PyObject* obj) {
     return UPCALL_CEXT_I(_jls_PyObject_AsFileDescriptor, native_to_java(obj));
