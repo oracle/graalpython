@@ -77,11 +77,9 @@ static void initialize_handle_cache() {
     cache = polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleCache_Create", truffle_managed_from_handle);
 }
 
-static void initialize_type_structure(PyTypeObject* structure, const char* typname, void* typeid) {
-    PyTypeObject* ptype = (PyTypeObject*)UPCALL_CEXT_O(polyglot_from_string("PyTruffle_Type", SRC_CS), polyglot_from_string(typname, SRC_CS));
-
+void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid) {
     // Store the Sulong struct type id to be used for instances of this class
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_SulongType", ptype, typeid);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_SulongType", ptype, tid);
 
     unsigned long original_flags = structure->tp_flags;
     Py_ssize_t basicsize = structure->tp_basicsize;
@@ -89,6 +87,11 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
     // write flags as specified in the dummy to the PythonClass object
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
     type_handle->tp_basicsize = basicsize;
+}
+
+static void initialize_builtin_type(PyTypeObject* structure, const char* typname, polyglot_typeid tid) {
+    PyTypeObject* ptype = (PyTypeObject*)UPCALL_CEXT_O(polyglot_from_string("PyTruffle_Type", SRC_CS), polyglot_from_string(typname, SRC_CS));
+    initialize_type_structure(structure, ptype, tid);
 }
 
 #define ctor_hidden(a) __attribute__((constructor (10 ## a
@@ -99,9 +102,9 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
 #define initialize_type(typeobject, typename, struct)                   \
     ctor(__COUNTER__)                                                   \
     static void init(__COUNTER__, typeobject)(void) {                   \
-        initialize_type_structure(&typeobject,                          \
-                                  #typename,                            \
-                                  polyglot_ ## struct ## _typeid());    \
+		initialize_builtin_type(&typeobject,                          \
+                                #typename,                            \
+                                polyglot_ ## struct ## _typeid());    \
     }
 
 #define declare_struct(typeobject, typename, struct)    \

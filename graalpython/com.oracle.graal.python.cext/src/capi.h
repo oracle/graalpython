@@ -162,6 +162,8 @@ extern cache_t cache;
 
 #define resolve_handle(__cache__, __addr__) (__cache__)(__addr__)
 
+void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid);
+
 __attribute__((always_inline))
 inline void* native_to_java(PyObject* obj) {
     if (obj == NULL) {
