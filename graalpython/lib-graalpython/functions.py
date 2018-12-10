@@ -125,6 +125,12 @@ class map(object):
     def __iter__(self):
         return self
 
+    def __contains__(self, x):
+        for i in map(self.__func, *self.__iterators):
+            if x == i:
+                return True
+        return False
+
 
 def _caller_locals():
     import sys
