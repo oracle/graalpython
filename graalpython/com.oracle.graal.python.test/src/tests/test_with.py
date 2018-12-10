@@ -24,6 +24,8 @@
 # Qunaibit 02/05/2014
 # With Statement
 
+import sys
+
 a = 5
 
 LOG = []
@@ -211,13 +213,13 @@ def test_with_in_generator():
     e = None
     try:
         try:
-            raise ModuleNotFoundError
-        except ModuleNotFoundError as e1:
+            raise OverflowError
+        except OverflowError as e1:
             e = e1
             for i in gen():
                 r.append(i)
             raise
-    except ModuleNotFoundError as e2:
+    except OverflowError as e2:
         assert e2 is e
     else:
         assert False
@@ -240,7 +242,10 @@ def test_with_non_inherited():
         with x as l:
             pass
     except AttributeError as e:
-        assert "__enter__" in str(e)
+        if sys.version_info.minor > 5:
+            assert "__enter__" in str(e)
+        else:
+            assert "__exit__" in str(e)
 
 
     y_enter_called = 0
