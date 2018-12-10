@@ -177,6 +177,13 @@ def PySet_New(iterable):
         return set()
 
 
+@may_raise(-1)
+def PySet_Contains(anyset, item):
+    if not (isinstance(anyset, set) or isinstance(anyset, frozenset)):
+        __bad_internal_call(None, None, anyset)
+    return item in anyset
+
+
 @may_raise
 def PyFrozenSet_New(iterable):
     if iterable:

@@ -57,3 +57,8 @@ UPCALL_ID(PySet_Add);
 int PySet_Add(PyObject *set, PyObject *key) {
     return UPCALL_CEXT_I(_jls_PySet_Add, native_to_java(set), native_to_java(key));
 }
+
+UPCALL_ID(PySet_Contains);
+int PySet_Contains(PyObject *anyset, PyObject *key) {
+    return UPCALL_CEXT_I(_jls_PySet_Contains, native_to_java(anyset), native_to_java(key));
+}
