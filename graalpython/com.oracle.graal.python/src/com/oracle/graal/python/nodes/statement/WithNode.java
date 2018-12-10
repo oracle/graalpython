@@ -27,38 +27,35 @@ package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 public class WithNode extends StatementNode {
     @Child private StatementNode body;
     @Child private WriteNode targetNode;
     @Child private ExpressionNode withContext;
-    @Child private LookupAndCallBinaryNode enterGetter = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
-    @Child private LookupAndCallBinaryNode exitGetter = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
-    @Child private CallDispatchNode enterDispatch = CallDispatchNode.create();
-    @Child private CallDispatchNode exitDispatch = CallDispatchNode.create();
+    @Child private LookupInheritedAttributeNode enterGetter = LookupInheritedAttributeNode.create(__ENTER__);
+    @Child private LookupInheritedAttributeNode exitGetter = LookupInheritedAttributeNode.create(__EXIT__);
+    @Child private CallNode enterDispatch = CallNode.create();
+    @Child private CallNode exitDispatch = CallNode.create();
     @Child private CastToBooleanNode toBooleanNode = CastToBooleanNode.createIfTrueNode();
-    @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
+    @Child GetClassNode getClassNode = GetClassNode.create();
 
-    GetClassNode getClassNode = GetClassNode.create();
-    IsCallableNode isCallableNode = IsCallableNode.create();
-    IsCallableNode isExitCallableNode = IsCallableNode.create();
+    private final BranchProfile noEnter = BranchProfile.create();
+    private final BranchProfile noExit = BranchProfile.create();
 
     protected WithNode(WriteNode targetNode, StatementNode body, ExpressionNode withContext) {
         this.targetNode = targetNode;
@@ -91,9 +88,16 @@ public class WithNode extends StatementNode {
     public void executeVoid(VirtualFrame frame) {
         boolean gotException = false;
         Object withObject = getWithObject(frame);
-        // CPython first looks up '__exit__
-        Object exitCallable = exitGetter.executeObject(withObject, __EXIT__);
-        Object enterCallable = enterGetter.executeObject(withObject, __ENTER__);
+        Object enterCallable = enterGetter.execute(withObject);
+        if (enterCallable == PNone.NO_VALUE) {
+            noEnter.enter();
+            throw raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", withObject, __ENTER__);
+        }
+        Object exitCallable = exitGetter.execute(withObject);
+        if (exitCallable == PNone.NO_VALUE) {
+            noExit.enter();
+            throw raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", withObject, __EXIT__);
+        }
         PException exceptionState = doEnter(frame, withObject, enterCallable);
         try {
             doBody(frame);
@@ -125,11 +129,7 @@ public class WithNode extends StatementNode {
      */
     protected void doLeave(VirtualFrame frame, Object withObject, PException exceptionState, boolean gotException, Object exitCallable) {
         if (!gotException) {
-            if (isExitCallableNode.execute(exitCallable)) {
-                exitDispatch.executeCall(frame, exitCallable, createArgs.execute(withObject, PNone.NONE, PNone.NONE, PNone.NONE), new PKeyword[0]);
-            } else {
-                throw raise(TypeError, "%p is not callable", exitCallable);
-            }
+            exitDispatch.execute(frame, exitCallable, new Object[]{withObject, PNone.NONE, PNone.NONE, PNone.NONE}, PKeyword.EMPTY_KEYWORDS);
         }
         getContext().setCurrentException(exceptionState);
     }
@@ -140,11 +140,7 @@ public class WithNode extends StatementNode {
      */
     protected PException doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
         PException currentException = getContext().getCurrentException();
-        if (isCallableNode.execute(enterCallable)) {
-            applyValues(frame, enterDispatch.executeCall(frame, enterCallable, createArgs.execute(withObject), new PKeyword[0]));
-        } else {
-            throw raise(TypeError, "%p is not callable", enterCallable);
-        }
+        applyValues(frame, enterDispatch.execute(frame, enterCallable, new Object[]{withObject}, PKeyword.EMPTY_KEYWORDS));
         return currentException;
     }
 
@@ -152,15 +148,11 @@ public class WithNode extends StatementNode {
      * Call __exit__ to handle the exception
      */
     protected void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException e) {
-        if (!isExitCallableNode.execute(exitCallable)) {
-            throw raise(TypeError, "%p is not callable", exitCallable);
-        }
-
         e.getExceptionObject().reifyException();
         PBaseException value = e.getExceptionObject();
         PythonClass type = getClassNode.execute(value);
         Object trace = e.getExceptionObject().getTraceback(factory());
-        Object returnValue = exitDispatch.executeCall(frame, exitCallable, createArgs.execute(withObject, type, value, trace), new PKeyword[0]);
+        Object returnValue = exitDispatch.execute(frame, exitCallable, new Object[]{withObject, type, value, trace}, PKeyword.EMPTY_KEYWORDS);
         // If exit handler returns 'true', suppress
         if (toBooleanNode.executeWith(returnValue)) {
             return;

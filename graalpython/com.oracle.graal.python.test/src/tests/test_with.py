@@ -227,3 +227,31 @@ def test_with_in_generator():
     assert exit == 1, exit
     assert itr == 1, itr
     assert nxt == 4, nxt
+
+
+def test_with_non_inherited():
+    class X():
+        pass
+
+    x = X()
+    x.__enter__ = lambda s: s
+
+    try:
+        with x as l:
+            pass
+    except AttributeError as e:
+        assert "__enter__" in str(e)
+
+
+    y_enter_called = 0
+    class Y():
+        def __enter__(self):
+            nonlocal y_enter_called
+            y_enter_called += 1
+
+    try:
+        with Y() as y:
+            pass
+    except AttributeError as e:
+        assert "__exit__" in str(e)
+    assert y_enter_called == 0
