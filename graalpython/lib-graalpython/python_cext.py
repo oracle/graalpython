@@ -402,6 +402,8 @@ def PyNumber_BinOp(v, w, binop):
         return v // w
     elif binop == 10:
         return v % w
+    elif binop == 12:
+        return v @ w
     else:
         raise SystemError("unknown binary operator (code=%s)" % binop)
 
@@ -429,11 +431,12 @@ def _binop_name(binop):
         return "//"
     elif binop == 10:
         return "%"
+    elif binop == 12:
+        return "@"
 
 
 @may_raise
 def PyNumber_InPlaceBinOp(v, w, binop):
-    control = v
     if binop == 0:
         v += w
     elif binop == 1:
@@ -456,11 +459,14 @@ def PyNumber_InPlaceBinOp(v, w, binop):
         v //= w
     elif binop == 10:
         v %= w
+    elif binop == 12:
+        v @= w
     else:
         raise SystemError("unknown in-place binary operator (code=%s)" % binop)
-    if control is not v:
-        raise TypeError("unsupported operand type(s) for %s=: '%s' and '%s'" % (_binop_name(binop), type(v), type(w)))
-    return control
+
+    # nothing else required; the operator will automatically fall back if 
+    # no in-place operation is available
+    return v
 
 
 @may_raise
