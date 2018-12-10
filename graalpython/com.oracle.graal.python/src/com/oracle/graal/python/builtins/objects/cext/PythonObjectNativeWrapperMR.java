@@ -615,18 +615,18 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(START, key)")
-        int doStart(PSlice object, @SuppressWarnings("unused") String key) {
-            return object.getStart();
+        Object doStart(PSlice object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(object.getStart());
         }
 
         @Specialization(guards = "eq(STOP, key)")
-        int doStop(PSlice object, @SuppressWarnings("unused") String key) {
-            return object.getStop();
+        Object doStop(PSlice object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(object.getStop());
         }
 
         @Specialization(guards = "eq(STEP, key)")
-        int doStep(PSlice object, @SuppressWarnings("unused") String key) {
-            return object.getStep();
+        Object doStep(PSlice object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(object.getStep());
         }
 
         @Specialization(guards = "eq(IM_SELF, key)")

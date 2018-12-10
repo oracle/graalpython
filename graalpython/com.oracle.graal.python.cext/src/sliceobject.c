@@ -48,11 +48,12 @@ PyObject _Py_EllipsisObject = {
     1, &PyEllipsis_Type
 };
 
+UPCALL_ID(PySlice_GetIndicesEx);
 int PySlice_GetIndicesEx(PyObject *_r, Py_ssize_t length,
                          Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step,
                          Py_ssize_t *slicelength) {
     PySliceObject *r = (PySliceObject*)_r;
-    void *result = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PySlice_GetIndicesEx", r->start, r->stop, r->step, length));
+    PyObject* result = UPCALL_CEXT_O(_jls_PySlice_GetIndicesEx, native_to_java(r->start), native_to_java(r->stop), native_to_java(r->step), length);
     if (result == NULL) {
         return -1;
     }

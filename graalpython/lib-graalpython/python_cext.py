@@ -1273,10 +1273,9 @@ def PyRun_String(source, typ, globals, locals):
     return exec(compile(source, typ, typ), globals, locals)
 
 
-# called without landing; do conversion manually
-@may_raise(to_sulong(native_null))
+@may_raise
 def PySlice_GetIndicesEx(start, stop, step, length):
-    return to_sulong(PyTruffleSlice_GetIndicesEx(start, stop, step, length))
+    return PyTruffleSlice_GetIndicesEx(start, stop, step, length)
 
 
 @may_raise
