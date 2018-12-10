@@ -1254,3 +1254,9 @@ def PySlice_New(start, stop, step):
 @may_raise
 def PyMapping_Keys(obj):
     return list(obj.keys())
+
+
+@may_raise
+def PyState_FindModule(module_name):
+    return sys.modules[module_name]
+

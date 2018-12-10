@@ -57,3 +57,8 @@ PyGILState_STATE PyGILState_Ensure() {
 void PyGILState_Release(PyGILState_STATE state) {
     // ignore for the time being
 }
+
+UPCALL_ID(PyState_FindModule)
+PyObject* PyState_FindModule(struct PyModuleDef* module) {
+    return UPCALL_CEXT_O(_jls_PyState_FindModule, polyglot_from_string(module->m_name, SRC_CS));
+}
