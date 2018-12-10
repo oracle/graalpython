@@ -123,6 +123,7 @@ public final class NativeMemberNames {
     public static final String D_TYPE = "d_type";
     public static final String M_ML = "m_ml";
     public static final String DATETIME_DATA = "data";
+    public static final String SET_USED = "used";
 
     @CompilationFinal(dimensions = 1) public static final String[] values;
     static {

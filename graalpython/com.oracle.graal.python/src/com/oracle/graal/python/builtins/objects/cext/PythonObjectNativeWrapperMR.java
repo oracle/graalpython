@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
@@ -87,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.GetTypeFlagsNode;
@@ -686,6 +688,13 @@ public class PythonObjectNativeWrapperMR {
         Object doDQualname(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getQualnameNode) {
             return getToSulongNode().execute(getQualnameNode.executeObject(object, SpecialAttributeNames.__QUALNAME__));
+        }
+
+        @Specialization(guards = "eq(SET_USED, key)")
+        long doSetUsed(PSet object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") HashingCollectionNodes.GetDictStorageNode getStorageNode,
+                        @Cached("create()") HashingStorageNodes.LenNode lenNode) {
+            return lenNode.execute(getStorageNode.execute(object));
         }
 
         @Specialization
