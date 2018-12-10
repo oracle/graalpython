@@ -227,7 +227,7 @@ public final class Python3Core implements PythonCore {
 
     private final PythonBuiltins[] builtins;
 
-    private static final PythonBuiltins[] initializeBuiltins() {
+    private static final PythonBuiltins[] initializeBuiltins(Env env) {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
                         new BuiltinConstructors(),
                         new BuiltinFunctions(),
@@ -330,7 +330,7 @@ public final class Python3Core implements PythonCore {
             }
         }
         // threads
-        if (PythonLanguage.WITH_THREADS) {
+        if (env.getOptions().get(PythonOptions.WithThread)) {
             builtins.addAll(new ArrayList<>(Arrays.asList(
                             new ThreadModuleBuiltins(),
                             new ThreadBuiltins(),
@@ -361,9 +361,9 @@ public final class Python3Core implements PythonCore {
 
     private final PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public Python3Core(PythonParser parser) {
+    public Python3Core(PythonParser parser, Env env) {
         this.parser = parser;
-        this.builtins = initializeBuiltins();
+        this.builtins = initializeBuiltins(env);
         this.coreFiles = initializeCoreFiles();
     }
 
