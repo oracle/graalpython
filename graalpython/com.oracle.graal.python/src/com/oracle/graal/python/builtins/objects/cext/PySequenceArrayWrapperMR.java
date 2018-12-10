@@ -252,6 +252,15 @@ public class PySequenceArrayWrapperMR {
 
         @Specialization
         @ExplodeLoop
+        Object doBytes(PIBytesLike s, long idx, short value) {
+            for (int offset = 0; offset < Short.BYTES; offset++) {
+                getSetByteItemNode().executeLong(getSequenceStorage(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+            }
+            return value;
+        }
+
+        @Specialization
+        @ExplodeLoop
         Object doBytes(PIBytesLike s, long idx, int value) {
             for (int offset = 0; offset < Integer.BYTES; offset++) {
                 getSetByteItemNode().executeLong(getSequenceStorage(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
