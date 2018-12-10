@@ -362,7 +362,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "stat", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = "stat", minNumOfPositionalArgs = 1, keywordArguments = {"follow_symlinks"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StatNode extends PythonBinaryBuiltinNode {

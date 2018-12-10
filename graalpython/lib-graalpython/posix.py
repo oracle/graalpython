@@ -50,8 +50,8 @@ old_stat = stat
 
 
 @__builtin__
-def stat(filename):
-    return stat_result(old_stat(filename))
+def stat(filename, follow_symlinks=False):
+    return stat_result(old_stat(filename, follow_symlinks=follow_symlinks))
 
 
 @__builtin__
