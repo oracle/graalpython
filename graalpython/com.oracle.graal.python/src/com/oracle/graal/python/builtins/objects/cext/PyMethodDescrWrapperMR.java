@@ -138,7 +138,7 @@ public class PyMethodDescrWrapperMR {
         }
     }
 
-    @ImportStatic({SpecialMethodNames.class})
+    @ImportStatic({SpecialMethodNames.class, PGuards.class})
     abstract static class WriteFieldNode extends Node {
         public static final String DOC = "ml_doc";
 
@@ -158,11 +158,18 @@ public class PyMethodDescrWrapperMR {
             return fromCharPointerNode;
         }
 
-        @Specialization(guards = {"eq(DOC, key)"})
+        @Specialization(guards = {"!isBuiltinMethod(object)", "eq(DOC, key)"})
         void getDoc(PythonObject object, @SuppressWarnings("unused") String key, Object value,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Cached("create(__SETATTR__)") LookupAndCallTernaryNode setAttrNode) {
             setAttrNode.execute(object, SpecialAttributeNames.__DOC__, getFromCharPointer().execute(value));
+        }
+
+        @Specialization(guards = {"eq(DOC, key)"})
+        void getDoc(PBuiltinMethod object, @SuppressWarnings("unused") String key, Object value,
+                        @Cached("key") @SuppressWarnings("unused") String cachedKey) {
+            CompilerDirectives.transferToInterpreter();
+            object.getStorage().define(SpecialAttributeNames.__DOC__, getFromCharPointer().execute(value));
         }
     }
 }
