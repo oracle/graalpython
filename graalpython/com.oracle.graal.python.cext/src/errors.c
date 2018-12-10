@@ -185,3 +185,16 @@ UPCALL_ID(PyErr_SetExcInfo);
 void PyErr_SetExcInfo(PyObject *p_type, PyObject *p_value, PyObject *p_traceback) {
     UPCALL_CEXT_VOID(_jls_PyErr_SetExcInfo, native_to_java(p_type), native_to_java(p_value), native_to_java(p_traceback));
 }
+
+
+UPCALL_ID(PyErr_NewExceptionWithDoc);
+PyObject * PyErr_NewExceptionWithDoc(const char *name, const char *doc, PyObject *base, PyObject *dict) {
+    if (base == NULL) {
+        base = PyExc_Exception;
+    }
+    if (dict == NULL) {
+        dict = PyDict_New();
+    }
+    return UPCALL_CEXT_O(_jls_PyErr_NewExceptionWithDoc, polyglot_from_string(name, SRC_CS), polyglot_from_string(doc, SRC_CS), native_to_java(base), native_to_java(dict));
+
+}

@@ -951,6 +951,12 @@ def PyErr_NewException(name, base, dictionary):
     return type(name, bases, dictionary)
 
 
+def PyErr_NewExceptionWithDoc(name, doc, base, dictionary):
+    new_exc_obj = PyErr_NewException(name, base, dictionary)
+    new_exc_obj.__doc__ = doc
+    return new_exc_obj
+
+
 def PyErr_Format(err_type, format_str, args):
     PyErr_CreateAndSetException(err_type, format_str % args)
 
