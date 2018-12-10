@@ -103,8 +103,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int MICRO = 0;
     public static final String VERSION = MAJOR + "." + MINOR + "." + MICRO;
 
-    public static boolean WITH_THREADS = false;
-
     public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
 
@@ -141,7 +139,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected PythonContext createContext(Env env) {
         ensureHomeInOptions(env);
-        Python3Core newCore = new Python3Core(new PythonParserImpl());
+        Python3Core newCore = new Python3Core(new PythonParserImpl(), env);
         return new PythonContext(this, env, newCore);
     }
 
@@ -491,7 +489,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (singleThreaded) {
             return super.isThreadAccessAllowed(thread, singleThreaded);
         }
-        return WITH_THREADS;
+        return PythonOptions.isWithThread();
     }
 
     @Override

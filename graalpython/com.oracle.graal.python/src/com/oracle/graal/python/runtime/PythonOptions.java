@@ -82,6 +82,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "This option is set by the Python launcher to tell the language it can print exceptions directly") //
     public static final OptionKey<Boolean> AlwaysRunExcepthook = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.EXPERT, help = "This option control builtin _thread module support") //
+    public static final OptionKey<Boolean> WithThread = new OptionKey<>(false);
+
     @Option(category = OptionCategory.USER, help = "This option makes reading from files return opaque objects. Imports can work with such data, " +
                     "but all other access to the contents of the file is disabled, so the files are kept secret.") //
     public static final OptionKey<Boolean> OpaqueFilesystem = new OptionKey<>(false);
@@ -155,5 +158,9 @@ public final class PythonOptions {
 
     public static int getMinLazyStringLength() {
         return getOption(PythonLanguage.getContextRef().get(), MinLazyStringLength);
+    }
+
+    public static boolean isWithThread() {
+        return getOption(PythonLanguage.getContextRef().get(), WithThread);
     }
 }
