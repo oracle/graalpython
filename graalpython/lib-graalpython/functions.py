@@ -132,9 +132,8 @@ class map(object):
         return False
 
 
-def _caller_locals():
-    import sys
-    return sys._getframe(2).f_locals
+
+from sys import _getframe as __getframe__
 
 
 @__builtin__
@@ -143,12 +142,11 @@ def vars(*obj):
     called with no argument, return the variables bound in local scope."""
     if len(obj) == 0:
         # TODO inlining _caller_locals().items() in the dict comprehension does not work for now, investigate!
-        items = _caller_locals().items()
-        return {k: v for k, v in items}
+        return __getframe__(1).f_locals
     elif len(obj) != 1:
         raise TypeError("vars() takes at most 1 argument.")
     try:
-        return dict(obj[0].__dict__)
+        return obj[0].__dict__
     except AttributeError:
         raise TypeError("vars() argument must have __dict__ attribute")
 
