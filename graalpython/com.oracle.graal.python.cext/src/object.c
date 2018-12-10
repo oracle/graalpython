@@ -160,6 +160,10 @@ void* PyObject_Malloc(size_t size) {
     return calloc(size, 1);
 }
 
+void* PyObject_Realloc(void *ptr, size_t new_size) {
+	return realloc(ptr, new_size);
+}
+
 void PyObject_Free(void* ptr) {
     free(ptr);
 }
