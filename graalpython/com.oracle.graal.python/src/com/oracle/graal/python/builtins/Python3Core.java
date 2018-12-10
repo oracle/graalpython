@@ -224,7 +224,8 @@ public final class Python3Core implements PythonCore {
                         "zlib",
                         "termios",
                         "zipimport",
-                        "mmap"));
+                        "mmap",
+                        "_ast"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
     }
