@@ -288,7 +288,6 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
         public Object repr(PByteArray self) {
             return self.toString();
         }
