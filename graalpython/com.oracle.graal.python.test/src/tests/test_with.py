@@ -176,6 +176,8 @@ def test_with_restore_raise():
 def test_with_in_generator():
     enter = 0
     exit = 0
+    itr = 0
+    nxt = 0
     r = []
 
     class Gen():
@@ -192,9 +194,13 @@ def test_with_in_generator():
             exit += 1
 
         def __iter__(self):
+            nonlocal itr
+            itr += 1
             return self
 
         def __next__(self):
+            nonlocal nxt
+            nxt += 1
             return next(self.l)
 
     def gen():
@@ -202,9 +208,22 @@ def test_with_in_generator():
             for i in g:
                 yield i
 
-    for i in gen():
-        r.append(i)
+    e = None
+    try:
+        try:
+            raise ModuleNotFoundError
+        except ModuleNotFoundError as e1:
+            e = e1
+            for i in gen():
+                r.append(i)
+            raise
+    except ModuleNotFoundError as e2:
+        assert e2 is e
+    else:
+        assert False
 
     assert r == [1,2,3], r
     assert enter == 1, enter
     assert exit == 1, exit
+    assert itr == 1, itr
+    assert nxt == 4, nxt
