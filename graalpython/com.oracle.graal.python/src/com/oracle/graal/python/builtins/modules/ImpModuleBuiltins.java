@@ -194,15 +194,15 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
             try {
                 // save current exception state
-                PException exceptionState = getContext().getCurrentException();
+                PException exceptionState = getContext().getCaughtException();
                 // clear current exception such that native code has clean environment
-                getContext().setCurrentException(null);
+                getContext().setCaughtException(null);
 
                 Object nativeResult = ForeignAccess.sendExecute(executeNode, pyinitFunc);
                 getCheckResultNode().execute("PyInit_" + basename, nativeResult);
 
                 // restore previous exception state
-                getContext().setCurrentException(exceptionState);
+                getContext().setCaughtException(exceptionState);
 
                 Object result = AsPythonObjectNode.doSlowPath(nativeResult);
                 if (!(result instanceof PythonModule)) {
