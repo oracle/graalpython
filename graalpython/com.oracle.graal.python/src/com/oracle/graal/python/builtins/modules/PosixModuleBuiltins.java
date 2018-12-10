@@ -390,7 +390,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         long fileTimeToSeconds(FileTime t) {
-            return t.to(TimeUnit.SECONDS);
+            return t.to(TimeUnit.MILLISECONDS);
         }
 
         Object stat(String path, boolean followSymlinks) {
