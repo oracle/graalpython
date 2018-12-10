@@ -171,3 +171,40 @@ def test_with_restore_raise():
                    , "type: <class 'TypeError'>"
                    , "value: "
                    , "except exit"], "was: %s" % log
+
+
+def test_with_in_generator():
+    enter = 0
+    exit = 0
+    r = []
+
+    class Gen():
+        def __init__(self):
+            self.l = iter([1,2,3])
+
+        def __enter__(self):
+            nonlocal enter
+            enter += 1
+            return self
+
+        def __exit__(self, *args):
+            nonlocal exit
+            exit += 1
+
+        def __iter__(self):
+            return self
+
+        def __next__(self):
+            return next(self.l)
+
+    def gen():
+        with Gen() as g:
+            for i in g:
+                yield i
+
+    for i in gen():
+        r.append(i)
+
+    assert r == [1,2,3], r
+    assert enter == 1, enter
+    assert exit == 1, exit
