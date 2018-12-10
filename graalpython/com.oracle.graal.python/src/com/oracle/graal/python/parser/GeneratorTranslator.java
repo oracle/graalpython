@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.GeneratorTryExceptNode;
 import com.oracle.graal.python.nodes.generator.GeneratorTryFinallyNode;
 import com.oracle.graal.python.nodes.generator.GeneratorWhileNode;
+import com.oracle.graal.python.nodes.generator.GeneratorWithNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.YieldFromNode;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.nodes.generator.YieldNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
+import com.oracle.graal.python.nodes.statement.WithNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -291,6 +293,9 @@ public class GeneratorTranslator {
             ForNode forNode = (ForNode) node;
             replaceForNode(forNode);
 
+        } else if (node instanceof WithNode) {
+            replaceWithNode(((WithNode) node));
+
         } else if (node instanceof BlockNode) {
             BlockNode block = (BlockNode) node;
             int slotOfBlockIndex = nextGeneratorBlockIndexSlot();
@@ -314,6 +319,10 @@ public class GeneratorTranslator {
         } else {
             replaceYieldExpression(node);
         }
+    }
+
+    private void replaceWithNode(WithNode withNode) {
+        replace(withNode, new GeneratorWithNode(withNode.getTargetNode(), withNode.getBody(), withNode.getWithContext(), nextActiveFlagSlot(), nextGeneratorForNodeSlot(), nextActiveFlagSlot()));
     }
 
     /**

@@ -24,6 +24,8 @@
 # Qunaibit 02/05/2014
 # With Statement
 
+import sys
+
 a = 5
 
 LOG = []
@@ -171,3 +173,90 @@ def test_with_restore_raise():
                    , "type: <class 'TypeError'>"
                    , "value: "
                    , "except exit"], "was: %s" % log
+
+
+def test_with_in_generator():
+    enter = 0
+    exit = 0
+    itr = 0
+    nxt = 0
+    r = []
+
+    class Gen():
+        def __init__(self):
+            self.l = iter([1,2,3])
+
+        def __enter__(self):
+            nonlocal enter
+            enter += 1
+            return self
+
+        def __exit__(self, *args):
+            nonlocal exit
+            exit += 1
+
+        def __iter__(self):
+            nonlocal itr
+            itr += 1
+            return self
+
+        def __next__(self):
+            nonlocal nxt
+            nxt += 1
+            return next(self.l)
+
+    def gen():
+        with Gen() as g:
+            for i in g:
+                yield i
+
+    e = None
+    try:
+        try:
+            raise OverflowError
+        except OverflowError as e1:
+            e = e1
+            for i in gen():
+                r.append(i)
+            raise
+    except OverflowError as e2:
+        assert e2 is e
+    else:
+        assert False
+
+    assert r == [1,2,3], r
+    assert enter == 1, enter
+    assert exit == 1, exit
+    assert itr == 1, itr
+    assert nxt == 4, nxt
+
+
+def test_with_non_inherited():
+    class X():
+        pass
+
+    x = X()
+    x.__enter__ = lambda s: s
+
+    try:
+        with x as l:
+            pass
+    except AttributeError as e:
+        if sys.version_info.minor > 5:
+            assert "__enter__" in str(e)
+        else:
+            assert "__exit__" in str(e)
+
+
+    y_enter_called = 0
+    class Y():
+        def __enter__(self):
+            nonlocal y_enter_called
+            y_enter_called += 1
+
+    try:
+        with Y() as y:
+            pass
+    except AttributeError as e:
+        assert "__exit__" in str(e)
+    assert y_enter_called == 0

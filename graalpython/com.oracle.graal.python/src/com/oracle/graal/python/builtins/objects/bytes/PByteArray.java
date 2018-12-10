@@ -34,7 +34,7 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class PByteArray extends PSequence implements PIBytesLike {
 
@@ -62,8 +62,8 @@ public final class PByteArray extends PSequence implements PIBytesLike {
     }
 
     @Override
+    @TruffleBoundary
     public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
         if (store instanceof ByteSequenceStorage) {
             byte[] barr = ((ByteSequenceStorage) store).getInternalByteArray();
             return String.format("bytearray(%s)", BytesUtils.bytesRepr(barr, barr.length));

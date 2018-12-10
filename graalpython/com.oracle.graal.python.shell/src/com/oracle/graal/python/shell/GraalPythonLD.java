@@ -50,11 +50,15 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import jline.internal.InputStreamReader;
 
 public class GraalPythonLD extends GraalPythonCompiler {
+    private static final String LLVM_IR_BITCODE = "llvm-ir-bitcode";
+    private static final String LLVM_NM = "llvm-nm";
     private static List<String> linkPrefix = Arrays.asList(new String[]{
                     "llvm-link",
                     "-o",
@@ -67,6 +71,9 @@ public class GraalPythonLD extends GraalPythonCompiler {
     private String outputFilename;
     private List<String> fileInputs;
     private List<String> ldArgs;
+
+    private Set<String> definedSymbols = new HashSet<>();
+    private Set<String> undefinedSymbols = new HashSet<>();
 
     private void run(String[] args) {
         parseOptions(args);
@@ -94,16 +101,16 @@ public class GraalPythonLD extends GraalPythonCompiler {
                     break;
                 default:
                     if (arg.endsWith(".o") || arg.endsWith(".bc")) {
-                        fileInputs.add(arg);
+                        addFile(arg);
                     } else if (arg.startsWith("-L")) {
                         libraryDirs.add(arg.substring(2));
                     } else if (arg.startsWith("-l")) {
                         List<String> bcFiles = searchLib(libraryDirs, arg.substring(2));
                         for (String bcFile : bcFiles) {
                             try {
-                                if (Files.probeContentType(Paths.get(bcFile)).contains("llvm-ir-bitcode")) {
+                                if (Files.probeContentType(Paths.get(bcFile)).contains(LLVM_IR_BITCODE)) {
                                     logV("library input:", bcFile);
-                                    fileInputs.add(bcFile);
+                                    addFile(bcFile);
                                 } else {
                                     droppedArgs.add(bcFile + "(dropped as library input)");
                                 }
@@ -120,6 +127,55 @@ public class GraalPythonLD extends GraalPythonCompiler {
         // object files given on the commandline and see if these are bytecode files we can work
         // with
         logV("Dropped args: ", droppedArgs);
+    }
+
+    void addFile(String f) {
+        fileInputs.add(f);
+
+        try {
+            // symbols defined up to here
+            ProcessBuilder nm = new ProcessBuilder();
+            nm.command(LLVM_NM, "-g", "--defined-only", f);
+            nm.redirectInput(Redirect.INHERIT);
+            nm.redirectError(Redirect.INHERIT);
+            nm.redirectOutput(Redirect.PIPE);
+            Process nmProc = nm.start();
+            try (BufferedReader buffer = new BufferedReader(new InputStreamReader(nmProc.getInputStream()))) {
+                String line = null;
+                while ((line = buffer.readLine()) != null) {
+                    String[] symboldef = line.split(" ");
+                    if (symboldef.length >= 2) {
+                        definedSymbols.add(symboldef[symboldef.length - 1]);
+                    }
+                }
+            }
+            nmProc.waitFor();
+
+            // remove now resolved symbols
+            undefinedSymbols.removeAll(definedSymbols);
+
+            // add symbols undefined now
+            nm.command(LLVM_NM, "-u", f);
+            nm.redirectInput(Redirect.INHERIT);
+            nm.redirectError(Redirect.INHERIT);
+            nm.redirectOutput(Redirect.PIPE);
+            nmProc = nm.start();
+            try (BufferedReader buffer = new BufferedReader(new InputStreamReader(nmProc.getInputStream()))) {
+                String line = null;
+                while ((line = buffer.readLine()) != null) {
+                    String[] symboldef = line.split(" ");
+                    if (symboldef.length >= 2) {
+                        String sym = symboldef[symboldef.length - 1];
+                        if (!definedSymbols.contains(sym)) {
+                            undefinedSymbols.add(sym);
+                        }
+                    }
+                }
+            }
+            nmProc.waitFor();
+        } catch (InterruptedException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private List<String> searchLib(List<String> libraryDirs, String lib) {
@@ -179,6 +235,52 @@ public class GraalPythonLD extends GraalPythonCompiler {
         extractAr.redirectOutput(Redirect.INHERIT);
         extractAr.command("ar", "xv", path);
         extractAr.start().waitFor();
+
+        // ar has special semantics w.r.t ordering of included symbols. we try to emulate the smarts
+        // of GNU ld by listing all undefined symbols until here, extracting only those that we are
+        // still missing, and adding them to a bitcode file that will only add these to the linked
+        // product.
+        // According to some emscripten documentation and ML discussions, this is actually an error
+        // in the build process, because such a smart linker should not be assumed for POSIX, but it
+        // seems ok to emulate this at least for the very common case of ar archives with symbol
+        // definitions that overlap what's defined in explicitly include .o files
+        for (String f : members) {
+            if (Files.probeContentType(Paths.get(f)).contains(LLVM_IR_BITCODE)) {
+                HashSet<String> definedHere = new HashSet<>();
+                ProcessBuilder nm = new ProcessBuilder();
+                nm.command(LLVM_NM, "-g", "--defined-only", f);
+                nm.redirectInput(Redirect.INHERIT);
+                nm.redirectError(Redirect.INHERIT);
+                nm.redirectOutput(Redirect.PIPE);
+                Process nmProc = nm.start();
+                try (BufferedReader buffer = new BufferedReader(new InputStreamReader(nmProc.getInputStream()))) {
+                    String line = null;
+                    while ((line = buffer.readLine()) != null) {
+                        String[] symboldef = line.split(" ");
+                        if (symboldef.length >= 2) {
+                            definedHere.add(symboldef[symboldef.length - 1]);
+                        }
+                    }
+                }
+                nmProc.waitFor();
+
+                ArrayList<String> extractCmd = new ArrayList<>();
+                extractCmd.add("llvm-extract");
+                for (String def : definedHere) {
+                    if (undefinedSymbols.contains(def)) {
+                        definedSymbols.add(def);
+                        undefinedSymbols.remove(def);
+                        extractCmd.add("-func");
+                        extractCmd.add(def);
+                    }
+                }
+                extractCmd.add(f);
+                extractCmd.add("-o");
+                extractCmd.add(f);
+                exec(extractCmd);
+            }
+        }
+
         return members;
     }
 

@@ -169,10 +169,17 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
             return module;
         }
 
-        @Specialization(guards = "!isNoValue(value)")
+        @Specialization(guards = {"!isBuiltinMethod(self)", "!isNoValue(value)"})
         Object getModule(PythonObject self, Object value,
                         @Cached("create()") WriteAttributeToObjectNode writeObject) {
             writeObject.execute(self, __MODULE__, value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object getModule(PBuiltinMethod self, Object value) {
+            CompilerDirectives.transferToInterpreter();
+            self.getStorage().define(__MODULE__, value);
             return PNone.NONE;
         }
     }

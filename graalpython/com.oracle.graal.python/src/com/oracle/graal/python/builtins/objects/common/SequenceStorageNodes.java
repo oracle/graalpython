@@ -2088,6 +2088,7 @@ public abstract class SequenceStorageNodes {
                 return concatStoragesNode.execute(dest, s, rightProfiled);
             } catch (SequenceStoreException e) {
                 dest = generalizeStore(dest, e.getIndicationValue());
+                dest = ensureCapacityNode.execute(dest, Math.addExact(len1, len2));
                 return concatStoragesNode.execute(dest, s, rightProfiled);
             } catch (ArithmeticException e) {
                 overflowErrorProfile.enter();
