@@ -287,12 +287,12 @@ def ascii_decode(string, errors=None):
 
 @__builtin__
 def charmap_encode(string, errors=None, mapping=None):
-    raise NotImplementedError("charmap_encode")
+    return __truffle_encode(string, "cp437", errors)
 
 
 @__builtin__
 def charmap_decode(string, errors=None, mapping=None):
-    raise NotImplementedError("charmap_decode")
+    return __truffle_decode(string, "cp437", errors)
 
 
 @__builtin__

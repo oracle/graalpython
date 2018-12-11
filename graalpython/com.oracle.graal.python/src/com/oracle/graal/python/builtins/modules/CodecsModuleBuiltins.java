@@ -131,6 +131,10 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         // cp037 IBM037, IBM039 English
         // cp424 EBCDIC-CP-HE, IBM424 Hebrew
         // cp437 437, IBM437 English
+        PY_CODECS_ALIASES.put("IBM437", "IBM437");
+        PY_CODECS_ALIASES.put("IBM437 English", "IBM437");
+        PY_CODECS_ALIASES.put("437", "IBM437");
+        PY_CODECS_ALIASES.put("cp437", "IBM437");
         // cp500 EBCDIC-CP-BE, EBCDIC-CP-CH, IBM500 Western Europe
         // cp720 Arabic
         // cp737 Greek
