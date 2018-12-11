@@ -1157,7 +1157,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public PList split(String str, @SuppressWarnings("unused") PNone keepends) {
-            String[] split = str.split("\n");
+            String[] split = str.split("\n", -1); // -1 is needed to include trailing empty strings
             return factory().createList(Arrays.copyOf(split, split.length, Object[].class));
         }
     }
