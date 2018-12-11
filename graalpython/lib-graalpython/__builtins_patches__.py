@@ -67,6 +67,7 @@ for module in [_io, io]:
     setattr(module, 'BufferedReader', _pyio.BufferedReader)
     setattr(module, 'StringIO', _pyio.StringIO)
     setattr(module, '_IOBase', _pyio.IOBase)
+    setattr(module, 'BufferedIOBase', _pyio.BufferedIOBase)
     setattr(module, 'RawIOBase', _pyio.RawIOBase)
     setattr(module, 'FileIO', _pyio.FileIO)
     setattr(module, 'BytesIO', _pyio.BytesIO)
