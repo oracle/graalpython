@@ -963,15 +963,16 @@ public class PythonObjectNativeWrapperMR {
     @Resolve(message = "KEY_INFO")
     abstract static class KeyInfoNode extends Node {
         public int access(Object object, Object fieldName) {
-            assert object instanceof PythonObjectNativeWrapper;
             int info = KeyInfo.NONE;
-            if (fieldName.equals(GP_OBJECT)) {
-                info |= KeyInfo.READABLE;
-            } else if (fieldName instanceof String && NativeMemberNames.isValid((String) fieldName)) {
-                info |= KeyInfo.READABLE;
+            if (object instanceof PythonObjectNativeWrapper) {
+                if (fieldName.equals(GP_OBJECT)) {
+                    info |= KeyInfo.READABLE;
+                } else if (fieldName instanceof String && NativeMemberNames.isValid((String) fieldName)) {
+                    info |= KeyInfo.READABLE;
 
-                // TODO be more specific
-                info |= KeyInfo.MODIFIABLE;
+                    // TODO be more specific
+                    info |= KeyInfo.MODIFIABLE;
+                }
             }
             return info;
         }
