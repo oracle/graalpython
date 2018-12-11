@@ -1274,6 +1274,12 @@ def PyRun_String(source, typ, globals, locals):
 
 
 @may_raise
+def PyThread_allocate_lock():
+    # TODO at a late point in time, we should actually return a useful object here
+    return object()
+
+
+@may_raise
 def PySlice_GetIndicesEx(start, stop, step, length):
     return PyTruffleSlice_GetIndicesEx(start, stop, step, length)
 
