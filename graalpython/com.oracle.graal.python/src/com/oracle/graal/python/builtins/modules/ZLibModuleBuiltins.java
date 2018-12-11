@@ -378,8 +378,6 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DeflateInitNode extends PythonBuiltinNode {
         /**
-         * @param wbits is ignored - the window size can be set for performance reasons, we trust
-         *            that the Deflater implementation will work well
          * @param memLevel is ignored - it mostly affects performance and compression rate, we trust
          *            that the Deflater implementation will work well
          */
