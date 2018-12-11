@@ -162,15 +162,15 @@ public final class BytesUtils {
                 case '7':
                     if (!regexMode) {
                         int code = chr - '0';
-                        if (i < length) {
-                            char nextChar = string.charAt(i);
-                            if (nextChar < '7' && nextChar > '0') {
+                        if (i + 1 < length) {
+                            char nextChar = string.charAt(i + 1);
+                            if ('0' <= nextChar && nextChar <= '7') {
                                 code = (code << 3) + nextChar - '0';
                                 i++;
 
-                                if (i < length) {
-                                    nextChar = string.charAt(i);
-                                    if (nextChar < '7' && nextChar > '0') {
+                                if (i + 1 < length) {
+                                    nextChar = string.charAt(i + 1);
+                                    if ('0' <= nextChar && nextChar <= '7') {
                                         code = (code << 3) + nextChar - '0';
                                         i++;
                                     }
