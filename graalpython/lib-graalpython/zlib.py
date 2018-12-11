@@ -97,13 +97,9 @@ class compressobj():
           used after calling the flush() method.  Otherwise, more data
           can still be compressed.
         """
-        if mode == Z_FINISH:
-            finish = True
-            mode = Z_FULL_FLUSH
         if self.stream:
             result = zlib_deflateCompress(self.stream, b"", mode)
-            if finish:
-                zlib_deflateEnd(self.stream)
+            if mode == Z_FINISH:
                 self.stream = None
             return result
         else:

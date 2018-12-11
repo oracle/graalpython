@@ -41,6 +41,17 @@
 
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
+
+import java.io.ByteArrayOutputStream;
+import java.util.List;
+import java.util.zip.Adler32;
+import java.util.zip.CRC32;
+import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -56,12 +67,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonCore;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -73,14 +81,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.io.ByteArrayOutputStream;
-import java.util.Arrays;
-import java.util.List;
-import java.util.zip.Adler32;
-import java.util.zip.CRC32;
-import java.util.zip.DataFormatException;
-import java.util.zip.Deflater;
-import java.util.zip.Inflater;
 
 @CoreFunctions(defineModule = ZLibModuleBuiltins.MODULE_NAME)
 public class ZLibModuleBuiltins extends PythonBuiltins {
@@ -386,10 +386,20 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object deflateInit(int level, int method, int wbits, int memLevel, int strategy, Object zdict) {
+            Deflater deflater;
+            if (wbits < 0) {
+                deflater = new Deflater(level, true);
+                // generate a RAW stream
+            } else if (wbits >= 25) {
+                // include gzip container
+                throw raise(PythonBuiltinClassType.NotImplementedError, "gzip containers");
+            } else {
+                deflater = new Deflater(level, true);
+            }
+
             if (method != DEFLATED) {
                 throw raise(PythonBuiltinClassType.ValueError, "only DEFLATED (%d) allowed as method, got %d", DEFLATED, method);
             }
-            Deflater deflater = new Deflater(level);
             deflater.setStrategy(strategy);
             if (zdict instanceof String) {
                 deflater.setDictionary(((String) zdict).getBytes());
@@ -420,26 +430,28 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object deflateCompress(DeflaterWrapper stream, PIBytesLike pb, int mode) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
             byte[] data = toBytes.execute(pb);
-            stream.deflater.setInput(data);
-            byte[] result = new byte[data.length];
-            int bytesWritten = stream.deflater.deflate(result, 0, result.length, mode);
-            while (bytesWritten > 0 && bytesWritten >= result.length) {
-                result = Arrays.copyOf(result, bytesWritten * 2);
-                bytesWritten += stream.deflater.deflate(result, bytesWritten, result.length - bytesWritten, mode);
-            }
-            return factory().createBytes(result);
-        }
-    }
+            byte[] result = new byte[DEF_BUF_SIZE];
 
-    @Builtin(name = "zlib_deflateEnd", fixedNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class DeflateEnd extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        PNone deflateEnd(DeflaterWrapper stream) {
-            stream.deflater.end();
-            return PNone.NONE;
+            stream.deflater.setInput(data);
+            int deflateMode = mode;
+            if (mode == Z_FINISH) {
+                deflateMode = Z_SYNC_FLUSH;
+                stream.deflater.finish();
+            }
+
+            int bytesWritten = result.length;
+            while (bytesWritten == result.length) {
+                bytesWritten = stream.deflater.deflate(result, 0, result.length, deflateMode);
+                baos.write(result, 0, bytesWritten);
+            }
+
+            if (mode == Z_FINISH) {
+                stream.deflater.end();
+            }
+
+            return factory().createBytes(baos.toByteArray());
         }
     }
 
