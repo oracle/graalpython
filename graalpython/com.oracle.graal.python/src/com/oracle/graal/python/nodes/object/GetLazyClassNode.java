@@ -188,8 +188,7 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         } else if (o instanceof PNone) {
             return PythonBuiltinClassType.PNone;
         } else {
-            CompilerDirectives.transferToInterpreter();
-            throw new IllegalStateException("unknown type " + o.getClass().getName());
+            return null;
         }
     }
 
@@ -198,6 +197,12 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         if (PGuards.isForeignObject(o)) {
             return BuiltinNames.FOREIGN;
         }
-        return getItSlowPath(o).getName();
+        LazyPythonClass lazyClass = getItSlowPath(o);
+        if (lazyClass != null) {
+            return lazyClass.getName();
+        } else {
+            CompilerDirectives.transferToInterpreter();
+            return o.toString();
+        }
     }
 }
