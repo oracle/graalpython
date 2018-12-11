@@ -46,6 +46,9 @@ stat_result = make_named_tuple_class("stat_result", [
     "st_uid", "st_gid", "st_size", "st_atime",
     "st_mtime", "st_ctime"
 ])
+stat_result.st_atime_ns = property(lambda s: int(s.st_atime * 1000))
+stat_result.st_mtime_ns = property(lambda s: int(s.st_mtime * 1000))
+
 old_stat = stat
 
 
