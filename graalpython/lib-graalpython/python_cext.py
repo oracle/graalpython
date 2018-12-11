@@ -999,7 +999,8 @@ def PyErr_PrintEx(set_sys_last_vars):
     typ, val, tb = sys.exc_info()
     if PyErr_GivenExceptionMatches(PyErr_Occurred(), SystemExit):
         _handle_system_exit()
-    typ, val, tb = PyErr_Fetch(True, (None, None, None))
+    fetched = PyErr_Fetch()
+    typ, val, tb = fetched if fetched is not native_null else (None, None, None)
     if typ is None:
         return
     if set_sys_last_vars:
@@ -1042,7 +1043,8 @@ def _handle_system_exit():
 
 
 def PyErr_WriteUnraisable(obj):
-    typ, val, tb = PyErr_Fetch(True, (None, None, None))
+    fetched = PyErr_Fetch()
+    typ, val, tb = fetched if fetched is not native_null else (None, None, None)
     try:
         if sys.stderr is None:
             return
