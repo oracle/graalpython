@@ -426,7 +426,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             int bytesWritten = stream.deflater.deflate(result, 0, result.length, mode);
             while (bytesWritten > 0 && bytesWritten >= result.length) {
                 result = Arrays.copyOf(result, bytesWritten * 2);
-                bytesWritten += stream.deflater.deflate(result, bytesWritten, result.length, mode);
+                bytesWritten += stream.deflater.deflate(result, bytesWritten, result.length - bytesWritten, mode);
             }
             return factory().createBytes(result);
         }
