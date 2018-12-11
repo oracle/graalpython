@@ -62,7 +62,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private ArrayList<String> programArgs = null;
     private String commandString = null;
     private String inputFile = null;
-    private String module = null;
     private boolean ignoreEnv = false;
     private boolean inspectFlag = false;
     private boolean verboseFlag = false;
@@ -104,9 +103,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     inspectFlag = true;
                     break;
                 case "-m":
-                    i += 1;
-                    if (i < arguments.size()) {
-                        module = arguments.get(i);
+                    if (i + 1 < arguments.size()) {
+                        // don't increment i here so that we capture the correct args
+                        String module = arguments.get(i + 1);
+                        commandString = "import runpy; runpy._run_module_as_main('" + module + "')";
                     } else {
                         print("Argument expected for the -m option");
                         printShortHelp();
@@ -179,7 +179,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     }
             }
 
-            if (inputFile != null || commandString != null || module != null) {
+            if (inputFile != null || commandString != null) {
                 i += 1;
                 if (i < arguments.size()) {
                     programArgs.addAll(arguments.subList(i, arguments.size()));
@@ -252,7 +252,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         try (Context context = contextBuilder.build()) {
             runVersionAction(versionAction, context.getEngine());
 
-            if (!quietFlag && (verboseFlag || (commandString == null && inputFile == null && module == null && stdinIsInteractive))) {
+            if (!quietFlag && (verboseFlag || (commandString == null && inputFile == null && stdinIsInteractive))) {
                 print("Python " + evalInternal(context, "import sys; sys.version + ' on ' + sys.platform").asString());
                 if (!noSite) {
                     print("Type \"help\", \"copyright\", \"credits\" or \"license\" for more information.");
