@@ -81,6 +81,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.JoinInternalNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -752,8 +753,6 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         protected abstract static class SpliceNode extends PNodeWithContext {
-            private static final String MAX_CODE_POINT_HEX_RANGE = Integer.toHexString(Character.MAX_CODE_POINT + 1);
-
             public static SpliceNode create() {
                 return SpliceNodeGen.create();
             }
@@ -785,7 +784,7 @@ public final class StringBuiltins extends PythonBuiltins {
             }
 
             private PException raiseError() {
-                return raise(ValueError, "character mapping must be in range(0x%s)", MAX_CODE_POINT_HEX_RANGE);
+                return raise(ValueError, "character mapping must be in range(0x%s)", Integer.toHexString(Character.MAX_CODE_POINT + 1));
             }
 
             @Specialization
@@ -1153,12 +1152,36 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SplitLinesNode extends PythonBuiltinNode {
+        @Child private ListAppendNode appendNode = ListAppendNode.create();
+        @Child private CastToBooleanNode keepEndsNode = CastToBooleanNode.createIfTrueNode();
 
         @Specialization
-        @TruffleBoundary
-        public PList split(String str, @SuppressWarnings("unused") PNone keepends) {
-            String[] split = str.split("\n", -1); // -1 is needed to include trailing empty strings
-            return factory().createList(Arrays.copyOf(split, split.length, Object[].class));
+        public PList split(String self, @SuppressWarnings("unused") PNone keepends) {
+            return split(self, false);
+        }
+
+        @Specialization
+        public PList split(String self, boolean keepends) {
+            PList list = factory().createList();
+            int end = self.length();
+            String remainder = self;
+            while (true) {
+                int idx = remainder.lastIndexOf("\n");
+                if (idx < 0) {
+                    break;
+                }
+                if (keepends) {
+                    appendNode.execute(list, self.substring(idx, end));
+                } else {
+                    appendNode.execute(list, self.substring(idx + 1, end));
+                }
+                end = idx;
+                remainder = remainder.substring(0, end);
+            }
+            if (!remainder.isEmpty()) {
+                appendNode.execute(list, remainder);
+            }
+            return list;
         }
     }
 
