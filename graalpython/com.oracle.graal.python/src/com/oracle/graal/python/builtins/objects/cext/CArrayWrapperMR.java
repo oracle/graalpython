@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ForeignAccess;
@@ -123,8 +122,6 @@ public class CArrayWrapperMR {
 
         @Child private PCallCapiFunction callUnaryNode;
 
-        @CompilationFinal private TruffleObject funGetByteArrayTypeID;
-
         public abstract Object execute(Object delegate);
 
         @Specialization
@@ -137,7 +134,7 @@ public class CArrayWrapperMR {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callUnaryNode = insert(PCallCapiFunction.create(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID));
             }
-            return callUnaryNode.call(funGetByteArrayTypeID, new Object[]{len});
+            return callUnaryNode.call(new Object[]{len});
         }
     }
 
