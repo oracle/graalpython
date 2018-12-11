@@ -403,15 +403,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 }
             }
             errorProfile.enter();
-            return fallbackGetattr(object, key);
-        }
-
-        private Object fallbackGetattr(Object object, Object key) {
-            if (getattrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getattrNode = insert(LookupAndCallBinaryNode.create(SpecialMethodNames.__GETATTR__));
-            }
-            return getattrNode.executeObject(object, key);
+            throw raise(AttributeError, "'%p' object has no attribute '%s'", object, key);
         }
 
         private Object readAttribute(Object object, Object key) {
