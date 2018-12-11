@@ -220,6 +220,7 @@ public final class Python3Core implements PythonCore {
                         "_socket",
                         "_thread",
                         "ctypes",
+                        "zlib",
                         "zipimport"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
