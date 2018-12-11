@@ -73,7 +73,7 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListReverseNod
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.TranslateNodeFactory.SpliceNodeGen;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.SpliceNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -751,91 +751,91 @@ public final class StringBuiltins extends PythonBuiltins {
 
             return new String(translatedChars);
         }
+    }
 
-        protected abstract static class SpliceNode extends PNodeWithContext {
-            public static SpliceNode create() {
-                return SpliceNodeGen.create();
+    protected abstract static class SpliceNode extends PNodeWithContext {
+        public static SpliceNode create() {
+            return SpliceNodeGen.create();
+        }
+
+        protected abstract char[] execute(char[] translatedChars, int i, Object translated);
+
+        @Specialization
+        char[] doInt(char[] translatedChars, int i, int translated,
+                        @Cached("create()") BranchProfile ovf) {
+            char t = (char) translated;
+            if (t != translated) {
+                ovf.enter();
+                throw raiseError();
             }
+            translatedChars[i] = t;
+            return translatedChars;
+        }
 
-            protected abstract char[] execute(char[] translatedChars, int i, Object translated);
-
-            @Specialization
-            char[] doInt(char[] translatedChars, int i, int translated,
-                            @Cached("create()") BranchProfile ovf) {
-                char t = (char) translated;
-                if (t != translated) {
-                    ovf.enter();
-                    throw raiseError();
-                }
-                translatedChars[i] = t;
-                return translatedChars;
+        @Specialization
+        char[] doLong(char[] translatedChars, int i, long translated,
+                        @Cached("create()") BranchProfile ovf) {
+            char t = (char) translated;
+            if (t != translated) {
+                ovf.enter();
+                throw raiseError();
             }
+            translatedChars[i] = t;
+            return translatedChars;
+        }
 
-            @Specialization
-            char[] doLong(char[] translatedChars, int i, long translated,
-                            @Cached("create()") BranchProfile ovf) {
-                char t = (char) translated;
-                if (t != translated) {
-                    ovf.enter();
-                    throw raiseError();
-                }
-                translatedChars[i] = t;
-                return translatedChars;
+        private PException raiseError() {
+            return raise(ValueError, "character mapping must be in range(0x%s)", Integer.toHexString(Character.MAX_CODE_POINT + 1));
+        }
+
+        @Specialization
+        char[] doPInt(char[] translatedChars, int i, PInt translated,
+                        @Cached("create()") BranchProfile ovf) {
+            double doubleValue = translated.doubleValue();
+            char t = (char) doubleValue;
+            if (t != doubleValue) {
+                ovf.enter();
+                throw raiseError();
             }
+            translatedChars[i] = t;
+            return translatedChars;
+        }
 
-            private PException raiseError() {
-                return raise(ValueError, "character mapping must be in range(0x%s)", Integer.toHexString(Character.MAX_CODE_POINT + 1));
-            }
+        @Specialization(guards = "translated.length() == 1")
+        @TruffleBoundary
+        char[] doStringChar(char[] translatedChars, int i, String translated) {
+            translatedChars[i] = translated.charAt(0);
+            return translatedChars;
+        }
 
-            @Specialization
-            char[] doPInt(char[] translatedChars, int i, PInt translated,
-                            @Cached("create()") BranchProfile ovf) {
-                double doubleValue = translated.doubleValue();
-                char t = (char) doubleValue;
-                if (t != doubleValue) {
-                    ovf.enter();
-                    throw raiseError();
-                }
-                translatedChars[i] = t;
-                return translatedChars;
-            }
+        @Specialization(guards = "translated.getValue().length() == 1")
+        @TruffleBoundary
+        char[] doPStringChar(char[] translatedChars, int i, PString translated) {
+            translatedChars[i] = translated.getValue().charAt(0);
+            return translatedChars;
+        }
 
-            @Specialization(guards = "translated.length() == 1")
-            @TruffleBoundary
-            char[] doStringChar(char[] translatedChars, int i, String translated) {
+        @Specialization(replaces = "doStringChar")
+        @TruffleBoundary
+        char[] doString(char[] translatedChars, int i, String translated) {
+            int transLen = translated.length();
+            if (transLen == 1) {
                 translatedChars[i] = translated.charAt(0);
-                return translatedChars;
+            } else if (transLen == 0) {
+                int len = translatedChars.length;
+                return Arrays.copyOf(translatedChars, len - 1);
+            } else {
+                int len = translatedChars.length;
+                char[] copy = Arrays.copyOf(translatedChars, len + transLen - 1);
+                translated.getChars(0, transLen, copy, i);
+                return copy;
             }
+            return translatedChars;
+        }
 
-            @Specialization(guards = "translated.getValue().length() == 1")
-            @TruffleBoundary
-            char[] doPStringChar(char[] translatedChars, int i, PString translated) {
-                translatedChars[i] = translated.getValue().charAt(0);
-                return translatedChars;
-            }
-
-            @Specialization(replaces = "doStringChar")
-            @TruffleBoundary
-            char[] doString(char[] translatedChars, int i, String translated) {
-                int transLen = translated.length();
-                if (transLen == 1) {
-                    translatedChars[i] = translated.charAt(0);
-                } else if (transLen == 0) {
-                    int len = translatedChars.length;
-                    return Arrays.copyOf(translatedChars, len - 1);
-                } else {
-                    int len = translatedChars.length;
-                    char[] copy = Arrays.copyOf(translatedChars, len + transLen - 1);
-                    translated.getChars(0, transLen, copy, i);
-                    return copy;
-                }
-                return translatedChars;
-            }
-
-            @Specialization(replaces = "doPStringChar")
-            char[] doPString(char[] translatedChars, int i, PString translated) {
-                return doString(translatedChars, i, translated.getValue());
-            }
+        @Specialization(replaces = "doPStringChar")
+        char[] doPString(char[] translatedChars, int i, PString translated) {
+            return doString(translatedChars, i, translated.getValue());
         }
     }
 

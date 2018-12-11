@@ -56,7 +56,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins.DeflateInitNode.DeflaterWrapper;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -406,17 +405,17 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             }
             return new DeflaterWrapper(deflater);
         }
+    }
 
-        static class DeflaterWrapper implements TruffleObject {
-            private final Deflater deflater;
+    static class DeflaterWrapper implements TruffleObject {
+        private final Deflater deflater;
 
-            public DeflaterWrapper(Deflater deflater) {
-                this.deflater = deflater;
-            }
+        public DeflaterWrapper(Deflater deflater) {
+            this.deflater = deflater;
+        }
 
-            public ForeignAccess getForeignAccess() {
-                return null;
-            }
+        public ForeignAccess getForeignAccess() {
+            return null;
         }
     }
 
