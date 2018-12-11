@@ -897,7 +897,7 @@ def test_translate():
     assert "abc".translate({ord("a"): ""}) == "bc"
     try:
         "abc".translate({ord("a"): 8**63})
-    except ValueError as e:
+    except (ValueError, TypeError) as e:
         assert "mapping must be in range" in str(e)
     else:
         assert False, "should raise"
