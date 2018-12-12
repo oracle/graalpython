@@ -3,6 +3,23 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 1.0.0 RC11
+
+* Support running setuptools to build and install various packages
+* Support running a source release version of NumPy out of the box
+* Improve performance of member access to C API objects
+* Improve performance of binary operations on C API objects
+* Add support for `yield from`
+* Support assignment to `object.__dict__` and ensure that managed subclasses of native types also have a `__dict__`
+* Fix `[]` access with non-integer keys for array-like foreign objects
+* Fix various performance regressions introduced in the last RC
+* Implement more built-in methods on the `time` module
+* Python no longer exposes internal languages through `polyglot.eval`
+* Improve performance of `os.scandir` and functions that build on it (such as `glob`)
+* More correct implementation of standard streams, including buffering
+* Properly support the `-m` switch to run modules
+* Support creating ZIP files through the standard `zipfile` module
+
 ## Version 1.0.0 RC10
 
 * Improve performance of C API upcalls
