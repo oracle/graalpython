@@ -66,7 +66,7 @@ int PySlice_GetIndicesEx(PyObject *_r, Py_ssize_t length,
 
 int PySlice_Unpack(PyObject *_r, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step) {
     PySliceObject *r = (PySliceObject*)_r;
-    void *result = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PySlice_GetIndicesEx", r->start, r->stop, r->step, PY_SSIZE_T_MAX));
+    PyObject* result = UPCALL_CEXT_O(_jls_PySlice_GetIndicesEx, native_to_java(r->start), native_to_java(r->stop), native_to_java(r->step), PY_SSIZE_T_MAX);
     if (result == NULL) {
         return -1;
     }
@@ -77,7 +77,7 @@ int PySlice_Unpack(PyObject *_r, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t
 }
 
 Py_ssize_t PySlice_AdjustIndices(Py_ssize_t length, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t step) {
-    PyObject *result = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PySlice_GetIndicesEx", *start, *stop, step, length));
+    PyObject* result = UPCALL_CEXT_O(_jls_PySlice_GetIndicesEx, *start, *stop, step, length);
     if (result == NULL) {
         return -1;
     }
