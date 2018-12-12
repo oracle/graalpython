@@ -41,6 +41,8 @@ import _imp
 import sys
 import python_cext
 
+_thread = None
+
 def may_raise(error_result=native_null):
     if isinstance(error_result, type(may_raise)):
         # direct annotation
@@ -1277,8 +1279,10 @@ def PyRun_String(source, typ, globals, locals):
 
 @may_raise
 def PyThread_allocate_lock():
-    # TODO at a late point in time, we should actually return a useful object here
-    return object()
+    global _thread
+    if not _thread:
+        import _thread
+    return _thread.allocate_lock()
 
 
 @may_raise
