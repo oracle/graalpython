@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.method;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
@@ -181,6 +182,52 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
             CompilerDirectives.transferToInterpreter();
             self.getStorage().define(__MODULE__, value);
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = __DOC__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class DocNode extends PythonBinaryBuiltinNode {
+        @Child ReadAttributeFromObjectNode readFunc;
+
+        private Object readFromFunc(Object func) {
+            if (readFunc == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readFunc = insert(ReadAttributeFromObjectNode.create());
+            }
+            return readFunc.execute(func, __DOC__);
+        }
+
+        @Specialization(guards = "isNoValue(none)")
+        Object getModule(PMethod self, @SuppressWarnings("unused") PNone none,
+                        @Cached("create()") ReadAttributeFromObjectNode readSelf) {
+            Object doc = readSelf.execute(self, __DOC__);
+            if (doc == PNone.NO_VALUE) {
+                return readFromFunc(self.getFunction());
+            }
+            return doc;
+        }
+
+        @Specialization(guards = "isNoValue(none)")
+        Object getModule(PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
+                        @Cached("create()") ReadAttributeFromObjectNode readSelf) {
+            Object doc = readSelf.execute(self, __DOC__);
+            if (doc == PNone.NO_VALUE) {
+                return readFromFunc(self.getFunction());
+            }
+            return doc;
+        }
+
+        @Specialization(guards = {"!isNoValue(value)"})
+        Object getModule(PMethod self, Object value,
+                        @Cached("create()") WriteAttributeToObjectNode writeObject) {
+            writeObject.execute(self, __DOC__, value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isNoValue(value)"})
+        Object getModule(@SuppressWarnings("unused") PBuiltinMethod self, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonBuiltinClassType.AttributeError, "attribute '__doc__' of 'builtin_function_or_method' objects is not writable");
         }
     }
 }
