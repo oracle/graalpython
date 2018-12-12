@@ -808,7 +808,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return translatedChars;
         }
 
-        @Specialization(guards = "translated.getValue().length() == 1")
+        @Specialization(guards = "translated.len() == 1")
         @TruffleBoundary
         char[] doPStringChar(char[] translatedChars, int i, PString translated) {
             translatedChars[i] = translated.getValue().charAt(0);
