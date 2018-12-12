@@ -1101,8 +1101,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object utime(String path, PNone times, PNone ns, PNone dir_fd, PNone follow_symlinks) {
             long time = ((Double) TimeModuleBuiltins.timeSeconds()).longValue();
-            setMtime(path, time);
-            setAtime(path, time);
+            setMtime(getFile(path, true), time);
+            setAtime(getFile(path, true), time);
             return PNone.NONE;
         }
 
@@ -1111,8 +1111,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object utime(String path, PTuple times, PNone ns, PNone dir_fd, PNone follow_symlinks) {
             long atime = getTime(times, 0, "times");
             long mtime = getTime(times, 1, "times");
-            setMtime(path, mtime);
-            setAtime(path, atime);
+            setMtime(getFile(path, true), mtime);
+            setAtime(getFile(path, true), atime);
             return PNone.NONE;
         }
 
@@ -1121,8 +1121,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object utime(String path, PNone times, PTuple ns, PNone dir_fd, PNone follow_symlinks) {
             long atime = getTime(ns, 0, "ns") / 1000;
             long mtime = getTime(ns, 1, "ns") / 1000;
-            setMtime(path, mtime);
-            setAtime(path, atime);
+            setMtime(getFile(path, true), mtime);
+            setAtime(getFile(path, true), atime);
+            return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        Object utime(String path, PNone times, PTuple ns, PNone dir_fd, boolean follow_symlinks) {
+            long atime = getTime(ns, 0, "ns") / 1000;
+            long mtime = getTime(ns, 1, "ns") / 1000;
+            setMtime(getFile(path, true), mtime);
+            setAtime(getFile(path, true), atime);
             return PNone.NONE;
         }
 
@@ -1183,18 +1193,36 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return raise(TypeError, "utime: '%s' must be either a tuple of two ints or None", argname);
         }
 
-        private void setMtime(String path, long mtime) {
+        private void setMtime(TruffleFile truffleFile, long mtime) {
             try {
-                getContext().getEnv().getTruffleFile(path).setLastModifiedTime(FileTime.from(mtime, TimeUnit.SECONDS));
-            } catch (IOException e) {
+                truffleFile.setLastModifiedTime(FileTime.from(mtime, TimeUnit.SECONDS));
+            } catch (IOException | SecurityException e) {
+                throw raise();
             }
         }
 
-        private void setAtime(String path, long mtime) {
+        private void setAtime(TruffleFile truffleFile, long mtime) {
             try {
-                getContext().getEnv().getTruffleFile(path).setLastAccessTime(FileTime.from(mtime, TimeUnit.SECONDS));
-            } catch (IOException e) {
+                truffleFile.setLastAccessTime(FileTime.from(mtime, TimeUnit.SECONDS));
+            } catch (IOException | SecurityException e) {
+                throw raise();
             }
+        }
+
+        private TruffleFile getFile(String path, boolean followSymlinks) {
+            TruffleFile truffleFile = getContext().getEnv().getTruffleFile(path);
+            if (!followSymlinks) {
+                try {
+                    truffleFile = truffleFile.getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
+                } catch (IOException | SecurityException e) {
+                    throw raise();
+                }
+            }
+            return truffleFile;
+        }
+
+        private PException raise() {
+            throw raise(ValueError, "Operation not allowed");
         }
 
         private int getLength(PTuple times) {
