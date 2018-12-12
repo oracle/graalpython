@@ -483,6 +483,7 @@ public class PythonObjectNativeWrapperMR {
         Object doTpDictoffset(PythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") CastToIndexNode castToIntNode,
                         @Cached("create(__DICTOFFSET__)") LookupAttributeInMRONode getAttrNode) {
+            // TODO properly implement 'tp_dictoffset' for builtin classes
             if (object instanceof PythonBuiltinClass) {
                 return 0L;
             }
