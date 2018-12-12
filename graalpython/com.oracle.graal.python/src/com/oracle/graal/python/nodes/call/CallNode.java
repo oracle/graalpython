@@ -74,6 +74,10 @@ public abstract class CallNode extends PNodeWithContext {
 
     public abstract Object execute(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords);
 
+    public final Object execute(VirtualFrame frame, Object callableObject, Object... arguments) {
+        return execute(frame, callableObject, arguments, PKeyword.EMPTY_KEYWORDS);
+    }
+
     protected static boolean isNoCallable(Object callee) {
         return !(callee instanceof PythonCallable);
     }

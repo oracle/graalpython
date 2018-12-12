@@ -46,28 +46,6 @@ def hasattr(obj, key):
         return False
 
 
-# We re-define the print function here, because that makes it easier for us to
-# deal with the default arguments. The builtin version simply requires all
-# arguments.
-def make_print():
-    builtin_print = print
-
-    def print_f(*objects, sep=" ", end="\n", file=None, flush=False):
-        if file is not None:
-            sz = len(objects) - 1
-            for i in range(sz):
-                file.write(str(objects[i]))
-                file.write(str(sep))
-            file.write(str(objects[-1]))
-            file.write(str(end))
-        else:
-            builtin_print(tuple(objects), sep, end, file, flush)
-    print_f.__name__ = "print"
-    return print_f
-print = __builtin__(make_print())
-del make_print
-
-
 @__builtin__
 def any(iterable):
     for i in iterable:
