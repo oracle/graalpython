@@ -296,14 +296,16 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "isEmpty(kwargs)")
-        public HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            return dictLike.getDictStorage().copy(HashingStorage.DEFAULT_EQIVALENCE);
+        public HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @Cached("create()") HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
+            return getDictStorageNode.execute(dictLike).copy(HashingStorage.DEFAULT_EQIVALENCE);
         }
 
         @Specialization(guards = "!isEmpty(kwargs)", rewriteOn = HashingStorage.UnmodifiableStorageException.class)
-        public HashingStorage doPDictKwargs(PHashingCollection iterable, PKeyword[] kwargs,
-                        @Cached("create()") UnionNode unionNode) {
-            return unionNode.execute(iterable.getDictStorage(), new KeywordsStorage(kwargs));
+        public HashingStorage doPDictKwargs(PHashingCollection dictLike, PKeyword[] kwargs,
+                        @Cached("create()") UnionNode unionNode,
+                        @Cached("create()") HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
+            return unionNode.execute(getDictStorageNode.execute(dictLike), new KeywordsStorage(kwargs));
         }
 
         @Specialization(guards = "!isEmpty(kwargs)")
