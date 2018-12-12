@@ -362,7 +362,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "stat", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = "stat", minNumOfPositionalArgs = 1, keywordArguments = {"follow_symlinks"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StatNode extends PythonBinaryBuiltinNode {
@@ -1185,14 +1185,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         private void setMtime(String path, long mtime) {
             try {
-                getContext().getEnv().getTruffleFile(path).setLastModifiedTime(FileTime.fromMillis(mtime));
+                getContext().getEnv().getTruffleFile(path).setLastModifiedTime(FileTime.from(mtime, TimeUnit.SECONDS));
             } catch (IOException e) {
             }
         }
 
         private void setAtime(String path, long mtime) {
             try {
-                getContext().getEnv().getTruffleFile(path).setLastAccessTime(FileTime.fromMillis(mtime));
+                getContext().getEnv().getTruffleFile(path).setLastAccessTime(FileTime.from(mtime, TimeUnit.SECONDS));
             } catch (IOException e) {
             }
         }

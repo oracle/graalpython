@@ -46,28 +46,6 @@ def hasattr(obj, key):
         return False
 
 
-# We re-define the print function here, because that makes it easier for us to
-# deal with the default arguments. The builtin version simply requires all
-# arguments.
-def make_print():
-    builtin_print = print
-
-    def print_f(*objects, sep=" ", end="\n", file=None, flush=False):
-        if file is not None:
-            sz = len(objects) - 1
-            for i in range(sz):
-                file.write(str(objects[i]))
-                file.write(str(sep))
-            file.write(str(objects[-1]))
-            file.write(str(end))
-        else:
-            builtin_print(tuple(objects), sep, end, file, flush)
-    print_f.__name__ = "print"
-    return print_f
-print = __builtin__(make_print())
-del make_print
-
-
 @__builtin__
 def any(iterable):
     for i in iterable:
@@ -125,10 +103,15 @@ class map(object):
     def __iter__(self):
         return self
 
+    def __contains__(self, x):
+        for i in map(self.__func, *self.__iterators):
+            if x == i:
+                return True
+        return False
 
-def _caller_locals():
-    import sys
-    return sys._getframe(2).f_locals
+
+
+from sys import _getframe as __getframe__
 
 
 @__builtin__
@@ -137,12 +120,11 @@ def vars(*obj):
     called with no argument, return the variables bound in local scope."""
     if len(obj) == 0:
         # TODO inlining _caller_locals().items() in the dict comprehension does not work for now, investigate!
-        items = _caller_locals().items()
-        return {k: v for k, v in items}
+        return __getframe__(1).f_locals
     elif len(obj) != 1:
         raise TypeError("vars() takes at most 1 argument.")
     try:
-        return dict(obj[0].__dict__)
+        return obj[0].__dict__
     except AttributeError:
         raise TypeError("vars() argument must have __dict__ attribute")
 

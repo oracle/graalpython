@@ -25,10 +25,15 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import java.text.DateFormatSymbols;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -38,8 +43,11 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -47,20 +55,18 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.text.DateFormatSymbols;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 
 @CoreFunctions(defineModule = "time")
 public final class TimeModuleBuiltins extends PythonBuiltins {
     private static final int DELAY_NANOS = 10;
 
     @Override
-    protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TimeModuleBuiltinsFactory.getFactories();
     }
 
@@ -590,6 +596,37 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Fallback
         public String formatTime(Object format, @SuppressWarnings("unused") Object time) {
             throw raise(PythonBuiltinClassType.TypeError, "strftime() argument 1 must be str, not %p", format);
+        }
+    }
+
+    @Builtin(name = "mktime", fixedNumOfPositionalArgs = 1, doc = "mktime(tuple) -> floating point number\n\n" +
+                    "Convert a time tuple in local time to seconds since the Epoch.\n" +
+                    "Note that mktime(gmtime(0)) will not generally return zero for most\n" +
+                    "time zones; instead the returned value will either be equal to that\n" +
+                    "of the timezone or altzone attributes on the time module.")
+    @GenerateNodeFactory
+    static abstract class MkTimeNode extends PythonUnaryBuiltinNode {
+        private static final int ELEMENT_COUNT = 9;
+        @Child CastToIndexNode castInt = CastToIndexNode.create();
+
+        @Specialization
+        @ExplodeLoop
+        double mktime(PTuple tuple) {
+            Object[] items = tuple.getArray();
+            if (items.length != 9) {
+                throw raise(PythonBuiltinClassType.TypeError, "function takes exactly 9 arguments (%d given)", items.length);
+            }
+            int[] integers = new int[9];
+            for (int i = 0; i < ELEMENT_COUNT; i++) {
+                integers[i] = castInt.execute(items[i]);
+            }
+            return op(integers);
+        }
+
+        @TruffleBoundary
+        private static long op(int[] integers) {
+            LocalDateTime localtime = LocalDateTime.of(integers[0], integers[1], integers[2], integers[3], integers[4], integers[5]);
+            return localtime.toEpochSecond(ZoneOffset.UTC);
         }
     }
 }

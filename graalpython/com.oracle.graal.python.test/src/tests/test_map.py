@@ -58,3 +58,25 @@ def test_map2():
     items0 = [0, 1, 2, 3, 4]
     items1 = [5, 6, 7, 8, 9]
     assert list(map(lambda x, y: x * y, items0, items1)) == [0, 6, 14, 24, 36]
+
+
+def test_map_contains():
+    assert 1 in map(lambda s: s, [1])
+    assert 2 not in map(lambda s: s, [1])
+
+    class X():
+        def __iter__(self):
+            return self
+
+        def __next__(self):
+            i = getattr(self, "i", 0)
+            if i == 1:
+                raise StopIteration
+            else:
+                self.i = i + 1
+                return i
+
+    # the below checks that __contains__ consumes the iterator
+    m = map(lambda s: s, X())
+    assert 0 in m
+    assert 0 not in m

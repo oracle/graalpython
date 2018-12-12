@@ -74,3 +74,16 @@ def test_vars():
     assert_raises(TypeError, vars, 42, 42)
     assert_raises(TypeError, vars, 42)
     assert vars(C_get_vars()) == {'a': 2}
+
+
+def test_vars_update():
+    class X():
+        pass
+
+    x = X()
+    vars(x).update({"args": 42})
+    assert vars(x)["args"] == 42
+    assert x.__dict__["args"] == 42
+
+    vars().update({"arg": 12})
+    assert locals()["arg"] == 12

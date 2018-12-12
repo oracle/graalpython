@@ -123,6 +123,7 @@ import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -153,15 +154,16 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1326,45 +1328,113 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
-    @Builtin(name = PRINT, fixedNumOfPositionalArgs = 5)
+    @Builtin(name = PRINT, takesVarArgs = true, keywordArguments = {"sep", "end", "file", "flush"}, doc = "\n" +
+                    "print(value, ..., sep=' ', end='\\n', file=sys.stdout, flush=False)\n" +
+                    "\n" +
+                    "Prints the values to a stream, or to sys.stdout by default.\n" +
+                    "Optional keyword arguments:\n" +
+                    "file:  a file-like object (stream); defaults to the current sys.stdout.\n" +
+                    "sep:   string inserted between values, default a space.\n" +
+                    "end:   string appended after the last value, default a newline.\n" +
+                    "flush: whether to forcibly flush the stream.")
     @GenerateNodeFactory
     public abstract static class PrintNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        public Object print(PTuple values, String sep, String end, Object file, boolean flush,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
-                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode callStr) {
-            try {
-                PythonContext context = getContext();
-                if (lenNode.execute(values.getSequenceStorage()) == 0) {
-                    write(context, end);
-                } else {
-                    SequenceStorage store = values.getSequenceStorage();
-                    StringBuilder sb = new StringBuilder();
-                    for (int i = 0; i < store.length() - 1; i++) {
-                        append(sb, callStr.executeObject(getItemNode.execute(store, i)));
-                        append(sb, " ");
-                    }
-                    append(sb, callStr.executeObject(getItemNode.execute(store, store.length() - 1)));
-                    append(sb, end);
-                    write(context, sb.toString());
-                }
-            } catch (IOException e) {
-                // pass through
-            }
+        private static final String DEFAULT_END = "\n";
+        private static final String DEFAULT_SEPARATOR = " ";
+        @Child ReadAttributeFromObjectNode readStdout;
+        @Child GetAttributeNode getWrite = GetAttributeNode.create("write", null);
+        @Child CallNode callWrite = CallNode.create();
+        @Child CastToStringNode toString = CastToStringNode.createCoercing();
+        @Child private LookupAndCallUnaryNode callFlushNode;
+        @CompilationFinal private Assumption singleContextAssumption;
+        @CompilationFinal private PythonModule cachedSys;
 
+        @Specialization
+        PNone printNoKeywords(VirtualFrame frame, Object[] values, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone end, @SuppressWarnings("unused") PNone file,
+                        @SuppressWarnings("unused") PNone flush) {
+            Object stdout = getStdout();
+            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false);
+        }
+
+        @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"})
+        PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush) {
+            int lastValue = values.length - 1;
+            Object write = getWrite.executeObject(file);
+            for (int i = 0; i < lastValue; i++) {
+                callWrite.execute(frame, write, toString.execute(values[i]));
+                callWrite.execute(frame, write, sep);
+            }
+            if (lastValue >= 0) {
+                callWrite.execute(frame, write, toString.execute(values[lastValue]));
+            }
+            callWrite.execute(frame, write, end);
+            if (flush) {
+                if (callFlushNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    callFlushNode = insert(LookupAndCallUnaryNode.create("flush"));
+                }
+                callFlushNode.executeObject(file);
+            }
             return PNone.NONE;
         }
 
-        @TruffleBoundary(transferToInterpreterOnException = false)
-        private static void append(StringBuilder sb, Object o) {
-            sb.append(o);
+        @Specialization(replaces = {"printAllGiven", "printNoKeywords"})
+        PNone printGeneric(VirtualFrame frame, Object[] values, Object sepIn, Object endIn, Object fileIn, Object flushIn,
+                        @Cached("createCoercing()") CastToStringNode castSep,
+                        @Cached("createCoercing()") CastToStringNode castEnd,
+                        @Cached("createIfTrueNode()") CastToBooleanNode castFlush) {
+            String sep;
+            if (sepIn instanceof PNone) {
+                sep = DEFAULT_SEPARATOR;
+            } else {
+                sep = castSep.execute(sepIn);
+            }
+            String end;
+            if (endIn instanceof PNone) {
+                end = DEFAULT_END;
+            } else {
+                end = castEnd.execute(endIn);
+            }
+            Object file;
+            if (fileIn instanceof PNone) {
+                file = getStdout();
+            } else {
+                file = fileIn;
+            }
+            boolean flush;
+            if (flushIn instanceof PNone) {
+                flush = false;
+            } else {
+                flush = castFlush.executeWith(flushIn);
+            }
+            return printAllGiven(frame, values, sep, end, file, flush);
         }
 
-        @TruffleBoundary
-        private static void write(PythonContext context, String string) throws IOException {
-            context.getStandardOut().write(string.getBytes());
+        private Object getStdout() {
+            if (singleContextAssumption == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                singleContextAssumption = singleContextAssumption();
+            }
+            PythonModule sys;
+            if (singleContextAssumption.isValid()) {
+                if (cachedSys == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    cachedSys = getContext().getCore().lookupBuiltinModule("sys");
+                }
+                sys = cachedSys;
+            } else {
+                if (cachedSys != null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    cachedSys = null;
+                }
+                sys = getContext().getCore().lookupBuiltinModule("sys");
+            }
+            if (readStdout == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readStdout = insert(ReadAttributeFromObjectNode.create());
+            }
+            Object stdout = readStdout.execute(sys, "stdout");
+            return stdout;
         }
     }
 

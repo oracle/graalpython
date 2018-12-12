@@ -73,7 +73,21 @@ class chain():
 
 
 class starmap():
-    pass
+    """starmap(function, sequence) --> starmap object
+
+    Return an iterator whose values are returned from the function evaluated
+    with an argument tuple taken from the given sequence.
+    """
+    def __init__(self, fun, iterable):
+        self.fun = fun
+        self.iterable = iterable
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        obj = next(self.iterable)
+        return self.fun(obj)
 
 
 class islice(object):

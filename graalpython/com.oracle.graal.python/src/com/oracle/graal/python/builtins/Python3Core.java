@@ -84,8 +84,8 @@ import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltins;
@@ -220,6 +220,7 @@ public final class Python3Core implements PythonCore {
                         "_socket",
                         "_thread",
                         "ctypes",
+                        "zlib",
                         "zipimport"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);

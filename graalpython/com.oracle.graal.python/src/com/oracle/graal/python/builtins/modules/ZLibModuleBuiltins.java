@@ -41,32 +41,9 @@
 
 package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
-import com.oracle.graal.python.runtime.PythonCore;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.zip.Adler32;
@@ -75,35 +52,64 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.profiles.ConditionProfile;
+
 @CoreFunctions(defineModule = ZLibModuleBuiltins.MODULE_NAME)
 public class ZLibModuleBuiltins extends PythonBuiltins {
 
-    protected static final byte MAX_WBITS = 15;
-    protected static final byte DEFLATED = 8;
-    protected static final byte DEF_MEM_LEVEL = 8;
+    protected static final int MAX_WBITS = 15;
+    protected static final int DEFLATED = 8;
+    protected static final int DEF_MEM_LEVEL = 8;
     protected static final int DEF_BUF_SIZE = 16 * 1024;
     // compression levels
-    protected static final byte Z_NO_COMPRESSION = 0;
-    protected static final byte Z_BEST_SPEED = 1;
-    protected static final byte Z_BEST_COMPRESSION = 9;
-    protected static final byte Z_DEFAULT_COMPRESSION = -1;
+    protected static final int Z_NO_COMPRESSION = 0;
+    protected static final int Z_BEST_SPEED = 1;
+    protected static final int Z_BEST_COMPRESSION = 9;
+    protected static final int Z_DEFAULT_COMPRESSION = -1;
     // compression strategies
-    protected static final byte Z_FILTERED = 1;
-    protected static final byte Z_HUFFMAN_ONLY = 2;
-    protected static final byte Z_RLE = 3;
-    protected static final byte Z_FIXED = 4;
-    protected static final byte Z_DEFAULT_STRATEGY = 0;
+    protected static final int Z_FILTERED = 1;
+    protected static final int Z_HUFFMAN_ONLY = 2;
+    protected static final int Z_RLE = 3;
+    protected static final int Z_FIXED = 4;
+    protected static final int Z_DEFAULT_STRATEGY = 0;
     // allowed flush values
-    protected static final byte Z_NO_FLUSH = 0;
-    protected static final byte Z_PARTIAL_FLUSH = 1;
-    protected static final byte Z_SYNC_FLUSH = 2;
-    protected static final byte Z_FULL_FLUSH = 3;
-    protected static final byte Z_FINISH = 4;
-    protected static final byte Z_BLOCK = 5;
-    protected static final byte Z_TREES = 6;
+    protected static final int Z_NO_FLUSH = 0;
+    protected static final int Z_PARTIAL_FLUSH = 1;
+    protected static final int Z_SYNC_FLUSH = 2;
+    protected static final int Z_FULL_FLUSH = 3;
+    protected static final int Z_FINISH = 4;
+    protected static final int Z_BLOCK = 5;
+    protected static final int Z_TREES = 6;
 
     // errors
-    protected static final byte Z_BUF_ERROR = -5;
+    protected static final int Z_BUF_ERROR = -5;
 
     protected static final String MODULE_NAME = "zlib";
 
@@ -364,6 +370,86 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         protected static Adler32Node create() {
             return ZLibModuleBuiltinsFactory.Adler32NodeFactory.create();
+        }
+    }
+
+    @Builtin(name = "zlib_deflateInit", fixedNumOfPositionalArgs = 6)
+    @GenerateNodeFactory
+    abstract static class DeflateInitNode extends PythonBuiltinNode {
+        /**
+         * @param memLevel is ignored - it mostly affects performance and compression rate, we trust
+         *            that the Deflater implementation will work well
+         */
+        @Specialization
+        @TruffleBoundary
+        Object deflateInit(int level, int method, int wbits, int memLevel, int strategy, Object zdict) {
+            Deflater deflater;
+            if (wbits < 0) {
+                // generate a RAW stream, i.e., no wrapping
+                deflater = new Deflater(level, true);
+            } else if (wbits >= 25) {
+                // include gzip container
+                throw raise(PythonBuiltinClassType.NotImplementedError, "gzip containers");
+            } else {
+                // wrap stream with zlib header and trailer
+                deflater = new Deflater(level, false);
+            }
+
+            if (method != DEFLATED) {
+                throw raise(PythonBuiltinClassType.ValueError, "only DEFLATED (%d) allowed as method, got %d", DEFLATED, method);
+            }
+            deflater.setStrategy(strategy);
+            if (zdict instanceof String) {
+                deflater.setDictionary(((String) zdict).getBytes());
+            } else if (!(zdict instanceof PNone)) {
+                throw raise(PythonBuiltinClassType.ValueError, "zdict must be a str, not %p", zdict);
+            }
+            return new DeflaterWrapper(deflater);
+        }
+    }
+
+    static class DeflaterWrapper implements TruffleObject {
+        private final Deflater deflater;
+
+        public DeflaterWrapper(Deflater deflater) {
+            this.deflater = deflater;
+        }
+
+        public ForeignAccess getForeignAccess() {
+            return null;
+        }
+    }
+
+    @Builtin(name = "zlib_deflateCompress", fixedNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class DeflateCompress extends PythonTernaryBuiltinNode {
+        @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+
+        @Specialization
+        @TruffleBoundary
+        Object deflateCompress(DeflaterWrapper stream, PIBytesLike pb, int mode) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] data = toBytes.execute(pb);
+            byte[] result = new byte[DEF_BUF_SIZE];
+
+            stream.deflater.setInput(data);
+            int deflateMode = mode;
+            if (mode == Z_FINISH) {
+                deflateMode = Z_SYNC_FLUSH;
+                stream.deflater.finish();
+            }
+
+            int bytesWritten = result.length;
+            while (bytesWritten == result.length) {
+                bytesWritten = stream.deflater.deflate(result, 0, result.length, deflateMode);
+                baos.write(result, 0, bytesWritten);
+            }
+
+            if (mode == Z_FINISH) {
+                stream.deflater.end();
+            }
+
+            return factory().createBytes(baos.toByteArray());
         }
     }
 

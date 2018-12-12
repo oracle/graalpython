@@ -905,6 +905,11 @@ public final class FloatBuiltins extends PythonBuiltins {
             return x < y;
         }
 
+        @Specialization
+        boolean doPI(double x, PInt y) {
+            return x < y.doubleValue();
+        }
+
         @Specialization(guards = "fromNativeNode.isSubtype(y)", limit = "1")
         boolean doDN(double x, PythonNativeObject y,
                         @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
@@ -995,6 +1000,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         boolean doDL(double x, long y) {
             return x > y;
+        }
+
+        @Specialization
+        boolean doPI(double x, PInt y) {
+            return x > y.doubleValue();
         }
 
         @Specialization(guards = "fromNativeNode.isSubtype(y)", limit = "1")

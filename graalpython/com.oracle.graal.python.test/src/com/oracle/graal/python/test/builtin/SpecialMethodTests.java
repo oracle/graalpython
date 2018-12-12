@@ -39,7 +39,7 @@ public class SpecialMethodTests {
                         "  def __add__(self, other):\n" + //
                         "    return Num(self.n + other.n)\n" + //
                         "  def __repr__(self):\n" + //
-                        "    return self.n\n" + //
+                        "    return str(self.n)\n" + //
                         "" + //
                         "n0 = Num(42)\n" + //
                         "n1 = Num(1)\n" + //
@@ -55,7 +55,7 @@ public class SpecialMethodTests {
                         "  def __add__(self, other):\n" + //
                         "    return Num(self.n + other)\n" + //
                         "  def __repr__(self):\n" + //
-                        "    return self.n\n" + //
+                        "    return str(self.n)\n" + //
                         "" + //
                         "n0 = Num(42)\n" + //
                         "print(n0 + 1)\n";
@@ -70,7 +70,7 @@ public class SpecialMethodTests {
                         "  def __radd__(self, other):\n" + //
                         "    return Num(self.n + other)\n" + //
                         "  def __repr__(self):\n" + //
-                        "    return self.n\n" + //
+                        "    return str(self.n)\n" + //
                         "" + //
                         "n0 = Num(42)\n" + //
                         "print(1 + n0)\n";
@@ -87,7 +87,7 @@ public class SpecialMethodTests {
                         "  def __radd__(self, other):\n" + //
                         "    return Num(self.n + other)\n" + //
                         "  def __repr__(self):\n" + //
-                        "    return self.n\n" + //
+                        "    return str(self.n)\n" + //
                         "" + //
                         "def doAdd(left, right):\n" + //
                         "  return left + right\n" + //
@@ -104,7 +104,7 @@ public class SpecialMethodTests {
                         "  def __sub__(self, other):\n" + //
                         "    return Num(self.n - other.n)\n" + //
                         "  def __repr__(self):\n" + //
-                        "    return self.n\n" + //
+                        "    return str(self.n)\n" + //
                         "" + //
                         "n0 = Num(42)\n" + //
                         "n1 = Num(1)\n" + //
@@ -120,7 +120,7 @@ public class SpecialMethodTests {
                         "  def __eq__(self, other):\n" + //
                         "    return type(self) == type(other) and self.n == other.n\n" + //
                         "  def __repr__(self):\n" + //
-                        "    return self.n\n" + //
+                        "    return str(self.n)\n" + //
                         "" + //
                         "n0 = Num(1)\n" + //
                         "n1 = Num(1)\n" + //

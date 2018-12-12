@@ -153,22 +153,22 @@ public class PosixTest {
 
     @Test
     public void stdout() {
-        assertPrints("hello", "import sys; sys.stdout.write('hello')");
+        assertPrints("hello\n", "import sys; sys.stdout.write('hello\\n')");
     }
 
     @Test
     public void stderr() {
-        assertLastLineError("error", "import sys; sys.stderr.write('error')");
+        assertLastLineError("error\n", "import sys; sys.stderr.write('error\\n')");
     }
 
     @Test
     public void printToStdout() {
-        assertPrints("1-2...", "import sys; print('1', '2', sep='-', file=sys.stdout, end='...')");
+        assertPrints("1-2...", "import sys; print('1', '2', sep='-', file=sys.stdout, end='...', flush=True)");
     }
 
     @Test
     public void printToStderr() {
-        assertLastLineError("1-2...", "import sys; print('1', '2', sep='-', file=sys.stderr, end='...')");
+        assertLastLineError("1-2...", "import sys; print('1', '2', sep='-', file=sys.stderr, end='...', flush=True)");
     }
 
     @Test

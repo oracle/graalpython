@@ -146,14 +146,16 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
+        @Child SequenceStorageNodes.CmpNode eqNode;
+
         @Specialization
-        public boolean eq(PBytes self, PByteArray other) {
-            return !self.equals(other);
+        public boolean ne(PBytes self, PByteArray other) {
+            return !getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @Specialization
-        public boolean eq(PBytes self, PBytes other) {
-            return !self.equals(other);
+        public boolean ne(PBytes self, PBytes other) {
+            return !getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @SuppressWarnings("unused")
@@ -163,6 +165,14 @@ public class BytesBuiltins extends PythonBuiltins {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             throw raise(TypeError, "descriptor '__ne__' requires a 'bytes' object but received a '%p'", self);
+        }
+
+        private SequenceStorageNodes.CmpNode getEqNode() {
+            if (eqNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                eqNode = insert(SequenceStorageNodes.CmpNode.createEq());
+            }
+            return eqNode;
         }
     }
 

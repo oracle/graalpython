@@ -84,3 +84,7 @@ def test_lambda_no_args_with_nested_lambdas():
     except Exception as e:
         no_err = False
     assert no_err
+
+
+def test_byte_numeric_escapes():
+    assert eval('b"PK\\005\\006\\00\\11\\22\\08"') == b'PK\x05\x06\x00\t\x12\x008'
