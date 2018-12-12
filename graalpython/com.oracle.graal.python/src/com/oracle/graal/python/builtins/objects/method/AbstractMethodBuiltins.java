@@ -195,7 +195,11 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readFunc = insert(ReadAttributeFromObjectNode.create());
             }
-            return readFunc.execute(func, __DOC__);
+            Object doc = readFunc.execute(func, __DOC__);
+            if (doc == PNone.NO_VALUE) {
+                doc = PNone.NONE;
+            }
+            return doc;
         }
 
         @Specialization(guards = "isNoValue(none)")
