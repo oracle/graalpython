@@ -77,13 +77,13 @@ for module in [_io, io]:
 setattr(builtins, 'open', open)
 
 
-sys.stdin = _pyio.TextIOWrapper(_pyio.BufferedReader(sys.stdin, 8192), encoding="utf-8", line_buffering=True)
+sys.stdin = _pyio.TextIOWrapper(_pyio.BufferedReader(sys.stdin), encoding="utf-8", line_buffering=True)
 sys.stdin.mode = "r"
 sys.__stdin__ = sys.stdin
-sys.stdout = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stdout, 8192), encoding="utf-8", line_buffering=True)
+sys.stdout = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stdout), encoding="utf-8", line_buffering=True)
 sys.stdout.mode = "w"
 sys.__stdout__ = sys.stdout
-sys.stderr = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stderr, 8192), encoding="utf-8", line_buffering=True)
+sys.stderr = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stderr), encoding="utf-8", line_buffering=True)
 sys.stderr.mode = "w"
 sys.__stderr__ = sys.stderr
 
