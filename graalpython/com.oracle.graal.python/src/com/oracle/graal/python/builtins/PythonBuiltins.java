@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
@@ -72,17 +73,18 @@ public abstract class PythonBuiltins {
             }
             RootCallTarget callTarget = core.getLanguage().builtinCallTargetCache.computeIfAbsent(factory.getNodeClass(),
                             (b) -> Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf)));
+            Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : builtin.doc();
             if (builtin.constructsClass().length > 0) {
                 assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();
                 PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, null, createArity(builtin, declaresExplicitSelf), callTarget);
                 for (PythonBuiltinClassType type : builtin.constructsClass()) {
                     PythonBuiltinClass builtinClass = core.lookupType(type);
                     builtinClass.setAttributeUnsafe(__NEW__, newFunc);
-                    builtinClass.setAttribute(__DOC__, builtin.doc());
+                    builtinClass.setAttribute(__DOC__, builtinDoc);
                 }
             } else {
                 PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), null, createArity(builtin, declaresExplicitSelf), callTarget);
-                function.setAttribute(__DOC__, builtin.doc());
+                function.setAttribute(__DOC__, builtinDoc);
                 BoundBuiltinCallable<?> callable = function;
                 if (builtin.isGetter() || builtin.isSetter()) {
                     assert !builtin.isClassmethod() && !builtin.isStaticmethod();
