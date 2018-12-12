@@ -357,7 +357,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return convertStringToComplex(real, (PythonClass) cls);
         }
 
-        @Specialization(guards = "isExactComplexType(getClassNode, obj)", limit = "1")
+        @Specialization(guards = "isExactComplexType(getClassNode, obj)")
         PComplex complexFromComplex(@SuppressWarnings("unused") Object cls, PComplex obj, @SuppressWarnings("unused") PNone none,
                         @Cached("create()") @SuppressWarnings("unused") GetLazyClassNode getClassNode) {
             return obj;
