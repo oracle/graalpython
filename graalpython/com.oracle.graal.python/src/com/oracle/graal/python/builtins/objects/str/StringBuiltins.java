@@ -1163,21 +1163,20 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         public PList split(String self, boolean keepends) {
             PList list = factory().createList();
-            int end = self.length();
-            String remainder = self;
+            int lastEnd = 0;
             while (true) {
-                int idx = remainder.lastIndexOf("\n");
-                if (idx < 0) {
+                int nextIndex = self.indexOf("\n", lastEnd);
+                if (nextIndex == -1) {
                     break;
                 }
                 if (keepends) {
-                    appendNode.execute(list, self.substring(idx, end));
+                    appendNode.execute(list, self.substring(lastEnd, nextIndex + 1));
                 } else {
-                    appendNode.execute(list, self.substring(idx + 1, end));
+                    appendNode.execute(list, self.substring(lastEnd, nextIndex));
                 }
-                end = idx;
-                remainder = remainder.substring(0, end);
+                lastEnd = nextIndex + 1;
             }
+            String remainder = self.substring(lastEnd, self.length());
             if (!remainder.isEmpty()) {
                 appendNode.execute(list, remainder);
             }
