@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
@@ -249,6 +250,16 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         PBaseSet doItemsView(PDictItemsView self, PDictItemsView other,
+                        @Cached("create()") HashingStorageNodes.DiffNode diffNode,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+            PSet selfSet = constructSetNode.executeWith(self);
+            PSet otherSet = constructSetNode.executeWith(other);
+            HashingStorage storage = diffNode.execute(selfSet.getDictStorage(), otherSet.getDictStorage());
+            return factory().createSet(storage);
+        }
+
+        @Specialization
+        PBaseSet doItemsView(PDictKeysView self, PList other,
                         @Cached("create()") HashingStorageNodes.DiffNode diffNode,
                         @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(self);
