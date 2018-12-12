@@ -374,6 +374,14 @@ def PyFloat_FromDouble(n):
     return float(n)
 
 
+##################### COMPLEX
+
+@may_raise
+def PyComplex_AsCComplex(n):
+    obj = complex(n)
+    return (obj.real, obj.imag) 
+
+
 ##################### NUMBER
 
 def _safe_check(v, type_check):

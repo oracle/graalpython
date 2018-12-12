@@ -140,6 +140,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -300,39 +301,93 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     "Create a complex number from a real part and an optional imaginary part.\n" +
                     "This is equivalent to (real + imag*1j) where imag defaults to 0.")
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ComplexNode extends PythonBuiltinNode {
         @Specialization
-        public PComplex complexFromDoubleDouble(Object cls, int real, int imaginary) {
+        PComplex complexFromIntInt(@SuppressWarnings("unused") Object cls, int real, int imaginary) {
             return factory().createComplex(real, imaginary);
         }
 
         @Specialization
-        public PComplex complexFromDoubleDouble(Object cls, double real, double imaginary) {
+        PComplex complexFromLongLong(@SuppressWarnings("unused") Object cls, long real, long imaginary) {
             return factory().createComplex(real, imaginary);
         }
 
         @Specialization
-        public PComplex complexFromDouble(Object cls, double real, PNone image) {
+        PComplex complexFromLongLong(@SuppressWarnings("unused") Object cls, PInt real, PInt imaginary) {
+            return factory().createComplex(real.doubleValue(), imaginary.doubleValue());
+        }
+
+        @Specialization
+        PComplex complexFromDoubleDouble(@SuppressWarnings("unused") Object cls, double real, double imaginary) {
+            return factory().createComplex(real, imaginary);
+        }
+
+        @Specialization
+        PComplex complexFromDouble(@SuppressWarnings("unused") Object cls, double real, @SuppressWarnings("unused") PNone image) {
             return factory().createComplex(real, 0);
         }
 
         @Specialization
-        public PComplex complexFromDouble(Object cls, int real, PNone image) {
+        PComplex complexFromInt(@SuppressWarnings("unused") Object cls, int real, @SuppressWarnings("unused") PNone image) {
             return factory().createComplex(real, 0);
         }
 
         @Specialization
-        public PComplex complexFromNone(Object cls, PNone real, PNone image) {
+        PComplex complexFromLong(@SuppressWarnings("unused") Object cls, long real, @SuppressWarnings("unused") PNone image) {
+            return factory().createComplex(real, 0);
+        }
+
+        @Specialization
+        PComplex complexFromLong(@SuppressWarnings("unused") Object cls, PInt real, @SuppressWarnings("unused") PNone image) {
+            return factory().createComplex(real.doubleValue(), 0);
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        PComplex complexFromNone(Object cls, PNone real, PNone image) {
             return factory().createComplex(0, 0);
         }
 
         @Specialization
-        public PComplex complexFromObjectObject(Object cls, String real, Object imaginary) {
+        PComplex complexFromObjectObject(Object cls, String real, Object imaginary) {
             if (!(imaginary instanceof PNone)) {
                 throw raise(TypeError, "complex() can't take second arg if first is a string");
             }
             return convertStringToComplex(real, (PythonClass) cls);
+        }
+
+        @Specialization(guards = "isExactComplexType(getClassNode, obj)", limit = "1")
+        PComplex complexFromComplex(@SuppressWarnings("unused") Object cls, PComplex obj, @SuppressWarnings("unused") PNone none,
+                        @Cached("create()") @SuppressWarnings("unused") GetLazyClassNode getClassNode) {
+            return obj;
+        }
+
+        @Specialization
+        Object complexGeneric(@SuppressWarnings("unused") Object cls, Object realObj, Object imaginaryObj,
+                        @Cached("create()") GetLazyClassNode getClassNode,
+                        @Cached("create()") IsBuiltinClassProfile isComplexTypeProfile,
+                        @Cached("create()") BranchProfile errorProfile,
+                        @Cached("create()") CastToDoubleNode castRealNode,
+                        @Cached("create()") CastToDoubleNode castImagNode,
+                        @Cached("create()") IsBuiltinClassProfile profile) {
+            boolean noImag = PGuards.isNoValue(imaginaryObj);
+            if (noImag && isComplexTypeProfile.profileClass(getClassNode.execute(realObj), PythonBuiltinClassType.PComplex)) {
+                return realObj;
+            }
+            try {
+                double real = castRealNode.execute(realObj);
+                double imag = !noImag ? castImagNode.execute(imaginaryObj) : 0.0;
+                return factory().createComplex(real, imag);
+            } catch (PException e) {
+                errorProfile.enter();
+                e.expect(PythonBuiltinClassType.TypeError, profile);
+                throw raise(TypeError, "can't convert real %s imag %s", realObj, imaginaryObj);
+            }
+        }
+
+        protected static boolean isExactComplexType(GetLazyClassNode getClassNode, PComplex obj) {
+            return getClassNode.execute(obj) == PythonBuiltinClassType.PComplex;
         }
 
         // Taken from Jython PyString's __complex__() method
@@ -473,11 +528,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return end - 1;
             }
             return end;
-        }
-
-        @Fallback
-        public PComplex complexFromObjectObject(Object cls, Object real, Object imaginary) {
-            throw raise(TypeError, "can't convert real %s imag %s", real, imaginary);
         }
     }
 
