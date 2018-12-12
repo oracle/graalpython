@@ -385,13 +385,14 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         Object deflateInit(int level, int method, int wbits, int memLevel, int strategy, Object zdict) {
             Deflater deflater;
             if (wbits < 0) {
+                // generate a RAW stream, i.e., no wrapping
                 deflater = new Deflater(level, true);
-                // generate a RAW stream
             } else if (wbits >= 25) {
                 // include gzip container
                 throw raise(PythonBuiltinClassType.NotImplementedError, "gzip containers");
             } else {
-                deflater = new Deflater(level, true);
+                // wrap stream with zlib header and trailer
+                deflater = new Deflater(level, false);
             }
 
             if (method != DEFLATED) {
