@@ -34,7 +34,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ApplyKeywordsNode;
@@ -65,16 +64,13 @@ abstract class AbstractInvokeNode extends Node {
     }
 
     @TruffleBoundary
-    protected static RootCallTarget getCallTarget(PythonCallable callee) {
+    protected static RootCallTarget getCallTarget(Object callee) {
         RootCallTarget callTarget;
-        PythonCallable actualCallee = callee;
+        Object actualCallee = callee;
         if (actualCallee instanceof PFunction) {
-            callTarget = actualCallee.getCallTarget();
-        } else if (actualCallee instanceof PMethod) {
-            PMethod method = (PMethod) actualCallee;
-            callTarget = method.getFunction().getCallTarget();
+            callTarget = ((PFunction) actualCallee).getCallTarget();
         } else if (actualCallee instanceof PBuiltinFunction) {
-            callTarget = callee.getCallTarget();
+            callTarget = ((PBuiltinFunction) callee).getCallTarget();
         } else if (callee instanceof PBuiltinMethod) {
             PBuiltinMethod method = (PBuiltinMethod) callee;
             PBuiltinFunction internalFunc = method.getFunction();
@@ -110,7 +106,7 @@ abstract class AbstractInvokeNode extends Node {
         return callee.getArity();
     }
 
-    protected static boolean isBuiltin(PythonCallable callee) {
+    protected static boolean isBuiltin(Object callee) {
         return callee instanceof PBuiltinFunction || callee instanceof PBuiltinMethod;
     }
 }

@@ -1698,10 +1698,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return NodeUtil.printTreeToString(func.getCallTarget().getRootNode());
         }
 
-        @Specialization
+        @Specialization(guards = "isFunction(method.getFunction())")
         @TruffleBoundary
         public String doIt(PMethod method) {
-            return NodeUtil.printTreeToString(method.getCallTarget().getRootNode());
+            // cast ensured by guard
+            PFunction fun = (PFunction) method.getFunction();
+            return NodeUtil.printTreeToString(fun.getCallTarget().getRootNode());
         }
 
         @Specialization
@@ -1714,6 +1716,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         public Object doit(Object object) {
             return "truffle ast dump not supported for " + object.toString();
+        }
+
+        protected static boolean isFunction(Object callee) {
+            return callee instanceof PFunction;
         }
     }
 

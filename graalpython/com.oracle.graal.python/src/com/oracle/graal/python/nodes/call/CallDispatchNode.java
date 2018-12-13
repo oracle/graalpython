@@ -31,7 +31,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
@@ -67,22 +66,6 @@ public abstract class CallDispatchNode extends Node {
     }
 
     public abstract Object executeCall(VirtualFrame frame, Object callee, Object[] arguments, PKeyword[] keywords);
-
-    @SuppressWarnings("unused")
-    @Specialization(guards = "method.getFunction() == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    protected Object callMethod(VirtualFrame frame, PMethod method, Object[] arguments, PKeyword[] keywords,
-                    @Cached("method.getFunction()") PFunction cachedCallee,
-                    @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
-        return invoke.execute(frame, arguments, keywords);
-    }
-
-    @SuppressWarnings("unused")
-    @Specialization(guards = "method.getFunction().getCallTarget() == ct", limit = "getCallSiteInlineCacheMaxDepth()")
-    protected Object callMethod(VirtualFrame frame, PMethod method, Object[] arguments, PKeyword[] keywords,
-                    @Cached("method.getFunction().getCallTarget()") RootCallTarget ct,
-                    @Cached("createCtInvokeNode(method)") CallTargetInvokeNode invoke) {
-        return invoke.execute(frame, method.getGlobals(), method.getClosure(), arguments, keywords);
-    }
 
     @SuppressWarnings("unused")
     @Specialization(guards = "method.getFunction() == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
@@ -124,7 +107,7 @@ public abstract class CallDispatchNode extends Node {
         return invoke.execute(frame, callee.getGlobals(), callee.getClosure(), arguments, keywords);
     }
 
-    @Specialization(replaces = {"callMethod", "callBuiltinMethod", "callFunction"})
+    @Specialization(replaces = {"callBuiltinMethod", "callFunction"})
     protected Object callGeneric(VirtualFrame frame, PythonCallable callee, Object[] arguments, PKeyword[] keywords,
                     @Cached("create()") GenericInvokeNode invoke) {
         return invoke.execute(frame, callee, arguments, keywords);

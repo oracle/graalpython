@@ -38,11 +38,14 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -50,7 +53,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PBuiltinMethod})
 public class BuiltinMethodBuiltins extends PythonBuiltins {
@@ -61,7 +63,6 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         boolean isBuiltinFunction(PBuiltinMethod self) {
@@ -69,14 +70,15 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         }
 
         boolean isBuiltinFunction(PMethod self) {
-            return self.getSelf() instanceof PythonModule && self.getFunction().getEnclosingClassName() == null;
+            return self.getSelf() instanceof PythonModule && self.getFunction() instanceof PFunction && ((PFunction) self.getFunction()).getEnclosingClassName() == null;
         }
 
         @Specialization(guards = "isBuiltinFunction(self)")
         @TruffleBoundary
-        Object reprBuiltinFunction(PMethod self) {
+        Object reprBuiltinFunction(PMethod self,
+                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode) {
             // (tfel): this only happens for builtin modules ... I think
-            return String.format("<built-in function %s>", self.getName());
+            return String.format("<built-in function %s>", getNameNode.executeObject(self.getFunction()));
         }
 
         @Specialization(guards = "isBuiltinFunction(self)")
@@ -95,8 +97,13 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isBuiltinFunction(self)")
         @TruffleBoundary
         Object reprBuiltinMethod(PMethod self,
-                        @Cached("create()") GetLazyClassNode getClassNode) {
-            return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
+                        @Cached("create()") GetLazyClassNode getClassNode,
+                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode) {
+            return String.format("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(self.getFunction()), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
+        }
+
+        protected static GetAttributeNode createGetAttributeNode() {
+            return GetAttributeNode.create(SpecialAttributeNames.__NAME__, null);
         }
     }
 
@@ -109,8 +116,10 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        String doBuiltinMethod(PMethod self) {
-            return doMethod(self.getName(), self.getSelf());
+        String doBuiltinMethod(PMethod self,
+                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
+                        @Cached("create()") CastToStringNode castToStringNode) {
+            return doMethod(castToStringNode.execute(getNameNode.executeObject(self.getFunction())), self.getSelf());
         }
 
         private String doMethod(String name, Object owner) {
@@ -123,6 +132,10 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         @Fallback
         Object doGeneric(@SuppressWarnings("unused") Object obj) {
             throw raiseCannotPickle();
+        }
+
+        protected static GetAttributeNode createGetAttributeNode() {
+            return GetAttributeNode.create(SpecialAttributeNames.__NAME__, null);
         }
 
         private PException raiseCannotPickle() {

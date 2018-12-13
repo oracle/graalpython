@@ -111,8 +111,10 @@ public abstract class CallNode extends PNodeWithContext {
     }
 
     @Specialization
-    protected Object methodCall(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords) {
-        return ensureDispatch().executeCall(frame, callable, ensureCreateArguments().executeWithSelf(callable.getSelf(), arguments), keywords);
+    protected Object methodCall(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords,
+                    @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
+                    @Cached("create()") CallVarargsMethodNode callCallNode) {
+        return specialCall(frame, callable.getFunction(), arguments, keywords, callAttrGetterNode, callCallNode);
     }
 
     @Specialization
