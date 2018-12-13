@@ -35,15 +35,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.call.InvokeNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.test.PythonTests;
 
@@ -68,8 +65,8 @@ public class PythonModuleTests {
     @Test
     public void builtinsMinTest() {
         final PythonModule builtins = context.getBuiltins();
-        PBuiltinMethod min = (PBuiltinMethod) builtins.getAttribute(BuiltinNames.MIN);
-        Object returnValue = InvokeNode.create(min).execute(null, createWithUserArguments(builtins, 4, 2, 1), PKeyword.EMPTY_KEYWORDS);
+        Object min = builtins.getAttribute(BuiltinNames.MIN);
+        Object returnValue = CallNode.create().execute(null, min, 4, 2, 1);
         assertEquals(1, returnValue);
     }
 
@@ -77,8 +74,8 @@ public class PythonModuleTests {
     public void builtinsIntTest() {
         final PythonModule builtins = context.getBuiltins();
         PythonBuiltinClass intClass = (PythonBuiltinClass) builtins.getAttribute(BuiltinNames.INT);
-        PythonCallable intNew = (PythonCallable) intClass.getAttribute(SpecialAttributeNames.__NEW__);
-        Object returnValue = InvokeNode.create(intNew).execute(null, createWithUserArguments(intClass, "42"), PKeyword.EMPTY_KEYWORDS);
+        Object intNew = intClass.getAttribute(SpecialAttributeNames.__NEW__);
+        Object returnValue = CallNode.create().execute(null, intNew, "42");
         assertEquals(42, returnValue);
     }
 
@@ -87,16 +84,7 @@ public class PythonModuleTests {
         PythonModule main = context.getMainModule();
         PythonModule builtins = (PythonModule) main.getAttribute(__BUILTINS__);
         PBuiltinMethod abs = (PBuiltinMethod) builtins.getAttribute(BuiltinNames.ABS);
-        Object returned = InvokeNode.create(abs).execute(null, createWithUserArguments(builtins, -42), PKeyword.EMPTY_KEYWORDS);
+        Object returned = CallNode.create().execute(null, abs, -42);
         assertEquals(42, returned);
     }
-
-    private static Object[] createWithUserArguments(Object... args) {
-        Object[] arguments = PArguments.create(args.length);
-        for (int i = 0; i < args.length; i++) {
-            PArguments.setArgument(arguments, i, args[i]);
-        }
-        return arguments;
-    }
-
 }

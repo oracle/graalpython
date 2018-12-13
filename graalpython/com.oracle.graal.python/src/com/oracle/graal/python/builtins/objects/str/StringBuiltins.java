@@ -79,7 +79,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.JoinInternalNode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -1446,7 +1446,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object doGeneric(String left, Object right,
-                        @Cached("create()") CallDispatchNode callNode,
+                        @Cached("create()") CallNode callNode,
                         @Cached("create()") GetLazyClassNode getClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {

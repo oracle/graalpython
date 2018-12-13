@@ -53,7 +53,8 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -221,12 +222,18 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             return value;
         }
 
-        @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        public Object exportSymbol(PythonCallable value, PNone name) {
-            getContext().getEnv().exportSymbol(value.getName(), value);
-            return value;
+        public Object exportSymbol(PFunction fun, @SuppressWarnings("unused") PNone name) {
+            getContext().getEnv().exportSymbol(fun.getName(), fun);
+            return fun;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public Object exportSymbol(PBuiltinFunction fun, @SuppressWarnings("unused") PNone name) {
+            getContext().getEnv().exportSymbol(fun.getName(), fun);
+            return fun;
         }
     }
 

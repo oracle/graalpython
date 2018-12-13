@@ -64,10 +64,10 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -374,7 +374,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 if (set != PNone.NO_VALUE || delete != PNone.NO_VALUE) {
                     isDescProfile.enter();
                     Object get = lookupGet(dataDescClass);
-                    if (get instanceof PythonCallable) {
+                    if (PGuards.isCallable(get)) {
                         // Only override if __get__ is defined, too, for compatibility with CPython.
                         return dispatch(object, getPythonClass(type, getClassProfile), descr, get);
                     }
@@ -398,7 +398,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 Object get = lookupGet(dataDescClass);
                 if (get == PNone.NO_VALUE) {
                     return descr;
-                } else if (get instanceof PythonCallable) {
+                } else if (PGuards.isCallable(get)) {
                     return dispatch(object, getPythonClass(type, getClassProfile), descr, get);
                 }
             }
@@ -488,7 +488,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             if (descr != PNone.NO_VALUE) {
                 PythonClass dataDescClass = getDataClassNode.execute(descr);
                 Object set = lookupSetNode.execute(dataDescClass);
-                if (set instanceof PythonCallable) {
+                if (PGuards.isCallable(set)) {
                     callSetNode.execute(set, descr, object, value);
                     return PNone.NONE;
                 }
@@ -521,7 +521,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             if (descr != PNone.NO_VALUE) {
                 PythonClass dataDescClass = getDataClassNode.execute(descr);
                 Object set = lookupDeleteNode.execute(dataDescClass);
-                if (set instanceof PythonCallable) {
+                if (PGuards.isCallable(set)) {
                     callSetNode.executeObject(set, descr, object);
                     return PNone.NONE;
                 }

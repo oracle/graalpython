@@ -102,7 +102,6 @@ import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -349,14 +348,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CallableNode extends PythonBuiltinNode {
 
-        @SuppressWarnings("unused")
-        @Specialization
-        public boolean callable(PythonCallable callable) {
+        @Specialization(guards = "isCallable(callable)")
+        boolean doCallable(@SuppressWarnings("unused") Object callable) {
             return true;
         }
 
         @Specialization
-        public boolean callable(Object object,
+        boolean doGeneric(Object object,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode getAttributeNode) {
             /**
              * Added temporarily to skip translation/execution errors in unit testing
@@ -371,7 +369,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return true;
             }
 
-            return object instanceof PythonCallable;
+            return PGuards.isCallable(object);
         }
     }
 

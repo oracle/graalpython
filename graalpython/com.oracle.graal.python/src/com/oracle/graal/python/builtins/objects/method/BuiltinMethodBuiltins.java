@@ -83,15 +83,17 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isBuiltinFunction(self)")
         @TruffleBoundary
-        String reprBuiltinFunction(PBuiltinMethod self) {
-            return String.format("<built-in function %s>", self.getName());
+        String reprBuiltinFunction(PBuiltinMethod self,
+                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode) {
+            return String.format("<built-in function %s>", getNameNode.executeObject(self.getFunction()));
         }
 
         @Specialization(guards = "!isBuiltinFunction(self)")
         @TruffleBoundary
         Object reprBuiltinMethod(PBuiltinMethod self,
-                        @Cached("create()") GetLazyClassNode getClassNode) {
-            return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
+                        @Cached("create()") GetLazyClassNode getClassNode,
+                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode) {
+            return String.format("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(self.getFunction()), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
         }
 
         @Specialization(guards = "!isBuiltinFunction(self)")
@@ -111,8 +113,11 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        String doBuiltinMethod(PBuiltinMethod self) {
-            return doMethod(self.getName(), self.getSelf());
+        String doBuiltinMethod(PBuiltinMethod self,
+                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
+                        @Cached("create()") CastToStringNode castToStringNode) {
+            String name = castToStringNode.execute(getNameNode.executeObject(self.getFunction()));
+            return doMethod(name, self.getSelf());
         }
 
         @Specialization

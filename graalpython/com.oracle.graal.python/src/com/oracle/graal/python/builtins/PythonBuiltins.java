@@ -39,7 +39,6 @@ import java.util.function.BiConsumer;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -88,8 +87,8 @@ public abstract class PythonBuiltins {
                 BoundBuiltinCallable<?> callable = function;
                 if (builtin.isGetter() || builtin.isSetter()) {
                     assert !builtin.isClassmethod() && !builtin.isStaticmethod();
-                    PythonCallable get = builtin.isGetter() ? function : null;
-                    PythonCallable set = builtin.isSetter() ? function : null;
+                    PBuiltinFunction get = builtin.isGetter() ? function : null;
+                    PBuiltinFunction set = builtin.isSetter() ? function : null;
                     callable = core.factory().createGetSetDescriptor(get, set, builtin.name(), null);
                 } else if (builtin.isClassmethod()) {
                     assert !builtin.isStaticmethod();

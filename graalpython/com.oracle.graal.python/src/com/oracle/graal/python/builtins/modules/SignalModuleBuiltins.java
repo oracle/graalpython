@@ -49,9 +49,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -159,7 +157,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return retval;
         }
 
-        private Object installSignalHandler(int signum, PythonCallable handler, RootCallTarget callTarget, Object[] arguments) {
+        private Object installSignalHandler(int signum, Object handler, RootCallTarget callTarget, Object[] arguments) {
             Object retval;
             try {
                 retval = Signals.setSignalHandler(signum, () -> {
@@ -183,12 +181,6 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         // TODO: the second argument should be the interrupted, currently executing frame
         // we'll get that when we switch to executing these handlers (just like finalizers)
         // on the main thread
-        @Specialization
-        @TruffleBoundary
-        Object signal(int signum, PBuiltinMethod handler) {
-            return installSignalHandler(signum, handler, handler.getCallTarget(), createArgs.executeWithSelf(handler.getSelf(), new Object[]{signum, PNone.NONE}));
-        }
-
         @Specialization
         @TruffleBoundary
         Object signal(int signum, PBuiltinFunction handler) {

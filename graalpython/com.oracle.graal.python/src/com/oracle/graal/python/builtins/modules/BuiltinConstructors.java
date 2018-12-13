@@ -92,7 +92,6 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
@@ -2176,32 +2175,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        @Specialization
+        @Specialization(guards = {"!isNoValue(get)", "!isNoValue(set)"})
         @TruffleBoundary
-        Object call(PythonClass getSetClass, PythonCallable get, PythonCallable set, String name, PythonClass owner) {
+        Object call(PythonClass getSetClass, Object get, Object set, String name, PythonClass owner) {
             denyInstantiationAfterInitialization();
             return factory().createGetSetDescriptor(get, set, name, owner);
         }
 
-        @Specialization
+        @Specialization(guards = {"!isNoValue(get)", "isNoValue(set)"})
         @TruffleBoundary
-        Object call(PythonClass getSetClass, PythonCallable get, PNone set, String name, PythonClass owner) {
+        Object call(PythonClass getSetClass, Object get, PNone set, String name, PythonClass owner) {
             denyInstantiationAfterInitialization();
             return factory().createGetSetDescriptor(get, null, name, owner);
         }
 
-        @Specialization
+        @Specialization(guards = {"isNoValue(get)", "isNoValue(set)"})
         @TruffleBoundary
-        Object call(PythonClass getSetClass, PNone set, PNone get, String name, PythonClass owner) {
+        Object call(PythonClass getSetClass, PNone get, PNone set, String name, PythonClass owner) {
             denyInstantiationAfterInitialization();
             return factory().createGetSetDescriptor(null, null, name, owner);
-        }
-
-        @Fallback
-        @TruffleBoundary
-        Object call(Object klsas, Object set, Object get, Object name, Object owner) {
-            denyInstantiationAfterInitialization();
-            throw new RuntimeException("error in creating getset_descriptor during core initialization");
         }
     }
 

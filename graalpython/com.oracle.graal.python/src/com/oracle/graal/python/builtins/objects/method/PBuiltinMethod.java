@@ -25,29 +25,22 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
-import com.oracle.graal.python.builtins.objects.function.Arity;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 
 // Corresponds to PyCFunction, but that name is just confusing
-public class PBuiltinMethod extends PythonBuiltinObject implements PythonCallable {
+public class PBuiltinMethod extends PythonBuiltinObject {
 
-    private final PBuiltinFunction function;
+    private final Object function;
     private final Object self;
-    private final RootCallTarget callTarget;
 
-    public PBuiltinMethod(LazyPythonClass clazz, Object self, PBuiltinFunction function) {
+    public PBuiltinMethod(LazyPythonClass clazz, Object self, Object function) {
         super(clazz);
         this.self = self;
         this.function = function;
-        this.callTarget = function.getCallTarget();
     }
 
-    public PBuiltinFunction getFunction() {
+    public Object getFunction() {
         return function;
     }
 
@@ -56,27 +49,7 @@ public class PBuiltinMethod extends PythonBuiltinObject implements PythonCallabl
     }
 
     @Override
-    public RootCallTarget getCallTarget() {
-        return callTarget;
-    }
-
-    @Override
-    public FrameDescriptor getFrameDescriptor() {
-        return function.getFrameDescriptor();
-    }
-
-    @Override
-    public Arity getArity() {
-        return function.getArity();
-    }
-
-    @Override
-    public String getName() {
-        return function.getName();
-    }
-
-    @Override
     public String toString() {
-        return "<builtin-method '" + function.getName() + "' of '" + self + "' objects>";
+        return "<builtin-method '" + function + "' of '" + self + "' objects>";
     }
 }

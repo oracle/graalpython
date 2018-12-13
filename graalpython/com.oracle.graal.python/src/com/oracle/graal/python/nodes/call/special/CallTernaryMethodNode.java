@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.truffle.api.RootCallTarget;
@@ -83,34 +82,6 @@ public abstract class CallTernaryMethodNode extends CallSpecialMethodNode {
     Object call(@SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
-        return builtinNode.execute(arg1, arg2, arg3);
-    }
-
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object call(@SuppressWarnings("unused") PBuiltinMethod func, Object arg1, int arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
-                    @Cached("getTernary(func.getFunction())") PythonTernaryBuiltinNode builtinNode) {
-        return builtinNode.execute(arg1, arg2, arg3);
-    }
-
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object call(@SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
-                    @Cached("getTernary(func.getFunction())") PythonTernaryBuiltinNode builtinNode) {
-        return builtinNode.execute(arg1, arg2, arg3);
-    }
-
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    Object call(@SuppressWarnings("unused") PBuiltinMethod func, Object arg1, int arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getTernary(func.getFunction())") PythonTernaryBuiltinNode builtinNode) {
-        return builtinNode.execute(arg1, arg2, arg3);
-    }
-
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    Object call(@SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getTernary(func.getFunction())") PythonTernaryBuiltinNode builtinNode) {
         return builtinNode.execute(arg1, arg2, arg3);
     }
 

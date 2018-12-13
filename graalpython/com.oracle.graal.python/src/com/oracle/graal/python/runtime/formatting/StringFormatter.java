@@ -22,12 +22,11 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -113,7 +112,7 @@ public class StringFormatter {
         }
     }
 
-    private static Object asNumber(Object arg, CallDispatchNode callNode, BiFunction<Object, String, Object> lookupAttribute) {
+    private static Object asNumber(Object arg, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute) {
         if (arg instanceof Integer || arg instanceof Long || arg instanceof PInt) {
             // arg is already acceptable
             return arg;
@@ -125,9 +124,7 @@ public class StringFormatter {
             try {
                 // Result is the result of arg.__int__() if that works
                 Object attribute = lookupAttribute.apply(arg, __INT__);
-                if (attribute instanceof PythonCallable) {
-                    return callNode.executeCall(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
-                }
+                return callNode.execute(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
             } catch (PException e) {
                 // No __int__ defined (at Python level)
             }
@@ -135,16 +132,14 @@ public class StringFormatter {
         return arg;
     }
 
-    private static Object asFloat(Object arg, CallDispatchNode callNode, BiFunction<Object, String, Object> lookupAttribute) {
+    private static Object asFloat(Object arg, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute) {
         if (arg instanceof Double) {
             // arg is already acceptable
             return arg;
         } else {
             try {
                 Object attribute = lookupAttribute.apply(arg, __FLOAT__);
-                if (attribute instanceof PythonCallable) {
-                    return callNode.executeCall(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
-                }
+                return callNode.execute(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
             } catch (PException e) {
             }
         }
@@ -159,7 +154,7 @@ public class StringFormatter {
      * @return result of formatting
      */
     @TruffleBoundary
-    public Object format(Object args1, CallDispatchNode callNode, BiFunction<Object, String, Object> lookupAttribute, LookupAndCallBinaryNode getItemNode) {
+    public Object format(Object args1, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute, LookupAndCallBinaryNode getItemNode) {
         PDict dict = null;
         this.args = args1;
 
@@ -346,7 +341,7 @@ public class StringFormatter {
                     } else if (arg instanceof PBytes) {
                         ft.format(((PBytes) arg).toString());
                     } else if (arg instanceof PythonAbstractObject && ((bytesAttribute = lookupAttribute.apply(arg, __BYTES__)) != PNone.NO_VALUE)) {
-                        Object result = callNode.executeCall(null, bytesAttribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
+                        Object result = callNode.execute(null, bytesAttribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
                         ft.format(result.toString());
                     } else {
                         throw core.raise(TypeError, " %%b requires bytes, or an object that implements %s, not '%p'", __BYTES__, arg);
@@ -358,7 +353,7 @@ public class StringFormatter {
                     // Get hold of the actual object to display (may set needUnicode)
                     Object attribute = spec.type == 's' ? lookupAttribute.apply(arg, __STR__) : lookupAttribute.apply(arg, __REPR__);
                     if (attribute != PNone.NO_VALUE) {
-                        Object result = callNode.executeCall(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
+                        Object result = callNode.execute(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
                         if (PGuards.isString(result)) {
                             // Format the str/unicode form of the argument using this Spec.
                             f = ft = new TextFormatter(core, buffer, spec);
@@ -450,9 +445,7 @@ public class StringFormatter {
     }
 
     private static Object[] createArgs(Object self) {
-        Object[] args = PArguments.create();
-        args = PArguments.insertSelf(args, self);
-        return args;
+        return new Object[]{self};
     }
 
 }

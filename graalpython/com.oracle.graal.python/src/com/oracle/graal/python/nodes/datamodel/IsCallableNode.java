@@ -44,9 +44,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -54,7 +54,7 @@ public abstract class IsCallableNode extends PDataModelEmulationNode {
     @Child private LookupInheritedAttributeNode callAttrGetterNode = LookupInheritedAttributeNode.create(__CALL__);
 
     protected static boolean isNoCallable(Object callee) {
-        return !(callee instanceof PythonCallable);
+        return !PGuards.isCallable(callee);
     }
 
     @Specialization(guards = {"isNoCallable(callable) || isClass(callable)"})

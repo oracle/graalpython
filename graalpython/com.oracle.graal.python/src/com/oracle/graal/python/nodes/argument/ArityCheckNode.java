@@ -49,19 +49,23 @@ import java.util.Set;
 
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
-@ImportStatic(PythonOptions.class)
+@ImportStatic({PythonOptions.class, PGuards.class})
 public abstract class ArityCheckNode extends PNodeWithContext {
     public static ArityCheckNode create() {
         return ArityCheckNodeGen.create();
@@ -76,6 +80,7 @@ public abstract class ArityCheckNode extends PNodeWithContext {
     private final ConditionProfile missingKeywordArgs = ConditionProfile.createBinaryProfile();
     private final ConditionProfile noKeywordArgs = ConditionProfile.createBinaryProfile();
     private final ConditionProfile unexpectedKeywordArg = ConditionProfile.createBinaryProfile();
+    private final ValueProfile calleeTypeProfile = ValueProfile.createClassProfile();
 
     @ExplodeLoop
     private String[] extractKeywordNames(int length, PKeyword[] keywords) {
@@ -131,15 +136,16 @@ public abstract class ArityCheckNode extends PNodeWithContext {
 
     @Specialization(guards = {
                     "cachedLen == keywords.length",
-                    "cachedNumParamIds == callee.getArity().getNumParameterIds()",
-                    "cachedDeclLen == callee.getArity().getNumKeywordNames()"
+                    "cachedNumParamIds == getArity(callee).getNumParameterIds()",
+                    "cachedDeclLen == getArity(callee).getNumKeywordNames()",
+                    "isFunction(callee)"
     }, limit = "getVariableArgumentInlineCacheLimit()", replaces = "constantArityCheck")
-    void arityCheckCallable(PythonCallable callee, Object[] arguments, PKeyword[] keywords,
-                    @Cached("callee.getArity().getNumParameterIds()") int cachedNumParamIds,
-                    @Cached("callee.getArity().getNumKeywordNames()") int cachedDeclLen,
+    void arityCheckCallable(Object callee, Object[] arguments, PKeyword[] keywords,
+                    @Cached("getArity(callee).getNumParameterIds()") int cachedNumParamIds,
+                    @Cached("getArity(callee).getNumKeywordNames()") int cachedDeclLen,
                     @Cached("keywords.length") int cachedLen) {
         String[] kwNames = extractKeywordNames(cachedLen, keywords);
-        Arity arity = callee.getArity();
+        Arity arity = getArity(callee);
         arityCheck(arity, arguments, cachedNumParamIds, PArguments.getNumberOfUserArgs(arguments), cachedDeclLen, cachedLen, kwNames);
     }
 
@@ -149,10 +155,10 @@ public abstract class ArityCheckNode extends PNodeWithContext {
         arityCheck(arity, arguments, PArguments.getNumberOfUserArgs(arguments), kwNames);
     }
 
-    @Specialization(replaces = {"arityCheckCallable", "constantArityCheck"})
-    void uncachedCheckCallable(PythonCallable callee, Object[] arguments, PKeyword[] keywords) {
+    @Specialization(guards = "isFunction(callee)", replaces = {"arityCheckCallable", "constantArityCheck"})
+    void uncachedCheckCallable(Object callee, Object[] arguments, PKeyword[] keywords) {
         String[] kwNames = extractKeywordNames(keywords);
-        arityCheck(callee.getArity(), arguments, PArguments.getNumberOfUserArgs(arguments), kwNames);
+        arityCheck(getArity(callee), arguments, PArguments.getNumberOfUserArgs(arguments), kwNames);
     }
 
     @TruffleBoundary
@@ -326,5 +332,16 @@ public abstract class ArityCheckNode extends PNodeWithContext {
                         arity.getMaxNumOfArgs(),
                         numOfArgs,
                         givenCountMessage);
+    }
+
+    protected Arity getArity(Object callee) {
+        Object profiled = calleeTypeProfile.profile(callee);
+        if (profiled instanceof PFunction) {
+            return ((PFunction) profiled).getArity();
+        } else if (profiled instanceof PBuiltinFunction) {
+            return ((PBuiltinFunction) profiled).getArity();
+        }
+        CompilerDirectives.transferToInterpreter();
+        throw new IllegalStateException();
     }
 }
