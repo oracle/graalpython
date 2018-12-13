@@ -1064,9 +1064,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object chmod(String path, int mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone follow_symlinks) {
+            return chmod(path, mode, dir_fd, true);
+        }
+
+        @Specialization
+        Object chmod(String path, int mode, @SuppressWarnings("unused") PNone dir_fd, boolean follow_symlinks) {
             Set<PosixFilePermission> permissions = modeToPermissions(mode);
             try {
                 TruffleFile truffleFile = getContext().getEnv().getTruffleFile(path);
+                if (!follow_symlinks) {
+                    truffleFile = truffleFile.getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
+                } else {
+                    truffleFile = truffleFile.getCanonicalFile();
+                }
                 truffleFile.setPosixPermissions(permissions);
             } catch (IOException e) {
                 gotException.enter();
@@ -1081,12 +1091,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             permissions.addAll(Arrays.asList(groupBitsToPermission[mode >> 3 & 7]));
             permissions.addAll(Arrays.asList(ownerBitsToPermission[mode >> 6 & 7]));
             return permissions;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object chmod(Object path, Object mode, Object dir_fd, Object follow_symlinks) {
-            throw raise(NotImplementedError, "chmod");
         }
     }
 
