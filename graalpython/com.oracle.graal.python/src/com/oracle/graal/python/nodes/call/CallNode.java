@@ -100,14 +100,26 @@ public abstract class CallNode extends PNodeWithContext {
         return dispatch;
     }
 
-    @Specialization
+    @Specialization(guards = "isFunction(callable.getFunction())")
+    protected Object methodCallDirect(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords) {
+        // functions must be called directly otherwise the call stack is incorrect
+        return ensureDispatch().executeCall(frame, callable.getFunction(), ensureCreateArguments().executeWithSelf(callable.getSelf(), arguments), keywords);
+    }
+
+    @Specialization(guards = "isFunction(callable.getFunction())")
+    protected Object builtinMethodCallDirect(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords) {
+        // functions must be called directly otherwise the call stack is incorrect
+        return ensureDispatch().executeCall(frame, callable.getFunction(), ensureCreateArguments().executeWithSelf(callable.getSelf(), arguments), keywords);
+    }
+
+    @Specialization(guards = "!isFunction(callable.getFunction())")
     protected Object methodCall(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords,
                     @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                     @Cached("create()") CallVarargsMethodNode callCallNode) {
         return specialCall(frame, callable, arguments, keywords, callAttrGetterNode, callCallNode);
     }
 
-    @Specialization
+    @Specialization(guards = "!isFunction(callable.getFunction())")
     protected Object builtinMethodCall(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
                     @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                     @Cached("create()") CallVarargsMethodNode callCallNode) {
