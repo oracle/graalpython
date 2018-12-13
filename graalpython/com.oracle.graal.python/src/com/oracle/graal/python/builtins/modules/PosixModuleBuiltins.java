@@ -1612,4 +1612,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return Runtime.getRuntime().availableProcessors();
         }
     }
+
+    @Builtin(name = "umask", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class UmaskNode extends PythonBuiltinNode {
+        @Specialization
+        int getAndSetUmask(int umask) {
+            if (umask == 0022) {
+                return 0022;
+            } else {
+                throw raise(NotImplementedError, "setting the umask to anything other than the default");
+            }
+        }
+    }
 }
