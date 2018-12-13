@@ -29,6 +29,7 @@ package com.oracle.graal.python.builtins.objects.function;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__KWDEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.TRUFFLE_SOURCE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -43,6 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltinsFactory.GetFunctionDefaultsNodeFactory;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltinsFactory.GetFunctionKeywordDefaultsNodeFactory;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
@@ -231,6 +233,33 @@ public class FunctionBuiltins extends PythonBuiltins {
         @Fallback
         Object doGeneric(@SuppressWarnings("unused") Object obj) {
             throw raise(TypeError, "can't pickle function objects");
+        }
+    }
+
+    @Builtin(name = TRUFFLE_SOURCE, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetFunctionSourceNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doFunction(PFunction function) {
+            String sourceCode = function.getSourceCode();
+            if (sourceCode != null) {
+                return sourceCode;
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object doMethod(PMethod function) {
+            String sourceCode = function.getFunction().getSourceCode();
+            if (sourceCode != null) {
+                return sourceCode;
+            }
+            return PNone.NONE;
+        }
+
+        @Fallback
+        Object doGeneric(Object object) {
+            throw raise(TypeError, "getting the source is not supported for '%p'", object);
         }
     }
 
