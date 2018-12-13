@@ -1063,12 +1063,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final BranchProfile gotException = BranchProfile.create();
 
         @Specialization
-        Object chmod(String path, int mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone follow_symlinks) {
+        Object chmod(String path, long mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone follow_symlinks) {
             return chmod(path, mode, dir_fd, true);
         }
 
         @Specialization
-        Object chmod(String path, int mode, @SuppressWarnings("unused") PNone dir_fd, boolean follow_symlinks) {
+        Object chmod(String path, long mode, @SuppressWarnings("unused") PNone dir_fd, boolean follow_symlinks) {
             Set<PosixFilePermission> permissions = modeToPermissions(mode);
             try {
                 TruffleFile truffleFile = getContext().getEnv().getTruffleFile(path);
@@ -1086,10 +1086,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary(allowInlining = true)
-        private static Set<PosixFilePermission> modeToPermissions(int mode) {
-            Set<PosixFilePermission> permissions = new HashSet<>(Arrays.asList(otherBitsToPermission[mode & 7]));
-            permissions.addAll(Arrays.asList(groupBitsToPermission[mode >> 3 & 7]));
-            permissions.addAll(Arrays.asList(ownerBitsToPermission[mode >> 6 & 7]));
+        private static Set<PosixFilePermission> modeToPermissions(long mode) {
+            Set<PosixFilePermission> permissions = new HashSet<>(Arrays.asList(otherBitsToPermission[(int) (mode & 7)]));
+            permissions.addAll(Arrays.asList(groupBitsToPermission[(int) (mode >> 3 & 7)]));
+            permissions.addAll(Arrays.asList(ownerBitsToPermission[(int) (mode >> 6 & 7)]));
             return permissions;
         }
     }
