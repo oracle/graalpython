@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
@@ -794,7 +795,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         protected Object raiseBadArgument(Object errorMarker) {
-            return raiseNative(errorMarker, PythonErrorType.TypeError, "bad argument type for built-in operation");
+            return raiseNative(errorMarker, TypeError, "bad argument type for built-in operation");
         }
 
         private Node getHasSizeNode() {
@@ -931,7 +932,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)"})
         @SuppressWarnings("unused")
         int doGeneric(Object obj, boolean signed, int targetTypeSize) {
-            return raiseNative(-1, PythonErrorType.TypeError, "an integer is required", obj);
+            return raiseNative(-1, TypeError, "an integer is required", obj);
         }
 
         private int raiseTooLarge(long targetTypeSize) {
@@ -1224,7 +1225,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doUnicode(Object o, Object errorMarker) {
-            return raiseNative(errorMarker, PythonErrorType.TypeError, "expected bytes, %p found", o);
+            return raiseNative(errorMarker, TypeError, "expected bytes, %p found", o);
         }
     }
 
