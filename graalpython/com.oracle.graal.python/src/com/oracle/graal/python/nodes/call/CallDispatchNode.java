@@ -37,11 +37,13 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
+@ReportPolymorphism
 public abstract class CallDispatchNode extends Node {
 
     protected static InvokeNode createInvokeNode(PythonCallable callee) {
