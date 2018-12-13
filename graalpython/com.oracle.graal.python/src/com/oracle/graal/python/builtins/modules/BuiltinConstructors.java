@@ -49,7 +49,9 @@ import static com.oracle.graal.python.nodes.BuiltinNames.SUPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -91,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -124,6 +127,7 @@ import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
+import com.oracle.graal.python.nodes.expression.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -140,6 +144,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -151,6 +156,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -1598,6 +1604,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private ReadAttributeFromObjectNode readAttrNode;
         @Child private WriteAttributeToObjectNode writeAttrNode;
         @Child private CastToIndexNode castToInt;
+        @Child private CastToListNode castToList;
+        @Child private SequenceStorageNodes.LenNode slotLenNode;
+        @Child private SequenceStorageNodes.GetItemNode getSlotItemNode;
 
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
@@ -1612,12 +1621,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create()") CallDispatchNode callNewFuncNode,
                         @Cached("create()") CreateArgumentsNode createArgs) {
+            // Determine the proper metatype to deal with this
             PythonClass metaclass = calculate_metaclass(cls, bases, getMetaclassNode);
+
             if (metaclass != cls) {
                 Object newFunc = getNewFuncNode.execute(metaclass);
                 if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
-                    // the new metaclass has the same __new__ function as we are in
+                    // the new metaclass has the same __new__ function as we are in, continue
                 } else {
+                    // Pass it to the winner
                     return callNewFuncNode.executeCall(frame, newFunc, createArgs.execute(metaclass, name, bases, namespace), kwds);
                 }
             }
@@ -1626,12 +1638,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @TruffleBoundary
         private Object typeMetaclass(String name, PTuple bases, PDict namespace, PythonClass metaclass) {
-            if (name.indexOf('\0') != -1) {
-                throw raise(ValueError, "type name must not contain null characters");
-            }
+
             Object[] array = bases.getArray();
             PythonClass[] basesArray;
             if (array.length == 0) {
+                // Adjust for empty tuple bases
                 basesArray = new PythonClass[]{getCore().lookupType(PythonBuiltinClassType.PythonObject)};
             } else {
                 basesArray = new PythonClass[array.length];
@@ -1645,15 +1656,106 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
             }
             assert metaclass != null;
-            PythonClass pythonClass = factory().createPythonClass(metaclass, name, basesArray);
-            for (DictEntry entry : namespace.entries()) {
-                pythonClass.setAttribute(entry.getKey(), entry.getValue());
+
+            if (name.indexOf('\0') != -1) {
+                throw raise(ValueError, "type name must not contain null characters");
             }
-            addDictIfNative(pythonClass);
+            PythonClass pythonClass = factory().createPythonClass(metaclass, name, basesArray);
+
+            // copy the dictionary slots over, as CPython does through PyDict_Copy
+            // Also check for a __slots__ sequence variable in dict
+            Object slots = null;
+            for (DictEntry entry : namespace.entries()) {
+                Object key = entry.getKey();
+                Object value = entry.getValue();
+                if (__SLOTS__.equals(key)) {
+                    slots = value;
+                } else {
+                    pythonClass.setAttribute(key, value);
+                }
+            }
+
+            if (slots == null) {
+                // takes care of checking if we may_add_dict and adds it if needed
+                addDictIfNative(pythonClass);
+                // TODO: tfel - also deal with weaklistoffset
+            } else {
+                // have slots
+
+                // Make it into a list
+                SequenceStorage slotList;
+                if (slots instanceof String) {
+                    slotList = factory().createList(new Object[]{slots}).getSequenceStorage();
+                } else {
+                    slotList = getCastToListNode().executeWith(slots).getSequenceStorage();
+                }
+                int slotlen = getListLenNode().execute(slotList);
+                // TODO: tfel - check if slots are allowed. They are not if the base class is var
+                // sized
+
+                for (int i = 0; i < slotlen; i++) {
+                    String slotName;
+                    Object element = getSlotItemNode().execute(slotList, i);
+                    // Check valid slot name
+                    if (element instanceof String) {
+                        slotName = (String) element;
+                    } else {
+                        throw raise(TypeError, "__slots__ items must be strings, not '%p'", element);
+                    }
+                    if (__DICT__.equals(slotName)) {
+                        // check that the native base does not already have tp_dictoffset
+                        if (addDictIfNative(pythonClass)) {
+                            throw raise(TypeError, "__dict__ slot disallowed: we already got one");
+                        }
+                    } else {
+                        // TODO: check for __weakref__
+                        // TODO: Copy slots into a list, mangle names and sort them
+                        HiddenKey hiddenSlotKey = new HiddenKey(slotName);
+                        HiddenKeyDescriptor slotDesc = factory().createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
+                        pythonClass.setAttribute(slotName, slotDesc);
+                    }
+                    // Make slots into a tuple
+                }
+                pythonClass.setAttribute(__SLOTS__, factory().createTuple(slotList));
+                if (basesArray.length > 1) {
+                    // TODO: tfel - check if secondary bases provide weakref or dict when we don't
+                    // already have one
+                }
+            }
+
+            // TODO: tfel special case __new__: if it's a plain function, make it a static function
+            // TODO: tfel Special-case __init_subclass__: if it's a plain function, make it a
+            // classmethod
+
             return pythonClass;
         }
 
-        private void addDictIfNative(PythonClass pythonClass) {
+        private SequenceStorageNodes.GetItemNode getSlotItemNode() {
+            if (getSlotItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getSlotItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return getSlotItemNode;
+        }
+
+        private SequenceStorageNodes.LenNode getListLenNode() {
+            if (slotLenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                slotLenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return slotLenNode;
+        }
+
+        private CastToListNode getCastToListNode() {
+            if (castToList == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToList = insert(CastToListNode.create());
+            }
+            return castToList;
+        }
+
+        private boolean addDictIfNative(PythonClass pythonClass) {
+            boolean addedNewDict = false;
             for (Object cls : pythonClass.getMethodResolutionOrder()) {
                 if (cls instanceof PythonNativeClass) {
                     if (readAttrNode == null) {
@@ -1666,6 +1768,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     long basicsize = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__BASICSIZE__));
                     long itemsize = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__ITEMSIZE__));
                     if (dictoffset == 0) {
+                        addedNewDict = true;
                         // add_dict
                         if (itemsize != 0) {
                             dictoffset = -SIZEOF_PY_OBJECT_PTR;
@@ -1680,6 +1783,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     break;
                 }
             }
+            return addedNewDict;
         }
 
         private PythonClass calculate_metaclass(PythonClass cls, PTuple bases, GetClassNode getMetaclassNode) {

@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator;
@@ -133,6 +134,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PythonObjectFactory extends Node {
@@ -398,6 +400,10 @@ public final class PythonObjectFactory extends Node {
 
     public GetSetDescriptor createGetSetDescriptor(PythonCallable get, PythonCallable set, String name, LazyPythonClass type) {
         return trace(new GetSetDescriptor(PythonBuiltinClassType.GetSetDescriptor, get, set, name, type));
+    }
+
+    public HiddenKeyDescriptor createHiddenKeyDescriptor(HiddenKey key, LazyPythonClass type) {
+        return trace(new HiddenKeyDescriptor(PythonBuiltinClassType.GetSetDescriptor, key, type));
     }
 
     public PDecoratedMethod createClassmethod(LazyPythonClass cls) {
