@@ -135,10 +135,10 @@ public abstract class ArityCheckNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {
+                    "isFunction(callee)",
                     "cachedLen == keywords.length",
                     "cachedNumParamIds == getArity(callee).getNumParameterIds()",
-                    "cachedDeclLen == getArity(callee).getNumKeywordNames()",
-                    "isFunction(callee)"
+                    "cachedDeclLen == getArity(callee).getNumKeywordNames()"
     }, limit = "getVariableArgumentInlineCacheLimit()", replaces = "constantArityCheck")
     void arityCheckCallable(Object callee, Object[] arguments, PKeyword[] keywords,
                     @Cached("getArity(callee).getNumParameterIds()") int cachedNumParamIds,
