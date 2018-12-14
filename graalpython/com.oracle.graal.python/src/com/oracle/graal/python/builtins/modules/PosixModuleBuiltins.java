@@ -1063,10 +1063,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final BranchProfile gotException = BranchProfile.create();
 
         @Specialization
-        Object chmod(String path, int mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone follow_symlinks) {
+        Object chmod(String path, long mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone follow_symlinks) {
+            return chmod(path, mode, dir_fd, true);
+        }
+
+        @Specialization
+        Object chmod(String path, long mode, @SuppressWarnings("unused") PNone dir_fd, boolean follow_symlinks) {
             Set<PosixFilePermission> permissions = modeToPermissions(mode);
             try {
                 TruffleFile truffleFile = getContext().getEnv().getTruffleFile(path);
+                if (!follow_symlinks) {
+                    truffleFile = truffleFile.getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
+                } else {
+                    truffleFile = truffleFile.getCanonicalFile();
+                }
                 truffleFile.setPosixPermissions(permissions);
             } catch (IOException e) {
                 gotException.enter();
@@ -1076,17 +1086,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary(allowInlining = true)
-        private static Set<PosixFilePermission> modeToPermissions(int mode) {
-            Set<PosixFilePermission> permissions = new HashSet<>(Arrays.asList(otherBitsToPermission[mode & 7]));
-            permissions.addAll(Arrays.asList(groupBitsToPermission[mode >> 3 & 7]));
-            permissions.addAll(Arrays.asList(ownerBitsToPermission[mode >> 6 & 7]));
+        private static Set<PosixFilePermission> modeToPermissions(long mode) {
+            Set<PosixFilePermission> permissions = new HashSet<>(Arrays.asList(otherBitsToPermission[(int) (mode & 7)]));
+            permissions.addAll(Arrays.asList(groupBitsToPermission[(int) (mode >> 3 & 7)]));
+            permissions.addAll(Arrays.asList(ownerBitsToPermission[(int) (mode >> 6 & 7)]));
             return permissions;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object chmod(Object path, Object mode, Object dir_fd, Object follow_symlinks) {
-            throw raise(NotImplementedError, "chmod");
         }
     }
 
@@ -1101,8 +1105,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object utime(String path, PNone times, PNone ns, PNone dir_fd, PNone follow_symlinks) {
             long time = ((Double) TimeModuleBuiltins.timeSeconds()).longValue();
-            setMtime(path, time);
-            setAtime(path, time);
+            setMtime(getFile(path, true), time);
+            setAtime(getFile(path, true), time);
             return PNone.NONE;
         }
 
@@ -1111,8 +1115,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object utime(String path, PTuple times, PNone ns, PNone dir_fd, PNone follow_symlinks) {
             long atime = getTime(times, 0, "times");
             long mtime = getTime(times, 1, "times");
-            setMtime(path, mtime);
-            setAtime(path, atime);
+            setMtime(getFile(path, true), mtime);
+            setAtime(getFile(path, true), atime);
             return PNone.NONE;
         }
 
@@ -1121,8 +1125,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object utime(String path, PNone times, PTuple ns, PNone dir_fd, PNone follow_symlinks) {
             long atime = getTime(ns, 0, "ns") / 1000;
             long mtime = getTime(ns, 1, "ns") / 1000;
-            setMtime(path, mtime);
-            setAtime(path, atime);
+            setMtime(getFile(path, true), mtime);
+            setAtime(getFile(path, true), atime);
+            return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        Object utime(String path, PNone times, PTuple ns, PNone dir_fd, boolean follow_symlinks) {
+            long atime = getTime(ns, 0, "ns") / 1000;
+            long mtime = getTime(ns, 1, "ns") / 1000;
+            setMtime(getFile(path, true), mtime);
+            setAtime(getFile(path, true), atime);
             return PNone.NONE;
         }
 
@@ -1183,18 +1197,36 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return raise(TypeError, "utime: '%s' must be either a tuple of two ints or None", argname);
         }
 
-        private void setMtime(String path, long mtime) {
+        private void setMtime(TruffleFile truffleFile, long mtime) {
             try {
-                getContext().getEnv().getTruffleFile(path).setLastModifiedTime(FileTime.from(mtime, TimeUnit.SECONDS));
-            } catch (IOException e) {
+                truffleFile.setLastModifiedTime(FileTime.from(mtime, TimeUnit.SECONDS));
+            } catch (IOException | SecurityException e) {
+                throw raise();
             }
         }
 
-        private void setAtime(String path, long mtime) {
+        private void setAtime(TruffleFile truffleFile, long mtime) {
             try {
-                getContext().getEnv().getTruffleFile(path).setLastAccessTime(FileTime.from(mtime, TimeUnit.SECONDS));
-            } catch (IOException e) {
+                truffleFile.setLastAccessTime(FileTime.from(mtime, TimeUnit.SECONDS));
+            } catch (IOException | SecurityException e) {
+                throw raise();
             }
+        }
+
+        private TruffleFile getFile(String path, boolean followSymlinks) {
+            TruffleFile truffleFile = getContext().getEnv().getTruffleFile(path);
+            if (!followSymlinks) {
+                try {
+                    truffleFile = truffleFile.getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
+                } catch (IOException | SecurityException e) {
+                    throw raise();
+                }
+            }
+            return truffleFile;
+        }
+
+        private PException raise() {
+            throw raise(ValueError, "Operation not allowed");
         }
 
         private int getLength(PTuple times) {
@@ -1578,6 +1610,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         int getCpuCount() {
             return Runtime.getRuntime().availableProcessors();
+        }
+    }
+
+    @Builtin(name = "umask", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class UmaskNode extends PythonBuiltinNode {
+        @Specialization
+        int getAndSetUmask(int umask) {
+            if (umask == 0022) {
+                return 0022;
+            } else {
+                throw raise(NotImplementedError, "setting the umask to anything other than the default");
+            }
         }
     }
 }

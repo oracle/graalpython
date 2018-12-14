@@ -84,7 +84,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     @Specialization(guards = {
-                    "isDictUnsetOrSameAsStorage(object)"
+                    "isDictUnsetOrSameAsStorage(object) || isHiddenKey(key)"
     }, replaces = "readFromDynamicStorageCached")
     protected Object readFromDynamicStorage(PythonObject object, Object key,
                     @Cached("create()") ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
@@ -94,7 +94,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // read from the Dict
     @Specialization(guards = {
                     "object == cachedObject",
-                    "!dictUnsetOrSameAsStorageAssumption.isValid()"
+                    "!dictUnsetOrSameAsStorageAssumption.isValid()",
+                    "!isHiddenKey(key)"
     }, assumptions = {
                     "singleContextAssumption"
     })
@@ -112,7 +113,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     @Specialization(guards = {
-                    "!isDictUnsetOrSameAsStorage(object)"
+                    "!isDictUnsetOrSameAsStorage(object)",
+                    "!isHiddenKey(key)"
     }, replaces = "readFromDictCached")
     protected Object readFromDict(PythonObject object, Object key,
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {

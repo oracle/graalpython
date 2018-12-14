@@ -453,6 +453,76 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "zlib_inflateInit", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class InflateInitNode extends PythonBinaryBuiltinNode {
+        @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+
+        @Specialization
+        @TruffleBoundary
+        Object init(int wbits, PBytes zdict) {
+            Inflater inflater;
+            if (wbits < 0) {
+                // generate a RAW stream, i.e., no wrapping
+                inflater = new Inflater(true);
+            } else if (wbits >= 25) {
+                // include gzip container
+                throw raise(PythonBuiltinClassType.NotImplementedError, "gzip containers");
+            } else {
+                // wrap stream with zlib header and trailer
+                inflater = new Inflater(false);
+            }
+
+            inflater.setDictionary(toBytes.execute(zdict));
+            return new InflaterWrapper(inflater);
+        }
+    }
+
+    static class InflaterWrapper implements TruffleObject {
+        private final Inflater inflater;
+
+        public InflaterWrapper(Inflater inflater) {
+            this.inflater = inflater;
+        }
+
+        public ForeignAccess getForeignAccess() {
+            return null;
+        }
+    }
+
+    @Builtin(name = "zlib_inflateDecompress", fixedNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class InflaterDecompress extends PythonTernaryBuiltinNode {
+        @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+
+        @Specialization
+        @TruffleBoundary
+        Object decompress(InflaterWrapper stream, PIBytesLike pb, int maxLen) {
+            int maxLength = maxLen == 0 ? Integer.MAX_VALUE : maxLen;
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] data = toBytes.execute(pb);
+            byte[] result = new byte[DEF_BUF_SIZE];
+            stream.inflater.setInput(data);
+
+            int bytesWritten = result.length;
+            while (baos.size() < maxLength && bytesWritten == result.length) {
+                try {
+                    bytesWritten = stream.inflater.inflate(result, 0, result.length);
+                } catch (DataFormatException e) {
+                    throw raise(ZLibError, e.getMessage());
+                }
+                baos.write(result, 0, bytesWritten);
+            }
+
+            return factory().createTuple(new Object[]{
+                            factory().createBytes(baos.toByteArray()),
+                            stream.inflater.needsInput(),
+                            stream.inflater.getRemaining()
+            });
+        }
+    }
+
     // zlib.compress(data, level=-1)
     @Builtin(name = "compress", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"level"})
     @TypeSystemReference(PythonArithmeticTypes.class)

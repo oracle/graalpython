@@ -1785,11 +1785,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
     abstract static class LocalsNode extends PythonBuiltinNode {
         @Child ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
         @Child GetLocalsNode getLocalsNode = GetLocalsNode.create();
+        private final ConditionProfile inGenerator = ConditionProfile.createBinaryProfile();
 
         @Specialization
         public Object locals(VirtualFrame frame) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            return getLocalsNode.execute(callerFrame);
+            Frame generatorFrame = PArguments.getGeneratorFrame(callerFrame);
+            if (inGenerator.profile(generatorFrame == null)) {
+                return getLocalsNode.execute(callerFrame);
+            } else {
+                return getLocalsNode.execute(generatorFrame);
+            }
         }
     }
 }

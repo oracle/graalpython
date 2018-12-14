@@ -38,37 +38,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes;
+package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
-public abstract class SpecialAttributeNames {
-    public static final String __DOC__ = "__doc__";
-    public static final String __DEFAULTS__ = "__defaults__";
-    public static final String __CODE__ = "__code__";
-    public static final String __GLOBALS__ = "__globals__";
-    public static final String __CLOSURE__ = "__closure__";
-    public static final String __ANNOTATIONS__ = "__annotations__";
-    public static final String __KWDEFAULTS__ = "__kwdefaults__";
-    public static final String __SELF__ = "__self__";
-    public static final String __FUNC__ = "__func__";
-    public static final String __MODULE__ = "__module__";
-    public static final String __DICT__ = "__dict__";
-    public static final String __CLASS__ = "__class__";
-    public static final String __BASES__ = "__bases__";
-    public static final String __NAME__ = "__name__";
-    public static final String __QUALNAME__ = "__qualname__";
-    public static final String __MRO__ = "__mro__";
-    public static final String __LOADER__ = "__loader__";
-    public static final String __PACKAGE__ = "__package__";
-    public static final String __SPEC__ = "__spec__";
-    public static final String __PATH__ = "__path__";
-    public static final String __FILE__ = "__file__";
-    public static final String __CACHED__ = "__cached__";
-    public static final String __TRACEBACK__ = "__traceback__";
-    public static final String __CAUSE__ = "__cause__";
-    public static final String __CONTEXT__ = "__context__";
-    public static final String __BASICSIZE__ = "__basicsize__";
-    public static final String __NEW__ = "__new__";
-    public static final String __SLOTS__ = "__slots__";
-    public static final String __DICTOFFSET__ = "__dictoffset__";
-    public static final String __ITEMSIZE__ = "__itemsize__";
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.HiddenKey;
+
+public final class HiddenKeyDescriptor extends PythonBuiltinObject {
+    private final HiddenKey key;
+    private final LazyPythonClass type;
+
+    public HiddenKeyDescriptor(LazyPythonClass cls, HiddenKey key, LazyPythonClass type) {
+        super(cls);
+        this.key = key;
+        this.type = type;
+    }
+
+    public HiddenKey getKey() {
+        return key;
+    }
+
+    public LazyPythonClass getType() {
+        return type;
+    }
 }
