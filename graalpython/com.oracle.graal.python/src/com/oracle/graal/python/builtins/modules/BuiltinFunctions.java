@@ -102,7 +102,6 @@ import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -349,14 +348,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CallableNode extends PythonBuiltinNode {
 
-        @SuppressWarnings("unused")
-        @Specialization
-        public boolean callable(PythonCallable callable) {
+        @Specialization(guards = "isCallable(callable)")
+        boolean doCallable(@SuppressWarnings("unused") Object callable) {
             return true;
         }
 
         @Specialization
-        public boolean callable(Object object,
+        boolean doGeneric(Object object,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode getAttributeNode) {
             /**
              * Added temporarily to skip translation/execution errors in unit testing
@@ -371,7 +369,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return true;
             }
 
-            return object instanceof PythonCallable;
+            return PGuards.isCallable(object);
         }
     }
 
@@ -1698,10 +1696,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return NodeUtil.printTreeToString(func.getCallTarget().getRootNode());
         }
 
-        @Specialization
+        @Specialization(guards = "isFunction(method.getFunction())")
         @TruffleBoundary
         public String doIt(PMethod method) {
-            return NodeUtil.printTreeToString(method.getCallTarget().getRootNode());
+            // cast ensured by guard
+            PFunction fun = (PFunction) method.getFunction();
+            return NodeUtil.printTreeToString(fun.getCallTarget().getRootNode());
         }
 
         @Specialization
@@ -1714,6 +1714,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         public Object doit(Object object) {
             return "truffle ast dump not supported for " + object.toString();
+        }
+
+        protected static boolean isFunction(Object callee) {
+            return callee instanceof PFunction;
         }
     }
 

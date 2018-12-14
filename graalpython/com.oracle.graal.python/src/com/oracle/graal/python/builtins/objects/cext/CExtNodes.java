@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.TruffleObjec
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -1412,7 +1411,7 @@ public abstract class CExtNodes {
         @Child private PythonObjectFactory factory;
         private final Object errorResult;
 
-        public MayRaiseNode(PythonCallable callable, Object errorResult) {
+        public MayRaiseNode(PFunction callable, Object errorResult) {
             this.readVarargsNode = ReadVarArgsNode.create(0, true);
             this.createArgsNode = CreateArgumentsNode.create();
             this.invokeNode = InvokeNode.create(callable);

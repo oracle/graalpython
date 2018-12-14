@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -385,8 +384,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     @TruffleBoundary
     protected SourceSection findSourceLocation(PythonContext context, Object value) {
-        if (value instanceof PFunction || value instanceof PMethod) {
-            PythonCallable callable = (PythonCallable) value;
+        if (value instanceof PFunction) {
+            PFunction callable = (PFunction) value;
+            return callable.getCallTarget().getRootNode().getSourceSection();
+        } else if (value instanceof PMethod && ((PMethod) value).getFunction() instanceof PFunction) {
+            PFunction callable = (PFunction) ((PMethod) value).getFunction();
             return callable.getCallTarget().getRootNode().getSourceSection();
         } else if (value instanceof PCode) {
             return ((PCode) value).getRootNode().getSourceSection();
@@ -408,7 +410,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             // true during initialization
             return value.toString();
         }
-        PBuiltinFunction reprMethod = ((PBuiltinMethod) builtins.getAttribute(BuiltinNames.REPR)).getFunction();
+        PBuiltinFunction reprMethod = (PBuiltinFunction) ((PBuiltinMethod) builtins.getAttribute(BuiltinNames.REPR)).getFunction();
         Object[] userArgs = PArguments.create(2);
         PArguments.setArgument(userArgs, 0, PNone.NONE);
         PArguments.setArgument(userArgs, 1, value);

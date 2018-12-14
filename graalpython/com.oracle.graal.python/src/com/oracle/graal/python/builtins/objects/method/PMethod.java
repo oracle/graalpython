@@ -25,30 +25,22 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
-import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.function.Arity;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PGeneratorFunction;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.CompilerAsserts;
 
-public final class PMethod extends PythonBuiltinObject implements PythonCallable {
+public final class PMethod extends PythonBuiltinObject {
 
-    private final PFunction function;
+    private final Object function;
     private final Object self;
-    private final RootCallTarget callTarget;
 
-    public PMethod(LazyPythonClass cls, Object self, PFunction function) {
+    public PMethod(LazyPythonClass cls, Object self, Object function) {
         super(cls);
         this.self = self;
         this.function = function;
-        this.callTarget = function.getCallTarget();
     }
 
-    public PFunction getFunction() {
+    public Object getFunction() {
         return function;
     }
 
@@ -56,46 +48,9 @@ public final class PMethod extends PythonBuiltinObject implements PythonCallable
         return self;
     }
 
-    public PythonObject getGlobals() {
-        return function.getGlobals();
-    }
-
-    @Override
-    public PCell[] getClosure() {
-        return function.getClosure();
-    }
-
-    @Override
-    public boolean isGeneratorFunction() {
-        return function instanceof PGeneratorFunction;
-    }
-
-    @Override
-    public PGeneratorFunction asGeneratorFunction() {
-        if (function instanceof PGeneratorFunction) {
-            return (PGeneratorFunction) function;
-        } else {
-            return null;
-        }
-    }
-
-    @Override
-    public RootCallTarget getCallTarget() {
-        return callTarget;
-    }
-
-    @Override
-    public Arity getArity() {
-        return function.getArity();
-    }
-
-    @Override
-    public String getName() {
-        return function.getName();
-    }
-
     @Override
     public String toString() {
-        return "<method '" + function.getName() + "' of " + self + " object at " + function.hashCode() + ">";
+        CompilerAsserts.neverPartOfCompilation();
+        return "<method '" + function + "' of " + self + " object at " + function.hashCode() + ">";
     }
 }

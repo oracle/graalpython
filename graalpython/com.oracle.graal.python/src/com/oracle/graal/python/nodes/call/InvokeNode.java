@@ -32,9 +32,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ApplyKeywordsNode;
@@ -65,20 +63,13 @@ abstract class AbstractInvokeNode extends Node {
     }
 
     @TruffleBoundary
-    protected static RootCallTarget getCallTarget(PythonCallable callee) {
+    protected static RootCallTarget getCallTarget(Object callee) {
         RootCallTarget callTarget;
-        PythonCallable actualCallee = callee;
+        Object actualCallee = callee;
         if (actualCallee instanceof PFunction) {
-            callTarget = actualCallee.getCallTarget();
-        } else if (actualCallee instanceof PMethod) {
-            PMethod method = (PMethod) actualCallee;
-            callTarget = method.getFunction().getCallTarget();
+            callTarget = ((PFunction) actualCallee).getCallTarget();
         } else if (actualCallee instanceof PBuiltinFunction) {
-            callTarget = callee.getCallTarget();
-        } else if (callee instanceof PBuiltinMethod) {
-            PBuiltinMethod method = (PBuiltinMethod) callee;
-            PBuiltinFunction internalFunc = method.getFunction();
-            callTarget = internalFunc.getCallTarget();
+            callTarget = ((PBuiltinFunction) callee).getCallTarget();
         } else {
             throw new UnsupportedOperationException("Unsupported callee type " + actualCallee);
         }
@@ -106,11 +97,16 @@ abstract class AbstractInvokeNode extends Node {
     }
 
     @TruffleBoundary
-    protected static Arity getArity(PythonCallable callee) {
+    protected static Arity getArity(PFunction callee) {
         return callee.getArity();
     }
 
-    protected static boolean isBuiltin(PythonCallable callee) {
+    @TruffleBoundary
+    protected static Arity getArity(PBuiltinFunction callee) {
+        return callee.getArity();
+    }
+
+    protected static boolean isBuiltin(Object callee) {
         return callee instanceof PBuiltinFunction || callee instanceof PBuiltinMethod;
     }
 }
@@ -124,23 +120,29 @@ final class GenericInvokeNode extends AbstractInvokeNode {
         return new GenericInvokeNode();
     }
 
-    protected Object execute(VirtualFrame frame, PythonCallable callee, Object[] arguments, PKeyword[] keywords) {
+    protected Object execute(VirtualFrame frame, PFunction callee, Object[] arguments, PKeyword[] keywords) {
         RootCallTarget callTarget = getCallTarget(callee);
         MaterializedFrame callerFrame = getCallerFrame(frame, callTarget);
         PArguments.setCallerFrame(arguments, callerFrame);
         optionallySetClassBodySpecial(arguments, callTarget);
         Arity arity = getArity(callee);
-        if (isBuiltin(callee)) {
-            PArguments.setKeywordArguments(arguments, keywords);
-            arityCheck.execute(arity, arguments, keywords);
-            return callNode.call(callTarget, arguments);
-        } else {
-            Object[] combined = applyKeywords.execute(arity, arguments, keywords);
-            PArguments.setGlobals(combined, callee.getGlobals());
-            PArguments.setClosure(combined, callee.getClosure());
-            arityCheck.execute(arity, combined, PArguments.getKeywordArguments(combined));
-            return callNode.call(callTarget, combined);
-        }
+        Object[] combined = applyKeywords.execute(arity, arguments, keywords);
+        PArguments.setGlobals(combined, callee.getGlobals());
+        PArguments.setClosure(combined, callee.getClosure());
+        arityCheck.execute(arity, combined, PArguments.getKeywordArguments(combined));
+        return callNode.call(callTarget, combined);
+
+    }
+
+    protected Object execute(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments, PKeyword[] keywords) {
+        RootCallTarget callTarget = getCallTarget(callee);
+        MaterializedFrame callerFrame = getCallerFrame(frame, callTarget);
+        PArguments.setCallerFrame(arguments, callerFrame);
+        optionallySetClassBodySpecial(arguments, callTarget);
+        Arity arity = getArity(callee);
+        PArguments.setKeywordArguments(arguments, keywords);
+        arityCheck.execute(arity, arguments, keywords);
+        return callNode.call(callTarget, arguments);
     }
 }
 
@@ -163,10 +165,17 @@ abstract class CallTargetInvokeNode extends AbstractInvokeNode {
     }
 
     @TruffleBoundary
-    public static CallTargetInvokeNode create(PythonCallable callee) {
+    public static CallTargetInvokeNode create(PFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
         return CallTargetInvokeNodeGen.create(callTarget, callee.getArity(), builtin, callee.isGeneratorFunction());
+    }
+
+    @TruffleBoundary
+    public static CallTargetInvokeNode create(PBuiltinFunction callee) {
+        RootCallTarget callTarget = getCallTarget(callee);
+        boolean builtin = isBuiltin(callee);
+        return CallTargetInvokeNodeGen.create(callTarget, callee.getArity(), builtin, false);
     }
 
     public abstract Object execute(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments, PKeyword[] keywords);
@@ -229,10 +238,17 @@ public abstract class InvokeNode extends AbstractInvokeNode {
     public abstract Object execute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords);
 
     @TruffleBoundary
-    public static InvokeNode create(PythonCallable callee) {
+    public static InvokeNode create(PFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
         return InvokeNodeGen.create(callTarget, getArity(callee), callee.getGlobals(), callee.getClosure(), builtin, callee.isGeneratorFunction());
+    }
+
+    @TruffleBoundary
+    public static InvokeNode create(PBuiltinFunction callee) {
+        RootCallTarget callTarget = getCallTarget(callee);
+        boolean builtin = isBuiltin(callee);
+        return InvokeNodeGen.create(callTarget, getArity(callee), null, null, builtin, false);
     }
 
     @Specialization(guards = {"keywords.length == 0"})

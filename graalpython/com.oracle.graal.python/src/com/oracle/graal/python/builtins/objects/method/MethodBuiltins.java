@@ -42,18 +42,18 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMethod)
 public class MethodBuiltins extends PythonBuiltins {
@@ -88,14 +88,18 @@ public class MethodBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         Object reprMethod(PMethod self,
-                        @Cached("create()") GetLazyClassNode getClassNode) {
-            return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
+                        @Cached("create()") GetLazyClassNode getClassNode,
+                        @Cached("createGetAttributeNode()") GetAttributeNode getNameAttrNode) {
+            return String.format("<built-in method %s of %s object at 0x%x>", getNameAttrNode.executeObject(self.getFunction()), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
+        }
+
+        protected static GetAttributeNode createGetAttributeNode() {
+            return GetAttributeNode.create(SpecialAttributeNames.__NAME__, null);
         }
     }
 
