@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -62,6 +63,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class PNodeWithContext extends Node {
     @Child private PythonObjectFactory factory;
+    @Child private WriteAttributeToObjectNode writeCause;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected final PythonObjectFactory factory() {
@@ -86,6 +88,17 @@ public abstract class PNodeWithContext extends Node {
 
     public PException raise(LazyPythonClass exceptionType) {
         throw raise(factory().createBaseException(exceptionType));
+    }
+
+    public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
+        assert format != null;
+        PBaseException baseException = factory().createBaseException(type, format, arguments);
+        if (writeCause == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            writeCause = insert(WriteAttributeToObjectNode.create());
+        }
+        writeCause.execute(baseException, SpecialAttributeNames.__CAUSE__, cause);
+        throw raise(baseException);
     }
 
     public final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
