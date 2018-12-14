@@ -112,8 +112,8 @@ public class ClassmethodBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object generic(@SuppressWarnings("unused") Object self, Object func) {
-            throw raise(PythonBuiltinClassType.NotImplementedError, "classmethods with non-function callables '%p'", func);
+        Object generic(Object self, Object func) {
+            return factory().createMethod(self, func);
         }
 
         static MakeMethodNode create() {
