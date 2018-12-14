@@ -84,6 +84,12 @@ suite = {
     #
     # --------------------------------------------------------------------------------------------------------------
     "libraries": {
+        "SETUPTOOLS": {
+            "urls": [
+                "https://github.com/pypa/setuptools/archive/v40.6.3.zip",
+            ],
+            "sha1": "7a5960b8062ddbf0c0e79f806e23785d55fec3c8",
+        }
     },
 
     # --------------------------------------------------------------------------------------------------------------
@@ -242,6 +248,14 @@ suite = {
             "output": ".",
             "license": ["MIT"],
             "defaultBuild": False,
+            "buildEnv": {
+                "SETUPTOOLS_ZIP": "<path:SETUPTOOLS>",
+            },
+            "buildDependencies": [
+                "SETUPTOOLS",
+                "GRAALPYTHON-LAUNCHER",
+                "GRAALPYTHON",
+            ],
         },
     },
 
