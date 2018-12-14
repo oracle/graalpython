@@ -450,5 +450,9 @@ PyVarObject * PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t siz
 }
 
 int PyCallable_Check(PyObject *x) {
-    return polyglot_as_i32(polyglot_invoke(PY_BUILTIN, "callable", to_java(x)));
+	return UPCALL_I(PY_BUILTIN, polyglot_from_string("callable", SRC_CS), native_to_java(x));
+}
+
+PyObject * PyObject_Dir(PyObject *obj) {
+	return UPCALL_O(PY_BUILTIN, polyglot_from_string("dir", SRC_CS), native_to_java(obj));
 }
