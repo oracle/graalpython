@@ -70,3 +70,8 @@ PyObject * PyMethod_New(PyObject *func, PyObject *self) {
     }
     return UPCALL_CEXT_O(_jls_PyMethod_New, native_to_java(func), native_to_java(self));
 }
+
+PyObject * PyInstanceMethod_New(PyObject *func) {
+	// TODO properly implement this function
+	return func;
+}
