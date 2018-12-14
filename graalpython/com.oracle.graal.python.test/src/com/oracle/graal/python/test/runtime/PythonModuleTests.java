@@ -35,6 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -43,9 +44,36 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 
 public class PythonModuleTests {
     private PythonContext context;
+
+    private static class PythonModuleTestRootNode extends RootNode {
+
+        @Child private CallNode body;
+
+        public PythonModuleTestRootNode(PythonLanguage language, CallNode body) {
+            super(language);
+            this.body = body;
+            Truffle.getRuntime().createCallTarget(this);
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            Object[] arguments = frame.getArguments();
+            Object[] argsWithoutSelf = new Object[arguments.length - 1];
+            System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
+            return body.execute(frame, arguments[0], argsWithoutSelf);
+        }
+    }
+
+    private Object callBuiltin(Object... args) {
+        PythonModuleTestRootNode rootNode = new PythonModuleTestRootNode(context.getLanguage(), CallNode.create());
+        return rootNode.getCallTarget().call(args);
+    }
 
     @Before
     public void setUp() {
@@ -66,7 +94,7 @@ public class PythonModuleTests {
     public void builtinsMinTest() {
         final PythonModule builtins = context.getBuiltins();
         Object min = builtins.getAttribute(BuiltinNames.MIN);
-        Object returnValue = CallNode.create().execute(null, min, 4, 2, 1);
+        Object returnValue = callBuiltin(min, 4, 2, 1);
         assertEquals(1, returnValue);
     }
 
@@ -75,7 +103,7 @@ public class PythonModuleTests {
         final PythonModule builtins = context.getBuiltins();
         PythonBuiltinClass intClass = (PythonBuiltinClass) builtins.getAttribute(BuiltinNames.INT);
         Object intNew = intClass.getAttribute(SpecialAttributeNames.__NEW__);
-        Object returnValue = CallNode.create().execute(null, intNew, "42");
+        Object returnValue = callBuiltin(intNew, PythonBuiltinClassType.PInt, "42");
         assertEquals(42, returnValue);
     }
 
@@ -84,7 +112,7 @@ public class PythonModuleTests {
         PythonModule main = context.getMainModule();
         PythonModule builtins = (PythonModule) main.getAttribute(__BUILTINS__);
         PBuiltinMethod abs = (PBuiltinMethod) builtins.getAttribute(BuiltinNames.ABS);
-        Object returned = CallNode.create().execute(null, abs, -42);
+        Object returned = callBuiltin(abs, -42);
         assertEquals(42, returned);
     }
 }

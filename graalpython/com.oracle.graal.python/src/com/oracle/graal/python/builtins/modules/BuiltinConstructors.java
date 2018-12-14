@@ -967,12 +967,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         public abstract Object executeWith(Object cls, Object arg, Object keywordArg);
 
-        protected boolean isPrimitiveInt(PythonClass cls) {
+        protected boolean isPrimitiveInt(LazyPythonClass cls) {
             return isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PInt);
         }
 
         @Specialization
-        Object parseInt(PythonClass cls, boolean arg, @SuppressWarnings("unused") PNone keywordArg) {
+        Object parseInt(LazyPythonClass cls, boolean arg, @SuppressWarnings("unused") PNone keywordArg) {
             if (isPrimitiveInt(cls)) {
                 return arg ? 1 : 0;
             } else {
@@ -981,7 +981,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(keywordArg)")
-        public Object createInt(PythonClass cls, int arg, @SuppressWarnings("unused") PNone keywordArg) {
+        public Object createInt(LazyPythonClass cls, int arg, @SuppressWarnings("unused") PNone keywordArg) {
             if (isPrimitiveInt(cls)) {
                 return arg;
             }
@@ -989,7 +989,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(keywordArg)")
-        public Object createInt(PythonClass cls, long arg, @SuppressWarnings("unused") PNone keywordArg,
+        public Object createInt(LazyPythonClass cls, long arg, @SuppressWarnings("unused") PNone keywordArg,
                         @Cached("createBinaryProfile()") ConditionProfile isIntProfile) {
             if (isPrimitiveInt(cls)) {
                 int intValue = (int) arg;
@@ -1003,7 +1003,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(keywordArg)")
-        public Object createInt(PythonClass cls, double arg, @SuppressWarnings("unused") PNone keywordArg,
+        public Object createInt(LazyPythonClass cls, double arg, @SuppressWarnings("unused") PNone keywordArg,
                         @Cached("createBinaryProfile()") ConditionProfile isIntProfile) {
             if (isPrimitiveInt(cls) && isIntProfile.profile(arg >= Integer.MIN_VALUE && arg <= Integer.MAX_VALUE)) {
                 return (int) arg;
@@ -1012,7 +1012,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        public Object createInt(PythonClass cls, @SuppressWarnings("unused") PNone none, @SuppressWarnings("unused") PNone keywordArg) {
+        public Object createInt(LazyPythonClass cls, @SuppressWarnings("unused") PNone none, @SuppressWarnings("unused") PNone keywordArg) {
             if (isPrimitiveInt(cls)) {
                 return 0;
             }
@@ -1020,7 +1020,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(keywordArg)")
-        public Object createInt(PythonClass cls, String arg, @SuppressWarnings("unused") PNone keywordArg) {
+        public Object createInt(LazyPythonClass cls, String arg, @SuppressWarnings("unused") PNone keywordArg) {
             try {
                 Object value = stringToInt(arg, 10);
                 if (isPrimitiveInt(cls)) {
@@ -1035,18 +1035,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        int parseInt(PythonClass cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
+        int parseInt(LazyPythonClass cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
             return parseInt(cls, toString(arg), keywordArg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        long parseLong(PythonClass cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
+        long parseLong(LazyPythonClass cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
             return parseLong(cls, toString(arg), keywordArg);
         }
 
         @Specialization
-        Object parseBytesError(PythonClass cls, PIBytesLike arg, int base,
+        Object parseBytesError(LazyPythonClass cls, PIBytesLike arg, int base,
                         @Cached("create()") BranchProfile errorProfile) {
             try {
                 return parsePInt(cls, toString(arg), base);
@@ -1057,46 +1057,46 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(base)")
-        Object parseBytesError(PythonClass cls, PIBytesLike arg, @SuppressWarnings("unused") PNone base,
+        Object parseBytesError(LazyPythonClass cls, PIBytesLike arg, @SuppressWarnings("unused") PNone base,
                         @Cached("create()") BranchProfile errorProfile) {
             return parseBytesError(cls, arg, 10, errorProfile);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        int parseInt(PythonClass cls, PString arg, int keywordArg) throws NumberFormatException {
+        int parseInt(LazyPythonClass cls, PString arg, int keywordArg) throws NumberFormatException {
             return parseInt(cls, arg.getValue(), keywordArg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        long parseLong(PythonClass cls, PString arg, int keywordArg) throws NumberFormatException {
+        long parseLong(LazyPythonClass cls, PString arg, int keywordArg) throws NumberFormatException {
             return parseLong(cls, arg.getValue(), keywordArg);
         }
 
         @Specialization
-        Object parsePInt(PythonClass cls, PString arg, int keywordArg) {
+        Object parsePInt(LazyPythonClass cls, PString arg, int keywordArg) {
             return parsePInt(cls, arg.getValue(), keywordArg);
         }
 
         @Specialization(guards = "isNoValue(base)")
-        Object parsePInt(PythonClass cls, PString arg, PNone base) {
+        Object parsePInt(LazyPythonClass cls, PString arg, PNone base) {
             return createInt(cls, arg.getValue(), base);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        int parseInt(@SuppressWarnings("unused") PythonClass cls, String arg, int keywordArg) throws NumberFormatException {
+        int parseInt(@SuppressWarnings("unused") LazyPythonClass cls, String arg, int keywordArg) throws NumberFormatException {
             return Integer.parseInt(arg, keywordArg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        long parseLong(@SuppressWarnings("unused") PythonClass cls, String arg, int keywordArg) throws NumberFormatException {
+        long parseLong(@SuppressWarnings("unused") LazyPythonClass cls, String arg, int keywordArg) throws NumberFormatException {
             return Long.parseLong(arg, keywordArg);
         }
 
         @Specialization(rewriteOn = NumberFormatException.class)
-        Object parsePInt(PythonClass cls, String arg, int base) {
+        Object parsePInt(LazyPythonClass cls, String arg, int base) {
             Object int2 = toInt(arg, base);
             if (int2 instanceof BigInteger) {
                 return factory().createInt(cls, (BigInteger) int2);
@@ -1109,7 +1109,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(replaces = "parsePInt")
-        Object parsePIntError(PythonClass cls, String arg, int base) {
+        Object parsePIntError(LazyPythonClass cls, String arg, int base) {
             try {
                 return parsePInt(cls, arg, base);
             } catch (NumberFormatException e) {
@@ -1118,7 +1118,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        public Object createInt(PythonClass cls, String arg, Object keywordArg) {
+        public Object createInt(LazyPythonClass cls, String arg, Object keywordArg) {
             if (keywordArg instanceof PNone) {
                 Object value = toInt(arg);
                 if (value == null) {
@@ -1138,12 +1138,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isString(arg)", "!isNoValue(keywordArg)"})
-        Object fail(PythonClass cls, Object arg, Object keywordArg) {
+        Object fail(LazyPythonClass cls, Object arg, Object keywordArg) {
             throw raise(TypeError, "int() can't convert non-string with explicit base");
         }
 
         @Specialization(guards = {"isNoValue(keywordArg)", "!isNoValue(obj)", "!isHandledType(obj)"})
-        public Object createInt(PythonClass cls, Object obj, PNone keywordArg,
+        public Object createInt(LazyPythonClass cls, Object obj, PNone keywordArg,
                         @Cached("create(__INT__)") LookupAndCallUnaryNode callIntNode,
                         @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTruncNode,
                         @Cached("createBinaryProfile()") ConditionProfile isIntProfile) {
