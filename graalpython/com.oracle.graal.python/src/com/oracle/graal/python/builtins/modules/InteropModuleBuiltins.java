@@ -55,13 +55,19 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
@@ -215,6 +221,9 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "export_value", minNumOfPositionalArgs = 1, keywordArguments = {"name"})
     @GenerateNodeFactory
     public abstract static class ExportSymbolNode extends PythonBuiltinNode {
+        @Child private GetAttributeNode getNameAttributeNode;
+        @Child private CastToStringNode castToStringNode;
+
         @Specialization
         @TruffleBoundary
         public Object exportSymbol(Object value, String name) {
@@ -234,6 +243,36 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         public Object exportSymbol(PBuiltinFunction fun, @SuppressWarnings("unused") PNone name) {
             getContext().getEnv().exportSymbol(fun.getName(), fun);
             return fun;
+        }
+
+        @Specialization(guards = "isModule(fun.getSelf())")
+        @TruffleBoundary
+        public Object exportSymbol(PMethod fun, @SuppressWarnings("unused") PNone name) {
+            getContext().getEnv().exportSymbol(getMethodName(fun), fun);
+            return fun;
+        }
+
+        @Specialization(guards = "isModule(fun.getSelf())")
+        @TruffleBoundary
+        public Object exportSymbol(PBuiltinMethod fun, @SuppressWarnings("unused") PNone name) {
+            getContext().getEnv().exportSymbol(getMethodName(fun), fun);
+            return fun;
+        }
+
+        private String getMethodName(Object o) {
+            if (getNameAttributeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getNameAttributeNode = insert(GetAttributeNode.create(SpecialAttributeNames.__NAME__, null));
+            }
+            if (castToStringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToStringNode = insert(CastToStringNode.create());
+            }
+            return castToStringNode.execute(getNameAttributeNode.executeObject(o));
+        }
+
+        protected static boolean isModule(Object o) {
+            return o instanceof PythonModule;
         }
     }
 
