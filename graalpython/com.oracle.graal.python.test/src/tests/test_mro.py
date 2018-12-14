@@ -184,3 +184,25 @@ def test_class_slots():
     assert x._local__impl == 1
 
     assert X.__dict__["_local__impl"].__get__(x, type(x)) == 1
+
+
+def test_class_with_slots_assignment():
+    class X():
+        __slots__ = "a", "b"
+
+    class Y():
+        __slots__ = "a", "b"
+
+    class Z():
+        __slots__ = "b", "c"
+
+
+    x = X()
+    x.__class__ = Y
+    assert type(x) == Y
+    try:
+        x.__class__ = Z
+    except TypeError as e:
+        assert True
+    else:
+        assert False
