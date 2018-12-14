@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.method;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerAsserts;
 
 // Corresponds to PyCFunction, but that name is just confusing
 public class PBuiltinMethod extends PythonBuiltinObject {
@@ -50,6 +51,7 @@ public class PBuiltinMethod extends PythonBuiltinObject {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return "<builtin-method '" + function + "' of '" + self + "' objects>";
     }
 }
