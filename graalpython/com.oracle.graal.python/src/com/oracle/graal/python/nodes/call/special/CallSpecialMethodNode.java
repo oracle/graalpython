@@ -41,7 +41,11 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -50,6 +54,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -81,19 +86,67 @@ abstract class CallSpecialMethodNode extends Node {
         return language.singleContextAssumption;
     }
 
-    protected static PythonUnaryBuiltinNode getUnary(PBuiltinFunction func) {
-        return getBuiltin(func, PythonUnaryBuiltinNode.class);
+    protected static PythonUnaryBuiltinNode getUnary(Object func) {
+        if (func instanceof PBuiltinFunction) {
+            return getBuiltin((PBuiltinFunction) func, PythonUnaryBuiltinNode.class);
+        }
+        return null;
     }
 
-    protected static PythonBinaryBuiltinNode getBinary(PBuiltinFunction func) {
-        return getBuiltin(func, PythonBinaryBuiltinNode.class);
+    protected static PythonBinaryBuiltinNode getBinary(Object func) {
+        if (func instanceof PBuiltinFunction) {
+            return getBuiltin((PBuiltinFunction) func, PythonBinaryBuiltinNode.class);
+        }
+        return null;
     }
 
-    protected static PythonTernaryBuiltinNode getTernary(PBuiltinFunction func) {
-        return getBuiltin(func, PythonTernaryBuiltinNode.class);
+    protected static PythonTernaryBuiltinNode getTernary(Object func) {
+        if (func instanceof PBuiltinFunction) {
+            return getBuiltin((PBuiltinFunction) func, PythonTernaryBuiltinNode.class);
+        }
+        return null;
     }
 
-    protected static PythonVarargsBuiltinNode getVarargs(PBuiltinFunction func) {
-        return getBuiltin(func, PythonVarargsBuiltinNode.class);
+    protected static PythonVarargsBuiltinNode getVarargs(Object func) {
+        if (func instanceof PBuiltinFunction) {
+            return getBuiltin((PBuiltinFunction) func, PythonVarargsBuiltinNode.class);
+        }
+        return null;
+    }
+
+    protected static boolean takesFixedNumOfPositionalArgs(PMethod func) {
+        Arity arity = getArity(func.getFunction());
+        return arity != null && arity.takesFixedNumOfPositionalArgs();
+    }
+
+    protected static boolean takesFixedNumOfPositionalArgs(PBuiltinMethod func) {
+        Arity arity = getArity(func.getFunction());
+        return arity != null && arity.takesFixedNumOfPositionalArgs();
+    }
+
+    private static Arity getArity(Object func) {
+        if (func instanceof PFunction) {
+            return ((PFunction) func).getArity();
+        } else if (func instanceof PBuiltinFunction) {
+            return ((PBuiltinFunction) func).getArity();
+        }
+        return null;
+    }
+
+    protected static RootCallTarget getCallTarget(PMethod meth) {
+        return getCallTargetOfFunction(meth.getFunction());
+    }
+
+    protected static RootCallTarget getCallTarget(PBuiltinMethod meth) {
+        return getCallTargetOfFunction(meth.getFunction());
+    }
+
+    private static RootCallTarget getCallTargetOfFunction(Object func) {
+        if (func instanceof PFunction) {
+            return ((PFunction) func).getCallTarget();
+        } else if (func instanceof PBuiltinFunction) {
+            return ((PBuiltinFunction) func).getCallTarget();
+        }
+        return null;
     }
 }
