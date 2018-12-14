@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.method;
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Arity;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -52,7 +51,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 /**
  * Storage for both classmethods and staticmethods
  */
-public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuiltinCallable<Object>, PythonCallable {
+public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuiltinCallable<Object> {
     private Object callable;
 
     public PDecoratedMethod(LazyPythonClass cls) {
