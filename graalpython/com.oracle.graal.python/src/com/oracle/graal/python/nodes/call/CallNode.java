@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.call;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -81,6 +83,10 @@ public abstract class CallNode extends PNodeWithContext {
                     @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                     @Cached("create()") CallVarargsMethodNode callCallNode) {
         Object call = callAttrGetterNode.execute(callableObject);
+        if (call == PNone.NO_VALUE) {
+            CompilerDirectives.transferToInterpreter();
+            throw raise(PythonBuiltinClassType.TypeError, "'%p' object is not callable", callableObject);
+        }
         return callCallNode.execute(frame, call, PositionalArgumentsNode.prependArgument(callableObject, arguments, arguments.length), keywords);
     }
 
