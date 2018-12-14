@@ -60,6 +60,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PMethod, PythonBuiltinClassType.PBuiltinMethod})
 public class AbstractMethodBuiltins extends PythonBuiltins {
@@ -83,6 +84,13 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         @Specialization
         protected Object doIt(PBuiltinMethod self, Object[] arguments, PKeyword[] keywords) {
             return dispatch.executeCall(null, self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
+        }
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            Object[] argsWithoutSelf = new Object[arguments.length - 1];
+            System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
+            return execute(frame, arguments[0], argsWithoutSelf, keywords);
         }
     }
 
