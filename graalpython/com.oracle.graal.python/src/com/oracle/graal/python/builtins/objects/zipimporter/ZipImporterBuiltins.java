@@ -333,7 +333,10 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                     throw raise(PythonErrorType.ZipImportError, "zipimport: cannot read archive members large than 2GB");
                 }
                 byte[] bytes = new byte[byteSize];
-                in.read(bytes);
+                int bytesRead = 0;
+                while (bytesRead < byteSize) {
+                    bytesRead += in.read(bytes, bytesRead, byteSize - bytesRead);
+                }
                 in.close();
                 return factory().createBytes(bytes);
             } catch (IOException e) {
