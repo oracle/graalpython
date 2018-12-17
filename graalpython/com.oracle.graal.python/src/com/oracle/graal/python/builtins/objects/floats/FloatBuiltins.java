@@ -394,11 +394,33 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        Object doDP(PythonNativeObject left, long right,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            Double leftPrimitive = getFloat.execute(left);
+            if (leftPrimitive != null) {
+                return leftPrimitive * right;
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+        }
+
+        @Specialization
         Object doDP(PythonNativeObject left, double right,
                         @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
             Double leftPrimitive = getFloat.execute(left);
             if (leftPrimitive != null) {
                 return leftPrimitive * right;
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+        }
+
+        @Specialization
+        Object doDP(PythonNativeObject left, PInt right,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            Double leftPrimitive = getFloat.execute(left);
+            if (leftPrimitive != null) {
+                return leftPrimitive * right.doubleValue();
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
