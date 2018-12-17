@@ -328,7 +328,11 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 ZipFile zip = new ZipFile(archive);
                 ZipEntry entry = zip.getEntry(key);
                 InputStream in = zip.getInputStream(entry);
-                byte[] bytes = new byte[(int) fileSize];
+                int byteSize = (int) fileSize;
+                if (byteSize != fileSize) {
+                    throw raise(PythonErrorType.ZipImportError, "zipimport: cannot read archive members large than 2GB");
+                }
+                byte[] bytes = new byte[byteSize];
                 in.read(bytes);
                 in.close();
                 return factory().createBytes(bytes);
