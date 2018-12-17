@@ -578,3 +578,26 @@ class combinations():
                 result[i] = elem
         self.last_result = result
         return tuple(result)
+
+
+class combinations_with_replacement(combinations):
+    """
+    combinations_with_replacement(iterable, r) --> combinations_with_replacement object
+
+    Return successive r-length combinations of elements in the iterable
+    allowing individual elements to have successive repeats.
+    combinations_with_replacement('ABC', 2) --> AA AB AC BB BC CC
+    """
+    def __init__(self, iterable, r):
+        pool = list(iterable)
+        if r < 0:
+            raise ValueError("r must be non-negative")
+        indices = [0] * r
+        combinations.__init__(pool, indices, r)
+        self.stopped = len(pool) == 0 and r > 0
+
+    def get_maximum(self, i):
+        return len(self.pool) - 1
+
+    def max_index(self, j):
+        return self.indices[j - 1]
