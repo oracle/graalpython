@@ -248,7 +248,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
             if (Files.probeContentType(Paths.get(f)).contains(LLVM_IR_BITCODE)) {
                 HashSet<String> definedHere = new HashSet<>();
                 ProcessBuilder nm = new ProcessBuilder();
-                nm.command(LLVM_NM, "-g", "--defined-only", f);
+                nm.command(LLVM_NM, "--defined-only", f);
                 nm.redirectInput(Redirect.INHERIT);
                 nm.redirectError(Redirect.INHERIT);
                 nm.redirectOutput(Redirect.PIPE);
@@ -256,9 +256,9 @@ public class GraalPythonLD extends GraalPythonCompiler {
                 try (BufferedReader buffer = new BufferedReader(new InputStreamReader(nmProc.getInputStream()))) {
                     String line = null;
                     while ((line = buffer.readLine()) != null) {
-                        String[] symboldef = line.split(" ");
+                        String[] symboldef = line.split(" [Tt]");
                         if (symboldef.length >= 2) {
-                            definedHere.add(symboldef[symboldef.length - 1]);
+                            definedHere.add(symboldef[symboldef.length - 1].trim());
                         }
                     }
                 }
@@ -267,7 +267,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
                 ArrayList<String> extractCmd = new ArrayList<>();
                 extractCmd.add("llvm-extract");
                 for (String def : definedHere) {
-                    if (undefinedSymbols.contains(def)) {
+                    if (!definedSymbols.contains(def)) {
                         definedSymbols.add(def);
                         undefinedSymbols.remove(def);
                         extractCmd.add("-func");
