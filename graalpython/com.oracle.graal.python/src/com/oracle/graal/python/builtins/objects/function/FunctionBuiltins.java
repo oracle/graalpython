@@ -249,10 +249,13 @@ public class FunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doMethod(PMethod function) {
-            String sourceCode = function.getFunction().getSourceCode();
-            if (sourceCode != null) {
-                return sourceCode;
+        Object doMethod(PMethod method) {
+            Object function = method.getFunction();
+            if (function instanceof PFunction) {
+                String sourceCode = ((PFunction) function).getSourceCode();
+                if (sourceCode != null) {
+                    return sourceCode;
+                }
             }
             return PNone.NONE;
         }
