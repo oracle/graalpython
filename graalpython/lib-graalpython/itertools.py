@@ -80,14 +80,14 @@ class starmap():
     """
     def __init__(self, fun, iterable):
         self.fun = fun
-        self.iterable = iterable
+        self.iterable = iter(iterable)
 
     def __iter__(self):
         return self
 
     def __next__(self):
         obj = next(self.iterable)
-        return self.fun(obj)
+        return self.fun(*obj)
 
 
 class islice(object):
