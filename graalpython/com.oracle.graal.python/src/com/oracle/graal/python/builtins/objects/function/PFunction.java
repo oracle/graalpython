@@ -142,6 +142,7 @@ public class PFunction extends PythonObject {
         this.defaults = defaults;
     }
 
+    @TruffleBoundary
     public String getSourceCode() {
         SourceSection sourceSection = callTarget.getRootNode().getSourceSection();
         if (sourceSection != null) {
