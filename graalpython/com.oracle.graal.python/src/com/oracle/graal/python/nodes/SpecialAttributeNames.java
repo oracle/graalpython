@@ -71,4 +71,5 @@ public abstract class SpecialAttributeNames {
     public static final String __SLOTS__ = "__slots__";
     public static final String __DICTOFFSET__ = "__dictoffset__";
     public static final String __ITEMSIZE__ = "__itemsize__";
+    public static final String __WEAKREF__ = "__weakref__";
 }

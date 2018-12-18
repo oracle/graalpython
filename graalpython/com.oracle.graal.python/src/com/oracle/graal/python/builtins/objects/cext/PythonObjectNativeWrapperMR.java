@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
+
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -103,6 +105,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -110,6 +113,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
@@ -811,7 +815,7 @@ public class PythonObjectNativeWrapperMR {
         }
     }
 
-    @ImportStatic({NativeMemberNames.class, PGuards.class})
+    @ImportStatic({NativeMemberNames.class, PGuards.class, SpecialMethodNames.class})
     abstract static class WriteNativeMemberNode extends PNodeWithContext {
         @Child private HashingStorageNodes.SetItemNode setItemNode;
 
@@ -890,6 +894,18 @@ public class PythonObjectNativeWrapperMR {
             } else {
                 // TODO custom mapping object
             }
+            return value;
+        }
+
+        @Specialization(guards = "eq(TP_DICTOFFSET, key)")
+        Object doTpDictoffset(PythonClass object, @SuppressWarnings("unused") String key, Object value,
+                        @Cached("create()") CastToIntegerFromIntNode castToIntNode,
+                        @Cached("create(__SETATTR__)") LookupAndCallTernaryNode call) {
+            // TODO properly implement 'tp_dictoffset' for builtin classes
+            if (object instanceof PythonBuiltinClass) {
+                return 0L;
+            }
+            call.execute(object, __DICTOFFSET__, castToIntNode.execute(value));
             return value;
         }
 

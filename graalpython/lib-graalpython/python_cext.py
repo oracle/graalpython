@@ -643,9 +643,14 @@ def PyUnicode_Join(separator, seq):
     return separator.join(seq)
 
 
-@may_raise
+@may_raise(-1)
 def PyUnicode_Compare(left, right):
-    return left == right
+    if left == right:
+        return 0
+    elif left < right:
+        return -1
+    else:
+        return 1
 
 
 ##################### CAPSULE
@@ -786,13 +791,13 @@ def PyMethod_New(func, self):
 def AddMember(primary, name, memberType, offset, canSet, doc):
     # the ReadMemberFunctions and WriteMemberFunctions don't have a wrapper to
     # convert arguments to Sulong, so we can avoid boxing the offsets into PInts
-    pclass = to_java(primary)
+    pclass = primary
     member = property()
     getter = ReadMemberFunctions[memberType]
     def member_getter(self):
         return to_java(getter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8)))
     member.getter(member_getter)
-    if to_java(canSet):
+    if canSet:
         setter = WriteMemberFunctions[memberType]
         def member_setter(self, value):
             setter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8), to_sulong(value))

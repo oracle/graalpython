@@ -52,6 +52,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -88,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CastToByteNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
@@ -147,6 +149,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -1709,6 +1712,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private CastToListNode castToList;
         @Child private SequenceStorageNodes.LenNode slotLenNode;
         @Child private SequenceStorageNodes.GetItemNode getSlotItemNode;
+        @Child private SequenceStorageNodes.AppendNode setSlotItemNode;
+        @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
+        @Child private CExtNodes.PCallCapiFunction callAddNativeSlotsNode;
+        @Child private CExtNodes.ToSulongNode toSulongNode;
 
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
@@ -1717,7 +1724,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return getClass.execute(obj);
         }
 
-        @Specialization(guards = {"!isNoValue(bases)", "!isNoValue(namespace)"})
+        @Specialization
         public Object type(VirtualFrame frame, PythonClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @Cached("create()") GetClassNode getMetaclassNode,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
@@ -1735,13 +1742,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     return callNewFuncNode.executeCall(frame, newFunc, createArgs.execute(metaclass, name, bases, namespace), kwds);
                 }
             }
-            return typeMetaclass(name, bases, namespace, metaclass);
+            try {
+                return typeMetaclass(name, bases, namespace, metaclass);
+            } catch (PException e) {
+                e.getExceptionObject().reifyException();
+                throw e;
+            }
         }
 
         @TruffleBoundary
         private Object typeMetaclass(String name, PTuple bases, PDict namespace, PythonClass metaclass) {
 
             Object[] array = bases.getArray();
+
             PythonClass[] basesArray;
             if (array.length == 0) {
                 // Adjust for empty tuple bases
@@ -1777,9 +1790,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
             }
 
+            boolean addDict = false;
             if (slots == null) {
                 // takes care of checking if we may_add_dict and adds it if needed
-                addDictIfNative(pythonClass);
+                addDict = addDictIfNative(pythonClass);
                 // TODO: tfel - also deal with weaklistoffset
             } else {
                 // have slots
@@ -1809,19 +1823,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         if (addDictIfNative(pythonClass)) {
                             throw raise(TypeError, "__dict__ slot disallowed: we already got one");
                         }
+                        addDict = true;
                     } else {
                         // TODO: check for __weakref__
-                        // TODO: Copy slots into a list, mangle names and sort them
                         HiddenKey hiddenSlotKey = new HiddenKey(slotName);
                         HiddenKeyDescriptor slotDesc = factory().createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
                         pythonClass.setAttribute(slotName, slotDesc);
                     }
                     // Make slots into a tuple
                 }
-                pythonClass.setAttribute(__SLOTS__, factory().createTuple(slotList));
+                PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace);
+                pythonClass.setAttribute(__SLOTS__, newSlots);
                 if (basesArray.length > 1) {
                     // TODO: tfel - check if secondary bases provide weakref or dict when we don't
                     // already have one
+                }
+
+                // add native slot descriptors
+                if (pythonClass.needsNativeAllocation()) {
+                    addNativeSlots(pythonClass, newSlots);
                 }
             }
 
@@ -1832,6 +1852,79 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return pythonClass;
         }
 
+        private PTuple copySlots(String className, SequenceStorage slotList, int slotlen, boolean add_dict, boolean add_weak, PDict namespace) {
+            SequenceStorage newSlots = new ObjectSequenceStorage(slotlen - PInt.intValue(add_dict) - PInt.intValue(add_weak));
+            int j = 0;
+            for (int i = 0; i < slotlen; i++) {
+                // the cast is ensured by the previous loop
+                String slotName = (String) getSlotItemNode().execute(slotList, i);
+                if ((add_dict && __DICT__.equals(slotName)) || (add_weak && __WEAKREF__.equals(slotName))) {
+                    continue;
+                }
+
+                slotName = mangle(className, slotName);
+                if (slotName == null) {
+                    return null;
+                }
+
+                setSlotItemNode().execute(newSlots, slotName);
+                if (containsKeyNode().execute(namespace.getDictStorage(), slotName)) {
+                    throw raise(PythonBuiltinClassType.ValueError, "%s in __slots__ conflicts with class variable", slotName);
+                }
+                j++;
+            }
+            assert j == slotlen - PInt.intValue(add_dict) - PInt.intValue(add_weak);
+
+            // sort newSlots
+            Arrays.sort(newSlots.getInternalArray());
+
+            return factory().createTuple(newSlots);
+
+        }
+
+        private String mangle(String privateobj, String ident) {
+            // Name mangling: __private becomes _classname__private. This is independent from how
+            // the name is used.
+            int nlen, plen, ipriv;
+            if (privateobj == null || ident.charAt(0) != '_' || ident.charAt(1) != '_') {
+                return ident;
+            }
+            nlen = ident.length();
+            plen = privateobj.length();
+
+            // Don't mangle __whatever__ or names with dots.
+            if ((ident.charAt(nlen - 1) == '_' && ident.charAt(nlen - 2) == '_') || ident.indexOf('.') != -1) {
+                return ident;
+            }
+
+            // Strip leading underscores from class name
+            ipriv = 0;
+            while (privateobj.charAt(ipriv) == '_') {
+                ipriv++;
+            }
+
+            // Don't mangle if class is just underscores
+            if (ipriv == plen) {
+                return ident;
+            }
+            plen -= ipriv;
+
+            if ((long) plen + nlen >= Integer.MAX_VALUE) {
+                throw raise(PythonBuiltinClassType.OverflowError, "private identifier too large to be mangled");
+            }
+
+            /* ident = "_" + priv[ipriv:] + ident # i.e. 1+plen+nlen bytes */
+            return "_" + privateobj.substring(ipriv) + ident;
+        }
+
+        private HashingStorageNodes.ContainsKeyNode containsKeyNode() {
+            if (containsKeyNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                containsKeyNode = insert(HashingStorageNodes.ContainsKeyNode.create());
+            }
+            return containsKeyNode;
+        }
+
         private SequenceStorageNodes.GetItemNode getSlotItemNode() {
             if (getSlotItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1840,12 +1933,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return getSlotItemNode;
         }
 
+        private SequenceStorageNodes.AppendNode setSlotItemNode() {
+            if (setSlotItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                setSlotItemNode = insert(SequenceStorageNodes.AppendNode.create(() -> NoGeneralizationNode.create("")));
+            }
+            return setSlotItemNode;
+        }
+
         private SequenceStorageNodes.LenNode getListLenNode() {
             if (slotLenNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 slotLenNode = insert(SequenceStorageNodes.LenNode.create());
             }
             return slotLenNode;
+        }
+
+        private void addNativeSlots(PythonClass pythonClass, PTuple slots) {
+            if (callAddNativeSlotsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callAddNativeSlotsNode = insert(CExtNodes.PCallCapiFunction.create(NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS));
+            }
+            callAddNativeSlotsNode.call(toSulongNode.execute(pythonClass), toSulongNode.execute(slots));
         }
 
         private CastToListNode getCastToListNode() {
@@ -1858,31 +1967,33 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private boolean addDictIfNative(PythonClass pythonClass) {
             boolean addedNewDict = false;
-            for (Object cls : pythonClass.getMethodResolutionOrder()) {
-                if (cls instanceof PythonNativeClass) {
-                    if (readAttrNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        readAttrNode = insert(ReadAttributeFromObjectNode.create());
-                        writeAttrNode = insert(WriteAttributeToObjectNode.create());
-                        castToInt = insert(CastToIndexNode.create());
-                    }
-                    long dictoffset = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__DICTOFFSET__));
-                    long basicsize = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__BASICSIZE__));
-                    long itemsize = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__ITEMSIZE__));
-                    if (dictoffset == 0) {
-                        addedNewDict = true;
-                        // add_dict
-                        if (itemsize != 0) {
-                            dictoffset = -SIZEOF_PY_OBJECT_PTR;
-                        } else {
-                            dictoffset = basicsize;
-                            basicsize += SIZEOF_PY_OBJECT_PTR;
+            if (pythonClass.needsNativeAllocation()) {
+                for (Object cls : pythonClass.getMethodResolutionOrder()) {
+                    if (cls instanceof PythonNativeClass) {
+                        if (readAttrNode == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            readAttrNode = insert(ReadAttributeFromObjectNode.create());
+                            writeAttrNode = insert(WriteAttributeToObjectNode.create());
+                            castToInt = insert(CastToIndexNode.create());
                         }
+                        long dictoffset = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__DICTOFFSET__));
+                        long basicsize = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__BASICSIZE__));
+                        long itemsize = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__ITEMSIZE__));
+                        if (dictoffset == 0) {
+                            addedNewDict = true;
+                            // add_dict
+                            if (itemsize != 0) {
+                                dictoffset = -SIZEOF_PY_OBJECT_PTR;
+                            } else {
+                                dictoffset = basicsize;
+                                basicsize += SIZEOF_PY_OBJECT_PTR;
+                            }
+                        }
+                        writeAttrNode.execute(pythonClass, SpecialAttributeNames.__DICTOFFSET__, dictoffset);
+                        writeAttrNode.execute(pythonClass, SpecialAttributeNames.__BASICSIZE__, basicsize);
+                        writeAttrNode.execute(pythonClass, SpecialAttributeNames.__ITEMSIZE__, itemsize);
+                        break;
                     }
-                    writeAttrNode.execute(pythonClass, SpecialAttributeNames.__DICTOFFSET__, dictoffset);
-                    writeAttrNode.execute(pythonClass, SpecialAttributeNames.__BASICSIZE__, basicsize);
-                    writeAttrNode.execute(pythonClass, SpecialAttributeNames.__ITEMSIZE__, itemsize);
-                    break;
                 }
             }
             return addedNewDict;

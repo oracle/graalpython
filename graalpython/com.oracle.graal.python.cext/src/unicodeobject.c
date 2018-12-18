@@ -363,3 +363,7 @@ UPCALL_ID(PyUnicode_Compare);
 int PyUnicode_Compare(PyObject *left, PyObject *right) {
 	return UPCALL_CEXT_I(_jls_PyUnicode_Compare, native_to_java(left), native_to_java(right));
 }
+
+int _PyUnicode_EqualToASCIIString( PyObject *left, const char *right) {
+	return UPCALL_CEXT_I(_jls_PyUnicode_Compare, native_to_java(left), polyglot_from_string(right, SRC_CS)) == 0;
+}

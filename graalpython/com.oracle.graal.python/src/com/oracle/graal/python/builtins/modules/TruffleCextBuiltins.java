@@ -138,6 +138,7 @@ import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
@@ -547,6 +548,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private HashingStorageNodes.GetItemNode getItemNode;
         @Child private CastToIndexNode castToIntNode;
         @Child private ReadAttributeFromObjectNode readAttrNode;
+        @Child private SequenceStorageNodes.LenNode slotLenNode;
+        @Child private SequenceStorageNodes.GetItemNode getSlotItemNode;
+        @Child private SequenceStorageNodes.AppendNode setSlotItemNode;
+        @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
+        @Child private CExtNodes.PCallCapiFunction callAddNativeSlotsNode;
+        @Child private CExtNodes.ToSulongNode toSulongNode;
 
         private HashingStorageNodes.GetItemNode getGetItemNode() {
             if (getItemNode == null) {
@@ -604,11 +611,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 for (Object cls : cclass.getMethodResolutionOrder()) {
                     if (cls != cclass) {
                         if (cls instanceof PythonNativeClass) {
-                            if (readAttrNode == null) {
-                                CompilerDirectives.transferToInterpreterAndInvalidate();
-                                readAttrNode = insert(ReadAttributeFromObjectNode.create());
-                            }
-                            int baseDictoffset = castToIntNode.execute(readAttrNode.execute(cls, __DICTOFFSET__));
+                            int baseDictoffset = castToIntNode.execute(ensureReadAttrNode().execute(cls, __DICTOFFSET__));
                             if (baseDictoffset != 0) {
                                 long dictoffset;
                                 // add_dict
@@ -631,6 +634,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             }
             writeAttrNode.execute(cclass, __DICTOFFSET__, 0);
             return;
+        }
+
+        private ReadAttributeFromObjectNode ensureReadAttrNode() {
+            if (readAttrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readAttrNode = insert(ReadAttributeFromObjectNode.create());
+            }
+            return readAttrNode;
         }
 
         private static String getQualName(String fqname) {
@@ -663,6 +674,29 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 return item;
             }
             return (long) item;
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Type_Slots", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialAttributeNames.class)
+    abstract static class PyTruffle_Type_SlotsNode extends NativeBuiltin {
+
+        /**
+         * A native class may inherit from a managed class. However, the managed class may define
+         * custom slots at a time where the C API is not yet loaded. So we need to check if any of
+         * the base classes defines custom slots and adapt the basicsize to allocate space for the
+         * slots and add the native member slot descriptors.
+         *
+         */
+        @Specialization
+        Object slots(Object module, PythonClass pythonClass,
+                        @Cached("create(__SLOTS__)") LookupAttributeInMRONode lookupSlotsNode) {
+            Object execute = lookupSlotsNode.execute(pythonClass);
+            if (execute != PNone.NO_VALUE) {
+                return execute;
+            }
+            return getNativeNull(module);
         }
     }
 
