@@ -265,19 +265,24 @@ public class GraalPythonLD extends GraalPythonCompiler {
                 nmProc.waitFor();
 
                 ArrayList<String> extractCmd = new ArrayList<>();
+                HashSet<String> droppedDefinitions = new HashSet<>(definedHere);
                 extractCmd.add("llvm-extract");
                 for (String def : definedHere) {
                     if (!definedSymbols.contains(def)) {
                         definedSymbols.add(def);
                         undefinedSymbols.remove(def);
+                        droppedDefinitions.remove(def);
                         extractCmd.add("-func");
                         extractCmd.add(def);
                     }
                 }
-                extractCmd.add(f);
-                extractCmd.add("-o");
-                extractCmd.add(f);
-                exec(extractCmd);
+                if (!droppedDefinitions.isEmpty()) {
+                    // only run the extractor if we actually need to drop something
+                    extractCmd.add(f);
+                    extractCmd.add("-o");
+                    extractCmd.add(f);
+                    exec(extractCmd);
+                }
             }
         }
 
