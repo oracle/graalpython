@@ -240,6 +240,15 @@ class TestAbstract(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyLong_Check = CPyExtFunction(
+        lambda args: isinstance(args[0], int),
+        _default_unarop_args,
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* v"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyNumber_Add = CPyExtFunction(
         lambda args: args[0] + args[1],
         lambda: (
