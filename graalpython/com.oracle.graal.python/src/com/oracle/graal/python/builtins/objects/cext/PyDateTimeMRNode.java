@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -54,14 +55,13 @@ public abstract class PyDateTimeMRNode extends Node {
 
     public abstract Object execute(PythonObject object, String key);
 
-    public static final String YEAR = "_year";
-    public static final String MONTH = "_month";
-    public static final String DAY = "_day";
-    public static final String HOUR = "_hour";
-    public static final String MIN = "_minute";
-    public static final String SEC = "_second";
-    public static final String USEC = "_microsecond";
-    public static final String DATE = "date";
+    public static final String YEAR = "year";
+    public static final String MONTH = "month";
+    public static final String DAY = "day";
+    public static final String HOUR = "hour";
+    public static final String MIN = "minute";
+    public static final String SEC = "second";
+    public static final String USEC = "microsecond";
 
     /**
      * Fields are packed into successive bytes, each viewed as unsigned and big-endian, unless
@@ -82,21 +82,22 @@ public abstract class PyDateTimeMRNode extends Node {
     @Specialization(guards = "eq(DATETIME_DATA,key)")
     Object doData(PythonObject object, @SuppressWarnings("unused") String key,
                     @Cached("create()") ReadAttributeFromObjectNode getYearNode,
-                    @Cached("create()") ReadAttributeFromObjectNode getMonthNode,
-                    @Cached("create()") ReadAttributeFromObjectNode getDayNode,
-                    @Cached("create()") ReadAttributeFromObjectNode getHourNode,
-                    @Cached("create()") ReadAttributeFromObjectNode getMinNode,
-                    @Cached("create()") ReadAttributeFromObjectNode getSecNode,
-                    @Cached("create()") ReadAttributeFromObjectNode getUSecNode,
+                    @Cached("createAttr(YEAR)") GetAttributeNode getYearPropNode,
+                    @Cached("createAttr(MONTH)") GetAttributeNode getMonthNode,
+                    @Cached("createAttr(DAY)") GetAttributeNode getDayNode,
+                    @Cached("createAttr(HOUR)") GetAttributeNode getHourNode,
+                    @Cached("createAttr(MIN)") GetAttributeNode getMinNode,
+                    @Cached("createAttr(SEC)") GetAttributeNode getSecNode,
+                    @Cached("createAttr(USEC)") GetAttributeNode getUSecNode,
                     @Cached("create()") CastToIndexNode castToIntNode) {
 
-        int year = castToIntNode.execute(getYearNode.execute(object, YEAR));
-        int month = castToIntNode.execute(getMonthNode.execute(object, MONTH));
-        int day = castToIntNode.execute(getDayNode.execute(object, DAY));
-        int hour = castToIntNode.execute(getHourNode.execute(object, HOUR));
-        int min = castToIntNode.execute(getMinNode.execute(object, MIN));
-        int sec = castToIntNode.execute(getSecNode.execute(object, SEC));
-        int usec = castToIntNode.execute(getUSecNode.execute(object, USEC));
+        int year = castToIntNode.execute(getYearPropNode.executeObject(object));
+        int month = castToIntNode.execute(getMonthNode.executeObject(object));
+        int day = castToIntNode.execute(getDayNode.executeObject(object));
+        int hour = castToIntNode.execute(getHourNode.executeObject(object));
+        int min = castToIntNode.execute(getMinNode.executeObject(object));
+        int sec = castToIntNode.execute(getSecNode.executeObject(object));
+        int usec = castToIntNode.execute(getUSecNode.executeObject(object));
         assert year >= 0 && year < 0x10000;
         assert month >= 0 && month < 0x100;
         assert day >= 0 && day < 0x100;
@@ -107,6 +108,10 @@ public abstract class PyDateTimeMRNode extends Node {
         byte[] data = new byte[]{(byte) (year >> 8), (byte) year, (byte) month, (byte) day, (byte) hour, (byte) min, (byte) sec, (byte) (usec >> 16), (byte) (usec >> 8), (byte) usec};
 
         return new CByteArrayWrapper(data);
+    }
+
+    protected static GetAttributeNode createAttr(String expected) {
+        return GetAttributeNode.create(expected, null);
     }
 
     protected boolean eq(String expected, String actual) {
