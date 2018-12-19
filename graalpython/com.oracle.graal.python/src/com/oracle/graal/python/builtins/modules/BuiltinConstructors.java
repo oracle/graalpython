@@ -1826,6 +1826,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         addDict = true;
                     } else {
                         // TODO: check for __weakref__
+                        // TODO avoid if native slots are inherited
                         HiddenKey hiddenSlotKey = new HiddenKey(slotName);
                         HiddenKeyDescriptor slotDesc = factory().createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
                         pythonClass.setAttribute(slotName, slotDesc);

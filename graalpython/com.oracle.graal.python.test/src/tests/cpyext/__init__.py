@@ -422,6 +422,8 @@ class UnseenFormatter(Formatter):
 def CPyExtType(name, code, **kwargs):
     template = """
     #include "Python.h"
+    
+    {includes}
 
     typedef struct {{
         PyObject_HEAD;
@@ -507,11 +509,11 @@ def CPyExtType(name, code, **kwargs):
         {name}_methods,             /* tp_methods */
         NULL,                       /* tp_members */
         0,                          /* tp_getset */
-        0,                          /* tp_base */
+        {tp_base},                  /* tp_base */
         {tp_dict},                  /* tp_dict */
         0,                          /* tp_descr_get */
         0,                          /* tp_descr_set */
-        0,                          /* tp_dictoffset */
+        {tp_dictoffset},            /* tp_dictoffset */
         {tp_init},                  /* tp_init */
         PyType_GenericAlloc,        /* tp_alloc */
         {tp_new},                   /* tp_new */
