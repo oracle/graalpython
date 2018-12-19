@@ -150,13 +150,14 @@ public final class PBaseException extends PythonObject {
     }
 
     public Object[] getMessageArgs() {
-        return messageArgs;
+        // clone message args to ensure that they stay unmodified
+        return messageArgs.clone();
     }
 
     public String getFormattedMessage(GetLazyClassNode getClassNode) {
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return getLazyPythonClass().getName() + ": " + FORMATTER.format(getClassNode, messageFormat, messageArgs);
+                return getLazyPythonClass().getName() + ": " + FORMATTER.format(getClassNode, messageFormat, getMessageArgs());
             }
             return getLazyPythonClass().getName() + ": " + messageFormat;
         } else if (args.getSequenceStorage().length() == 0) {
