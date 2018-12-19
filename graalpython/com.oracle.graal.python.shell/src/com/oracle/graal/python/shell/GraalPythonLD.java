@@ -246,7 +246,9 @@ public class GraalPythonLD extends GraalPythonCompiler {
         // definitions that overlap what's defined in explicitly include .o files
         for (String f : members) {
             if (Files.probeContentType(Paths.get(f)).contains(LLVM_IR_BITCODE)) {
-                HashSet<String> definedHere = new HashSet<>();
+                HashSet<String> definedFuncs = new HashSet<>();
+                HashSet<String> definedGlobals = new HashSet<>();
+
                 ProcessBuilder nm = new ProcessBuilder();
                 nm.command(LLVM_NM, "--defined-only", f);
                 nm.redirectInput(Redirect.INHERIT);
@@ -256,33 +258,43 @@ public class GraalPythonLD extends GraalPythonCompiler {
                 try (BufferedReader buffer = new BufferedReader(new InputStreamReader(nmProc.getInputStream()))) {
                     String line = null;
                     while ((line = buffer.readLine()) != null) {
-                        String[] symboldef = line.split(" [Tt]");
-                        if (symboldef.length >= 2) {
-                            definedHere.add(symboldef[symboldef.length - 1].trim());
+                        String[] symboldef = line.split(" ");
+                        if (symboldef.length == 3) {
+                            // format is ------- CHAR FUNCNAME
+                            if (symboldef[1].toLowerCase().equals("t")) {
+                                definedFuncs.add(symboldef[2].trim());
+                            } else if (symboldef[1].toLowerCase().equals("d")) {
+                                definedGlobals.add(symboldef[2].trim());
+                            } else {
+                                // ignore
+                            }
                         }
                     }
                 }
                 nmProc.waitFor();
 
                 ArrayList<String> extractCmd = new ArrayList<>();
-                HashSet<String> droppedDefinitions = new HashSet<>(definedHere);
                 extractCmd.add("llvm-extract");
-                for (String def : definedHere) {
+                for (String def : definedFuncs) {
                     if (!definedSymbols.contains(def)) {
                         definedSymbols.add(def);
                         undefinedSymbols.remove(def);
-                        droppedDefinitions.remove(def);
                         extractCmd.add("-func");
                         extractCmd.add(def);
                     }
                 }
-                if (!droppedDefinitions.isEmpty()) {
-                    // only run the extractor if we actually need to drop something
-                    extractCmd.add(f);
-                    extractCmd.add("-o");
-                    extractCmd.add(f);
-                    exec(extractCmd);
+                for (String def : definedGlobals) {
+                    if (!definedSymbols.contains(def)) {
+                        definedSymbols.add(def);
+                        undefinedSymbols.remove(def);
+                        extractCmd.add("-glob");
+                        extractCmd.add(def);
+                    }
                 }
+                extractCmd.add(f);
+                extractCmd.add("-o");
+                extractCmd.add(f);
+                exec(extractCmd);
             }
         }
 
