@@ -51,6 +51,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
@@ -94,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -132,6 +135,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -160,6 +164,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -1729,7 +1734,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached("create()") GetClassNode getMetaclassNode,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create()") CallDispatchNode callNewFuncNode,
-                        @Cached("create()") CreateArgumentsNode createArgs) {
+                        @Cached("create()") CreateArgumentsNode createArgs,
+                        @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
             // Determine the proper metatype to deal with this
             PythonClass metaclass = calculate_metaclass(cls, bases, getMetaclassNode);
 
@@ -1742,8 +1748,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     return callNewFuncNode.executeCall(frame, newFunc, createArgs.execute(metaclass, name, bases, namespace), kwds);
                 }
             }
+
             try {
-                return typeMetaclass(name, bases, namespace, metaclass);
+                Object newType = typeMetaclass(name, bases, namespace, metaclass);
+
+                // set '__module__' attribute
+                Frame callerFrame = readCallerFrameNode.executeWith(frame);
+                PythonObject globals = PArguments.getGlobals(callerFrame);
+                if (globals != null) {
+                    Object execute = ensureReadAttrNode().execute(globals, __NAME__);
+                    if (execute != PNone.NO_VALUE) {
+                        ensureWriteAttrNode().execute(newType, __MODULE__, execute);
+                    }
+                }
+
+                return newType;
             } catch (PException e) {
                 e.getExceptionObject().reifyException();
                 throw e;
@@ -1971,15 +1990,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (pythonClass.needsNativeAllocation()) {
                 for (Object cls : pythonClass.getMethodResolutionOrder()) {
                     if (cls instanceof PythonNativeClass) {
-                        if (readAttrNode == null) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            readAttrNode = insert(ReadAttributeFromObjectNode.create());
-                            writeAttrNode = insert(WriteAttributeToObjectNode.create());
-                            castToInt = insert(CastToIndexNode.create());
-                        }
-                        long dictoffset = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__DICTOFFSET__));
-                        long basicsize = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__BASICSIZE__));
-                        long itemsize = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__ITEMSIZE__));
+                        long dictoffset = ensureCastToIntNode().execute(ensureReadAttrNode().execute(cls, SpecialAttributeNames.__DICTOFFSET__));
+                        long basicsize = ensureCastToIntNode().execute(ensureReadAttrNode().execute(cls, SpecialAttributeNames.__BASICSIZE__));
+                        long itemsize = ensureCastToIntNode().execute(ensureReadAttrNode().execute(cls, SpecialAttributeNames.__ITEMSIZE__));
                         if (dictoffset == 0) {
                             addedNewDict = true;
                             // add_dict
@@ -1990,9 +2003,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                                 basicsize += SIZEOF_PY_OBJECT_PTR;
                             }
                         }
-                        writeAttrNode.execute(pythonClass, SpecialAttributeNames.__DICTOFFSET__, dictoffset);
-                        writeAttrNode.execute(pythonClass, SpecialAttributeNames.__BASICSIZE__, basicsize);
-                        writeAttrNode.execute(pythonClass, SpecialAttributeNames.__ITEMSIZE__, itemsize);
+                        ensureWriteAttrNode().execute(pythonClass, SpecialAttributeNames.__DICTOFFSET__, dictoffset);
+                        ensureWriteAttrNode().execute(pythonClass, SpecialAttributeNames.__BASICSIZE__, basicsize);
+                        ensureWriteAttrNode().execute(pythonClass, SpecialAttributeNames.__ITEMSIZE__, itemsize);
                         break;
                     }
                 }
@@ -2047,6 +2060,30 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw raise(NotImplementedError, "creating a class with non-class metaclass");
             }
             return nextTypeNode.execute(frame, cls, name, bases, dict, kwds);
+        }
+
+        private ReadAttributeFromObjectNode ensureReadAttrNode() {
+            if (readAttrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readAttrNode = insert(ReadAttributeFromObjectNode.create());
+            }
+            return readAttrNode;
+        }
+
+        private WriteAttributeToObjectNode ensureWriteAttrNode() {
+            if (writeAttrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                writeAttrNode = insert(WriteAttributeToObjectNode.create());
+            }
+            return writeAttrNode;
+        }
+
+        private CastToIndexNode ensureCastToIntNode() {
+            if (castToInt == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToInt = insert(CastToIndexNode.create());
+            }
+            return castToInt;
         }
     }
 
