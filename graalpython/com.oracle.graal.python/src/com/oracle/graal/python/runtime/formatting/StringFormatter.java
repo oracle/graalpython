@@ -20,6 +20,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -95,6 +96,8 @@ public class StringFormatter {
                 return ((PInt) o).intValue();
             } else if (o instanceof Double) {
                 return ((Double) o).intValue();
+            } else if (o instanceof PFloat) {
+                return (int) ((PFloat) o).getValue();
             }
             throw core.raise(TypeError, "* wants int");
         } else {
@@ -118,6 +121,8 @@ public class StringFormatter {
         } else if (arg instanceof Double) {
             // A common case where it is safe to return arg.__int__()
             return ((Double) arg).intValue();
+        } else if (arg instanceof PFloat) {
+            return (int) ((PFloat) arg).getValue();
         } else if (arg instanceof PythonAbstractObject) {
             // Try again with arg.__int__()
             try {
@@ -135,6 +140,8 @@ public class StringFormatter {
         if (arg instanceof Double) {
             // arg is already acceptable
             return arg;
+        } else if (arg instanceof PFloat) {
+            return ((PFloat) arg).getValue();
         } else {
             try {
                 Object attribute = lookupAttribute.apply(arg, __FLOAT__);
@@ -416,6 +423,8 @@ public class StringFormatter {
                     // We have to check what we got back..
                     if (argAsFloat instanceof Double) {
                         ff.format((Double) argAsFloat);
+                    } else if (argAsFloat instanceof PFloat) {
+                        ff.format(((PFloat) argAsFloat).getValue());
                     } else {
                         // It couldn't be converted, raise the error here
                         throw core.raise(TypeError, "float argument required, not %p", arg);
