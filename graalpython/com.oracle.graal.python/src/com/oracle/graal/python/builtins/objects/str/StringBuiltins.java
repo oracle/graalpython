@@ -1801,7 +1801,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String createDefault(String self, long width, @SuppressWarnings("unused") PNone fill) {
+        public String createDefault(String self, Object width, @SuppressWarnings("unused") PNone fill) {
             return make(self, getCastToIndexNode().execute(width), " ");
         }
 
@@ -1814,11 +1814,6 @@ public final class StringBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         public String createError(String self, long width, String fill) {
             throw raise(TypeError, "The fill character must be exactly one character long");
-        }
-
-        @Specialization
-        public String createDefault(String self, PInt width, @SuppressWarnings("unused") PNone fill) {
-            return make(self, getCastToIndexNode().execute(width), " ");
         }
 
         @Specialization(guards = "fill.codePointCount(0, fill.length()) == 1")
