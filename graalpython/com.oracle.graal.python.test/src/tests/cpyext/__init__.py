@@ -555,6 +555,7 @@ def CPyExtType(name, code, **kwargs):
     kwargs.setdefault("tp_methods", "{NULL, NULL, 0, NULL}")
     kwargs.setdefault("tp_new", "PyType_GenericNew")
     kwargs.setdefault("cmembers", "")
+    kwargs.setdefault("includes", "")
     c_source = UnseenFormatter().format(template, **kwargs)
 
     source_file = "%s/%s.c" % (__dir__, name)
