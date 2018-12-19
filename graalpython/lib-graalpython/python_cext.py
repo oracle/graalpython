@@ -888,7 +888,12 @@ def PyObject_CallMethod(rcvr, method, args):
     # TODO(fa) that seems to be a workaround
     if type(args) is tuple:
         return getattr(rcvr, method)(*args)
-    return getattr(rcvr, method)(args)
+    try:
+        attr = getattr(rcvr, method)
+    except AttributeError:
+        return native_null
+    else:
+        return attr(args)
 
 
 @may_raise
