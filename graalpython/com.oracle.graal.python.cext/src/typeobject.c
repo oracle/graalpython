@@ -381,10 +381,14 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT_CONV("__bool__", wrap_nb_bool, numbers->nb_bool, -1);
         ADD_SLOT("__invert__", numbers->nb_invert, -1);
         ADD_SLOT("__lshift__", numbers->nb_lshift, -2);
+        ADD_SLOT_CONV("__rlshift__", wrap_reverse_binop, numbers->nb_lshift, -2);
         ADD_SLOT("__rshift__", numbers->nb_rshift, -2);
         ADD_SLOT("__and__", numbers->nb_and, -2);
+        ADD_SLOT_CONV("__rand__", wrap_reverse_binop, numbers->nb_and, -2);
         ADD_SLOT("__xor__", numbers->nb_xor, -2);
+        ADD_SLOT_CONV("__rxor__", wrap_reverse_binop, numbers->nb_xor, -2);
         ADD_SLOT("__or__", numbers->nb_or, -2);
+        ADD_SLOT_CONV("__ror__", wrap_reverse_binop, numbers->nb_or, -2);
         ADD_SLOT("__int__", numbers->nb_int, -1);
         ADD_SLOT("__float__", numbers->nb_float, -1);
         ADD_SLOT("__iadd__", numbers->nb_inplace_add, -2);
