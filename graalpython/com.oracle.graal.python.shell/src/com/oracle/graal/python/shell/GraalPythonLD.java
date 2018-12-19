@@ -244,7 +244,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
         // in the build process, because such a smart linker should not be assumed for POSIX, but it
         // seems ok to emulate this at least for the very common case of ar archives with symbol
         // definitions that overlap what's defined in explicitly include .o files
-        for (String f : members) {
+        outer: for (String f : members) {
             if (Files.probeContentType(Paths.get(f)).contains(LLVM_IR_BITCODE)) {
                 HashSet<String> definedFuncs = new HashSet<>();
                 HashSet<String> definedGlobals = new HashSet<>();
@@ -266,7 +266,9 @@ public class GraalPythonLD extends GraalPythonCompiler {
                             } else if (symboldef[1].toLowerCase().equals("d")) {
                                 definedGlobals.add(symboldef[2].trim());
                             } else {
-                                // ignore
+                                // keep all if we have symbols that we wouldn't know what to do with
+                                logV("Not extracting from ", f, " because there are non-strong function or global symbols");
+                                continue outer;
                             }
                         }
                     }
