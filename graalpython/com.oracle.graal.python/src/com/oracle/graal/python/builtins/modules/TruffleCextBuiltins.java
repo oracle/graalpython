@@ -1831,15 +1831,27 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private CExtNodes.AsLong asLongNode = CExtNodes.AsLong.create();
 
         @Specialization
-        long upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args,
+        Object upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args,
+                        @Cached("createBinaryProfile()") ConditionProfile isVoidPtr,
                         @Cached("create()") CExtNodes.CextUpcallNode upcallNode) {
-            return asLongNode.execute(upcallNode.execute(frame, cextModule, name, args));
+            Object result = upcallNode.execute(frame, cextModule, name, args);
+            if (isVoidPtr.profile(result instanceof PythonNativeVoidPtr)) {
+                return ((PythonNativeVoidPtr) result).object;
+            } else {
+                return asLongNode.execute(result);
+            }
         }
 
         @Specialization(guards = "!isString(callable)")
-        long doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object callable, Object[] args,
+        Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object callable, Object[] args,
+                        @Cached("createBinaryProfile()") ConditionProfile isVoidPtr,
                         @Cached("create()") CExtNodes.DirectUpcallNode upcallNode) {
-            return asLongNode.execute(upcallNode.execute(frame, callable, args));
+            Object result = upcallNode.execute(frame, callable, args);
+            if (isVoidPtr.profile(result instanceof PythonNativeVoidPtr)) {
+                return ((PythonNativeVoidPtr) result).object;
+            } else {
+                return asLongNode.execute(result);
+            }
         }
     }
 
