@@ -954,6 +954,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return obj;
         }
 
+        @Specialization(guards = "targetTypeSize == 8")
+        Object doVoid(PythonNativeVoidPtr obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
+            return obj;
+        }
+
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
         int doPInt(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
             return raiseUnsupportedSize(targetTypeSize);
