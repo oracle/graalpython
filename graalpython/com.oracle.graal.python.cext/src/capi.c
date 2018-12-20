@@ -235,13 +235,19 @@ void* get_ob_type(PyObject* obj) {
     if (!truffle_cannot_be_handle(type)) {
         return resolve_handle(cache, (uint64_t)type);
     } else {
-        // we have stored a handle to the Java class in ob_refcnt
-        void* handle = (void*)((PyObject*)type)->ob_refcnt;
-        if (!truffle_cannot_be_handle(handle)) {
-            return resolve_handle(cache, (uint64_t)handle);
+        PyObject* cast_type = ((PyObject*)type);
+        if (!polyglot_is_value(cast_type)) {
+            // we have stored a handle to the Java class in ob_refcnt
+            void* handle = (void*)(cast_type->ob_refcnt);
+            if (!truffle_cannot_be_handle(handle)) {
+                return resolve_handle(cache, (uint64_t)handle);
+            } else {
+                // assume handle is a TruffleObject
+                return handle;
+            }
         } else {
-            // assume handle is a TruffleObject
-            return handle;
+            // the type is already the right value (e.g. on sandboxed it's a managed pointer)
+            return cast_type;
         }
     }
 }
