@@ -1640,8 +1640,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @CompilationFinal private ConditionProfile errorProfile;
         @CompilationFinal private ConditionProfile overflowProfile;
 
-        public abstract PTuple execute(Object fd);
-
         private CastToIntegerFromIntNode getCastIntNode() {
             if (castIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1711,7 +1709,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        PTuple getTerminalSize(Object fd) {
+        Object getTerminalSize(Object fd) {
             Object value = getCastIntNode().execute(fd);
             if (recursiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
