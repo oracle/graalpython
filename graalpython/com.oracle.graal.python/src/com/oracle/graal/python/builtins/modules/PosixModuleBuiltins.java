@@ -93,11 +93,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
@@ -1623,6 +1626,102 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } else {
                 throw raise(NotImplementedError, "setting the umask to anything other than the default");
             }
+        }
+    }
+
+    @Builtin(name = "get_terminal_size", maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetTerminalSizeNode extends PythonUnaryBuiltinNode {
+        private final static String ERROR_MESSAGE = "[Errno 9] Bad file descriptor";
+
+        @Child private CastToIntegerFromIntNode castIntNode;
+        @Child private GetTerminalSizeNode recursiveNode;
+
+        @CompilationFinal private ConditionProfile errorProfile;
+        @CompilationFinal private ConditionProfile overflowProfile;
+
+        public abstract PTuple execute(Object fd);
+
+        private CastToIntegerFromIntNode getCastIntNode() {
+            if (castIntNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castIntNode = insert(CastToIntegerFromIntNode.create(val -> {
+                    throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
+                }));
+            }
+            return castIntNode;
+        }
+
+        private ConditionProfile getErrorProfile() {
+            if (errorProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                errorProfile = ConditionProfile.createBinaryProfile();
+            }
+            return errorProfile;
+        }
+
+        private ConditionProfile getOverflowProfile() {
+            if (overflowProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                overflowProfile = ConditionProfile.createBinaryProfile();
+            }
+            return overflowProfile;
+        }
+
+        @Specialization(guards = "isNone(fd)")
+        PTuple getTerminalSize(@SuppressWarnings("unused") PNone fd) {
+            if (getErrorProfile().profile(getContext().getResources().getFileChannel(0) == null)) {
+                throw raise(OSError, ERROR_MESSAGE);
+            }
+            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+        }
+
+        @Specialization
+        PTuple getTerminalSize(int fd) {
+            if (getErrorProfile().profile(getContext().getResources().getFileChannel(fd) == null)) {
+                throw raise(OSError, ERROR_MESSAGE);
+            }
+            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+        }
+
+        @Specialization
+        PTuple getTerminalSize(long fd) {
+            if (getOverflowProfile().profile(Integer.MIN_VALUE > fd || fd > Integer.MAX_VALUE)) {
+                raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
+            }
+            if (getErrorProfile().profile(getContext().getResources().getFileChannel((int) fd) == null)) {
+                throw raise(OSError, "[Errno 9] Bad file descriptor");
+            }
+            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+        }
+
+        @Specialization
+        @TruffleBoundary
+        PTuple getTerminalSize(PInt fd) {
+            int value;
+            try {
+                value = fd.intValueExact();
+                if (getContext().getResources().getFileChannel(value) == null) {
+                    throw raise(OSError, ERROR_MESSAGE);
+                }
+            } catch (ArithmeticException e) {
+                throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
+            }
+            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+        }
+
+        @Fallback
+        PTuple getTerminalSize(Object fd) {
+            Object value = getCastIntNode().execute(fd);
+            if (recursiveNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                recursiveNode = create();
+            }
+            return recursiveNode.execute(value);
+        }
+
+        protected GetTerminalSizeNode create() {
+            return PosixModuleBuiltinsFactory.GetTerminalSizeNodeFactory.create();
         }
     }
 }

@@ -119,6 +119,12 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Enable forced splitting (of builtins). Default true.") //
     public static final OptionKey<Boolean> EnableForcedSplits = new OptionKey<>(true);
 
+    @Option(category = OptionCategory.EXPERT, help = "") //
+    public static final OptionKey<Integer> TerminalWidth = new OptionKey<>(80);
+
+    @Option(category = OptionCategory.EXPERT, help = "") //
+    public static final OptionKey<Integer> TerminalHeight = new OptionKey<>(25);
+
     public static OptionDescriptors createDescriptors() {
         return new PythonOptionsOptionDescriptors();
     }
@@ -169,5 +175,13 @@ public final class PythonOptions {
 
     public static boolean getEnableForcedSplits() {
         return getOption(PythonLanguage.getContextRef().get(), EnableForcedSplits);
+    }
+
+    public static int getTerminalHeight() {
+        return getOption(PythonLanguage.getContextRef().get(), TerminalHeight);
+    }
+
+    public static int getTerminalWidth() {
+        return getOption(PythonLanguage.getContextRef().get(), TerminalWidth);
     }
 }
