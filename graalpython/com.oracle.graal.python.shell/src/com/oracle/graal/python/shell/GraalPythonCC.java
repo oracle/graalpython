@@ -104,14 +104,19 @@ public class GraalPythonCC extends GraalPythonCompiler {
 
     private void run(String[] args) {
         parseOptions(args);
-        if (isCpp && clangArgs.stream().anyMatch(s -> s.contains("--sysroot"))) {
-            // nasty, nasty
-            logV("Refusing to compile C++ code in sandboxed mode, because we cannot actually do it");
-            try {
-                Files.createFile(Paths.get(outputFilename));
-            } catch (IOException e) {
+        if (isCpp) {
+            // cannot use streaming API anyMatch for this on SVM
+            for (String s : clangArgs) {
+                if (s.contains("--sysroot")) {
+                    // nasty, nasty
+                    logV("Refusing to compile C++ code in sandboxed mode, because we cannot actually do it");
+                    try {
+                        Files.createFile(Paths.get(outputFilename));
+                    } catch (IOException e) {
+                    }
+                    return;
+                }
             }
-            return;
         }
         launchCC();
     }
