@@ -113,8 +113,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     @Specialization(guards = {
-                    "!isDictUnsetOrSameAsStorage(object)",
-                    "!isHiddenKey(key)"
+                    "!isHiddenKey(key)",
+                    "!isDictUnsetOrSameAsStorage(object)"
     }, replaces = "readFromDictCached")
     protected Object readFromDict(PythonObject object, Object key,
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
@@ -131,7 +131,10 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         return Message.READ.createNode();
     }
 
-    @Specialization(guards = "!isPythonObject(object)")
+    @Specialization(guards = {
+                    "!isHiddenKey(key)",
+                    "!isPythonObject(object)"
+    })
     protected Object readNative(PythonNativeObject object, Object key,
                     @Cached("create()") GetObjectDictNode getNativeDict,
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
