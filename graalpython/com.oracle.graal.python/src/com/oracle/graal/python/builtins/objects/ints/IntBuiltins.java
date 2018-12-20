@@ -2280,6 +2280,11 @@ public class IntBuiltins extends PythonBuiltins {
         PInt doPIntOverriden(PInt self) {
             return factory().createInt(self.getValue());
         }
+
+        @Specialization
+        PythonNativeVoidPtr doL(PythonNativeVoidPtr self) {
+            return self;
+        }
     }
 
     @Builtin(name = SpecialMethodNames.__INDEX__, fixedNumOfPositionalArgs = 1)
