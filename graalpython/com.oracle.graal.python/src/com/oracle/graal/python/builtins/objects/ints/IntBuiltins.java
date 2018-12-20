@@ -90,6 +90,10 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -1483,6 +1487,41 @@ public class IntBuiltins extends PythonBuiltins {
         boolean doDN(PythonNativeObject x, double y,
                         @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
             return fromNativeNode.execute(x) < y;
+        }
+
+        protected static Node createAsPointerNode() {
+            return Message.AS_POINTER.createNode();
+        }
+
+        protected static Node createIsPointerNode() {
+            return Message.IS_POINTER.createNode();
+        }
+
+        protected static Node createIsNullNode() {
+            return Message.IS_NULL.createNode();
+        }
+
+        @Specialization
+        boolean doVoidPtr(PythonNativeVoidPtr x, long y,
+                        @Cached("createIsPointerNode()") Node isPointerNode,
+                        @Cached("createAsPointerNode()") Node asPointerNode,
+                        @Cached("createIsNullNode()") Node isNullNode) {
+            boolean isPointer = ForeignAccess.sendIsPointer(isPointerNode, x.object);
+            if (isPointer) {
+                try {
+                    return ForeignAccess.sendAsPointer(asPointerNode, x.object) < y;
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException("a void ptr should be a ptr");
+                }
+            } else if (ForeignAccess.sendIsNull(isNullNode, x.object)) {
+                return 0 < y;
+            } else if (y <= 0) {
+                return false;
+            } else {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException("cannot compare a wrapped void ptr that has no native allocation against arbitrary integers");
+            }
         }
 
         @SuppressWarnings("unused")
