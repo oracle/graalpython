@@ -276,13 +276,14 @@ class TestPyLong(CPyExtTestCase):
         lambda args: True,
         lambda: ((None,),),
         code="""PyObject* PyLong_FromAndToVoidPtrAllocated(PyObject* none) {
+            unsigned long l = 0;
             void* dummyPtr = malloc(sizeof(size_t));
             PyObject* obj = PyLong_FromVoidPtr(dummyPtr);
             int r = PyObject_RichCompareBool(obj, Py_False, Py_LT);
             if (r < 0) {
                 return Py_None;
             }
-            unsigned long l = PyLong_AsUnsignedLong(obj);
+            l = PyLong_AsUnsignedLong(obj);
             void* unwrappedPtr = (void*)l;
             PyObject* result = unwrappedPtr == dummyPtr ? Py_True : Py_False;
             free(dummyPtr);
