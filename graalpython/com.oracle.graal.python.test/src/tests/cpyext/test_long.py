@@ -277,6 +277,8 @@ class TestPyLong(CPyExtTestCase):
         lambda: ((None,),),
         code="""PyObject* PyLong_FromAndToVoidPtrAllocated(PyObject* none) {
             unsigned long l = 0;
+            void* unwrappedPtr;
+            PyObject* result;
             void* dummyPtr = malloc(sizeof(size_t));
             PyObject* obj = PyLong_FromVoidPtr(dummyPtr);
             int r = PyObject_RichCompareBool(obj, Py_False, Py_LT);
@@ -284,8 +286,8 @@ class TestPyLong(CPyExtTestCase):
                 return Py_None;
             }
             l = PyLong_AsUnsignedLong(obj);
-            void* unwrappedPtr = (void*)l;
-            PyObject* result = unwrappedPtr == dummyPtr ? Py_True : Py_False;
+            unwrappedPtr = (void*)l;
+            result = unwrappedPtr == dummyPtr ? Py_True : Py_False;
             free(dummyPtr);
             return result;
         }
