@@ -271,6 +271,30 @@ class TestPyLong(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    # We get a pattern like this in Cython generated code
+    test_PyLong_FromAndToVoidPtrAllocated = CPyExtFunction(
+        lambda args: True,
+        lambda: ((None,),),
+        code="""PyObject* PyLong_FromAndToVoidPtrAllocated(PyObject* none) {
+            void* dummyPtr = malloc(sizeof(size_t));
+            PyObject* obj = PyLong_FromVoidPtr(dummyPtr);
+            int r = PyObject_RichCompareBool(obj, Py_False, Py_LT);
+            if (r < 0) {
+                return Py_None;
+            }
+            unsigned long l = PyLong_AsUnsignedLong(obj);
+            void* unwrappedPtr = (void*)l;
+            PyObject* result = unwrappedPtr == dummyPtr ? Py_True : Py_False;
+            free(dummyPtr);
+            return result;
+        }
+        """,
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* none"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyLong_Check = CPyExtFunction(
         lambda args: isinstance(args[0], int),
         lambda: (
