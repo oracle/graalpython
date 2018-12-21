@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -81,8 +80,7 @@ public abstract class PyDateTimeMRNode extends Node {
      */
     @Specialization(guards = "eq(DATETIME_DATA,key)")
     Object doData(PythonObject object, @SuppressWarnings("unused") String key,
-                    @Cached("create()") ReadAttributeFromObjectNode getYearNode,
-                    @Cached("createAttr(YEAR)") GetAttributeNode getYearPropNode,
+                    @Cached("createAttr(YEAR)") GetAttributeNode getYearNode,
                     @Cached("createAttr(MONTH)") GetAttributeNode getMonthNode,
                     @Cached("createAttr(DAY)") GetAttributeNode getDayNode,
                     @Cached("createAttr(HOUR)") GetAttributeNode getHourNode,
@@ -91,7 +89,7 @@ public abstract class PyDateTimeMRNode extends Node {
                     @Cached("createAttr(USEC)") GetAttributeNode getUSecNode,
                     @Cached("create()") CastToIndexNode castToIntNode) {
 
-        int year = castToIntNode.execute(getYearPropNode.executeObject(object));
+        int year = castToIntNode.execute(getYearNode.executeObject(object));
         int month = castToIntNode.execute(getMonthNode.executeObject(object));
         int day = castToIntNode.execute(getDayNode.executeObject(object));
         int hour = castToIntNode.execute(getHourNode.executeObject(object));

@@ -915,3 +915,4 @@ def test_literals():
     assert "hello\[world\]"[6] == "["
     assert "hello\[world\]"[12] == "\\"
     assert "hello\[world\]"[13] == "]"
+
