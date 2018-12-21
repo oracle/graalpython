@@ -1756,8 +1756,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 Frame callerFrame = readCallerFrameNode.executeWith(frame);
                 PythonObject globals = PArguments.getGlobals(callerFrame);
                 if (globals != null) {
+                    Object moduleAttr = ensureReadAttrNode().execute(newType, __MODULE__);
                     Object execute = ensureReadAttrNode().execute(globals, __NAME__);
-                    if (execute != PNone.NO_VALUE) {
+                    if (moduleAttr == PNone.NO_VALUE && execute != PNone.NO_VALUE) {
                         ensureWriteAttrNode().execute(newType, __MODULE__, execute);
                     }
                 }
