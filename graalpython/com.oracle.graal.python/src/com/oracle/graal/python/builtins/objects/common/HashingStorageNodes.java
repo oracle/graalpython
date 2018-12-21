@@ -359,7 +359,7 @@ public abstract class HashingStorageNodes {
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"})
         @TruffleBoundary
-        public HashingStorage doSequence(PythonObject iterable, @SuppressWarnings("unused") PKeyword[] kwargs,
+        public HashingStorage doSequence(PythonObject iterable, PKeyword[] kwargs,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") FastConstructListNode createListNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
@@ -400,12 +400,14 @@ public abstract class HashingStorageNodes {
                 }
             }
 
-            HashingStorage storage = PDict.createNewStorage(isStringKey, elements.size());
+            HashingStorage storage = PDict.createNewStorage(isStringKey, elements.size() + kwargs.length);
             for (int j = 0; j < elements.size(); j++) {
                 PSequence element = elements.get(j);
                 storage = getSetItemNode().execute(storage, getItemNode.executeObject(element, 0), getItemNode.executeObject(element, 1));
             }
-
+            if (kwargs.length > 0) {
+                storage.addAll(new KeywordsStorage(kwargs));
+            }
             return storage;
         }
 
