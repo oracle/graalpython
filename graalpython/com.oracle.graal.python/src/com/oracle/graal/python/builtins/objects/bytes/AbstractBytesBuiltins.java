@@ -209,7 +209,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LStripNode extends AStripNode {
 
-        private byte[] getResultBytes(int i, byte[] bs) {
+        private static byte[] getResultBytes(int i, byte[] bs) {
             byte[] out;
             if (i != 0) {
                 int len = bs.length - i;
@@ -251,7 +251,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RStripNode extends AStripNode {
 
-        private byte[] getResultBytes(int i, byte[] bs) {
+        private static byte[] getResultBytes(int i, byte[] bs) {
             byte[] out;
             int len = i + 1;
             if (len != bs.length) {
