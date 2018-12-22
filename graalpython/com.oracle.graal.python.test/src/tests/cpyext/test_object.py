@@ -44,14 +44,6 @@ from . import CPyExtType, CPyExtTestCase, CPyExtFunction
 __dir__ = __file__.rpartition("/")[0]
 
 
-def _reference_callmethod(args):
-    try:
-        attr = getattr(args[0], args[1])
-    except AttributeError:
-        raise
-    else:
-        return attr(*args[2])
-
 class AttroClass(object):
     def __getattribute__(self, key):
         if key == "foo":
@@ -248,13 +240,3 @@ class TestObjectFunctions(CPyExtTestCase):
         argspec="O",
     )
 
-    test_PyObject_CallMethod = CPyExtFunction(
-        _reference_callmethod,
-        lambda: (
-            ([3,4,5],"__inexisting_method__", "", tuple()),
-            ([1,2,3,4],"__len__", "", tuple()),
-        ),
-        arguments=["PyObject* callable", "char* method_name", "char* fmt", "PyObject* margs"],
-        resultspec="O",
-        argspec="OssO",
-    )
