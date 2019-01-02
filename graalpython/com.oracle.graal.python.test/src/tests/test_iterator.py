@@ -115,3 +115,10 @@ def test_iter_try_except():
             break
 
     assert exit_via_break
+
+
+def test_iterator_in():
+    assert 1 not in (i for i in range(1))
+    assert 1 in (i for i in range(2))
+    assert 1 in iter(range(2))
+    assert 1 not in iter(range(1))
