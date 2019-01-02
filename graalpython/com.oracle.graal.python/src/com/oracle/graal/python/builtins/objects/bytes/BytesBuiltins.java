@@ -455,17 +455,6 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "strip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"bytes"})
-    @GenerateNodeFactory
-    abstract static class StripNode extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        PBytes strip(PBytes self, @SuppressWarnings("unused") PNone bytes,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return factory().createBytes(new String(toBytesNode.execute(self)).trim().getBytes());
-        }
-    }
-
     // bytes.find(bytes[, start[, end]])
     @Builtin(name = "find", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
