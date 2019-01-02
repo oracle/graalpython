@@ -1032,12 +1032,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 case 0:
                 case 1:
                 case 2:
-                    // TODO: XXX: actually check
-                    // TODO: We can only return true here once we
-                    // have at least basic subprocess module support,
-                    // because otherwise we break the REPL help
-                    // return consoleCheck();
-                    return false;
+                    return consoleCheck();
                 default:
                     return false;
             }
