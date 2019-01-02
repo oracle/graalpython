@@ -221,6 +221,7 @@ public final class Python3Core implements PythonCore {
                         "_thread",
                         "ctypes",
                         "zlib",
+                        "termios",
                         "zipimport"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
