@@ -247,6 +247,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);
         contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[0])).in(consoleHandler.createInputStream());
+        contextBuilder.option("python.TerminalIsInteractive", Boolean.toString(stdinIsInteractive));
         contextBuilder.option("python.TerminalWidth", Integer.toString(consoleHandler.getTerminalWidth()));
         contextBuilder.option("python.TerminalHeight", Integer.toString(consoleHandler.getTerminalHeight()));
 

@@ -184,6 +184,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     new PosixFilePermission[]{PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE},
     };
 
+    private static boolean terminalIsInteractive(PythonContext context) {
+        return PythonOptions.getFlag(context, PythonOptions.TerminalIsInteractive);
+    }
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PosixModuleBuiltinsFactory.getFactories();
@@ -1032,15 +1036,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 case 0:
                 case 1:
                 case 2:
-                    return consoleCheck();
+                    return terminalIsInteractive(getContext());
                 default:
                     return false;
             }
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static boolean consoleCheck() {
-            return System.console() != null;
         }
     }
 

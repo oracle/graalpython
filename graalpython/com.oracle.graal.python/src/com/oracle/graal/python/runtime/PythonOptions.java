@@ -120,6 +120,9 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> EnableForcedSplits = new OptionKey<>(true);
 
     @Option(category = OptionCategory.EXPERT, help = "") //
+    public static final OptionKey<Boolean> TerminalIsInteractive = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Integer> TerminalWidth = new OptionKey<>(80);
 
     @Option(category = OptionCategory.EXPERT, help = "") //
