@@ -1270,20 +1270,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             private final OutputStream out;
             private final byte[] buffer;
             private volatile boolean finish;
-            private volatile boolean flush;
 
-            public PipePump(InputStream in, OutputStream out) {
+            public PipePump(String name, InputStream in, OutputStream out) {
+                this.setName(name);
                 this.in = in;
                 this.out = out;
                 this.buffer = new byte[MAX_READ];
                 this.finish = false;
-                this.flush = false;
             }
 
             @Override
             public void run() {
                 try {
-                    while (!finish || (flush && in.available() > 0)) {
+                    while (!finish || in.available() > 0) {
                         if (Thread.interrupted()) {
                             finish = true;
                         }
@@ -1297,14 +1296,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            public void finish(boolean force_flush) {
+            public void finish() {
                 finish = true;
-                flush = force_flush;
-                if (flush) {
-                    // If we need to flush, make ourselves max priority to pump data out as quickly
-                    // as possible
-                    setPriority(Thread.MAX_PRIORITY);
-                }
+                // Make ourselves max priority to flush data out as quickly as possible
+                setPriority(Thread.MAX_PRIORITY);
                 Thread.yield();
             }
         }
@@ -1320,20 +1315,28 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             Env env = context.getEnv();
             try {
                 ProcessBuilder pb = new ProcessBuilder(command);
-                pb.redirectInput(Redirect.PIPE);
-                pb.redirectOutput(Redirect.PIPE);
-                pb.redirectError(Redirect.PIPE);
+                PipePump stdout = null, stderr = null;
+                boolean stdsArePipes = !terminalIsInteractive(context);
+                if (stdsArePipes) {
+                    pb.redirectInput(Redirect.PIPE);
+                    pb.redirectOutput(Redirect.PIPE);
+                    pb.redirectError(Redirect.PIPE);
+                } else {
+                    pb.inheritIO();
+                }
                 Process proc = pb.start();
-                PipePump stdin = new PipePump(env.in(), proc.getOutputStream());
-                PipePump stdout = new PipePump(proc.getInputStream(), env.out());
-                PipePump stderr = new PipePump(proc.getErrorStream(), env.err());
-                stdin.start();
-                stdout.start();
-                stderr.start();
+                if (stdsArePipes) {
+                    proc.getOutputStream().close(); // stdin will be closed
+                    stdout = new PipePump(cmd + " [stdout]", proc.getInputStream(), env.out());
+                    stderr = new PipePump(cmd + " [stderr]", proc.getErrorStream(), env.err());
+                    stdout.start();
+                    stderr.start();
+                }
                 int exitStatus = proc.waitFor();
-                stdin.finish(false);
-                stdout.finish(true);
-                stderr.finish(true);
+                if (stdsArePipes) {
+                    stdout.finish();
+                    stderr.finish();
+                }
                 return exitStatus;
             } catch (IOException | InterruptedException e) {
                 return -1;
