@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1979,20 +1979,6 @@ public class IntBuiltins extends PythonBuiltins {
         private Object compute(PythonClass cl, byte[] bytes, String byteorder, boolean signed) {
             BigInteger bi = createBigInteger(bytes, isBigEndian(byteorder), signed);
             return createIntObject(cl, bi);
-        }
-
-        // from String / PString
-        // TODO these specialization shouldn't be there. The CPython ends up with TypeError in such
-        // case. See GR-12453
-        @Specialization
-        @TruffleBoundary
-        public Object fromString(PythonClass cl, String str, String byteorder, Object[] args, boolean signed) {
-            return compute(cl, str.getBytes(), byteorder, signed);
-        }
-
-        @Specialization
-        public Object fromString(PythonClass cl, String str, String byteorder, Object[] args, PNone keywordArg) {
-            return fromString(cl, str, byteorder, args, false);
         }
 
         // from PBytes
