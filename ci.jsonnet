@@ -251,6 +251,8 @@
     // unittests 
     testGate(type="unittest", platform="linux"),
     testGate(type="unittest", platform="darwin"),
+    testGate(type="svm-unittest", platform="linux"),
+    testGate(type="svm-unittest", platform="darwin"),
 
     // junit 
     testGate(type="junit", platform="linux"),
