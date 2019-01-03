@@ -81,8 +81,6 @@ public final class ScopeInfo {
     private List<ExpressionNode> defaultArgumentNodes;
     private ReadDefaultArgumentNode[] defaultArgumentReads;
 
-    private int loopCount = 0;
-
     public ScopeInfo(String scopeId, ScopeKind kind, FrameDescriptor frameDescriptor, ScopeInfo parent) {
         this.scopeId = scopeId;
         this.scopeKind = kind;
@@ -94,18 +92,6 @@ public final class ScopeInfo {
             this.nextChildScope = this.parent.firstChildScope;
             this.parent.firstChildScope = this;
         }
-    }
-
-    public void incLoopCount() {
-        loopCount++;
-    }
-
-    public int getLoopCount() {
-        return loopCount;
-    }
-
-    public void resetLoopCount() {
-        this.loopCount = 0;
     }
 
     public ScopeInfo getFirstChildScope() {

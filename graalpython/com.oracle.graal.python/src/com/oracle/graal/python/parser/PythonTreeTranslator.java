@@ -1855,11 +1855,11 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         // TODO: async
         ScopeInfo old = null;
         if (iteratorInParentScope) {
-            old = environment.pushCurentScope();
+            old = environment.leaveScope();
         }
         ExpressionNode iterator = (ExpressionNode) comp_for.or_test().accept(this);
         if (iteratorInParentScope) {
-            environment.popCurrentScope(old);
+            environment.enterScope(old);
         }
 
         StatementNode targets = assigns.translate(comp_for.exprlist());

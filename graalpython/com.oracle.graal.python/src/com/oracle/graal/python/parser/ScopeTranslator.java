@@ -28,7 +28,6 @@ package com.oracle.graal.python.parser;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Stack;
 import java.util.function.Function;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -347,13 +346,12 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
         declareNames(ctx.exprlist());
         visitExprlist(ctx.exprlist());
 
-        ScopeInfo currentGeneratorScope = environment.getCurrentScope();
-        currentGeneratorScope.incLoopCount();
-        if (currentGeneratorScope.getLoopCount() == 1) {
-            // the first iterator is eagerly evaluated in the outside scope
-            environment.pushCurentScope();
+        if (!(ctx.getParent() instanceof Python3Parser.Comp_iterContext)) {
+            // the first iterator is eagerly evaluated in the outside scope, but any iterator under
+            // the comp_iter is not
+            ScopeInfo currentGeneratorScope = environment.leaveScope();
             visitOr_test(ctx.or_test());
-            environment.popCurrentScope(currentGeneratorScope);
+            environment.enterScope(currentGeneratorScope);
         } else {
             visitOr_test(ctx.or_test());
         }

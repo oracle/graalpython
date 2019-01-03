@@ -64,7 +64,6 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
     public static TranslationEnvironment createFromScope(ScopeInfo scope) {
         TranslationEnvironment environment = new TranslationEnvironment(PythonLanguage.getCurrent());
         environment.currentScope = scope;
-        scope.resetLoopCount();
         ScopeInfo global = scope;
         while (global.getParent() != null) {
             global = global.getParent();
@@ -88,11 +87,12 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
     public void enterScope(ScopeInfo scope) {
         assert scope != null;
         currentScope = scope;
-        scope.resetLoopCount();
     }
 
-    public void leaveScope() {
+    public ScopeInfo leaveScope() {
+        ScopeInfo old = currentScope;
         currentScope = currentScope.getParent();
+        return old;
     }
 
     public ScopeInfo pushCurentScope() {
@@ -101,13 +101,8 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
             currentScope = currentScope.getParent();
             return old;
         }
+        assert false;
         return null;
-    }
-
-    public void popCurrentScope(ScopeInfo oldScope) {
-        if (oldScope != null) {
-            currentScope = oldScope;
-        }
     }
 
     public boolean atModuleLevel() {
