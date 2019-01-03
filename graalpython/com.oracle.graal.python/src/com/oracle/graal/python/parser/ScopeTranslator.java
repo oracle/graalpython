@@ -28,6 +28,7 @@ package com.oracle.graal.python.parser;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Stack;
 import java.util.function.Function;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -55,7 +56,7 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     private final ArrayList<String> possibleCellIdentifiers = new ArrayList<>();
     private final ArrayList<ScopeInfo> possibleCellScopes = new ArrayList<>();
 
-    private ScopeInfo currentGeneratorScope = null;
+    private Stack<ScopeInfo> currentGeneratorScope = new Stack<>();
 
     public ScopeTranslator(ParserErrorCallback errors, TranslationEnvironment environment, boolean interactive, FrameDescriptor curInlineLocals) {
         this.errors = errors;
@@ -354,9 +355,10 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     public T visitOr_test(Python3Parser.Or_testContext ctx) {
         boolean pushedCurrentGeneratorScope = false;
         if (ctx.getParent() instanceof Python3Parser.Comp_forContext) {
-            if (currentGeneratorScope == null && environment.getCurrentScopeLoopCount() == 1) {
+            if (currentGeneratorScope.peek() == null && environment.getCurrentScopeLoopCount() == 1) {
                 // the generator iterator needs to be early evaluated in the parent scope
-                currentGeneratorScope = environment.pushCurentScope();
+                currentGeneratorScope.pop();
+                currentGeneratorScope.push(environment.pushCurentScope());
                 pushedCurrentGeneratorScope = true;
             }
         }
@@ -364,10 +366,11 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
             return super.visitOr_test(ctx);
         } finally {
             if (ctx.getParent() instanceof Python3Parser.Comp_forContext) {
-                if (pushedCurrentGeneratorScope && currentGeneratorScope.getLoopCount() == 1) {
+                if (pushedCurrentGeneratorScope) {
+                    ScopeInfo scopeInfo = currentGeneratorScope.pop();
                     // restore the current scope
-                    environment.popCurrentScope(currentGeneratorScope);
-                    currentGeneratorScope = null;
+                    environment.popCurrentScope(scopeInfo);
+                    currentGeneratorScope.push(null);
                 }
             }
         }
@@ -375,11 +378,14 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
 
     private T visitGenerator(ParserRuleContext ctx, Python3Parser.Comp_forContext compctx, Function<ParserRuleContext, T> block) {
         compctx.scope = environment.createScope(ctx, ScopeKind.Generator);
+        currentGeneratorScope.push(null);
         try {
             return block.apply(ctx);
         } finally {
-            if (currentGeneratorScope == null) {
+            if (currentGeneratorScope.pop() == null) {
                 environment.leaveScope();
+            } else {
+                throw new IllegalStateException("why did the currentGeneratorScope leak?");
             }
         }
     }
