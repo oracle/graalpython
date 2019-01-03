@@ -487,11 +487,10 @@ class FromBytesTests(unittest.TestCase):
         self.assertRaises(TypeError, int.from_bytes, 0, 'big')
         self.assertRaises(TypeError, int.from_bytes, 0, 'big', True)
 
-        #TODO uncoment these tests, when GR-12453 is fixed
-        #self.assertRaises(TypeError, int.from_bytes, "", 'big')
-        #self.assertRaises(TypeError, int.from_bytes, "\x00", 'big')
-        #self.assertRaises(TypeError, MyInt.from_bytes, "", 'big')
-        #self.assertRaises(TypeError, MyInt.from_bytes, "\x00", 'big')
+        self.assertRaises(TypeError, int.from_bytes, "", 'big')
+        self.assertRaises(TypeError, int.from_bytes, "\x00", 'big')
+        self.assertRaises(TypeError, MyInt.from_bytes, "", 'big')
+        self.assertRaises(TypeError, MyInt.from_bytes, "\x00", 'big')
         self.assertRaises(TypeError, MyInt.from_bytes, 0, 'big')
         self.assertRaises(TypeError, int.from_bytes, 0, 'big', True)
 

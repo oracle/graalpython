@@ -48,7 +48,7 @@ def extension_suffixes():
 
 @__builtin__
 def get_magic():
-    return '\x0c\xaf\xaf\xe1'
+    return b'\x0c\xaf\xaf\xe1'
 
 
 @__builtin__

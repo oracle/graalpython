@@ -1981,20 +1981,6 @@ public class IntBuiltins extends PythonBuiltins {
             return createIntObject(cl, bi);
         }
 
-        // from String / PString
-        // TODO these specialization shouldn't be there. The CPython ends up with TypeError in such
-        // case. See GR-12453
-        @Specialization
-        @TruffleBoundary
-        public Object fromString(PythonClass cl, String str, String byteorder, Object[] args, boolean signed) {
-            return compute(cl, str.getBytes(), byteorder, signed);
-        }
-
-        @Specialization
-        public Object fromString(PythonClass cl, String str, String byteorder, Object[] args, PNone keywordArg) {
-            return fromString(cl, str, byteorder, args, false);
-        }
-
         // from PBytes
         @Specialization
         public Object fromPBytes(PythonClass cl, PBytes bytes, String byteorder, Object[] args, boolean signed) {
