@@ -40,36 +40,6 @@ public final class PythonOptions {
         // no instances
     }
 
-    @Option(category = OptionCategory.DEBUG, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
-    public static final OptionKey<Boolean> ExposeInternalSources = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "Print the java stacktrace if enabled") //
-    public static final OptionKey<Boolean> WithJavaStacktrace = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> IntrinsifyBuiltinCalls = new OptionKey<>(true);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Integer> AttributeAccessInlineCacheMaxDepth = new OptionKey<>(3);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Integer> CallSiteInlineCacheMaxDepth = new OptionKey<>(3);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Integer> VariableArgumentReadUnrollingLimit = new OptionKey<>(5);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Integer> VariableArgumentInlineCacheLimit = new OptionKey<>(3);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> ForceInlineGeneratorCalls = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> CatchGraalPythonExceptionForUnitTesting = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
-
     @Option(category = OptionCategory.USER, help = "Set the location of sys.prefix. Overrides any environment variables or Java options.") //
     public static final OptionKey<String> SysPrefix = new OptionKey<>("");
 
@@ -79,53 +49,83 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Set the location of lib-python/3. Overrides any environment variables or Java options.") //
     public static final OptionKey<String> StdLibHome = new OptionKey<>("");
 
+    @Option(category = OptionCategory.USER, help = "This option makes reading from files return opaque objects. Imports can work with such data, " +
+                    "but all other access to the contents of the file is disabled, so the files are kept secret.") //
+    public static final OptionKey<Boolean> OpaqueFilesystem = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -i flag. Inspect interactively after running a script.") //
+    public static final OptionKey<Boolean> InspectFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -q flag. Don't  print version and copyright messages on interactive startup.") //
+    public static final OptionKey<Boolean> QuietFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -S flag. Don't imply 'import site' on initialization.") //
+    public static final OptionKey<Boolean> NoSiteFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -s flag. Don't add user site directory to sys.path.") //
+    public static final OptionKey<Boolean> NoUserSiteFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONPATH environment variable for the standard launcher. ':'-separated list of directories prefixed to the default module search path.") //
+    public static final OptionKey<String> PythonPath = new OptionKey<>("");
+
+    @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.") //
+    public static final OptionKey<Boolean> PythonOptimizeFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -v flag. Turn on verbose mode.") //
+    public static final OptionKey<Boolean> VerboseFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.DEBUG, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
+    public static final OptionKey<Boolean> ExposeInternalSources = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.DEBUG, help = "Print the java stacktrace if enabled") //
+    public static final OptionKey<Boolean> WithJavaStacktrace = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.DEBUG, help = "") //
+    public static final OptionKey<Boolean> CatchGraalPythonExceptionForUnitTesting = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.DEBUG, help = "Enable catching all Exceptions in generic try-catch statements.") //
+    public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "") //
+    public static final OptionKey<Boolean> IntrinsifyBuiltinCalls = new OptionKey<>(true);
+
+    @Option(category = OptionCategory.EXPERT, help = "") //
+    public static final OptionKey<Integer> AttributeAccessInlineCacheMaxDepth = new OptionKey<>(3);
+
+    @Option(category = OptionCategory.EXPERT, help = "") //
+    public static final OptionKey<Integer> CallSiteInlineCacheMaxDepth = new OptionKey<>(3);
+
+    @Option(category = OptionCategory.EXPERT, help = "") //
+    public static final OptionKey<Integer> VariableArgumentReadUnrollingLimit = new OptionKey<>(5);
+
+    @Option(category = OptionCategory.EXPERT, help = "") //
+    public static final OptionKey<Integer> VariableArgumentInlineCacheLimit = new OptionKey<>(3);
+
+    @Option(category = OptionCategory.EXPERT, help = "") //
+    public static final OptionKey<Boolean> ForceInlineGeneratorCalls = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "Minimal size of string, when lazy strings are used. Default 20") //
+    public static final OptionKey<Integer> MinLazyStringLength = new OptionKey<>(20);
+
     @Option(category = OptionCategory.EXPERT, help = "This option is set by the Python launcher to tell the language it can print exceptions directly") //
     public static final OptionKey<Boolean> AlwaysRunExcepthook = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, help = "This option control builtin _thread module support") //
     public static final OptionKey<Boolean> WithThread = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.USER, help = "This option makes reading from files return opaque objects. Imports can work with such data, " +
-                    "but all other access to the contents of the file is disabled, so the files are kept secret.") //
-    public static final OptionKey<Boolean> OpaqueFilesystem = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.USER, help = "") //
-    public static final OptionKey<Boolean> InspectFlag = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.USER, help = "") //
-    public static final OptionKey<Boolean> QuietFlag = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.USER, help = "") //
-    public static final OptionKey<Boolean> NoSiteFlag = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.USER, help = "") //
-    public static final OptionKey<Boolean> NoUserSiteFlag = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.USER, help = "") //
-    public static final OptionKey<String> PythonPath = new OptionKey<>("");
-
-    @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.") //
-    public static final OptionKey<Boolean> PythonOptimizeFlag = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "Turn on verbose mode") //
-    public static final OptionKey<Boolean> VerboseFlag = new OptionKey<>(false);
-
     @Option(category = OptionCategory.EXPERT, help = "Switch on/off using lazy strings for performance reasons. Default true.") //
     public static final OptionKey<Boolean> LazyStrings = new OptionKey<>(true);
-
-    @Option(category = OptionCategory.DEBUG, help = "Minimal size of string, when lazy strings are used. Default 20") //
-    public static final OptionKey<Integer> MinLazyStringLength = new OptionKey<>(20);
 
     @Option(category = OptionCategory.EXPERT, help = "Enable forced splitting (of builtins). Default true.") //
     public static final OptionKey<Boolean> EnableForcedSplits = new OptionKey<>(true);
 
-    @Option(category = OptionCategory.EXPERT, help = "") //
+    @Option(category = OptionCategory.EXPERT, help = "Set by the launcher if an interactive console is used to run Python.") //
     public static final OptionKey<Boolean> TerminalIsInteractive = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, help = "") //
+    @Option(category = OptionCategory.EXPERT, help = "Set by the launcher to the terminal width.") //
     public static final OptionKey<Integer> TerminalWidth = new OptionKey<>(80);
 
-    @Option(category = OptionCategory.EXPERT, help = "") //
+    @Option(category = OptionCategory.EXPERT, help = "Set by the launcher to the terminal height.") //
     public static final OptionKey<Integer> TerminalHeight = new OptionKey<>(25);
 
     public static OptionDescriptors createDescriptors() {
