@@ -428,14 +428,6 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         }
     }
 
-    public void incCurrentScopeLoopCount() {
-        currentScope.incLoopCount();
-    }
-
-    public int getCurrentScopeLoopCount() {
-        return currentScope.getLoopCount();
-    }
-
     public FrameSlot findFrameSlot(String identifier) {
         return currentScope.findFrameSlot(identifier);
     }

@@ -56,8 +56,6 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     private final ArrayList<String> possibleCellIdentifiers = new ArrayList<>();
     private final ArrayList<ScopeInfo> possibleCellScopes = new ArrayList<>();
 
-    private Stack<ScopeInfo> currentGeneratorScope = new Stack<>();
-
     public ScopeTranslator(ParserErrorCallback errors, TranslationEnvironment environment, boolean interactive, FrameDescriptor curInlineLocals) {
         this.errors = errors;
         this.environment = environment;
@@ -347,46 +345,31 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     @Override
     public T visitComp_for(Python3Parser.Comp_forContext ctx) {
         declareNames(ctx.exprlist());
-        environment.incCurrentScopeLoopCount();
-        return super.visitComp_for(ctx);
-    }
+        visitExprlist(ctx.exprlist());
 
-    @Override
-    public T visitOr_test(Python3Parser.Or_testContext ctx) {
-        boolean pushedCurrentGeneratorScope = false;
-        if (ctx.getParent() instanceof Python3Parser.Comp_forContext) {
-            if (currentGeneratorScope.peek() == null && environment.getCurrentScopeLoopCount() == 1) {
-                // the generator iterator needs to be early evaluated in the parent scope
-                currentGeneratorScope.pop();
-                currentGeneratorScope.push(environment.pushCurentScope());
-                pushedCurrentGeneratorScope = true;
-            }
+        ScopeInfo currentGeneratorScope = environment.getCurrentScope();
+        currentGeneratorScope.incLoopCount();
+        if (currentGeneratorScope.getLoopCount() == 1) {
+            // the first iterator is eagerly evaluated in the outside scope
+            environment.pushCurentScope();
+            visitOr_test(ctx.or_test());
+            environment.popCurrentScope(currentGeneratorScope);
+        } else {
+            visitOr_test(ctx.or_test());
         }
-        try {
-            return super.visitOr_test(ctx);
-        } finally {
-            if (ctx.getParent() instanceof Python3Parser.Comp_forContext) {
-                if (pushedCurrentGeneratorScope) {
-                    ScopeInfo scopeInfo = currentGeneratorScope.pop();
-                    // restore the current scope
-                    environment.popCurrentScope(scopeInfo);
-                    currentGeneratorScope.push(null);
-                }
-            }
+
+        if (ctx.comp_iter() != null) {
+            visitComp_iter(ctx.comp_iter());
         }
+        return null;
     }
 
     private T visitGenerator(ParserRuleContext ctx, Python3Parser.Comp_forContext compctx, Function<ParserRuleContext, T> block) {
         compctx.scope = environment.createScope(ctx, ScopeKind.Generator);
-        currentGeneratorScope.push(null);
         try {
             return block.apply(ctx);
         } finally {
-            if (currentGeneratorScope.pop() == null) {
-                environment.leaveScope();
-            } else {
-                throw new IllegalStateException("why did the currentGeneratorScope leak?");
-            }
+            environment.leaveScope();
         }
     }
 
