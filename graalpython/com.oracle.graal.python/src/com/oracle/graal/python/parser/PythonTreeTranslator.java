@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -228,31 +228,31 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
     @Override
     public Object visitFile_input(Python3Parser.File_inputContext ctx) {
-        environment.enterScope(ctx.scope);
+        environment.pushScope(ctx.scope);
         ExpressionNode file = asExpression(super.visitFile_input(ctx));
         deriveSourceSection(ctx, file);
-        environment.leaveScope();
+        environment.popScope();
         return factory.createModuleRoot(name, file, ctx.scope.getFrameDescriptor());
     }
 
     @Override
     public Object visitEval_input(Python3Parser.Eval_inputContext ctx) {
-        environment.enterScope(ctx.scope);
+        environment.pushScope(ctx.scope);
         ExpressionNode node = (ExpressionNode) super.visitEval_input(ctx);
         deriveSourceSection(ctx, node);
         StatementNode evalReturn = factory.createFrameReturn(factory.createWriteLocal(node, environment.getReturnSlot()));
         ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, factory.createReadLocal(environment.getReturnSlot()));
         FunctionRootNode functionRoot = factory.createFunctionRoot(node.getSourceSection(), name, false, ctx.scope.getFrameDescriptor(), returnTarget, environment.getExecutionCellSlots());
-        environment.leaveScope();
+        environment.popScope();
         return functionRoot;
     }
 
     @Override
     public Object visitSingle_input(Python3Parser.Single_inputContext ctx) {
-        environment.enterScope(ctx.scope);
+        environment.pushScope(ctx.scope);
         ExpressionNode body = asExpression(super.visitSingle_input(ctx));
         deriveSourceSection(ctx, body);
-        environment.leaveScope();
+        environment.popScope();
         if (isInlineMode) {
             return body;
         } else {
@@ -468,7 +468,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
     private ExpressionNode createComprehensionExpression(ParserRuleContext ctx, Python3Parser.Comp_forContext compctx, Function<ParserRuleContext, ExpressionNode> getBlock) {
         try {
-            environment.enterScope(compctx.scope);
+            environment.pushScope(compctx.scope);
             ExpressionNode block = getBlock.apply(ctx);
             ExpressionNode yield = factory.createYield(block, environment.getReturnSlot());
             yield.assignSourceSection(block.getSourceSection());
@@ -482,13 +482,13 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             genExprDef.assignSourceSection(srcSection);
             return genExprDef;
         } finally {
-            environment.leaveScope();
+            environment.popScope();
         }
     }
 
     private GeneratorExpressionNode createGeneratorExpressionDefinition(ExpressionNode body, int lineNum) {
         FrameDescriptor fd = environment.getCurrentFrame();
-        String generatorName = source.getName() + ":generator_exp:" + lineNum;
+        String generatorName = environment.getCurrentScope().getParent().getScopeId() + ".<locals>.<genexp>:" + source.getName() + ":" + lineNum;
         FunctionRootNode funcRoot = factory.createFunctionRoot(body.getSourceSection(), generatorName, true, fd, body, environment.getExecutionCellSlots());
         GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, true);
         RootCallTarget callTarget = gtran.translate();
@@ -1440,7 +1440,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             }
         }
 
-        environment.enterScope(ctx.scope);
+        environment.pushScope(ctx.scope);
         environment.setDefaultArgumentNodes(defaultArgs);
 
         /**
@@ -1491,7 +1491,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         } else {
             funcDef = new FunctionDefinitionNode(funcName, enclosingClassName, doc, arity, defaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         }
-        environment.leaveScope();
+        environment.popScope();
 
         ReadNode funcVar = environment.findVariable(funcName);
         return funcVar.makeWriteNode(funcDef);
@@ -1624,7 +1624,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         }
 
         String funcname = "anonymous";
-        environment.enterScope(scope);
+        environment.pushScope(scope);
         environment.setDefaultArgumentNodes(defaultArgs);
 
         /**
@@ -1667,7 +1667,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         } else {
             funcDef = new FunctionDefinitionNode(funcname, null, null, arity, defaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         }
-        environment.leaveScope();
+        environment.popScope();
 
         return funcDef;
     }
@@ -1730,14 +1730,14 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ExpressionNode[] splatArguments = new ExpressionNode[2];
         visitCallArglist(ctx.arglist(), argumentNodes, keywords, splatArguments);
 
-        environment.enterScope(ctx.scope);
+        environment.pushScope(ctx.scope);
 
         ExpressionNode body = asClassBody(ctx.suite().accept(this), qualName);
         ClassBodyRootNode classBodyRoot = factory.createClassBodyRoot(deriveSourceSection(ctx), className, environment.getCurrentFrame(), body, environment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
         FunctionDefinitionNode funcDef = new FunctionDefinitionNode(className, null, null, Arity.createOneArgumentWithVarKwArgs(className),
                         factory.createBlock(), ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
-        environment.leaveScope();
+        environment.popScope();
 
         argumentNodes.add(0, factory.createStringLiteral(className));
         argumentNodes.add(0, funcDef);
@@ -1855,11 +1855,11 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         // TODO: async
         ScopeInfo old = null;
         if (iteratorInParentScope) {
-            old = environment.pushCurentScope();
+            old = environment.popScope();
         }
         ExpressionNode iterator = (ExpressionNode) comp_for.or_test().accept(this);
         if (iteratorInParentScope) {
-            environment.popCurrentScope(old);
+            environment.pushScope(old);
         }
 
         StatementNode targets = assigns.translate(comp_for.exprlist());
