@@ -101,10 +101,13 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     }
 
     @Override
+    public T visitDecorator(Python3Parser.DecoratorContext ctx) {
+        registerPossibleCell(ctx.dotted_name().NAME(0).getText());
+        return super.visitDecorator(ctx);
+    }
+
+    @Override
     public T visitFuncdef(Python3Parser.FuncdefContext ctx) {
-        if (ctx.parent instanceof Python3Parser.DecoratedContext) {
-            // TODO: get the decorators
-        }
         environment.createLocal(ctx.NAME().getText());
         ArgListCompiler<T> argListCompiler = new ArgListCompiler<>(errors);
         argListCompilers.add(argListCompiler);

@@ -88,3 +88,13 @@ def test_lambda_no_args_with_nested_lambdas():
 
 def test_byte_numeric_escapes():
     assert eval('b"PK\\005\\006\\00\\11\\22\\08"') == b'PK\x05\x06\x00\t\x12\x008'
+
+
+def test_decorator_cell():
+    foo = lambda x: "just a string, not %s" % x.__name__
+    def run_me():
+        @foo
+        def func():
+            pass
+        return func
+    assert run_me() == "just a string, not func", run_me()
