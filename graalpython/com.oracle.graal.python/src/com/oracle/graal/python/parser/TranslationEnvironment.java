@@ -72,37 +72,28 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         return environment;
     }
 
-    public ScopeInfo createScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind) {
-        return createScope(ctx, kind, null);
+    public ScopeInfo pushScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind) {
+        return pushScope(ctx, kind, null);
     }
 
-    public ScopeInfo createScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind, FrameDescriptor frameDescriptor) {
-        currentScope = new ScopeInfo(TranslationUtil.getScopeId(ctx, kind), kind, frameDescriptor, currentScope);
+    public ScopeInfo pushScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind, FrameDescriptor frameDescriptor) {
+        ScopeInfo newScope = new ScopeInfo(TranslationUtil.getScopeId(ctx, kind), kind, frameDescriptor, currentScope);
+        pushScope(newScope);
         if (globalScope == null) {
             globalScope = currentScope;
         }
         return currentScope;
     }
 
-    public void enterScope(ScopeInfo scope) {
+    public void pushScope(ScopeInfo scope) {
         assert scope != null;
         currentScope = scope;
     }
 
-    public ScopeInfo leaveScope() {
+    public ScopeInfo popScope() {
         ScopeInfo old = currentScope;
         currentScope = currentScope.getParent();
         return old;
-    }
-
-    public ScopeInfo pushCurentScope() {
-        if (currentScope.getParent() != null) {
-            ScopeInfo old = currentScope;
-            currentScope = currentScope.getParent();
-            return old;
-        }
-        assert false;
-        return null;
     }
 
     public boolean atModuleLevel() {
