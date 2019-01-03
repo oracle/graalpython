@@ -60,29 +60,29 @@ def test_int_subclassing():
     MAXREPEAT = _NamedIntConstant(1, 'MAXREPEAT')
     assert MAXREPEAT == 1
     assert str(MAXREPEAT) == "MAXREPEAT"
-    
+
 
 def test_boolean2int():
     assert int(True) == 1
     assert int(False) == 0
-    
-    
+
+
 def test_int_from_custom():
     class CustomInt4():
         def __int__(self):
             return 1
-    
+
     class CustomInt8():
         def __int__(self):
             return 0xCAFEBABECAFED00D
-        
+
     class SubInt(int):
         def __int__(self):
             return 0xBADF00D
-        
+
     class NoInt():
         pass
-        
+
     assert int(CustomInt4()) == 1
     assert int(CustomInt8()) == 0xCAFEBABECAFED00D
     assert CustomInt8() != 0xCAFEBABECAFED00D
@@ -124,7 +124,7 @@ def test_int():
     builtinTest(9)
     builtinTest(6227020800)
     builtinTest(9999992432902008176640000999999)
-    
+
     assert True.__int__() == 1
     assert False.__int__() == 0
 
@@ -161,13 +161,13 @@ def test_real_imag():
     builtinTest(9)
     builtinTest(6227020800)
     builtinTest(9999992432902008176640000999999)
-    
+
     assert True.real == 1
     assert False.real == 0
     assert True.imag == 0
     assert False.imag == 0
 
-def test_real_imag_subclass():    
+def test_real_imag_subclass():
     def subclassTest(number):
         a = MyInt(number)
         b = a.real
@@ -202,7 +202,7 @@ def test_numerator_denominator():
     builtinTest(9)
     builtinTest(6227020800)
     builtinTest(9999992432902008176640000999999)
-    
+
     assert True.numerator == 1
     assert False.numerator == 0
     assert True.denominator == 1
@@ -240,7 +240,7 @@ def test_conjugate():
     builtinTest(9)
     builtinTest(6227020800)
     builtinTest(9999992432902008176640000999999)
-    
+
     assert True.conjugate() == 1
     assert False.conjugate() == 0
 
@@ -282,7 +282,7 @@ def test_trunc():
     builtinTest(9)
     builtinTest(6227020800)
     builtinTest(9999992432902008176640000999999)
-    
+
     assert True.__trunc__() == 1
     assert False.__trunc__() == 0
 
@@ -325,7 +325,7 @@ def test_create_int_from_string():
 
 
 class FromBytesTests(unittest.TestCase):
-    
+
     def check(self, tests, byteorder, signed=False):
         for test, expected in tests.items():
             try:
@@ -447,10 +447,10 @@ class FromBytesTests(unittest.TestCase):
         class LyingList(list):
             def __iter__(self):
                 return iter([10, 20, 30, 40])
-        
+
         self.assertEqual(
             int.from_bytes(LyingList([255, 1, 1]), 'big'), 169090600)
-         
+
     def test_from_tuple(self):
         self.assertEqual(
             int.from_bytes((255, 0, 0), 'big', signed=True), -65536)
@@ -464,7 +464,7 @@ class FromBytesTests(unittest.TestCase):
                 return iter((15, 25, 35, 45))
         self.assertEqual(
             int.from_bytes(LyingTuple((255, 1, 1)), 'big'), 253305645)
-        
+
     def test_from_bytearray(self):
         self.assertEqual(int.from_bytes(
             bytearray(b'\xff\x00\x00'), 'big', signed=True), -65536)
@@ -549,7 +549,7 @@ class FromBytesTests(unittest.TestCase):
             def __bytes__(self):
                 return array.array('b', [2, 2, 3])
 
-        self.assertRaises(TypeError, int.from_bytes, mybyteslike2(), 'big') 
+        self.assertRaises(TypeError, int.from_bytes, mybyteslike2(), 'big')
 
     def test_from_list_with_byteslike(self):
         class StrangeList(list):
@@ -563,7 +563,7 @@ class FromBytesTests(unittest.TestCase):
 class ToBytesTests(unittest.TestCase):
 
     class MyInt(int):
-        pass 
+        pass
 
     def check(self, tests, byteorder, signed=False):
         for test, expected in tests.items():
@@ -633,7 +633,7 @@ class ToBytesTests(unittest.TestCase):
         }
         self.check(tests2, 'little', signed=True)
         self.checkPIntSpec(tests2, 'little', signed=True)
- 
+
     def test_UnsignedBigEndian(self):
         # Convert integers to unsigned big-endian byte arrays.
         tests3 = {
@@ -705,7 +705,5 @@ class ToBytesTests(unittest.TestCase):
                 return 3
             def __index__(self):
                 return 4
-        
+
         self.assertEqual(MyTest(1).to_bytes(MyTest(10), 'big'), b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01')
-
-
