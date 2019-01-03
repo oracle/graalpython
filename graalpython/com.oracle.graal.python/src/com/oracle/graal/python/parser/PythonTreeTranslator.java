@@ -488,7 +488,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
     private GeneratorExpressionNode createGeneratorExpressionDefinition(ExpressionNode body, int lineNum) {
         FrameDescriptor fd = environment.getCurrentFrame();
-        String generatorName = source.getName() + ":generator_exp:" + lineNum;
+        String generatorName = environment.getCurrentScope().getParent().getScopeId() + ".<locals>.<genexp>:" + source.getName() + ":" + lineNum;
         FunctionRootNode funcRoot = factory.createFunctionRoot(body.getSourceSection(), generatorName, true, fd, body, environment.getExecutionCellSlots());
         GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, true);
         RootCallTarget callTarget = gtran.translate();
