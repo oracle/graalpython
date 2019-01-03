@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -115,3 +115,10 @@ def test_iter_try_except():
             break
 
     assert exit_via_break
+
+
+def test_iterator_in():
+    assert 1 not in (i for i in range(1))
+    assert 1 in (i for i in range(2))
+    assert 1 in iter(range(2))
+    assert 1 not in iter(range(1))

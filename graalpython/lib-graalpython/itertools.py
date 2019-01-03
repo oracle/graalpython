@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2019, Oracle and/or its affiliates.
 # Copyright (c) 2017, The PyPy Project
 #
 #     The MIT License
@@ -578,3 +578,70 @@ class combinations():
                 result[i] = elem
         self.last_result = result
         return tuple(result)
+
+
+class combinations_with_replacement(combinations):
+    """
+    combinations_with_replacement(iterable, r) --> combinations_with_replacement object
+
+    Return successive r-length combinations of elements in the iterable
+    allowing individual elements to have successive repeats.
+    combinations_with_replacement('ABC', 2) --> AA AB AC BB BC CC
+    """
+    def __init__(self, iterable, r):
+        pool = list(iterable)
+        if r < 0:
+            raise ValueError("r must be non-negative")
+        indices = [0] * r
+        combinations.__init__(pool, indices, r)
+        self.stopped = len(pool) == 0 and r > 0
+
+    def get_maximum(self, i):
+        return len(self.pool) - 1
+
+    def max_index(self, j):
+        return self.indices[j - 1]
+
+
+class zip_longest():
+    """
+    zip_longest(iter1 [,iter2 [...]], [fillvalue=None]) --> zip_longest object
+
+    Return a zip_longest object whose .next() method returns a tuple where
+    the i-th element comes from the i-th iterable argument.  The .next()
+    method continues until the longest iterable in the argument sequence
+    is exhausted and then it raises StopIteration.  When the shorter iterables
+    are exhausted, the fillvalue is substituted in their place.  The fillvalue
+    defaults to None or can be specified by a keyword argument.
+    """
+
+    def __iter__(self):
+        return self
+
+    def _fetch(self, index):
+        it = self.iterators[index]
+        if it is not None:
+            try:
+                return next(it)
+            except StopIteration:
+                self.active -= 1
+                if self.active <= 0:
+                    # It was the last active iterator
+                    raise
+                self.iterators[index] = None
+        return self.fillvalue
+
+    def __next__(self):
+        if self.active <= 0:
+            raise StopIteration
+        nb = len(self.iterators)
+        if nb == 0:
+            raise StopIteration
+        return tuple(self._fetch(index) for index in range(nb))
+
+    def __new__(subtype, iter1, *args, fillvalue=None):
+        self = object.__new__(subtype)
+        self.fillvalue = fillvalue
+        self.active = len(args) + 1
+        self.iterators = [iter1] + args
+        return self

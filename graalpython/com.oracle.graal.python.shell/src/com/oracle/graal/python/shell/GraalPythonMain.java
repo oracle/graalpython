@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -247,6 +247,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);
         contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[0])).in(consoleHandler.createInputStream());
+        contextBuilder.option("python.TerminalIsInteractive", Boolean.toString(stdinIsInteractive));
         contextBuilder.option("python.TerminalWidth", Integer.toString(consoleHandler.getTerminalWidth()));
         contextBuilder.option("python.TerminalHeight", Integer.toString(consoleHandler.getTerminalHeight()));
 

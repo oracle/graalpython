@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,6 +71,7 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode.NotNode;
+import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.IsNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
@@ -358,9 +359,9 @@ public class TestParserTranslator {
         parseAs("x <= y", BinaryComparisonNode.class);
         parseAs("x <> y", BinaryComparisonNode.class);
         parseAs("x != y", BinaryComparisonNode.class);
-        parseAs("x in y", BinaryComparisonNode.class);
+        parseAs("x in y", ContainsNode.class);
         CastToBooleanNode notNode = parseAs("x not in y", CastToBooleanNode.NotNode.class);
-        getChild(notNode, 0, BinaryComparisonNode.class);
+        getChild(notNode, 0, ContainsNode.class);
         parseAs("x is y", IsNode.class);
         notNode = parseAs("x is not y", CastToBooleanNode.NotNode.class);
         getChild(notNode, 0, IsNode.class);

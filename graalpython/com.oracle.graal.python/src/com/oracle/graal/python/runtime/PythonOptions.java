@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -118,6 +118,9 @@ public final class PythonOptions {
 
     @Option(category = OptionCategory.EXPERT, help = "Enable forced splitting (of builtins). Default true.") //
     public static final OptionKey<Boolean> EnableForcedSplits = new OptionKey<>(true);
+
+    @Option(category = OptionCategory.EXPERT, help = "") //
+    public static final OptionKey<Boolean> TerminalIsInteractive = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Integer> TerminalWidth = new OptionKey<>(80);
