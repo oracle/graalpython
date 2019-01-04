@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -534,3 +534,16 @@ def test_strip_bytes():
     assert b'abc'.strip(b'ac') == b'b'
     assert b'abc'.lstrip(b'ac') == b'bc'
     assert b'abc'.rstrip(b'ac') == b'ab'
+
+def test_add_mv_to_bytes():
+    b = b'hello '
+    mv = memoryview(b'world')
+    b += mv
+    assert b == b'hello world'
+
+def test_add_mv_to_bytearray():
+    ba = bytearray(b'hello ')
+    mv = memoryview(b'world')
+    ba += mv
+    assert ba == b'hello world'
+
