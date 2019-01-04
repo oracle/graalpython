@@ -319,7 +319,7 @@ class SRE_Pattern():
         self.__check_input_type(string)
         if endpos > len(string):
             endpos = len(string)
-        elif endpos < 0:
+        elif endpos < 0 and len(string) > 0:
             endpos = endpos % len(string) + 1
         matchlist = []
         while pos < endpos:

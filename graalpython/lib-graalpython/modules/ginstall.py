@@ -57,21 +57,15 @@ def known_packages():
         install_from_pypi("setuptools")
 
     def numpy():
+        # needs setuptools
+        setuptools()
+
         url = "https://files.pythonhosted.org/packages/b0/2b/497c2bb7c660b2606d4a96e2035e92554429e139c6c71cdff67af66b58d2/numpy-1.14.3.zip"
         tempdir = tempfile.mkdtemp()
         system("curl -o %s/numpy-1.14.3.zip %s" % (tempdir, url))
         system("unzip -u %s/numpy-1.14.3.zip -d %s" % (tempdir, tempdir))
 
         patch = """
-From 1842b6b02557d824692a32bb623b8e74eb7989d3 Mon Sep 17 00:00:00 2001
-From: Tim Felgentreff <tim.felgentreff@oracle.com>
-Date: Wed, 20 Jun 2018 18:01:30 +0200
-Subject: PATCH
-
----
- numpy/core/getlimits.py | 150 ++++++++++++++++++++++++------------------------
- 1 file changed, 75 insertions(+), 75 deletions(-)
-
 diff --git a/setup.py 2018-02-28 17:03:26.000000000 +0100
 index e450a66..ed538b4 100644
 --- a/setup.py
@@ -321,8 +315,13 @@ def xit(str, status=-1):
 
 
 def install_from_pypi(package):
-    url = None
-    r = subprocess.check_output("curl https://pypi.org/pypi/%s/json" % package, shell=True).decode("utf8")
+    if "==" in package:
+        package, _, version = package.rpartition("==")
+        url = "https://pypi.org/pypi/%s/%s/json" % (package, version)
+    else:
+        url = "https://pypi.org/pypi/%s/json" % (package, version)
+
+    r = subprocess.check_output("curl %s" % url, shell=True).decode("utf8")
     try:
         urls = json.loads(r)["urls"]
     except:
@@ -366,21 +365,41 @@ def install_from_pypi(package):
 
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--list", action="store_true", help="list known packages with potential workarounds available for installation")
-    parser.add_argument("--install", help="install a known package")
-    parser.add_argument("--pypi", help="attempt to install a package from PyPI (untested, likely won't work, it'll only try the latest version, and it won't install dependencies for you)")
-    args, _ = parser.parse_known_args(argv)
-    if args.list:
-        print(list(KNOWN_PACKAGES.keys()))
-    elif args.install:
-        if args.install not in KNOWN_PACKAGES:
-            xit("Unknown package: '%s'" % args.install)
-        else:
-            KNOWN_PACKAGES[args.install]()
-    elif args.pypi:
-        install_from_pypi(args.pypi)
+
+    subparsers = parser.add_subparsers(help="Commands", dest="command")
+
+    subparsers.add_parser(
+        "list", help="list known packages with potential workarounds available for installation"
+    )
+
+    subparsers.add_parser(
+        "install", help="install a known package"
+    ).add_argument(
+        "package", help="comma-separated list"
+    )
+
+    subparsers.add_parser(
+        "pypi", help="attempt to install a package from PyPI (untested, likely won't work, and it won't install dependencies for you)"
+    ).add_argument(
+        "package", help="comma-separated list, can use `==` at the end of a package name to specify an exact version"
+    )
+
+    args = parser.parse_args(argv)
+
+    if args.command == "list":
+        print("Known packages:")
+        print("\n".join("  " + x for x in KNOWN_PACKAGES.keys()))
+    elif args.command == "install":
+        for pkg in args.package.split(","):
+            if pkg not in KNOWN_PACKAGES:
+                xit("Unknown package: '%s'" % args.install)
+            else:
+                KNOWN_PACKAGES[args.install]()
+    elif args.command == "pypi":
+        for pkg in args.pypi.split(","):
+            install_from_pypi(pkg)
 
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main(sys.argv[1:])
