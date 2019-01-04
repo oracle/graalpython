@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -319,7 +319,7 @@ class SRE_Pattern():
         self.__check_input_type(string)
         if endpos > len(string):
             endpos = len(string)
-        elif endpos < 0:
+        elif endpos < 0 and len(string) > 0:
             endpos = endpos % len(string) + 1
         matchlist = []
         while pos < endpos:
