@@ -21,9 +21,20 @@ standard package installers for many packages. As a convenience, we provide a
 simple module to install packages that we know to be working (including
 potential patches required for those packages). Try the following to find out
 more:
-```python
+
+```
 graalpython -m ginstall --help
 ```
+
+As a slightly more exciting example, try:
+
+```
+graalpython -m ginstall install numpy
+```
+
+If all goes well (you'll need to have `clang`, `llvm-link`, `llvm-extract`,
+`llvm-nm`, and `opt` in your `PATH` in addition to the normal NumPy build
+dependencies), you should be able to `import numpy` afterwards.
 
 ### Licensing
 
