@@ -18,7 +18,12 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Improve performance of `os.scandir` and functions that build on it (such as `glob`)
 * More correct implementation of standard streams, including buffering
 * Properly support the `-m` switch to run modules
-* Support creating ZIP files through the standard `zipfile` module
+* Support the standard `zipfile` module
+* Add the built-in `_cvs` module
+* Add support for `__slots__`
+* Allow arbitrary callable objects in methods, not only functions
+* Report that we have a TTY console if we are launched on a Terminal through our launcher
+* Add the `ginstall` custom module to install known packages such as NumPy and setuptools
 
 ## Version 1.0.0 RC10
 
