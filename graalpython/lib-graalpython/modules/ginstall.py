@@ -40,10 +40,11 @@
 import argparse
 import json
 import os
+import shutil
+import site
 import subprocess
 import sys
 import tempfile
-import zipfile
 
 
 def system(cmd, msg=""):
@@ -57,8 +58,11 @@ def known_packages():
         install_from_pypi("setuptools")
 
     def numpy():
-        # needs setuptools
-        setuptools()
+        try:
+            import setuptools
+        except ImportError:
+            print("Installing required dependency: setuptools")
+            setuptools()
 
         url = "https://files.pythonhosted.org/packages/b0/2b/497c2bb7c660b2606d4a96e2035e92554429e139c6c71cdff67af66b58d2/numpy-1.14.3.zip"
         tempdir = tempfile.mkdtemp()
@@ -309,7 +313,7 @@ index e450a66..ed538b4 100644
 KNOWN_PACKAGES = known_packages()
 
 
-def xit(str, status=-1):
+def xit(msg, status=-1):
     print(msg)
     exit(-1)
 
@@ -335,23 +339,16 @@ def install_from_pypi(package):
     if url:
         tempdir = tempfile.mkdtemp()
         filename = url.rpartition("/")[2]
-        status = os.system("curl -L -o %s/%s %s" % (tempdir, filename, url))
-        if status != 0:
-            xit("Download error", status=status)
+        system("curl -L -o %s/%s %s" % (tempdir, filename, url), msg="Download error")
         dirname = None
         if filename.endswith(".zip"):
-            with zipfile.ZipFile("%s/%s" % (tempdir, filename), 'r') as zf:
-                zf.extractall(tempdir)
+            system("unzip -u %s/%s -d %s" % (tempdir, filename, tempdir))
             dirname = filename[:-4]
         elif filename.endswith(".tar.gz"):
-            status = os.system("tar -C %s -xzf %s/%s" % (tempdir, tempdir, filename))
-            if status != 0:
-                xit("Error during extraction", status=status)
+            system("tar -C %s -xzf %s/%s" % (tempdir, tempdir, filename), msg="Error during extraction")
             dirname = filename[:-7]
         elif filename.endswith(".tar.bz2"):
-            status = os.system("tar -C %s -xjf %s/%s" % (tempdir, tempdir, filename))
-            if status != 0:
-                xit("Error during extraction", status=status)
+            system("tar -C %s -xjf %s/%s" % (tempdir, tempdir, filename), msg="Error during extraction")
             dirname = filename[:-7]
         else:
             xit("Unknown file type: %s" % filename)
@@ -364,35 +361,70 @@ def install_from_pypi(package):
 
 
 def main(argv):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="The simple Python package installer for GraalVM")
 
-    subparsers = parser.add_subparsers(help="Commands", dest="command")
+    subparsers = parser.add_subparsers(title="Commands", dest="command", metavar="Use COMMAND --help for further help.")
 
     subparsers.add_parser(
-        "list", help="list known packages with potential workarounds available for installation"
+        "list",
+        help="list known packages with potential workarounds available for installation"
     )
 
     subparsers.add_parser(
-        "install", help="install a known package"
+        "install",
+        help="install a known package",
+        description="Install a known package. Known packages are " + ", ".join(KNOWN_PACKAGES.keys())
     ).add_argument(
-        "package", help="comma-separated list"
+        "package",
+        help="comma-separated list"
     )
 
     subparsers.add_parser(
-        "pypi", help="attempt to install a package from PyPI (untested, likely won't work, and it won't install dependencies for you)"
+        "uninstall",
+        help="remove installation folder of a local package",
     ).add_argument(
-        "package", help="comma-separated list, can use `==` at the end of a package name to specify an exact version"
+        "package",
+        help="comma-separated list"
+    )
+
+    subparsers.add_parser(
+        "pypi",
+        help="attempt to install a package from PyPI (untested, likely won't work, and it won't install dependencies for you)",
+        description="Attempt to install a package from PyPI"
+    ).add_argument(
+        "package",
+        help="comma-separated list, can use `==` at the end of a package name to specify an exact version"
     )
 
     args = parser.parse_args(argv)
 
     if args.command == "list":
-        print("Known packages:")
-        print("\n".join("  " + x for x in KNOWN_PACKAGES.keys()))
+        user_site = site.getusersitepackages()
+        print("Installed packages:")
+        for p in sys.path:
+            if p.startswith(user_site):
+                print(p[len(user_site) + 1:])
+    elif args.command == "uninstall":
+        print("WARNING: I will only delete the package folder, proper uninstallation is not supported at this time.")
+        user_site = site.getusersitepackages()
+        for pkg in args.package.split(","):
+            deleted = False
+            for p in sys.path:
+                if p.startswith(user_site) and p.endswith(pkg):
+                    if os.path.isdir(p):
+                        shutil.rmtree(p)
+                    else:
+                        os.unlink(p)
+                    deleted = True
+                    break
+            if deleted:
+                print("Deleted %s" % p)
+            else:
+                xit("Unknown package: '%s'" % pkg)
     elif args.command == "install":
         for pkg in args.package.split(","):
             if pkg not in KNOWN_PACKAGES:
-                xit("Unknown package: '%s'" % args.install)
+                xit("Unknown package: '%s'" % pkg)
             else:
                 KNOWN_PACKAGES[args.install]()
     elif args.command == "pypi":
