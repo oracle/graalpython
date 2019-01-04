@@ -109,4 +109,14 @@ public abstract class ConsoleHandler {
             }
         };
     }
+
+    public int getTerminalWidth() {
+        // deafult value
+        return 80;
+    }
+
+    public int getTerminalHeight() {
+        // default value
+        return 25;
+    }
 }

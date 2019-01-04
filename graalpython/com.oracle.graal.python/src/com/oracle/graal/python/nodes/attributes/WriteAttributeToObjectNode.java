@@ -77,8 +77,8 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return WriteAttributeToObjectNodeGen.create();
     }
 
-    protected boolean isAttrWritable(PythonObject self) {
-        if (self instanceof PythonClass || self instanceof PFunction || self instanceof PMethod || self instanceof PythonModule || self instanceof PBaseException) {
+    protected boolean isAttrWritable(PythonObject self, Object key) {
+        if (isHiddenKey(key) || self instanceof PythonClass || self instanceof PFunction || self instanceof PMethod || self instanceof PythonModule || self instanceof PBaseException) {
             return true;
         }
         return !exactBuiltinInstanceProfile.profileIsAnyBuiltinObject(self);
@@ -95,7 +95,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     // write to the DynamicObject
     @Specialization(guards = {
                     "object == cachedObject",
-                    "isAttrWritable(object) || isHiddenKey(key)"
+                    "isAttrWritable(object, key)"
     }, assumptions = {
                     "singleContextAssumption",
                     "dictUnsetOrSameAsStorageAssumption"
@@ -110,8 +110,8 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     @Specialization(guards = {
-                    "isAttrWritable(object) || isHiddenKey(key)",
-                    "isDictUnsetOrSameAsStorage(object)"
+                    "isAttrWritable(object, key)",
+                    "isHiddenKey(key) || isDictUnsetOrSameAsStorage(object)"
     }, replaces = "writeToDynamicStorageCached")
     protected boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
                     @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
@@ -122,7 +122,8 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     // write to the dict
     @Specialization(guards = {
                     "object == cachedObject",
-                    "!dictUnsetOrSameAsStorageAssumption.isValid()"
+                    "!isHiddenKey(key)",
+                    "!dictUnsetOrSameAsStorageAssumption.isValid()",
     }, assumptions = {
                     "singleContextAssumption"
     })
@@ -144,6 +145,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     @Specialization(guards = {
+                    "!isHiddenKey(key)",
                     "!isDictUnsetOrSameAsStorage(object)"
     }, replaces = "writeToDictCached")
     protected boolean writeToDict(PythonObject object, Object key, Object value,
@@ -160,7 +162,10 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return true;
     }
 
-    @Specialization(guards = "!isPythonObject(object)")
+    @Specialization(guards = {
+                    "!isHiddenKey(key)",
+                    "!isPythonObject(object)"
+    })
     protected boolean readNative(PythonNativeObject object, Object key, Object value,
                     @Cached("create()") GetObjectDictNode getNativeDict,
                     @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -93,11 +93,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
@@ -180,6 +183,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     new PosixFilePermission[]{PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE},
                     new PosixFilePermission[]{PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE},
     };
+
+    private static boolean terminalIsInteractive(PythonContext context) {
+        return PythonOptions.getFlag(context, PythonOptions.TerminalIsInteractive);
+    }
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -1029,20 +1036,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 case 0:
                 case 1:
                 case 2:
-                    // TODO: XXX: actually check
-                    // TODO: We can only return true here once we
-                    // have at least basic subprocess module support,
-                    // because otherwise we break the REPL help
-                    // return consoleCheck();
-                    return false;
+                    return terminalIsInteractive(getContext());
                 default:
                     return false;
             }
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static boolean consoleCheck() {
-            return System.console() != null;
         }
     }
 
@@ -1273,20 +1270,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             private final OutputStream out;
             private final byte[] buffer;
             private volatile boolean finish;
-            private volatile boolean flush;
 
-            public PipePump(InputStream in, OutputStream out) {
+            public PipePump(String name, InputStream in, OutputStream out) {
+                this.setName(name);
                 this.in = in;
                 this.out = out;
                 this.buffer = new byte[MAX_READ];
                 this.finish = false;
-                this.flush = false;
             }
 
             @Override
             public void run() {
                 try {
-                    while (!finish || (flush && in.available() > 0)) {
+                    while (!finish || in.available() > 0) {
                         if (Thread.interrupted()) {
                             finish = true;
                         }
@@ -1300,14 +1296,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            public void finish(boolean force_flush) {
+            public void finish() {
                 finish = true;
-                flush = force_flush;
-                if (flush) {
-                    // If we need to flush, make ourselves max priority to pump data out as quickly
-                    // as possible
-                    setPriority(Thread.MAX_PRIORITY);
-                }
+                // Make ourselves max priority to flush data out as quickly as possible
+                setPriority(Thread.MAX_PRIORITY);
                 Thread.yield();
             }
         }
@@ -1323,20 +1315,28 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             Env env = context.getEnv();
             try {
                 ProcessBuilder pb = new ProcessBuilder(command);
-                pb.redirectInput(Redirect.PIPE);
-                pb.redirectOutput(Redirect.PIPE);
-                pb.redirectError(Redirect.PIPE);
+                PipePump stdout = null, stderr = null;
+                boolean stdsArePipes = !terminalIsInteractive(context);
+                if (stdsArePipes) {
+                    pb.redirectInput(Redirect.PIPE);
+                    pb.redirectOutput(Redirect.PIPE);
+                    pb.redirectError(Redirect.PIPE);
+                } else {
+                    pb.inheritIO();
+                }
                 Process proc = pb.start();
-                PipePump stdin = new PipePump(env.in(), proc.getOutputStream());
-                PipePump stdout = new PipePump(proc.getInputStream(), env.out());
-                PipePump stderr = new PipePump(proc.getErrorStream(), env.err());
-                stdin.start();
-                stdout.start();
-                stderr.start();
+                if (stdsArePipes) {
+                    proc.getOutputStream().close(); // stdin will be closed
+                    stdout = new PipePump(cmd + " [stdout]", proc.getInputStream(), env.out());
+                    stderr = new PipePump(cmd + " [stderr]", proc.getErrorStream(), env.err());
+                    stdout.start();
+                    stderr.start();
+                }
                 int exitStatus = proc.waitFor();
-                stdin.finish(false);
-                stdout.finish(true);
-                stderr.finish(true);
+                if (stdsArePipes) {
+                    stdout.finish();
+                    stderr.finish();
+                }
                 return exitStatus;
             } catch (IOException | InterruptedException e) {
                 return -1;
@@ -1623,6 +1623,100 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } else {
                 throw raise(NotImplementedError, "setting the umask to anything other than the default");
             }
+        }
+    }
+
+    @Builtin(name = "get_terminal_size", maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetTerminalSizeNode extends PythonUnaryBuiltinNode {
+        private final static String ERROR_MESSAGE = "[Errno 9] Bad file descriptor";
+
+        @Child private CastToIntegerFromIntNode castIntNode;
+        @Child private GetTerminalSizeNode recursiveNode;
+
+        @CompilationFinal private ConditionProfile errorProfile;
+        @CompilationFinal private ConditionProfile overflowProfile;
+
+        private CastToIntegerFromIntNode getCastIntNode() {
+            if (castIntNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castIntNode = insert(CastToIntegerFromIntNode.create(val -> {
+                    throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
+                }));
+            }
+            return castIntNode;
+        }
+
+        private ConditionProfile getErrorProfile() {
+            if (errorProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                errorProfile = ConditionProfile.createBinaryProfile();
+            }
+            return errorProfile;
+        }
+
+        private ConditionProfile getOverflowProfile() {
+            if (overflowProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                overflowProfile = ConditionProfile.createBinaryProfile();
+            }
+            return overflowProfile;
+        }
+
+        @Specialization(guards = "isNone(fd)")
+        PTuple getTerminalSize(@SuppressWarnings("unused") PNone fd) {
+            if (getErrorProfile().profile(getContext().getResources().getFileChannel(0) == null)) {
+                throw raise(OSError, ERROR_MESSAGE);
+            }
+            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+        }
+
+        @Specialization
+        PTuple getTerminalSize(int fd) {
+            if (getErrorProfile().profile(getContext().getResources().getFileChannel(fd) == null)) {
+                throw raise(OSError, ERROR_MESSAGE);
+            }
+            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+        }
+
+        @Specialization
+        PTuple getTerminalSize(long fd) {
+            if (getOverflowProfile().profile(Integer.MIN_VALUE > fd || fd > Integer.MAX_VALUE)) {
+                raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
+            }
+            if (getErrorProfile().profile(getContext().getResources().getFileChannel((int) fd) == null)) {
+                throw raise(OSError, "[Errno 9] Bad file descriptor");
+            }
+            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+        }
+
+        @Specialization
+        @TruffleBoundary
+        PTuple getTerminalSize(PInt fd) {
+            int value;
+            try {
+                value = fd.intValueExact();
+                if (getContext().getResources().getFileChannel(value) == null) {
+                    throw raise(OSError, ERROR_MESSAGE);
+                }
+            } catch (ArithmeticException e) {
+                throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
+            }
+            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+        }
+
+        @Fallback
+        Object getTerminalSize(Object fd) {
+            Object value = getCastIntNode().execute(fd);
+            if (recursiveNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                recursiveNode = create();
+            }
+            return recursiveNode.execute(value);
+        }
+
+        protected GetTerminalSizeNode create() {
+            return PosixModuleBuiltinsFactory.GetTerminalSizeNodeFactory.create();
         }
     }
 }

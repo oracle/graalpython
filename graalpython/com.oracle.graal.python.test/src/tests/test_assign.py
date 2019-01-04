@@ -85,3 +85,18 @@ def test_destructuring():
     # TODO not supported yet
 #     a, b, c = "\U0001d49c\U0001d49e\U0001d4b5"
 #     assert a == '𝒜' and b == '𝒞' and c == '𝒵'
+
+
+def test_assigning_hidden_keys():
+    class A():
+        def __init__(self):
+            self.__dict__["xyz"] = 1
+
+    ary = [A(), A(), A(), A(), A(), A()]
+    for a in ary:
+        a.foo = 12
+
+    for a in ary:
+        id(a) # id is stored in a HiddenKey
+
+    return

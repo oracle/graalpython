@@ -38,6 +38,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.source.SourceSection;
 
 public class PFunction extends PythonObject {
 
@@ -139,5 +140,14 @@ public class PFunction extends PythonObject {
 
     public void setDefaults(Object[] defaults) {
         this.defaults = defaults;
+    }
+
+    @TruffleBoundary
+    public String getSourceCode() {
+        SourceSection sourceSection = callTarget.getRootNode().getSourceSection();
+        if (sourceSection != null) {
+            return sourceSection.getCharacters().toString();
+        }
+        return null;
     }
 }

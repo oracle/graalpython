@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -247,6 +247,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);
         contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[0])).in(consoleHandler.createInputStream());
+        contextBuilder.option("python.TerminalIsInteractive", Boolean.toString(stdinIsInteractive));
+        contextBuilder.option("python.TerminalWidth", Integer.toString(consoleHandler.getTerminalWidth()));
+        contextBuilder.option("python.TerminalHeight", Integer.toString(consoleHandler.getTerminalHeight()));
 
         int rc = 1;
         try (Context context = contextBuilder.build()) {
@@ -360,7 +363,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "-B     : don't write .py[co] files on import; also PYTHONDONTWRITEBYTECODE=x\n" +
                         "-c cmd : program passed in as string (terminates option list)\n" +
                         // "-d : debug output from parser; also PYTHONDEBUG=x\n" +
-                        // "-E : ignore PYTHON* environment variables (such as PYTHONPATH)\n" +
+                        "-E     : ignore PYTHON* environment variables (such as PYTHONPATH)\n" +
                         "-h     : print this help message and exit (also --help)\n" +
                         "-i     : inspect interactively after running script; forces a prompt even\n" +
                         "         if stdin does not appear to be a terminal; also PYTHONINSPECT=x\n" +

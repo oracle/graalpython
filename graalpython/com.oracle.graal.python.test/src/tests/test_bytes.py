@@ -529,3 +529,8 @@ def test_strip_bytearray():
     assert bytearray(b'abc').strip(b'ac') == b'b'
     assert bytearray(b'abc').lstrip(b'ac') == b'bc'
     assert bytearray(b'abc').rstrip(b'ac') == b'ab'
+
+def test_strip_bytes():
+    assert b'abc'.strip(b'ac') == b'b'
+    assert b'abc'.lstrip(b'ac') == b'bc'
+    assert b'abc'.rstrip(b'ac') == b'ab'

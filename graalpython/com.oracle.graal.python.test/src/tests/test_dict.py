@@ -176,6 +176,12 @@ def test_init5():
     assert set(d.keys()) == key_set, "unexpected keys: %s" % str(d.keys())
     assert set(d.values()) == { 97, 98, 99, 100 }, "unexpected values: %s" % str(d.values())
 
+def test_init_kwargs():
+    kwargs = {'ONE':'one', 'TWO' : 'two'}
+    d = dict([(1,11),(2,22)], **kwargs)
+    assert len(d) == 4, "invalid length, expected 4 but was %d" % len(d)
+    assert set(d.keys()) == {1,2,'ONE','TWO'}, "unexpected keys: %s" % str(d.keys())
+    assert set(d.values()) == { 11, 22, 'one', 'two' }, "unexpected values: %s" % str(d.values())
 
 def test_custom_key_object0():
     class CollisionKey:

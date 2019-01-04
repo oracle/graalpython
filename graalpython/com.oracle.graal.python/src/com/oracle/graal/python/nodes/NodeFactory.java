@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.IsNode;
@@ -389,9 +390,9 @@ public class NodeFactory {
             case "!=":
                 return BinaryComparisonNode.create(SpecialMethodNames.__NE__, SpecialMethodNames.__NE__, operator, left, right);
             case "in":
-                return BinaryComparisonNode.create(SpecialMethodNames.__CONTAINS__, null, operator, right, left);
+                return ContainsNode.create(right, left);
             case "notin":
-                return CastToBooleanNode.createIfFalseNode(BinaryComparisonNode.create(SpecialMethodNames.__CONTAINS__, null, operator, right, left));
+                return CastToBooleanNode.createIfFalseNode(ContainsNode.create(right, left));
             case "is":
                 return IsNode.create(left, right);
             case "isnot":

@@ -135,3 +135,11 @@ def uname():
 
 
 error = OSError
+
+terminal_size = make_named_tuple_class("os.terminal_size", ["columns", "lines"])
+
+old_get_terminal_size = get_terminal_size
+
+@__builtin__
+def get_terminal_size(fd = None):
+    return terminal_size(old_get_terminal_size(fd))
