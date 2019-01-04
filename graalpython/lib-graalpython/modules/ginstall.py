@@ -59,7 +59,7 @@ def known_packages():
 
     def numpy():
         try:
-            import setuptools
+            import setuptools as st
         except ImportError:
             print("Installing required dependency: setuptools")
             setuptools()
@@ -323,7 +323,7 @@ def install_from_pypi(package):
         package, _, version = package.rpartition("==")
         url = "https://pypi.org/pypi/%s/%s/json" % (package, version)
     else:
-        url = "https://pypi.org/pypi/%s/json" % (package, version)
+        url = "https://pypi.org/pypi/%s/json" % package
 
     r = subprocess.check_output("curl %s" % url, shell=True).decode("utf8")
     try:
@@ -367,7 +367,7 @@ def main(argv):
 
     subparsers.add_parser(
         "list",
-        help="list known packages with potential workarounds available for installation"
+        help="list locally installed packages"
     )
 
     subparsers.add_parser(
@@ -426,9 +426,9 @@ def main(argv):
             if pkg not in KNOWN_PACKAGES:
                 xit("Unknown package: '%s'" % pkg)
             else:
-                KNOWN_PACKAGES[args.install]()
+                KNOWN_PACKAGES[pkg]()
     elif args.command == "pypi":
-        for pkg in args.pypi.split(","):
+        for pkg in args.package.split(","):
             install_from_pypi(pkg)
 
 
