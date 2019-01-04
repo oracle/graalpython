@@ -534,3 +534,16 @@ def test_strip_bytes():
     assert b'abc'.strip(b'ac') == b'b'
     assert b'abc'.lstrip(b'ac') == b'bc'
     assert b'abc'.rstrip(b'ac') == b'ab'
+
+def test_add_mv_to_bytes():
+    b = b'hello '
+    mv = memoryview(b'world')
+    b += mv
+    assert b == b'hello world'
+
+def test_add_mv_to_bytearray():
+    ba = bytearray(b'hello ')
+    mv = memoryview(b'world')
+    ba += mv
+    assert ba == b'hello world'
+

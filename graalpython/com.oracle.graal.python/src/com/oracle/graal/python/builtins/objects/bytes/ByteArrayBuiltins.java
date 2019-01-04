@@ -244,6 +244,20 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return factory().createByteArray(res);
         }
 
+        @Specialization
+        public Object add(PByteArray self, PMemoryView other,
+                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
+                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
+                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+
+            Object bytesObj = toBytesNode.executeObject(other);
+            if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
+                SequenceStorage res = concatNode.execute(self.getSequenceStorage(), ((PBytes) bytesObj).getSequenceStorage());
+                return factory().createByteArray(res);
+            }
+            throw raise(SystemError, "could not get bytes of memoryview");
+        }
+
         @SuppressWarnings("unused")
         @Fallback
         public Object add(Object self, Object other) {

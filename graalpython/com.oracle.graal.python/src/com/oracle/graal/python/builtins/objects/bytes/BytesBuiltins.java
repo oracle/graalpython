@@ -61,13 +61,16 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToBy
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -77,6 +80,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBytes)
 public class BytesBuiltins extends PythonBuiltins {
@@ -258,6 +262,20 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
             ByteSequenceStorage res = (ByteSequenceStorage) concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
             return factory().createBytes(res);
+        }
+
+        @Specialization
+        public Object add(PBytes self, PMemoryView other,
+                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
+                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
+                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+
+            Object bytesObj = toBytesNode.executeObject(other);
+            if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
+                SequenceStorage res = concatNode.execute(self.getSequenceStorage(), ((PBytes) bytesObj).getSequenceStorage());
+                return factory().createByteArray(res);
+            }
+            throw raise(SystemError, "could not get bytes of memoryview");
         }
 
         @SuppressWarnings("unused")
