@@ -593,6 +593,17 @@ class BaseTestSplit:
         self.assertRaises(ValueError, self.type2test(b'a b').split, b'')
         self.assertRaises(ValueError, self.type2test(b'a b').rsplit, b'')
 
+    def test_indexable_object(self):
+
+        class MyIndexable(object):
+            def __init__(self, value):
+                self.value = value
+            def __index__(self):
+                return self.value
+        
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(maxsplit=MyIndexable(1)), [b'ahoj', b'jak\tse\nmas'])
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(maxsplit=MyIndexable(1)), [b'ahoj jak\tse', b'mas'])
+        
 class BytesSplitTest(BaseTestSplit, unittest.TestCase):
     type2test = bytes
 

@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -318,6 +319,10 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
             throw new RuntimeException();
         }
 
+        protected AbstractSplitNode createRecursiveNode() {
+            throw new RuntimeException();
+        }
+
         @CompilationFinal private ConditionProfile isEmptySepProfile;
         @CompilationFinal private ConditionProfile overflowProfile;
 
@@ -346,10 +351,6 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
             for (char c : " \t\n\u000b\f\r".toCharArray()) {
                 CTYPE[0x80 + c] = SPACE;
             }
-        }
-
-        public static AbstractSplitNode create() {
-            return AbstractBytesBuiltinsFactory.AbstractSplitNodeGen.create();
         }
 
         private ConditionProfile getIsEmptyProfile() {
@@ -403,7 +404,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         private AbstractSplitNode getRecursiveNode() {
             if (recursiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                recursiveNode = insert(AbstractSplitNode.create());
+                recursiveNode = insert(createRecursiveNode());
             }
             return recursiveNode;
         }
@@ -661,6 +662,11 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
             }
             return result;
         }
+
+        @Override
+        protected AbstractSplitNode createRecursiveNode() {
+            return AbstractBytesBuiltinsFactory.SplitNodeFactory.create(new ReadArgumentNode[]{});
+        }
     }
 
     @Builtin(name = "rsplit", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"sep", "maxsplit"})
@@ -762,6 +768,11 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
                 result.add(0, copyOfRange(bytes, 0, end));
             }
             return result;
+        }
+
+        @Override
+        protected AbstractSplitNode createRecursiveNode() {
+            return AbstractBytesBuiltinsFactory.RSplitNodeFactory.create(new ReadArgumentNode[]{});
         }
     }
 }
