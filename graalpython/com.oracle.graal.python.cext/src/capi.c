@@ -655,6 +655,21 @@ void* wrap_unsupported(void *fun, ...) {
     return NULL;
 }
 
-int truffle_ptr_compare(void* x, void* y) {
-    return x == y;
+int truffle_ptr_compare(void* x, void* y, int op) {
+    switch (op) {
+    case Py_LT:
+        return x < y;
+    case Py_LE:
+        return x <= y;
+    case Py_EQ:
+        return x == y;
+    case Py_NE:
+        return x != y;
+    case Py_GT:
+        return x > y;
+    case Py_GE:
+        return x >= y;
+    default:
+        return -1;
+    }
 }

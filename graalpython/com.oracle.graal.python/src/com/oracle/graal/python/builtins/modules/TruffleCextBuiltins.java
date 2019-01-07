@@ -415,14 +415,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "do_richcompare", fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class RichCompareNode extends PythonBuiltinNode {
-        private static final String[] opstrings = new String[]{"<", "<=", "==", "!=", ">", ">="};
-        private static final String[] opnames = new String[]{
-                        SpecialMethodNames.__LT__, SpecialMethodNames.__LE__, SpecialMethodNames.__EQ__, SpecialMethodNames.__NE__, SpecialMethodNames.__GT__, SpecialMethodNames.__GE__};
-        private static final String[] reversals = new String[]{
-                        SpecialMethodNames.__GT__, SpecialMethodNames.__GE__, SpecialMethodNames.__EQ__, SpecialMethodNames.__NE__, SpecialMethodNames.__GT__, SpecialMethodNames.__GE__};
-
         protected static BinaryComparisonNode create(int op) {
-            return BinaryComparisonNode.create(opnames[op], reversals[op], opstrings[op]);
+            return BinaryComparisonNode.create(SpecialMethodNames.COMPARE_OPNAMES[op], SpecialMethodNames.COMPARE_REVERSALS[op], SpecialMethodNames.COMPARE_OPSTRINGS[op]);
         }
 
         @Specialization(guards = "op == 0")

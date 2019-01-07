@@ -162,4 +162,10 @@ public abstract class SpecialMethodNames {
 
     public static final String RICHCMP = "__truffle_richcompare__";
     public static final String TRUFFLE_SOURCE = "__truffle_source__";
+
+    // (tfel): The order of these matches the one in CPython, and thus is assumed to remain the same
+    // in various places
+    public static final String[] COMPARE_OPSTRINGS = new String[]{"<", "<=", "==", "!=", ">", ">="};
+    public static final String[] COMPARE_OPNAMES = new String[]{__LT__, __LE__, __EQ__, __NE__, __GT__, __GE__};
+    public static final String[] COMPARE_REVERSALS = new String[]{__GT__, __GE__, __EQ__, __NE__, __GT__, __GE__};
 }

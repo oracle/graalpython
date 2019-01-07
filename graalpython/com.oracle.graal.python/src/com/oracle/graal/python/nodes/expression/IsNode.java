@@ -165,7 +165,7 @@ public abstract class IsNode extends BinaryOpNode {
 
     @Specialization
     boolean doNative(PythonNativeObject left, PythonNativeObject right,
-                    @Cached("create()") CExtNodes.IsNode isNode) {
+                    @Cached("create(__EQ__)") CExtNodes.PointerCompareNode isNode) {
         return isNode.execute(left, right);
     }
 

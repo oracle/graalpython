@@ -848,17 +848,34 @@ public abstract class CExtNodes {
         }
     }
 
-    public static class IsNode extends CExtBaseNode {
+    public static final class PointerCompareNode extends CExtBaseNode {
+        private final int op;
         @CompilationFinal private TruffleObject isFunc = null;
         @Child Node executeNode = Message.EXECUTE.createNode();
 
-        public boolean execute(PythonNativeObject a, PythonNativeObject b) {
+        private PointerCompareNode(int op) {
+            this.op = op;
+        }
+
+        private boolean executeCFunction(Object a, Object b) {
             try {
-                return (int) ForeignAccess.sendExecute(executeNode, getNativeFunction(), a.object, b.object) != 0;
+                return (int) ForeignAccess.sendExecute(executeNode, getNativeFunction(), a, b, op) != 0;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw new IllegalStateException(NativeCAPISymbols.FUN_PTR_COMPARE + " didn't work!");
             }
+        }
+
+        public boolean execute(PythonNativeObject a, PythonNativeObject b) {
+            return executeCFunction(a.object, b.object);
+        }
+
+        public boolean execute(PythonNativeObject a, long b) {
+            return executeCFunction(a.object, b);
+        }
+
+        public boolean execute(PythonNativeVoidPtr a, long b) {
+            return executeCFunction(a.object, b);
         }
 
         private TruffleObject getNativeFunction() {
@@ -869,10 +886,14 @@ public abstract class CExtNodes {
             return isFunc;
         }
 
-        public static IsNode create() {
-            return new CExtNodes.IsNode();
+        public static PointerCompareNode create(String specialMethodName) {
+            for (int i = 0; i < SpecialMethodNames.COMPARE_OPNAMES.length; i++) {
+                if (SpecialMethodNames.COMPARE_OPNAMES[i].equals(specialMethodName)) {
+                    return new CExtNodes.PointerCompareNode(i);
+                }
+            }
+            throw new RuntimeException("The special method used for Python C API pointer comparison must be a constant literal (i.e., interned) string");
         }
-
     }
 
     public abstract static class AllToJavaNode extends PNodeWithContext {
