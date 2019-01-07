@@ -211,7 +211,7 @@ void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *var
 void* wrap_fastcall(_PyCFunctionFast        fun, PyObject *  self, PyObject   **args, PyObject  *nargs, PyObject *kwnames);
 void* wrap_unsupported(void *fun, ...);
 
-#define TDEBUG __asm__("int $3")
+#define TDEBUG __builtin_debugtrap()
 #define get_method_flags_wrapper(flags)                                 \
     (((flags) < 0) ?                                                    \
      truffle_read(PY_TRUFFLE_CEXT, "METH_DIRECT") :                     \

@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
@@ -1003,6 +1004,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(keywordArg)")
+        public Object createInt(LazyPythonClass cls, PythonNativeVoidPtr arg, @SuppressWarnings("unused") PNone keywordArg) {
+            if (isPrimitiveInt(cls)) {
+                return arg;
+            } else {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException("cannot wrap void ptr in int subclass");
+            }
+        }
+
+        @Specialization(guards = "isNoValue(keywordArg)")
         public Object createInt(LazyPythonClass cls, double arg, @SuppressWarnings("unused") PNone keywordArg,
                         @Cached("createBinaryProfile()") ConditionProfile isIntProfile) {
             if (isPrimitiveInt(cls) && isIntProfile.profile(arg >= Integer.MIN_VALUE && arg <= Integer.MAX_VALUE)) {
@@ -1178,7 +1189,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         protected static boolean isHandledType(Object obj) {
-            return PGuards.isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj);
+            return PGuards.isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj) || obj instanceof PythonNativeVoidPtr;
         }
 
         private String toString(PIBytesLike pByteArray) {

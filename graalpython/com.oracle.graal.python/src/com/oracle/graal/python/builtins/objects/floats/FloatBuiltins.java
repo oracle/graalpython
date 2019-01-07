@@ -394,11 +394,33 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        Object doDP(PythonNativeObject left, long right,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            Double leftPrimitive = getFloat.execute(left);
+            if (leftPrimitive != null) {
+                return leftPrimitive * right;
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+        }
+
+        @Specialization
         Object doDP(PythonNativeObject left, double right,
                         @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
             Double leftPrimitive = getFloat.execute(left);
             if (leftPrimitive != null) {
                 return leftPrimitive * right;
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+        }
+
+        @Specialization
+        Object doDP(PythonNativeObject left, PInt right,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            Double leftPrimitive = getFloat.execute(left);
+            if (leftPrimitive != null) {
+                return leftPrimitive * right.doubleValue();
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -773,6 +795,17 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         double div(double right, PInt left) {
             return left.doubleValue() / right;
+        }
+
+        @Specialization
+        Object doDP(PythonNativeObject right, long left,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            Double rPrimitive = getFloat.execute(right);
+            if (rPrimitive != null) {
+                return left / rPrimitive;
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
         }
 
         @SuppressWarnings("unused")

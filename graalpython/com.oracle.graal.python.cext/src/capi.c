@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -235,13 +235,19 @@ void* get_ob_type(PyObject* obj) {
     if (!truffle_cannot_be_handle(type)) {
         return resolve_handle(cache, (uint64_t)type);
     } else {
-        // we have stored a handle to the Java class in ob_refcnt
-        void* handle = (void*)((PyObject*)type)->ob_refcnt;
-        if (!truffle_cannot_be_handle(handle)) {
-            return resolve_handle(cache, (uint64_t)handle);
+        PyObject* cast_type = ((PyObject*)type);
+        if (!polyglot_is_value(cast_type)) {
+            // we have stored a handle to the Java class in ob_refcnt
+            void* handle = (void*)(cast_type->ob_refcnt);
+            if (!truffle_cannot_be_handle(handle)) {
+                return resolve_handle(cache, (uint64_t)handle);
+            } else {
+                // assume handle is a TruffleObject
+                return handle;
+            }
         } else {
-            // assume handle is a TruffleObject
-            return handle;
+            // the type is already the right value (e.g. on sandboxed it's a managed pointer)
+            return cast_type;
         }
     }
 }
@@ -649,6 +655,21 @@ void* wrap_unsupported(void *fun, ...) {
     return NULL;
 }
 
-int truffle_ptr_compare(void* x, void* y) {
-    return x == y;
+int truffle_ptr_compare(void* x, void* y, int op) {
+    switch (op) {
+    case Py_LT:
+        return x < y;
+    case Py_LE:
+        return x <= y;
+    case Py_EQ:
+        return x == y;
+    case Py_NE:
+        return x != y;
+    case Py_GT:
+        return x > y;
+    case Py_GE:
+        return x >= y;
+    default:
+        return -1;
+    }
 }

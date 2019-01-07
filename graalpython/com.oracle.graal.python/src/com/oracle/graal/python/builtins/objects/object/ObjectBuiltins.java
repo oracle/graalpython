@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -225,7 +225,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         public boolean eq(PythonNativeObject self, PythonNativeObject other,
-                        @Cached("create()") CExtNodes.IsNode nativeIsNode) {
+                        @Cached("create(__EQ__)") CExtNodes.PointerCompareNode nativeIsNode) {
             return nativeIsNode.execute(self, other);
         }
 
@@ -244,8 +244,8 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         public boolean ne(PythonNativeObject self, PythonNativeObject other,
-                        @Cached("create()") CExtNodes.IsNode nativeIsNode) {
-            return !nativeIsNode.execute(self, other);
+                        @Cached("create(__NE__)") CExtNodes.PointerCompareNode nativeNeNode) {
+            return nativeNeNode.execute(self, other);
         }
 
         @Fallback

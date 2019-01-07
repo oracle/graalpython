@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -415,14 +415,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "do_richcompare", fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class RichCompareNode extends PythonBuiltinNode {
-        private static final String[] opstrings = new String[]{"<", "<=", "==", "!=", ">", ">="};
-        private static final String[] opnames = new String[]{
-                        SpecialMethodNames.__LT__, SpecialMethodNames.__LE__, SpecialMethodNames.__EQ__, SpecialMethodNames.__NE__, SpecialMethodNames.__GT__, SpecialMethodNames.__GE__};
-        private static final String[] reversals = new String[]{
-                        SpecialMethodNames.__GT__, SpecialMethodNames.__GE__, SpecialMethodNames.__EQ__, SpecialMethodNames.__NE__, SpecialMethodNames.__GT__, SpecialMethodNames.__GE__};
-
         protected static BinaryComparisonNode create(int op) {
-            return BinaryComparisonNode.create(opnames[op], reversals[op], opstrings[op]);
+            return BinaryComparisonNode.create(SpecialMethodNames.COMPARE_OPNAMES[op], SpecialMethodNames.COMPARE_REVERSALS[op], SpecialMethodNames.COMPARE_OPSTRINGS[op]);
         }
 
         @Specialization(guards = "op == 0")
@@ -951,6 +945,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "targetTypeSize == 8")
         long doLong8(long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
+            return obj;
+        }
+
+        @Specialization(guards = "targetTypeSize == 8")
+        Object doVoid(PythonNativeVoidPtr obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
             return obj;
         }
 
@@ -1831,15 +1830,27 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private CExtNodes.AsLong asLongNode = CExtNodes.AsLong.create();
 
         @Specialization
-        long upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args,
+        Object upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args,
+                        @Cached("createBinaryProfile()") ConditionProfile isVoidPtr,
                         @Cached("create()") CExtNodes.CextUpcallNode upcallNode) {
-            return asLongNode.execute(upcallNode.execute(frame, cextModule, name, args));
+            Object result = upcallNode.execute(frame, cextModule, name, args);
+            if (isVoidPtr.profile(result instanceof PythonNativeVoidPtr)) {
+                return ((PythonNativeVoidPtr) result).object;
+            } else {
+                return asLongNode.execute(result);
+            }
         }
 
         @Specialization(guards = "!isString(callable)")
-        long doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object callable, Object[] args,
+        Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object callable, Object[] args,
+                        @Cached("createBinaryProfile()") ConditionProfile isVoidPtr,
                         @Cached("create()") CExtNodes.DirectUpcallNode upcallNode) {
-            return asLongNode.execute(upcallNode.execute(frame, callable, args));
+            Object result = upcallNode.execute(frame, callable, args);
+            if (isVoidPtr.profile(result instanceof PythonNativeVoidPtr)) {
+                return ((PythonNativeVoidPtr) result).object;
+            } else {
+                return asLongNode.execute(result);
+            }
         }
     }
 
