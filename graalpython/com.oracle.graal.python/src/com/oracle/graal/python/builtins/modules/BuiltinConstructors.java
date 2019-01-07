@@ -148,6 +148,7 @@ import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -1715,10 +1716,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private WriteAttributeToObjectNode writeAttrNode;
         @Child private CastToIndexNode castToInt;
         @Child private CastToListNode castToList;
+        @Child private CastToStringNode castToStringNode;
         @Child private SequenceStorageNodes.LenNode slotLenNode;
         @Child private SequenceStorageNodes.GetItemNode getSlotItemNode;
         @Child private SequenceStorageNodes.AppendNode setSlotItemNode;
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
+        @Child private HashingStorageNodes.GetItemNode getDictItemNode;
         @Child private CExtNodes.PCallCapiFunction callAddNativeSlotsNode;
         @Child private CExtNodes.ToSulongNode toSulongNode;
 
@@ -1738,7 +1741,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
             // Determine the proper metatype to deal with this
             PythonClass metaclass = calculate_metaclass(cls, bases, getMetaclassNode);
-
             if (metaclass != cls) {
                 Object newFunc = getNewFuncNode.execute(metaclass);
                 if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
@@ -1758,9 +1760,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     Frame callerFrame = readCallerFrameNode.executeWith(frame);
                     PythonObject globals = PArguments.getGlobals(callerFrame);
                     if (globals != null) {
-                        Object nameAttr = ensureReadAttrNode().execute(globals, __NAME__);
-                        if (nameAttr != PNone.NO_VALUE) {
-                            ensureWriteAttrNode().execute(newType, __MODULE__, nameAttr);
+                        String moduleName = getModuleNameFromGlobals(globals);
+                        if (moduleName != null) {
+                            ensureWriteAttrNode().execute(newType, __MODULE__, moduleName);
                         }
                     }
                 }
@@ -1770,6 +1772,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 e.getExceptionObject().reifyException();
                 throw e;
             }
+        }
+
+        private String getModuleNameFromGlobals(PythonObject globals) {
+            Object nameAttr;
+            if (globals instanceof PythonModule) {
+                nameAttr = ensureReadAttrNode().execute(globals, __NAME__);
+            } else if (globals instanceof PDict) {
+                nameAttr = ensureGetDictItemNode().execute(((PDict) globals).getDictStorage(), __NAME__);
+            } else {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException("invalid globals object");
+            }
+            return ensureCastToStringNode().execute(nameAttr);
         }
 
         @TruffleBoundary
@@ -2065,6 +2080,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return nextTypeNode.execute(frame, cls, name, bases, dict, kwds);
         }
 
+        private HashingStorageNodes.GetItemNode ensureGetDictItemNode() {
+            if (getDictItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getDictItemNode = insert(HashingStorageNodes.GetItemNode.create());
+            }
+            return getDictItemNode;
+        }
+
         private ReadAttributeFromObjectNode ensureReadAttrNode() {
             if (readAttrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2087,6 +2110,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 castToInt = insert(CastToIndexNode.create());
             }
             return castToInt;
+        }
+
+        private CastToStringNode ensureCastToStringNode() {
+            if (castToStringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToStringNode = insert(CastToStringNode.create());
+            }
+            return castToStringNode;
         }
     }
 
