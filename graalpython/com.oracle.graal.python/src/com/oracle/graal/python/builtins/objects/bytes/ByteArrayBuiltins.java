@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -242,6 +242,20 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
             SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
             return factory().createByteArray(res);
+        }
+
+        @Specialization
+        public Object add(PByteArray self, PMemoryView other,
+                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
+                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
+                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+
+            Object bytesObj = toBytesNode.executeObject(other);
+            if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
+                SequenceStorage res = concatNode.execute(self.getSequenceStorage(), ((PBytes) bytesObj).getSequenceStorage());
+                return factory().createByteArray(res);
+            }
+            throw raise(SystemError, "could not get bytes of memoryview");
         }
 
         @SuppressWarnings("unused")
