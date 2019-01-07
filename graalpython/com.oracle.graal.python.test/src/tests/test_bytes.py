@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import unittest
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -535,6 +536,80 @@ def test_strip_bytes():
     assert b'abc'.lstrip(b'ac') == b'bc'
     assert b'abc'.rstrip(b'ac') == b'ab'
 
+class BaseTestSplit:
+    
+    def test_string_error(self):
+        self.assertRaises(TypeError, self.type2test(b'a b').split, ' ')
+        self.assertRaises(TypeError, self.type2test(b'a b').rsplit, ' ')
+
+    def test_int_error(self):
+        self.assertRaises(TypeError, self.type2test(b'a b').split, 32)
+        self.assertRaises(TypeError, self.type2test(b'a b').rsplit, 32)
+
+    def test_split_unicodewhitespace(self):
+        for b in (b'a\x1Cb', b'a\x1Db', b'a\x1Eb', b'a\x1Fb'):
+            b = self.type2test(b)
+            self.assertEqual(b.split(), [b])
+        b = self.type2test(b"\x09\x0A\x0B\x0C\x0D\x1C\x1D\x1E\x1F")
+        self.assertEqual(b.split(), [b'\x1c\x1d\x1e\x1f'])
+
+    def test_rsplit_unicodewhitespace(self):
+        b = self.type2test(b"\x09\x0A\x0B\x0C\x0D\x1C\x1D\x1E\x1F")
+        self.assertEqual(b.rsplit(), [b'\x1c\x1d\x1e\x1f'])
+
+    def test_memoryview(self):
+        self.assertEqual(self.type2test(b'a b').split(memoryview(b' ')), [b'a', b'b'])
+        self.assertEqual(self.type2test(b'c d').rsplit(memoryview(b' ')), [b'c', b'd'])
+
+    def test_split(self):
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(), [b'ahoj', b'jak', b'se', b'mas'])
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(), [b'ahoj', b'jak', b'se', b'mas'])
+
+    def test_maxsplit(self):
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(maxsplit=1), [b'ahoj', b'jak\tse\nmas'])
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(maxsplit=1), [b'ahoj jak\tse', b'mas'])
+
+    def test_maxsplit_zero(self):
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(maxsplit=0), [b'ahoj jak\tse\nmas'])
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(maxsplit=0), [b'ahoj jak\tse\nmas'])
+
+    def test_maxsplit_negative(self):
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(maxsplit=-10), [b'ahoj', b'jak', b'se', b'mas'])
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(maxsplit=-10), [b'ahoj', b'jak', b'se', b'mas'])
+
+    def test_separator(self):
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(b' '), [b'ahoj', b'jak\tse\nmas'])
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(b' '), [b'ahoj', b'jak\tse\nmas'])
+
+    def test_empty(self):
+        self.assertEqual(self.type2test(b'').split(), [])
+        self.assertEqual(self.type2test(b'').rsplit(), [])
+
+    def test_empty_delim(self):
+        self.assertEqual(self.type2test(b'').split(b' '), [b''])
+        self.assertEqual(self.type2test(b'').rsplit(b' '), [b''])
+
+    def test_empty_separator(self):
+        self.assertRaises(ValueError, self.type2test(b'a b').split, b'')
+        self.assertRaises(ValueError, self.type2test(b'a b').rsplit, b'')
+
+    def test_indexable_object(self):
+
+        class MyIndexable(object):
+            def __init__(self, value):
+                self.value = value
+            def __index__(self):
+                return self.value
+        
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').split(maxsplit=MyIndexable(1)), [b'ahoj', b'jak\tse\nmas'])
+        self.assertEqual(self.type2test(b'ahoj jak\tse\nmas').rsplit(maxsplit=MyIndexable(1)), [b'ahoj jak\tse', b'mas'])
+        
+class BytesSplitTest(BaseTestSplit, unittest.TestCase):
+    type2test = bytes
+
+class ByteArraySplitTest(BaseTestSplit, unittest.TestCase):
+    type2test = bytearray
+
 def test_add_mv_to_bytes():
     b = b'hello '
     mv = memoryview(b'world')
@@ -546,4 +621,3 @@ def test_add_mv_to_bytearray():
     mv = memoryview(b'world')
     ba += mv
     assert ba == b'hello world'
-
