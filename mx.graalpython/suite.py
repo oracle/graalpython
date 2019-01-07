@@ -8,7 +8,7 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "1.0.0-rc11",
+    "version": "1.0.0-rc12",
     "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
@@ -86,7 +86,7 @@ suite = {
     "libraries": {
         "SETUPTOOLS": {
             "urls": [
-                "https://github.com/pypa/setuptools/archive/v40.6.3.zip",
+                "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/setuptools-40.6.3.zip",
             ],
             "sha1": "7a5960b8062ddbf0c0e79f806e23785d55fec3c8",
         }

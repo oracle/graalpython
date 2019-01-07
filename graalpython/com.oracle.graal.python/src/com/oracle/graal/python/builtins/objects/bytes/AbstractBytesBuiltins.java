@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,16 +46,30 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PBytes})
@@ -288,6 +302,477 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         @Override
         int start(byte[] bs) {
             return bs.length - 1;
+        }
+    }
+
+    abstract static class AbstractSplitNode extends PythonBuiltinNode {
+
+        abstract PList execute(Object bytes, Object sep, Object maxsplit);
+
+        @SuppressWarnings("unused")
+        protected List<byte[]> splitWhitespace(byte[] bytes, int maxsplit) {
+            throw new RuntimeException();
+        }
+
+        @SuppressWarnings("unused")
+        protected List<byte[]> splitDelimiter(byte[] bytes, byte[] sep, int maxsplit) {
+            throw new RuntimeException();
+        }
+
+        protected AbstractSplitNode createRecursiveNode() {
+            throw new RuntimeException();
+        }
+
+        @CompilationFinal private ConditionProfile isEmptySepProfile;
+        @CompilationFinal private ConditionProfile overflowProfile;
+
+        @Child private BytesNodes.ToBytesNode selfToBytesNode;
+        @Child private BytesNodes.ToBytesNode sepToBytesNode;
+        @Child private ListAppendNode appendNode;
+        @Child private CastToIntegerFromIndexNode castIntNode;
+        @Child private AbstractSplitNode recursiveNode;
+
+        // taken from JPython
+        private static final int SWAP_CASE = 0x20;
+        private static final byte UPPER = 0b1;
+        private static final byte LOWER = 0b10;
+        private static final byte DIGIT = 0b100;
+        private static final byte SPACE = 0b1000;
+        private static final byte[] CTYPE = new byte[256];
+
+        static {
+            for (int c = 'A'; c <= 'Z'; c++) {
+                CTYPE[0x80 + c] = UPPER;
+                CTYPE[0x80 + SWAP_CASE + c] = LOWER;
+            }
+            for (int c = '0'; c <= '9'; c++) {
+                CTYPE[0x80 + c] = DIGIT;
+            }
+            for (char c : " \t\n\u000b\f\r".toCharArray()) {
+                CTYPE[0x80 + c] = SPACE;
+            }
+        }
+
+        private ConditionProfile getIsEmptyProfile() {
+            if (isEmptySepProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isEmptySepProfile = ConditionProfile.createBinaryProfile();
+            }
+            return isEmptySepProfile;
+        }
+
+        private ConditionProfile getOverflowProfile() {
+            if (overflowProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                overflowProfile = ConditionProfile.createBinaryProfile();
+            }
+            return overflowProfile;
+        }
+
+        protected BytesNodes.ToBytesNode getSelfToBytesNode() {
+            if (selfToBytesNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                selfToBytesNode = insert(BytesNodes.ToBytesNode.create());
+            }
+            return selfToBytesNode;
+        }
+
+        protected BytesNodes.ToBytesNode getSepToBytesNode() {
+            if (sepToBytesNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                sepToBytesNode = insert(BytesNodes.ToBytesNode.create());
+            }
+            return sepToBytesNode;
+        }
+
+        protected ListAppendNode getAppendNode() {
+            if (appendNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                appendNode = insert(ListAppendNode.create());
+            }
+            return appendNode;
+        }
+
+        private CastToIntegerFromIndexNode getCastIntNode() {
+            if (castIntNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castIntNode = insert(CastToIntegerFromIndexNode.create());
+            }
+            return castIntNode;
+        }
+
+        private AbstractSplitNode getRecursiveNode() {
+            if (recursiveNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                recursiveNode = insert(createRecursiveNode());
+            }
+            return recursiveNode;
+        }
+
+        private int getIntValue(PInt from) {
+            try {
+                return from.intValueExact();
+            } catch (ArithmeticException e) {
+                throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
+            }
+        }
+
+        private int getIntValue(long from) {
+            if (getOverflowProfile().profile(Integer.MIN_VALUE > from || from > Integer.MAX_VALUE)) {
+                throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
+            }
+            return (int) from;
+        }
+
+        private PList getBytesResult(List<byte[]> bytes) {
+            PList result = factory().createList();
+            for (byte[] bs : bytes) {
+                getAppendNode().execute(result, factory().createBytes(bs));
+            }
+            return result;
+        }
+
+        private PList getByteArrayResult(List<byte[]> bytes) {
+            PList result = factory().createList();
+            for (byte[] bs : bytes) {
+                getAppendNode().execute(result, factory().createByteArray(bs));
+            }
+            return result;
+        }
+
+        @TruffleBoundary
+        protected static byte[] copyOfRange(byte[] bytes, int from, int to) {
+            return Arrays.copyOfRange(bytes, from, to);
+        }
+
+        protected static boolean isSpace(byte b) {
+            return (CTYPE[0x80 + b] & SPACE) != 0;
+        }
+
+        // split()
+        // rsplit()
+        @Specialization
+        PList split(PBytes bytes, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone maxsplit) {
+            byte[] splitBs = getSelfToBytesNode().execute(bytes);
+            return getBytesResult(splitWhitespace(splitBs, -1));
+        }
+
+        @Specialization
+        PList split(PByteArray bytes, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone maxsplit) {
+            byte[] splitBs = getSelfToBytesNode().execute(bytes);
+            return getByteArrayResult(splitWhitespace(splitBs, -1));
+        }
+
+        // split(sep=...)
+        // rsplit(sep=...)
+        @Specialization(guards = "!isPNone(sep)")
+        PList split(PBytes bytes, Object sep, @SuppressWarnings("unused") PNone maxsplit) {
+            return split(bytes, sep, -1);
+        }
+
+        @Specialization(guards = "!isPNone(sep)")
+        PList split(PByteArray bytes, Object sep, @SuppressWarnings("unused") PNone maxsplit) {
+            return split(bytes, sep, -1);
+        }
+
+        // split(sep=..., maxsplit=...)
+        // rsplit(sep=..., maxsplit=...)
+        @Specialization(guards = "!isPNone(sep)")
+        PList split(PBytes bytes, Object sep, int maxsplit) {
+            byte[] sepBs = getSepToBytesNode().execute(sep);
+            if (getIsEmptyProfile().profile(sepBs.length == 0)) {
+                throw raise(PythonErrorType.ValueError, "empty separator");
+            }
+            byte[] splitBs = getSelfToBytesNode().execute(bytes);
+            return getBytesResult(splitDelimiter(splitBs, sepBs, maxsplit));
+        }
+
+        @Specialization(guards = "!isPNone(sep)")
+        PList split(PBytes bytes, Object sep, long maxsplit) {
+            return split(bytes, sep, getIntValue(maxsplit));
+        }
+
+        @Specialization(guards = "!isPNone(sep)")
+        PList split(PBytes bytes, Object sep, PInt maxsplit) {
+            return split(bytes, sep, getIntValue(maxsplit));
+        }
+
+        @Specialization(guards = "!isPNone(sep)")
+        PList split(PBytes bytes, Object sep, Object maxsplit) {
+            return getRecursiveNode().execute(bytes, sep, getCastIntNode().execute(maxsplit));
+        }
+
+        @Specialization(guards = "!isPNone(sep)")
+        PList split(PByteArray bytes, Object sep, int maxsplit) {
+            byte[] sepBs = getSepToBytesNode().execute(sep);
+            if (getIsEmptyProfile().profile(sepBs.length == 0)) {
+                throw raise(PythonErrorType.ValueError, "empty separator");
+            }
+            byte[] splitBs = getSelfToBytesNode().execute(bytes);
+            return getByteArrayResult(splitDelimiter(splitBs, sepBs, maxsplit));
+        }
+
+        @Specialization(guards = "!isPNone(sep)")
+        PList split(PByteArray bytes, Object sep, long maxsplit) {
+            return split(bytes, sep, getIntValue(maxsplit));
+        }
+
+        @Specialization(guards = "!isPNone(sep)")
+        PList split(PByteArray bytes, Object sep, PInt maxsplit) {
+            return split(bytes, sep, getIntValue(maxsplit));
+        }
+
+        @Specialization(guards = "!isPNone(sep)")
+        PList split(PByteArray bytes, Object sep, Object maxsplit) {
+            return getRecursiveNode().execute(bytes, sep, getCastIntNode().execute(maxsplit));
+        }
+
+        // split(maxsplit=...)
+        // rsplit(maxsplit=...)
+        @Specialization
+        PList split(PBytes bytes, @SuppressWarnings("unused") PNone sep, int maxsplit) {
+            byte[] splitBs = getSelfToBytesNode().execute(bytes);
+            return getBytesResult(splitWhitespace(splitBs, maxsplit));
+        }
+
+        @Specialization
+        PList split(PBytes bytes, PNone sep, long maxsplit) {
+            return split(bytes, sep, getIntValue(maxsplit));
+        }
+
+        @Specialization
+        PList split(PBytes bytes, PNone sep, PInt maxsplit) {
+            return split(bytes, sep, getIntValue(maxsplit));
+        }
+
+        @Specialization
+        PList split(PBytes bytes, PNone sep, Object maxsplit) {
+            return getRecursiveNode().execute(bytes, sep, getCastIntNode().execute(maxsplit));
+        }
+
+        @Specialization
+        PList split(PByteArray bytes, @SuppressWarnings("unused") PNone sep, int maxsplit) {
+            byte[] splitBs = getSelfToBytesNode().execute(bytes);
+            return getByteArrayResult(splitWhitespace(splitBs, maxsplit));
+        }
+
+        @Specialization
+        PList split(PByteArray bytes, PNone sep, long maxsplit) {
+            return split(bytes, sep, getIntValue(maxsplit));
+        }
+
+        @Specialization
+        PList split(PByteArray bytes, PNone sep, PInt maxsplit) {
+            return split(bytes, sep, getIntValue(maxsplit));
+        }
+
+        @Specialization
+        PList split(PByteArray bytes, PNone sep, Object maxsplit) {
+            return getRecursiveNode().execute(bytes, sep, getCastIntNode().execute(maxsplit));
+        }
+
+    }
+
+    @Builtin(name = "split", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"sep", "maxsplit"})
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class SplitNode extends AbstractSplitNode {
+
+        @Override
+        protected List<byte[]> splitWhitespace(byte[] bytes, int maxsplit) {
+            int offset = 0;
+            int size = bytes.length;
+
+            List<byte[]> result = new ArrayList<>();
+            if (size == 0) {
+                return result;
+            }
+            if (maxsplit == 0) {
+                // handling case b''.split(b' ') -> [b'']
+                result.add(bytes);
+                return result;
+            }
+
+            int countSplit = maxsplit;
+            int p, q; // Indexes of unsplit text and whitespace
+
+            // Scan over leading whitespace
+            for (p = offset; p < size && isSpace(bytes[p]); p++) {
+            }
+
+            // At this point if p<limit it points to the start of a word.
+            // While we have some splits left (if maxsplit started>=0)
+            while (p < size && countSplit-- != 0) {
+                // Delimit a word at p
+                // Skip q over the non-whitespace at p
+                for (q = p; q < size && !isSpace(bytes[q]); q++) {
+                }
+                // storage[q] is whitespace or it is at the limit
+                result.add(copyOfRange(bytes, p - offset, q - offset));
+                // Skip p over the whitespace at q
+                for (p = q; p < size && isSpace(bytes[p]); p++) {
+                }
+            }
+
+            // Append the remaining unsplit text if any
+            if (p < size) {
+                result.add(copyOfRange(bytes, p - offset, size));
+            }
+            return result;
+        }
+
+        @Override
+        protected List<byte[]> splitDelimiter(byte[] bytes, byte[] sep, int maxsplit) {
+            List<byte[]> result = new ArrayList<>();
+            int size = bytes.length;
+
+            if (maxsplit == 0 || size == 0) {
+                // if maxsplit is 0, just add the whole input
+                result.add(bytes);
+                return result;
+            }
+            if (sep.length == 0) {
+                // should not happen, and should be threated outside this method
+                return result;
+            }
+            int countSplit = maxsplit;
+            int begin = 0;
+
+            outer: for (int offset = 0; offset < size - sep.length + 1; offset++) {
+                for (int sepOffset = 0; sepOffset < sep.length; sepOffset++) {
+                    if (bytes[offset + sepOffset] != sep[sepOffset]) {
+                        continue outer;
+                    }
+                }
+
+                if (begin < offset) {
+                    result.add(copyOfRange(bytes, begin, offset));
+                } else {
+                    result.add(new byte[0]);
+                }
+                begin = offset + sep.length;
+                offset = begin - 1;
+                if (--countSplit == 0) {
+                    break;
+                }
+            }
+
+            if (begin != size) {
+                result.add(copyOfRange(bytes, begin, size));
+            }
+            return result;
+        }
+
+        @Override
+        protected AbstractSplitNode createRecursiveNode() {
+            return AbstractBytesBuiltinsFactory.SplitNodeFactory.create(new ReadArgumentNode[]{});
+        }
+    }
+
+    @Builtin(name = "rsplit", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"sep", "maxsplit"})
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class RSplitNode extends AbstractSplitNode {
+
+        @Override
+        protected List<byte[]> splitWhitespace(byte[] bytes, int maxsplit) {
+            int size = bytes.length;
+            List<byte[]> result = new ArrayList<>();
+
+            if (size == 0) {
+                return result;
+            }
+
+            if (maxsplit == 0) {
+                // if maxsplit is 0, just add the whole input
+                result.add(bytes);
+                return result;
+            }
+
+            int countSplit = maxsplit;
+            int offset = 0;
+
+            int p, q; // Indexes of unsplit text and whitespace
+
+            // Scan backwards over trailing whitespace
+            for (q = offset + size; q > offset; --q) {
+                if (!isSpace(bytes[q - 1])) {
+                    break;
+                }
+            }
+
+            // At this point storage[q-1] is the rightmost non-space byte, or
+            // q=offset if there aren't any. While we have some splits left ...
+            while (q > offset && countSplit-- != 0) {
+                // Delimit the word whose last byte is storage[q-1]
+                // Skip p backwards over the non-whitespace
+                for (p = q; p > offset; --p) {
+                    if (isSpace(bytes[p - 1])) {
+                        break;
+                    }
+                }
+
+                result.add(0, copyOfRange(bytes, p - offset, q - offset));
+                // Skip q backwards over the whitespace
+                for (q = p; q > offset; --q) {
+                    if (!isSpace(bytes[q - 1])) {
+                        break;
+                    }
+                }
+            }
+
+            // Prepend the remaining unsplit text if any
+            if (q > offset) {
+                result.add(0, copyOfRange(bytes, 0, q - offset));
+            }
+            return result;
+        }
+
+        @Override
+        protected List<byte[]> splitDelimiter(byte[] bytes, byte[] sep, int maxsplit) {
+            List<byte[]> result = new ArrayList<>();
+            int size = bytes.length;
+
+            if (maxsplit == 0 || size == 0) {
+                // if maxsplit is 0, just add the whole input
+                result.add(bytes);
+                return result;
+            }
+            if (sep.length == 0) {
+                // should not happen, and should be threated outside this method
+                return result;
+            }
+
+            int countSplit = maxsplit;
+            int end = size;
+
+            outer: for (int offset = size - 1; offset >= 0; offset--) {
+                for (int sepOffset = 0; sepOffset < sep.length; sepOffset++) {
+                    if (bytes[offset - sepOffset] != sep[sep.length - sepOffset - 1]) {
+                        continue outer;
+                    }
+                }
+
+                if (end > offset) {
+                    result.add(0, copyOfRange(bytes, offset + 1, end));
+                } else {
+                    result.add(0, new byte[0]);
+                }
+                end = offset;
+                if (--countSplit == 0) {
+                    break;
+                }
+            }
+
+            if (end != 0) {
+                result.add(0, copyOfRange(bytes, 0, end));
+            }
+            return result;
+        }
+
+        @Override
+        protected AbstractSplitNode createRecursiveNode() {
+            return AbstractBytesBuiltinsFactory.RSplitNodeFactory.create(new ReadArgumentNode[]{});
         }
     }
 }
