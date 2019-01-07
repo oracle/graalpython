@@ -38,30 +38,56 @@
 # SOFTWARE.
 
 
+def make_struct_time():
+    from _descriptor import make_named_tuple_class
+    fields = ["tm_year", "tm_mon", "tm_mday", "tm_hour", "tm_min", "tm_sec", "tm_wday", "tm_yday", "tm_isdst"]
+    struct_time_type = make_named_tuple_class("struct_time", fields)
+
+    class struct_time(struct_time_type):
+        
+        def __new__(cls, iterable):
+            def create_struct(iter, zone, gmtoff):
+                result = tuple.__new__(cls, iter)
+                result.tm_zone = zone
+                result.tm_gmtoff = gmtoff
+                return result
+
+            count = len(iterable)
+            if (count < 9):
+                raise TypeError("time.struct_time() takes an at least 9-sequence (%d-sequence given)" % count)
+            if (count > 11):
+                raise TypeError("time.struct_time() takes an at most 11-sequence (%d-sequence given)" % count)
+            if count == 11:
+                return create_struct(iterable[0:9], iterable[9], iterable[10])
+            if count == 10:
+                return create_struct(iterable[0:9], iterable[9], None)
+            if count == 9:
+                return create_struct(iterable, None, None)
+                
+
+        def __repr__(self):
+            text = "{}(".format(self.__class__.__name__)
+            n = len(self)
+            for i in range(n):
+                if self[i] != None:
+                    if i > 0 :
+                        text = text + ", "
+                    text = text + "{}={}".format(fields[i], str(self[i]))
+            text = text + ')'
+            return text
+    return struct_time
+
+
+struct_time = make_struct_time()
+del make_struct_time
+
+_STRUCT_TM_ITEMS = 11
+
 @__builtin__
-def struct_time(*args, **kwargs):
-    from collections import namedtuple
-
-    nt = namedtuple("struct_time", [
-        "tm_year",
-        "tm_mon",
-        "tm_mday",
-        "tm_hour",
-        "tm_min",
-        "tm_sec",
-        "tm_wday",
-        "tm_yday",
-        "tm_isdst",
-    ])
-
-    return nt(*args, **kwargs)
+def gmtime(seconds=None):
+    return struct_time(__truffle_gmtime_tuple__(seconds))
 
 
 @__builtin__
-def gmtime(seconds):
-    return struct_time(*__truffle_gmtime_tuple__(seconds))
-
-
-@__builtin__
-def localtime(seconds):
-    return struct_time(*__truffle_localtime_tuple__(seconds))
+def localtime(seconds=None):
+    return struct_time(__truffle_localtime_tuple__(seconds))

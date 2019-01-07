@@ -164,22 +164,22 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "isFixed"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object callSelfMethodSingleContext(@SuppressWarnings("unused") PBuiltinMethod func, Object arg,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
-                    @SuppressWarnings("unused") @Cached("func.getArity().takesFixedNumOfPositionalArgs()") boolean isFixed,
+                    @SuppressWarnings("unused") @Cached("takesFixedNumOfPositionalArgs(func)") boolean isFixed,
                     @Cached("getBinary(func.getFunction())") PythonBinaryBuiltinNode builtinNode) {
         return builtinNode.execute(func.getSelf(), arg);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callMethod(@SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
-                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
                     @Cached("getUnary(func.getFunction())") PythonUnaryBuiltinNode builtinNode) {
         return builtinNode.execute(receiver);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isFixed"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "isFixed"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSelfMethod(@SuppressWarnings("unused") PBuiltinMethod func, Object arg,
-                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                    @SuppressWarnings("unused") @Cached("func.getArity().takesFixedNumOfPositionalArgs()") boolean isFixed,
+                    @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("takesFixedNumOfPositionalArgs(func)") boolean isFixed,
                     @Cached("getBinary(func.getFunction())") PythonBinaryBuiltinNode builtinNode) {
         return builtinNode.execute(func.getSelf(), arg);
     }

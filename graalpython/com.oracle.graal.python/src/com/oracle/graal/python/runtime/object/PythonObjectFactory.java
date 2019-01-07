@@ -26,6 +26,7 @@
 package com.oracle.graal.python.runtime.object;
 
 import java.math.BigInteger;
+import java.nio.file.DirectoryStream;
 import java.util.Map;
 import java.util.Optional;
 
@@ -60,9 +61,9 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PGeneratorFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator;
@@ -86,6 +87,8 @@ import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
+import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.random.PRandom;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
@@ -120,6 +123,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -129,6 +133,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PythonObjectFactory extends Node {
@@ -392,8 +397,12 @@ public final class PythonObjectFactory extends Node {
         return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, name, type, arity, callTarget));
     }
 
-    public GetSetDescriptor createGetSetDescriptor(PythonCallable get, PythonCallable set, String name, LazyPythonClass type) {
+    public GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, LazyPythonClass type) {
         return trace(new GetSetDescriptor(PythonBuiltinClassType.GetSetDescriptor, get, set, name, type));
+    }
+
+    public HiddenKeyDescriptor createHiddenKeyDescriptor(HiddenKey key, LazyPythonClass type) {
+        return trace(new HiddenKeyDescriptor(PythonBuiltinClassType.GetSetDescriptor, key, type));
     }
 
     public PDecoratedMethod createClassmethod(LazyPythonClass cls) {
@@ -574,6 +583,10 @@ public final class PythonObjectFactory extends Node {
 
     public PFrame createPFrame(PBaseException exception, int index) {
         return trace(new PFrame(PythonBuiltinClassType.PFrame, exception, index));
+    }
+
+    public PFrame createPFrame(PBaseException exception, int index, Object locals) {
+        return trace(new PFrame(PythonBuiltinClassType.PFrame, exception, index, locals));
     }
 
     public PFrame createPFrame(Object threadState, PCode code, PythonObject globals, Object locals) {
@@ -810,5 +823,17 @@ public final class PythonObjectFactory extends Node {
 
     public PThread createPythonThread(PythonClass cls, Thread thread) {
         return trace(new PThread(cls, thread));
+    }
+
+    public PScandirIterator createScandirIterator(PythonClass cls, String path, DirectoryStream<TruffleFile> next) {
+        return trace(new PScandirIterator(cls, path, next));
+    }
+
+    public PDirEntry createDirEntry(String name, TruffleFile file) {
+        return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, name, file));
+    }
+
+    public Object createDirEntry(PythonClass cls, String name, TruffleFile file) {
+        return trace(new PDirEntry(cls, name, file));
     }
 }

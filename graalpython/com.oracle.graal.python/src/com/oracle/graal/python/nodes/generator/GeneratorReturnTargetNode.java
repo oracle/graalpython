@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.generator;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.ReturnException;
@@ -68,14 +69,19 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
         try {
             body.executeVoid(frame);
             fallthroughProfile.enter();
+            throw raise(StopIteration);
         } catch (YieldException eye) {
             yieldProfile.enter();
             return returnValue.execute(frame);
         } catch (ReturnException ire) {
-            // return statement in generators throws StopIteration.
+            // return statement in generators throws StopIteration with the return value
             returnProfile.enter();
+            Object retVal = returnValue.execute(frame);
+            if (retVal != PNone.NONE) {
+                throw raise(factory().createBaseException(StopIteration, factory().createTuple(new Object[]{retVal})));
+            } else {
+                throw raise(StopIteration);
+            }
         }
-
-        throw raise(StopIteration);
     }
 }

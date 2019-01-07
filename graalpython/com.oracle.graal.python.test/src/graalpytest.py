@@ -116,6 +116,9 @@ class TestCase(object):
         fail_msg = FAIL + BOLD + "F" + ENDC if verbose else "F"
         print(fail_msg, end="", flush=True)
 
+    def assertIsInstance(self, value, cls):
+        assert isinstance(value, cls), "Expected %r to be instance of %r" % (value, cls)
+
     def assertTrue(self, value, msg=""):
         assert value, msg
 
@@ -126,6 +129,11 @@ class TestCase(object):
         if not msg:
             msg = "Expected '%r' to be None" % value
         assert value is None, msg
+
+    def assertIsNotNone(self, value, msg=""):
+        if not msg:
+            msg = "Expected '%r' to not be None" % value
+        assert value is not None, msg
 
     def assertIs(self, actual, expected, msg=""):
         if not msg:
@@ -166,6 +174,9 @@ class TestCase(object):
             if msg is None:
                 message = '%s is not an instance of %r' % (obj, cls)
             assert False, message
+
+    def fail(self, msg):
+        assert False, msg
 
     class assertRaises():
         def __init__(self, exc_type, function=None, *args, **kwargs):

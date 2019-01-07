@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -84,10 +84,11 @@ import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
@@ -134,6 +135,8 @@ import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.posix.DirEntryBuiltins;
+import com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.random.RandomBuiltins;
 import com.oracle.graal.python.builtins.objects.range.RangeBuiltins;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins;
@@ -217,6 +220,8 @@ public final class Python3Core implements PythonCore {
                         "_socket",
                         "_thread",
                         "ctypes",
+                        "zlib",
+                        "termios",
                         "zipimport"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
@@ -224,7 +229,7 @@ public final class Python3Core implements PythonCore {
 
     private final PythonBuiltins[] builtins;
 
-    private static final PythonBuiltins[] initializeBuiltins() {
+    private static final PythonBuiltins[] initializeBuiltins(Env env) {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
                         new BuiltinConstructors(),
                         new BuiltinFunctions(),
@@ -239,6 +244,7 @@ public final class Python3Core implements PythonCore {
                         new BytesBuiltins(),
                         new ComplexBuiltins(),
                         new ByteArrayBuiltins(),
+                        new AbstractBytesBuiltins(),
                         new TypeBuiltins(),
                         new IntBuiltins(),
                         new TruffleObjectBuiltins(),
@@ -274,6 +280,8 @@ public final class Python3Core implements PythonCore {
                         new GetSetDescriptorTypeBuiltins(),
                         new BaseExceptionBuiltins(),
                         new PosixModuleBuiltins(),
+                        new ScandirIteratorBuiltins(),
+                        new DirEntryBuiltins(),
                         new ImpModuleBuiltins(),
                         new ArrayModuleBuiltins(),
                         new ArrayBuiltins(),
@@ -324,7 +332,7 @@ public final class Python3Core implements PythonCore {
             }
         }
         // threads
-        if (PythonLanguage.WITH_THREADS) {
+        if (env.getOptions().get(PythonOptions.WithThread)) {
             builtins.addAll(new ArrayList<>(Arrays.asList(
                             new ThreadModuleBuiltins(),
                             new ThreadBuiltins(),
@@ -355,9 +363,9 @@ public final class Python3Core implements PythonCore {
 
     private final PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public Python3Core(PythonParser parser) {
+    public Python3Core(PythonParser parser, Env env) {
         this.parser = parser;
-        this.builtins = initializeBuiltins();
+        this.builtins = initializeBuiltins(env);
         this.coreFiles = initializeCoreFiles();
     }
 

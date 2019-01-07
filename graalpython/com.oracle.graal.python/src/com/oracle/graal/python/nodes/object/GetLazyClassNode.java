@@ -148,12 +148,11 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         return PythonBuiltinClassType.PInt;
     }
 
-    /*
-     * We don't cache the object in the AST, but its classStable assumption
-     */
-    @Specialization(guards = "object.getClassStableAssumption() == classStable", assumptions = "classStable", limit = "1")
+    @Specialization(guards = "object == cachedObject", assumptions = {"classStable", "singleContextAssumption"}, limit = "1")
     protected static LazyPythonClass getPythonClassCached(@SuppressWarnings("unused") PythonObject object,
-                    @SuppressWarnings("unused") @Cached("object.getClassStableAssumption()") Assumption classStable,
+                    @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
+                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
+                    @SuppressWarnings("unused") @Cached("cachedObject.getClassStableAssumption()") Assumption classStable,
                     @Cached("object.getLazyPythonClass()") LazyPythonClass klass) {
         return klass;
     }
@@ -189,8 +188,7 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         } else if (o instanceof PNone) {
             return PythonBuiltinClassType.PNone;
         } else {
-            CompilerDirectives.transferToInterpreter();
-            throw new IllegalStateException("unknown type " + o.getClass().getName());
+            return null;
         }
     }
 
@@ -199,6 +197,12 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         if (PGuards.isForeignObject(o)) {
             return BuiltinNames.FOREIGN;
         }
-        return getItSlowPath(o).getName();
+        LazyPythonClass lazyClass = getItSlowPath(o);
+        if (lazyClass != null) {
+            return lazyClass.getName();
+        } else {
+            CompilerDirectives.transferToInterpreter();
+            return o.toString();
+        }
     }
 }

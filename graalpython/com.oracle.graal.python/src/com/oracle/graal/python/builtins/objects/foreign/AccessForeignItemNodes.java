@@ -139,14 +139,18 @@ abstract class AccessForeignItemNodes {
         }
 
         private Object readForeignValue(TruffleObject object, Object key, Node foreignRead, boolean indexed) {
-            Object index = indexed ? checkNumber(getIndexNode().executeObject(key)) : key;
+            Object index = key;
+            if (indexed) {
+                // getIndexNode() is branch profile
+                Object indexKey = getIndexNode().executeObject(key);
+                if (object instanceof Number || PTypeToForeignNode.isBoxed(object)) {
+                    index = indexKey;
+                }
+            }
             try {
                 return getToPythonNode().executeConvert(ForeignAccess.sendRead(foreignRead, object, getToForeignNode().executeConvert(index)));
             } catch (UnsupportedMessageException ex) {
                 throw raise(AttributeError, "%s instance has no attribute '__getitem__'", object);
-            } catch (IndexOutOfBoundsException ex) {
-                // TODO remove this; workaround for TRegex
-                throw raise(IndexError, "invalid index %s", index);
             } catch (UnknownIdentifierException ex) {
                 if (indexed) {
                     throw raise(IndexError, "invalid index %s", index);
@@ -154,13 +158,6 @@ abstract class AccessForeignItemNodes {
                     throw raise(KeyError, "invalid key %s", key);
                 }
             }
-        }
-
-        private Object checkNumber(Object object) {
-            if (object instanceof Number || PTypeToForeignNode.isBoxed(object)) {
-                return object;
-            }
-            throw raiseIndexError();
         }
 
         protected boolean isArray(TruffleObject o) {

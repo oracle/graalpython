@@ -37,6 +37,8 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltinsFactory.GetLocalsNodeFactory;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -65,13 +67,19 @@ public final class FrameBuiltins extends PythonBuiltins {
     @Builtin(name = "f_globals", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetGlobalsNode extends PythonBuiltinNode {
+        @Child DictNode getDictNode;
+
         @Specialization
         Object get(PFrame self) {
             Frame frame = self.getFrame();
             if (frame != null) {
                 PythonObject globals = PArguments.getGlobals(frame);
                 if (globals instanceof PythonModule) {
-                    return factory().createDictFixedStorage(globals);
+                    if (getDictNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getDictNode = insert(DictNodeFactory.create());
+                    }
+                    return getDictNode.execute(globals, PNone.NO_VALUE);
                 } else {
                     return globals;
                 }
@@ -83,9 +91,11 @@ public final class FrameBuiltins extends PythonBuiltins {
     @Builtin(name = "f_builtins", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetBuiltinsNode extends PythonBuiltinNode {
+        @Child DictNode dictNode = DictNodeFactory.create();
+
         @Specialization
         Object get(@SuppressWarnings("unused") PFrame self) {
-            return factory().createDictFixedStorage(getContext().getBuiltins());
+            return dictNode.execute(getContext().getBuiltins(), PNone.NO_VALUE);
         }
     }
 

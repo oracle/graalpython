@@ -50,6 +50,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,17 +59,22 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -125,6 +131,10 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         // cp037 IBM037, IBM039 English
         // cp424 EBCDIC-CP-HE, IBM424 Hebrew
         // cp437 437, IBM437 English
+        PY_CODECS_ALIASES.put("IBM437", "IBM437");
+        PY_CODECS_ALIASES.put("IBM437 English", "IBM437");
+        PY_CODECS_ALIASES.put("437", "IBM437");
+        PY_CODECS_ALIASES.put("cp437", "IBM437");
         // cp500 EBCDIC-CP-BE, EBCDIC-CP-CH, IBM500 Western Europe
         // cp720 Arabic
         // cp737 Greek
@@ -248,6 +258,102 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     break;
             }
             return errorAction;
+        }
+    }
+
+    @Builtin(name = "unicode_escape_encode", fixedNumOfPositionalArgs = 1, keywordArguments = {"errors"})
+    @GenerateNodeFactory
+    @ImportStatic(PythonArithmeticTypes.class)
+    abstract static class UnicodeEscapeEncode extends PythonBinaryBuiltinNode {
+        static final byte[] hexdigits = "0123456789abcdef".getBytes();
+
+        @Specialization
+        @TruffleBoundary
+        Object encode(String str, @SuppressWarnings("unused") Object errors) {
+            // Initial allocation of bytes for UCS4 strings needs 10 bytes per source character
+            // ('\U00xxxxxx')
+            byte[] bytes = new byte[str.length() * 10];
+            int j = 0;
+            for (int i = 0; i < str.length(); i++) {
+                int ch = str.codePointAt(i);
+                /* U+0000-U+00ff range */
+                if (ch < 0x100) {
+                    if (ch >= ' ' && ch < 127) {
+                        if (ch != '\\') {
+                            /* Copy printable US ASCII as-is */
+                            bytes[j++] = (byte) ch;
+                        } else {
+                            /* Escape backslashes */
+                            bytes[j++] = '\\';
+                            bytes[j++] = '\\';
+                        }
+                    } else if (ch == '\t') {
+                        /* Map special whitespace to '\t', \n', '\r' */
+                        bytes[j++] = '\\';
+                        bytes[j++] = 't';
+                    } else if (ch == '\n') {
+                        bytes[j++] = '\\';
+                        bytes[j++] = 'n';
+                    } else if (ch == '\r') {
+                        bytes[j++] = '\\';
+                        bytes[j++] = 'r';
+                    } else {
+                        /* Map non-printable US ASCII and 8-bit characters to '\xHH' */
+                        bytes[j++] = '\\';
+                        bytes[j++] = 'x';
+                        bytes[j++] = hexdigits[(ch >> 4) & 0x000F];
+                        bytes[j++] = hexdigits[ch & 0x000F];
+                    }
+                } else if (ch < 0x10000) {
+                    /* U+0100-U+ffff range: Map 16-bit characters to '\\uHHHH' */
+                    bytes[j++] = '\\';
+                    bytes[j++] = 'u';
+                    bytes[j++] = hexdigits[(ch >> 12) & 0x000F];
+                    bytes[j++] = hexdigits[(ch >> 8) & 0x000F];
+                    bytes[j++] = hexdigits[(ch >> 4) & 0x000F];
+                    bytes[j++] = hexdigits[ch & 0x000F];
+                } else {
+                    /* U+010000-U+10ffff range: Map 21-bit characters to '\U00HHHHHH' */
+                    /* Make sure that the first two digits are zero */
+                    bytes[j++] = '\\';
+                    bytes[j++] = 'U';
+                    bytes[j++] = '0';
+                    bytes[j++] = '0';
+                    bytes[j++] = hexdigits[(ch >> 20) & 0x0000000F];
+                    bytes[j++] = hexdigits[(ch >> 16) & 0x0000000F];
+                    bytes[j++] = hexdigits[(ch >> 12) & 0x0000000F];
+                    bytes[j++] = hexdigits[(ch >> 8) & 0x0000000F];
+                    bytes[j++] = hexdigits[(ch >> 4) & 0x0000000F];
+                    bytes[j++] = hexdigits[ch & 0x0000000F];
+                }
+            }
+            bytes = Arrays.copyOf(bytes, j);
+            return factory().createTuple(new Object[]{factory().createBytes(bytes), str.length()});
+        }
+
+        @Fallback
+        Object encode(Object str, @SuppressWarnings("unused") Object errors) {
+            throw raise(TypeError, "unicode_escape_encode() argument 1 must be str, not %p", str);
+        }
+    }
+
+    @Builtin(name = "unicode_escape_decode", fixedNumOfPositionalArgs = 1, keywordArguments = {"errors"})
+    @GenerateNodeFactory
+    abstract static class UnicodeEscapeDecode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isBytes(bytes)")
+        Object encode(Object bytes, @SuppressWarnings("unused") PNone errors,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytes) {
+            // for now we'll just parse this as a String, ignoring any error strategies
+            PythonCore core = getCore();
+            byte[] byteArray = toBytes.execute(bytes);
+            String string = strFromBytes(byteArray);
+            String unescapedString = core.getParser().unescapeJavaString(string);
+            return factory().createTuple(new Object[]{unescapedString, byteArray.length});
+        }
+
+        @TruffleBoundary
+        private static String strFromBytes(byte[] execute) {
+            return new String(execute);
         }
     }
 

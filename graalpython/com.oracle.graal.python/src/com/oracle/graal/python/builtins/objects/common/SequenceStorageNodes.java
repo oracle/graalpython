@@ -1064,7 +1064,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "!compatibleAssign(self, sequence)")
         void doError(@SuppressWarnings("unused") SequenceStorage self, @SuppressWarnings("unused") SliceInfo info, SequenceStorage sequence) {
-            throw new SequenceStoreException(sequence);
+            throw new SequenceStoreException(sequence.getIndicativeValue());
         }
 
         protected static boolean isValidReplacement(Class<? extends SequenceStorage> cachedClass, SequenceStorage s, SliceInfo info) {
@@ -2088,6 +2088,7 @@ public abstract class SequenceStorageNodes {
                 return concatStoragesNode.execute(dest, s, rightProfiled);
             } catch (SequenceStoreException e) {
                 dest = generalizeStore(dest, e.getIndicationValue());
+                dest = ensureCapacityNode.execute(dest, Math.addExact(len1, len2));
                 return concatStoragesNode.execute(dest, s, rightProfiled);
             } catch (ArithmeticException e) {
                 overflowErrorProfile.enter();

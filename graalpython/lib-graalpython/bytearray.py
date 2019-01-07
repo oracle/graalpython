@@ -47,3 +47,4 @@ def strip(self, what=None):
 
 
 bytearray.strip = strip
+bytearray.rfind = bytes.rfind

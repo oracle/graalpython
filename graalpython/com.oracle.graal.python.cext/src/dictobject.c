@@ -57,6 +57,10 @@ PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
     return UPCALL_CEXT_O(_jls_PyDict_GetItem, native_to_java(d), native_to_java(k));
 }
 
+PyObject* _PyDict_GetItemId(PyObject* d, _Py_Identifier* id) {
+    return PyDict_GetItemString(d, id->string);
+}
+
 UPCALL_ID(PyDict_DelItem);
 int PyDict_DelItem(PyObject *d, PyObject *k) {
     return UPCALL_CEXT_I(_jls_PyDict_DelItem, native_to_java(d), native_to_java(k));

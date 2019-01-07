@@ -44,13 +44,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -62,8 +63,11 @@ import com.oracle.truffle.api.dsl.Specialization;
 @CoreFunctions(defineModule = "_sysconfig")
 public class SysConfigModuleBuiltins extends PythonBuiltins {
     private final static Map<Object, Object> STATIC_CONFIG_OPTIONS = new HashMap<>();
-    static {
-        STATIC_CONFIG_OPTIONS.put("WITH_THREAD", PythonLanguage.WITH_THREADS ? 1 : 0);
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        STATIC_CONFIG_OPTIONS.put("WITH_THREAD", PythonOptions.isWithThread() ? 1 : 0);
     }
 
     @Override

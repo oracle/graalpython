@@ -41,7 +41,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.nodes.RootNode;
 
-public final class PBuiltinFunction extends PythonBuiltinObject implements PythonCallable, BoundBuiltinCallable<PBuiltinFunction> {
+public final class PBuiltinFunction extends PythonBuiltinObject implements BoundBuiltinCallable<PBuiltinFunction> {
 
     private final String name;
     private final LazyPythonClass enclosingType;
@@ -81,17 +81,14 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Pytho
         }
     }
 
-    @Override
     public Arity getArity() {
         return arity;
     }
 
-    @Override
     public RootCallTarget getCallTarget() {
         return callTarget;
     }
 
-    @Override
     public String getName() {
         return name;
     }

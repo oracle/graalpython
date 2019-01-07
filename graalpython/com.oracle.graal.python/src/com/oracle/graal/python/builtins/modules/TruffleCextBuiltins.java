@@ -107,7 +107,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -1452,18 +1451,18 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_GetSetDescriptor", keywordArguments = {"fget", "fset", "name", "owner"})
     @GenerateNodeFactory
     public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
-        @Specialization
-        Object call(PythonCallable get, PythonCallable set, String name, PythonClass owner) {
+        @Specialization(guards = {"!isNoValue(get)", "!isNoValue(set)"})
+        Object call(Object get, Object set, String name, PythonClass owner) {
             return factory().createGetSetDescriptor(get, set, name, owner);
         }
 
-        @Specialization
-        Object call(PythonCallable get, @SuppressWarnings("unused") PNone set, String name, PythonClass owner) {
+        @Specialization(guards = {"!isNoValue(get)", "isNoValue(set)"})
+        Object call(Object get, @SuppressWarnings("unused") PNone set, String name, PythonClass owner) {
             return factory().createGetSetDescriptor(get, null, name, owner);
         }
 
-        @Specialization
-        Object call(@SuppressWarnings("unused") PNone get, PythonCallable set, String name, PythonClass owner) {
+        @Specialization(guards = {"isNoValue(get)", "!isNoValue(set)"})
+        Object call(@SuppressWarnings("unused") PNone get, Object set, String name, PythonClass owner) {
             return factory().createGetSetDescriptor(null, set, name, owner);
         }
     }
@@ -1723,7 +1722,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 if (readErrorHandlerNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    readErrorHandlerNode = ReadAttributeFromObjectNode.create();
+                    readErrorHandlerNode = insert(ReadAttributeFromObjectNode.create());
                 }
                 getContext().setCurrentException(e);
                 return toSulongNode.execute(readErrorHandlerNode.execute(cextModule, NATIVE_NULL));

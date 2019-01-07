@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.frame.WriteLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
+import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
 import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
 import com.oracle.graal.python.nodes.generator.GeneratorControlNode;
 import com.oracle.graal.python.nodes.generator.GeneratorForNode;
@@ -54,12 +55,15 @@ import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.GeneratorTryExceptNode;
 import com.oracle.graal.python.nodes.generator.GeneratorTryFinallyNode;
 import com.oracle.graal.python.nodes.generator.GeneratorWhileNode;
+import com.oracle.graal.python.nodes.generator.GeneratorWithNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
+import com.oracle.graal.python.nodes.generator.YieldFromNode;
 import com.oracle.graal.python.nodes.generator.YieldNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
+import com.oracle.graal.python.nodes.statement.WithNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -108,6 +112,10 @@ public class GeneratorTranslator {
             replace(read, ReadGeneratorFrameVariableNode.create(read.getSlot()));
         }
 
+        for (YieldFromNode yieldFrom : NodeUtil.findAllNodeInstances(root, YieldFromNode.class)) {
+            replaceYieldFrom(yieldFrom);
+        }
+
         /**
          * Rewrite all control flow paths leading to yields.
          */
@@ -120,6 +128,33 @@ public class GeneratorTranslator {
         }
 
         return callTarget;
+    }
+
+    private void replaceYieldFrom(YieldFromNode yield) {
+        PNode current = yield;
+        yield.setIteratorSlot(nextGeneratorForNodeSlot());
+        yield.setFlagSlot(nextActiveFlagSlot());
+
+        if (yield.getParent() instanceof GeneratorReturnTargetNode) {
+            // if this yield...from is the only thing in the body, we introduce a block
+            replace(yield, BlockNode.create(yield.asStatement()));
+        }
+
+        while (current.getParent() != root) {
+            Node parent = current.getParent();
+            // skip non-python nodes (e.g., Truffle loop nodes)
+            while (!(parent instanceof PNode)) {
+                parent = parent.getParent();
+            }
+            current = (PNode) parent;
+            replaceControl(current);
+        }
+
+        if (needToHandleComplicatedYieldExpression) {
+            needToHandleComplicatedYieldExpression = false;
+            // TranslationUtil.notCovered("Yield expression used in a complicated expression");
+            handleComplicatedYieldExpression(yield);
+        }
     }
 
     private void replaceYield(YieldNode yield) {
@@ -148,7 +183,7 @@ public class GeneratorTranslator {
         }
     }
 
-    public void handleComplicatedYieldExpression(YieldNode yield) {
+    public void handleComplicatedYieldExpression(AbstractYieldNode yield) {
         // Find the dominating StatementNode.
         StatementNode targetingStatement = (StatementNode) PNodeUtil.getParentFor(yield, WriteNode.class);
 
@@ -258,6 +293,9 @@ public class GeneratorTranslator {
             ForNode forNode = (ForNode) node;
             replaceForNode(forNode);
 
+        } else if (node instanceof WithNode) {
+            replaceWithNode(((WithNode) node));
+
         } else if (node instanceof BlockNode) {
             BlockNode block = (BlockNode) node;
             int slotOfBlockIndex = nextGeneratorBlockIndexSlot();
@@ -281,6 +319,10 @@ public class GeneratorTranslator {
         } else {
             replaceYieldExpression(node);
         }
+    }
+
+    private void replaceWithNode(WithNode withNode) {
+        replace(withNode, new GeneratorWithNode(withNode.getTargetNode(), withNode.getBody(), withNode.getWithContext(), nextActiveFlagSlot(), nextGeneratorForNodeSlot(), nextActiveFlagSlot()));
     }
 
     /**

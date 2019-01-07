@@ -44,14 +44,14 @@ def make_implementation_info():
     )
     return SimpleNamespace(
         name="graalpython",
-        cache_tag=None,
-        version_info=version_info_type(version_info),
+        cache_tag="graalpython",
+        version=version_info_type(version_info),
         _multiarch=__gmultiarch
     )
 implementation = make_implementation_info()
 del make_implementation_info
 del __gmultiarch
-version_info = implementation.version_info
+version_info = implementation.version
 
 
 def make_flags_class():

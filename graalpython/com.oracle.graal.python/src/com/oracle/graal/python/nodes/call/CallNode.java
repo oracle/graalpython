@@ -40,10 +40,11 @@
  */
 package com.oracle.graal.python.nodes.call;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.PGuards;
@@ -54,7 +55,6 @@ import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -69,23 +69,23 @@ public abstract class CallNode extends PNodeWithContext {
         return CallNodeGen.create();
     }
 
-    @Child CreateArgumentsNode createArguments = CreateArgumentsNode.create();
-    @Child CallDispatchNode dispatch = CallDispatchNode.create();
+    @Child private CreateArgumentsNode createArguments = CreateArgumentsNode.create();
+    @Child private CallDispatchNode dispatch = CallDispatchNode.create();
 
     public abstract Object execute(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords);
 
-    protected static boolean isNoCallable(Object callee) {
-        return !(callee instanceof PythonCallable);
+    public final Object execute(VirtualFrame frame, Object callableObject, Object... arguments) {
+        return execute(frame, callableObject, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
-    @Specialization(guards = {"isNoCallable(callableObject) || isClass(callableObject)"})
+    @Specialization(guards = {"!isCallable(callableObject) || isClass(callableObject)"})
     protected Object specialCall(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                     @Cached("create()") CallVarargsMethodNode callCallNode) {
         Object call = callAttrGetterNode.execute(callableObject);
-        if (isNoCallable(call)) {
+        if (call == PNone.NO_VALUE) {
             CompilerDirectives.transferToInterpreter();
-            throw raise(PythonErrorType.TypeError, "'%p' object is not callable", callableObject);
+            throw raise(PythonBuiltinClassType.TypeError, "'%p' object is not callable", callableObject);
         }
         return callCallNode.execute(frame, call, PositionalArgumentsNode.prependArgument(callableObject, arguments, arguments.length), keywords);
     }
@@ -106,14 +106,30 @@ public abstract class CallNode extends PNodeWithContext {
         return dispatch;
     }
 
-    @Specialization
-    protected Object methodCall(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords) {
-        return ensureDispatch().executeCall(frame, callable, ensureCreateArguments().executeWithSelf(callable.getSelf(), arguments), keywords);
+    @Specialization(guards = "isFunction(callable.getFunction())")
+    protected Object methodCallDirect(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords) {
+        // functions must be called directly otherwise the call stack is incorrect
+        return ensureDispatch().executeCall(frame, callable.getFunction(), ensureCreateArguments().executeWithSelf(callable.getSelf(), arguments), keywords);
     }
 
-    @Specialization
-    protected Object builtinMethodCall(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords) {
-        return ensureDispatch().executeCall(frame, callable, ensureCreateArguments().executeWithSelf(callable.getSelf(), arguments), keywords);
+    @Specialization(guards = "isFunction(callable.getFunction())")
+    protected Object builtinMethodCallDirect(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords) {
+        // functions must be called directly otherwise the call stack is incorrect
+        return ensureDispatch().executeCall(frame, callable.getFunction(), ensureCreateArguments().executeWithSelf(callable.getSelf(), arguments), keywords);
+    }
+
+    @Specialization(guards = "!isFunction(callable.getFunction())")
+    protected Object methodCall(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords,
+                    @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
+                    @Cached("create()") CallVarargsMethodNode callCallNode) {
+        return specialCall(frame, callable, arguments, keywords, callAttrGetterNode, callCallNode);
+    }
+
+    @Specialization(guards = "!isFunction(callable.getFunction())")
+    protected Object builtinMethodCall(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
+                    @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
+                    @Cached("create()") CallVarargsMethodNode callCallNode) {
+        return specialCall(frame, callable, arguments, keywords, callAttrGetterNode, callCallNode);
     }
 
     @Specialization

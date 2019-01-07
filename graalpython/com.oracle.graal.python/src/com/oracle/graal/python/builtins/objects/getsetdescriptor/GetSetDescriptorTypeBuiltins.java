@@ -55,6 +55,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -63,6 +65,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -94,13 +97,12 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         private final BranchProfile errorBranch = BranchProfile.create();
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
-        protected boolean descr_check(GetSetDescriptor descr, Object obj, PythonClass type) {
+        protected boolean descr_check(LazyPythonClass descrType, String name, Object obj, PythonClass type) {
             if (PGuards.isNone(obj)) {
                 if (!isNoneBuiltinClassProfile.profileClass(type, PythonBuiltinClassType.PNone)) {
                     return true;
                 }
             }
-            LazyPythonClass descrType = descr.getType();
             if (isBuiltinProfile.profile(descrType instanceof PythonBuiltinClassType)) {
                 PythonBuiltinClassType builtinClassType = (PythonBuiltinClassType) descrType;
                 for (PythonClass o : type.getMethodResolutionOrder()) {
@@ -116,20 +118,20 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 }
             }
             errorBranch.enter();
-            throw raise(TypeError, "descriptor '%s' for '%s' objects doesn't apply to '%s' object", descr.getName(), descrType.getName(), type.getName());
+            throw raise(TypeError, "descriptor '%s' for '%s' objects doesn't apply to '%s' object", name, descrType.getName(), type.getName());
         }
     }
 
     @Builtin(name = __GET__, fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSetGetNode extends GetSetNode {
-        @Child CallUnaryMethodNode callNode = CallUnaryMethodNode.create();
         private final BranchProfile branchProfile = BranchProfile.create();
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L149
         @Specialization
-        Object get(GetSetDescriptor descr, Object obj, PythonClass type) {
-            if (descr_check(descr, obj, type)) {
+        Object get(GetSetDescriptor descr, Object obj, PythonClass type,
+                        @Cached("create()") CallUnaryMethodNode callNode) {
+            if (descr_check(descr.getType(), descr.getName(), obj, type)) {
                 return descr;
             }
             if (descr.getGet() != null) {
@@ -139,19 +141,28 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 throw raise(AttributeError, "attribute '%s' of '%s' objects is not readable", descr.getName(), descr.getType().getName());
             }
         }
+
+        @Specialization
+        Object getSlot(HiddenKeyDescriptor descr, Object obj, PythonClass type,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            if (descr_check(descr.getType(), descr.getKey().getName(), obj, type)) {
+                return descr;
+            }
+            return readNode.execute(obj, descr.getKey());
+        }
     }
 
     @Builtin(name = __SET__, fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSetSetNode extends GetSetNode {
         @Child GetClassNode getClassNode = GetClassNode.create();
-        @Child CallBinaryMethodNode callNode = CallBinaryMethodNode.create();
         private final BranchProfile branchProfile = BranchProfile.create();
 
         @Specialization
-        Object set(GetSetDescriptor descr, Object obj, Object value) {
+        Object set(GetSetDescriptor descr, Object obj, Object value,
+                        @Cached("create()") CallBinaryMethodNode callNode) {
             // the noneType is not important here - there are no setters on None
-            if (descr_check(descr, obj, getClassNode.execute(obj))) {
+            if (descr_check(descr.getType(), descr.getName(), obj, getClassNode.execute(obj))) {
                 return descr;
             }
             if (descr.getSet() != null) {
@@ -160,6 +171,16 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 branchProfile.enter();
                 throw raise(AttributeError, "attribute '%s' of '%s' object is not writable", descr.getName(), descr.getType().getName());
             }
+        }
+
+        @Specialization
+        Object setSlot(HiddenKeyDescriptor descr, Object obj, Object value,
+                        @Cached("create()") WriteAttributeToObjectNode writeNode) {
+            // the noneType is not important here - there are no setters on None
+            if (descr_check(descr.getType(), descr.getKey().getName(), obj, getClassNode.execute(obj))) {
+                return descr;
+            }
+            return writeNode.execute(obj, descr.getKey(), value);
         }
     }
 }

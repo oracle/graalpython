@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -64,7 +64,6 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
     public static TranslationEnvironment createFromScope(ScopeInfo scope) {
         TranslationEnvironment environment = new TranslationEnvironment(PythonLanguage.getCurrent());
         environment.currentScope = scope;
-        scope.resetLoopCount();
         ScopeInfo global = scope;
         while (global.getParent() != null) {
             global = global.getParent();
@@ -73,41 +72,28 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         return environment;
     }
 
-    public ScopeInfo createScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind) {
-        return createScope(ctx, kind, null);
+    public ScopeInfo pushScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind) {
+        return pushScope(ctx, kind, null);
     }
 
-    public ScopeInfo createScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind, FrameDescriptor frameDescriptor) {
-        currentScope = new ScopeInfo(TranslationUtil.getScopeId(ctx, kind), kind, frameDescriptor, currentScope);
+    public ScopeInfo pushScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind, FrameDescriptor frameDescriptor) {
+        ScopeInfo newScope = new ScopeInfo(TranslationUtil.getScopeId(ctx, kind), kind, frameDescriptor, currentScope);
+        pushScope(newScope);
         if (globalScope == null) {
             globalScope = currentScope;
         }
         return currentScope;
     }
 
-    public void enterScope(ScopeInfo scope) {
+    public void pushScope(ScopeInfo scope) {
         assert scope != null;
         currentScope = scope;
-        scope.resetLoopCount();
     }
 
-    public void leaveScope() {
+    public ScopeInfo popScope() {
+        ScopeInfo old = currentScope;
         currentScope = currentScope.getParent();
-    }
-
-    public ScopeInfo pushCurentScope() {
-        if (currentScope.getParent() != null) {
-            ScopeInfo old = currentScope;
-            currentScope = currentScope.getParent();
-            return old;
-        }
-        return null;
-    }
-
-    public void popCurrentScope(ScopeInfo oldScope) {
-        if (oldScope != null) {
-            currentScope = oldScope;
-        }
+        return old;
     }
 
     public boolean atModuleLevel() {
@@ -426,14 +412,6 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
                 childScope = childScope.getNextChildScope();
             }
         }
-    }
-
-    public void incCurrentScopeLoopCount() {
-        currentScope.incLoopCount();
-    }
-
-    public int getCurrentScopeLoopCount() {
-        return currentScope.getLoopCount();
     }
 
     public FrameSlot findFrameSlot(String identifier) {

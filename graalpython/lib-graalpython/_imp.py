@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -48,7 +48,7 @@ def extension_suffixes():
 
 @__builtin__
 def get_magic():
-    return '\x0c\xaf\xaf\xe1'
+    return b'\x0c\xaf\xaf\xe1'
 
 
 @__builtin__

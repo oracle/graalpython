@@ -236,9 +236,11 @@ graalpython/com.oracle.graal.python.test/src/tests/test_re.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_slice.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_sorted.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_string.py,python.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_subprocess.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_tuple.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_with-test-2.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_with.py,zippy.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_yield_from.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_zipimport.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_zlib.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/try-test.py,zippy.copyright
@@ -294,7 +296,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/PFunction.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/PGeneratorFunction.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/PKeyword.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/PythonCallable.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/generator/GeneratorBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/generator/GeneratorControlData.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/generator/PGenerator.java,zippy.copyright

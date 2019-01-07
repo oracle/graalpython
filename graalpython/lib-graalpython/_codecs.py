@@ -246,16 +246,6 @@ def utf_32_ex_decode(data, errors=None, byteorder=0, final=False):
 
 
 @__builtin__
-def unicode_escape_encode(string, errors=None):
-    raise NotImplementedError("unicode_escape_encode")
-
-
-@__builtin__
-def unicode_escape_decode(string, errors=None):
-    raise NotImplementedError("unicode_escape_decode")
-
-
-@__builtin__
 def unicode_internal_encode(obj, errors=None):
     raise NotImplementedError("unicode_internal_encode")
 
@@ -297,12 +287,12 @@ def ascii_decode(string, errors=None):
 
 @__builtin__
 def charmap_encode(string, errors=None, mapping=None):
-    raise NotImplementedError("charmap_encode")
+    return __truffle_encode(string, "cp437", errors)
 
 
 @__builtin__
 def charmap_decode(string, errors=None, mapping=None):
-    raise NotImplementedError("charmap_decode")
+    return __truffle_decode(string, "cp437", errors)
 
 
 @__builtin__

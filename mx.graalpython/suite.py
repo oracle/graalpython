@@ -8,6 +8,24 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
+    "version": "1.0.0-rc11",
+    "release": False,
+    "groupId": "org.graalvm.graalpython",
+    "url": "http://www.graalvm.org/",
+
+    "developer": {
+        "name": "Truffle and Graal developers",
+        "email": "graalvm-users@oss.oracle.com",
+        "organization": "Graal",
+        "organizationUrl": "http://www.graalvm.org/",
+    },
+
+    "scm": {
+        "url": "https://github.com/graalvm/graalpython",
+        "read": "https://github.com/graalvm/graalpython.git",
+        "write": "git@github.com:graalvm/graalpython.git",
+    },
+
     # --------------------------------------------------------------------------------------------------------------
     #
     #  DEPENDENCIES
@@ -25,7 +43,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "7db682cf8d61ba711396aec6cfaa885170890c31",
+                "version": "9d229909cf650948b7cf438fee2addb4b97603c1",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -33,7 +51,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "7db682cf8d61ba711396aec6cfaa885170890c31",
+                "version": "9d229909cf650948b7cf438fee2addb4b97603c1",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -66,6 +84,12 @@ suite = {
     #
     # --------------------------------------------------------------------------------------------------------------
     "libraries": {
+        "SETUPTOOLS": {
+            "urls": [
+                "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/setuptools-40.6.3.zip",
+            ],
+            "sha1": "7a5960b8062ddbf0c0e79f806e23785d55fec3c8",
+        }
     },
 
     # --------------------------------------------------------------------------------------------------------------
@@ -173,6 +197,7 @@ suite = {
             "javaCompliance": "1.8",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
             "workingSets": "Truffle,Python",
+            "testProject": True,
         },
 
         "com.oracle.graal.python.tck": {
@@ -185,6 +210,7 @@ suite = {
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "1.8",
             "workingSets": "Truffle,Python",
+            "testProject": True,
         },
 
 
@@ -192,8 +218,8 @@ suite = {
             "subDir": "graalpython",
             "native": True,
             "vpath": True,
-            "results" : ["graalpython/lib-graalpython"],
-            "output" : ".",
+            "results": ["graalpython/lib-graalpython"],
+            "output": ".",
             "buildDependencies": [
                 "sulong:SULONG_LIBS",
             ],
@@ -221,7 +247,15 @@ suite = {
             "results": ["graalpython/lib-python/3/site-packages"],
             "output": ".",
             "license": ["MIT"],
-            "defaultBuild" : False,
+            "defaultBuild": False,
+            "buildEnv": {
+                "SETUPTOOLS_ZIP": "<path:SETUPTOOLS>",
+            },
+            "buildDependencies": [
+                "SETUPTOOLS",
+                "GRAALPYTHON-LAUNCHER",
+                "GRAALPYTHON",
+            ],
         },
     },
 
@@ -230,9 +264,9 @@ suite = {
             "name": "Python Software Foundation License",
             "url": "https://docs.python.org/3/license.html",
         },
-        "UPL" : {
-            "name" : "Universal Permissive License, Version 1.0",
-            "url" : "http://opensource.org/licenses/UPL",
+        "UPL": {
+            "name": "Universal Permissive License, Version 1.0",
+            "url": "http://opensource.org/licenses/UPL",
         },
     },
 
@@ -250,12 +284,7 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
             ],
-        },
-
-        "GRAALPYTHON-ENV": {
-        },
-
-        "GRAALPYTHON-ZIP": {
+            "description": "GraalPython launcher",
         },
 
         "GRAALPYTHON": {
@@ -270,11 +299,13 @@ suite = {
                 "truffle:ANTLR4",
             ],
             "sourcesPath": "graalpython.src.zip",
+            "description": "GraalPython engine",
         },
 
-        "GRAALPYTHON_PYTHON_LIB" : {
-            "dependencies" : ["python-lib"],
-            "description" : "Python 3 lib files",
+        "GRAALPYTHON_PYTHON_LIB": {
+            "dependencies": ["python-lib"],
+            "description": "Python 3 lib files",
+            "maven": False,
         },
 
         "GRAALPYTHON_UNIT_TESTS": {
@@ -289,6 +320,7 @@ suite = {
                 "truffle:TRUFFLE_TCK",
             ],
             "sourcesPath": "graalpython.tests.src.zip",
+            "testDistribution": True,
         },
 
         "GRAALPYTHON_TCK": {
@@ -301,31 +333,34 @@ suite = {
                 "sdk:POLYGLOT_TCK",
             ],
             "sourcesPath": "graalpython.tests.src.zip",
+            "testDistribution": True,
         },
 
-        "GRAALPYTHON_GRAALVM_SUPPORT" : {
-            "native" : True,
-            "platformDependent" : True,
-            "description" : "Graal.Python support distribution for the GraalVM",
-            "layout" : {
-                "./" : [
+        "GRAALPYTHON_GRAALVM_SUPPORT": {
+            "native": True,
+            "platformDependent": True,
+            "description": "Graal.Python support distribution for the GraalVM",
+            "layout": {
+                "./": [
                     "dependency:com.oracle.graal.python.cext/graalpython/lib-graalpython",
                     "file:graalpython/com.oracle.graal.python.cext/include",
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
                 ],
-                "LICENSE_GRAALPYTHON" : "file:LICENSE",
-                "3rd_party_licenses_graalpython.txt" : "file:3rd_party_licenses.txt",
-            }
+                "LICENSE_GRAALPYTHON": "file:LICENSE",
+                "3rd_party_licenses_graalpython.txt": "file:3rd_party_licenses.txt",
+            },
+            "maven": False,
         },
 
-        "GRAALPYTHON_GRAALVM_DOCS" : {
-            "native" : True,
-            "description" : "Graal.Python documentation files for the GraalVM",
-            "layout" : {
-                "README_GRAALPYTHON.md" : "file:README.md",
-                "./" : "file:doc",
+        "GRAALPYTHON_GRAALVM_DOCS": {
+            "native": True,
+            "description": "Graal.Python documentation files for the GraalVM",
+            "layout": {
+                "README_GRAALPYTHON.md": "file:README.md",
+                "./": "file:doc",
             },
+            "maven": False,
         },
     },
 }

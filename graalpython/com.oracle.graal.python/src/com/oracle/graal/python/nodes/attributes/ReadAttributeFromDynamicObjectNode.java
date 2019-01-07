@@ -47,12 +47,14 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Shape;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
+@ReportPolymorphism
 public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttributeNode {
     public static ReadAttributeFromDynamicObjectNode create() {
         return ReadAttributeFromDynamicObjectNodeGen.create();
@@ -87,6 +89,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
                                     "loc.isAssumedFinal()",
                     }, //
                     assumptions = {
+                                    "singleContextAssumption",
                                     "layoutAssumption",
                                     "finalAssumption"
                     })
@@ -98,6 +101,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
                     @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc,
                     @Cached("loc.getFinalAssumption()") Assumption finalAssumption,
+                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @Cached("readFinalValue(dynamicObject, loc)") Object cachedValue) {
         assert assertFinal(dynamicObject, attrKey, cachedValue);
         return cachedValue;
@@ -108,7 +112,6 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
                     guards = {
                                     "dynamicObject.getShape() == cachedShape",
                                     "key == cachedKey",
-                                    "loc == null || !loc.isAssumedFinal()",
                     }, //
                     assumptions = {
                                     "layoutAssumption"

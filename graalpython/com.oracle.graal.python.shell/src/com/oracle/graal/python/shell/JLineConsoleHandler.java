@@ -268,4 +268,15 @@ public class JLineConsoleHandler extends ConsoleHandler {
         }
         return result;
     }
+
+    @Override
+    public int getTerminalHeight() {
+        return console.getTerminal().getHeight();
+    }
+
+    @Override
+    public int getTerminalWidth() {
+        return console.getTerminal().getWidth();
+    }
+
 }

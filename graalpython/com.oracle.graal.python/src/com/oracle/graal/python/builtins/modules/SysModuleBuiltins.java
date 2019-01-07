@@ -159,6 +159,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("graal_python_core_home", PythonOptions.getOption(core.getContext(), PythonOptions.CoreHome));
         builtinConstants.put("graal_python_stdlib_home", PythonOptions.getOption(core.getContext(), PythonOptions.StdLibHome));
         builtinConstants.put("graal_python_opaque_filesystem", PythonOptions.getOption(core.getContext(), PythonOptions.OpaqueFilesystem));
+        builtinConstants.put("graal_python_is_native", TruffleOptions.AOT);
         // the default values taken from JPython
         builtinConstants.put("float_info", core.factory().createTuple(new Object[]{
                         Double.MAX_VALUE,       // DBL_MAX
@@ -173,7 +174,25 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         2,                      // FLT_RADIX
                         1                       // FLT_ROUNDS
         }));
+        builtinConstants.put("maxunicode", Character.MAX_CODE_POINT);
 
+        String os = getPythonOSName();
+        builtinConstants.put("platform", os);
+        builtinConstants.put("__gmultiarch", getPythonArch() + "-" + os);
+
+        super.initialize(core);
+    }
+
+    static String getPythonArch() {
+        String arch = System.getProperty("os.arch", "");
+        if (arch.equals("amd64")) {
+            // be compatible with CPython's designation
+            arch = "x86_64";
+        }
+        return arch;
+    }
+
+    static String getPythonOSName() {
         String property = System.getProperty("os.name");
         String os = "java";
         if (property.toLowerCase().contains("cygwin")) {
@@ -189,12 +208,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         } else if (property.toLowerCase().contains("freebsd")) {
             os = "freebsd";
         }
-        builtinConstants.put("platform", os);
-
-        String architecture = System.getProperty("os.arch");
-        builtinConstants.put("__gmultiarch", architecture + "-" + os);
-
-        super.initialize(core);
+        return os;
     }
 
     @Builtin(name = "exc_info", fixedNumOfPositionalArgs = 0)

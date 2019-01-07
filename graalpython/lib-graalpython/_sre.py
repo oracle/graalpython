@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -99,7 +99,7 @@ def setup(sre_compiler, error_class, flags_table):
 
         return fallback_compiler
 
-    engine_builder = _interop.eval(string="", language="regex")
+    engine_builder = _build_regex_engine("")
 
     global TREGEX_ENGINE_STR
     global TREGEX_ENGINE_BYTES
@@ -299,11 +299,27 @@ class SRE_Pattern():
         else:
             return str(elem)
 
-    def findall(self, string, pos=0, endpos=-1):
+    def finditer(self, string, pos=0, endpos=-1):
         self.__check_input_type(string)
         if endpos > len(string):
             endpos = len(string)
         elif endpos < 0:
+            endpos = endpos % len(string) + 1
+        while pos < endpos:
+            result = tregex_call_exec(self.__tregex_compile(self.pattern).exec, string, pos)
+            if not result.isMatch:
+                break
+            else:
+                yield SRE_Match(self, pos, endpos, result)
+            no_progress = (result.start[0] == result.end[0])
+            pos = result.end[0] + no_progress
+        return
+
+    def findall(self, string, pos=0, endpos=-1):
+        self.__check_input_type(string)
+        if endpos > len(string):
+            endpos = len(string)
+        elif endpos < 0 and len(string) > 0:
             endpos = endpos % len(string) + 1
         matchlist = []
         while pos < endpos:
@@ -319,7 +335,6 @@ class SRE_Pattern():
             no_progress = (result.start[0] == result.end[0])
             pos = result.end[0] + no_progress
         return matchlist
-
 
     def __replace_groups(self, repl, string, match_result, pattern):
         def group(match_result, group_nr, string):

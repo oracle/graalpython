@@ -60,11 +60,11 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -268,7 +268,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 hasDescProfile.enter();
                 LazyPythonClass dataDescClass = getDataClass(descr);
                 get = lookupGet(dataDescClass);
-                if (get instanceof PythonCallable) {
+                if (PGuards.isCallable(get)) {
                     Object delete = PNone.NO_VALUE;
                     Object set = lookupSet(dataDescClass);
                     if (set == PNone.NO_VALUE) {
@@ -291,7 +291,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 Object valueGet = lookupValueGet(value);
                 if (valueGet == PNone.NO_VALUE) {
                     return value;
-                } else if (valueGet instanceof PythonCallable) {
+                } else if (PGuards.isCallable(valueGet)) {
                     if (invokeValueGet == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         invokeValueGet = insert(CallTernaryMethodNode.create());
@@ -303,7 +303,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 hasDescProfile.enter();
                 if (get == PNone.NO_VALUE) {
                     return descr;
-                } else if (get instanceof PythonCallable) {
+                } else if (PGuards.isCallable(get)) {
                     if (invokeGet == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         invokeGet = insert(CallTernaryMethodNode.create());

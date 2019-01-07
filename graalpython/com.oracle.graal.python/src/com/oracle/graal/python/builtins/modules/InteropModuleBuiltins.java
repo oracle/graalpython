@@ -53,14 +53,21 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
@@ -130,6 +137,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             try {
                 boolean mimeType = isMimeType(langOrMimeType);
                 String lang = mimeType ? findLanguageByMimeType(env, langOrMimeType) : langOrMimeType;
+                raiseIfInternal(env, lang);
                 LiteralBuilder newBuilder = Source.newBuilder(lang, value, value);
                 if (mimeType) {
                     newBuilder = newBuilder.mimeType(langOrMimeType);
@@ -140,6 +148,13 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        private void raiseIfInternal(Env env, String lang) {
+            LanguageInfo languageInfo = env.getLanguages().get(lang);
+            if (languageInfo != null && languageInfo.isInternal()) {
+                throw raise(NotImplementedError, "access to internal language %s is not permitted", lang);
+            }
+        }
+
         @TruffleBoundary
         @Specialization
         Object evalFile(String path, @SuppressWarnings("unused") PNone string, String langOrMimeType) {
@@ -147,6 +162,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             try {
                 boolean mimeType = isMimeType(langOrMimeType);
                 String lang = mimeType ? findLanguageByMimeType(env, langOrMimeType) : langOrMimeType;
+                raiseIfInternal(env, lang);
                 SourceBuilder newBuilder = Source.newBuilder(lang, env.getTruffleFile(path));
                 if (mimeType) {
                     newBuilder = newBuilder.mimeType(langOrMimeType);
@@ -187,9 +203,11 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary(transferToInterpreterOnException = false)
         private static String findLanguageByMimeType(Env env, String mimeType) {
             Map<String, LanguageInfo> languages = env.getLanguages();
-            for (String registeredMimeType : languages.keySet()) {
-                if (mimeType.equals(registeredMimeType)) {
-                    return languages.get(registeredMimeType).getId();
+            for (String language : languages.keySet()) {
+                for (String registeredMimeType : languages.get(language).getMimeTypes()) {
+                    if (mimeType.equals(registeredMimeType)) {
+                        return language;
+                    }
                 }
             }
             return null;
@@ -203,6 +221,9 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "export_value", minNumOfPositionalArgs = 1, keywordArguments = {"name"})
     @GenerateNodeFactory
     public abstract static class ExportSymbolNode extends PythonBuiltinNode {
+        @Child private GetAttributeNode getNameAttributeNode;
+        @Child private CastToStringNode castToStringNode;
+
         @Specialization
         @TruffleBoundary
         public Object exportSymbol(Object value, String name) {
@@ -210,12 +231,48 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             return value;
         }
 
-        @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        public Object exportSymbol(PythonCallable value, PNone name) {
-            getContext().getEnv().exportSymbol(value.getName(), value);
-            return value;
+        public Object exportSymbol(PFunction fun, @SuppressWarnings("unused") PNone name) {
+            getContext().getEnv().exportSymbol(fun.getName(), fun);
+            return fun;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public Object exportSymbol(PBuiltinFunction fun, @SuppressWarnings("unused") PNone name) {
+            getContext().getEnv().exportSymbol(fun.getName(), fun);
+            return fun;
+        }
+
+        @Specialization(guards = "isModule(fun.getSelf())")
+        @TruffleBoundary
+        public Object exportSymbol(PMethod fun, @SuppressWarnings("unused") PNone name) {
+            getContext().getEnv().exportSymbol(getMethodName(fun), fun);
+            return fun;
+        }
+
+        @Specialization(guards = "isModule(fun.getSelf())")
+        @TruffleBoundary
+        public Object exportSymbol(PBuiltinMethod fun, @SuppressWarnings("unused") PNone name) {
+            getContext().getEnv().exportSymbol(getMethodName(fun), fun);
+            return fun;
+        }
+
+        private String getMethodName(Object o) {
+            if (getNameAttributeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getNameAttributeNode = insert(GetAttributeNode.create(SpecialAttributeNames.__NAME__, null));
+            }
+            if (castToStringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToStringNode = insert(CastToStringNode.create());
+            }
+            return castToStringNode.execute(getNameAttributeNode.executeObject(o));
+        }
+
+        protected static boolean isModule(Object o) {
+            return o instanceof PythonModule;
         }
     }
 

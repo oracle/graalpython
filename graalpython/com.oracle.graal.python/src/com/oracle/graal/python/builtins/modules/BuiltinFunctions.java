@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.LEN;
 import static com.oracle.graal.python.nodes.BuiltinNames.MAX;
 import static com.oracle.graal.python.nodes.BuiltinNames.MIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.NEXT;
+import static com.oracle.graal.python.nodes.BuiltinNames.OCT;
 import static com.oracle.graal.python.nodes.BuiltinNames.ORD;
 import static com.oracle.graal.python.nodes.BuiltinNames.POW;
 import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
@@ -94,13 +95,13 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -121,6 +122,7 @@ import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -151,15 +153,16 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
@@ -286,19 +289,72 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
+    // oct(object)
+    @Builtin(name = OCT, fixedNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class OctNode extends PythonUnaryBuiltinNode {
+
+        public abstract String executeObject(Object x);
+
+        @TruffleBoundary
+        private static String buildString(boolean isNegative, String number) {
+            StringBuilder sb = new StringBuilder();
+            if (isNegative) {
+                sb.append('-');
+            }
+            sb.append("0o");
+            sb.append(number);
+            return sb.toString();
+        }
+
+        @Specialization
+        public String doL(long x) {
+            return buildString(x < 0, longToOctString(x));
+        }
+
+        @TruffleBoundary
+        private static String longToOctString(long x) {
+            return Long.toOctalString(Math.abs(x));
+        }
+
+        @Specialization
+        public String doD(double x) {
+            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public String doPI(PInt x) {
+            BigInteger value = x.getValue();
+            return buildString(value.compareTo(BigInteger.ZERO) == -1, value.abs().toString(8));
+        }
+
+        @Specialization
+        public String doO(Object x,
+                        @Cached("create()") CastToIntegerFromIndexNode toIntNode,
+                        @Cached("create()") OctNode recursiveNode) {
+            Object value = toIntNode.execute(x);
+            return recursiveNode.executeObject(value);
+        }
+
+        protected static OctNode create() {
+            return BuiltinFunctionsFactory.OctNodeFactory.create();
+        }
+    }
+
     // callable(object)
     @Builtin(name = CALLABLE, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CallableNode extends PythonBuiltinNode {
 
-        @SuppressWarnings("unused")
-        @Specialization
-        public boolean callable(PythonCallable callable) {
+        @Specialization(guards = "isCallable(callable)")
+        boolean doCallable(@SuppressWarnings("unused") Object callable) {
             return true;
         }
 
         @Specialization
-        public boolean callable(Object object,
+        boolean doGeneric(Object object,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode getAttributeNode) {
             /**
              * Added temporarily to skip translation/execution errors in unit testing
@@ -313,7 +369,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return true;
             }
 
-            return object instanceof PythonCallable;
+            return PGuards.isCallable(object);
         }
     }
 
@@ -447,6 +503,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public PTuple doDouble(double a, double b) {
             double q = Math.floor(a / b);
             return factory().createTuple(new Object[]{q, a % b});
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        public PTuple doComplex(PComplex c, Object o) {
+            throw raise(PythonErrorType.TypeError, "can't take floor or mod of complex number.");
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        public PTuple doComplex(Object o, PComplex c) {
+            throw raise(PythonErrorType.TypeError, "can't take floor or mod of complex number.");
         }
 
         @Specialization
@@ -1210,7 +1278,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return next.execute(iterator);
             } catch (PException e) {
                 e.expectAttributeError(errorProfile);
-                throw raise(TypeError, "'%p' object is not an iterator", iterator);
+                throw raise(TypeError, e.getExceptionObject(), "'%p' object is not an iterator", iterator);
             }
         }
 
@@ -1258,45 +1326,113 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
-    @Builtin(name = PRINT, fixedNumOfPositionalArgs = 5)
+    @Builtin(name = PRINT, takesVarArgs = true, keywordArguments = {"sep", "end", "file", "flush"}, doc = "\n" +
+                    "print(value, ..., sep=' ', end='\\n', file=sys.stdout, flush=False)\n" +
+                    "\n" +
+                    "Prints the values to a stream, or to sys.stdout by default.\n" +
+                    "Optional keyword arguments:\n" +
+                    "file:  a file-like object (stream); defaults to the current sys.stdout.\n" +
+                    "sep:   string inserted between values, default a space.\n" +
+                    "end:   string appended after the last value, default a newline.\n" +
+                    "flush: whether to forcibly flush the stream.")
     @GenerateNodeFactory
     public abstract static class PrintNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        public Object print(PTuple values, String sep, String end, Object file, boolean flush,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
-                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode callStr) {
-            try {
-                PythonContext context = getContext();
-                if (lenNode.execute(values.getSequenceStorage()) == 0) {
-                    write(context, end);
-                } else {
-                    SequenceStorage store = values.getSequenceStorage();
-                    StringBuilder sb = new StringBuilder();
-                    for (int i = 0; i < store.length() - 1; i++) {
-                        append(sb, callStr.executeObject(getItemNode.execute(store, i)));
-                        append(sb, " ");
-                    }
-                    append(sb, callStr.executeObject(getItemNode.execute(store, store.length() - 1)));
-                    append(sb, end);
-                    write(context, sb.toString());
-                }
-            } catch (IOException e) {
-                // pass through
-            }
+        private static final String DEFAULT_END = "\n";
+        private static final String DEFAULT_SEPARATOR = " ";
+        @Child ReadAttributeFromObjectNode readStdout;
+        @Child GetAttributeNode getWrite = GetAttributeNode.create("write", null);
+        @Child CallNode callWrite = CallNode.create();
+        @Child CastToStringNode toString = CastToStringNode.createCoercing();
+        @Child private LookupAndCallUnaryNode callFlushNode;
+        @CompilationFinal private Assumption singleContextAssumption;
+        @CompilationFinal private PythonModule cachedSys;
 
+        @Specialization
+        PNone printNoKeywords(VirtualFrame frame, Object[] values, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone end, @SuppressWarnings("unused") PNone file,
+                        @SuppressWarnings("unused") PNone flush) {
+            Object stdout = getStdout();
+            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false);
+        }
+
+        @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"})
+        PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush) {
+            int lastValue = values.length - 1;
+            Object write = getWrite.executeObject(file);
+            for (int i = 0; i < lastValue; i++) {
+                callWrite.execute(frame, write, toString.execute(values[i]));
+                callWrite.execute(frame, write, sep);
+            }
+            if (lastValue >= 0) {
+                callWrite.execute(frame, write, toString.execute(values[lastValue]));
+            }
+            callWrite.execute(frame, write, end);
+            if (flush) {
+                if (callFlushNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    callFlushNode = insert(LookupAndCallUnaryNode.create("flush"));
+                }
+                callFlushNode.executeObject(file);
+            }
             return PNone.NONE;
         }
 
-        @TruffleBoundary(transferToInterpreterOnException = false)
-        private static void append(StringBuilder sb, Object o) {
-            sb.append(o);
+        @Specialization(replaces = {"printAllGiven", "printNoKeywords"})
+        PNone printGeneric(VirtualFrame frame, Object[] values, Object sepIn, Object endIn, Object fileIn, Object flushIn,
+                        @Cached("createCoercing()") CastToStringNode castSep,
+                        @Cached("createCoercing()") CastToStringNode castEnd,
+                        @Cached("createIfTrueNode()") CastToBooleanNode castFlush) {
+            String sep;
+            if (sepIn instanceof PNone) {
+                sep = DEFAULT_SEPARATOR;
+            } else {
+                sep = castSep.execute(sepIn);
+            }
+            String end;
+            if (endIn instanceof PNone) {
+                end = DEFAULT_END;
+            } else {
+                end = castEnd.execute(endIn);
+            }
+            Object file;
+            if (fileIn instanceof PNone) {
+                file = getStdout();
+            } else {
+                file = fileIn;
+            }
+            boolean flush;
+            if (flushIn instanceof PNone) {
+                flush = false;
+            } else {
+                flush = castFlush.executeWith(flushIn);
+            }
+            return printAllGiven(frame, values, sep, end, file, flush);
         }
 
-        @TruffleBoundary
-        private static void write(PythonContext context, String string) throws IOException {
-            context.getStandardOut().write(string.getBytes());
+        private Object getStdout() {
+            if (singleContextAssumption == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                singleContextAssumption = singleContextAssumption();
+            }
+            PythonModule sys;
+            if (singleContextAssumption.isValid()) {
+                if (cachedSys == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    cachedSys = getContext().getCore().lookupBuiltinModule("sys");
+                }
+                sys = cachedSys;
+            } else {
+                if (cachedSys != null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    cachedSys = null;
+                }
+                sys = getContext().getCore().lookupBuiltinModule("sys");
+            }
+            if (readStdout == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readStdout = insert(ReadAttributeFromObjectNode.create());
+            }
+            Object stdout = readStdout.execute(sys, "stdout");
+            return stdout;
         }
     }
 
@@ -1560,10 +1696,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return NodeUtil.printTreeToString(func.getCallTarget().getRootNode());
         }
 
-        @Specialization
+        @Specialization(guards = "isFunction(method.getFunction())")
         @TruffleBoundary
         public String doIt(PMethod method) {
-            return NodeUtil.printTreeToString(method.getCallTarget().getRootNode());
+            // cast ensured by guard
+            PFunction fun = (PFunction) method.getFunction();
+            return NodeUtil.printTreeToString(fun.getCallTarget().getRootNode());
         }
 
         @Specialization
@@ -1576,6 +1714,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         public Object doit(Object object) {
             return "truffle ast dump not supported for " + object.toString();
+        }
+
+        protected static boolean isFunction(Object callee) {
+            return callee instanceof PFunction;
         }
     }
 
@@ -1647,11 +1789,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
     abstract static class LocalsNode extends PythonBuiltinNode {
         @Child ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
         @Child GetLocalsNode getLocalsNode = GetLocalsNode.create();
+        private final ConditionProfile inGenerator = ConditionProfile.createBinaryProfile();
 
         @Specialization
         public Object locals(VirtualFrame frame) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            return getLocalsNode.execute(callerFrame);
+            Frame generatorFrame = PArguments.getGeneratorFrame(callerFrame);
+            if (inGenerator.profile(generatorFrame == null)) {
+                return getLocalsNode.execute(callerFrame);
+            } else {
+                return getLocalsNode.execute(generatorFrame);
+            }
         }
     }
 }

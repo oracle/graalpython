@@ -38,8 +38,9 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.source.SourceSection;
 
-public class PFunction extends PythonObject implements PythonCallable {
+public class PFunction extends PythonObject {
 
     private final String name;
     private final String enclosingClassName;
@@ -79,12 +80,10 @@ public class PFunction extends PythonObject implements PythonCallable {
         return isStatic;
     }
 
-    @Override
     public RootCallTarget getCallTarget() {
         return callTarget;
     }
 
-    @Override
     public PythonObject getGlobals() {
         return globals;
     }
@@ -93,19 +92,24 @@ public class PFunction extends PythonObject implements PythonCallable {
         return callTarget.getRootNode();
     }
 
-    @Override
     public String getName() {
         return name;
     }
 
-    @Override
     public Arity getArity() {
         return arity;
     }
 
-    @Override
     public PCell[] getClosure() {
         return closure;
+    }
+
+    public boolean isGeneratorFunction() {
+        return false;
+    }
+
+    public PGeneratorFunction asGeneratorFunction() {
+        return null;
     }
 
     @Override
@@ -136,5 +140,14 @@ public class PFunction extends PythonObject implements PythonCallable {
 
     public void setDefaults(Object[] defaults) {
         this.defaults = defaults;
+    }
+
+    @TruffleBoundary
+    public String getSourceCode() {
+        SourceSection sourceSection = callTarget.getRootNode().getSourceSection();
+        if (sourceSection != null) {
+            return sourceSection.getCharacters().toString();
+        }
+        return null;
     }
 }

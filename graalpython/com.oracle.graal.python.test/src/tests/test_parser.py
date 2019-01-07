@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -84,3 +84,17 @@ def test_lambda_no_args_with_nested_lambdas():
     except Exception as e:
         no_err = False
     assert no_err
+
+
+def test_byte_numeric_escapes():
+    assert eval('b"PK\\005\\006\\00\\11\\22\\08"') == b'PK\x05\x06\x00\t\x12\x008'
+
+
+def test_decorator_cell():
+    foo = lambda x: "just a string, not %s" % x.__name__
+    def run_me():
+        @foo
+        def func():
+            pass
+        return func
+    assert run_me() == "just a string, not func", run_me()

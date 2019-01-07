@@ -535,10 +535,13 @@ class FileIO(_RawIOBase):
 
 
 sys.stdin = FileIO(0, mode='r', closefd=False)
+sys.stdin.name = "<stdin>"
 sys.__stdin__ = sys.stdin
 sys.stdout = FileIO(1, mode='w', closefd=False)
+sys.stdout.name = "<stdout>"
 sys.__stdout__ = sys.stdout
 sys.stderr = FileIO(2, mode='w', closefd=False)
+sys.stderr.name = "<stderr>"
 sys.__stderr__ = sys.stderr
 
 

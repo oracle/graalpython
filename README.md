@@ -14,6 +14,28 @@ To try it, you can use the bundled releases from
 some examples of what you can do with it, check out the
 [reference](https://www.graalvm.org/docs/reference-manual/languages/python/).
 
+### Installing packages
+
+At the moment not enough of the standard library is implemented to run the
+standard package installers for many packages. As a convenience, we provide a
+simple module to install packages that we know to be working (including
+potential patches required for those packages). Try the following to find out
+more:
+
+```
+graalpython -m ginstall --help
+```
+
+As a slightly more exciting example, try:
+
+```
+graalpython -m ginstall install numpy
+```
+
+If all goes well (you'll need to have `clang`, `llvm-link`, `llvm-extract`,
+`llvm-nm`, and `opt` in your `PATH` in addition to the normal NumPy build
+dependencies), you should be able to `import numpy` afterwards.
+
 ### Licensing
 
 This Graal/Truffle-based implementation of Python is copyright (c) 2017, 2018
@@ -23,3 +45,4 @@ Universal Permissive License v 1.0 as shown at
 implementation is in part derived from and contains additional code from 3rd
 parties, the copyrights and licensing of which is detailed in the
 [LICENSE](LICENSE) and [3rd_party_licenses.txt](3rd_party_licenses.txt) files.
+

@@ -47,6 +47,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.FinalLocationException;
@@ -55,6 +56,7 @@ import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Shape;
 
 @ImportStatic(PythonOptions.class)
+@ReportPolymorphism
 public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeNode {
 
     public abstract boolean execute(Object primary, Object key, Object value);

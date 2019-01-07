@@ -1,5 +1,5 @@
 {
-  overlay: "ffde557d62fff381069838b745c31b79c90e6e2a",
+  overlay: "3cf78c3623442ad827eed58a1780784a6eb95676",
 
   // ======================================================================================================
   // 
@@ -251,6 +251,8 @@
     // unittests 
     testGate(type="unittest", platform="linux"),
     testGate(type="unittest", platform="darwin"),
+    testGate(type="svm-unittest", platform="linux"),
+    testGate(type="svm-unittest", platform="darwin"),
 
     // junit 
     testGate(type="junit", platform="linux"),

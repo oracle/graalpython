@@ -155,3 +155,54 @@ def test_class_assignment():
         assert True
     else:
         assert False
+
+
+def test_class_slots():
+    class X():
+        __slots__ = "_local__impl", "__dict__"
+
+        def __init__(self):
+            self._local__impl = 1
+            self.foo = 12
+            self.__dict__ = {"bar": 42}
+
+
+    assert X().bar == 42
+    assert X()._local__impl == 1
+    try:
+        X().foo
+    except AttributeError:
+        assert True
+    else:
+        assert False
+
+    x = X()
+    x.foo = 1
+    assert x.foo == 1
+    assert x.__dict__["foo"] == 1
+    x.__dict__["_local__impl"] = 22
+    assert x._local__impl == 1
+
+    assert X.__dict__["_local__impl"].__get__(x, type(x)) == 1
+
+
+def test_class_with_slots_assignment():
+    class X():
+        __slots__ = "a", "b"
+
+    class Y():
+        __slots__ = "a", "b"
+
+    class Z():
+        __slots__ = "b", "c"
+
+
+    x = X()
+    x.__class__ = Y
+    assert type(x) == Y
+    try:
+        x.__class__ = Z
+    except TypeError as e:
+        assert True
+    else:
+        assert False

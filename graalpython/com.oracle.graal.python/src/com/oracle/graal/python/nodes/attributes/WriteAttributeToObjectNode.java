@@ -43,10 +43,10 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -60,6 +60,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PythonOptions.class)
@@ -76,8 +77,8 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return WriteAttributeToObjectNodeGen.create();
     }
 
-    protected boolean isAttrWritable(PythonObject self) {
-        if (self instanceof PythonClass || self instanceof PFunction || self instanceof PMethod || self instanceof PythonModule || self instanceof PBaseException) {
+    protected boolean isAttrWritable(PythonObject self, Object key) {
+        if (isHiddenKey(key) || self instanceof PythonClass || self instanceof PFunction || self instanceof PMethod || self instanceof PythonModule || self instanceof PBaseException) {
             return true;
         }
         return !exactBuiltinInstanceProfile.profileIsAnyBuiltinObject(self);
@@ -93,13 +94,15 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     // write to the DynamicObject
     @Specialization(guards = {
-                    "isAttrWritable(object) || isHiddenKey(key)",
-                    "object == cachedObject"
+                    "object == cachedObject",
+                    "isAttrWritable(object, key)"
     }, assumptions = {
+                    "singleContextAssumption",
                     "dictUnsetOrSameAsStorageAssumption"
     })
     protected boolean writeToDynamicStorageCached(PythonObject object, Object key, Object value,
                     @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
+                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
                     @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
         handlePythonClass(object, key);
@@ -107,8 +110,8 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     @Specialization(guards = {
-                    "isAttrWritable(object) || isHiddenKey(key)",
-                    "isDictUnsetOrSameAsStorage(object)"
+                    "isAttrWritable(object, key)",
+                    "isHiddenKey(key) || isDictUnsetOrSameAsStorage(object)"
     }, replaces = "writeToDynamicStorageCached")
     protected boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
                     @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
@@ -119,38 +122,56 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     // write to the dict
     @Specialization(guards = {
                     "object == cachedObject",
-                    "!dictUnsetOrSameAsStorageAssumption.isValid()"
+                    "!isHiddenKey(key)",
+                    "!dictUnsetOrSameAsStorageAssumption.isValid()",
+    }, assumptions = {
+                    "singleContextAssumption"
     })
     protected boolean writeToDictCached(PythonObject object, Object key, Object value,
                     @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
+                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
+                    @Cached("create()") BranchProfile updateStorage,
                     @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
         handlePythonClass(object, key);
         PHashingCollection dict = object.getDict();
-        HashingStorage hashingStorage = setItemNode.execute(dict.getDictStorage(), key, value);
-        dict.setDictStorage(hashingStorage);
+        HashingStorage dictStorage = getDictStorage(dict);
+        HashingStorage hashingStorage = setItemNode.execute(dictStorage, key, value);
+        if (dictStorage != hashingStorage) {
+            updateStorage.enter();
+            dict.setDictStorage(hashingStorage);
+        }
         return true;
     }
 
     @Specialization(guards = {
+                    "!isHiddenKey(key)",
                     "!isDictUnsetOrSameAsStorage(object)"
     }, replaces = "writeToDictCached")
     protected boolean writeToDict(PythonObject object, Object key, Object value,
+                    @Cached("create()") BranchProfile updateStorage,
                     @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
         handlePythonClass(object, key);
         PHashingCollection dict = object.getDict();
-        HashingStorage hashingStorage = setItemNode.execute(dict.getDictStorage(), key, value);
-        dict.setDictStorage(hashingStorage);
+        HashingStorage dictStorage = getDictStorage(dict);
+        HashingStorage hashingStorage = setItemNode.execute(dictStorage, key, value);
+        if (dictStorage != hashingStorage) {
+            updateStorage.enter();
+            dict.setDictStorage(hashingStorage);
+        }
         return true;
     }
 
-    @Specialization(guards = "!isPythonObject(object)")
+    @Specialization(guards = {
+                    "!isHiddenKey(key)",
+                    "!isPythonObject(object)"
+    })
     protected boolean readNative(PythonNativeObject object, Object key, Object value,
                     @Cached("create()") GetObjectDictNode getNativeDict,
-                    @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
+                    @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
         Object d = getNativeDict.execute(object);
-        if (d instanceof PDict) {
-            setItemNode.execute(((PDict) d).getDictStorage(), key, value);
+        if (d instanceof PHashingCollection) {
+            setItemNode.execute(((PHashingCollection) d), key, value);
             return true;
         } else {
             return raise(object, key, value);

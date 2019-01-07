@@ -27,11 +27,10 @@ class Log:
                 stream = sys.stderr
             else:
                 stream = sys.stdout
-            # TODO: Truffle revert-me [GR-10256]
-            # if stream.errors == 'strict':
-            #     # emulate backslashreplace error handler
-            #     encoding = stream.encoding
-            #     msg = msg.encode(encoding, "backslashreplace").decode(encoding)
+            if stream.errors == 'strict':
+                # emulate backslashreplace error handler
+                encoding = stream.encoding
+                msg = msg.encode(encoding, "backslashreplace").decode(encoding)
             stream.write('%s\n' % msg)
             stream.flush()
 

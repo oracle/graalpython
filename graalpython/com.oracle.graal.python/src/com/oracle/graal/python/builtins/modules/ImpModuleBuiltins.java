@@ -240,7 +240,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     throw raise(PythonErrorType.ImportError, "cannot load capi from " + capiFile.getAbsoluteFile().getPath());
                 }
                 // call into Python to initialize python_cext module globals
-                ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.create();
+                ReadAttributeFromObjectNode readNode = insert(ReadAttributeFromObjectNode.create());
                 CallUnaryMethodNode callNode = insert(CallUnaryMethodNode.create());
                 callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
                 ctxt.setCapiWasLoaded(capi);

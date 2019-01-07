@@ -89,7 +89,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     private GetLazyClassNode getClassNode() {
         if (getClass == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getClass = GetLazyClassNode.create();
+            getClass = insert(GetLazyClassNode.create());
         }
         return getClass;
     }
@@ -236,7 +236,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         // TODO: check whether expected type derives from BaseException
         PythonBuiltinClassType builtinClass = clazz;
         while (builtinClass != PythonBuiltinClassType.PythonObject) {
-            if (isClassProfile.profileClass(expectedClass, clazz)) {
+            if (isClassProfile.profileClass(expectedClass, builtinClass)) {
                 return true;
             }
             builtinClass = builtinClass.getBase();

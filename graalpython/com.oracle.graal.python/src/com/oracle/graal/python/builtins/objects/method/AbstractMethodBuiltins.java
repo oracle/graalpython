@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.method;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
@@ -59,6 +60,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PMethod, PythonBuiltinClassType.PBuiltinMethod})
 public class AbstractMethodBuiltins extends PythonBuiltins {
@@ -82,6 +84,13 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         @Specialization
         protected Object doIt(PBuiltinMethod self, Object[] arguments, PKeyword[] keywords) {
             return dispatch.executeCall(null, self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
+        }
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            Object[] argsWithoutSelf = new Object[arguments.length - 1];
+            System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
+            return execute(frame, arguments[0], argsWithoutSelf, keywords);
         }
     }
 
@@ -123,8 +132,9 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        protected Object doIt(PBuiltinMethod self) {
-            return self.getName();
+        protected Object doIt(PBuiltinMethod self,
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getName) {
+            return getName.executeObject(self.getFunction(), __NAME__);
         }
     }
 
@@ -169,11 +179,68 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
             return module;
         }
 
-        @Specialization(guards = "!isNoValue(value)")
+        @Specialization(guards = {"!isBuiltinMethod(self)", "!isNoValue(value)"})
         Object getModule(PythonObject self, Object value,
                         @Cached("create()") WriteAttributeToObjectNode writeObject) {
             writeObject.execute(self, __MODULE__, value);
             return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object getModule(PBuiltinMethod self, Object value) {
+            CompilerDirectives.transferToInterpreter();
+            self.getStorage().define(__MODULE__, value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = __DOC__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class DocNode extends PythonBinaryBuiltinNode {
+        @Child ReadAttributeFromObjectNode readFunc;
+
+        private Object readFromFunc(Object func) {
+            if (readFunc == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readFunc = insert(ReadAttributeFromObjectNode.create());
+            }
+            Object doc = readFunc.execute(func, __DOC__);
+            if (doc == PNone.NO_VALUE) {
+                doc = PNone.NONE;
+            }
+            return doc;
+        }
+
+        @Specialization(guards = "isNoValue(none)")
+        Object getModule(PMethod self, @SuppressWarnings("unused") PNone none,
+                        @Cached("create()") ReadAttributeFromObjectNode readSelf) {
+            Object doc = readSelf.execute(self, __DOC__);
+            if (doc == PNone.NO_VALUE) {
+                return readFromFunc(self.getFunction());
+            }
+            return doc;
+        }
+
+        @Specialization(guards = "isNoValue(none)")
+        Object getModule(PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
+                        @Cached("create()") ReadAttributeFromObjectNode readSelf) {
+            Object doc = readSelf.execute(self, __DOC__);
+            if (doc == PNone.NO_VALUE) {
+                return readFromFunc(self.getFunction());
+            }
+            return doc;
+        }
+
+        @Specialization(guards = {"!isNoValue(value)"})
+        Object getModule(PMethod self, Object value,
+                        @Cached("create()") WriteAttributeToObjectNode writeObject) {
+            writeObject.execute(self, __DOC__, value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isNoValue(value)"})
+        Object getModule(@SuppressWarnings("unused") PBuiltinMethod self, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonBuiltinClassType.AttributeError, "attribute '__doc__' of 'builtin_function_or_method' objects is not writable");
         }
     }
 }

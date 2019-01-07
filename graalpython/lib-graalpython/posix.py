@@ -38,24 +38,29 @@
 # SOFTWARE.
 
 from _descriptor import make_named_tuple_class
+from sys import graal_python_is_native
+from sys import executable as graal_python_executable
 
 stat_result = make_named_tuple_class("stat_result", [
     "st_mode", "st_ino", "st_dev", "st_nlink",
     "st_uid", "st_gid", "st_size", "st_atime",
     "st_mtime", "st_ctime"
 ])
-del make_named_tuple_class
+stat_result.st_atime_ns = property(lambda s: int(s.st_atime * 1000))
+stat_result.st_mtime_ns = property(lambda s: int(s.st_mtime * 1000))
 
 old_stat = stat
 
 
 @__builtin__
-def stat(filename):
-    return stat_result(old_stat(filename))
+def stat(filename, follow_symlinks=False):
+    return stat_result(old_stat(filename, follow_symlinks=follow_symlinks))
 
 
 @__builtin__
 def lstat(filename):
+    if not graal_python_is_native and filename == graal_python_executable:
+        return stat_result((0,0,0,0,0,0,0,0,0,0))
     return stat_result(old_stat(filename, False))
 
 
@@ -80,23 +85,12 @@ def fspath(path):
     if __fspath__:
         return __fspath__()
     else:
-        raise TypeError("expected str, bytes or os.PathLike object, not object")
-
-
-class ScandirIterator:
-    def __init__(self, it):
-        self.__delegate = it
-
-    def __iter__(self):
-        return self.__delegate.__iter__()
-
-    def __next__(self):
-        return self.__delegate.__next__()
+        raise TypeError("expected str, bytes or os.PathLike object, not %r" % type(path))
 
 
 @__builtin__
 def scandir(path):
-    return ScandirIterator(iter(listdir(path)))
+    return ScandirIterator(path)
 
 
 @__builtin__
@@ -127,3 +121,25 @@ def WIFSTOPPED(status):
 @__builtin__
 def WSTOPSIG(status):
     return 0
+
+
+uname_result = make_named_tuple_class("posix.uname_result", [
+    "sysname", "nodename", "release", "version", "machine"
+])
+old_uname = uname
+
+
+@__builtin__
+def uname():
+    return uname_result(old_uname())
+
+
+error = OSError
+
+terminal_size = make_named_tuple_class("os.terminal_size", ["columns", "lines"])
+
+old_get_terminal_size = get_terminal_size
+
+@__builtin__
+def get_terminal_size(fd = None):
+    return terminal_size(old_get_terminal_size(fd))

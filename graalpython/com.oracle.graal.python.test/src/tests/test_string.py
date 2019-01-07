@@ -53,7 +53,7 @@ def test_find():
     assert s.find('cau', MyIndexable(5), None) == 5
     assert s.find('cau', MyIndexable(5), MyIndexable(8)) == 5
     assert s.find('cau', None, MyIndexable(8)) == 5
-    
+
 
 def test_rfind():
     assert "test string test".rfind("test") == 12
@@ -749,7 +749,7 @@ class UnicodeTest(unittest.TestCase):
         self.checkequal('0034', '34', 'zfill', 4)
 
         self.checkraises(TypeError, '123', 'zfill')
-        
+
     def test_zfill_specialization(self):
         self.checkequal('123', '123', 'zfill', True)
         self.checkequal('0123', '123', 'zfill', MyIndexable(4))
@@ -880,7 +880,7 @@ class UnicodeTest(unittest.TestCase):
                 if rem or r1 != r2:
                     self.assertEqual(rem, 0, '%s != 0 for %s' % (rem, i))
                     self.assertEqual(r1, r2, '%s != %s for %s' % (r1, r2, i))
-                    
+
 
 def test_same_id():
     empty_ids = set([id(str()) for i in range(100)])
@@ -889,3 +889,21 @@ def test_same_id():
     assert len(empty_ids) == 1
     empty_ids = set([id(u'') for i in range(100)])
     assert len(empty_ids) == 1
+
+
+def test_translate():
+    assert "abc".translate({ord("a"): "b"}) == "bbc"
+    assert "abc".translate({ord("a"): "xxx"}) == "xxxbc"
+    assert "abc".translate({ord("a"): ""}) == "bc"
+    try:
+        "abc".translate({ord("a"): 8**63})
+    except (ValueError, TypeError) as e:
+        assert "mapping must be in range" in str(e)
+    else:
+        assert False, "should raise"
+
+
+def test_splitlines():
+    assert len(str.splitlines("\n\n")) == 2
+    assert len(str.splitlines("\n")) == 1
+    assert len(str.splitlines("a\nb")) == 2

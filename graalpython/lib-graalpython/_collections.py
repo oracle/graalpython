@@ -113,7 +113,7 @@ class deque(object):
 
     def _modified(self):
         self._lock = None
-        
+
     def _getlock(self):
         if self._lock is None:
             self._lock = Lock()
@@ -618,8 +618,8 @@ class _DequeRevIter(object):
 
 
 class defaultdict(dict):
-    def __new__(self, default_factory, *args, **kwds):
-        dict.__init__(self, args, kwds)
+    def __init__(self, default_factory, *args, **kwds):
+        dict.__init__(self, *args, **kwds)
         self.default_factory = default_factory
 
     def __missing__(self, key):
