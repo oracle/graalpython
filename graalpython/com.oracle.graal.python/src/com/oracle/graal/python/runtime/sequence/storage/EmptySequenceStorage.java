@@ -79,8 +79,10 @@ public final class EmptySequenceStorage extends SequenceStorage {
 
     @Override
     public void setNewLength(int length) {
-        CompilerDirectives.transferToInterpreter();
-        throw PythonLanguage.getContextRef().get().getCore().raise(ValueError, "list length out of range");
+        if (length != 0) {
+            CompilerDirectives.transferToInterpreter();
+            throw PythonLanguage.getContextRef().get().getCore().raise(ValueError, "list length out of range");
+        }
     }
 
     @Override
