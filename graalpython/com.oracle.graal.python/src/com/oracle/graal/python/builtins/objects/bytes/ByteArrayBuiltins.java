@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDEX;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
@@ -262,6 +263,45 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Fallback
         public Object add(Object self, Object other) {
             throw raise(TypeError, "can't concat bytearray to %p", other);
+        }
+    }
+
+    @Builtin(name = __IADD__, fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class IAddNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        public PByteArray add(PByteArray self, PIBytesLike other,
+                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+            SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
+            updateSequenceStorage(self, res);
+            return self;
+        }
+
+        @Specialization
+        public PByteArray add(PByteArray self, PMemoryView other,
+                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
+                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
+                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+
+            Object bytesObj = toBytesNode.executeObject(other);
+            if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
+                SequenceStorage res = concatNode.execute(self.getSequenceStorage(), ((PBytes) bytesObj).getSequenceStorage());
+                updateSequenceStorage(self, res);
+                return self;
+            }
+            throw raise(SystemError, "could not get bytes of memoryview");
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        public Object add(Object self, Object other) {
+            throw raise(TypeError, "can't concat bytearray to %p", other);
+        }
+
+        private static void updateSequenceStorage(PByteArray array, SequenceStorage s) {
+            if (array.getSequenceStorage() != s) {
+                array.setSequenceStorage(s);
+            }
         }
     }
 
