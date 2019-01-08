@@ -87,6 +87,10 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
         return GetAttributeNodeGen.create(key, object);
     }
 
+    public static GetAttributeNode create(String key) {
+        return GetAttributeNodeGen.create(key, null);
+    }
+
     public abstract ExpressionNode getObject();
 
     @Specialization(rewriteOn = UnexpectedResultException.class)

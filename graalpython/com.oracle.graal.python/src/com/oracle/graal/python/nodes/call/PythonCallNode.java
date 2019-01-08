@@ -179,7 +179,7 @@ public abstract class PythonCallNode extends ExpressionNode {
     @NodeChild("object")
     protected abstract static class GetCallAttributeNode extends ExpressionNode {
 
-        private final String key;
+        protected final String key;
 
         protected GetCallAttributeNode(String key) {
             this.key = key;
@@ -192,8 +192,8 @@ public abstract class PythonCallNode extends ExpressionNode {
 
         @Specialization(guards = "!isForeignObject(object)")
         Object getCallAttribute(Object object,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttributeNode) {
-            return getAttributeNode.executeObject(object, key);
+                        @Cached("create(key)") GetAttributeNode getAttributeNode) {
+            return getAttributeNode.executeObject(object);
         }
     }
 
