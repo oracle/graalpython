@@ -54,8 +54,17 @@ def system(cmd, msg=""):
 
 
 def known_packages():
+    def PyYAML():
+        install_from_pypi("PyYAML==3.13")
+
+    def six():
+        install_from_pypi("six==1.12.0")
+
+    def Cython():
+        install_from_pypi("Cython==0.29.2", ['--no-cython-compile'])
+
     def setuptools():
-        install_from_pypi("setuptools")
+        install_from_pypi("setuptools==40.6.3")
 
     def numpy():
         try:
@@ -318,7 +327,7 @@ def xit(msg, status=-1):
     exit(-1)
 
 
-def install_from_pypi(package):
+def install_from_pypi(package, extra_opts=[]):
     if "==" in package:
         package, _, version = package.rpartition("==")
         url = "https://pypi.org/pypi/%s/%s/json" % (package, version)
@@ -353,7 +362,7 @@ def install_from_pypi(package):
         else:
             xit("Unknown file type: %s" % filename)
 
-        status = os.system("cd %s/%s; %s setup.py install --user" % (tempdir, dirname, sys.executable))
+        status = os.system("cd %s/%s; %s setup.py install --user %s" % (tempdir, dirname, sys.executable, " ".join(extra_opts)))
         if status != 0:
             xit("An error occurred trying to run `setup.py install --user'")
     else:
