@@ -385,21 +385,31 @@ public class BytesBuiltins extends PythonBuiltins {
         @Child private SequenceStorageNodes.LenNode lenNode;
 
         @Specialization
-        @TruffleBoundary
         boolean contains(PBytes self, PBytes other,
                         @Cached("create()") BytesNodes.FindNode findNode) {
             return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
         }
 
         @Specialization
-        @TruffleBoundary
         boolean contains(PBytes self, PByteArray other,
                         @Cached("create()") BytesNodes.FindNode findNode) {
             return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
         }
 
-        @Specialization(guards = "!isBytes(other)")
-        boolean contains(@SuppressWarnings("unused") PBytes self, Object other) {
+        @Specialization
+        boolean contains(PBytes self, int other,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
+        }
+
+        @Specialization
+        boolean contains(PBytes self, long other,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
+        }
+
+        @Fallback
+        boolean contains(@SuppressWarnings("unused") Object self, Object other) {
             throw raise(TypeError, "a bytes-like object is required, not '%p'", other);
         }
 
