@@ -40,7 +40,7 @@ public class PSlice extends PythonBuiltinObject {
 
     protected int start;
     protected int stop;
-    protected final int step;
+    protected int step;
 
     public PSlice(LazyPythonClass cls, int start, int stop, int step) {
         super(cls);

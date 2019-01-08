@@ -152,6 +152,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -1556,6 +1558,28 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             try {
                 PSlice tmpSlice = factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), PInt.intValueExact(step));
                 SliceInfo actualIndices = tmpSlice.computeIndices(length > Integer.MAX_VALUE ? Integer.MAX_VALUE : PInt.intValueExact(length));
+                return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
+            } catch (ArithmeticException e) {
+                throw raiseIndexError();
+            }
+        }
+
+        @Specialization(replaces = {"doUnpackLongOvf"})
+        Object doUnpackLongOvf(Object start, Object stop, Object step, Object lengthObj,
+                        @Cached("createOverflow()") CastToIndexNode castToIndexNode,
+                        @Cached("create()") IsBuiltinClassProfile profile,
+                        @Cached("create()") SliceLiteralNode sliceLiteralNode) {
+
+            int length;
+            try {
+                length = castToIndexNode.execute(lengthObj);
+            } catch (PException e) {
+                e.expect(OverflowError, profile);
+                length = Integer.MAX_VALUE;
+            }
+
+            try {
+                SliceInfo actualIndices = sliceLiteralNode.execute(start, stop, step).computeIndices(length);
                 return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
             } catch (ArithmeticException e) {
                 throw raiseIndexError();

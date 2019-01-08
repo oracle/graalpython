@@ -2489,18 +2489,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     public abstract static class CreateSliceNode extends PythonBuiltinNode {
-        @Specialization(guards = "isNoValue(second)")
+        @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
         Object sliceStop(PythonClass cls, int first, PNone second, PNone third) {
             return factory().createSlice(MISSING_INDEX, first, MISSING_INDEX);
         }
 
-        @Specialization(guards = "isNone(second)")
-        Object sliceStart(PythonClass cls, int first, PNone second, PNone third) {
-            return factory().createSlice(first, MISSING_INDEX, MISSING_INDEX);
-        }
-
         @Specialization(guards = "isNoValue(third)")
-        Object slice(PythonClass cls, int first, int second, PNone third) {
+        Object sliceStart(PythonClass cls, int first, int second, PNone third) {
             return factory().createSlice(first, second, MISSING_INDEX);
         }
 
@@ -2509,7 +2504,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createSlice(first, second, third);
         }
 
-        @Specialization
+        @Specialization(guards = "isNoValue(third)")
+        Object slice(PythonClass cls, Object first, Object second, PNone third,
+                        @Cached("create()") SliceLiteralNode sliceNode) {
+            return sliceNode.execute(first, second, MISSING_INDEX);
+        }
+
+        @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
+        Object slice(PythonClass cls, Object first, PNone second, PNone third,
+                        @Cached("create()") SliceLiteralNode sliceNode) {
+            return sliceNode.execute(MISSING_INDEX, first, MISSING_INDEX);
+        }
+
+        @Specialization(guards = {"!isNoValue(stop)", "!isNoValue(step)"})
         Object slice(PythonClass cls, Object start, Object stop, Object step,
                         @Cached("create()") SliceLiteralNode sliceNode) {
             return sliceNode.execute(start, stop, step);

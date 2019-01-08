@@ -621,17 +621,17 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(START, key)")
         Object doStart(PSlice object, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(object.getStart());
+            return getToSulongNode().execute(getSliceComponent(object.getStart()));
         }
 
         @Specialization(guards = "eq(STOP, key)")
         Object doStop(PSlice object, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(object.getStop());
+            return getToSulongNode().execute(getSliceComponent(object.getStop()));
         }
 
         @Specialization(guards = "eq(STEP, key)")
         Object doStep(PSlice object, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(object.getStep());
+            return getToSulongNode().execute(getSliceComponent(object.getStep()));
         }
 
         @Specialization(guards = "eq(IM_SELF, key)")
@@ -795,6 +795,13 @@ public class PythonObjectNativeWrapperMR {
                 getClassNode = insert(GetClassNode.create());
             }
             return getClassNode.execute(obj);
+        }
+
+        private static Object getSliceComponent(int sliceComponent) {
+            if (sliceComponent == PSlice.MISSING_INDEX) {
+                return PNone.NONE;
+            }
+            return sliceComponent;
         }
 
         protected Node createReadNode() {
