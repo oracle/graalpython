@@ -53,6 +53,25 @@ def system(cmd, msg=""):
         xit(msg, status=status)
 
 
+def install_from_url(url, patch=None):
+    name = url[url.rfind("/")+1:]
+    tempdir = tempfile.mkdtemp()
+    system("curl -o %s/%s %s" % (tempdir, name, url))
+    if name.endswith(".tar.gz"):
+        system("tar xzf %s/%s -C %s" % (tempdir, name, tempdir))
+        bare_name = name[:-len(".tar.gz")]
+    elif name.endswith(".zip"):
+        system("unzip -u %s/%s -d %s" % (tempdir, name, tempdir))
+        bare_name = name[:-len(".zip")]
+        
+    if patch:
+        with open("%s/%s.patch" % (tempdir, bare_name), "w") as f:
+            f.write(patch)
+        system("patch -d %s/%s/ -p1 < %s/%s.patch" % ((tempdir, bare_name)*2))
+    
+    system("cd %s/%s; %s setup.py install --user" % (tempdir, bare_name, sys.executable))
+
+
 def known_packages():
     def PyYAML():
         install_from_pypi("PyYAML==3.13")
@@ -65,6 +84,16 @@ def known_packages():
 
     def setuptools():
         install_from_pypi("setuptools==40.6.3")
+
+    def setuptools_scm():
+        install_from_url("https://files.pythonhosted.org/packages/70/bc/f34b06274c1260c5e4842f789fb933a09b89f23549f282b36a15bdf63614/setuptools_scm-1.15.0rc1.tar.gz")
+
+    def setuptools():
+        install_from_pypi("setuptools")
+        try:
+            import setuptools_scm as st_scm
+        except ImportError:
+            setuptools_scm()
 
     def numpy():
         try:
@@ -324,15 +353,22 @@ index e450a66..ed538b4 100644
             numpy()
 
 
-        install_from_pypi("pytz==2018.7")
-        install_from_pypi("python-dateutil==2.7.5")
-        install_from_pypi("six==1.12.0")
-        # download pandas-0.20.3
-        url = "https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz"
-        tempdir = tempfile.mkdtemp()
-        system("curl -o %s/pandas-0.20.3.tar.gz %s" % (tempdir, url))
-        system("tar xzf %s/pandas-0.20.3.tar.gz -d %s" % (tempdir, tempdir))
+        try: 
+            import pytz as _dummy_pytz
+        except ImportError:
+            install_from_url("https://files.pythonhosted.org/packages/cd/71/ae99fc3df1b1c5267d37ef2c51b7d79c44ba8a5e37b48e3ca93b4d74d98b/pytz-2018.7.tar.gz")
 
+        try: 
+            import six as _dummy_six
+        except ImportError:
+            install_from_url("https://files.pythonhosted.org/packages/dd/bf/4138e7bfb757de47d1f4b6994648ec67a51efe58fa907c1e11e350cddfca/six-1.12.0.tar.gz")
+
+        try: 
+            import dateutil as __dummy_dateutil
+        except ImportError:
+            install_from_url("https://files.pythonhosted.org/packages/0e/01/68747933e8d12263d41ce08119620d9a7e5eb72c876a3442257f74490da0/python-dateutil-2.7.5.tar.gz")
+
+        # download pandas-0.20.3
         patch = """diff --git a/pandas/_libs/src/period_helper.c b/pandas/_libs/src/period_helper.c
 index 19f810e..2f01238 100644
 --- a/pandas/_libs/src/period_helper.c
@@ -359,11 +395,9 @@ index 2f01238..6c79eb5 100644
  
          dinfo->abstime = (double)(hour * 3600 + minute * 60) + second;
  
+
         """
-        with open("%s/pandas.patch" % tempdir, "w") as f:
-            f.write(patch)
-        system("patch -d %s/pandas-0.20.3/ -p1 < %s/numpy.patch" % (tempdir, tempdir))
-        system("cd %s/numpy-0.20.3; %s setup.py install --user" % (tempdir, sys.executable))
+        install_from_url("https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz", patch=patch)
         
     return locals()
 
