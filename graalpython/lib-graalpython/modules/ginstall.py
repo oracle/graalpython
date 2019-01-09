@@ -56,7 +56,16 @@ def system(cmd, msg=""):
 def install_from_url(url, patch=None):
     name = url[url.rfind("/")+1:]
     tempdir = tempfile.mkdtemp()
-    system("curl -o %s/%s %s" % (tempdir, name, url))
+
+    # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
+    env = os.environ
+    curl_opts = []
+    if url.startswith("http://") and "HTTP_PROXY" in env:
+        curl_opts += ["--proxy", env["HTTP_PROXY"]]
+    elif url.startswith("https://") and "HTTPS_PROXY" in env:
+        curl_opts += ["--proxy", env["HTTPS_PROXY"]]
+
+    system("curl %s -o %s/%s %s" % (" ".join(curl_opts), tempdir, name, url))
     if name.endswith(".tar.gz"):
         system("tar xzf %s/%s -C %s" % (tempdir, name, tempdir))
         bare_name = name[:-len(".tar.gz")]
@@ -395,8 +404,7 @@ index 2f01238..6c79eb5 100644
  
          dinfo->abstime = (double)(hour * 3600 + minute * 60) + second;
  
-
-        """
+"""
         install_from_url("https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz", patch=patch)
         
     return locals()
