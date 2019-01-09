@@ -316,6 +316,55 @@ index e450a66..ed538b4 100644
         system("cd %s/numpy-1.14.3; %s setup.py install --user" % (tempdir, sys.executable))
 
 
+    def pandas():
+        try:
+            import numpy as np
+        except ImportError:
+            print("Installing required dependency: numpy")
+            numpy()
+
+
+        install_from_pypi("pytz==2018.7")
+        install_from_pypi("python-dateutil==2.7.5")
+        install_from_pypi("six==1.12.0")
+        # download pandas-0.20.3
+        url = "https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz"
+        tempdir = tempfile.mkdtemp()
+        system("curl -o %s/pandas-0.20.3.tar.gz %s" % (tempdir, url))
+        system("tar xzf %s/pandas-0.20.3.tar.gz -d %s" % (tempdir, tempdir))
+
+        patch = """diff --git a/pandas/_libs/src/period_helper.c b/pandas/_libs/src/period_helper.c
+index 19f810e..2f01238 100644
+--- a/pandas/_libs/src/period_helper.c
++++ b/pandas/_libs/src/period_helper.c
+@@ -1105,7 +1105,7 @@ static int dInfoCalc_SetFromAbsDateTime(struct date_info *dinfo,
+     /* Bounds check */
+     Py_AssertWithArg(abstime >= 0.0 && abstime <= SECONDS_PER_DAY,
+                      PyExc_ValueError,
+-                     "abstime out of range (0.0 - 86400.0): %f", abstime);
++                     "abstime out of range (0.0 - 86400.0): %f", (long long)abstime);
+ 
+     /* Calculate the date */
+     if (dInfoCalc_SetFromAbsDate(dinfo, absdate, calendar)) goto onError;
+diff --git a/pandas/_libs/src/period_helper.c b/pandas/_libs/src/period_helper.c
+index 2f01238..6c79eb5 100644
+--- a/pandas/_libs/src/period_helper.c
++++ b/pandas/_libs/src/period_helper.c
+@@ -157,7 +157,7 @@ static int dInfoCalc_SetFromDateAndTime(struct date_info *dinfo, int year,
+                 (second < (double)60.0 ||
+                  (hour == 23 && minute == 59 && second < (double)61.0)),
+             PyExc_ValueError,
+-            "second out of range (0.0 - <60.0; <61.0 for 23:59): %f", second);
++            "second out of range (0.0 - <60.0; <61.0 for 23:59): %f", (long long)second);
+ 
+         dinfo->abstime = (double)(hour * 3600 + minute * 60) + second;
+ 
+        """
+        with open("%s/pandas.patch" % tempdir, "w") as f:
+            f.write(patch)
+        system("patch -d %s/pandas-0.20.3/ -p1 < %s/numpy.patch" % (tempdir, tempdir))
+        system("cd %s/numpy-0.20.3; %s setup.py install --user" % (tempdir, sys.executable))
+        
     return locals()
 
 
