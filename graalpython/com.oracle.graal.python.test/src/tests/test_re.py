@@ -43,6 +43,11 @@ def test_grouping2():
     assert md.end(0) == 5
 
 
+def test_pattern_groups():
+     pttrn = re.compile(r"hello (?P<prop>\w*) world")
+     assert pttrn.groups == 1
+
+
 def test_ignorecase():
     md = re.compile('he(l)l(?:o)', re.IGNORECASE).match('HELLO world')
     assert md.group(1) == "L"
