@@ -51,6 +51,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.AppendNodeGen;
@@ -538,10 +539,11 @@ public abstract class SequenceStorageNodes {
             return storage.getItemNormalized(idx);
         }
 
-        @Specialization(guards = "!isByteStorage(storage)")
-        protected Object doNative(NativeSequenceStorage storage, int idx) {
+        @Specialization(guards = "isObject(storage)")
+        protected Object doNativeObject(NativeSequenceStorage storage, int idx,
+                        @Cached("create()") CExtNodes.ToJavaNode toJavaNode) {
             try {
-                return verifyResult(storage, ForeignAccess.sendRead(getReadNode(), (TruffleObject) storage.getPtr(), idx));
+                return verifyResult(storage, toJavaNode.execute(ForeignAccess.sendRead(getReadNode(), (TruffleObject) storage.getPtr(), idx)));
             } catch (InteropException e) {
                 throw e.raise();
             }
@@ -551,6 +553,15 @@ public abstract class SequenceStorageNodes {
         protected int doNativeByte(NativeSequenceStorage storage, int idx) {
             Object result = doNative(storage, idx);
             return (byte) result & 0xFF;
+        }
+
+        @Specialization(guards = {"!isByteStorage(storage)", "!isObject(storage)"})
+        protected Object doNative(NativeSequenceStorage storage, int idx) {
+            try {
+                return verifyResult(storage, ForeignAccess.sendRead(getReadNode(), (TruffleObject) storage.getPtr(), idx));
+            } catch (InteropException e) {
+                throw e.raise();
+            }
         }
 
         private Object verifyResult(NativeSequenceStorage storage, Object item) {
@@ -1145,8 +1156,13 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         NativeSequenceStorage doObject(Object[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE)") PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.call(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Generic);
+                        @Cached("create(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE)") PCallCapiFunction callNode,
+                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
+            Object[] wrappedValues = new Object[arr.length];
+            for (int i = 0; i < wrappedValues.length; i++) {
+                wrappedValues[i] = toSulongNode.execute(arr[i]);
+            }
+            return new NativeSequenceStorage(callNode.call(wrap(wrappedValues), wrappedValues.length), wrappedValues.length, wrappedValues.length, ListStorageType.Generic);
         }
 
         private Object wrap(Object arr) {
