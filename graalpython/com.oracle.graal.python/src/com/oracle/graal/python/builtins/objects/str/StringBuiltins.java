@@ -956,7 +956,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         public PList doSplit(String self, @SuppressWarnings("unused") PNone sep, int maxsplit) {
-            return splitfields(self, maxsplit + 1);
+            return splitfields(self, maxsplit);
         }
 
         @Fallback
