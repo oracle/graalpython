@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -432,9 +432,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public Object hash(Object object,
                         @Cached("create(__DIR__)") LookupInheritedAttributeNode lookupDirNode,
                         @Cached("create(__HASH__)") LookupAndCallUnaryNode dispatchHash,
-                        @Cached("createIfTrueNode()") CastToBooleanNode trueNode) {
+                        @Cached("createIfTrueNode()") CastToBooleanNode trueNode,
+                        @Cached("create()") IsInstanceNode isInstanceNode) {
             if (trueNode.executeWith(lookupDirNode.execute(object))) {
-                return dispatchHash.executeObject(object);
+                Object hashValue = dispatchHash.executeObject(object);
+                if (isInstanceNode.executeWith(hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {
+                    return hashValue;
+                }
+                throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
             }
             return object.hashCode();
         }
