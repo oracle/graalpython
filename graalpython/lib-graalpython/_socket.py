@@ -48,3 +48,13 @@ SOCK_RDM = 4
 SOCK_SEQPACKET = 5
 
 has_ipv6 = False  #: TODO implement me
+error = OSError
+__default_timeout = None
+
+def getdefaulttimeout():
+    return __default_timeout
+
+def setdefaulttimeout(timeout):
+    global __default_timeout
+    __default_timeout = timeout
+
