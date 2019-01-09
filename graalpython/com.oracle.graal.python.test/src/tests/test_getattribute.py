@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 def some_fun(self, key):
-    return lambda: "hello from %s" % key
+    return "hello from %s" % key
 
 
 class CustomAttr:
@@ -47,4 +47,8 @@ class CustomAttr:
 
 
 def test_callCustomAttr():
-    assert CustomAttr().uff() == "hello from uff"
+    assert CustomAttr().uff == "hello from uff"
+    
+def test_getattr():
+    assert getattr(CustomAttr(), "uff") == "hello from uff"
+    
