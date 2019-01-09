@@ -813,7 +813,10 @@ def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc
     if getter:
         getter_w = CreateFunction(name, getter, getter_wrapper, pclass)
         def member_getter(self):
-            return capi_to_java(getter_w(self, closure))
+            # NOTE: The 'to_java' is intended and correct because this call will do a downcall an 
+            # all args will go through 'to_sulong' then. So, if we don't convert the pointer 
+            # 'closure' to a Python value, we will get the wrong wrapper from 'to_sulong'.
+            return capi_to_java(getter_w(self, to_java(closure)))
 
         fget = member_getter
     if setter:
