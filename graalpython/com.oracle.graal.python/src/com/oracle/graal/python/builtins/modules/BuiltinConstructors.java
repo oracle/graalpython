@@ -1724,6 +1724,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private HashingStorageNodes.GetItemNode getDictItemNode;
         @Child private CExtNodes.PCallCapiFunction callAddNativeSlotsNode;
         @Child private CExtNodes.ToSulongNode toSulongNode;
+        @Child private ReadCallerFrameNode readCallerFrameNode;
 
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
@@ -1737,8 +1738,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached("create()") GetClassNode getMetaclassNode,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create()") CallDispatchNode callNewFuncNode,
-                        @Cached("create()") CreateArgumentsNode createArgs,
-                        @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
+                        @Cached("create()") CreateArgumentsNode createArgs) {
             // Determine the proper metatype to deal with this
             PythonClass metaclass = calculate_metaclass(cls, bases, getMetaclassNode);
             if (metaclass != cls) {
@@ -1757,7 +1757,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // set '__module__' attribute
                 Object moduleAttr = ensureReadAttrNode().execute(newType, __MODULE__);
                 if (moduleAttr == PNone.NO_VALUE) {
-                    Frame callerFrame = readCallerFrameNode.executeWith(frame);
+                    Frame callerFrame = getReadCallerFrameNode().executeWith(frame);
                     PythonObject globals = PArguments.getGlobals(callerFrame);
                     if (globals != null) {
                         String moduleName = getModuleNameFromGlobals(globals);
@@ -1985,6 +1985,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 slotLenNode = insert(SequenceStorageNodes.LenNode.create());
             }
             return slotLenNode;
+        }
+
+        private ReadCallerFrameNode getReadCallerFrameNode() {
+            if (readCallerFrameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readCallerFrameNode = insert(ReadCallerFrameNode.create());
+            }
+            return readCallerFrameNode;
         }
 
         private void addNativeSlots(PythonClass pythonClass, PTuple slots) {
