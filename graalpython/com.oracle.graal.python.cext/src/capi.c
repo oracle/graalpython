@@ -44,6 +44,7 @@ void *PY_TRUFFLE_CEXT;
 void *PY_BUILTIN;
 void *Py_NoValue;
 
+
 PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
 PyObject*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
 PyObject*(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
@@ -52,6 +53,7 @@ PyObject*(*PY_TRUFFLE_CEXT_LANDING)(void* name, ...);
 uint64_t (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
 double (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
+
 
 cache_t cache;
 

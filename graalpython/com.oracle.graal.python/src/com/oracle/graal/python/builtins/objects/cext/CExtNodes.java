@@ -1259,7 +1259,7 @@ public abstract class CExtNodes {
 
         @Specialization
         long run(PInt value) {
-            // TODO(fa) longValueExact ?
+            // TODO(fa) should we use longValueExact ?
             return value.longValue();
         }
 

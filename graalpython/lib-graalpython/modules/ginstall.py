@@ -53,34 +53,6 @@ def system(cmd, msg=""):
         xit(msg, status=status)
 
 
-def install_from_url(url, patch=None):
-    name = url[url.rfind("/")+1:]
-    tempdir = tempfile.mkdtemp()
-
-    # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
-    env = os.environ
-    curl_opts = []
-    if url.startswith("http://") and "HTTP_PROXY" in env:
-        curl_opts += ["--proxy", env["HTTP_PROXY"]]
-    elif url.startswith("https://") and "HTTPS_PROXY" in env:
-        curl_opts += ["--proxy", env["HTTPS_PROXY"]]
-
-    system("curl %s -o %s/%s %s" % (" ".join(curl_opts), tempdir, name, url))
-    if name.endswith(".tar.gz"):
-        system("tar xzf %s/%s -C %s" % (tempdir, name, tempdir))
-        bare_name = name[:-len(".tar.gz")]
-    elif name.endswith(".zip"):
-        system("unzip -u %s/%s -d %s" % (tempdir, name, tempdir))
-        bare_name = name[:-len(".zip")]
-        
-    if patch:
-        with open("%s/%s.patch" % (tempdir, bare_name), "w") as f:
-            f.write(patch)
-        system("patch -d %s/%s/ -p1 < %s/%s.patch" % ((tempdir, bare_name)*2))
-    
-    system("cd %s/%s; %s setup.py install --user" % (tempdir, bare_name, sys.executable))
-
-
 def known_packages():
     def PyYAML():
         install_from_pypi("PyYAML==3.13")
@@ -97,24 +69,12 @@ def known_packages():
     def setuptools_scm():
         install_from_url("https://files.pythonhosted.org/packages/70/bc/f34b06274c1260c5e4842f789fb933a09b89f23549f282b36a15bdf63614/setuptools_scm-1.15.0rc1.tar.gz")
 
-    def setuptools():
-        install_from_pypi("setuptools")
-        try:
-            import setuptools_scm as st_scm
-        except ImportError:
-            setuptools_scm()
-
     def numpy():
         try:
             import setuptools as st
         except ImportError:
             print("Installing required dependency: setuptools")
             setuptools()
-
-        url = "https://files.pythonhosted.org/packages/b0/2b/497c2bb7c660b2606d4a96e2035e92554429e139c6c71cdff67af66b58d2/numpy-1.14.3.zip"
-        tempdir = tempfile.mkdtemp()
-        system("curl -o %s/numpy-1.14.3.zip %s" % (tempdir, url))
-        system("unzip -u %s/numpy-1.14.3.zip -d %s" % (tempdir, tempdir))
 
         patch = """
 diff --git a/setup.py 2018-02-28 17:03:26.000000000 +0100
@@ -348,10 +308,24 @@ index e450a66..ed538b4 100644
 2.14.1
 
 """
-        with open("%s/numpy.patch" % tempdir, "w") as f:
-            f.write(patch)
-        system("patch -d %s/numpy-1.14.3/ -p1 < %s/numpy.patch" % (tempdir, tempdir))
-        system("cd %s/numpy-1.14.3; %s setup.py install --user" % (tempdir, sys.executable))
+        install_from_url("https://files.pythonhosted.org/packages/b0/2b/497c2bb7c660b2606d4a96e2035e92554429e139c6c71cdff67af66b58d2/numpy-1.14.3.zip", patch=patch)
+
+
+    def dateutil():
+        try:
+            import setuptools_scm as st_scm
+        except ImportError:
+            print("Installing required dependency: setuptools_scm")
+            setuptools_scm()
+        install_from_url("https://files.pythonhosted.org/packages/0e/01/68747933e8d12263d41ce08119620d9a7e5eb72c876a3442257f74490da0/python-dateutil-2.7.5.tar.gz")
+
+
+    def pytz():
+        install_from_url("https://files.pythonhosted.org/packages/cd/71/ae99fc3df1b1c5267d37ef2c51b7d79c44ba8a5e37b48e3ca93b4d74d98b/pytz-2018.7.tar.gz")
+
+
+    def six():
+        install_from_url("https://files.pythonhosted.org/packages/dd/bf/4138e7bfb757de47d1f4b6994648ec67a51efe58fa907c1e11e350cddfca/six-1.12.0.tar.gz")
 
 
     def pandas():
@@ -365,17 +339,20 @@ index e450a66..ed538b4 100644
         try: 
             import pytz as _dummy_pytz
         except ImportError:
-            install_from_url("https://files.pythonhosted.org/packages/cd/71/ae99fc3df1b1c5267d37ef2c51b7d79c44ba8a5e37b48e3ca93b4d74d98b/pytz-2018.7.tar.gz")
+            print("Installing required dependency: pytz")
+            pytz()
 
         try: 
             import six as _dummy_six
         except ImportError:
-            install_from_url("https://files.pythonhosted.org/packages/dd/bf/4138e7bfb757de47d1f4b6994648ec67a51efe58fa907c1e11e350cddfca/six-1.12.0.tar.gz")
+            print("Installing required dependency: six")
+            six()
 
         try: 
             import dateutil as __dummy_dateutil
         except ImportError:
-            install_from_url("https://files.pythonhosted.org/packages/0e/01/68747933e8d12263d41ce08119620d9a7e5eb72c876a3442257f74490da0/python-dateutil-2.7.5.tar.gz")
+            print("Installing required dependency: dateutil")
+            dateutil()
 
         # download pandas-0.20.3
         patch = """diff --git a/pandas/_libs/src/period_helper.c b/pandas/_libs/src/period_helper.c
@@ -416,6 +393,34 @@ KNOWN_PACKAGES = known_packages()
 def xit(msg, status=-1):
     print(msg)
     exit(-1)
+
+
+def install_from_url(url, patch=None):
+    name = url[url.rfind("/")+1:]
+    tempdir = tempfile.mkdtemp()
+
+    # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
+    env = os.environ
+    curl_opts = []
+    if url.startswith("http://") and "HTTP_PROXY" in env:
+        curl_opts += ["--proxy", env["HTTP_PROXY"]]
+    elif url.startswith("https://") and "HTTPS_PROXY" in env:
+        curl_opts += ["--proxy", env["HTTPS_PROXY"]]
+
+    system("curl %s -o %s/%s %s" % (" ".join(curl_opts), tempdir, name, url))
+    if name.endswith(".tar.gz"):
+        system("tar xzf %s/%s -C %s" % (tempdir, name, tempdir))
+        bare_name = name[:-len(".tar.gz")]
+    elif name.endswith(".zip"):
+        system("unzip -u %s/%s -d %s" % (tempdir, name, tempdir))
+        bare_name = name[:-len(".zip")]
+        
+    if patch:
+        with open("%s/%s.patch" % (tempdir, bare_name), "w") as f:
+            f.write(patch)
+        system("patch -d %s/%s/ -p1 < %s/%s.patch" % ((tempdir, bare_name)*2))
+    
+    system("cd %s/%s; %s setup.py install --user" % (tempdir, bare_name, sys.executable))
 
 
 def install_from_pypi(package, extra_opts=[]):
