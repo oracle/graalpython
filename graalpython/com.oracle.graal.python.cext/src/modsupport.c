@@ -72,32 +72,11 @@ PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnam
         if (PyErr_Occurred()) {                 \
             return 0;                           \
         }                                       \
-        switch(n) {                             \
-        case 0: *((T*)v0) = __oai; break;       \
-        case 1: *((T*)v1) = __oai; break;       \
-        case 2: *((T*)v2) = __oai; break;       \
-        case 3: *((T*)v3) = __oai; break;       \
-        case 4: *((T*)v4) = __oai; break;       \
-        case 5: *((T*)v5) = __oai; break;       \
-        case 6: *((T*)v6) = __oai; break;       \
-        case 7: *((T*)v7) = __oai; break;       \
-        case 8: *((T*)v8) = __oai; break;       \
-        case 9: *((T*)v9) = __oai; break;       \
-        case 10: *((T*)v10) = __oai; break;     \
-        case 11: *((T*)v11) = __oai; break;     \
-        case 12: *((T*)v12) = __oai; break;     \
-        case 13: *((T*)v13) = __oai; break;     \
-        case 14: *((T*)v14) = __oai; break;     \
-        case 15: *((T*)v15) = __oai; break;     \
-        case 16: *((T*)v16) = __oai; break;     \
-        case 17: *((T*)v17) = __oai; break;     \
-        case 18: *((T*)v18) = __oai; break;     \
-        case 19: *((T*)v19) = __oai; break;     \
-        }                                       \
+        *((T*)polyglot_get_arg(n)) = __oai;     \
         n++;                                    \
     } while(0);
 
-#define PyTruffle_ArgN(n) (((n) == 0) ? v0 : (((n) == 1) ? v1 : (((n) == 2) ? v2 : (((n) == 3) ? v3 : (((n) == 4) ? v4 : (((n) == 5) ? v5 : (((n) == 6) ? v6 : (((n) == 7) ? v7 : (((n) == 8) ? v8 : (((n) == 9) ? v9 : (((n) == 10) ? v10 : (((n) == 11) ? v11 : (((n) == 12) ? v12 : (((n) == 13) ? v13 : (((n) == 14) ? v14 : (((n) == 15) ? v15 : (((n) == 16) ? v16 : (((n) == 17) ? v17 : (((n) == 18) ? v18 : (((n) == 19) ? v19 : NULL))))))))))))))))))))
+#define PyTruffle_ArgN(n) polyglot_get_arg(n)
 
 #define PyTruffle_SkipOptionalArg(n, arg, optional)     \
     if (arg == NULL && optional) {                      \
@@ -107,10 +86,10 @@ PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnam
 
 /* argparse */
 UPCALL_ID(__bool__);
-int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, int outc, void *v0, void *v1, void *v2, void *v3, void *v4, void *v5, void *v6, void *v7, void *v8, void *v9, void *v10, void *v11, void *v12, void *v13, void *v14, void *v15, void *v16, void *v17, void *v18, void *v19) {
+int PyArg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
     PyObject* arg;
     int format_idx = 0;
-    int output_idx = 0;
+    int output_idx = 4;
     unsigned char rest_optional = 0;
     unsigned char rest_keywords_only = 0;
 
