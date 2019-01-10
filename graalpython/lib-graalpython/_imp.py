@@ -43,7 +43,7 @@ _py_package_context = None
 
 @__builtin__
 def extension_suffixes():
-    return [".bc", ".so", ".dylib", ".su"]
+    return [".so", ".bc", ".dylib", ".su"]
 
 
 @__builtin__
