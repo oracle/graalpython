@@ -66,7 +66,7 @@ PyObject * PyBytes_FromString(const char *str) {
 
 UPCALL_ID(PyTruffle_Bytes_AsString);
 char* PyBytes_AsString(PyObject *obj) {
-    return UPCALL_CEXT_NOCAST(_jls_PyTruffle_Bytes_AsString, native_to_java(obj), ERROR_MARKER);
+    return (char*)UPCALL_CEXT_NOCAST(_jls_PyTruffle_Bytes_AsString, native_to_java(obj), ERROR_MARKER);
 }
 
 UPCALL_ID(PyBytes_AsStringCheckEmbeddedNull);
