@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -956,7 +956,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         public PList doSplit(String self, @SuppressWarnings("unused") PNone sep, int maxsplit) {
-            return splitfields(self, maxsplit + 1);
+            return splitfields(self, maxsplit);
         }
 
         @Fallback
