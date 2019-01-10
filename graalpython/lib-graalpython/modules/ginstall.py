@@ -54,27 +54,27 @@ def system(cmd, msg=""):
 
 
 def known_packages():
-    def PyYAML():
-        install_from_pypi("PyYAML==3.13")
+    def PyYAML(*args):
+        install_from_pypi("PyYAML==3.13", args)
 
-    def six():
-        install_from_pypi("six==1.12.0")
+    def six(*args):
+        install_from_pypi("six==1.12.0", args)
 
-    def Cython():
-        install_from_pypi("Cython==0.29.2", ['--no-cython-compile'])
+    def Cython(*args):
+        install_from_pypi("Cython==0.29.2", ['--no-cython-compile'] + args)
 
-    def setuptools():
-        install_from_pypi("setuptools==40.6.3")
+    def setuptools(*args):
+        install_from_pypi("setuptools==40.6.3", args)
 
-    def setuptools_scm():
-        install_from_url("https://files.pythonhosted.org/packages/70/bc/f34b06274c1260c5e4842f789fb933a09b89f23549f282b36a15bdf63614/setuptools_scm-1.15.0rc1.tar.gz")
+    def setuptools_scm(*args):
+        install_from_url("https://files.pythonhosted.org/packages/70/bc/f34b06274c1260c5e4842f789fb933a09b89f23549f282b36a15bdf63614/setuptools_scm-1.15.0rc1.tar.gz", extra_opts=args)
 
-    def numpy():
+    def numpy(*args):
         try:
             import setuptools as st
         except ImportError:
             print("Installing required dependency: setuptools")
-            setuptools()
+            setuptools(*args)
 
         patch = """
 diff --git a/setup.py 2018-02-28 17:03:26.000000000 +0100
@@ -308,51 +308,47 @@ index e450a66..ed538b4 100644
 2.14.1
 
 """
-        install_from_url("https://files.pythonhosted.org/packages/b0/2b/497c2bb7c660b2606d4a96e2035e92554429e139c6c71cdff67af66b58d2/numpy-1.14.3.zip", patch=patch)
+        install_from_url("https://files.pythonhosted.org/packages/b0/2b/497c2bb7c660b2606d4a96e2035e92554429e139c6c71cdff67af66b58d2/numpy-1.14.3.zip", patch=patch, extra_opts=args)
 
 
-    def dateutil():
+    def dateutil(*args):
         try:
             import setuptools_scm as st_scm
         except ImportError:
             print("Installing required dependency: setuptools_scm")
-            setuptools_scm()
-        install_from_url("https://files.pythonhosted.org/packages/0e/01/68747933e8d12263d41ce08119620d9a7e5eb72c876a3442257f74490da0/python-dateutil-2.7.5.tar.gz")
+            setuptools_scm(*args)
+        install_from_url("https://files.pythonhosted.org/packages/0e/01/68747933e8d12263d41ce08119620d9a7e5eb72c876a3442257f74490da0/python-dateutil-2.7.5.tar.gz", extra_opts=args)
 
 
-    def pytz():
-        install_from_url("https://files.pythonhosted.org/packages/cd/71/ae99fc3df1b1c5267d37ef2c51b7d79c44ba8a5e37b48e3ca93b4d74d98b/pytz-2018.7.tar.gz")
+    def pytz(*args):
+        install_from_url("https://files.pythonhosted.org/packages/cd/71/ae99fc3df1b1c5267d37ef2c51b7d79c44ba8a5e37b48e3ca93b4d74d98b/pytz-2018.7.tar.gz", extra_opts=args)
 
 
-    def six():
-        install_from_url("https://files.pythonhosted.org/packages/dd/bf/4138e7bfb757de47d1f4b6994648ec67a51efe58fa907c1e11e350cddfca/six-1.12.0.tar.gz")
-
-
-    def pandas():
+    def pandas(*args):
         try:
             import numpy as np
         except ImportError:
             print("Installing required dependency: numpy")
-            numpy()
+            numpy(*args)
 
 
         try: 
             import pytz as _dummy_pytz
         except ImportError:
             print("Installing required dependency: pytz")
-            pytz()
+            pytz(*args)
 
         try: 
             import six as _dummy_six
         except ImportError:
             print("Installing required dependency: six")
-            six()
+            six(*args)
 
         try: 
             import dateutil as __dummy_dateutil
         except ImportError:
             print("Installing required dependency: dateutil")
-            dateutil()
+            dateutil(*args)
 
         # download pandas-0.20.3
         patch = """diff --git a/pandas/_libs/src/period_helper.c b/pandas/_libs/src/period_helper.c
@@ -382,7 +378,7 @@ index 2f01238..6c79eb5 100644
          dinfo->abstime = (double)(hour * 3600 + minute * 60) + second;
  
 """
-        install_from_url("https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz", patch=patch)
+        install_from_url("https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz", patch=patch, extra_opts=args)
         
     return locals()
 
@@ -395,7 +391,7 @@ def xit(msg, status=-1):
     exit(-1)
 
 
-def install_from_url(url, patch=None):
+def install_from_url(url, patch=None, extra_opts=[]):
     name = url[url.rfind("/")+1:]
     tempdir = tempfile.mkdtemp()
 
@@ -419,8 +415,11 @@ def install_from_url(url, patch=None):
         with open("%s/%s.patch" % (tempdir, bare_name), "w") as f:
             f.write(patch)
         system("patch -d %s/%s/ -p1 < %s/%s.patch" % ((tempdir, bare_name)*2))
-    
-    system("cd %s/%s; %s setup.py install --user" % (tempdir, bare_name, sys.executable))
+
+    if "--prefix" in extra_opts:
+        system("cd %s/%s; %s setup.py install %s" % (tempdir, bare_name, sys.executable, " ".join(extra_opts)))
+    else:
+        system("cd %s/%s; %s setup.py install --user %s" % (tempdir, bare_name, sys.executable, " ".join(extra_opts)))
 
 
 def install_from_pypi(package, extra_opts=[]):
@@ -475,13 +474,18 @@ def main(argv):
         help="list locally installed packages"
     )
 
-    subparsers.add_parser(
+    install_parser = subparsers.add_parser(
         "install",
         help="install a known package",
         description="Install a known package. Known packages are " + ", ".join(KNOWN_PACKAGES.keys())
-    ).add_argument(
+    )
+    install_parser.add_argument(
         "package",
         help="comma-separated list"
+    )
+    install_parser.add_argument(
+        "--prefix",
+        help="user-site path prefix"
     )
 
     subparsers.add_parser(
@@ -534,7 +538,10 @@ def main(argv):
             if pkg not in KNOWN_PACKAGES:
                 xit("Unknown package: '%s'" % pkg)
             else:
-                KNOWN_PACKAGES[pkg]()
+                if "prefix" in args:
+                    KNOWN_PACKAGES[pkg]("--prefix", args.prefix)
+                else:
+                    KNOWN_PACKAGES[pkg]()
     elif args.command == "pypi":
         for pkg in args.package.split(","):
             install_from_pypi(pkg)
