@@ -135,6 +135,23 @@ index e450a66..ed538b4 100644
              return all_sources
 
 
+diff --git a/numpy/core/setup_common.py b/numpy/core/setup_common.py
+index e450a66..ed538b4 100644
+--- a/numpy/core/setup_common.py
++++ b/numpy/core/setup_common.py
+@@ -238,8 +238,8 @@
+     except ValueError:
+         # try linking to support CC="gcc -flto" or icc -ipo
+         # struct needs to be volatile so it isn't optimized away
+-        body = body.replace('struct', 'volatile struct')
+-        body += "int main(void) { return 0; }\\n"
++        body = "#include <stdio.h>\\n" + body.replace('struct', 'volatile struct')
++        body += "int main(void) { printf(\\"%p\\", &foo); return 0; }\\n"
+         src, obj = cmd._compile(body, None, None, 'c')
+         cmd.temp_files.append("_configtest")
+         cmd.compiler.link_executable([obj], "_configtest")
+
+
 diff --git a/numpy/core/getlimits.py b/numpy/core/getlimits.py
 index e450a66..ed538b4 100644
 --- a/numpy/core/getlimits.py
