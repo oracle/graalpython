@@ -515,13 +515,16 @@ def main(argv):
         for pkg in args.package.split(","):
             deleted = False
             for p in sys.path:
-                if p.startswith(user_site) and p.endswith(pkg):
-                    if os.path.isdir(p):
-                        shutil.rmtree(p)
-                    else:
-                        os.unlink(p)
-                    deleted = True
-                    break
+                if p.startswith(user_site):
+                    # +1 due to the path separator
+                    pkg_name = p[len(user_site)+1:]
+                    if pkg_name.startswith(pkg):
+                        if os.path.isdir(p):
+                            shutil.rmtree(p)
+                        else:
+                            os.unlink(p)
+                        deleted = True
+                        break
             if deleted:
                 print("Deleted %s" % p)
             else:
