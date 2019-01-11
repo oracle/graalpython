@@ -44,7 +44,7 @@
 
 typedef struct _positional_argstack {
     PyObject* argv;
-    long argnum;
+    int argnum;
     struct _positional_argstack* prev;
 } positional_argstack;
 
@@ -93,10 +93,9 @@ int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const cha
     unsigned char rest_optional = 0;
     unsigned char rest_keywords_only = 0;
 
-    positional_argstack *v = (positional_argstack*)truffle_managed_malloc(sizeof(positional_argstack));
+    positional_argstack *v = (positional_argstack*)calloc(1, sizeof(positional_argstack));
     v->argv = argv;
     v->argnum = 0;
-    v->prev = NULL;
     positional_argstack *next;
 
     char c = format[format_idx];
@@ -321,7 +320,7 @@ int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const cha
                 PyErr_Format(PyExc_TypeError, "expected tuple, got %R", Py_TYPE(arg));
                 return 0;
             }
-            next = (positional_argstack*)truffle_managed_malloc(sizeof(positional_argstack));
+            next = (positional_argstack*)calloc(1, sizeof(positional_argstack));
             next->argv = arg;
             next->argnum = 0;
             next->prev = v;
@@ -331,7 +330,9 @@ int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const cha
             if (v->prev == NULL) {
                 PyErr_SetString(PyExc_SystemError, "')' without '(' in argument parsing");
             } else {
+                next = v;
                 v = v->prev;
+                free(next);
             }
             break;
         case '|':
@@ -353,6 +354,7 @@ int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const cha
     }
 
  end:
+    free(v);
     return 1;
 }
 
@@ -369,10 +371,9 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
     char argchar[2] = {'\0'};
     unsigned int value_idx = 1;
     unsigned int format_idx = 0;
-    build_stack *v = (build_stack*)truffle_managed_malloc(sizeof(build_stack));
+    build_stack *v = (build_stack*)calloc(1, sizeof(build_stack));
     build_stack *next;
     v->list = PyList_New(0);
-    v->prev = NULL;
 
     char c = format[format_idx];
     while (c != '\0') {
@@ -483,7 +484,7 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
             }
             break;
         case '(':
-            next = (build_stack*)truffle_managed_malloc(sizeof(build_stack));
+            next = (build_stack*)calloc(1, sizeof(build_stack));
             next->list = PyList_New(0);
             next->prev = v;
             v = next;
@@ -493,11 +494,13 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
                 PyErr_SetString(PyExc_SystemError, "')' without '(' in Py_BuildValue");
             } else {
                 PyList_Append(v->prev->list, PyList_AsTuple(v->list));
+                next = v;
                 v = v->prev;
+                free(next);
             }
             break;
         case '[':
-            next = (build_stack*)truffle_managed_malloc(sizeof(build_stack));
+            next = (build_stack*)calloc(1, sizeof(build_stack));
             next->list = PyList_New(0);
             next->prev = v;
             v = next;
@@ -507,11 +510,13 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
                 PyErr_SetString(PyExc_SystemError, "']' without '[' in Py_BuildValue");
             } else {
                 PyList_Append(v->prev->list, v->list);
+                next = v;
                 v = v->prev;
+                free(next);
             }
             break;
         case '{':
-            next = (build_stack*)truffle_managed_malloc(sizeof(build_stack));
+            next = (build_stack*)calloc(1, sizeof(build_stack));
             next->list = PyList_New(0);
             next->prev = v;
             v = next;
@@ -521,7 +526,9 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
                 PyErr_SetString(PyExc_SystemError, "'}' without '{' in Py_BuildValue");
             } else {
                 PyList_Append(v->prev->list, to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "dict_from_list", to_java(v->list))));
+                next = v;
                 v = v->prev;
+                free(next);
             }
             break;
         case ':':
