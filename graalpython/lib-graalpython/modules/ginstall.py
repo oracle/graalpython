@@ -46,7 +46,6 @@ import subprocess
 import sys
 import tempfile
 
-
 def system(cmd, msg=""):
     status = os.system(cmd)
     if status != 0:
@@ -378,8 +377,9 @@ index 2f01238..6c79eb5 100644
          dinfo->abstime = (double)(hour * 3600 + minute * 60) + second;
  
 """
-        install_from_url("https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz", patch=patch, extra_opts=args)
-        
+        cflags = "-allowcpp" if sys.implementation.name == "graalpython" else ""
+        install_from_url("https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz", patch=patch, extra_opts=args, cflags=cflags)
+
     return locals()
 
 
@@ -391,7 +391,7 @@ def xit(msg, status=-1):
     exit(-1)
 
 
-def install_from_url(url, patch=None, extra_opts=[]):
+def install_from_url(url, patch=None, extra_opts=[], cflags=""):
     name = url[url.rfind("/")+1:]
     tempdir = tempfile.mkdtemp()
 
@@ -417,7 +417,7 @@ def install_from_url(url, patch=None, extra_opts=[]):
         system("patch -d %s/%s/ -p1 < %s/%s.patch" % ((tempdir, bare_name)*2))
 
     user_arg = "--user" if "--prefix" not in extra_opts else ""
-    system("cd %s/%s; %s setup.py install %s %s" % (tempdir, bare_name, sys.executable, user_arg, " ".join(extra_opts)))
+    system("cd %s/%s; %s %s setup.py install %s %s" % (tempdir, bare_name, "CFLAGS=%s" % cflags if cflags else "", sys.executable, user_arg, " ".join(extra_opts)))
 
 
 def install_from_pypi(package, extra_opts=[]):
@@ -537,7 +537,7 @@ def main(argv):
             if pkg not in KNOWN_PACKAGES:
                 xit("Unknown package: '%s'" % pkg)
             else:
-                if "prefix" in args:
+                if args.prefix:
                     KNOWN_PACKAGES[pkg]("--prefix", args.prefix)
                 else:
                     KNOWN_PACKAGES[pkg]()
