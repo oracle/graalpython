@@ -156,11 +156,11 @@
 extern int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...);
 
 // we use defines for these so we don't need to call with va_list
-#define _PyArg_Parse_SizeT(ARGV, FORMAT, ...) PyArg_ParseTupleAndKeywords(ARGV, PyDict_New(), FORMAT, NULL, __VA_ARGS__)
-#define _PyArg_ParseTuple_SizeT(ARGV, FORMAT, ...) PyArg_ParseTupleAndKeywords(ARGV, PyDict_New(), FORMAT, NULL, __VA_ARGS__)
-#define _PyArg_ParseTupleAndKeywordsFast_SizeT(ARGS, KWARGS, PARSER, ...) PyArg_ParseTupleAndKeywords(ARGS, KWARGS, (PARSER)->format, (PARSER)->keywords, __VA_ARGS__)
+#define _PyArg_Parse_SizeT(ARGV, FORMAT, ...) PyArg_ParseTupleAndKeywords(ARGV, PyDict_New(), FORMAT, NULL, ##__VA_ARGS__)
+#define _PyArg_ParseTuple_SizeT(ARGV, FORMAT, ...) PyArg_ParseTupleAndKeywords(ARGV, PyDict_New(), FORMAT, NULL, ##__VA_ARGS__)
+#define _PyArg_ParseTupleAndKeywordsFast_SizeT(ARGS, KWARGS, PARSER, ...) PyArg_ParseTupleAndKeywords(ARGS, KWARGS, (PARSER)->format, (PARSER)->keywords, ##__VA_ARGS__)
 extern PyObject* PyTruffle_Stack2Tuple(PyObject** args, Py_ssize_t nargs);
-#define _PyArg_ParseStack_SizeT(ARGS, NARGS, KWNAMES, PARSER, ...) PyArg_ParseTupleAndKeywords(PyTruffle_Stack2Tuple(ARGS, NARGS), KWNAMES, (PARSER)->format, (PARSER)->keywords, __VA_ARGS__)
+#define _PyArg_ParseStack_SizeT(ARGS, NARGS, KWNAMES, PARSER, ...) PyArg_ParseTupleAndKeywords(PyTruffle_Stack2Tuple(ARGS, NARGS), KWNAMES, (PARSER)->format, (PARSER)->keywords, ##__VA_ARGS__)
 
 #ifndef PyArg_Parse
 #define PyArg_Parse _PyArg_Parse_SizeT
