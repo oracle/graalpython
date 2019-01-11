@@ -133,7 +133,6 @@ old_uname = uname
 def uname():
     return uname_result(old_uname())
 
-
 error = OSError
 
 terminal_size = make_named_tuple_class("os.terminal_size", ["columns", "lines"])

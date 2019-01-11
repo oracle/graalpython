@@ -131,7 +131,7 @@ public class WithNode extends StatementNode {
         if (!gotException) {
             exitDispatch.execute(frame, exitCallable, new Object[]{withObject, PNone.NONE, PNone.NONE, PNone.NONE}, PKeyword.EMPTY_KEYWORDS);
         }
-        getContext().setCurrentException(exceptionState);
+        getContext().setCaughtException(exceptionState);
     }
 
     /**
@@ -139,9 +139,9 @@ public class WithNode extends StatementNode {
      * statement
      */
     protected PException doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
-        PException currentException = getContext().getCurrentException();
+        PException caughtException = getContext().getCaughtException();
         applyValues(frame, enterDispatch.execute(frame, enterCallable, new Object[]{withObject}, PKeyword.EMPTY_KEYWORDS));
-        return currentException;
+        return caughtException;
     }
 
     /**

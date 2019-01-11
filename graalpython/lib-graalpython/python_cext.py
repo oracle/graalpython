@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
 import _imp
 import sys
 import python_cext
+
+_thread = None
 
 def may_raise(error_result=native_null):
     if isinstance(error_result, type(may_raise)):
@@ -177,6 +179,20 @@ def PySet_New(iterable):
         return set()
 
 
+@may_raise(-1)
+def PySet_Contains(anyset, item):
+    if not (isinstance(anyset, set) or isinstance(anyset, frozenset)):
+        __bad_internal_call(None, None, anyset)
+    return item in anyset
+
+
+@may_raise
+def PySet_Pop(anyset):
+    if not isinstance(anyset, set):
+        __bad_internal_call(None, None, anyset)
+    return anyset.pop()
+
+
 @may_raise
 def PyFrozenSet_New(iterable):
     if iterable:
@@ -299,10 +315,26 @@ def PyList_GetSlice(listObj, ilow, ihigh):
 
 
 @may_raise(-1)
+def PyList_SetSlice(listObj, ilow, ihigh, s):
+    if not isinstance(listObj, list):
+        __bad_internal_call(None, None, listObj)
+    listObj[ilow:ihigh] = s
+    return 0
+
+
+@may_raise(-1)
 def PyList_Size(listObj):
     if not isinstance(listObj, list):
         __bad_internal_call(None, None, listObj)
     return len(listObj)
+
+
+@may_raise(-1)
+def PyList_Sort(listObj):
+    if not isinstance(listObj, list):
+        __bad_internal_call(None, None, listObj)
+    listObj.sort()
+    return 0
 
 
 ##################### LONG
@@ -342,6 +374,14 @@ def PyFloat_FromDouble(n):
     return float(n)
 
 
+##################### COMPLEX
+
+@may_raise
+def PyComplex_AsCComplex(n):
+    obj = complex(n)
+    return (obj.real, obj.imag) 
+
+
 ##################### NUMBER
 
 def _safe_check(v, type_check):
@@ -379,6 +419,8 @@ def PyNumber_BinOp(v, w, binop):
         return v // w
     elif binop == 10:
         return v % w
+    elif binop == 12:
+        return v @ w
     else:
         raise SystemError("unknown binary operator (code=%s)" % binop)
 
@@ -406,11 +448,12 @@ def _binop_name(binop):
         return "//"
     elif binop == 10:
         return "%"
+    elif binop == 12:
+        return "@"
 
 
 @may_raise
 def PyNumber_InPlaceBinOp(v, w, binop):
-    control = v
     if binop == 0:
         v += w
     elif binop == 1:
@@ -433,11 +476,14 @@ def PyNumber_InPlaceBinOp(v, w, binop):
         v //= w
     elif binop == 10:
         v %= w
+    elif binop == 12:
+        v @= w
     else:
         raise SystemError("unknown in-place binary operator (code=%s)" % binop)
-    if control is not v:
-        raise TypeError("unsupported operand type(s) for %s=: '%s' and '%s'" % (_binop_name(binop), type(v), type(w)))
-    return control
+
+    # nothing else required; the operator will automatically fall back if 
+    # no in-place operation is available
+    return v
 
 
 @may_raise
@@ -597,6 +643,16 @@ def PyUnicode_Join(separator, seq):
     return separator.join(seq)
 
 
+@may_raise(-1)
+def PyUnicode_Compare(left, right):
+    if left == right:
+        return 0
+    elif left < right:
+        return -1
+    else:
+        return 1
+
+
 ##################### CAPSULE
 
 
@@ -724,16 +780,24 @@ def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
     return method
 
 
+def PyMethod_New(func, self):
+    # TODO we should use the method constructor
+    # e.g. methodtype(func, self)
+    def bound_function(*args, **kwargs):
+        return func(self, *args, **kwargs)
+    return bound_function
+
+
 def AddMember(primary, name, memberType, offset, canSet, doc):
     # the ReadMemberFunctions and WriteMemberFunctions don't have a wrapper to
     # convert arguments to Sulong, so we can avoid boxing the offsets into PInts
-    pclass = to_java(primary)
+    pclass = primary
     member = property()
     getter = ReadMemberFunctions[memberType]
     def member_getter(self):
         return to_java(getter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8)))
     member.getter(member_getter)
-    if to_java(canSet):
+    if canSet:
         setter = WriteMemberFunctions[memberType]
         def member_setter(self, value):
             setter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8), to_sulong(value))
@@ -749,7 +813,10 @@ def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc
     if getter:
         getter_w = CreateFunction(name, getter, getter_wrapper, pclass)
         def member_getter(self):
-            return capi_to_java(getter_w(self, closure))
+            # NOTE: The 'to_java' is intended and correct because this call will do a downcall an 
+            # all args will go through 'to_sulong' then. So, if we don't convert the pointer 
+            # 'closure' to a Python value, we will get the wrong wrapper from 'to_sulong'.
+            return capi_to_java(getter_w(self, to_java(closure)))
 
         fget = member_getter
     if setter:
@@ -820,11 +887,14 @@ def PyObject_Call(callee, args, kwargs):
     return callee(*args, **kwargs)
 
 
+@may_raise
 def PyObject_CallMethod(rcvr, method, args):
     # TODO(fa) that seems to be a workaround
     if type(args) is tuple:
         return getattr(rcvr, method)(*args)
-    return getattr(rcvr, method)(args)
+    elif args is not None:
+        return getattr(rcvr, method)(args)
+    return getattr(rcvr, method)()
 
 
 @may_raise
@@ -840,6 +910,13 @@ def PyObject_SetItem(obj, key, value):
 
 def PyObject_IsInstance(obj, typ):
     if isinstance(obj, typ):
+        return 1
+    else:
+        return 0
+
+
+def PyObject_IsSubclass(derived, cls):
+    if issubclass(derived, cls):
         return 1
     else:
         return 0
@@ -922,25 +999,29 @@ def PyErr_NewException(name, base, dictionary):
     return type(name, bases, dictionary)
 
 
+def PyErr_NewExceptionWithDoc(name, doc, base, dictionary):
+    new_exc_obj = PyErr_NewException(name, base, dictionary)
+    new_exc_obj.__doc__ = doc
+    return new_exc_obj
+
+
 def PyErr_Format(err_type, format_str, args):
     PyErr_CreateAndSetException(err_type, format_str % args)
 
 
-def PyErr_Fetch(consume, default):
+def PyErr_GetExcInfo():
     res = sys.exc_info()
     if res != (None, None, None):
-        # fetch 'consumes' the exception
-        if consume:
-            PyErr_Restore(None, None, None)
         return res
-    return default
+    return native_null
 
 
 def PyErr_PrintEx(set_sys_last_vars):
     typ, val, tb = sys.exc_info()
     if PyErr_GivenExceptionMatches(PyErr_Occurred(), SystemExit):
         _handle_system_exit()
-    typ, val, tb = PyErr_Fetch(True, (None, None, None))
+    fetched = PyErr_Fetch()
+    typ, val, tb = fetched if fetched is not native_null else (None, None, None)
     if typ is None:
         return
     if set_sys_last_vars:
@@ -983,7 +1064,8 @@ def _handle_system_exit():
 
 
 def PyErr_WriteUnraisable(obj):
-    typ, val, tb = PyErr_Fetch(True, (None, None, None))
+    fetched = PyErr_Fetch()
+    typ, val, tb = fetched if fetched is not native_null else (None, None, None)
     try:
         if sys.stderr is None:
             return
@@ -1127,11 +1209,11 @@ def initialize_datetime_capi():
     import datetime
 
     class PyDateTime_CAPI:
-        DateType = type(datetime.date)
-        DateTimeType = type(datetime.datetime)
-        TimeType = type(datetime.time)
-        DeltaType = type(datetime.timedelta)
-        TZInfoType = type(datetime.tzinfo)
+        DateType = datetime.date
+        DateTimeType = datetime.datetime
+        TimeType = datetime.time
+        DeltaType = datetime.timedelta
+        TZInfoType = datetime.tzinfo
 
         @staticmethod
         def Date_FromDate(y, m, d, typ):
@@ -1165,8 +1247,12 @@ def initialize_datetime_capi():
         def Time_FromTimeAndFold(h, m, s, us, tz, fold, typ):
             return typ(hour=h, minute=m, second=s, microsecond=us, tzinfo=tz, fold=fold)
 
-    import_c_func("set_PyDateTime_CAPI_typeid")(PyDateTime_CAPI)
+    import_c_func("set_PyDateTime_typeids")(PyDateTime_CAPI, PyDateTime_CAPI.DateType, PyDateTime_CAPI.DateTimeType, PyDateTime_CAPI.TimeType, PyDateTime_CAPI.DeltaType, PyDateTime_CAPI.TZInfoType)
     datetime.datetime_CAPI = PyCapsule("datetime.datetime_CAPI", PyDateTime_CAPI(), None)
+    datetime.date.__basicsize__ = import_c_func("get_PyDateTime_Date_basicsize")()
+    datetime.time.__basicsize__ = import_c_func("get_PyDateTime_Time_basicsize")()
+    datetime.datetime.__basicsize__ = import_c_func("get_PyDateTime_DateTime_basicsize")()
+    datetime.timedelta.__basicsize__ = import_c_func("get_PyDateTime_Delta_basicsize")()
 
 
 ReadMemberFunctions = []
@@ -1210,10 +1296,17 @@ def PyRun_String(source, typ, globals, locals):
     return exec(compile(source, typ, typ), globals, locals)
 
 
-# called without landing; do conversion manually
-@may_raise(to_sulong(native_null))
+@may_raise
+def PyThread_allocate_lock():
+    global _thread
+    if not _thread:
+        import _thread
+    return _thread.allocate_lock()
+
+
+@may_raise
 def PySlice_GetIndicesEx(start, stop, step, length):
-    return to_sulong(PyTruffleSlice_GetIndicesEx(start, stop, step, length))
+    return PyTruffleSlice_GetIndicesEx(start, stop, step, length)
 
 
 @may_raise
@@ -1224,3 +1317,9 @@ def PySlice_New(start, stop, step):
 @may_raise
 def PyMapping_Keys(obj):
     return list(obj.keys())
+
+
+@may_raise
+def PyState_FindModule(module_name):
+    return sys.modules[module_name]
+

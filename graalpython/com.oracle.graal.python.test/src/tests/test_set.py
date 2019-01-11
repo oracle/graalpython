@@ -258,3 +258,17 @@ def test_rich_compare():
     myobj = TestRichSetCompare()
     myset >= myobj
     assert myobj.le_called
+
+
+def test_pop():
+    s = {1, 2, 3}
+    l = []
+    l.append(s.pop())
+    l.append(s.pop())
+    l.append(s.pop())
+    assert set(l) == {1, 2, 3}
+    try:
+        s.pop()
+    except BaseException as e:
+        assert type(e) == KeyError, "expected KeyError, got %s" % type(e)
+

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -51,7 +51,10 @@ import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -77,6 +80,8 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -86,10 +91,12 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CastToByteNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -128,6 +135,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -138,12 +146,15 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -154,6 +165,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -298,39 +310,87 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     "Create a complex number from a real part and an optional imaginary part.\n" +
                     "This is equivalent to (real + imag*1j) where imag defaults to 0.")
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ComplexNode extends PythonBuiltinNode {
         @Specialization
-        public PComplex complexFromDoubleDouble(Object cls, int real, int imaginary) {
+        PComplex complexFromIntInt(@SuppressWarnings("unused") Object cls, int real, int imaginary) {
             return factory().createComplex(real, imaginary);
         }
 
         @Specialization
-        public PComplex complexFromDoubleDouble(Object cls, double real, double imaginary) {
+        PComplex complexFromLongLong(@SuppressWarnings("unused") Object cls, long real, long imaginary) {
             return factory().createComplex(real, imaginary);
         }
 
         @Specialization
-        public PComplex complexFromDouble(Object cls, double real, PNone image) {
+        PComplex complexFromLongLong(@SuppressWarnings("unused") Object cls, PInt real, PInt imaginary) {
+            return factory().createComplex(real.doubleValue(), imaginary.doubleValue());
+        }
+
+        @Specialization
+        PComplex complexFromDoubleDouble(@SuppressWarnings("unused") Object cls, double real, double imaginary) {
+            return factory().createComplex(real, imaginary);
+        }
+
+        @Specialization
+        PComplex complexFromDouble(@SuppressWarnings("unused") Object cls, double real, @SuppressWarnings("unused") PNone image) {
             return factory().createComplex(real, 0);
         }
 
         @Specialization
-        public PComplex complexFromDouble(Object cls, int real, PNone image) {
+        PComplex complexFromInt(@SuppressWarnings("unused") Object cls, int real, @SuppressWarnings("unused") PNone image) {
             return factory().createComplex(real, 0);
         }
 
         @Specialization
-        public PComplex complexFromNone(Object cls, PNone real, PNone image) {
+        PComplex complexFromLong(@SuppressWarnings("unused") Object cls, long real, @SuppressWarnings("unused") PNone image) {
+            return factory().createComplex(real, 0);
+        }
+
+        @Specialization
+        PComplex complexFromLong(@SuppressWarnings("unused") Object cls, PInt real, @SuppressWarnings("unused") PNone image) {
+            return factory().createComplex(real.doubleValue(), 0);
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        PComplex complexFromNone(Object cls, PNone real, PNone image) {
             return factory().createComplex(0, 0);
         }
 
         @Specialization
-        public PComplex complexFromObjectObject(Object cls, String real, Object imaginary) {
+        PComplex complexFromObjectObject(Object cls, String real, Object imaginary) {
             if (!(imaginary instanceof PNone)) {
                 throw raise(TypeError, "complex() can't take second arg if first is a string");
             }
             return convertStringToComplex(real, (PythonClass) cls);
+        }
+
+        @Specialization
+        Object complexGeneric(@SuppressWarnings("unused") Object cls, Object realObj, Object imaginaryObj,
+                        @Cached("create()") GetLazyClassNode getClassNode,
+                        @Cached("create()") IsBuiltinClassProfile isComplexTypeProfile,
+                        @Cached("create()") BranchProfile errorProfile,
+                        @Cached("create()") CastToDoubleNode castRealNode,
+                        @Cached("create()") CastToDoubleNode castImagNode,
+                        @Cached("create()") IsBuiltinClassProfile profile) {
+            boolean noImag = PGuards.isNoValue(imaginaryObj);
+            if (noImag && isComplexTypeProfile.profileClass(getClassNode.execute(realObj), PythonBuiltinClassType.PComplex)) {
+                return realObj;
+            }
+            try {
+                double real = castRealNode.execute(realObj);
+                double imag = !noImag ? castImagNode.execute(imaginaryObj) : 0.0;
+                return factory().createComplex(real, imag);
+            } catch (PException e) {
+                errorProfile.enter();
+                e.expect(PythonBuiltinClassType.TypeError, profile);
+                throw raise(TypeError, "can't convert real %s imag %s", realObj, imaginaryObj);
+            }
+        }
+
+        protected static boolean isExactComplexType(GetLazyClassNode getClassNode, PComplex obj) {
+            return getClassNode.execute(obj) == PythonBuiltinClassType.PComplex;
         }
 
         // Taken from Jython PyString's __complex__() method
@@ -471,11 +531,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return end - 1;
             }
             return end;
-        }
-
-        @Fallback
-        public PComplex complexFromObjectObject(Object cls, Object real, Object imaginary) {
-            throw raise(TypeError, "can't convert real %s imag %s", real, imaginary);
         }
     }
 
@@ -1271,6 +1326,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = OBJECT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonObject)
     @GenerateNodeFactory
     public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
+        @Child private PCallCapiFunction callNativeGenericNewNode;
+        @Children private CExtNodes.ToSulongNode[] toSulongNodes;
+        @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode;
+
         @Override
         public final Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             return execute(frame, PNone.NO_VALUE, arguments, keywords);
@@ -1281,18 +1340,59 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createPythonObject((PythonClass) arguments[0]);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"})
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf", "!self.needsNativeAllocation()"})
         Object doObjectDirect(@SuppressWarnings("unused") PythonClass self, Object[] varargs, PKeyword[] kwargs,
                         @Cached("self") PythonClass cachedSelf) {
             return doObjectIndirect(cachedSelf, varargs, kwargs);
         }
 
-        @Specialization(replaces = "doObjectDirect")
+        @Specialization(guards = "!self.needsNativeAllocation()", replaces = "doObjectDirect")
         Object doObjectIndirect(PythonClass self, Object[] varargs, PKeyword[] kwargs) {
             if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
             return factory().createPythonObject(self);
+        }
+
+        @Specialization(guards = "self.needsNativeAllocation()")
+        Object doNativeObjectIndirect(PythonClass self, Object[] varargs, PKeyword[] kwargs) {
+            if (varargs.length > 0 || kwargs.length > 0) {
+                // TODO: tfel: this should throw an error only if init isn't overridden
+            }
+            PythonNativeClass nativeBaseClass = findFirstNativeBaseClass(self.getMethodResolutionOrder());
+            return callNativeGenericNewNode(nativeBaseClass, varargs, kwargs);
+        }
+
+        private static PythonNativeClass findFirstNativeBaseClass(PythonClass[] methodResolutionOrder) {
+            for (PythonClass cls : methodResolutionOrder) {
+                if (cls instanceof PythonNativeClass) {
+                    return (PythonNativeClass) cls;
+                }
+            }
+            throw new IllegalStateException("class needs native allocation but has not native base class");
+        }
+
+        private Object callNativeGenericNewNode(PythonNativeClass self, Object[] varargs, PKeyword[] kwargs) {
+            if (callNativeGenericNewNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNativeGenericNewNode = insert(PCallCapiFunction.create(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_NEW));
+            }
+            if (toSulongNodes == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNodes = new CExtNodes.ToSulongNode[4];
+                for (int i = 0; i < toSulongNodes.length; i++) {
+                    toSulongNodes[i] = insert(CExtNodes.ToSulongNode.create());
+                }
+            }
+            if (asPythonObjectNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asPythonObjectNode = insert(CExtNodes.AsPythonObjectNode.create());
+            }
+            PKeyword[] kwarr = kwargs.length > 0 ? kwargs : null;
+            PTuple targs = factory().createTuple(varargs);
+            PDict dkwargs = factory().createDict(kwarr);
+            return asPythonObjectNode.execute(
+                            callNativeGenericNewNode.call(toSulongNodes[0].execute(self), toSulongNodes[1].execute(self), toSulongNodes[2].execute(targs), toSulongNodes[3].execute(dkwargs)));
         }
     }
 
@@ -1609,14 +1709,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // type(object, bases, dict)
     @Builtin(name = TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonClass)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class TypeNode extends PythonBuiltinNode {
-        private static final long SIZEOF_PY_OBJECT_PTR = 8L;
+        private static final long SIZEOF_PY_OBJECT_PTR = Long.BYTES;
         @Child private ReadAttributeFromObjectNode readAttrNode;
         @Child private WriteAttributeToObjectNode writeAttrNode;
         @Child private CastToIndexNode castToInt;
         @Child private CastToListNode castToList;
+        @Child private CastToStringNode castToStringNode;
         @Child private SequenceStorageNodes.LenNode slotLenNode;
         @Child private SequenceStorageNodes.GetItemNode getSlotItemNode;
+        @Child private SequenceStorageNodes.AppendNode setSlotItemNode;
+        @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
+        @Child private HashingStorageNodes.GetItemNode getDictItemNode;
+        @Child private CExtNodes.PCallCapiFunction callAddNativeSlotsNode;
+        @Child private CExtNodes.ToSulongNode toSulongNode;
+        @Child private ReadCallerFrameNode readCallerFrameNode;
 
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
@@ -1625,7 +1733,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return getClass.execute(obj);
         }
 
-        @Specialization(guards = {"!isNoValue(bases)", "!isNoValue(namespace)"})
+        @Specialization
         public Object type(VirtualFrame frame, PythonClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @Cached("create()") GetClassNode getMetaclassNode,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
@@ -1633,7 +1741,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached("create()") CreateArgumentsNode createArgs) {
             // Determine the proper metatype to deal with this
             PythonClass metaclass = calculate_metaclass(cls, bases, getMetaclassNode);
-
             if (metaclass != cls) {
                 Object newFunc = getNewFuncNode.execute(metaclass);
                 if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
@@ -1643,13 +1750,48 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     return callNewFuncNode.executeCall(frame, newFunc, createArgs.execute(metaclass, name, bases, namespace), kwds);
                 }
             }
-            return typeMetaclass(name, bases, namespace, metaclass);
+
+            try {
+                Object newType = typeMetaclass(name, bases, namespace, metaclass);
+
+                // set '__module__' attribute
+                Object moduleAttr = ensureReadAttrNode().execute(newType, __MODULE__);
+                if (moduleAttr == PNone.NO_VALUE) {
+                    Frame callerFrame = getReadCallerFrameNode().executeWith(frame);
+                    PythonObject globals = PArguments.getGlobals(callerFrame);
+                    if (globals != null) {
+                        String moduleName = getModuleNameFromGlobals(globals);
+                        if (moduleName != null) {
+                            ensureWriteAttrNode().execute(newType, __MODULE__, moduleName);
+                        }
+                    }
+                }
+
+                return newType;
+            } catch (PException e) {
+                e.getExceptionObject().reifyException();
+                throw e;
+            }
+        }
+
+        private String getModuleNameFromGlobals(PythonObject globals) {
+            Object nameAttr;
+            if (globals instanceof PythonModule) {
+                nameAttr = ensureReadAttrNode().execute(globals, __NAME__);
+            } else if (globals instanceof PDict) {
+                nameAttr = ensureGetDictItemNode().execute(((PDict) globals).getDictStorage(), __NAME__);
+            } else {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException("invalid globals object");
+            }
+            return ensureCastToStringNode().execute(nameAttr);
         }
 
         @TruffleBoundary
         private Object typeMetaclass(String name, PTuple bases, PDict namespace, PythonClass metaclass) {
 
             Object[] array = bases.getArray();
+
             PythonClass[] basesArray;
             if (array.length == 0) {
                 // Adjust for empty tuple bases
@@ -1685,9 +1827,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
             }
 
+            boolean addDict = false;
             if (slots == null) {
                 // takes care of checking if we may_add_dict and adds it if needed
-                addDictIfNative(pythonClass);
+                addDict = addDictIfNative(pythonClass);
                 // TODO: tfel - also deal with weaklistoffset
             } else {
                 // have slots
@@ -1717,19 +1860,26 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         if (addDictIfNative(pythonClass)) {
                             throw raise(TypeError, "__dict__ slot disallowed: we already got one");
                         }
+                        addDict = true;
                     } else {
                         // TODO: check for __weakref__
-                        // TODO: Copy slots into a list, mangle names and sort them
+                        // TODO avoid if native slots are inherited
                         HiddenKey hiddenSlotKey = new HiddenKey(slotName);
                         HiddenKeyDescriptor slotDesc = factory().createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
                         pythonClass.setAttribute(slotName, slotDesc);
                     }
                     // Make slots into a tuple
                 }
-                pythonClass.setAttribute(__SLOTS__, factory().createTuple(slotList));
+                PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace);
+                pythonClass.setAttribute(__SLOTS__, newSlots);
                 if (basesArray.length > 1) {
                     // TODO: tfel - check if secondary bases provide weakref or dict when we don't
                     // already have one
+                }
+
+                // add native slot descriptors
+                if (pythonClass.needsNativeAllocation()) {
+                    addNativeSlots(pythonClass, newSlots);
                 }
             }
 
@@ -1740,6 +1890,79 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return pythonClass;
         }
 
+        private PTuple copySlots(String className, SequenceStorage slotList, int slotlen, boolean add_dict, boolean add_weak, PDict namespace) {
+            SequenceStorage newSlots = new ObjectSequenceStorage(slotlen - PInt.intValue(add_dict) - PInt.intValue(add_weak));
+            int j = 0;
+            for (int i = 0; i < slotlen; i++) {
+                // the cast is ensured by the previous loop
+                String slotName = (String) getSlotItemNode().execute(slotList, i);
+                if ((add_dict && __DICT__.equals(slotName)) || (add_weak && __WEAKREF__.equals(slotName))) {
+                    continue;
+                }
+
+                slotName = mangle(className, slotName);
+                if (slotName == null) {
+                    return null;
+                }
+
+                setSlotItemNode().execute(newSlots, slotName);
+                if (containsKeyNode().execute(namespace.getDictStorage(), slotName)) {
+                    throw raise(PythonBuiltinClassType.ValueError, "%s in __slots__ conflicts with class variable", slotName);
+                }
+                j++;
+            }
+            assert j == slotlen - PInt.intValue(add_dict) - PInt.intValue(add_weak);
+
+            // sort newSlots
+            Arrays.sort(newSlots.getInternalArray());
+
+            return factory().createTuple(newSlots);
+
+        }
+
+        private String mangle(String privateobj, String ident) {
+            // Name mangling: __private becomes _classname__private. This is independent from how
+            // the name is used.
+            int nlen, plen, ipriv;
+            if (privateobj == null || ident.charAt(0) != '_' || ident.charAt(1) != '_') {
+                return ident;
+            }
+            nlen = ident.length();
+            plen = privateobj.length();
+
+            // Don't mangle __whatever__ or names with dots.
+            if ((ident.charAt(nlen - 1) == '_' && ident.charAt(nlen - 2) == '_') || ident.indexOf('.') != -1) {
+                return ident;
+            }
+
+            // Strip leading underscores from class name
+            ipriv = 0;
+            while (privateobj.charAt(ipriv) == '_') {
+                ipriv++;
+            }
+
+            // Don't mangle if class is just underscores
+            if (ipriv == plen) {
+                return ident;
+            }
+            plen -= ipriv;
+
+            if ((long) plen + nlen >= Integer.MAX_VALUE) {
+                throw raise(PythonBuiltinClassType.OverflowError, "private identifier too large to be mangled");
+            }
+
+            /* ident = "_" + priv[ipriv:] + ident # i.e. 1+plen+nlen bytes */
+            return "_" + privateobj.substring(ipriv) + ident;
+        }
+
+        private HashingStorageNodes.ContainsKeyNode containsKeyNode() {
+            if (containsKeyNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                containsKeyNode = insert(HashingStorageNodes.ContainsKeyNode.create());
+            }
+            return containsKeyNode;
+        }
+
         private SequenceStorageNodes.GetItemNode getSlotItemNode() {
             if (getSlotItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1748,12 +1971,36 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return getSlotItemNode;
         }
 
+        private SequenceStorageNodes.AppendNode setSlotItemNode() {
+            if (setSlotItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                setSlotItemNode = insert(SequenceStorageNodes.AppendNode.create(() -> NoGeneralizationNode.create("")));
+            }
+            return setSlotItemNode;
+        }
+
         private SequenceStorageNodes.LenNode getListLenNode() {
             if (slotLenNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 slotLenNode = insert(SequenceStorageNodes.LenNode.create());
             }
             return slotLenNode;
+        }
+
+        private ReadCallerFrameNode getReadCallerFrameNode() {
+            if (readCallerFrameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readCallerFrameNode = insert(ReadCallerFrameNode.create());
+            }
+            return readCallerFrameNode;
+        }
+
+        private void addNativeSlots(PythonClass pythonClass, PTuple slots) {
+            if (callAddNativeSlotsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callAddNativeSlotsNode = insert(CExtNodes.PCallCapiFunction.create(NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS));
+            }
+            callAddNativeSlotsNode.call(toSulongNode.execute(pythonClass), toSulongNode.execute(slots));
         }
 
         private CastToListNode getCastToListNode() {
@@ -1766,31 +2013,27 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private boolean addDictIfNative(PythonClass pythonClass) {
             boolean addedNewDict = false;
-            for (Object cls : pythonClass.getMethodResolutionOrder()) {
-                if (cls instanceof PythonNativeClass) {
-                    if (readAttrNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        readAttrNode = insert(ReadAttributeFromObjectNode.create());
-                        writeAttrNode = insert(WriteAttributeToObjectNode.create());
-                        castToInt = insert(CastToIndexNode.create());
-                    }
-                    long dictoffset = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__DICTOFFSET__));
-                    long basicsize = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__BASICSIZE__));
-                    long itemsize = castToInt.execute(readAttrNode.execute(cls, SpecialAttributeNames.__ITEMSIZE__));
-                    if (dictoffset == 0) {
-                        addedNewDict = true;
-                        // add_dict
-                        if (itemsize != 0) {
-                            dictoffset = -SIZEOF_PY_OBJECT_PTR;
-                        } else {
-                            dictoffset = basicsize;
-                            basicsize += SIZEOF_PY_OBJECT_PTR;
+            if (pythonClass.needsNativeAllocation()) {
+                for (Object cls : pythonClass.getMethodResolutionOrder()) {
+                    if (cls instanceof PythonNativeClass) {
+                        long dictoffset = ensureCastToIntNode().execute(ensureReadAttrNode().execute(cls, SpecialAttributeNames.__DICTOFFSET__));
+                        long basicsize = ensureCastToIntNode().execute(ensureReadAttrNode().execute(cls, SpecialAttributeNames.__BASICSIZE__));
+                        long itemsize = ensureCastToIntNode().execute(ensureReadAttrNode().execute(cls, SpecialAttributeNames.__ITEMSIZE__));
+                        if (dictoffset == 0) {
+                            addedNewDict = true;
+                            // add_dict
+                            if (itemsize != 0) {
+                                dictoffset = -SIZEOF_PY_OBJECT_PTR;
+                            } else {
+                                dictoffset = basicsize;
+                                basicsize += SIZEOF_PY_OBJECT_PTR;
+                            }
                         }
+                        ensureWriteAttrNode().execute(pythonClass, SpecialAttributeNames.__DICTOFFSET__, dictoffset);
+                        ensureWriteAttrNode().execute(pythonClass, SpecialAttributeNames.__BASICSIZE__, basicsize);
+                        ensureWriteAttrNode().execute(pythonClass, SpecialAttributeNames.__ITEMSIZE__, itemsize);
+                        break;
                     }
-                    writeAttrNode.execute(pythonClass, SpecialAttributeNames.__DICTOFFSET__, dictoffset);
-                    writeAttrNode.execute(pythonClass, SpecialAttributeNames.__BASICSIZE__, basicsize);
-                    writeAttrNode.execute(pythonClass, SpecialAttributeNames.__ITEMSIZE__, itemsize);
-                    break;
                 }
             }
             return addedNewDict;
@@ -1843,6 +2086,46 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw raise(NotImplementedError, "creating a class with non-class metaclass");
             }
             return nextTypeNode.execute(frame, cls, name, bases, dict, kwds);
+        }
+
+        private HashingStorageNodes.GetItemNode ensureGetDictItemNode() {
+            if (getDictItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getDictItemNode = insert(HashingStorageNodes.GetItemNode.create());
+            }
+            return getDictItemNode;
+        }
+
+        private ReadAttributeFromObjectNode ensureReadAttrNode() {
+            if (readAttrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readAttrNode = insert(ReadAttributeFromObjectNode.create());
+            }
+            return readAttrNode;
+        }
+
+        private WriteAttributeToObjectNode ensureWriteAttrNode() {
+            if (writeAttrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                writeAttrNode = insert(WriteAttributeToObjectNode.create());
+            }
+            return writeAttrNode;
+        }
+
+        private CastToIndexNode ensureCastToIntNode() {
+            if (castToInt == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToInt = insert(CastToIndexNode.create());
+            }
+            return castToInt;
+        }
+
+        private CastToStringNode ensureCastToStringNode() {
+            if (castToStringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToStringNode = insert(CastToStringNode.create());
+            }
+            return castToStringNode;
         }
     }
 
@@ -2214,18 +2497,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     public abstract static class CreateSliceNode extends PythonBuiltinNode {
-        @Specialization(guards = "isNoValue(second)")
+        @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
         Object sliceStop(PythonClass cls, int first, PNone second, PNone third) {
             return factory().createSlice(MISSING_INDEX, first, MISSING_INDEX);
         }
 
-        @Specialization(guards = "isNone(second)")
-        Object sliceStart(PythonClass cls, int first, PNone second, PNone third) {
-            return factory().createSlice(first, MISSING_INDEX, MISSING_INDEX);
-        }
-
         @Specialization(guards = "isNoValue(third)")
-        Object slice(PythonClass cls, int first, int second, PNone third) {
+        Object sliceStart(PythonClass cls, int first, int second, PNone third) {
             return factory().createSlice(first, second, MISSING_INDEX);
         }
 
@@ -2234,7 +2512,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createSlice(first, second, third);
         }
 
-        @Specialization
+        @Specialization(guards = "isNoValue(third)")
+        Object slice(PythonClass cls, Object first, Object second, PNone third,
+                        @Cached("create()") SliceLiteralNode sliceNode) {
+            return sliceNode.execute(first, second, MISSING_INDEX);
+        }
+
+        @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
+        Object slice(PythonClass cls, Object first, PNone second, PNone third,
+                        @Cached("create()") SliceLiteralNode sliceNode) {
+            return sliceNode.execute(MISSING_INDEX, first, MISSING_INDEX);
+        }
+
+        @Specialization(guards = {"!isNoValue(stop)", "!isNoValue(step)"})
         Object slice(PythonClass cls, Object start, Object stop, Object step,
                         @Cached("create()") SliceLiteralNode sliceNode) {
             return sliceNode.execute(start, stop, step);

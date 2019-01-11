@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.TimeZone;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -70,6 +72,23 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         return TimeModuleBuiltinsFactory.getFactories();
     }
 
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        TimeZone defaultTimeZone = TimeZone.getDefault();
+        String noDaylightSavingZone = defaultTimeZone.getDisplayName(false, TimeZone.SHORT);
+        String daylightSavingZone = defaultTimeZone.getDisplayName(true, TimeZone.SHORT);
+
+        boolean hasDaylightSaving = !noDaylightSavingZone.equals(daylightSavingZone);
+        if (hasDaylightSaving) {
+            builtinConstants.put("tzname", core.factory().createTuple(new Object[]{noDaylightSavingZone, daylightSavingZone}));
+        } else {
+            builtinConstants.put("tzname", core.factory().createTuple(new Object[]{noDaylightSavingZone}));
+        }
+
+        builtinConstants.put("daylight", PInt.intValue(hasDaylightSaving));
+    }
+
     @TruffleBoundary
     public static double timeSeconds() {
         return System.currentTimeMillis() / 1000.0;
@@ -87,7 +106,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         timeStruct[3] = zonedDateTime.getHour();
         timeStruct[4] = zonedDateTime.getMinute();
         timeStruct[5] = zonedDateTime.getSecond();
-        timeStruct[6] = zonedDateTime.getDayOfWeek().getValue();
+        timeStruct[6] = zonedDateTime.getDayOfWeek().getValue() - 1;
         timeStruct[7] = zonedDateTime.getDayOfYear();
         timeStruct[8] = (zonedDateTime.getZone().getRules().isDaylightSavings(instant)) ? 1 : 0;
         timeStruct[9] = zone.getId();
@@ -119,7 +138,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.localtime([seconds])
-    @Builtin(name = "__truffle_localtime_tuple__", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "__truffle_localtime_tuple__", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonLocalTimeNode extends PythonBuiltinNode {

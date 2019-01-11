@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes;
 
 public abstract class SpecialMethodNames {
+
     public static final String __NEW__ = "__new__";
     public static final String __ALLOC__ = "__alloc__";
     public static final String __INIT__ = "__init__";
@@ -159,6 +160,7 @@ public abstract class SpecialMethodNames {
     public static final String __FSPATH__ = "__fspath__";
     public static final String TOBYTES = "tobytes";
     public static final String DECODE = "decode";
+    public static final String __SIZEOF__ = "__sizeof__";
 
     public static final String RICHCMP = "__truffle_richcompare__";
     public static final String TRUFFLE_SOURCE = "__truffle_source__";

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,6 +61,7 @@ public class GraalPythonCC extends GraalPythonCompiler {
     private List<String> execLinkArgs;
     private List<String> fileInputs;
     private boolean isCpp;
+    private boolean allowCpp;
 
     GraalPythonCC() {
     }
@@ -104,7 +105,7 @@ public class GraalPythonCC extends GraalPythonCompiler {
 
     private void run(String[] args) {
         parseOptions(args);
-        if (isCpp) {
+        if (!allowCpp && isCpp) {
             // cannot use streaming API anyMatch for this on SVM
             for (String s : clangArgs) {
                 if (s.contains("--sysroot")) {
@@ -159,6 +160,9 @@ public class GraalPythonCC extends GraalPythonCompiler {
                         continue; // the first verbose is not passed on to clang
                     }
                     break;
+                case "-allowcpp":
+                    allowCpp = true;
+                    continue;
                 default:
                     if (arg.endsWith(".o") || arg.endsWith(".bc")) {
                         if (compile == null) {

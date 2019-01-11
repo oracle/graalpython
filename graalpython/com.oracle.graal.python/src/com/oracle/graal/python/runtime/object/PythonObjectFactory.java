@@ -364,11 +364,11 @@ public final class PythonObjectFactory extends Node {
         return trace(new PMemoryView(metaclass, value));
     }
 
-    public final PMethod createMethod(LazyPythonClass cls, Object self, PFunction function) {
+    public final PMethod createMethod(LazyPythonClass cls, Object self, Object function) {
         return trace(new PMethod(cls, self, function));
     }
 
-    public final PMethod createMethod(Object self, PFunction function) {
+    public final PMethod createMethod(Object self, Object function) {
         return createMethod(PythonBuiltinClassType.PMethod, self, function);
     }
 

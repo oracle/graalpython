@@ -45,6 +45,9 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.ManagedMethodWrappers.MethKeywords;
 import com.oracle.graal.python.builtins.objects.cext.ManagedMethodWrappers.MethVarargs;
 import com.oracle.graal.python.builtins.objects.cext.ManagedMethodWrappers.MethodWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.PAsPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
@@ -117,6 +120,45 @@ public class ManagedMethodWrappersMR {
                 executeNode = insert(new PythonMessageResolution.ExecuteNode());
             }
             return toSulongNode.execute(executeNode.execute(object.getDelegate(), new Object[]{varArgs}));
+        }
+    }
+
+    @Resolve(message = "IS_POINTER")
+    abstract static class IsPointerNode extends Node {
+        @Child private CExtNodes.IsPointerNode pIsPointerNode;
+
+        boolean access(PythonNativeWrapper obj) {
+            if (pIsPointerNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                pIsPointerNode = insert(CExtNodes.IsPointerNode.create());
+            }
+            return pIsPointerNode.execute(obj);
+        }
+    }
+
+    @Resolve(message = "AS_POINTER")
+    abstract static class AsPointerNode extends Node {
+        @Child private PAsPointerNode pAsPointerNode;
+
+        long access(PythonNativeWrapper obj) {
+            if (pAsPointerNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                pAsPointerNode = insert(PAsPointerNode.create());
+            }
+            return pAsPointerNode.execute(obj);
+        }
+    }
+
+    @Resolve(message = "TO_NATIVE")
+    abstract static class ToNativeNode extends Node {
+        @Child private ToPyObjectNode toPyObjectNode;
+
+        public Object access(MethodWrapper object) {
+            if (toPyObjectNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toPyObjectNode = insert(ToPyObjectNode.create());
+            }
+            return toPyObjectNode.execute(object);
         }
     }
 }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -48,3 +48,13 @@ SOCK_RDM = 4
 SOCK_SEQPACKET = 5
 
 has_ipv6 = False  #: TODO implement me
+error = OSError
+__default_timeout = None
+
+def getdefaulttimeout():
+    return __default_timeout
+
+def setdefaulttimeout(timeout):
+    global __default_timeout
+    __default_timeout = timeout
+

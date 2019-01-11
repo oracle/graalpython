@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2019, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -41,6 +41,11 @@ def test_grouping2():
     assert md.start(1) == 2
     assert md.end(1) == 3
     assert md.end(0) == 5
+
+
+def test_pattern_groups():
+     pttrn = re.compile(r"hello (?P<prop>\w*) world")
+     assert pttrn.groups == 1
 
 
 def test_ignorecase():

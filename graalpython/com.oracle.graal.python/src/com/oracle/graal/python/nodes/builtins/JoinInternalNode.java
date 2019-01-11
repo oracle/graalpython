@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.builtins;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -56,6 +55,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PGuards.class)
 @TypeSystemReference(PythonArithmeticTypes.class)
@@ -82,28 +82,29 @@ public abstract class JoinInternalNode extends PNodeWithContext {
         return sb.toString();
     }
 
-    private String checkItem(Object item, int pos) {
-        if (PGuards.isString(item)) {
+    private String checkItem(Object item, int pos, ConditionProfile profile) {
+        if (profile.profile(PGuards.isString(item))) {
             return item.toString();
         }
         throw raise(TypeError, "sequence item %d: expected str instance, %p found", pos, item);
     }
 
     @Specialization
-    @TruffleBoundary
-    protected String join(String string, PythonObject iterable,
+    protected String join(String string, Object iterable,
                     @Cached("create()") GetIteratorNode getIterator,
                     @Cached("create()") GetNextNode next,
                     @Cached("create()") IsBuiltinClassProfile errorProfile1,
-                    @Cached("create()") IsBuiltinClassProfile errorProfile2) {
+                    @Cached("create()") IsBuiltinClassProfile errorProfile2,
+                    @Cached("createBinaryProfile()") ConditionProfile errorProfile3) {
 
         Object iterator = getIterator.executeWith(iterable);
         StringBuilder str = new StringBuilder();
         try {
-            str.append(checkItem(next.execute(iterator), 0));
+            append(str, checkItem(next.execute(iterator), 0, errorProfile3));
         } catch (PException e) {
             e.expectStopIteration(errorProfile1);
             return "";
+
         }
         int i = 1;
         while (true) {
@@ -112,11 +113,21 @@ public abstract class JoinInternalNode extends PNodeWithContext {
                 value = next.execute(iterator);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile2);
-                return str.toString();
+                return toString(str);
             }
-            str.append(string);
-            str.append(checkItem(value, i++));
+            append(str, string);
+            append(str, checkItem(value, i++, errorProfile3));
         }
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder append(StringBuilder sb, String o) {
+        return sb.append(o);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String toString(StringBuilder sb) {
+        return sb.toString();
     }
 
     @Fallback

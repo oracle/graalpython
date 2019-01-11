@@ -220,8 +220,9 @@ class SRE_Pattern():
         self.groupindex = dict()
         if self.__tregex_compile(self.pattern).groups is not None:
             for group_name in dir(self.__tregex_compile(self.pattern).groups):
-                self.groupindex[group_name] = self.__tregex_compile(self.pattern).groups[group_name]
-
+                groups = self.__tregex_compile(self.pattern).groups
+                self.groups = _interop.__get_size__(_interop.__keys__(groups))
+                self.groupindex[group_name] = groups[group_name]
 
     def __check_input_type(self, input):
         if not isinstance(input, str) and not _is_bytes_like(input):

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -179,7 +179,7 @@ public abstract class PythonCallNode extends ExpressionNode {
     @NodeChild("object")
     protected abstract static class GetCallAttributeNode extends ExpressionNode {
 
-        private final String key;
+        protected final String key;
 
         protected GetCallAttributeNode(String key) {
             this.key = key;
@@ -192,8 +192,8 @@ public abstract class PythonCallNode extends ExpressionNode {
 
         @Specialization(guards = "!isForeignObject(object)")
         Object getCallAttribute(Object object,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttributeNode) {
-            return getAttributeNode.executeObject(object, key);
+                        @Cached("create(key)") GetAttributeNode getAttributeNode) {
+            return getAttributeNode.executeObject(object);
         }
     }
 

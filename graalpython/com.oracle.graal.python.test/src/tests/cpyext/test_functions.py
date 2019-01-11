@@ -150,6 +150,17 @@ class TestPyObject(CPyExtTestCase):
         arguments=["PyObject* rcvr", "const char* method", "const char* fmt", "PyObject* list", "int initial"],
         argspec="OssOi",
     )
+    test_PyObject_CallMethod0 = CPyExtFunction(
+        lambda args: getattr(args[0], args[1])(),
+        lambda: (
+            ([3,4,5],"__inexisting_method__", ""),
+            ([1,2,3,4],"__len__", ""),
+        ),
+        arguments=["PyObject* callable", "char* method_name", "char* fmt"],
+        resultspec="O",
+        argspec="Oss",
+        callfunction="PyObject_CallMethod"
+    )
     test_PyObject_Type = CPyExtFunction(
         type,
         lambda: (

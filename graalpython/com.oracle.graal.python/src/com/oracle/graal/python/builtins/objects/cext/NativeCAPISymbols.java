@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 public abstract class NativeCAPISymbols {
 
     public static final String FUN_NATIVE_POINTER_TO_JAVA = "native_pointer_to_java";
+    public static final String FUN_NATIVE_LONG_TO_JAVA = "native_long_to_java";
     public static final String FUN_NATIVE_TO_JAVA = "native_to_java_exported";
     public static final String FUN_PY_TRUFFLE_STRING_TO_CSTR = "PyTruffle_StringToCstr";
     public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT = "PyObjectHandle_ForJavaObject";
@@ -63,4 +64,8 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE = "PyTruffle_DoubleArrayToNative";
     public static final String FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE = "PyTruffle_ObjectArrayToNative";
     public static final String FUN_PY_OBJECT_GENERIC_GET_DICT = "_PyObject_GenericGetDict";
+    public static final String FUN_PY_OBJECT_GENERIC_NEW = "PyTruffle_Type_GenericNew";
+    public static final String FUN_GET_THREAD_STATE_TYPE_ID = "get_thread_state_typeid";
+    public static final String FUN_ADD_NATIVE_SLOTS = "PyTruffle_Type_AddSlots";
+
 }

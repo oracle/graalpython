@@ -42,7 +42,7 @@
 
 typedef enum e_binop {
     ADD=0, SUB, MUL, TRUEDIV, LSHIFT, RSHIFT, OR, AND, XOR, FLOORDIV, MOD,
-    INPLACE_OFFSET,
+    INPLACE_OFFSET, MATRIX_MUL
 } BinOp;
 
 typedef enum e_unaryop {
@@ -71,12 +71,12 @@ static PyObject * do_unaryop(PyObject *v, UnaryOp unaryop) {
 }
 
 UPCALL_ID(PyNumber_BinOp);
-static PyObject * do_binop(PyObject *v, PyObject *w, BinOp binop) {
+MUST_INLINE static PyObject * do_binop(PyObject *v, PyObject *w, BinOp binop) {
     return UPCALL_CEXT_O(_jls_PyNumber_BinOp, native_to_java(v), native_to_java(w), binop);
 }
 
 UPCALL_ID(PyNumber_InPlaceBinOp);
-static PyObject * do_inplace_binop(PyObject *v, PyObject *w, BinOp binop) {
+MUST_INLINE static PyObject * do_inplace_binop(PyObject *v, PyObject *w, BinOp binop) {
     return UPCALL_CEXT_O(_jls_PyNumber_InPlaceBinOp, native_to_java(v), native_to_java(w), binop);
 }
 
@@ -90,6 +90,11 @@ PyObject * PyNumber_Subtract(PyObject *o1, PyObject *o2) {
 
 PyObject * PyNumber_Multiply(PyObject *o1, PyObject *o2) {
 	return do_binop(o1, o2, MUL);
+}
+
+
+PyObject * PyNumber_MatrixMultiply(PyObject *o1, PyObject *o2) {
+	return do_binop(o1, o2, MATRIX_MUL);
 }
 
 PyObject * PyNumber_TrueDivide(PyObject *o1, PyObject *o2) {
@@ -140,16 +145,67 @@ PyObject * PyNumber_Power(PyObject *v, PyObject *w, PyObject *z) {
     return UPCALL_O(PY_BUILTIN, polyglot_from_string("pow", SRC_CS), native_to_java(v), native_to_java(w), native_to_java(z));
 }
 
+PyObject* PyNumber_InPlaceAdd(PyObject *o1, PyObject *o2) {
+	return do_inplace_binop(o1, o2, ADD);
+}
+
+PyObject* PyNumber_InPlaceSubtract(PyObject *o1, PyObject *o2) {
+	return do_inplace_binop(o1, o2, SUB);
+}
+
+PyObject* PyNumber_InPlaceMultiply(PyObject *o1, PyObject *o2) {
+	return do_inplace_binop(o1, o2, MUL);
+}
+
+PyObject* PyNumber_InPlaceMatrixMultiply(PyObject *o1, PyObject *o2) {
+	return do_inplace_binop(o1, o2, MATRIX_MUL);
+}
+
+PyObject* PyNumber_InPlaceFloorDivide(PyObject *o1, PyObject *o2) {
+	return do_inplace_binop(o1, o2, FLOORDIV);
+}
+
+PyObject * PyNumber_InPlaceTrueDivide(PyObject *o1, PyObject *o2) {
+    return do_inplace_binop(o1, o2, TRUEDIV);
+}
+
+PyObject* PyNumber_InPlaceRemainder(PyObject *o1, PyObject *o2) {
+	return do_inplace_binop(o1, o2, MOD);
+}
+
+PyObject* PyNumber_InPlacePower(PyObject *o1, PyObject *o2, PyObject *o3) {
+	// TODO
+	PyErr_SetNone(PyExc_NotImplementedError);
+    return NULL;
+
+}
+
+PyObject* PyNumber_InPlaceLshift(PyObject *o1, PyObject *o2) {
+	return do_inplace_binop(o1, o2, LSHIFT);
+}
+
+PyObject* PyNumber_InPlaceRshift(PyObject *o1, PyObject *o2) {
+	return do_inplace_binop(o1, o2, RSHIFT);
+}
+
+PyObject* PyNumber_InPlaceAnd(PyObject *o1, PyObject *o2) {
+	return do_inplace_binop(o1, o2, AND);
+}
+
+PyObject* PyNumber_InPlaceXor(PyObject *o1, PyObject *o2) {
+	return do_inplace_binop(o1, o2, XOR);
+}
+
+PyObject* PyNumber_InPlaceOr(PyObject *o1, PyObject *o2) {
+	return do_inplace_binop(o1, o2, OR);
+}
+
 UPCALL_ID(PyNumber_Index);
 PyObject * PyNumber_Index(PyObject *o) {
     if (o == NULL) {
         return null_error();
     }
     return UPCALL_CEXT_O(_jls_PyNumber_Index, native_to_java(o));
-}
-
-PyObject * PyNumber_InPlaceTrueDivide(PyObject *o1, PyObject *o2) {
-    return do_inplace_binop(o1, o2, TRUEDIV);
 }
 
 Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {
