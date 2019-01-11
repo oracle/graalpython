@@ -84,6 +84,15 @@ PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnam
         break;                                          \
     }
 
+MUST_INLINE PyObject* PyTruffle_Stack2Tuple(PyObject** args, Py_ssize_t nargs) {
+    PyObject* argv = PyTuple_New(nargs);
+    Py_ssize_t i;
+    for (i=0; i < nargs; i++) {
+        PyTuple_SetItem(argv, i, args[i]);
+    }
+    return argv;
+}
+
 /* argparse */
 UPCALL_ID(__bool__);
 int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
