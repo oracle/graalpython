@@ -43,6 +43,7 @@ public class AssertNode extends StatementNode {
     @Child private ExpressionNode message;
     @Child private LookupAndCallUnaryNode callNode;
     @CompilationFinal private Boolean assertionsEnabled = null;
+    @CompilationFinal private boolean javaExceptionsFailAsssertions;
 
     public AssertNode(CastToBooleanNode condition, ExpressionNode message) {
         this.condition = condition;
@@ -54,6 +55,7 @@ public class AssertNode extends StatementNode {
         if (assertionsEnabled == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             assertionsEnabled = !PythonOptions.getOption(getContext(), PythonOptions.PythonOptimizeFlag);
+            javaExceptionsFailAsssertions = PythonOptions.getOption(getContext(), PythonOptions.CatchAllExceptions);
         }
         if (assertionsEnabled) {
             try {
@@ -64,8 +66,12 @@ public class AssertNode extends StatementNode {
                 // Python exceptions just fall through
                 throw e;
             } catch (Exception e) {
-                // catch any other exception and convert to Python exception
-                throw assertionFailed(frame);
+                if (javaExceptionsFailAsssertions) {
+                    // catch any other exception and convert to Python exception
+                    throw assertionFailed(frame);
+                } else {
+                    throw e;
+                }
             }
         }
     }
