@@ -416,10 +416,8 @@ def install_from_url(url, patch=None, extra_opts=[]):
             f.write(patch)
         system("patch -d %s/%s/ -p1 < %s/%s.patch" % ((tempdir, bare_name)*2))
 
-    if "--prefix" in extra_opts:
-        system("cd %s/%s; %s setup.py install %s" % (tempdir, bare_name, sys.executable, " ".join(extra_opts)))
-    else:
-        system("cd %s/%s; %s setup.py install --user %s" % (tempdir, bare_name, sys.executable, " ".join(extra_opts)))
+    user_arg = "--user" if "--prefix" not in extra_opts else ""
+    system("cd %s/%s; %s setup.py install %s %s" % (tempdir, bare_name, sys.executable, user_arg, " ".join(extra_opts)))
 
 
 def install_from_pypi(package, extra_opts=[]):
@@ -457,9 +455,10 @@ def install_from_pypi(package, extra_opts=[]):
         else:
             xit("Unknown file type: %s" % filename)
 
-        status = os.system("cd %s/%s; %s setup.py install --user %s" % (tempdir, dirname, sys.executable, " ".join(extra_opts)))
+        user_arg = "--user" if "--prefix" not in extra_opts else ""
+        status = os.system("cd %s/%s; %s setup.py install %s %s" % (tempdir, dirname, sys.executable, user_arg, " ".join(extra_opts)))
         if status != 0:
-            xit("An error occurred trying to run `setup.py install --user'")
+            xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
     else:
         xit("Package not found: '%s'" % package)
 
