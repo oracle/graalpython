@@ -1790,7 +1790,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CenterNode extends PythonBuiltinNode {
 
-        private @Child CastToIndexNode toIndexNode;
+        @Child private CastToIndexNode toIndexNode;
 
         private CastToIndexNode getCastToIndexNode() {
             if (toIndexNode == null) {
