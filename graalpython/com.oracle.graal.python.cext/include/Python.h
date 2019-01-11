@@ -153,6 +153,8 @@
 #undef Py_RETURN_NONE
 #define Py_RETURN_NONE return Py_None;
 
+extern int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...);
+
 // we use defines for these so we don't need to call with va_list
 #define _PyArg_Parse_SizeT(ARGV, FORMAT, ...) PyArg_ParseTupleAndKeywords(ARGV, PyDict_New(), FORMAT, NULL, __VA_ARGS__)
 #define _PyArg_ParseTuple_SizeT(ARGV, FORMAT, ...) PyArg_ParseTupleAndKeywords(ARGV, PyDict_New(), FORMAT, NULL, __VA_ARGS__)
@@ -165,6 +167,14 @@
 
 #ifndef PyArg_ParseTuple
 #define PyArg_ParseTuple _PyArg_ParseTuple_SizeT
+#endif
+
+#ifndef PyArg_ParseTupleAndKeywords
+#define PyArg_ParseTupleAndKeywords _PyArg_ParseTupleAndKeywords_SizeT
+#endif
+
+#ifndef _PyArg_ParseStack
+#define _PyArg_ParseStack _PyArg_ParseStack_SizeT
 #endif
 
 extern PyObject * PyTruffle_Unicode_FromFormat(const char *fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9, void* v10, void* v11, void* v12, void* v13, void* v14, void* v15, void* v16, void* v17, void* v18, void* v19);

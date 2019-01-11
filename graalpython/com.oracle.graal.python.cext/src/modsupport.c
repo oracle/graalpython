@@ -86,7 +86,7 @@ PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnam
 
 /* argparse */
 UPCALL_ID(__bool__);
-int PyArg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
+int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
     PyObject* arg;
     int format_idx = 0;
     int output_idx = 4;
