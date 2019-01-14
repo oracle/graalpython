@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
 import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -47,7 +49,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -55,11 +60,13 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @ImportStatic(PythonOptions.class)
 @NodeChild(value = "starargs", type = ExpressionNode.class)
-public abstract class ExecuteKeywordStarargsNode extends Node {
+public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
+    @Child private CastToStringNode castToStringNode;
+
     public abstract PKeyword[] execute(VirtualFrame frame);
 
     public abstract PKeyword[] executeWith(Object starargs);
@@ -76,18 +83,24 @@ public abstract class ExecuteKeywordStarargsNode extends Node {
 
     @Specialization(guards = "starargs.size() == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
     PKeyword[] cached(PDict starargs,
-                    @Cached("starargs.size()") int cachedLen) {
-        PKeyword[] keywords = new PKeyword[starargs.size()];
-        copyKeywords(starargs, cachedLen, keywords);
-        return keywords;
+                    @Cached("starargs.size()") int cachedLen,
+                    @Cached("create()") BranchProfile errorProfile) {
+        try {
+            PKeyword[] keywords = new PKeyword[starargs.size()];
+            copyKeywords(starargs, cachedLen, keywords);
+            return keywords;
+        } catch (KeywordNotStringException e) {
+            errorProfile.enter();
+            throw raise(TypeError, "keywords must be strings");
+        }
     }
 
     @TruffleBoundary(allowInlining = true)
-    private static void copyKeywords(PDict starargs, int cachedLen, PKeyword[] keywords) {
+    private static void copyKeywords(PDict starargs, int cachedLen, PKeyword[] keywords) throws KeywordNotStringException {
         Iterator<DictEntry> iterator = starargs.entries().iterator();
         for (int i = 0; i < cachedLen; i++) {
             DictEntry entry = iterator.next();
-            keywords[i] = new PKeyword((String) entry.getKey(), entry.getValue());
+            keywords[i] = new PKeyword(castToString(entry.getKey()), entry.getValue());
         }
     }
 
@@ -97,14 +110,28 @@ public abstract class ExecuteKeywordStarargsNode extends Node {
 
     @Specialization(replaces = "cached")
     @TruffleBoundary
-    PKeyword[] uncached(PDict starargs) {
-        return cached(starargs, starargs.size());
+    PKeyword[] uncached(PDict starargs,
+                    @Cached("create()") BranchProfile errorProfile) {
+        return cached(starargs, starargs.size(), errorProfile);
     }
 
     @SuppressWarnings("unused")
     @Specialization
     PKeyword[] generic(Object starargs) {
         return PKeyword.EMPTY_KEYWORDS;
+    }
+
+    private static String castToString(Object key) throws KeywordNotStringException {
+        if (key instanceof String) {
+            return (String) key;
+        } else if (key instanceof PString) {
+            return ((PString) key).getValue();
+        }
+        throw new KeywordNotStringException();
+    }
+
+    private static final class KeywordNotStringException extends Exception {
+        private static final long serialVersionUID = 1L;
     }
 
     public static ExecuteKeywordStarargsNode create() {

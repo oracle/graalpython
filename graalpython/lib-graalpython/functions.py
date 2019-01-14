@@ -136,7 +136,7 @@ def format(value, format_spec=''):
     format_spec defaults to the empty string.
     See the Format Specification Mini-Language section of help('FORMATTING') for
     details."""
-    return value.__format__(format_spec)
+    return type(value).__format__(value, format_spec)
 
 
 @__builtin__

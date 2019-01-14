@@ -133,3 +133,11 @@ UPCALL_ID(PyModule_NewObject);
 PyObject* PyModule_NewObject(PyObject* name) {
     return UPCALL_CEXT_O(_jls_PyModule_NewObject, native_to_java(name));
 }
+
+void* PyModule_GetState(PyObject *m) {
+    if (!PyModule_Check(m)) {
+        PyErr_BadArgument();
+        return NULL;
+    }
+    return ((PyModuleObject *)m)->md_state;
+}

@@ -149,35 +149,6 @@
  *     } while (0)
  */
 
-
-#undef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_None;
-
-extern int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...);
-
-// we use defines for these so we don't need to call with va_list
-#define _PyArg_Parse_SizeT(ARGV, FORMAT, ...) PyArg_ParseTupleAndKeywords(ARGV, PyDict_New(), FORMAT, NULL, ##__VA_ARGS__)
-#define _PyArg_ParseTuple_SizeT(ARGV, FORMAT, ...) PyArg_ParseTupleAndKeywords(ARGV, PyDict_New(), FORMAT, NULL, ##__VA_ARGS__)
-#define _PyArg_ParseTupleAndKeywordsFast_SizeT(ARGS, KWARGS, PARSER, ...) PyArg_ParseTupleAndKeywords(ARGS, KWARGS, (PARSER)->format, (PARSER)->keywords, ##__VA_ARGS__)
-extern PyObject* PyTruffle_Stack2Tuple(PyObject** args, Py_ssize_t nargs);
-#define _PyArg_ParseStack_SizeT(ARGS, NARGS, KWNAMES, PARSER, ...) PyArg_ParseTupleAndKeywords(PyTruffle_Stack2Tuple(ARGS, NARGS), KWNAMES, (PARSER)->format, (PARSER)->keywords, ##__VA_ARGS__)
-
-#ifndef PyArg_Parse
-#define PyArg_Parse _PyArg_Parse_SizeT
-#endif
-
-#ifndef PyArg_ParseTuple
-#define PyArg_ParseTuple _PyArg_ParseTuple_SizeT
-#endif
-
-#ifndef PyArg_ParseTupleAndKeywords
-#define PyArg_ParseTupleAndKeywords _PyArg_ParseTupleAndKeywords_SizeT
-#endif
-
-#ifndef _PyArg_ParseStack
-#define _PyArg_ParseStack _PyArg_ParseStack_SizeT
-#endif
-
 extern PyObject * PyTruffle_Unicode_FromFormat(const char *fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9, void* v10, void* v11, void* v12, void* v13, void* v14, void* v15, void* v16, void* v17, void* v18, void* v19);
 #define PyTruffle_Unicode_FromFormat_0(F1) PyTruffle_Unicode_FromFormat(F1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
 #define PyTruffle_Unicode_FromFormat_1(F1, V1) PyTruffle_Unicode_FromFormat(F1, 1, (void*)(V1), NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -449,3 +449,11 @@ def test_object_set_item_single_instance_non_str_key():
     bar.a = 'a'
     assert 1 in bar.__dict__
     assert 'a' in bar.__dict__
+
+
+def test_unhashable_key():
+    d = {}
+    key_list = [10, 11]
+    assert_raises(TypeError, lambda: d[key_list])
+    key_tuple_list = (key_list, 2)
+    assert_raises(TypeError, lambda: d[key_tuple_list])

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
+
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -71,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
@@ -87,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.GetTypeFlagsNode;
@@ -101,12 +105,15 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
@@ -478,8 +485,14 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
         Object doTpDictoffset(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") CastToIndexNode castToIntNode,
                         @Cached("create(__DICTOFFSET__)") LookupAttributeInMRONode getAttrNode) {
-            return getAttrNode.execute(object);
+            // TODO properly implement 'tp_dictoffset' for builtin classes
+            if (object instanceof PythonBuiltinClass) {
+                return 0L;
+            }
+            Object dictoffset = getAttrNode.execute(object);
+            return castToIntNode.execute(dictoffset);
         }
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
@@ -562,6 +575,13 @@ public class PythonObjectNativeWrapperMR {
             return new PyUnicodeState(object);
         }
 
+        @Specialization(guards = "eq(UNICODE_HASH, key)")
+        @TruffleBoundary
+        long doUnicodeHash(PString object, @SuppressWarnings("unused") String key) {
+            // TODO also support bare 'String' ?
+            return object.hashCode();
+        }
+
         @Specialization(guards = "eq(MD_DICT, key)")
         Object doMdDict(Object object, @SuppressWarnings("unused") String key,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getDictNode) {
@@ -600,18 +620,18 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(START, key)")
-        int doStart(PSlice object, @SuppressWarnings("unused") String key) {
-            return object.getStart();
+        Object doStart(PSlice object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(getSliceComponent(object.getStart()));
         }
 
         @Specialization(guards = "eq(STOP, key)")
-        int doStop(PSlice object, @SuppressWarnings("unused") String key) {
-            return object.getStop();
+        Object doStop(PSlice object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(getSliceComponent(object.getStop()));
         }
 
         @Specialization(guards = "eq(STEP, key)")
-        int doStep(PSlice object, @SuppressWarnings("unused") String key) {
-            return object.getStep();
+        Object doStep(PSlice object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(getSliceComponent(object.getStep()));
         }
 
         @Specialization(guards = "eq(IM_SELF, key)")
@@ -675,6 +695,13 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(getQualnameNode.executeObject(object, SpecialAttributeNames.__QUALNAME__));
         }
 
+        @Specialization(guards = "eq(SET_USED, key)")
+        long doSetUsed(PSet object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") HashingCollectionNodes.GetDictStorageNode getStorageNode,
+                        @Cached("create()") HashingStorageNodes.LenNode lenNode) {
+            return lenNode.execute(getStorageNode.execute(object));
+        }
+
         @Specialization
         Object doMemoryview(PMemoryView object, String key,
                         @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
@@ -691,15 +718,24 @@ public class PythonObjectNativeWrapperMR {
             throw new IllegalStateException("delegate of memoryview object is not native");
         }
 
-        protected static boolean isPyDateTimeCAPI(PythonObject object, GetLazyClassNode getClass) {
-            return getClass.execute(object).getName().equals("PyDateTime_CAPI");
+        protected boolean isPyDateTimeCAPI(PythonObject object) {
+            return getClass(object).getName().equals("PyDateTime_CAPI");
         }
 
-        @Specialization(guards = "isPyDateTimeCAPI(object, getClass)", limit = "1")
+        protected boolean isPyDateTime(PythonObject object) {
+            return getClass(object).getName().equals("datetime");
+        }
+
+        @Specialization(guards = "isPyDateTimeCAPI(object)")
         Object doDatetimeCAPI(PythonObject object, String key,
-                        @Cached("create()") GetLazyClassNode getClass,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getAttrNode) {
-            return getToSulongNode().execute(getAttrNode.execute(getClass.execute(object), key));
+            return getToSulongNode().execute(getAttrNode.execute(getClassNode.execute(object), key));
+        }
+
+        @Specialization(guards = "isPyDateTime(object)")
+        Object doDatetimeData(PythonObject object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") PyDateTimeMRNode pyDateTimeMRNode) {
+            return pyDateTimeMRNode.execute(object, key);
         }
 
         @Fallback
@@ -761,6 +797,13 @@ public class PythonObjectNativeWrapperMR {
             return getClassNode.execute(obj);
         }
 
+        private static Object getSliceComponent(int sliceComponent) {
+            if (sliceComponent == PSlice.MISSING_INDEX) {
+                return PNone.NONE;
+            }
+            return sliceComponent;
+        }
+
         protected Node createReadNode() {
             return Message.READ.createNode();
         }
@@ -779,7 +822,7 @@ public class PythonObjectNativeWrapperMR {
         }
     }
 
-    @ImportStatic({NativeMemberNames.class, PGuards.class})
+    @ImportStatic({NativeMemberNames.class, PGuards.class, SpecialMethodNames.class})
     abstract static class WriteNativeMemberNode extends PNodeWithContext {
         @Child private HashingStorageNodes.SetItemNode setItemNode;
 
@@ -858,6 +901,18 @@ public class PythonObjectNativeWrapperMR {
             } else {
                 // TODO custom mapping object
             }
+            return value;
+        }
+
+        @Specialization(guards = "eq(TP_DICTOFFSET, key)")
+        Object doTpDictoffset(PythonClass object, @SuppressWarnings("unused") String key, Object value,
+                        @Cached("create()") CastToIntegerFromIntNode castToIntNode,
+                        @Cached("create(__SETATTR__)") LookupAndCallTernaryNode call) {
+            // TODO properly implement 'tp_dictoffset' for builtin classes
+            if (object instanceof PythonBuiltinClass) {
+                return 0L;
+            }
+            call.execute(object, __DICTOFFSET__, castToIntNode.execute(value));
             return value;
         }
 

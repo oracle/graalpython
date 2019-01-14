@@ -57,7 +57,7 @@ PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnam
             out = PyTuple_GET_ITEM(p->argv, p->argnum);
         }
     }
-    if (out == NULL && p->prev == NULL && kwdnames != NULL) { // only the bottom argstack can have keyword names
+    if (kwds != NULL && out == NULL && p->prev == NULL && kwdnames != NULL) { // only the bottom argstack can have keyword names
         const char* kwdname = kwdnames[p->argnum];
         if (kwdname != NULL) {
             out = PyDict_GetItemString(kwds, kwdname);
@@ -67,38 +67,27 @@ PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnam
     return out;
 }
 
-#define PyTruffle_WriteOut(n, T, arg) {         \
+#define PyTruffle_WriteOut(va, T, arg) {        \
         T __oai = arg;                          \
         if (PyErr_Occurred()) {                 \
             return 0;                           \
         }                                       \
-        *((T*)polyglot_get_arg(n)) = __oai;     \
-        n++;                                    \
+        *((T*)va_arg(va, T*)) = __oai;          \
     } while(0);
 
-#define PyTruffle_ArgN(n) polyglot_get_arg(n)
+#define PyTruffle_ArgN(va) va_arg(va, void*)
 
-#define PyTruffle_SkipOptionalArg(n, arg, optional)     \
+#define PyTruffle_SkipOptionalArg(va, T, arg, optional) \
     if (arg == NULL && optional) {                      \
-        n++;                                            \
+        va_arg(va, T*);                                 \
         break;                                          \
     }
 
-MUST_INLINE PyObject* PyTruffle_Stack2Tuple(PyObject** args, Py_ssize_t nargs) {
-    PyObject* argv = PyTuple_New(nargs);
-    Py_ssize_t i;
-    for (i=0; i < nargs; i++) {
-        PyTuple_SetItem(argv, i, args[i]);
-    }
-    return argv;
-}
-
 /* argparse */
 UPCALL_ID(__bool__);
-int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
+int _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const char *format, char **kwdnames, va_list va) {
     PyObject* arg;
     int format_idx = 0;
-    int output_idx = 4;
     unsigned char rest_optional = 0;
     unsigned char rest_keywords_only = 0;
 
@@ -120,41 +109,41 @@ int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const cha
                 return 0;
             } else if (arg == Py_None) {
                 if (c == 'z') {
-                    PyTruffle_WriteOut(output_idx, const char*, NULL);
+                    PyTruffle_WriteOut(va, const char*, NULL);
                     if (format[format_idx + 1] == '#') {
                         format_idx++; // skip over '#'
-                        PyTruffle_WriteOut(output_idx, int, 0);
+                        PyTruffle_WriteOut(va, int, 0);
                     }
                 } else {
                     PyErr_Format(PyExc_TypeError, "expected str or bytes-like, got None");
                     return 0;
                 }
             } else {
-                PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-                PyTruffle_WriteOut(output_idx, const char*, as_char_pointer(arg));
+                PyTruffle_SkipOptionalArg(va, const char*, arg, rest_optional);
+                PyTruffle_WriteOut(va, const char*, as_char_pointer(arg));
                 if (format[format_idx + 1] == '#') {
                     format_idx++;
-                    PyTruffle_WriteOut(output_idx, int, Py_SIZE(arg));
+                    PyTruffle_WriteOut(va, int, Py_SIZE(arg));
                 }
             }
             break;
         case 'S':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
+            PyTruffle_SkipOptionalArg(va, PyObject*, arg, rest_optional);
             if (!PyBytes_Check(arg)) {
                 PyErr_Format(PyExc_TypeError, "expected bytes, got %R", Py_TYPE(arg));
                 return 0;
             }
-            PyTruffle_WriteOut(output_idx, PyObject*, arg);
+            PyTruffle_WriteOut(va, PyObject*, arg);
             break;
         case 'Y':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
+            PyTruffle_SkipOptionalArg(va, PyObject*, arg, rest_optional);
             if (!PyByteArray_Check(arg)) {
                 PyErr_Format(PyExc_TypeError, "expected bytearray, got %R", Py_TYPE(arg));
                 return 0;
             }
-            PyTruffle_WriteOut(output_idx, PyObject*, arg);
+            PyTruffle_WriteOut(va, PyObject*, arg);
             break;
         case 'u':
         case 'Z':
@@ -162,12 +151,12 @@ int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const cha
             return 0;
         case 'U':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
+            PyTruffle_SkipOptionalArg(va, PyObject*, arg, rest_optional);
             if (!PyUnicode_Check(arg)) {
                 PyErr_Format(PyExc_TypeError, "expected str, got %R", Py_TYPE(arg));
                 return 0;
             }
-            PyTruffle_WriteOut(output_idx, PyObject*, arg);
+            PyTruffle_WriteOut(va, PyObject*, arg);
             break;
         case 'w':
             PyErr_Format(PyExc_TypeError, "'w' format specifier in argument parsing not supported");
@@ -185,70 +174,70 @@ int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const cha
             return 0;
         case 'b':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
+            PyTruffle_SkipOptionalArg(va, unsigned char, arg, rest_optional);
             if (_PyLong_Sign(arg) < 0) {
                 PyErr_Format(PyExc_TypeError, "expected non-negative integer");
                 return 0;
             }
-            PyTruffle_WriteOut(output_idx, unsigned char, as_uchar(arg));
+            PyTruffle_WriteOut(va, unsigned char, as_uchar(arg));
             break;
         case 'B':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, unsigned char, as_uchar(arg));
+            PyTruffle_SkipOptionalArg(va, unsigned char, arg, rest_optional);
+            PyTruffle_WriteOut(va, unsigned char, as_uchar(arg));
             break;
         case 'h':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
+            PyTruffle_SkipOptionalArg(va, short int, arg, rest_optional);
             if (_PyLong_Sign(arg) < 0) {
                 PyErr_Format(PyExc_TypeError, "expected non-negative integer");
                 return 0;
             }
-            PyTruffle_WriteOut(output_idx, short int, as_short(arg));
+            PyTruffle_WriteOut(va, short int, as_short(arg));
             break;
         case 'H':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, short int, as_short(arg));
+            PyTruffle_SkipOptionalArg(va, short int, arg, rest_optional);
+            PyTruffle_WriteOut(va, short int, as_short(arg));
             break;
         case 'i':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, int, as_int(arg));
+            PyTruffle_SkipOptionalArg(va, int, arg, rest_optional);
+            PyTruffle_WriteOut(va, int, as_int(arg));
             break;
         case 'I':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, unsigned int, as_int(arg));
+            PyTruffle_SkipOptionalArg(va, unsigned int, arg, rest_optional);
+            PyTruffle_WriteOut(va, unsigned int, as_int(arg));
             break;
         case 'l':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, long, as_long(arg));
+            PyTruffle_SkipOptionalArg(va, long, arg, rest_optional);
+            PyTruffle_WriteOut(va, long, as_long(arg));
             break;
         case 'k':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, unsigned long, as_long(arg));
+            PyTruffle_SkipOptionalArg(va, unsigned long, arg, rest_optional);
+            PyTruffle_WriteOut(va, unsigned long, as_long(arg));
             break;
         case 'L':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, long long, as_long_long(arg));
+            PyTruffle_SkipOptionalArg(va, long long, arg, rest_optional);
+            PyTruffle_WriteOut(va, long long, as_long_long(arg));
             break;
         case 'K':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, unsigned long long, as_unsigned_long_long(arg));
+            PyTruffle_SkipOptionalArg(va, unsigned long long, arg, rest_optional);
+            PyTruffle_WriteOut(va, unsigned long long, as_unsigned_long_long(arg));
             break;
         case 'n':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, Py_ssize_t, as_long(arg));
+            PyTruffle_SkipOptionalArg(va, Py_ssize_t, arg, rest_optional);
+            PyTruffle_WriteOut(va, Py_ssize_t, as_long(arg));
             break;
         case 'c':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
+            PyTruffle_SkipOptionalArg(va, char, arg, rest_optional);
             if (!(PyBytes_Check(arg) || PyByteArray_Check(arg))) {
                 PyErr_Format(PyExc_TypeError, "expected bytes or bytearray, got %R", Py_TYPE(arg));
                 return 0;
@@ -257,11 +246,11 @@ int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const cha
                 PyErr_Format(PyExc_TypeError, "expected bytes or bytearray of length 1, was length %d", Py_SIZE(arg));
                 return 0;
             }
-            PyTruffle_WriteOut(output_idx, char, as_char(polyglot_invoke(to_java(arg), "__getitem__", 0)));
+            PyTruffle_WriteOut(va, char, as_char(polyglot_invoke(to_java(arg), "__getitem__", 0)));
             break;
         case 'C':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
+            PyTruffle_SkipOptionalArg(va, int, arg, rest_optional);
             if (!PyUnicode_Check(arg)) {
                 PyErr_Format(PyExc_TypeError, "expected bytes or bytearray, got %R", Py_TYPE(arg));
                 return 0;
@@ -270,17 +259,17 @@ int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const cha
                 PyErr_Format(PyExc_TypeError, "expected str of length 1, was length %d", Py_SIZE(arg));
                 return 0;
             }
-            PyTruffle_WriteOut(output_idx, int, as_int(polyglot_invoke(to_java(arg), "__getitem__", 0)));
+            PyTruffle_WriteOut(va, int, as_int(polyglot_invoke(to_java(arg), "__getitem__", 0)));
             break;
         case 'f':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, float, as_float(arg));
+            PyTruffle_SkipOptionalArg(va, float, arg, rest_optional);
+            PyTruffle_WriteOut(va, float, as_float(arg));
             break;
         case 'd':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, double, as_double(arg));
+            PyTruffle_SkipOptionalArg(va, double, arg, rest_optional);
+            PyTruffle_WriteOut(va, double, as_double(arg));
             break;
         case 'D':
             PyErr_Format(PyExc_TypeError, "converting complex arguments not implemented, yet");
@@ -289,21 +278,18 @@ int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const cha
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             if (format[format_idx + 1] == '!') {
                 format_idx++;
-                PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-                PyTypeObject* typeobject = (PyTypeObject*)PyTruffle_ArgN(output_idx);
-                output_idx++;
+                PyTruffle_SkipOptionalArg(va, PyObject*, arg, rest_optional);
+                PyTypeObject* typeobject = (PyTypeObject*)PyTruffle_ArgN(va);
                 if (!PyType_IsSubtype(Py_TYPE(arg), typeobject)) {
                     PyErr_Format(PyExc_TypeError, "expected object of type %R, got %R", typeobject, Py_TYPE(arg));
                     return 0;
                 }
-                PyTruffle_WriteOut(output_idx, PyObject*, arg);
+                PyTruffle_WriteOut(va, PyObject*, arg);
             } else if (format[format_idx + 1] == '&') {
                 format_idx++;
-                void* (*converter)(PyObject*,void*) = PyTruffle_ArgN(output_idx);
-                output_idx++;
-                PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-                void* output = PyTruffle_ArgN(output_idx);
-                output_idx++;
+                void* (*converter)(PyObject*,void*) = PyTruffle_ArgN(va);
+                PyTruffle_SkipOptionalArg(va, PyObject*, arg, rest_optional);
+                void* output = PyTruffle_ArgN(va);
                 int status = converter(arg, output);
                 if (!status) {
                     if (!PyErr_Occurred()) {
@@ -313,18 +299,18 @@ int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const cha
                     return 0;
                 }
             } else {
-                PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-                PyTruffle_WriteOut(output_idx, PyObject*, arg);
+                PyTruffle_SkipOptionalArg(va, PyObject*, arg, rest_optional);
+                PyTruffle_WriteOut(va, PyObject*, arg);
             }
             break;
         case 'p':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, int, (UPCALL_I(native_to_java(arg), polyglot_from_string("__bool__", SRC_CS))));
+            PyTruffle_SkipOptionalArg(va, int, arg, rest_optional);
+            PyTruffle_WriteOut(va, int, (UPCALL_I(native_to_java(arg), polyglot_from_string("__bool__", SRC_CS))));
             break;
         case '(':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
-            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
+            PyTruffle_SkipOptionalArg(va, PyObject*, arg, rest_optional);
             if (!PyTuple_Check(arg)) {
                 PyErr_Format(PyExc_TypeError, "expected tuple, got %R", Py_TYPE(arg));
                 return 0;
@@ -365,6 +351,116 @@ int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const cha
  end:
     free(v);
     return 1;
+}
+
+int PyArg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
+    va_list va;
+    va_start(va, kwdnames);
+    int result = _PyArg_VaParseTupleAndKeywords_SizeT(argv, kwds, format, kwdnames, va);
+    va_end(va);
+    return result;
+}
+
+int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, ...) {
+    va_list va;
+    va_start(va, kwdnames);
+    int result = _PyArg_VaParseTupleAndKeywords_SizeT(argv, kwds, format, kwdnames, va);
+    va_end(va);
+    return result;
+}
+
+int PyArg_ParseStack(PyObject **args, Py_ssize_t nargs, PyObject *kwds, struct _PyArg_Parser *parser, ...) {
+    va_list va;
+    va_start(va, parser);
+
+    PyObject* argv = PyTuple_New(nargs);
+    Py_ssize_t i;
+    for (i=0; i < nargs; i++) {
+        PyTuple_SetItem(argv, i, args[i]);
+    }
+
+    int result = _PyArg_VaParseTupleAndKeywords_SizeT(argv, kwds, parser->format, parser->keywords, va);
+    va_end(va);
+    return result;
+}
+
+int _PyArg_ParseStack_SizeT(PyObject **args, Py_ssize_t nargs, PyObject *kwds, struct _PyArg_Parser *parser, ...) {
+    va_list va;
+    va_start(va, parser);
+
+    PyObject* argv = PyTuple_New(nargs);
+    Py_ssize_t i;
+    for (i=0; i < nargs; i++) {
+        PyTuple_SetItem(argv, i, args[i]);
+    }
+
+    int result = _PyArg_VaParseTupleAndKeywords_SizeT(argv, kwds, parser->format, parser->keywords, va);
+    va_end(va);
+    return result;
+}
+
+int _PyArg_VaParseTupleAndKeywordsFast(PyObject *args, PyObject *kwargs, struct _PyArg_Parser *parser, va_list va) {
+    return _PyArg_VaParseTupleAndKeywords_SizeT(args, kwargs, parser->format, parser->keywords, va);
+}
+
+int _PyArg_VaParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *kwargs, struct _PyArg_Parser *parser, va_list va) {
+    return _PyArg_VaParseTupleAndKeywords_SizeT(args, kwargs, parser->format, parser->keywords, va);
+}
+
+int _PyArg_ParseTupleAndKeywordsFast(PyObject *args, PyObject *kwargs, struct _PyArg_Parser *parser, ...) {
+    va_list va;
+    va_start(va, parser);
+    int result = _PyArg_VaParseTupleAndKeywords_SizeT(args, kwargs, parser->format, parser->keywords, va);
+    va_end(va);
+    return result;
+}
+
+int _PyArg_ParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *kwargs, struct _PyArg_Parser *parser, ...) {
+    va_list va;
+    va_start(va, parser);
+    int result = _PyArg_VaParseTupleAndKeywords_SizeT(args, kwargs, parser->format, parser->keywords, va);
+    va_end(va);
+    return result;
+}
+
+int PyArg_ParseTuple(PyObject *args, const char *format, ...) {
+    va_list va;
+    va_start(va, format);
+    int result = _PyArg_VaParseTupleAndKeywords_SizeT(args, NULL, format, NULL, va);
+    va_end(va);
+    return result;
+}
+
+int _PyArg_ParseTuple_SizeT(PyObject *args, const char *format, ...) {
+    va_list va;
+    va_start(va, format);
+    int result = _PyArg_VaParseTupleAndKeywords_SizeT(args, NULL, format, NULL, va);
+    va_end(va);
+    return result;
+}
+
+int PyArg_VaParse(PyObject *args, const char *format, va_list va) {
+    return _PyArg_VaParseTupleAndKeywords_SizeT(PyTuple_Pack(1, args), NULL, format, NULL, va);
+}
+
+int _PyArg_VaParse_SizeT(PyObject *args, const char *format, va_list va) {
+    return _PyArg_VaParseTupleAndKeywords_SizeT(PyTuple_Pack(1, args), NULL, format, NULL, va);
+}
+
+int PyArg_Parse(PyObject *args, const char *format, ...) {
+    va_list va;
+    va_start(va, format);
+    int result = PyArg_VaParse(args, format, va);
+    va_end(va);
+    return result;
+}
+
+int _PyArg_Parse_SizeT(PyObject *args, const char *format, ...) {
+    va_list va;
+    va_start(va, format);
+    int result = _PyArg_VaParse_SizeT(args, format, va);
+    va_end(va);
+    return result;
 }
 
 typedef struct _build_stack {

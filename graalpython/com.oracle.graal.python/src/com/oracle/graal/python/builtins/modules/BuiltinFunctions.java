@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -123,6 +123,8 @@ import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -432,9 +434,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public Object hash(Object object,
                         @Cached("create(__DIR__)") LookupInheritedAttributeNode lookupDirNode,
                         @Cached("create(__HASH__)") LookupAndCallUnaryNode dispatchHash,
-                        @Cached("createIfTrueNode()") CastToBooleanNode trueNode) {
+                        @Cached("createIfTrueNode()") CastToBooleanNode trueNode,
+                        @Cached("create()") IsInstanceNode isInstanceNode) {
             if (trueNode.executeWith(lookupDirNode.execute(object))) {
-                return dispatchHash.executeObject(object);
+                Object hashValue = dispatchHash.executeObject(object);
+                if (isInstanceNode.executeWith(hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {
+                    return hashValue;
+                }
+                throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
             }
             return object.hashCode();
         }
@@ -770,18 +777,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", guards = {"name.equals(cachedName)", "isNoValue(defaultValue)"})
         public Object getAttrDefault(Object primary, String name, PNone defaultValue,
                         @Cached("name") String cachedName,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter) {
-            return getter.executeObject(primary, cachedName);
+                        @Cached("create(name)") GetFixedAttributeNode getAttributeNode) {
+            return getAttributeNode.executeObject(primary);
         }
 
         @SuppressWarnings("unused")
         @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", guards = {"name.equals(cachedName)", "!isNoValue(defaultValue)"})
         public Object getAttr(Object primary, String name, Object defaultValue,
                         @Cached("name") String cachedName,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter,
+                        @Cached("create(name)") GetFixedAttributeNode getAttributeNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
             try {
-                return getter.executeObject(primary, cachedName);
+                return getAttributeNode.executeObject(primary);
             } catch (PException e) {
                 e.expectAttributeError(errorProfile);
                 return defaultValue;
@@ -790,16 +797,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "isNoValue(defaultValue)")
         public Object getAttrFromObject(Object primary, String name, @SuppressWarnings("unused") PNone defaultValue,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter) {
-            return getter.executeObject(primary, name);
+                        @Cached("create()") GetAnyAttributeNode getAttributeNode) {
+            return getAttributeNode.executeObject(primary, name);
         }
 
         @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "!isNoValue(defaultValue)")
         public Object getAttrFromObject(Object primary, String name, Object defaultValue,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter,
+                        @Cached("create()") GetAnyAttributeNode getAttributeNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
             try {
-                return getter.executeObject(primary, name);
+                return getAttributeNode.executeObject(primary, name);
             } catch (PException e) {
                 e.expectAttributeError(errorProfile);
                 return defaultValue;
@@ -813,13 +820,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "!isString(name)")
         public Object getAttrGeneric(Object primary, Object name, Object defaultValue,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter,
+                        @Cached("create()") GetAnyAttributeNode getAttributeNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
             if (PGuards.isNoValue(defaultValue)) {
-                return getter.executeObject(primary, name);
+                return getAttributeNode.executeObject(primary, name);
             } else {
                 try {
-                    return getter.executeObject(primary, name);
+                    return getAttributeNode.executeObject(primary, name);
                 } catch (PException e) {
                     e.expectAttributeError(errorProfile);
                     return defaultValue;

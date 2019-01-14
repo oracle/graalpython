@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.modules.InteropModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
@@ -222,7 +223,9 @@ public final class Python3Core implements PythonCore {
                         "ctypes",
                         "zlib",
                         "termios",
-                        "zipimport"));
+                        "zipimport",
+                        "mmap",
+                        "_ast"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
     }
@@ -324,7 +327,8 @@ public final class Python3Core implements PythonCore {
                         new SysConfigModuleBuiltins(),
                         new ZipImporterBuiltins(),
                         new ZipImportModuleBuiltins(),
-                        new ZLibModuleBuiltins()));
+                        new ZLibModuleBuiltins(),
+                        new MMapModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
             for (PythonBuiltins builtin : providers) {

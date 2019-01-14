@@ -566,7 +566,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     static abstract class ImagNode extends PythonBuiltinNode {
         @Specialization
         double get(PComplex self) {
-            return self.getReal();
+            return self.getImag();
         }
     }
 

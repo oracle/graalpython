@@ -149,7 +149,12 @@ PyObject* PyObject_GenericGetDict(PyObject* obj, void* context) {
 
 PyObject** _PyObject_GetDictPtr(PyObject* obj) {
     Py_ssize_t dictoffset;
+
+    // relies on the fact that 'tp_dictoffset' is in sync with the corresponding managed class !
     PyTypeObject *tp = Py_TYPE(obj);
+
+    // this would be a different way to do it
+    // PyTypeObject *tp = (PyTypeObject*) native_type_to_java(Py_TYPE(obj));
 
     dictoffset = tp->tp_dictoffset;
     if (dictoffset == 0) {

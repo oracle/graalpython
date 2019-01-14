@@ -350,6 +350,19 @@ class ListTest(list_tests.CommonTest):
         a = ["1", "2", "3", "4", "5", "6"]
         a[5:8:1] = ["42", "42", "42"]
         self.assertEqual(["1", "2", "3", "4", "5", '42', '42', '42'], a)
+        
+        a = [1, 2, 3, 4]
+        a[-9223372036854775809:9223372036854775808] = [9, 10, 11, 12]
+        self.assertEqual([9, 10, 11, 12], a)
+        
+        try:
+            a = [1, 2, 3, 4]
+            a[-1000:1000:999999999999999999999999999999999999999999999999999999999999999999999999999] = [5,6,7,8]
+        except ValueError: 
+            self.assertEqual([1, 2, 3, 4], a)
+        else:
+            assert False, "expected ValueError"
+
 
     def test_set_slice_class_iter(self):
 

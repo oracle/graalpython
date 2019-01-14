@@ -156,6 +156,69 @@ class TestObject(object):
             assert False
         assert True
 
+    def test_new(self):
+        TestNew = CPyExtType("TestNew", 
+                             '''static PyObject* testnew_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
+                                 PyObject* obj;
+                                 TestNewObject* typedObj;
+                                 obj = PyBaseObject_Type.tp_new(cls, a, b);
+                                 
+                                 typedObj = ((TestNewObject*)obj);
+                                 typedObj->none = Py_None;
+                                 Py_INCREF(Py_None);
+                                 return obj;
+                            }
+                            static PyObject* get_none(PyObject* self) {
+                                return ((TestNewObject*)self)->none;
+                            }
+                             ''',
+                             cmembers="PyObject* none;",
+                             tp_new="testnew_new",
+                             tp_methods='{"get_none", (PyCFunction)get_none, METH_NOARGS, ""}'
+                             )
+        tester = TestNew()
+        assert tester.get_none() is None
+
+    def test_slots(self):
+        TestSlots = CPyExtType("TestSlots", 
+                               '',
+                              includes='#include "datetime.h"',
+                              cmembers="PyDateTime_DateTime __pyx_base;",
+                              ready_code='''PyObject* datetime_module = PyImport_ImportModule("datetime");
+                              PyTypeObject* datetime_type = (PyTypeObject*)PyObject_GetAttrString(datetime_module, "datetime");
+                              PyDateTime_IMPORT;
+                              Py_XINCREF(datetime_type);
+                              TestSlotsType.tp_base = (PyTypeObject*) datetime_type;
+                              TestSlotsType.tp_new = datetime_type->tp_new;
+                              ''')
+        tester = TestSlots(1, 1, 1)
+        assert tester.year == 1, "year was %s "% tester.year
+
+    def test_slots_initialized(self):
+        TestSlotsInitialized = CPyExtType("TestSlotsInitialized", 
+                              '''
+                              static PyTypeObject* datetime_type = NULL;
+                               
+                              PyObject* TestSlotsInitialized_new(PyTypeObject* self, PyObject* args, PyObject* kwargs) {
+                                  PyObject* result =  datetime_type->tp_new(self, args, kwargs);
+                                  Py_XINCREF(result);
+                                  return result;
+                              }
+                              ''',
+                              includes='#include "datetime.h"',
+                              cmembers="PyDateTime_DateTime __pyx_base;",
+                              ready_code='''PyObject* datetime_module = PyImport_ImportModule("datetime");
+                              PyDateTime_IMPORT;
+                              Py_INCREF(datetime_module);
+                              datetime_type = (PyTypeObject*)PyObject_GetAttrString(datetime_module, "datetime");
+                              Py_INCREF(datetime_type);
+                              TestSlotsInitializedType.tp_base = datetime_type;
+                              ''',
+                              tp_new="TestSlotsInitialized_new")
+        tester = TestSlotsInitialized(2012, 4, 4)
+        assert tester.year == 2012, "year was %s "% tester.year
+
+
 
 class TestObjectFunctions(CPyExtTestCase):
     def compile_module(self, name):
@@ -176,3 +239,4 @@ class TestObjectFunctions(CPyExtTestCase):
         resultspec="i",
         argspec="O",
     )
+

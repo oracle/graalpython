@@ -907,3 +907,12 @@ def test_splitlines():
     assert len(str.splitlines("\n\n")) == 2
     assert len(str.splitlines("\n")) == 1
     assert len(str.splitlines("a\nb")) == 2
+
+def test_literals():
+    s = "hello\[world\]"
+    assert len(s) == 14
+    assert "hello\[world\]"[5] == "\\"
+    assert "hello\[world\]"[6] == "["
+    assert "hello\[world\]"[12] == "\\"
+    assert "hello\[world\]"[13] == "]"
+

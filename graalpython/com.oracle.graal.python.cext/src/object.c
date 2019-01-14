@@ -139,8 +139,12 @@ PyObject _Py_NotImplementedStruct = {
 };
 
 PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
-    PyObject* newObj = (PyObject*)PyObject_Malloc(cls->tp_basicsize + cls->tp_itemsize * nitems);
-    newObj->ob_refcnt = 0;
+	Py_ssize_t size = cls->tp_basicsize + cls->tp_itemsize * nitems;
+    PyObject* newObj = (PyObject*)PyObject_Malloc(size);
+    memset(newObj, 0, size);
+    if(cls->tp_dictoffset) {
+    	*((PyObject **) ((char *)newObj + cls->tp_dictoffset)) = NULL;
+    }
     Py_TYPE(newObj) = cls;
     if (nitems > 0) {
         ((PyVarObject*)newObj)->ob_size = nitems;
@@ -154,6 +158,10 @@ int PyObject_GenericInit(PyObject* self, PyObject* args, PyObject* kwds) {
 
 void* PyObject_Malloc(size_t size) {
     return calloc(size, 1);
+}
+
+void* PyObject_Realloc(void *ptr, size_t new_size) {
+	return realloc(ptr, new_size);
 }
 
 void PyObject_Free(void* ptr) {
@@ -249,6 +257,18 @@ PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
 
+PyObject * _PyObject_FastCallDict(PyObject *func, PyObject **args, Py_ssize_t nargs, PyObject *kwargs) {
+	PyObject* targs = PyTuple_New(nargs);
+	Py_ssize_t i;
+	for(i=0; i < nargs; i++) {
+		PyTuple_SetItem(targs, i, args[i]);
+	}
+    if (kwargs == NULL) {
+        kwargs = PyDict_New();
+    }
+    return UPCALL_CEXT_O(_jls_PyObject_Call, native_to_java(func), native_to_java(targs), native_to_java(kwargs));
+}
+
 PyObject* PyObject_Type(PyObject* obj) {
     return UPCALL_O(PY_BUILTIN, polyglot_from_string("type", SRC_CS), native_to_java(obj));
 }
@@ -273,6 +293,11 @@ PyObject* PyObject_GetIter(PyObject* obj) {
 UPCALL_ID(PyObject_IsInstance);
 int PyObject_IsInstance(PyObject* obj, PyObject* typ) {
     return UPCALL_CEXT_I(_jls_PyObject_IsInstance, native_to_java(obj), native_to_java(typ));
+}
+
+UPCALL_ID(PyObject_IsSubclass);
+int PyObject_IsSubclass(PyObject *derived, PyObject *cls) {
+    return UPCALL_CEXT_I(_jls_PyObject_IsSubclass, native_to_java(derived), native_to_java(cls));
 }
 
 UPCALL_ID(PyObject_AsFileDescriptor);
@@ -425,5 +450,9 @@ PyVarObject * PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t siz
 }
 
 int PyCallable_Check(PyObject *x) {
-    return polyglot_as_i32(polyglot_invoke(PY_BUILTIN, "callable", to_java(x)));
+	return UPCALL_I(PY_BUILTIN, polyglot_from_string("callable", SRC_CS), native_to_java(x));
+}
+
+PyObject * PyObject_Dir(PyObject *obj) {
+	return UPCALL_O(PY_BUILTIN, polyglot_from_string("dir", SRC_CS), native_to_java(obj));
 }

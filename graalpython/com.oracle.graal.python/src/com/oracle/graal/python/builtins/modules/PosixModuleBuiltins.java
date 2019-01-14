@@ -45,6 +45,7 @@ import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.StandardCopyOption;
@@ -72,6 +73,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.Conve
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.ReadFromChannelNodeGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -373,6 +375,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StatNode extends PythonBinaryBuiltinNode {
+        @Child private ToBytesNode toBytesNode;
+
         private final BranchProfile fileNotFound = BranchProfile.create();
 
         private static final int S_IFIFO = 0010000;
@@ -390,9 +394,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return stat(path, followSymlinks);
         }
 
+        @Specialization
+        Object doStatDefault(PIBytesLike path, boolean followSymlinks) {
+            return stat(toJavaString(path), followSymlinks);
+        }
+
         @Specialization(guards = "isNoValue(followSymlinks)")
         Object doStatDefault(String path, @SuppressWarnings("unused") PNone followSymlinks) {
             return stat(path, true);
+        }
+
+        @Specialization(guards = "isNoValue(followSymlinks)")
+        Object doStatDefault(PIBytesLike path, @SuppressWarnings("unused") PNone followSymlinks) {
+            return stat(toJavaString(path), true);
         }
 
         @TruffleBoundary
@@ -547,6 +561,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 mode |= 0100;
             }
             return mode;
+        }
+
+        @TruffleBoundary
+        private String toJavaString(PIBytesLike bytesLike) {
+            if (toBytesNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toBytesNode = insert(ToBytesNode.create());
+            }
+            return new String(toBytesNode.execute(bytesLike), StandardCharsets.UTF_8);
         }
 
         public static StatNode create() {

@@ -162,6 +162,9 @@ extern cache_t cache;
 
 #define resolve_handle(__cache__, __addr__) (__cache__)(__addr__)
 
+void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid);
+Py_ssize_t PyTruffle_Type_AddSlots(PyTypeObject* cls, PyObject* slotsTuple);
+
 __attribute__((always_inline))
 inline void* native_to_java(PyObject* obj) {
     if (obj == NULL) {
@@ -284,6 +287,11 @@ void* wrap_unsupported(void *fun, ...);
     0,                                          /* tp_free */\
     0,                                          /* tp_is_gc */\
 }
+
+/** to be used from Java code only; returns a type's basic size */
+#define BASICSIZE_GETTER(__typename__)extern Py_ssize_t get_ ## __typename__ ## _basicsize() { \
+	return sizeof(__typename__); \
+} \
 
 
 int PyTruffle_Debug(void *arg);

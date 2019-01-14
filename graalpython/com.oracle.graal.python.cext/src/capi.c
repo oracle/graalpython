@@ -44,6 +44,7 @@ void *PY_TRUFFLE_CEXT;
 void *PY_BUILTIN;
 void *Py_NoValue;
 
+
 PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
 PyObject*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
 PyObject*(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
@@ -52,6 +53,7 @@ PyObject*(*PY_TRUFFLE_CEXT_LANDING)(void* name, ...);
 uint64_t (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
 double (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
+
 
 cache_t cache;
 
@@ -77,11 +79,9 @@ static void initialize_handle_cache() {
     cache = polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleCache_Create", truffle_managed_from_handle);
 }
 
-static void initialize_type_structure(PyTypeObject* structure, const char* typname, void* typeid) {
-    PyTypeObject* ptype = (PyTypeObject*)UPCALL_CEXT_O(polyglot_from_string("PyTruffle_Type", SRC_CS), polyglot_from_string(typname, SRC_CS));
-
+void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid) {
     // Store the Sulong struct type id to be used for instances of this class
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_SulongType", ptype, typeid);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_SulongType", ptype, tid);
 
     unsigned long original_flags = structure->tp_flags;
     Py_ssize_t basicsize = structure->tp_basicsize;
@@ -89,6 +89,11 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
     // write flags as specified in the dummy to the PythonClass object
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
     type_handle->tp_basicsize = basicsize;
+}
+
+static void initialize_builtin_type(PyTypeObject* structure, const char* typname, polyglot_typeid tid) {
+    PyTypeObject* ptype = (PyTypeObject*)UPCALL_CEXT_O(polyglot_from_string("PyTruffle_Type", SRC_CS), polyglot_from_string(typname, SRC_CS));
+    initialize_type_structure(structure, ptype, tid);
 }
 
 #define ctor_hidden(a) __attribute__((constructor (10 ## a
@@ -99,9 +104,9 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
 #define initialize_type(typeobject, typename, struct)                   \
     ctor(__COUNTER__)                                                   \
     static void init(__COUNTER__, typeobject)(void) {                   \
-        initialize_type_structure(&typeobject,                          \
-                                  #typename,                            \
-                                  polyglot_ ## struct ## _typeid());    \
+		initialize_builtin_type(&typeobject,                          \
+                                #typename,                            \
+                                polyglot_ ## struct ## _typeid());    \
     }
 
 #define declare_struct(typeobject, typename, struct)    \
@@ -154,6 +159,8 @@ initialize_type(_PyNotImplemented_Type, NotImplementedType, _object);
 initialize_type(PyDictProxy_Type, mappingproxy, _object);
 initialize_type(PyEllipsis_Type, ellipsis, _object);
 
+POLYGLOT_DECLARE_TYPE(PyThreadState);
+
 typedef PyObject* PyObjectPtr;
 POLYGLOT_DECLARE_TYPE(PyObjectPtr);
 
@@ -203,17 +210,38 @@ void* native_to_java_exported(PyObject* obj) {
     return native_to_java(obj);
 }
 
-void* native_pointer_to_java(PyObject* obj) {
+// This function does not guarantee that a pointer object is returned.
+void* native_pointer_to_java(PyObject* val) {
+	PyObject* obj = (PyObject*) val;
     if (obj == NULL) {
         return Py_NoValue;
     } else if (obj == Py_None) {
         return Py_None;
-    } else if (polyglot_is_string(obj)) {
-        return obj;
     } else if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
     }
     return obj;
+}
+
+// Workaround: use 'uint64' to avoid conversion to an LLVM boxed primitive such
+// that it is guaranteed to return a pointer object.
+void* native_long_to_java(uint64_t val) {
+	PyObject* obj = (PyObject*) val;
+    if (obj == NULL) {
+        return Py_NoValue;
+    } else if (obj == Py_None) {
+        return Py_None;
+    } else if (!truffle_cannot_be_handle(obj)) {
+        return resolve_handle(cache, (uint64_t)obj);
+    } else {
+        void* refcnt = obj->ob_refcnt;
+        if (!truffle_cannot_be_handle(refcnt)) {
+            return resolve_handle(cache, refcnt);
+        } else if (IS_POINTER(refcnt)) {
+            return refcnt;
+        }
+        return obj;
+    }
 }
 
 __attribute__((always_inline))
@@ -260,6 +288,11 @@ polyglot_typeid get_byte_array_typeid(uint64_t len) {
 /** to be used from Java code only; returns the type ID for a 'PyObject*' array */
 polyglot_typeid get_ptr_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_PyObjectPtr_typeid(), len);
+}
+
+/** to be used from Java code only; returns the type ID PyThreadState */
+polyglot_typeid get_thread_state_typeid() {
+    return polyglot_PyThreadState_typeid();
 }
 
 typedef struct PyObjectHandle {
@@ -310,6 +343,14 @@ const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
 
 const char* PyTruffle_CstrToString(const char* o) {
     return polyglot_from_string(o, SRC_CS);
+}
+
+PyObject* PyTruffle_Type_GenericNew(PyTypeObject* cls, PyTypeObject* dominatingNativeClass, PyObject* args, PyObject* kwds) {
+    PyObject* newInstance;
+    newInstance = dominatingNativeClass->tp_alloc(cls, 0);
+    newInstance->ob_refcnt = 0;
+    Py_TYPE(newInstance) = cls;
+    return newInstance;
 }
 
 #define PRIMITIVE_ARRAY_TO_NATIVE(__jtype__, __ctype__, __polyglot_type__, __element_cast__) \

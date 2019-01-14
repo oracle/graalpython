@@ -42,6 +42,21 @@ from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_e
 __dir__ = __file__.rpartition("/")[0]
 
 
+def raise_Py6_SystemError():
+    if sys.version_info.minor >= 6:
+        raise SystemError
+    else:
+        return -1
+    
+
+def _reference_contains(args):
+    if not (isinstance(args[0], set) or isinstance(args[0], frozenset)):
+        raise SystemError
+    try:
+        return args[1] in args[0]
+    except TypeError:
+        return raise_Py6_SystemError()
+
 class FrozenSetSubclass(frozenset):
     pass
 
@@ -146,5 +161,24 @@ class TestPySet(CPyExtTestCase):
         resultspec="i",
         argspec='O',
         arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySet_Contains = CPyExtFunction(
+        _reference_contains,
+        lambda: (
+            (set(),"A"),
+            (set(),None),
+            (set([1, 2, 3]),1),
+            (set({'a', 'b'}),'a'),
+            (frozenset([1, 2, 3]),[1,2,3]),
+            (frozenset({'a', 'b'}),'A'),
+            (frozenset([None]),None),
+            (FrozenSetSubclass(),None),
+            (SetSubclass([None]),None),
+        ),
+        resultspec="i",
+        argspec='OO',
+        arguments=["PyObject* o", "PyObject* item"],
         cmpfunc=unhandled_error_compare
     )

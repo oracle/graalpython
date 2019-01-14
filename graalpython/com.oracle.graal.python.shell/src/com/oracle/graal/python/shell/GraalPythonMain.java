@@ -71,6 +71,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean stdinIsInteractive = System.console() != null;
     private boolean runLLI = false;
     private VersionAction versionAction = VersionAction.None;
+    private String sulongLibraryPath = null;
 
     @Override
     protected List<String> preprocessArguments(List<String> arguments, Map<String, String> polyglotOptions) {
@@ -232,6 +233,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             noUserSite = noUserSite || System.getenv("PYTHONNOUSERSITE") != null;
             verboseFlag = verboseFlag || System.getenv("PYTHONVERBOSE") != null;
         }
+        sulongLibraryPath = System.getenv("SULONG_LIBRARY_PATH");
 
         // setting this to make sure our TopLevelExceptionHandler calls the excepthook
         // to print Python exceptions
@@ -244,6 +246,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.QuietFlag", Boolean.toString(quietFlag));
         contextBuilder.option("python.NoUserSiteFlag", Boolean.toString(noUserSite));
         contextBuilder.option("python.NoSiteFlag", Boolean.toString(noSite));
+        if (sulongLibraryPath != null) {
+            contextBuilder.option("llvm.libraryPath", sulongLibraryPath);
+        }
 
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);
         contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[0])).in(consoleHandler.createInputStream());
@@ -416,7 +421,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "PYTHONHASHSEED: if this variable is set to 'random', the effect is the same\n" +
                         "   as specifying the -R option: a random value is used to seed the hashes of\n" +
                         "   str, bytes and datetime objects.  It can also be set to an integer\n" +
-                        "   in the range [0,4294967295] to get hash values with a predictable seed.");
+                        "   in the range [0,4294967295] to get hash values with a predictable seed.\n" +
+                        "SULONG_LIBRARY_PATH: Specifies the library path for Sulong.\n" +
+                        "   This is required when starting subprocesses of python.");
         if (maxCategory.compareTo(OptionCategory.DEBUG) >= 0) {
             print("\nGraalPython performance debugging options:\n" +
                             "-debug-perf                  : Enable tracing of Truffle compilations and its warnings\n" +

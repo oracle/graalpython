@@ -40,6 +40,7 @@ import java.util.WeakHashMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -72,6 +73,9 @@ public class PythonClass extends PythonObject implements LazyPythonClass {
     private final Set<PythonClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonClass, Boolean>());
     private final Shape instanceShape;
     private final FlagsContainer flags;
+
+    /** {@code true} if the MRO contains a native class. */
+    private boolean needsNativeAllocation;
     @CompilationFinal private Object sulongType;
 
     public final boolean isBuiltin() {
@@ -213,6 +217,13 @@ public class PythonClass extends PythonObject implements LazyPythonClass {
             currentMRO = mergeMROs(toMerge, mro);
         }
 
+        for (PythonClass cls : currentMRO) {
+            if (cls instanceof PythonNativeClass) {
+                needsNativeAllocation = true;
+                break;
+            }
+        }
+
         methodResolutionOrder = currentMRO;
     }
 
@@ -347,5 +358,9 @@ public class PythonClass extends PythonObject implements LazyPythonClass {
     @TruffleBoundary
     public final void setSulongType(Object dynamicSulongType) {
         this.sulongType = dynamicSulongType;
+    }
+
+    public boolean needsNativeAllocation() {
+        return needsNativeAllocation;
     }
 }

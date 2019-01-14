@@ -610,6 +610,14 @@ class BytesSplitTest(BaseTestSplit, unittest.TestCase):
 class ByteArraySplitTest(BaseTestSplit, unittest.TestCase):
     type2test = bytearray
 
+
+def test_eq_add_bytearray():
+    b1 = bytearray(b'')
+    b2 = b1
+    b1 += bytearray(b'Hello')
+    assert b1 is b2
+
+
 def test_add_mv_to_bytes():
     b = b'hello '
     mv = memoryview(b'world')

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,6 +82,8 @@ public abstract class LookupAndCallBinaryNode extends Node {
     public abstract long executeLong(int arg, int arg2) throws UnexpectedResultException;
 
     public abstract long executeLong(long arg, long arg2) throws UnexpectedResultException;
+
+    public abstract long executeLong(Object arg, Object arg2) throws UnexpectedResultException;
 
     public abstract double executeDouble(double arg, double arg2) throws UnexpectedResultException;
 

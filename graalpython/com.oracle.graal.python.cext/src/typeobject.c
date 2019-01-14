@@ -168,6 +168,21 @@ static PyObject* wrap_reverse_binop(binaryfunc f, PyObject* a, PyObject* b) {
     return f(b, a);
 }
 
+// TODO(fa): there should actually be 'native_to_java' just in case 'javacls' goes to native in between
+// TODO support member flags other than READONLY
+UPCALL_ID(AddMember);
+#define ADD_MEMBER(__javacls__, __mname__, __mtype__, __moffset__, __mflags__, __mdoc__) do {        \
+	UPCALL_CEXT_VOID(_jls_AddMember,                                                                 \
+		(__javacls__),                                                                               \
+		(__mname__),                                                                                 \
+		(__mtype__),                                                                                 \
+		(__moffset__),                                                                               \
+		native_to_java((((__mflags__) & READONLY) == 0) ? Py_True : Py_False),                       \
+		polyglot_from_string((__mdoc__) ? (__mdoc__) : "", SRC_CS));                                 \
+} while (0)
+
+
+UPCALL_ID(PyTruffle_Type_Slots);
 int PyType_Ready(PyTypeObject* cls) {
 #define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
 #define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, get_method_flags_cwrapper(m.ml_flags), m.ml_meth, m.ml_flags, m.ml_doc)
@@ -198,16 +213,24 @@ int PyType_Ready(PyTypeObject* cls) {
     PyTypeObject* metaclass = Py_TYPE(cls);
     if (!base) {
         base = &PyBaseObject_Type;
-        if (!metaclass) {
-            metaclass = &PyType_Type;
-        }
     } else {
         if (!metaclass) {
             metaclass = Py_TYPE(base);
         }
     }
+    if (!metaclass) {
+        metaclass = &PyType_Type;
+    }
     cls->tp_base = base;
     Py_TYPE(cls) = metaclass;
+
+    /* Initialize the base class */
+    if (base != NULL && !(base->tp_flags % Py_TPFLAGS_READY)) {
+        if (PyType_Ready(base) < 0) {
+        	cls->tp_flags &= ~Py_TPFLAGS_READYING;
+        	return -1;
+        }
+    }
 
     if (!(cls->tp_doc)) {
         cls->tp_doc = "";
@@ -219,14 +242,16 @@ int PyType_Ready(PyTypeObject* cls) {
         if (base == NULL) {
             bases = PyTuple_New(0);
         } else {
-            bases = PyTuple_Pack(1, base);
+            bases = PyTuple_Pack(1, native_to_java((PyObject*)base));
         }
-        if (bases == NULL) {
-        	cls->tp_flags &= ~Py_TPFLAGS_READYING;
-        	return -1;
-        }
-        cls->tp_bases = bases;
+    } else {
+    	// we need to resolve pointers to Python classes
+    	Py_ssize_t n_bases = PyObject_Length(bases);
+    	for(Py_ssize_t i=0; i < n_bases; i++) {
+    		PyTuple_SetItem(bases, i, native_to_java(PyTuple_GetItem(bases, i)));
+    	}
     }
+    cls->tp_bases = bases;
 
     PyObject* native_members = PyDict_New();
     PyDict_SetItemString(native_members, "tp_name", polyglot_from_string(cls->tp_name, SRC_CS));
@@ -270,16 +295,7 @@ int PyType_Ready(PyTypeObject* cls) {
         int i = 0;
         PyMemberDef member = members[i];
         while (member.name != NULL) {
-            polyglot_invoke(PY_TRUFFLE_CEXT,
-                           "AddMember",
-                           // TODO(fa): there should actually be 'native_to_java' just in case 'javacls' goes to native in between
-                           javacls,
-                           polyglot_from_string(member.name, SRC_CS),
-                           member.type,
-                           member.offset,
-                           // TODO: support other flags
-                           native_to_java(((member.flags & READONLY) == 0) ? Py_True : Py_False),
-                           polyglot_from_string(member.doc ? member.doc : "", SRC_CS));
+        	ADD_MEMBER(javacls, polyglot_from_string(member.name, SRC_CS), member.type, member.offset, member.flags, member.doc);
             member = members[++i];
         }
     }
@@ -365,10 +381,14 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT_CONV("__bool__", wrap_nb_bool, numbers->nb_bool, -1);
         ADD_SLOT("__invert__", numbers->nb_invert, -1);
         ADD_SLOT("__lshift__", numbers->nb_lshift, -2);
+        ADD_SLOT_CONV("__rlshift__", wrap_reverse_binop, numbers->nb_lshift, -2);
         ADD_SLOT("__rshift__", numbers->nb_rshift, -2);
         ADD_SLOT("__and__", numbers->nb_and, -2);
+        ADD_SLOT_CONV("__rand__", wrap_reverse_binop, numbers->nb_and, -2);
         ADD_SLOT("__xor__", numbers->nb_xor, -2);
+        ADD_SLOT_CONV("__rxor__", wrap_reverse_binop, numbers->nb_xor, -2);
         ADD_SLOT("__or__", numbers->nb_or, -2);
+        ADD_SLOT_CONV("__ror__", wrap_reverse_binop, numbers->nb_or, -2);
         ADD_SLOT("__int__", numbers->nb_int, -1);
         ADD_SLOT("__float__", numbers->nb_float, -1);
         ADD_SLOT("__iadd__", numbers->nb_inplace_add, -2);
@@ -421,6 +441,16 @@ int PyType_Ready(PyTypeObject* cls) {
         // TODO ...
     }
 
+    // process inherited slots
+    // CPython doesn't do that in 'PyType_Ready' but we must because a native type can inherit
+    // dynamic slots from a managed Python class. Since the managed Python class may be created
+    // when the C API is not loaded, we need to do that later.
+    PyObject* inherited_slots_tuple = UPCALL_CEXT_O(_jls_PyTruffle_Type_Slots, native_to_java((PyObject*)javacls));
+//    PyObject* inherited_slots_tuple = PyObject_GetAttrString(javacls, "__slots__");
+    if(inherited_slots_tuple != NULL) {
+    	PyTruffle_Type_AddSlots(javacls, inherited_slots_tuple);
+    }
+
     /* Link into each base class's list of subclasses */
     bases = cls->tp_bases;
     Py_ssize_t n = PyTuple_GET_SIZE(bases);
@@ -433,6 +463,10 @@ int PyType_Ready(PyTypeObject* cls) {
         	return -1;
         }
     }
+
+    // down-sync possibly re-computed attributes
+    cls->tp_dictoffset = javacls->tp_dictoffset;
+    cls->tp_basicsize = javacls->tp_basicsize;
 
     // done
     cls->tp_flags = cls->tp_flags & ~Py_TPFLAGS_READYING;
@@ -449,4 +483,46 @@ int PyType_Ready(PyTypeObject* cls) {
 void PyType_Modified(PyTypeObject* type) {
     // (tfel) I don't think we have to do anything here, since we track MRO
     // changes separately, anyway
+}
+
+MUST_INLINE static int valid_identifier(PyObject *s) {
+    if (!PyUnicode_Check(s)) {
+        PyErr_Format(PyExc_TypeError,
+                     "__slots__ items must be strings, not '%.200s'",
+                     Py_TYPE(s)->tp_name);
+        return 0;
+    }
+    return 1;
+}
+
+/*
+typedef struct PyMemberDef {
+    char *name;
+    int type;
+    Py_ssize_t offset;
+    int flags;
+    char *doc;
+} PyMemberDef;
+
+ */
+Py_ssize_t PyTruffle_Type_AddSlots(PyTypeObject* cls, PyObject* slotsTuple) {
+    int i;
+    Py_ssize_t cur_offset = cls->tp_basicsize;
+    Py_ssize_t dictoffset = cls->tp_dictoffset;
+    Py_ssize_t slotLen = PyTuple_Size(slotsTuple);
+    PyObject* slot;
+
+    for(i = 0; i < slotLen; i++) {
+    	slot = PyTuple_GetItem(slotsTuple, i);
+    	// note: no flags and no doc (see typeobject.c in function 'type_new')
+    	ADD_MEMBER(native_to_java((PyObject*)cls), slot, T_OBJECT_EX, cur_offset, 0, NULL);
+    	cur_offset += sizeof(PyObject*);
+    	dictoffset += sizeof(PyObject*);
+    }
+    // only update if there was a dictoffset
+    if (cls->tp_dictoffset != 0) {
+    	cls->tp_dictoffset = dictoffset;
+    }
+    cls->tp_basicsize = cur_offset;
+    return cur_offset;
 }
