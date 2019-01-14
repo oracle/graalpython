@@ -468,17 +468,20 @@ typedef struct _build_stack {
     struct _build_stack* prev;
 } build_stack;
 
-PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
-#   define ARG polyglot_get_arg(value_idx)
-#   define APPEND_VALUE(list, value) PyList_Append(list, value); value_idx++
+PyObject* Py_VaBuildValue(const char *format, va_list va) {
+    return _Py_VaBuildValue_SizeT(format, va);
+}
 
+PyObject* _Py_VaBuildValue_SizeT(const char *format, va_list va) {
     PyObject* (*converter)(void*) = NULL;
     char argchar[2] = {'\0'};
-    unsigned int value_idx = 1;
     unsigned int format_idx = 0;
     build_stack *v = (build_stack*)calloc(1, sizeof(build_stack));
     build_stack *next;
     v->list = PyList_New(0);
+
+    char *char_arg;
+    void *void_arg;
 
     char c = format[format_idx];
     while (c != '\0') {
@@ -488,38 +491,38 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
         case 's':
         case 'z':
         case 'U':
+            char_arg = va_arg(va, char*);
             if (format[format_idx + 1] == '#') {
-                int size = (int)polyglot_get_arg(value_idx + 1);
-                if (ARG == NULL) {
-                    APPEND_VALUE(list, Py_None);
+                int size = va_arg(va, int);
+                if (char_arg == NULL) {
+                    PyList_Append(list, Py_None);
                 } else {
-                    APPEND_VALUE(list, PyUnicode_FromStringAndSize((char*)ARG, size));
+                    PyList_Append(list, PyUnicode_FromStringAndSize(char_arg, size));
                 }
-                value_idx++; // skip length argument
                 format_idx++;
             } else {
-                if (ARG == NULL) {
-                    APPEND_VALUE(list, Py_None);
+                if (char_arg == NULL) {
+                    PyList_Append(list, Py_None);
                 } else {
-                    APPEND_VALUE(list, PyUnicode_FromString((char*)ARG));
+                    PyList_Append(list, PyUnicode_FromString(char_arg));
                 }
             }
             break;
         case 'y':
+            char_arg = va_arg(va, char*);
             if (format[format_idx + 1] == '#') {
-                int size = (int)polyglot_get_arg(value_idx + 1);
-                if (ARG == NULL) {
-                    APPEND_VALUE(list, Py_None);
+                int size = va_arg(va, int);
+                if (char_arg == NULL) {
+                    PyList_Append(list, Py_None);
                 } else {
-                    APPEND_VALUE(list, PyBytes_FromStringAndSize((char*)ARG, size));
+                    PyList_Append(list, PyBytes_FromStringAndSize(char_arg, size));
                 }
-                value_idx++; // skip length argument
                 format_idx++;
             } else {
-                if (ARG == NULL) {
-                    APPEND_VALUE(list, Py_None);
+                if (char_arg == NULL) {
+                    PyList_Append(list, Py_None);
                 } else {
-                    APPEND_VALUE(list, PyBytes_FromString((char*)ARG));
+                    PyList_Append(list, PyBytes_FromString(char_arg));
                 }
             }
             break;
@@ -529,50 +532,56 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
         case 'i':
         case 'b':
         case 'h':
-            APPEND_VALUE(list, PyLong_FromLong((int)ARG));
+            PyList_Append(list, PyLong_FromLong(va_arg(va, int)));
             break;
         case 'l':
-            APPEND_VALUE(list, PyLong_FromLong((long)ARG));
+            PyList_Append(list, PyLong_FromLong(va_arg(va, long)));
             break;
         case 'B':
         case 'H':
         case 'I':
-            APPEND_VALUE(list, PyLong_FromUnsignedLong((unsigned int)ARG));
+            PyList_Append(list, PyLong_FromUnsignedLong(va_arg(va, unsigned int)));
             break;
         case 'k':
-            APPEND_VALUE(list, PyLong_FromUnsignedLong((unsigned long)ARG));
+            PyList_Append(list, PyLong_FromUnsignedLong(va_arg(va, unsigned long)));
             break;
         case 'L':
-            APPEND_VALUE(list, PyLong_FromLongLong((long long)ARG));
+            PyList_Append(list, PyLong_FromLongLong(va_arg(va, long long)));
             break;
         case 'K':
-            APPEND_VALUE(list, PyLong_FromLongLong((unsigned long long)ARG));
+            PyList_Append(list, PyLong_FromLongLong(va_arg(va, unsigned long long)));
             break;
         case 'n':
-            APPEND_VALUE(list, PyLong_FromSsize_t((Py_ssize_t)ARG));
+            PyList_Append(list, PyLong_FromSsize_t(va_arg(va, Py_ssize_t)));
             break;
         case 'c':
-            argchar[0] = (char)ARG;
-            APPEND_VALUE(list, PyBytes_FromStringAndSize(argchar, 1));
+            // note: a vararg char is promoted to int according to the C standard
+            argchar[0] = va_arg(va, int);
+            PyList_Append(list, PyBytes_FromStringAndSize(argchar, 1));
             break;
         case 'C':
-            argchar[0] = (char)ARG;
-            APPEND_VALUE(list, polyglot_from_string(argchar, "ascii"));
+            // note: a vararg char is promoted to int according to the C standard
+            argchar[0] = va_arg(va, int);
+            PyList_Append(list, polyglot_from_string(argchar, "ascii"));
             break;
         case 'd':
         case 'f':
-            APPEND_VALUE(list, PyFloat_FromDouble((double)(unsigned long long)ARG));
+            PyList_Append(list, PyFloat_FromDouble(va_arg(va, double)));
             break;
         case 'D':
             fprintf(stderr, "error: unsupported format 'D'\n");
             break;
         case 'O':
-            if (format[format_idx + 1] == '&') {
-                converter = polyglot_get_arg(value_idx + 1);
-            }
         case 'S':
         case 'N':
-            if (ARG == NULL) {
+            void_arg = va_arg(va, void*);
+            if (c == 'O') {
+                if (format[format_idx + 1] == '&') {
+                    converter = va_arg(va, void*);
+                }
+            }
+
+            if (void_arg == NULL) {
                 if (!PyErr_Occurred()) {
                     /* If a NULL was passed because a call that should have constructed a value failed, that's OK,
                      * and we pass the error on; but if no error occurred it's not clear that the caller knew what she was doing. */
@@ -580,12 +589,11 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
                 }
                 return NULL;
             } else if (converter != NULL) {
-                APPEND_VALUE(list, converter(ARG));
+                PyList_Append(list, converter(void_arg));
                 converter = NULL;
-                value_idx++; // skip converter argument
                 format_idx++;
             } else {
-                APPEND_VALUE(list, ARG);
+                PyList_Append(list, (PyObject*)void_arg);
             }
             break;
         case '(':
@@ -648,9 +656,6 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
         c = format[++format_idx];
     }
 
-#   undef APPEND_VALUE
-#   undef ARG
-
     if (v->prev != NULL) {
         PyErr_SetString(PyExc_SystemError, "dangling group in Py_BuildValue");
         return NULL;
@@ -665,6 +670,22 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
     default:
         return PyList_AsTuple(v->list);
     }
+}
+
+PyObject* Py_BuildValue(const char *format, ...) {
+    va_list va;
+    va_start(va, format);
+    PyObject *result = Py_VaBuildValue(format, va);
+    va_end(va);
+    return result;
+}
+
+PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
+    va_list va;
+    va_start(va, format);
+    PyObject *result = _Py_VaBuildValue_SizeT(format, va);
+    va_end(va);
+    return result;
 }
 
 // taken from CPython "Python/modsupport.c"
