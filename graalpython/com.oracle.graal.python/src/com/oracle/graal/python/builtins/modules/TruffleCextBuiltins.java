@@ -2390,11 +2390,15 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 floatNode = insert(BuiltinConstructorsFactory.FloatNodeFactory.create(null));
             }
+            return getToSulongNode().execute(floatNode.executeWith(PythonBuiltinClassType.PFloat, asPythonObjectNode.execute(object)));
+        }
+
+        private CExtNodes.ToSulongNode getToSulongNode() {
             if (toSulongNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toSulongNode = insert(CExtNodes.ToSulongNode.create());
             }
-            return toSulongNode.execute(floatNode.executeWith(PythonBuiltinClassType.PFloat, asPythonObjectNode.execute(object)));
+            return toSulongNode;
         }
 
         @Specialization(replaces = "doGeneric")
@@ -2403,7 +2407,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 return doGeneric(module, object);
             } catch (PException e) {
                 transformToNative(e);
-                return getNativeNull(module);
+                return getToSulongNode().execute(getNativeNull(module));
             }
         }
     }
