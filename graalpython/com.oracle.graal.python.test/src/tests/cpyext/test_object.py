@@ -218,6 +218,53 @@ class TestObject(object):
         tester = TestSlotsInitialized(2012, 4, 4)
         assert tester.year == 2012, "year was %s "% tester.year
 
+    def test_float_subclass(self):
+        TestFloatSubclass = CPyExtType("TestFloatSubclass",
+                                       """
+                                       static PyTypeObject* testFloatSubclassPtr = NULL;
+
+                                       static PyObject* new_fp(double val) {
+                                           PyFloatObject* fp = PyObject_New(PyFloatObject, testFloatSubclassPtr);
+                                           fp->ob_fval = val;
+                                           Py_XINCREF(fp);
+                                           return (PyObject*)fp;
+                                       }
+
+                                       static PyObject* fp_tpnew(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
+                                            double dval = 0.0;
+                                            if (!PyArg_ParseTuple(args, "d", &dval)) {{
+                                                return NULL;
+                                            }}
+                                            return new_fp(dval);
+                                       }
+                                       
+                                       static PyObject* fp_add(PyObject* l, PyObject* r) {
+                                           Py_XINCREF(l);
+                                           Py_XINCREF(r);
+                                           if (PyFloat_Check(l)) {
+                                               if (PyFloat_Check(r)) {
+                                                   return new_fp(PyFloat_AS_DOUBLE(l) + PyFloat_AS_DOUBLE(r));
+                                               } else if (PyLong_Check(r)) {
+                                                   return new_fp(PyFloat_AS_DOUBLE(l) + PyLong_AsLong(r));
+                                               }
+                                           } else if (PyLong_Check(l)) {
+                                               if (PyFloat_Check(r)) {
+                                                   return new_fp(PyLong_AsLong(l) + PyFloat_AS_DOUBLE(r));
+                                               } else if (PyLong_Check(r)) {
+                                                   return new_fp(PyLong_AsLong(l) + PyLong_AsLong(r));
+                                               }
+                                           }
+                                           return Py_NotImplemented;
+                                       }
+                                       """,
+                                       tp_base="&PyFloat_Type", 
+                                       nb_add="fp_add",
+                                       tp_new="fp_tpnew",
+                                       post_ready_code="testFloatSubclassPtr = &TestFloatSubclassType;"
+        )
+        tester = TestFloatSubclass(41.0)
+        res = tester + 1 
+        assert res == 42.0, "expected 42.0 but was %s" % res
 
 
 class TestObjectFunctions(CPyExtTestCase):
