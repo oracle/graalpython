@@ -499,7 +499,7 @@ PyObject* WriteObjectMember(PyObject* object, Py_ssize_t offset, PyObject* value
 PyObject* WriteCharMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
     const char* ptr = as_char_pointer(value);
     const char c = ptr[0];
-    truffle_free_cstr(ptr);
+    free(ptr);
     WriteMember(object, offset, c, char);
     return value;
 }

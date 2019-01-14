@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -217,18 +217,18 @@ void* wrap_unsupported(void *fun, ...);
 #define TDEBUG __builtin_debugtrap()
 #define get_method_flags_wrapper(flags)                                 \
     (((flags) < 0) ?                                                    \
-     truffle_read(PY_TRUFFLE_CEXT, "METH_DIRECT") :                     \
+     polyglot_get_member(PY_TRUFFLE_CEXT, "METH_DIRECT") :              \
      (((flags) & METH_FASTCALL) ?                                       \
-      truffle_read(PY_TRUFFLE_CEXT, "METH_FASTCALL") :                  \
-      (((flags) & METH_KEYWORDS) ?                                       \
-       truffle_read(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :                  \
-       (((flags) & METH_VARARGS) ?                                       \
-        truffle_read(PY_TRUFFLE_CEXT, "METH_VARARGS") :                  \
-        (((flags) & METH_NOARGS) ?                                           \
-         truffle_read(PY_TRUFFLE_CEXT, "METH_NOARGS") :                      \
-         (((flags) & METH_O) ?                                   \
-          truffle_read(PY_TRUFFLE_CEXT, "METH_O") :              \
-          truffle_read(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
+      polyglot_get_member(PY_TRUFFLE_CEXT, "METH_FASTCALL") :           \
+      (((flags) & METH_KEYWORDS) ?                                      \
+       polyglot_get_member(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :          \
+       (((flags) & METH_VARARGS) ?                                      \
+        polyglot_get_member(PY_TRUFFLE_CEXT, "METH_VARARGS") :          \
+        (((flags) & METH_NOARGS) ?                                      \
+         polyglot_get_member(PY_TRUFFLE_CEXT, "METH_NOARGS") :          \
+         (((flags) & METH_O) ?                                          \
+          polyglot_get_member(PY_TRUFFLE_CEXT, "METH_O") :              \
+          polyglot_get_member(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
 
 #define get_method_flags_cwrapper(flags)                                \
     (void*)((((flags) < 0) ?                                            \
