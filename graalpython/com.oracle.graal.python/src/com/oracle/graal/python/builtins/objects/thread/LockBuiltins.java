@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltinsFactory.AcquireLockNodeFactory;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -198,7 +199,7 @@ public class LockBuiltins extends PythonBuiltins {
         String repr(PLock self) {
             return String.format("<%s %s object at %s>",
                             (self.locked()) ? "locked" : "unlocked",
-                            self.getPythonClass().getName(),
+                            GetNameNode.doSlowPath(self.getPythonClass()),
                             self.hashCode());
         }
 
@@ -207,7 +208,7 @@ public class LockBuiltins extends PythonBuiltins {
         String repr(PRLock self) {
             return String.format("<%s %s object owner=%d count=%d at %s>",
                             (self.locked()) ? "locked" : "unlocked",
-                            self.getPythonClass().getName(),
+                            GetNameNode.doSlowPath(self.getPythonClass()),
                             self.getOwnerId(),
                             self.getCount(),
                             self.hashCode());

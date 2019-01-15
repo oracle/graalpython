@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -176,7 +177,7 @@ public class PythonObject extends PythonAbstractObject {
      */
     @Override
     public String toString() {
-        return "<" + getLazyPythonClass().getName() + " object at 0x" + Integer.toHexString(hashCode()) + ">";
+        return "<" + GetNameNode.doSlowPath(getLazyPythonClass()) + " object at 0x" + Integer.toHexString(hashCode()) + ">";
     }
 
     /**

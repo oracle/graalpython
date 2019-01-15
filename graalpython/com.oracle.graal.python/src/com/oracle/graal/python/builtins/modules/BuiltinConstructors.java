@@ -117,7 +117,9 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
@@ -1670,30 +1672,40 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "function", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 6, constructsClass = PythonBuiltinClassType.PFunction, isPublic = false)
     @GenerateNodeFactory
     public abstract static class FunctionNode extends PythonBuiltinNode {
+        @Child private GetNameNode getNameNode;
+
         @Specialization
         public PFunction function(PythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, @SuppressWarnings("unused") PNone closure) {
-            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), globals, null);
+            return factory().createFunction(name, getTypeName(cls), code.getArity(), code.getRootCallTarget(), globals, null);
         }
 
         @Specialization
         public PFunction function(PythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure) {
-            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), globals, (PCell[]) closure.getArray());
+            return factory().createFunction(name, getTypeName(cls), code.getArity(), code.getRootCallTarget(), globals, (PCell[]) closure.getArray());
         }
 
         @Specialization
         public PFunction function(PythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure) {
-            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), globals, defaultArgs.getArray(), null);
+            return factory().createFunction(name, getTypeName(cls), code.getArity(), code.getRootCallTarget(), globals, defaultArgs.getArray(), null);
         }
 
         @Specialization
         public PFunction function(PythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure) {
-            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), globals, defaultArgs.getArray(), (PCell[]) closure.getArray());
+            return factory().createFunction(name, getTypeName(cls), code.getArity(), code.getRootCallTarget(), globals, defaultArgs.getArray(), (PCell[]) closure.getArray());
         }
 
         @Fallback
         @SuppressWarnings("unused")
         public PFunction function(Object cls, Object code, Object globals, Object name, Object defaultArgs, Object closure) {
             throw raise(TypeError, "function construction not supported for (%p, %p, %p, %p, %p, %p)", cls, code, globals, name, defaultArgs, closure);
+        }
+
+        private String getTypeName(Object typeObj) {
+            if (getNameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getNameNode = insert(TypeNodes.GetNameNode.create());
+            }
+            return getNameNode.execute(typeObj);
         }
     }
 

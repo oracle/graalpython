@@ -183,7 +183,7 @@ public class PythonClass extends PythonObject implements LazyPythonClass {
         return methodResolutionOrder;
     }
 
-    public String getName() {
+    String getName() {
         return className;
     }
 

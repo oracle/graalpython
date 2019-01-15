@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -69,7 +70,7 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getEnclosingType() != null")
         @TruffleBoundary
         Object reprClassFunction(PBuiltinFunction self) {
-            return String.format("<method '%s' of '%s' objects>", self.getName(), self.getEnclosingType().getName());
+            return String.format("<method '%s' of '%s' objects>", self.getName(), GetNameNode.doSlowPath(self.getEnclosingType()));
         }
     }
 

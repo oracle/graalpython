@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -177,32 +176,24 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
             return PythonBuiltinClassType.Boolean;
         } else if (o instanceof Double || o instanceof Float) {
             return PythonBuiltinClassType.PFloat;
-        } else if (o instanceof Integer || o instanceof Long || o instanceof Short || o instanceof Byte) {
+        } else if (o instanceof Integer || o instanceof Long || o instanceof Short || o instanceof Byte || o instanceof PythonNativeVoidPtr) {
             return PythonBuiltinClassType.PInt;
         } else if (o instanceof PythonObject) {
             return ((PythonObject) o).getLazyPythonClass();
+        } else if (o instanceof PythonNativeObject) {
+            // TODO(fa): implement
+            throw new UnsupportedOperationException("get class of native object on slow path not yet implemented");
         } else if (o instanceof PEllipsis) {
             return PythonBuiltinClassType.PEllipsis;
         } else if (o instanceof PNotImplemented) {
             return PythonBuiltinClassType.PNotImplemented;
         } else if (o instanceof PNone) {
             return PythonBuiltinClassType.PNone;
-        } else {
-            return null;
-        }
-    }
-
-    @TruffleBoundary
-    public static String getNameSlowPath(Object o) {
-        if (PGuards.isForeignObject(o)) {
-            return BuiltinNames.FOREIGN;
-        }
-        LazyPythonClass lazyClass = getItSlowPath(o);
-        if (lazyClass != null) {
-            return lazyClass.getName();
+        } else if (o instanceof GetSetDescriptor) {
+            return PythonBuiltinClassType.GetSetDescriptor;
         } else {
             CompilerDirectives.transferToInterpreter();
-            return o.toString();
+            throw new IllegalStateException("unknown type " + o.getClass().getName());
         }
     }
 }

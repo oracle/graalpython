@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -97,7 +97,9 @@ import com.oracle.graal.python.builtins.objects.type.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -245,7 +247,7 @@ public class PythonObjectNativeWrapperMR {
                 CompilerDirectives.transferToInterpreter();
                 sulongType = findBuiltinClass(klass);
                 if (sulongType == null) {
-                    throw new IllegalStateException("sulong type for " + klass.getName() + " was not registered");
+                    throw new IllegalStateException("sulong type for " + GetNameNode.doSlowPath(klass) + " was not registered");
                 }
             }
             return sulongType;
@@ -310,10 +312,11 @@ public class PythonObjectNativeWrapperMR {
     @ImportStatic({NativeMemberNames.class, SpecialMethodNames.class, SpecialAttributeNames.class})
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ReadNativeMemberNode extends PNodeWithContext {
-        @Child GetClassNode getClassNode;
+        @Child private GetClassNode getClassNode;
         @Child private ToSulongNode toSulongNode;
         @Child private HashingStorageNodes.GetItemNode getItemNode;
         @Child private CExtNodes.SizeofWCharNode sizeofWcharNode;
+        @Child private GetNameNode getNameNode;
 
         abstract Object execute(Object receiver, String key);
 
@@ -720,17 +723,17 @@ public class PythonObjectNativeWrapperMR {
         }
 
         protected boolean isPyDateTimeCAPI(PythonObject object) {
-            return getClass(object).getName().equals("PyDateTime_CAPI");
+            return getClassName(object).equals("PyDateTime_CAPI");
         }
 
         protected boolean isPyDateTime(PythonObject object) {
-            return getClass(object).getName().equals("datetime");
+            return getClassName(object).equals("datetime");
         }
 
         @Specialization(guards = "isPyDateTimeCAPI(object)")
         Object doDatetimeCAPI(PythonObject object, String key,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getAttrNode) {
-            return getToSulongNode().execute(getAttrNode.execute(getClassNode.execute(object), key));
+            return getToSulongNode().execute(getAttrNode.execute(getClass(object), key));
         }
 
         @Specialization(guards = "isPyDateTime(object)")
@@ -796,6 +799,14 @@ public class PythonObjectNativeWrapperMR {
                 getClassNode = insert(GetClassNode.create());
             }
             return getClassNode.execute(obj);
+        }
+
+        private String getClassName(Object obj) {
+            if (getNameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getNameNode = insert(TypeNodes.GetNameNode.create());
+            }
+            return getNameNode.execute(getClass(obj));
         }
 
         private static Object getSliceComponent(int sliceComponent) {

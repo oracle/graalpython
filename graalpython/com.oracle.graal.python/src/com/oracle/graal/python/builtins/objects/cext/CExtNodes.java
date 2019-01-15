@@ -74,6 +74,8 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -315,13 +317,14 @@ public abstract class CExtNodes {
         @Specialization(guards = {"!isNativeClass(object)", "object == cachedObject"}, limit = "3")
         Object doPythonClass(@SuppressWarnings("unused") PythonClass object,
                         @SuppressWarnings("unused") @Cached("object") PythonClass cachedObject,
-                        @Cached("wrap(object)") PythonClassNativeWrapper wrapper) {
+                        @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
             return wrapper;
         }
 
         @Specialization(replaces = "doPythonClass", guards = {"!isNativeClass(object)"})
-        Object doPythonClassUncached(PythonClass object) {
-            return PythonClassNativeWrapper.wrap(object);
+        Object doPythonClassUncached(PythonClass object,
+                        @Cached("create()") TypeNodes.GetNameNode getNameNode) {
+            return PythonClassNativeWrapper.wrap(object, getNameNode.execute(object));
         }
 
         @Specialization(guards = {"cachedClass == object.getClass()", "!isPythonClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, limit = "3")
@@ -360,6 +363,10 @@ public abstract class CExtNodes {
 
         protected static boolean isNativeObject(PythonAbstractObject o) {
             return o instanceof PythonNativeObject;
+        }
+
+        protected static PythonClassNativeWrapper wrapNativeClass(PythonClass object) {
+            return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
         public static ToSulongNode create() {

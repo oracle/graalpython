@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -88,13 +89,14 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object repr(GetSetDescriptor descr) {
-            return String.format("<attribute '%s' of '%s' objects>", descr.getName(), descr.getType().getName());
+            return String.format("<attribute '%s' of '%s' objects>", descr.getName(), GetNameNode.doSlowPath(descr.getType()));
         }
     }
 
     abstract static class GetSetNode extends PythonTernaryBuiltinNode {
 
         @Child private GetMroNode getMroNode;
+        @Child private GetNameNode getNameNode;
 
         private final IsBuiltinClassProfile isNoneBuiltinClassProfile = IsBuiltinClassProfile.create();
         private final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
@@ -123,7 +125,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 }
             }
             errorBranch.enter();
-            throw raise(TypeError, "descriptor '%s' for '%s' objects doesn't apply to '%s' object", name, descrType.getName(), type.getName());
+            throw raise(TypeError, "descriptor '%s' for '%s' objects doesn't apply to '%s' object", name, getTypeName(descrType), getTypeName(type));
         }
 
         private PythonClass[] getMro(PythonClass clazz) {
@@ -132,6 +134,14 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 getMroNode = insert(GetMroNode.create());
             }
             return getMroNode.execute(clazz);
+        }
+
+        protected Object getTypeName(LazyPythonClass descrType) {
+            if (getNameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getNameNode = insert(GetNameNode.create());
+            }
+            return getNameNode.execute(descrType);
         }
     }
 
@@ -151,7 +161,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 return callNode.executeObject(descr.getGet(), obj);
             } else {
                 branchProfile.enter();
-                throw raise(AttributeError, "attribute '%s' of '%s' objects is not readable", descr.getName(), descr.getType().getName());
+                throw raise(AttributeError, "attribute '%s' of '%s' objects is not readable", descr.getName(), getTypeName(descr.getType()));
             }
         }
 
@@ -187,7 +197,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 return callNode.executeObject(descr.getSet(), obj, value);
             } else {
                 branchProfile.enter();
-                throw raise(AttributeError, "attribute '%s' of '%s' object is not writable", descr.getName(), descr.getType().getName());
+                throw raise(AttributeError, "attribute '%s' of '%s' object is not writable", descr.getName(), getTypeName(descr.getType()));
             }
         }
 

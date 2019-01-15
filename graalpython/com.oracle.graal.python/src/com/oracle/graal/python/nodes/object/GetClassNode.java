@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -246,10 +246,13 @@ public abstract class GetClassNode extends PNodeWithContext {
             return core.lookupType(PythonBuiltinClassType.Boolean);
         } else if (o instanceof Double || o instanceof Float) {
             return core.lookupType(PythonBuiltinClassType.PFloat);
-        } else if (o instanceof Integer || o instanceof Long || o instanceof Short || o instanceof Byte) {
+        } else if (o instanceof Integer || o instanceof Long || o instanceof Short || o instanceof Byte || o instanceof PythonNativeVoidPtr) {
             return core.lookupType(PythonBuiltinClassType.PInt);
         } else if (o instanceof PythonObject) {
             return ((PythonObject) o).getPythonClass();
+        } else if (o instanceof PythonNativeObject) {
+            // TODO(fa): implement
+            throw new UnsupportedOperationException("get class of native object on slow path not yet implemented");
         } else if (o instanceof PEllipsis) {
             return core.lookupType(PythonBuiltinClassType.PEllipsis);
         } else if (o instanceof PNotImplemented) {

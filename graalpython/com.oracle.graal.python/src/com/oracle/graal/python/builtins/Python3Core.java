@@ -155,6 +155,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -482,7 +483,7 @@ public final class Python3Core implements PythonCore {
             // export all exception classes for the C API
             for (PythonBuiltinClassType errorType : PythonBuiltinClassType.EXCEPTIONS) {
                 PythonClass errorClass = lookupType(errorType);
-                env.exportSymbol("python_" + errorClass.getName(), errorClass);
+                env.exportSymbol("python_" + GetNameNode.doSlowPath(errorClass), errorClass);
             }
         }
     }
@@ -586,7 +587,7 @@ public final class Python3Core implements PythonCore {
             boolean isPublic = entry.getValue().getValue();
             if (isPublic) {
                 PythonBuiltinClass pythonClass = entry.getKey();
-                obj.setAttribute(pythonClass.getName(), pythonClass);
+                obj.setAttribute(GetNameNode.doSlowPath(pythonClass), pythonClass);
             }
         }
     }

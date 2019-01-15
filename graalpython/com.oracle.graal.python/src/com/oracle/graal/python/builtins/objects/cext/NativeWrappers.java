@@ -275,9 +275,9 @@ public abstract class NativeWrappers {
         private Object getBufferProc;
         private Object releaseBufferProc;
 
-        public PythonClassNativeWrapper(PythonClass object) {
+        public PythonClassNativeWrapper(PythonClass object, String typeName) {
             super(object);
-            this.nameWrapper = new CStringWrapper(object.getName());
+            this.nameWrapper = new CStringWrapper(typeName);
         }
 
         public CStringWrapper getNameWrapper() {
@@ -300,11 +300,11 @@ public abstract class NativeWrappers {
             this.releaseBufferProc = releaseBufferProc;
         }
 
-        public static PythonClassNativeWrapper wrap(PythonClass obj) {
+        public static PythonClassNativeWrapper wrap(PythonClass obj, String typeName) {
             // important: native wrappers are cached
             PythonClassNativeWrapper nativeWrapper = obj.getNativeWrapper();
             if (nativeWrapper == null) {
-                nativeWrapper = new PythonClassNativeWrapper(obj);
+                nativeWrapper = new PythonClassNativeWrapper(obj, typeName);
                 obj.setNativeWrapper(nativeWrapper);
             }
             return nativeWrapper;

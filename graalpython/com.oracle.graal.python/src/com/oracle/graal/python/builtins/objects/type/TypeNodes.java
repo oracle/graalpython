@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.objects.type;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -78,6 +80,41 @@ public abstract class TypeNodes {
         public static GetMroNode create() {
             return GetMroNodeGen.create();
         }
+    }
+
+    public abstract static class GetNameNode extends PNodeWithContext {
+
+        public abstract String execute(Object obj);
+
+        @Specialization
+        String doPythonClass(PythonClass obj) {
+            return obj.getName();
+        }
+
+        @Specialization
+        String doPythonClass(PythonBuiltinClassType obj) {
+            return obj.getName();
+        }
+
+        @TruffleBoundary
+        public static String doSlowPath(Object obj) {
+            if (obj instanceof PythonClass) {
+                return ((PythonClass) obj).getName();
+            } else if (obj instanceof PythonBuiltinClassType) {
+                // TODO(fa): remove this special case
+                if (obj == PythonBuiltinClassType.TruffleObject) {
+                    return BuiltinNames.FOREIGN;
+                }
+                return ((PythonBuiltinClassType) obj).getName();
+            }
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("unknown type " + obj.getClass().getName());
+        }
+
+        public static GetNameNode create() {
+            return GetNameNodeGen.create();
+        }
+
     }
 
 }

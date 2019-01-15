@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -110,9 +111,10 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __CLASS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class ClassNode extends PythonBinaryBuiltinNode {
-        @Child LookupAttributeInMRONode lookupSlotsInSelf;
-        @Child LookupAttributeInMRONode lookupSlotsInOther;
-        @Child BinaryComparisonNode slotsAreEqual;
+        @Child private LookupAttributeInMRONode lookupSlotsInSelf;
+        @Child private LookupAttributeInMRONode lookupSlotsInOther;
+        @Child private BinaryComparisonNode slotsAreEqual;
+        @Child private TypeNodes.GetNameNode getTypeNameNode;
 
         private static final String ERROR_MESSAGE = "__class__ assignment only supported for heap types or ModuleType subclasses";
 
@@ -152,7 +154,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 Object otherSlots = getLookupSlotsInOther().execute(value);
                 if (otherSlots == PNone.NO_VALUE || !getSlotsAreEqual().executeBool(selfSlots, otherSlots)) {
                     errorSlotsBranch.enter();
-                    throw raise(TypeError, "__class__ assignment: '%s' object layout differs from '%s'", value.getName(), lazyClass.getName());
+                    throw raise(TypeError, "__class__ assignment: '%s' object layout differs from '%s'", getTypeName(value), getTypeName(lazyClass));
                 }
             }
             self.setLazyPythonClass(value);
@@ -191,6 +193,14 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Fallback
         PythonClass getClass(@SuppressWarnings("unused") Object self, Object value) {
             throw raise(TypeError, "__class__ must be set to a class, not '%p' object", value);
+        }
+
+        private String getTypeName(LazyPythonClass clazz) {
+            if (getTypeNameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getTypeNameNode = insert(TypeNodes.GetNameNode.create());
+            }
+            return getTypeNameNode.execute(clazz);
         }
     }
 
