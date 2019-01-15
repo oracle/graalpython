@@ -637,11 +637,14 @@ class zip_longest():
         nb = len(self.iterators)
         if nb == 0:
             raise StopIteration
-        return tuple(self._fetch(index) for index in range(nb))
+        result = []
+        for index in range(nb):
+            result.append(self._fetch(index))
+        return tuple(result)
 
     def __new__(subtype, iter1, *args, fillvalue=None):
         self = object.__new__(subtype)
         self.fillvalue = fillvalue
         self.active = len(args) + 1
-        self.iterators = [iter1] + args
+        self.iterators = [iter(iter1)] + [iter(arg) for arg in args]
         return self
