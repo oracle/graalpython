@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.type.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -251,7 +252,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         private static Object findBuiltinClass(PythonClass klass) {
-            PythonClass[] mro = klass.getMethodResolutionOrder();
+            PythonClass[] mro = GetMroNode.doSlowPath(klass);
             Object sulongType = null;
             for (PythonClass superClass : mro) {
                 sulongType = superClass.getSulongType();

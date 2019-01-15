@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,6 +32,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -39,6 +40,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
@@ -55,6 +57,7 @@ public abstract class RaiseNode extends StatementNode {
     private final IsBuiltinClassProfile simpleBaseCheckProfile = IsBuiltinClassProfile.create();
     private final IsBuiltinClassProfile iterativeBaseCheckProfile = IsBuiltinClassProfile.create();
     private final BranchProfile baseCheckFailedProfile = BranchProfile.create();
+    @Child private GetMroNode getMroNode;
 
     @Specialization
     public void reraise(PNone type, Object cause,
@@ -83,7 +86,7 @@ public abstract class RaiseNode extends StatementNode {
         if (simpleBaseCheckProfile.profileClass(pythonClass, BaseException)) {
             return;
         }
-        for (PythonClass klass : pythonClass.getMethodResolutionOrder()) {
+        for (PythonClass klass : getMro(pythonClass)) {
             if (iterativeBaseCheckProfile.profileClass(klass, BaseException)) {
                 return;
             }
@@ -110,6 +113,14 @@ public abstract class RaiseNode extends StatementNode {
     @Fallback
     public void doRaise(Object exception, Object cause) {
         throw raise(TypeError, "exceptions must derive from BaseException");
+    }
+
+    private PythonClass[] getMro(PythonClass clazz) {
+        if (getMroNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getMroNode = insert(GetMroNode.create());
+        }
+        return getMroNode.execute(clazz);
     }
 
     public static RaiseNode create(ExpressionNode type, ExpressionNode cause) {

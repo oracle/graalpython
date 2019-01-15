@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -65,6 +66,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -92,6 +94,8 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
 
     abstract static class GetSetNode extends PythonTernaryBuiltinNode {
 
+        @Child private GetMroNode getMroNode;
+
         private final IsBuiltinClassProfile isNoneBuiltinClassProfile = IsBuiltinClassProfile.create();
         private final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
         private final IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
@@ -106,13 +110,13 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             }
             if (isBuiltinProfile.profile(descrType instanceof PythonBuiltinClassType)) {
                 PythonBuiltinClassType builtinClassType = (PythonBuiltinClassType) descrType;
-                for (PythonClass o : type.getMethodResolutionOrder()) {
+                for (PythonClass o : getMro(type)) {
                     if (isBuiltinClassProfile.profileClass(o, builtinClassType)) {
                         return false;
                     }
                 }
             } else {
-                for (PythonClass o : type.getMethodResolutionOrder()) {
+                for (PythonClass o : getMro(type)) {
                     if (o == descrType) {
                         return false;
                     }
@@ -120,6 +124,14 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             }
             errorBranch.enter();
             throw raise(TypeError, "descriptor '%s' for '%s' objects doesn't apply to '%s' object", name, descrType.getName(), type.getName());
+        }
+
+        private PythonClass[] getMro(PythonClass clazz) {
+            if (getMroNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getMroNode = insert(GetMroNode.create());
+            }
+            return getMroNode.execute(clazz);
         }
     }
 

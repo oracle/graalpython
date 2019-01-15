@@ -131,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -558,6 +559,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
         @Child private CExtNodes.PCallCapiFunction callAddNativeSlotsNode;
         @Child private CExtNodes.ToSulongNode toSulongNode;
+        @Child private GetMroNode getMroNode;
 
         private HashingStorageNodes.GetItemNode getGetItemNode() {
             if (getItemNode == null) {
@@ -612,7 +614,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         private void computeAndSetDictoffset(Object tpDictoffset, PythonNativeClass cclass, long basicsize, long itemsize) {
             int initialDictoffset = castToIntNode.execute(tpDictoffset);
             if (initialDictoffset == 0) {
-                for (Object cls : cclass.getMethodResolutionOrder()) {
+                for (Object cls : getMro(cclass)) {
                     if (cls != cclass) {
                         if (cls instanceof PythonNativeClass) {
                             int baseDictoffset = castToIntNode.execute(ensureReadAttrNode().execute(cls, __DICTOFFSET__));
@@ -678,6 +680,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 return item;
             }
             return (long) item;
+        }
+
+        private PythonClass[] getMro(PythonClass clazz) {
+            if (getMroNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getMroNode = insert(GetMroNode.create());
+            }
+            return getMroNode.execute(clazz);
         }
     }
 

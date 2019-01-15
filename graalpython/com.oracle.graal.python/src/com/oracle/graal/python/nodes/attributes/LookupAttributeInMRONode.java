@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,10 +44,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -90,6 +92,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     }
 
     protected final String key;
+    @Child private GetMroNode getMroNode;
 
     public LookupAttributeInMRONode(String key) {
         this.key = key;
@@ -143,7 +146,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     }
 
     protected PythonClassAssumptionPair findAttrClassAndAssumptionInMRO(PythonClass klass) {
-        PythonClass[] mro = klass.getMethodResolutionOrder();
+        PythonClass[] mro = getMro(klass);
         Assumption attrAssumption = klass.createAttributeInMROFinalAssumption(key);
         for (int i = 0; i < mro.length; i++) {
             PythonClass cls = mro[i];
@@ -182,7 +185,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
                     @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
-                    @Cached(value = "cachedKlass.getMethodResolutionOrder()", dimensions = 1) PythonClass[] mro,
+                    @Cached(value = "getMro(cachedKlass)", dimensions = 1) PythonClass[] mro,
                     @Cached("mro.length") @SuppressWarnings("unused") int mroLength,
                     @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
         for (int i = 0; i < mro.length; i++) {
@@ -201,8 +204,16 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return lookupSlow(klass, key, readAttrNode);
     }
 
+    protected PythonClass[] getMro(PythonClass clazz) {
+        if (getMroNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getMroNode = insert(GetMroNode.create());
+        }
+        return getMroNode.execute(clazz);
+    }
+
     protected static Object lookupSlow(PythonClass klass, Object key, ReadAttributeFromObjectNode readAttrNode) {
-        PythonClass[] mro = klass.getMethodResolutionOrder();
+        PythonClass[] mro = GetMroNode.doSlowPath(klass);
         for (int i = 0; i < mro.length; i++) {
             PythonClass kls = mro[i];
             Object value = readAttrNode.execute(kls, key);
@@ -214,7 +225,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     }
 
     public static Object lookupSlow(PythonClass klass, String key) {
-        PythonClass[] mro = klass.getMethodResolutionOrder();
+        PythonClass[] mro = GetMroNode.doSlowPath(klass);
         for (int i = 0; i < mro.length; i++) {
             PythonClass kls = mro[i];
             Object value = kls.getAttribute(key);

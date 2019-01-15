@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.SuperInitNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -397,13 +398,14 @@ public final class SuperBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__GETATTRIBUTE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
-        @Child ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.create();
-        @Child LookupInheritedAttributeNode readGet = LookupInheritedAttributeNode.create(SpecialMethodNames.__GET__);
-        @Child GetObjectTypeNode getObjectType = GetObjectTypeNodeGen.create();
-        @Child GetTypeNode getType;
-        @Child GetObjectNode getObject;
-        @Child CallTernaryMethodNode callGet;
-        @Child ObjectBuiltins.GetAttributeNode objectGetattributeNode;
+        @Child private ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.create();
+        @Child private LookupInheritedAttributeNode readGet = LookupInheritedAttributeNode.create(SpecialMethodNames.__GET__);
+        @Child private GetObjectTypeNode getObjectType = GetObjectTypeNodeGen.create();
+        @Child private GetTypeNode getType;
+        @Child private GetObjectNode getObject;
+        @Child private CallTernaryMethodNode callGet;
+        @Child private ObjectBuiltins.GetAttributeNode objectGetattributeNode;
+        @Child private GetMroNode getMroNode;
 
         private Object genericGetAttr(Object object, Object attr) {
             if (objectGetattributeNode == null) {
@@ -442,7 +444,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                 getType = insert(GetTypeNodeGen.create());
             }
 
-            PythonClass[] mro = startType.getMethodResolutionOrder();
+            PythonClass[] mro = getMro(startType);
             /* No need to check the last one: it's gonna be skipped anyway. */
             int i = 0;
             int n = mro.length;
@@ -478,6 +480,14 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
 
             return genericGetAttr(self, attr);
+        }
+
+        private PythonClass[] getMro(PythonClass clazz) {
+            if (getMroNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getMroNode = insert(GetMroNode.create());
+            }
+            return getMroNode.execute(clazz);
         }
     }
 

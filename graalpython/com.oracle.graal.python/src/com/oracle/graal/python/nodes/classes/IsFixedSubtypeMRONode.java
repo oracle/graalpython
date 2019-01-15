@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.dsl.Cached;
@@ -92,9 +93,10 @@ public abstract class IsFixedSubtypeMRONode extends PNodeWithContext {
 
     @Specialization
     protected boolean isSubtype(PythonClass derived,
-                    @Cached("create()") IsBuiltinClassProfile profile) {
+                    @Cached("create()") IsBuiltinClassProfile profile,
+                    @Cached("create()") GetMroNode getMroNode) {
 
-        for (PythonClass mro : derived.getMethodResolutionOrder()) {
+        for (PythonClass mro : getMroNode.execute(derived)) {
             if (profile.profileClass(mro, clazz)) {
                 return true;
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,9 +41,11 @@
 package com.oracle.graal.python.nodes.classes;
 
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -58,6 +60,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
     @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
+    @Child private GetMroNode getMroNode;
 
     private final ConditionProfile exceptionDerivedProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile exceptionClsProfile = ConditionProfile.createBinaryProfile();
@@ -73,7 +76,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     boolean isSubtypeOfConstantType(@SuppressWarnings("unused") PythonClass derived, @SuppressWarnings("unused") PythonClass cls,
                     @Cached("derived") PythonClass cachedDerived,
                     @Cached("cls") PythonClass cachedCls) {
-        for (PythonClass n : cachedDerived.getMethodResolutionOrder()) {
+        for (PythonClass n : getMro(cachedDerived)) {
             if (n == cachedCls) {
                 return true;
             }
@@ -85,7 +88,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     @ExplodeLoop
     boolean isSubtypeOfVariableType(@SuppressWarnings("unused") PythonClass derived, PythonClass cls,
                     @Cached("derived") PythonClass cachedDerived) {
-        for (PythonClass n : cachedDerived.getMethodResolutionOrder()) {
+        for (PythonClass n : getMro(cachedDerived)) {
             if (n == cls) {
                 return true;
             }
@@ -95,7 +98,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     @Specialization(replaces = {"isSubtypeOfConstantType", "isSubtypeOfVariableType"})
     boolean issubTypeGeneric(PythonClass derived, PythonClass cls) {
-        for (PythonClass n : derived.getMethodResolutionOrder()) {
+        for (PythonClass n : getMro(derived)) {
             if (n == cls) {
                 return true;
             }
@@ -114,5 +117,13 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         }
 
         return abstractIsSubclassNode.execute(derived, cls);
+    }
+
+    private PythonClass[] getMro(PythonClass clazz) {
+        if (getMroNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getMroNode = insert(GetMroNode.create());
+        }
+        return getMroNode.execute(clazz);
     }
 }

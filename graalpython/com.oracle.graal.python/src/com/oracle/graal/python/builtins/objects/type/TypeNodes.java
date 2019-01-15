@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,44 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroNodeGen;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Specialization;
+
 public abstract class TypeNodes {
+
+    public abstract static class GetMroNode extends PNodeWithContext {
+
+        public abstract PythonClass[] execute(Object obj);
+
+        @Specialization
+        PythonClass[] doPythonClass(PythonClass obj) {
+            return obj.getMethodResolutionOrder();
+        }
+
+        @Specialization
+        PythonClass[] doPythonClass(PythonBuiltinClassType obj) {
+            return getBuiltinPythonClass(obj).getMethodResolutionOrder();
+        }
+
+        @TruffleBoundary
+        public static PythonClass[] doSlowPath(Object obj) {
+            if (obj instanceof PythonClass) {
+                return ((PythonClass) obj).getMethodResolutionOrder();
+            } else if (obj instanceof PythonBuiltinClassType) {
+                return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
+            }
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("unknown type " + obj.getClass().getName());
+        }
+
+        public static GetMroNode create() {
+            return GetMroNodeGen.create();
+        }
+    }
 
 }

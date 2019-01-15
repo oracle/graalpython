@@ -117,6 +117,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
@@ -1355,11 +1356,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.needsNativeAllocation()")
-        Object doNativeObjectIndirect(PythonClass self, Object[] varargs, PKeyword[] kwargs) {
+        Object doNativeObjectIndirect(PythonClass self, Object[] varargs, PKeyword[] kwargs,
+                        @Cached("create()") GetMroNode getMroNode) {
             if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
-            PythonNativeClass nativeBaseClass = findFirstNativeBaseClass(self.getMethodResolutionOrder());
+            PythonNativeClass nativeBaseClass = findFirstNativeBaseClass(getMroNode.execute(self));
             return callNativeGenericNewNode(nativeBaseClass, varargs, kwargs);
         }
 
@@ -1726,6 +1728,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private CExtNodes.PCallCapiFunction callAddNativeSlotsNode;
         @Child private CExtNodes.ToSulongNode toSulongNode;
         @Child private ReadCallerFrameNode readCallerFrameNode;
+        @Child private GetMroNode getMroNode;
+        @Child private IsSubtypeNode isSubtypeNode;
 
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
@@ -2015,7 +2019,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private boolean addDictIfNative(PythonClass pythonClass) {
             boolean addedNewDict = false;
             if (pythonClass.needsNativeAllocation()) {
-                for (Object cls : pythonClass.getMethodResolutionOrder()) {
+                for (Object cls : getMro(pythonClass)) {
                     if (cls instanceof PythonNativeClass) {
                         long dictoffset = ensureCastToIntNode().execute(ensureReadAttrNode().execute(cls, SpecialAttributeNames.__DICTOFFSET__));
                         long basicsize = ensureCastToIntNode().execute(ensureReadAttrNode().execute(cls, SpecialAttributeNames.__BASICSIZE__));
@@ -2040,6 +2044,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return addedNewDict;
         }
 
+        private PythonClass[] getMro(PythonClass pythonClass) {
+            if (getMroNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getMroNode = insert(GetMroNode.create());
+            }
+            return getMroNode.execute(pythonClass);
+        }
+
         private PythonClass calculate_metaclass(PythonClass cls, PTuple bases, GetClassNode getMetaclassNode) {
             PythonClass winner = cls;
             for (Object base : bases.getArray()) {
@@ -2056,13 +2068,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return winner;
         }
 
-        private static boolean isSubType(PythonClass subclass, PythonClass superclass) {
-            for (PythonClass base : subclass.getMethodResolutionOrder()) {
-                if (base == superclass) {
-                    return true;
-                }
+        private boolean isSubType(PythonClass subclass, PythonClass superclass) {
+            if (isSubtypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSubtypeNode = insert(IsSubtypeNode.create());
             }
-            return false;
+            return isSubtypeNode.execute(subclass, superclass);
         }
 
         protected abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);

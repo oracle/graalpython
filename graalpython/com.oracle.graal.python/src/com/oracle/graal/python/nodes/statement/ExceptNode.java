@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,6 +30,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
@@ -54,6 +55,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     @Child private ExpressionNode exceptType;
     @Child private WriteNode exceptName;
     @Child private GetLazyClassNode getClass;
+    @Child private GetMroNode getMroNode;
 
     // "object" is the uninitialized value (since it's not a valid error type)
     @CompilationFinal private PythonBuiltinClassType singleBuiltinError = PythonBuiltinClassType.PythonObject;
@@ -150,7 +152,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
             }
         } else {
             // non-builtin class: look through MRO
-            PythonClass[] mro = ((PythonClass) lazyClass).getMethodResolutionOrder();
+            PythonClass[] mro = getMro((PythonClass) lazyClass);
             for (PythonClass current : mro) {
                 if (isClassProfile.profileClass(current, cachedError)) {
                     matches = true;
@@ -214,7 +216,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         if (equalsProfile.profile(expectedType == clazz)) {
             return true;
         }
-        PythonClass[] mro = clazz.getMethodResolutionOrder();
+        PythonClass[] mro = getMro(clazz);
         for (PythonClass current : mro) {
             if (expectedType == current) {
                 return true;
@@ -271,5 +273,13 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
 
     public boolean isInstrumentable() {
         return getSourceSection() != null;
+    }
+
+    private PythonClass[] getMro(PythonClass clazz) {
+        if (getMroNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getMroNode = insert(GetMroNode.create());
+        }
+        return getMroNode.execute(clazz);
     }
 }

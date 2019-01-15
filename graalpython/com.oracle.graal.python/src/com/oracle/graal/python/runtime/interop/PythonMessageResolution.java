@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -309,6 +310,7 @@ public class PythonMessageResolution {
         @Child private IsMappingNode isMapping = IsMappingNode.create();
         @Child private GetItemNode getItemNode;
         @Child private LenNode lenNode;
+        @Child private GetMroNode getMroNode;
 
         @TruffleBoundary
         public Object execute(Object obj, boolean includeInternal) {
@@ -319,7 +321,7 @@ public class PythonMessageResolution {
 
             HashSet<String> keys = new HashSet<>();
             PythonClass klass = getClass.execute(object);
-            for (PythonObject o : klass.getMethodResolutionOrder()) {
+            for (PythonObject o : getMro(klass)) {
                 addKeysFromObject(keys, o, includeInternal);
             }
             if (object instanceof PythonObject) {
@@ -347,6 +349,14 @@ public class PythonMessageResolution {
             }
 
             return factory.createTuple(keys.toArray(new String[keys.size()]));
+        }
+
+        private PythonClass[] getMro(PythonClass clazz) {
+            if (getMroNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getMroNode = insert(GetMroNode.create());
+            }
+            return getMroNode.execute(clazz);
         }
 
         private static void addKeysFromObject(HashSet<String> keys, PythonObject o, boolean includeInternal) {
@@ -765,6 +775,7 @@ public class PythonMessageResolution {
         @Child private GetClassNode getClassNode = GetClassNode.create();
         @Child private IsImmutable isImmutable = new IsImmutable();
         @Child private KeyForItemAccess itemKey = new KeyForItemAccess();
+        @Child private GetMroNode getMroNode;
 
         public int access(Object object, Object fieldName) {
             if (fieldName instanceof Integer) {
@@ -781,7 +792,7 @@ public class PythonMessageResolution {
             Object attr = PNone.NO_VALUE;
 
             PythonClass klass = getClassNode.execute(object);
-            for (PythonClass c : klass.getMethodResolutionOrder()) {
+            for (PythonClass c : getMro(klass)) {
                 attr = readNode.execute(c, fieldName);
                 if (attr != PNone.NO_VALUE) {
                     owner = c;
@@ -842,6 +853,14 @@ public class PythonMessageResolution {
             }
 
             return info;
+        }
+
+        private PythonClass[] getMro(PythonClass clazz) {
+            if (getMroNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getMroNode = insert(GetMroNode.create());
+            }
+            return getMroNode.execute(clazz);
         }
     }
 
