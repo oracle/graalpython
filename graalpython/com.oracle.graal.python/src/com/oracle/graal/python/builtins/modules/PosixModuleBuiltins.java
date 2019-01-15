@@ -1752,4 +1752,23 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return PosixModuleBuiltinsFactory.GetTerminalSizeNodeFactory.create();
         }
     }
+
+    @Builtin(name = "readlink", fixedNumOfPositionalArgs = 1, keywordArguments = {"dirFd"}, doc = "readlink(path, *, dir_fd=None) -> path\n" +
+                    "\nReturn a string representing the path to which the symbolic link points.\n")
+    @GenerateNodeFactory
+    abstract static class ReadlinkNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        String readlinkPString(PString str, PNone none) {
+            return readlink(str.getValue(), none);
+        }
+
+        @Specialization
+        String readlink(String str, @SuppressWarnings("unused") PNone none) {
+            try {
+                return getContext().getEnv().getTruffleFile(str).getCanonicalFile().getPath();
+            } catch (IOException e) {
+                throw raise(OSError, e.getMessage());
+            }
+        }
+    }
 }
