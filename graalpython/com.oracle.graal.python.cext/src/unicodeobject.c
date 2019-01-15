@@ -112,7 +112,7 @@ PyObject * PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size) {
     return to_sulong(polyglot_from_string_n(u, size, SRC_CS));
 }
 
-PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, void **args, int argc) {
+MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va, void **args, int argc) {
     char* fmtcpy = strdup(fmt);
     char* c = fmtcpy;
 
