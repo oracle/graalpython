@@ -44,6 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -51,6 +52,32 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class TypeNodes {
+
+    public abstract static class GetTypeFlagsNode extends PNodeWithContext {
+
+        public abstract long execute(PythonClass clazz);
+
+        @Specialization(guards = "isInitialized(clazz)")
+        long doInitialized(PythonClass clazz) {
+            return clazz.getFlagsContainer().flags;
+        }
+
+        @Specialization
+        long doGeneric(PythonClass clazz) {
+            if (!isInitialized(clazz)) {
+                return clazz.getFlags();
+            }
+            return clazz.getFlagsContainer().flags;
+        }
+
+        protected static boolean isInitialized(PythonClass clazz) {
+            return clazz.getFlagsContainer().initialDominantBase == null;
+        }
+
+        public static GetTypeFlagsNode create() {
+            return GetTypeFlagsNodeGen.create();
+        }
+    }
 
     public abstract static class GetMroNode extends PNodeWithContext {
 
