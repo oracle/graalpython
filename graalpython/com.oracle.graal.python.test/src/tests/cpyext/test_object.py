@@ -130,13 +130,18 @@ class TestObject(object):
                                  return custom_dict;
                              }
                              """,
-                             ready_code="""
+                             ready_code="""PyObject* descr;
                                  custom_dict = PyDict_New();
-                                 PyDict_SetItemString(custom_dict, "hello", PyUnicode_FromString("first custom property"));
+                                 Py_XINCREF(custom_dict);
+                                 descr = PyUnicode_FromString("first custom property");
+                                 Py_INCREF(descr);
+                                 PyDict_SetItemString(custom_dict, "hello", descr);
                                  TestDictType.tp_dict = custom_dict;
                              """,
                              post_ready_code="""
-                                 PyDict_SetItemString(TestDictType.tp_dict, "world", PyUnicode_FromString("second custom property"));
+                                 descr = PyUnicode_FromString("second custom property");
+                                 Py_INCREF(descr);
+                                 PyDict_SetItemString(TestDictType.tp_dict, "world", descr);
                              """,
                              tp_methods='{"get_dict", get_dict, METH_NOARGS, ""}'
         )
@@ -166,6 +171,7 @@ class TestObject(object):
                                  typedObj = ((TestNewObject*)obj);
                                  typedObj->none = Py_None;
                                  Py_INCREF(Py_None);
+                                 Py_XINCREF(obj);
                                  return obj;
                             }
                             static PyObject* get_none(PyObject* self) {
@@ -184,9 +190,10 @@ class TestObject(object):
                                '',
                               includes='#include "datetime.h"',
                               cmembers="PyDateTime_DateTime __pyx_base;",
-                              ready_code='''PyObject* datetime_module = PyImport_ImportModule("datetime");
-                              PyTypeObject* datetime_type = (PyTypeObject*)PyObject_GetAttrString(datetime_module, "datetime");
+                              ready_code='''PyTypeObject* datetime_type = NULL;
                               PyDateTime_IMPORT;
+                              Py_INCREF(PyDateTimeAPI);
+                              datetime_type = PyDateTimeAPI->DateTimeType;
                               Py_XINCREF(datetime_type);
                               TestSlotsType.tp_base = (PyTypeObject*) datetime_type;
                               TestSlotsType.tp_new = datetime_type->tp_new;
@@ -198,7 +205,7 @@ class TestObject(object):
         TestSlotsInitialized = CPyExtType("TestSlotsInitialized", 
                               '''
                               static PyTypeObject* datetime_type = NULL;
-                               
+                                
                               PyObject* TestSlotsInitialized_new(PyTypeObject* self, PyObject* args, PyObject* kwargs) {
                                   PyObject* result =  datetime_type->tp_new(self, args, kwargs);
                                   Py_XINCREF(result);
@@ -207,10 +214,10 @@ class TestObject(object):
                               ''',
                               includes='#include "datetime.h"',
                               cmembers="PyDateTime_DateTime __pyx_base;",
-                              ready_code='''PyObject* datetime_module = PyImport_ImportModule("datetime");
+                              ready_code='''
                               PyDateTime_IMPORT;
-                              Py_INCREF(datetime_module);
-                              datetime_type = (PyTypeObject*)PyObject_GetAttrString(datetime_module, "datetime");
+                              Py_INCREF(PyDateTimeAPI);
+                              datetime_type = PyDateTimeAPI->DateTimeType;
                               Py_INCREF(datetime_type);
                               TestSlotsInitializedType.tp_base = datetime_type;
                               ''',
@@ -222,25 +229,23 @@ class TestObject(object):
         TestFloatSubclass = CPyExtType("TestFloatSubclass",
                                        """
                                        static PyTypeObject* testFloatSubclassPtr = NULL;
-
+ 
                                        static PyObject* new_fp(double val) {
                                            PyFloatObject* fp = PyObject_New(PyFloatObject, testFloatSubclassPtr);
                                            fp->ob_fval = val;
-                                           Py_XINCREF(fp);
                                            return (PyObject*)fp;
                                        }
-
+ 
                                        static PyObject* fp_tpnew(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
                                             double dval = 0.0;
+                                            Py_XINCREF(args);
                                             if (!PyArg_ParseTuple(args, "d", &dval)) {{
                                                 return NULL;
                                             }}
                                             return new_fp(dval);
                                        }
-                                       
+                                        
                                        static PyObject* fp_add(PyObject* l, PyObject* r) {
-                                           Py_XINCREF(l);
-                                           Py_XINCREF(r);
                                            if (PyFloat_Check(l)) {
                                                if (PyFloat_Check(r)) {
                                                    return new_fp(PyFloat_AS_DOUBLE(l) + PyFloat_AS_DOUBLE(r));
@@ -257,14 +262,16 @@ class TestObject(object):
                                            return Py_NotImplemented;
                                        }
                                        """,
+                                       cmembers="PyFloatObject base;",
                                        tp_base="&PyFloat_Type", 
                                        nb_add="fp_add",
                                        tp_new="fp_tpnew",
-                                       post_ready_code="testFloatSubclassPtr = &TestFloatSubclassType;"
+                                       post_ready_code="testFloatSubclassPtr = &TestFloatSubclassType; Py_INCREF(testFloatSubclassPtr);"
         )
         tester = TestFloatSubclass(41.0)
-        res = tester + 1 
+        res = tester + 1
         assert res == 42.0, "expected 42.0 but was %s" % res
+        
 
 
 class TestObjectFunctions(CPyExtTestCase):
