@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,7 +52,7 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_PY_NONE_HANDLE = "PyNoneHandle";
     public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";
     public static final String FUN_PY_TRUFFLE_CSTR_TO_STRING = "PyTruffle_CstrToString";
-    public static final String FUN_PY_FLOAT_AS_DOUBLE = "PyFloat_AsDouble";
+    public static final String FUN_PY_FLOAT_AS_DOUBLE = "truffle_read_ob_fval";
     public static final String FUN_GET_OB_TYPE = "get_ob_type";
     public static final String FUN_DEREF_HANDLE = "truffle_deref_handle_for_managed";
     public static final String FUN_GET_BYTE_ARRAY_TYPE_ID = "get_byte_array_typeid";

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -891,6 +891,24 @@ public final class FloatBuiltins extends PythonBuiltins {
             return a == b.doubleValue();
         }
 
+        @Specialization
+        Object eqPDb(PythonNativeObject left, double right,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            return getFloat.execute(left) == right;
+        }
+
+        @Specialization
+        Object eqPDb(PythonNativeObject left, long right,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            return getFloat.execute(left) == right;
+        }
+
+        @Specialization
+        Object eqPDb(PythonNativeObject left, PInt right,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            return getFloat.execute(left) == right.doubleValue();
+        }
+
         @Fallback
         @SuppressWarnings("unused")
         PNotImplemented eq(Object a, Object b) {
@@ -903,18 +921,36 @@ public final class FloatBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean eqDbDb(double a, double b) {
+        boolean neDbDb(double a, double b) {
             return a != b;
         }
 
         @Specialization
-        boolean eqDbLn(double a, long b) {
+        boolean neDbLn(double a, long b) {
             return a != b;
         }
 
         @Specialization
-        boolean eqDbPI(double a, PInt b) {
+        boolean neDbPI(double a, PInt b) {
             return a != b.doubleValue();
+        }
+
+        @Specialization
+        Object eqPDb(PythonNativeObject left, double right,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            return getFloat.execute(left) != right;
+        }
+
+        @Specialization
+        Object eqPDb(PythonNativeObject left, long right,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            return getFloat.execute(left) != right;
+        }
+
+        @Specialization
+        Object eqPDb(PythonNativeObject left, PInt right,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            return getFloat.execute(left) != right.doubleValue();
         }
 
         @Fallback
