@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -400,10 +401,12 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_BASE, key)")
-        Object doTpBase(PythonClass object, @SuppressWarnings("unused") String key) {
-            PythonClass superClass = object.getSuperClass();
+        Object doTpBase(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") GetSuperClassNode getSuperClassNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+            LazyPythonClass superClass = getSuperClassNode.execute(object);
             if (superClass != null) {
-                return getToSulongNode().execute(superClass);
+                return getToSulongNode().execute(getPythonClass(superClass, profile));
             }
             return getToSulongNode().execute(object);
         }

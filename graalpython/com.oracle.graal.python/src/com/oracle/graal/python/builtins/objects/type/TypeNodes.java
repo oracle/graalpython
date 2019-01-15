@@ -44,10 +44,10 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -100,7 +100,6 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
             }
-            CompilerDirectives.transferToInterpreter();
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
 
@@ -134,12 +133,41 @@ public abstract class TypeNodes {
                 }
                 return ((PythonBuiltinClassType) obj).getName();
             }
-            CompilerDirectives.transferToInterpreter();
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
 
         public static GetNameNode create() {
             return GetNameNodeGen.create();
+        }
+
+    }
+
+    public abstract static class GetSuperClassNode extends PNodeWithContext {
+
+        public abstract LazyPythonClass execute(Object obj);
+
+        @Specialization
+        LazyPythonClass doPythonClass(PythonClass obj) {
+            return obj.getSuperClass();
+        }
+
+        @Specialization
+        LazyPythonClass doPythonClass(PythonBuiltinClassType obj) {
+            return obj.getBase();
+        }
+
+        @TruffleBoundary
+        public static LazyPythonClass doSlowPath(Object obj) {
+            if (obj instanceof PythonClass) {
+                return ((PythonClass) obj).getSuperClass();
+            } else if (obj instanceof PythonBuiltinClassType) {
+                return ((PythonBuiltinClassType) obj).getBase();
+            }
+            throw new IllegalStateException("unknown type " + obj.getClass().getName());
+        }
+
+        public static GetSuperClassNode create() {
+            return GetSuperClassNodeGen.create();
         }
 
     }

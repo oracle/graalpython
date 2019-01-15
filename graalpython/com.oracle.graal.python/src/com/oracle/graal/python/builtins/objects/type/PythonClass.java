@@ -175,7 +175,7 @@ public class PythonClass extends PythonObject implements LazyPythonClass {
         return instanceShape;
     }
 
-    public PythonClass getSuperClass() {
+    PythonClass getSuperClass() {
         return getBaseClasses().length > 0 ? getBaseClasses()[0] : null;
     }
 
