@@ -159,8 +159,16 @@ int PyErr_ExceptionMatches(PyObject *exc) {
     return PyErr_GivenExceptionMatches(PyErr_Occurred(), exc);
 }
 
-PyObject* PyTruffle_Err_Format(PyObject* exception, const char* fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9) {
-    PyObject *formatted_msg = PyTruffle_Unicode_FromFormat(fmt, s, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+// defined without header in unicodeobject.c
+extern PyObject* PyTruffle_Unicode_FromFormat(const char*, va_list, void**, int);
+
+PyObject* PyErr_Format(PyObject* exception, const char* fmt, ...) {
+    int argc = polyglot_get_arg_count();
+    void **args = truffle_managed_malloc(sizeof(void*) * (argc - 2));
+    for (int i = 2; i < argc; i++) {
+        args[i - 2] = polyglot_get_arg(i);
+    }
+    PyObject *formatted_msg = PyTruffle_Unicode_FromFormat(fmt, NULL, args, 0);
     UPCALL_CEXT_VOID(_jls_PyErr_CreateAndSetException, native_to_java(exception), native_to_java(formatted_msg));
     return NULL;
 }

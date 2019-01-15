@@ -144,22 +144,4 @@
  *     } while (0)
  */
 
-extern PyObject* PyTruffle_Err_Format(PyObject* exception, const char* fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9);
-#define PyTruffle_Err_Format_0(EXC, FORMAT) PyTruffle_Err_Format(EXC, FORMAT, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Err_Format_1(EXC, FORMAT, V1) PyTruffle_Err_Format(EXC, FORMAT, 1, (void*)(V1), NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Err_Format_2(EXC, FORMAT, V1, V2) PyTruffle_Err_Format(EXC, FORMAT, 2, (void*)(V1), (void*)(V2), NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Err_Format_3(EXC, FORMAT, V1, V2, V3) PyTruffle_Err_Format(EXC, FORMAT, 3, (void*)(V1), (void*)(V2), (void*)(V3), NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Err_Format_4(EXC, FORMAT, V1, V2, V3, V4) PyTruffle_Err_Format(EXC, FORMAT, 4, (void*)(V1), (void*)(V2), (void*)(V3), (void*)(V4), NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Err_Format_5(EXC, FORMAT, V1, V2, V3, V4, V5) PyTruffle_Err_Format(EXC, FORMAT, 5, (void*)(V1), (void*)(V2), (void*)(V3), (void*)(V4), (void*)(V5), NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Err_Format_6(EXC, FORMAT, V1, V2, V3, V4, V5, V6) PyTruffle_Err_Format(EXC, FORMAT, 6, (void*)(V1), (void*)(V2), (void*)(V3), (void*)(V4), (void*)(V5), (void*)(V6), NULL, NULL, NULL, NULL)
-#define PyTruffle_Err_Format_7(EXC, FORMAT, V1, V2, V3, V4, V5, V6, V7) PyTruffle_Err_Format(EXC, FORMAT, 7, (void*)(V1), (void*)(V2), (void*)(V3), (void*)(V4), (void*)(V5), (void*)(V6), (void*)(V7), NULL, NULL, NULL)
-#define PyTruffle_Err_Format_8(EXC, FORMAT, V1, V2, V3, V4, V5, V6, V7, V8) PyTruffle_Err_Format(EXC, FORMAT, 8, (void*)(V1), (void*)(V2), (void*)(V3), (void*)(V4), (void*)(V5), (void*)(V6), (void*)(V7), (void*)(V8), NULL, NULL)
-#define PyTruffle_Err_Format_9(EXC, FORMAT, V1, V2, V3, V4, V5, V6, V7, V8, V9) PyTruffle_Err_Format(EXC, FORMAT, 9, (void*)(V1), (void*)(V2), (void*)(V3), (void*)(V4), (void*)(V5), (void*)(V6), (void*)(V7), (void*)(V8), (void*)(V9), NULL)
-#define PyTruffle_Err_Format_10(EXC, FORMAT, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10) PyTruffle_Err_Format(EXC, FORMAT, 10, (void*)(V1), (void*)(V2), (void*)(V3), (void*)(V4), (void*)(V5), (void*)(V6), (void*)(V7), (void*)(V8), (void*)(V9), (void*)V10)
-#define ARG_PARSE_ERR_FORMAT_IMPL(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, NAME, ...) NAME
-#ifdef PyErr_Format
-#undef PyErr_Format
-#endif
-#define PyErr_Format(EXC, ...) ARG_PARSE_ERR_FORMAT_IMPL(__VA_ARGS__, PyTruffle_Err_Format_10, PyTruffle_Err_Format_9, PyTruffle_Err_Format_8, PyTruffle_Err_Format_7, PyTruffle_Err_Format_6, PyTruffle_Err_Format_5, PyTruffle_Err_Format_4, PyTruffle_Err_Format_3, PyTruffle_Err_Format_2, PyTruffle_Err_Format_1, PyTruffle_Err_Format_0)(EXC, __VA_ARGS__)
-
 #endif
