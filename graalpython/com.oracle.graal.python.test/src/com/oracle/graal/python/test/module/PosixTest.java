@@ -183,10 +183,11 @@ public class PosixTest {
 
     @Test
     public void readlink() throws IOException {
-        Path symlinkPath = tmpfile.getParent().resolve(tmpfile.getFileName() + "__symlink");
+        Path realPath = tmpfile.toRealPath();
+        Path symlinkPath = realPath.getParent().resolve(tmpfile.getFileName() + "__symlink");
         try {
             Path symlink = Files.createSymbolicLink(symlinkPath, Paths.get(tmpfile.toUri()));
-            assertPrints(tmpfile.toString() + "\n", "import posix\n" +
+            assertPrints(realPath.toString() + "\n", "import posix\n" +
                             "print(posix.readlink('" + symlink.toString() + "'))\n");
         } finally {
             Files.deleteIfExists(symlinkPath);
