@@ -63,6 +63,7 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -130,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1604,8 +1606,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_Add_Subclass extends NativeBuiltin {
 
         @Specialization
-        int doManagedSubclass(PythonClassNativeWrapper base, @SuppressWarnings("unused") Object key, PythonClassNativeWrapper value) {
-            addToSet((PythonClass) base.getPythonObject(), (PythonClass) value.getPythonObject());
+        int doManagedSubclass(PythonClassNativeWrapper base, @SuppressWarnings("unused") Object key, PythonClassNativeWrapper value,
+                        @Cached("create()") TypeNodes.GetSubclassesNode getSubclassesNode) {
+            Set<PythonClass> subclasses = getSubclassesNode.execute(base.getPythonObject());
+            addToSet(subclasses, (PythonClass) value.getPythonObject());
             return 0;
         }
 
@@ -1615,8 +1619,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static void addToSet(PythonClass base, PythonClass value) {
-            base.getSubClasses().add(value);
+        private static void addToSet(Set<PythonClass> subclasses, PythonClass value) {
+            subclasses.add(value);
         }
     }
 

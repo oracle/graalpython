@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -880,7 +881,7 @@ public class PythonObjectNativeWrapperMR {
             // TODO more type checking; do fast path
             PDict dict = (PDict) value.getPythonObject();
             for (Object item : dict.items()) {
-                object.getSubClasses().add((PythonClass) item);
+                GetSubclassesNode.doSlowPath(object).add((PythonClass) item);
             }
             return value;
         }

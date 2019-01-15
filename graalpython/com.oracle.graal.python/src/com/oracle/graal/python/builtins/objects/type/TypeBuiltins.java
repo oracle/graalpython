@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -50,6 +50,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -64,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -463,10 +465,15 @@ public class TypeBuiltins extends PythonBuiltins {
     static abstract class SubclassesNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        PList getSubclasses(PythonClass cls) {
+        PList getSubclasses(PythonClass cls,
+                        @Cached("create()") GetSubclassesNode getSubclassesNode) {
             // TODO: missing: keep track of subclasses
-            return factory().createList(cls.getSubClasses().toArray());
+            return factory().createList(toArray(getSubclassesNode.execute(cls)));
+        }
+
+        @TruffleBoundary
+        private static Object[] toArray(Set<PythonClass> subclasses) {
+            return subclasses.toArray();
         }
     }
 

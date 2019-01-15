@@ -273,7 +273,7 @@ public class PythonClass extends PythonObject implements LazyPythonClass {
      * This method supports initialization and solves boot-order problems and should not normally be
      * used.
      */
-    public void unsafeSetSuperClass(PythonClass... newBaseClasses) {
+    private void unsafeSetSuperClass(PythonClass... newBaseClasses) {
         // TODO: if this is used outside bootstrapping, it needs to call
         // computeMethodResolutionOrder for subclasses.
 
@@ -288,7 +288,7 @@ public class PythonClass extends PythonObject implements LazyPythonClass {
         computeMethodResolutionOrder();
     }
 
-    public final Set<PythonClass> getSubClasses() {
+    final Set<PythonClass> getSubClasses() {
         return subClasses;
     }
 

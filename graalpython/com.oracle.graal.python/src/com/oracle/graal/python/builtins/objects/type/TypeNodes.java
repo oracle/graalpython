@@ -40,10 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import java.util.Set;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -168,6 +171,36 @@ public abstract class TypeNodes {
 
         public static GetSuperClassNode create() {
             return GetSuperClassNodeGen.create();
+        }
+
+    }
+
+    public abstract static class GetSubclassesNode extends PNodeWithContext {
+
+        public abstract Set<PythonClass> execute(Object obj);
+
+        @Specialization
+        Set<PythonClass> doPythonClass(PythonClass obj) {
+            return obj.getSubClasses();
+        }
+
+        @Specialization
+        Set<PythonClass> doPythonClass(PythonBuiltinClassType obj) {
+            return getBuiltinPythonClass(obj).getSubClasses();
+        }
+
+        @TruffleBoundary
+        public static Set<PythonClass> doSlowPath(Object obj) {
+            if (obj instanceof PythonClass) {
+                return ((PythonClass) obj).getSubClasses();
+            } else if (obj instanceof PythonBuiltinClassType) {
+                return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getSubClasses();
+            }
+            throw new IllegalStateException("unknown type " + obj.getClass().getName());
+        }
+
+        public static GetSubclassesNode create() {
+            return GetSubclassesNodeGen.create();
         }
 
     }
