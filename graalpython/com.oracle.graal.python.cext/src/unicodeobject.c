@@ -203,12 +203,8 @@ PyObject* PyUnicode_FromFormatV(const char* format, va_list va) {
 }
 
 PyObject* PyUnicode_FromFormat(const char* format, ...) {
-    int argc = polyglot_get_arg_count();
-    void **args = truffle_managed_malloc(sizeof(void*) * (argc - 1));
-    for (int i = 1; i < argc; i++) {
-        args[i - 1] = polyglot_get_arg(i);
-    }
-    return PyTruffle_Unicode_FromFormat(format, NULL, args, 0);
+    CallWithPolyglotArgs(PyObject* result, format, 1, PyTruffle_Unicode_FromFormat, format);
+    return result;
 }
 
 PyObject * PyUnicode_FromUnicode(const Py_UNICODE *u, Py_ssize_t size) {
