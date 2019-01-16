@@ -43,7 +43,12 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PyBufferProcsWrapperMRFactory.GetBufferProcsNodeGen;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -54,12 +59,30 @@ public class PyBufferProcsWrapperMR {
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
-        @Child private ToSulongNode toSulongNode;
+        @Child private GetBufferProcsNode getBufferProcsNode;
 
         public Object access(PyBufferProcsWrapper object, String key) {
+            if (getBufferProcsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getBufferProcsNode = insert(GetBufferProcsNodeGen.create());
+            }
+            return getBufferProcsNode.execute(object.getPythonClass(), key);
+        }
+    }
+
+    abstract static class GetBufferProcsNode extends PNodeWithContext {
+        @Child private ToSulongNode toSulongNode;
+
+        public abstract Object execute(AbstractPythonClass clazz, String key);
+
+        @Specialization
+        Object doManagedClass(ManagedPythonClass clazz, String key) {
             // translate key to attribute name
-            PythonClassNativeWrapper nativeWrapper = object.getPythonClass().getNativeWrapper();
-            // TODO handle case if nativeWrapper does not exist yet
+            PythonClassNativeWrapper nativeWrapper = clazz.getNativeWrapper();
+
+            // Since this MR is directly called from native, there must be a native wrapper.
+            assert nativeWrapper != null;
+
             Object result;
             switch (key) {
                 case "bf_getbuffer":
@@ -78,6 +101,12 @@ public class PyBufferProcsWrapperMR {
             return result == null ? getToSulongNode().execute(PNone.NO_VALUE) : result;
         }
 
+        @Specialization
+        Object doNativeClass(@SuppressWarnings("unused") PythonNativeClass clazz, @SuppressWarnings("unused") String key) {
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("native member access to native class via interop");
+        }
+
         private ToSulongNode getToSulongNode() {
             if (toSulongNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -85,5 +114,6 @@ public class PyBufferProcsWrapperMR {
             }
             return toSulongNode;
         }
+
     }
 }

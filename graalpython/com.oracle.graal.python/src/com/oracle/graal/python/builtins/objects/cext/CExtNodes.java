@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
@@ -72,6 +73,8 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -260,6 +263,16 @@ public abstract class CExtNodes {
             }
         }
 
+        protected static TruffleObject importCAPISymbolSlowPath(String name) {
+            TruffleObject capiLibrary = (TruffleObject) PythonLanguage.getContextRef().get().getCapiLibrary();
+            try {
+                return (TruffleObject) ForeignAccess.sendRead(Message.READ.createNode(), capiLibrary, name);
+            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw e.raise();
+            }
+        }
+
     }
 
     public abstract static class ToSulongNode extends CExtBaseNode {
@@ -301,7 +314,7 @@ public abstract class CExtNodes {
 
         @Specialization
         Object doNativeClass(PythonNativeClass nativeClass) {
-            return nativeClass.object;
+            return nativeClass.getPtr();
         }
 
         @Specialization
@@ -314,15 +327,15 @@ public abstract class CExtNodes {
             return object.getPtr();
         }
 
-        @Specialization(guards = {"!isNativeClass(object)", "object == cachedObject"}, limit = "3")
-        Object doPythonClass(@SuppressWarnings("unused") PythonClass object,
-                        @SuppressWarnings("unused") @Cached("object") PythonClass cachedObject,
+        @Specialization(guards = "object == cachedObject", limit = "3")
+        Object doPythonClass(@SuppressWarnings("unused") ManagedPythonClass object,
+                        @SuppressWarnings("unused") @Cached("object") ManagedPythonClass cachedObject,
                         @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
             return wrapper;
         }
 
-        @Specialization(replaces = "doPythonClass", guards = {"!isNativeClass(object)"})
-        Object doPythonClassUncached(PythonClass object,
+        @Specialization(replaces = "doPythonClass")
+        Object doPythonClassUncached(ManagedPythonClass object,
                         @Cached("create()") TypeNodes.GetNameNode getNameNode) {
             return PythonClassNativeWrapper.wrap(object, getNameNode.execute(object));
         }
@@ -353,24 +366,48 @@ public abstract class CExtNodes {
             return obj;
         }
 
-        protected static boolean isNativeClass(PythonAbstractObject o) {
-            return o instanceof PythonNativeClass;
-        }
-
         protected static boolean isPythonClass(PythonAbstractObject o) {
-            return o instanceof PythonClass;
+            return o instanceof AbstractPythonClass;
         }
 
         protected static boolean isNativeObject(PythonAbstractObject o) {
             return o instanceof PythonNativeObject;
         }
 
-        protected static PythonClassNativeWrapper wrapNativeClass(PythonClass object) {
+        protected static PythonClassNativeWrapper wrapNativeClass(ManagedPythonClass object) {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
         public static ToSulongNode create() {
             return ToSulongNodeGen.create();
+        }
+
+        @TruffleBoundary
+        public static Object doSlowPath(Object o) {
+            if (o instanceof String) {
+                PythonObjectNativeWrapper.wrapSlowPath(PythonLanguage.getCore().factory().createString((String) o));
+            } else if (o instanceof Integer) {
+                return PrimitiveNativeWrapper.createInt((Integer) o);
+            } else if (o instanceof Long) {
+                return PrimitiveNativeWrapper.createLong((Long) o);
+            } else if (o instanceof Double) {
+                return PrimitiveNativeWrapper.createDouble((Double) o);
+            } else if (o instanceof PythonNativeClass) {
+                return ((PythonNativeClass) o).getPtr();
+            } else if (o instanceof PythonNativeObject) {
+                return ((PythonNativeObject) o).object;
+            } else if (o instanceof PythonNativeNull) {
+                return ((PythonNativeNull) o).getPtr();
+            } else if (o instanceof ManagedPythonClass) {
+                return wrapNativeClass((ManagedPythonClass) o);
+            } else if (o instanceof PythonAbstractObject) {
+                assert !(o instanceof AbstractPythonClass);
+                return PythonObjectNativeWrapper.wrapSlowPath((PythonAbstractObject) o);
+            } else if (PGuards.isForeignObject(o)) {
+                return TruffleObjectNativeWrapper.wrap((TruffleObject) o);
+            }
+            assert o != null : "Java 'null' cannot be a Sulong value";
+            return o;
         }
     }
 
@@ -492,9 +529,11 @@ public abstract class CExtNodes {
             if (object instanceof PythonNativeWrapper) {
                 return ((PythonNativeWrapper) object).getDelegate();
             } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getItSlowPath(object), PythonBuiltinClassType.TruffleObject)) {
-                throw new AssertionError("Unsupported slow path operation: converting 'to_java(" + object + ")");
+                return PythonLanguage.getCore().factory().createNativeObjectWrapper((TruffleObject) object);
+            } else if (object instanceof Number || object instanceof Boolean) {
+                return object;
             }
-            return object;
+            throw PythonLanguage.getCore().raise(PythonErrorType.SystemError, "invalid object from native: %s", object);
         }
 
         private MaterializeDelegateNode getMaterializeNode() {
@@ -700,6 +739,19 @@ public abstract class CExtNodes {
         public static ToJavaNode create(boolean forcePointer) {
             return ToJavaNodeGen.create(forcePointer);
         }
+
+        @TruffleBoundary
+        public static Object doSlowPath(Object value, boolean forcePointer) {
+            if (value instanceof PythonAbstractObject || value instanceof String || value instanceof Boolean || value instanceof Integer || value instanceof Byte) {
+                return value;
+            } else if (value instanceof Long) {
+                String funName = forcePointer ? NativeCAPISymbols.FUN_NATIVE_LONG_TO_JAVA : NativeCAPISymbols.FUN_NATIVE_POINTER_TO_JAVA;
+                return AsPythonObjectNode.doSlowPath(PCallCapiFunction.doSlowPath(funName, value));
+            } else if (value instanceof PythonNativeWrapper) {
+                return AsPythonObjectNode.doSlowPath(value);
+            }
+            return AsPythonObjectNode.doSlowPath(PCallCapiFunction.doSlowPath(NativeCAPISymbols.FUN_NATIVE_TO_JAVA, value));
+        }
     }
 
     public abstract static class AsCharPointer extends CExtBaseNode {
@@ -888,6 +940,10 @@ public abstract class CExtNodes {
                 CompilerDirectives.transferToInterpreter();
                 throw new IllegalStateException(NativeCAPISymbols.FUN_PTR_COMPARE + " didn't work!");
             }
+        }
+
+        public boolean execute(PythonNativeClass a, PythonNativeClass b) {
+            return executeCFunction(a.getPtr(), b.getPtr());
         }
 
         public boolean execute(PythonNativeObject a, PythonNativeObject b) {
@@ -1322,6 +1378,15 @@ public abstract class CExtNodes {
             this.name = name;
         }
 
+        @TruffleBoundary
+        public static Object doSlowPath(String funNativeToJava, Object... args) {
+            try {
+                return ForeignAccess.sendExecute(Message.EXECUTE.createNode(), importCAPISymbolSlowPath(funNativeToJava), args);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw e.raise();
+            }
+        }
+
         public Object call(Object... args) {
             try {
                 return ForeignAccess.sendExecute(getCallNode(), getFunction(), args);
@@ -1510,12 +1575,17 @@ public abstract class CExtNodes {
         }
     }
 
-    public static class GetObjectDictNode extends CExtBaseNode {
+    public abstract static class GetNativeDictNode extends CExtBaseNode {
+        public abstract Object execute(Object obj);
+    }
+
+    public static class GetObjectDictNode extends GetNativeDictNode {
         @CompilationFinal private TruffleObject func;
         @Child private Node exec;
         @Child private ToSulongNode toSulong;
         @Child private ToJavaNode toJava;
 
+        @Override
         public Object execute(Object self) {
             if (func == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1532,8 +1602,45 @@ public abstract class CExtNodes {
             }
         }
 
+        @TruffleBoundary
+        public static Object doSlowPath(Object self) {
+            try {
+                TruffleObject func = importCAPISymbolSlowPath(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT);
+                return ToJavaNode.doSlowPath(ForeignAccess.sendExecute(Message.EXECUTE.createNode(), func, ToSulongNode.doSlowPath(self)), true);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw e.raise();
+            }
+        }
+
         public static GetObjectDictNode create() {
             return new GetObjectDictNode();
+        }
+    }
+
+    public static class GetTypeDictNode extends GetNativeDictNode {
+        @Child private ToSulongNode toSulong;
+        @Child private ToJavaNode toJava;
+        @Child private PCallCapiFunction callGetTpDictNode;
+
+        @Override
+        public Object execute(Object self) {
+            if (callGetTpDictNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callGetTpDictNode = PCallCapiFunction.create(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT);
+                toSulong = insert(ToSulongNode.create());
+                toJava = insert(ToJavaNode.create());
+            }
+            return toJava.execute(callGetTpDictNode.call(toSulong.execute(self)));
+        }
+
+        @TruffleBoundary
+        public static Object doSlowPath(Object self) {
+            return ToJavaNode.doSlowPath(PCallCapiFunction.doSlowPath(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT, ToSulongNode.doSlowPath(self)), true);
+        }
+
+        public static GetTypeDictNode create() {
+            return new GetTypeDictNode();
         }
     }
 }

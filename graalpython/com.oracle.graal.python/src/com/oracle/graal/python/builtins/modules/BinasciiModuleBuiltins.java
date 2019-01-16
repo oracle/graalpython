@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -95,8 +96,10 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     public void initialize(PythonCore core) {
         super.initialize(core);
         String pre = "binascii.";
-        builtinConstants.put(ERROR, core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, pre + ERROR, new PythonClass[]{core.lookupType(PythonBuiltinClassType.ValueError)}));
-        builtinConstants.put(INCOMPLETE, core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, pre + INCOMPLETE, new PythonClass[]{core.lookupType(PythonBuiltinClassType.Exception)}));
+        AbstractPythonClass[] errorBases = new AbstractPythonClass[]{core.lookupType(PythonBuiltinClassType.ValueError)};
+        builtinConstants.put(ERROR, core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, pre + ERROR, errorBases));
+        AbstractPythonClass[] incompleteBases = new AbstractPythonClass[]{core.lookupType(PythonBuiltinClassType.Exception)};
+        builtinConstants.put(INCOMPLETE, core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, pre + INCOMPLETE, incompleteBases));
     }
 
     @Builtin(name = "a2b_base64", fixedNumOfPositionalArgs = 1)

@@ -44,7 +44,8 @@ import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -154,15 +155,16 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     @Cached("create()") GetClassNode getClass,
                     @Cached("create()") GetClassNode getClassR,
                     @Cached("create()") IsSubtypeNode isSubtype,
+                    @Cached("create()") IsSameTypeNode isSameTypeNode,
                     @Cached("create()") BranchProfile notImplementedBranch) {
-        PythonClass leftClass = getClass.execute(v);
-        PythonClass rightClass = getClassR.execute(w);
+        AbstractPythonClass leftClass = getClass.execute(v);
+        AbstractPythonClass rightClass = getClassR.execute(w);
 
         Object result = PNotImplemented.NOT_IMPLEMENTED;
         Object leftCallable = getattr.execute(leftClass);
         Object rightCallable = PNone.NO_VALUE;
 
-        if (leftClass != rightClass) {
+        if (!isSameTypeNode.execute(leftClass, rightClass)) {
             rightCallable = getattrR.execute(rightClass);
             if (rightCallable == leftCallable) {
                 rightCallable = PNone.NO_VALUE;

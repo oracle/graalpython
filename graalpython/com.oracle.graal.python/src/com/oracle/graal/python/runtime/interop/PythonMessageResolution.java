@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -320,13 +321,17 @@ public class PythonMessageResolution {
             PythonAbstractObject object = (PythonAbstractObject) obj;
 
             HashSet<String> keys = new HashSet<>();
-            PythonClass klass = getClass.execute(object);
-            for (PythonObject o : getMro(klass)) {
-                addKeysFromObject(keys, o, includeInternal);
+            AbstractPythonClass klass = getClass.execute(object);
+            for (AbstractPythonClass o : getMro(klass)) {
+                // TODO PythonNativeClass
+                if (o instanceof PythonObject) {
+                    addKeysFromObject(keys, (PythonObject) o, includeInternal);
+                }
             }
             if (object instanceof PythonObject) {
                 addKeysFromObject(keys, (PythonObject) object, includeInternal);
             }
+            // TODO PythonNativeObject
             if (includeInternal) {
                 // we use the internal flag to also return dictionary keys for mappings
                 if (isMapping.execute(object)) {
@@ -351,7 +356,7 @@ public class PythonMessageResolution {
             return factory.createTuple(keys.toArray(new String[keys.size()]));
         }
 
-        private PythonClass[] getMro(PythonClass clazz) {
+        private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());
@@ -791,8 +796,8 @@ public class PythonMessageResolution {
             int info = KeyInfo.NONE;
             Object attr = PNone.NO_VALUE;
 
-            PythonClass klass = getClassNode.execute(object);
-            for (PythonClass c : getMro(klass)) {
+            AbstractPythonClass klass = getClassNode.execute(object);
+            for (AbstractPythonClass c : getMro(klass)) {
                 attr = readNode.execute(c, fieldName);
                 if (attr != PNone.NO_VALUE) {
                     owner = c;
@@ -855,7 +860,7 @@ public class PythonMessageResolution {
             return info;
         }
 
-        private PythonClass[] getMro(PythonClass clazz) {
+        private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());

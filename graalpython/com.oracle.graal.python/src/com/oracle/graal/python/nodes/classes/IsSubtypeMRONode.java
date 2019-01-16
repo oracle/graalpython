@@ -41,9 +41,11 @@
 package com.oracle.graal.python.nodes.classes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -93,7 +95,7 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
         return isSubtype(derived, clazz.getType());
     }
 
-    protected static boolean isBuiltinClass(PythonClass clazz) {
+    protected static boolean isBuiltinClass(AbstractPythonClass clazz) {
         return clazz instanceof PythonBuiltinClass;
     }
 
@@ -111,7 +113,7 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
     protected boolean isSubtype(PythonClass derived, PythonBuiltinClassType clazz,
                     @Cached("create()") IsBuiltinClassProfile profile) {
 
-        for (PythonClass mro : getMro(derived)) {
+        for (AbstractPythonClass mro : getMro(derived)) {
             if (profile.profileClass(mro, clazz)) {
                 return true;
             }
@@ -121,9 +123,10 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
     }
 
     @Specialization
-    protected boolean isSubtype(PythonClass derived, PythonClass clazz) {
-        for (PythonClass mro : getMro(derived)) {
-            if (mro == clazz) {
+    protected boolean isSubtype(PythonClass derived, PythonClass clazz,
+                    @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode) {
+        for (AbstractPythonClass mro : getMro(derived)) {
+            if (isSameTypeNode.execute(mro, clazz)) {
                 return true;
             }
         }
@@ -131,7 +134,7 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
         return false;
     }
 
-    private PythonClass[] getMro(PythonClass clazz) {
+    private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
         if (getMroNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             getMroNode = insert(GetMroNode.create());

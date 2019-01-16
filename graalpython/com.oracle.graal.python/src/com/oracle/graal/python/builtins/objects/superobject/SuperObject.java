@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,21 +41,21 @@
 package com.oracle.graal.python.builtins.objects.superobject;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.Truffle;
 
 public class SuperObject extends PythonBuiltinObject {
     private final Assumption neverReinitialized = Truffle.getRuntime().createAssumption("super object was never reinitialized");
     private Object type;
-    private PythonClass objecttype;
+    private AbstractPythonClass objecttype;
     private Object object;
 
-    public SuperObject(PythonClass cls) {
+    public SuperObject(AbstractPythonClass cls) {
         super(cls);
     }
 
-    public void init(Object newType, PythonClass newObjecttype, Object newObject) {
+    public void init(Object newType, AbstractPythonClass newObjecttype, Object newObject) {
         if (this.type != null) {
             neverReinitialized.invalidate();
         }
@@ -64,7 +64,7 @@ public class SuperObject extends PythonBuiltinObject {
         this.object = newObject;
     }
 
-    public PythonClass getObjectType() {
+    public AbstractPythonClass getObjectType() {
         return objecttype;
     }
 

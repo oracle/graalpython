@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -76,7 +77,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     boolean isSubtypeOfConstantType(@SuppressWarnings("unused") PythonClass derived, @SuppressWarnings("unused") PythonClass cls,
                     @Cached("derived") PythonClass cachedDerived,
                     @Cached("cls") PythonClass cachedCls) {
-        for (PythonClass n : getMro(cachedDerived)) {
+        for (AbstractPythonClass n : getMro(cachedDerived)) {
             if (n == cachedCls) {
                 return true;
             }
@@ -88,7 +89,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     @ExplodeLoop
     boolean isSubtypeOfVariableType(@SuppressWarnings("unused") PythonClass derived, PythonClass cls,
                     @Cached("derived") PythonClass cachedDerived) {
-        for (PythonClass n : getMro(cachedDerived)) {
+        for (AbstractPythonClass n : getMro(cachedDerived)) {
             if (n == cls) {
                 return true;
             }
@@ -98,7 +99,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     @Specialization(replaces = {"isSubtypeOfConstantType", "isSubtypeOfVariableType"})
     boolean issubTypeGeneric(PythonClass derived, PythonClass cls) {
-        for (PythonClass n : getMro(derived)) {
+        for (AbstractPythonClass n : getMro(derived)) {
             if (n == cls) {
                 return true;
             }
@@ -119,7 +120,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return abstractIsSubclassNode.execute(derived, cls);
     }
 
-    private PythonClass[] getMro(PythonClass clazz) {
+    private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
         if (getMroNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             getMroNode = insert(GetMroNode.create());

@@ -45,7 +45,8 @@ import java.util.function.Supplier;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -286,18 +287,19 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @Cached("create(rname)") LookupAttributeInMRONode getattrR,
                     @Cached("create()") GetClassNode getClass,
                     @Cached("create()") GetClassNode getClassR,
+                    @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
                     @Cached("create()") IsSubtypeNode isSubtype,
                     @Cached("createBinaryProfile()") ConditionProfile notImplementedBranch) {
         Object result = PNotImplemented.NOT_IMPLEMENTED;
-        PythonClass leftClass = getClass.execute(left);
+        AbstractPythonClass leftClass = getClass.execute(left);
         Object leftCallable = getattr.execute(leftClass);
-        PythonClass rightClass = getClassR.execute(right);
+        AbstractPythonClass rightClass = getClassR.execute(right);
         Object rightCallable = getattrR.execute(rightClass);
         if (leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;
         }
         if (leftCallable != PNone.NO_VALUE) {
-            if (rightCallable != PNone.NO_VALUE && leftClass != rightClass && isSubtype.execute(rightClass, leftClass)) {
+            if (rightCallable != PNone.NO_VALUE && !isSameTypeNode.execute(leftClass, rightClass) && isSubtype.execute(rightClass, leftClass)) {
                 result = ensureReverseDispatch().executeObject(rightCallable, right, left);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
                     return result;

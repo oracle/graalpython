@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
@@ -104,7 +105,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         private final BranchProfile errorBranch = BranchProfile.create();
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
-        protected boolean descr_check(LazyPythonClass descrType, String name, Object obj, PythonClass type) {
+        protected boolean descr_check(LazyPythonClass descrType, String name, Object obj, AbstractPythonClass type) {
             if (PGuards.isNone(obj)) {
                 if (!isNoneBuiltinClassProfile.profileClass(type, PythonBuiltinClassType.PNone)) {
                     return true;
@@ -112,13 +113,13 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             }
             if (isBuiltinProfile.profile(descrType instanceof PythonBuiltinClassType)) {
                 PythonBuiltinClassType builtinClassType = (PythonBuiltinClassType) descrType;
-                for (PythonClass o : getMro(type)) {
+                for (AbstractPythonClass o : getMro(type)) {
                     if (isBuiltinClassProfile.profileClass(o, builtinClassType)) {
                         return false;
                     }
                 }
             } else {
-                for (PythonClass o : getMro(type)) {
+                for (AbstractPythonClass o : getMro(type)) {
                     if (o == descrType) {
                         return false;
                     }
@@ -128,7 +129,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             throw raise(TypeError, "descriptor '%s' for '%s' objects doesn't apply to '%s' object", name, getTypeName(descrType), getTypeName(type));
         }
 
-        private PythonClass[] getMro(PythonClass clazz) {
+        private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());

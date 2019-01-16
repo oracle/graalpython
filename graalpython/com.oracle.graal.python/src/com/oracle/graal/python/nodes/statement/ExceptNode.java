@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.statement;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -152,8 +153,8 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
             }
         } else {
             // non-builtin class: look through MRO
-            PythonClass[] mro = getMro((PythonClass) lazyClass);
-            for (PythonClass current : mro) {
+            AbstractPythonClass[] mro = getMro((PythonClass) lazyClass);
+            for (AbstractPythonClass current : mro) {
                 if (isClassProfile.profileClass(current, cachedError)) {
                     matches = true;
                     break;
@@ -216,8 +217,8 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         if (equalsProfile.profile(expectedType == clazz)) {
             return true;
         }
-        PythonClass[] mro = getMro(clazz);
-        for (PythonClass current : mro) {
+        AbstractPythonClass[] mro = getMro(clazz);
+        for (AbstractPythonClass current : mro) {
             if (expectedType == current) {
                 return true;
             }
@@ -275,7 +276,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         return getSourceSection() != null;
     }
 
-    private PythonClass[] getMro(PythonClass clazz) {
+    private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
         if (getMroNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             getMroNode = insert(GetMroNode.create());

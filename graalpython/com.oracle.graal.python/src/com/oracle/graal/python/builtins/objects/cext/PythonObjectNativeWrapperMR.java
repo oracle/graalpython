@@ -93,7 +93,9 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -124,6 +126,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -210,8 +213,6 @@ public class PythonObjectNativeWrapperMR {
 
     abstract static class GetSulongTypeNode extends PNodeWithContext {
 
-        private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
-
         public abstract Object execute(LazyPythonClass clazz);
 
         @Specialization(guards = "clazz == cachedClass", limit = "10")
@@ -222,46 +223,66 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(replaces = "doBuiltinCached")
-        Object doBuiltinGeneric(PythonBuiltinClassType clazz) {
-            return getSulongTypeForBuiltinClass(clazz);
+        Object doBuiltinGeneric(PythonBuiltinClassType clazz,
+                        @Cached("create()") TypeNodes.GetSulongTypeNode getSulongTypeNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached("createBinaryProfile()") ConditionProfile hasSulongTypeProfile) {
+            ManagedPythonClass pythonClass = getPythonClass(clazz, profile);
+            return doManagedGeneric(pythonClass, getSulongTypeNode, hasSulongTypeProfile);
         }
 
         @Specialization(assumptions = "singleContextAssumption()", guards = "clazz == cachedClass")
-        Object doGeneric(@SuppressWarnings("unused") PythonClass clazz,
-                        @Cached("clazz") @SuppressWarnings("unused") PythonClass cachedClass,
-                        @Cached("doGeneric(clazz)") Object sulongType) {
+        Object doManagedCached(@SuppressWarnings("unused") ManagedPythonClass clazz,
+                        @Cached("clazz") @SuppressWarnings("unused") ManagedPythonClass cachedClass,
+                        @Cached("getSulongTypeForClass(cachedClass)") Object sulongType) {
             return sulongType;
         }
 
-        @Specialization
-        Object doGeneric(PythonClass clazz) {
-            return getSulongTypeForClass(clazz);
-        }
-
-        protected Object getSulongTypeForBuiltinClass(PythonBuiltinClassType clazz) {
-            PythonClass pythonClass = getPythonClass(clazz, profile);
-            return getSulongTypeForClass(pythonClass);
-        }
-
-        private static Object getSulongTypeForClass(PythonClass klass) {
-            Object sulongType = klass.getSulongType();
-            if (sulongType == null) {
+        @Specialization(replaces = "doManagedCached")
+        Object doManagedGeneric(ManagedPythonClass clazz,
+                        @Cached("create()") TypeNodes.GetSulongTypeNode getSulongTypeNode,
+                        @Cached("createBinaryProfile()") ConditionProfile hasSulongTypeProfile) {
+            Object sulongType = getSulongTypeNode.execute(clazz);
+            if (hasSulongTypeProfile.profile(sulongType == null)) {
                 CompilerDirectives.transferToInterpreter();
-                sulongType = findBuiltinClass(klass);
-                if (sulongType == null) {
-                    throw new IllegalStateException("sulong type for " + GetNameNode.doSlowPath(klass) + " was not registered");
-                }
+                return resolveSulongTypeForClass(clazz);
             }
             return sulongType;
         }
 
-        private static Object findBuiltinClass(PythonClass klass) {
-            PythonClass[] mro = GetMroNode.doSlowPath(klass);
+        protected Object getSulongTypeForBuiltinClass(PythonBuiltinClassType clazz) {
+            CompilerAsserts.neverPartOfCompilation();
+            AbstractPythonClass pythonClass = getPythonClass(clazz, ConditionProfile.createBinaryProfile());
+            return getSulongTypeForClass(pythonClass);
+        }
+
+        protected static Object getSulongTypeForClass(AbstractPythonClass clazz) {
+            CompilerAsserts.neverPartOfCompilation();
+            Object sulongType = TypeNodes.GetSulongTypeNode.getSlowPath(clazz);
+            if (sulongType == null) {
+                CompilerDirectives.transferToInterpreter();
+                return resolveSulongTypeForClass(clazz);
+            }
+            return sulongType;
+        }
+
+        /** resolves the Sulong type */
+        private static Object resolveSulongTypeForClass(AbstractPythonClass klass) {
+            Object sulongType = findBuiltinClass(klass);
+            if (sulongType == null) {
+                throw new IllegalStateException("sulong type for " + GetNameNode.doSlowPath(klass) + " was not registered");
+            }
+            return sulongType;
+        }
+
+        /** iterates over MRO and looks for the first builtin type with an existing Sulong type */
+        private static Object findBuiltinClass(AbstractPythonClass klass) {
+            AbstractPythonClass[] mro = GetMroNode.doSlowPath(klass);
             Object sulongType = null;
-            for (PythonClass superClass : mro) {
-                sulongType = superClass.getSulongType();
+            for (AbstractPythonClass superClass : mro) {
+                sulongType = TypeNodes.GetSulongTypeNode.getSlowPath(superClass);
                 if (sulongType != null) {
-                    klass.setSulongType(sulongType);
+                    TypeNodes.GetSulongTypeNode.setSlowPath(klass, sulongType);
                     break;
                 }
             }
@@ -492,7 +513,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
-        Object doTpDictoffset(PythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpDictoffset(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") CastToIndexNode castToIntNode,
                         @Cached("create(__DICTOFFSET__)") LookupAttributeInMRONode getAttrNode) {
             // TODO properly implement 'tp_dictoffset' for builtin classes
@@ -797,7 +818,7 @@ public class PythonObjectNativeWrapperMR {
             return (int) sizeofWcharNode.execute();
         }
 
-        private PythonClass getClass(Object obj) {
+        private AbstractPythonClass getClass(Object obj) {
             if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getClassNode = insert(GetClassNode.create());
@@ -921,7 +942,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
-        Object doTpDictoffset(PythonClass object, @SuppressWarnings("unused") String key, Object value,
+        Object doTpDictoffset(ManagedPythonClass object, @SuppressWarnings("unused") String key, Object value,
                         @Cached("create()") CastToIntegerFromIntNode castToIntNode,
                         @Cached("create(__SETATTR__)") LookupAndCallTernaryNode call) {
             // TODO properly implement 'tp_dictoffset' for builtin classes

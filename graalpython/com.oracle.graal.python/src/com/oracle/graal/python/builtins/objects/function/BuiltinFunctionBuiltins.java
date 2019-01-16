@@ -34,7 +34,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -85,7 +85,7 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getEnclosingType() != null")
         @TruffleBoundary
-        PythonClass objclass(PBuiltinFunction self,
+        ManagedPythonClass objclass(PBuiltinFunction self,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             return getPythonClass(self.getEnclosingType(), profile);
         }

@@ -60,7 +60,7 @@ import com.oracle.truffle.api.object.Property;
 public abstract class ObjectAttributeNode extends PNodeWithContext {
     @Child private GetDictStorageNode getStorageNode;
 
-    protected Object attrKey(Object key) {
+    protected static Object attrKey(Object key) {
         if (key instanceof PString) {
             return ((PString) key).getValue();
         } else {
@@ -76,7 +76,7 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
         return getStorageNode.execute(c);
     }
 
-    protected boolean isDictUnsetOrSameAsStorage(PythonObject object) {
+    protected static boolean isDictUnsetOrSameAsStorage(PythonObject object) {
         return object.getDict() == null;
     }
 

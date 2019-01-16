@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -134,7 +135,7 @@ public class PThreadStateMR {
         public abstract Object execute(Object key);
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
-        PythonClass doCurExcType(@SuppressWarnings("unused") String key) {
+        AbstractPythonClass doCurExcType(@SuppressWarnings("unused") String key) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
             if (currentException != null) {
@@ -167,7 +168,7 @@ public class PThreadStateMR {
         }
 
         @Specialization(guards = "eq(key, EXC_TYPE)")
-        PythonClass doExcType(@SuppressWarnings("unused") String key) {
+        AbstractPythonClass doExcType(@SuppressWarnings("unused") String key) {
             PythonContext context = getContext();
             PException currentException = context.getCaughtException();
             if (currentException != null) {

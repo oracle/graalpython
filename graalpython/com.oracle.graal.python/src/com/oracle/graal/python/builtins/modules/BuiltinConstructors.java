@@ -114,6 +114,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -1367,8 +1368,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return callNativeGenericNewNode(nativeBaseClass, varargs, kwargs);
         }
 
-        private static PythonNativeClass findFirstNativeBaseClass(PythonClass[] methodResolutionOrder) {
-            for (PythonClass cls : methodResolutionOrder) {
+        private static PythonNativeClass findFirstNativeBaseClass(AbstractPythonClass[] methodResolutionOrder) {
+            for (AbstractPythonClass cls : methodResolutionOrder) {
                 if (cls instanceof PythonNativeClass) {
                     return (PythonNativeClass) cls;
                 }
@@ -1757,7 +1758,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached("create()") CallDispatchNode callNewFuncNode,
                         @Cached("create()") CreateArgumentsNode createArgs) {
             // Determine the proper metatype to deal with this
-            PythonClass metaclass = calculate_metaclass(cls, bases, getMetaclassNode);
+            AbstractPythonClass metaclass = calculate_metaclass(cls, bases, getMetaclassNode);
             if (metaclass != cls) {
                 Object newFunc = getNewFuncNode.execute(metaclass);
                 if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
@@ -1805,16 +1806,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object typeMetaclass(String name, PTuple bases, PDict namespace, PythonClass metaclass) {
+        private Object typeMetaclass(String name, PTuple bases, PDict namespace, AbstractPythonClass metaclass) {
 
             Object[] array = bases.getArray();
 
-            PythonClass[] basesArray;
+            AbstractPythonClass[] basesArray;
             if (array.length == 0) {
                 // Adjust for empty tuple bases
-                basesArray = new PythonClass[]{getCore().lookupType(PythonBuiltinClassType.PythonObject)};
+                basesArray = new AbstractPythonClass[]{getCore().lookupType(PythonBuiltinClassType.PythonObject)};
             } else {
-                basesArray = new PythonClass[array.length];
+                basesArray = new AbstractPythonClass[array.length];
                 for (int i = 0; i < array.length; i++) {
                     // TODO: deal with non-class bases
                     if (!(array[i] instanceof PythonClass)) {
@@ -2056,7 +2057,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return addedNewDict;
         }
 
-        private PythonClass[] getMro(PythonClass pythonClass) {
+        private AbstractPythonClass[] getMro(PythonClass pythonClass) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());
@@ -2064,10 +2065,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return getMroNode.execute(pythonClass);
         }
 
-        private PythonClass calculate_metaclass(PythonClass cls, PTuple bases, GetClassNode getMetaclassNode) {
-            PythonClass winner = cls;
+        private AbstractPythonClass calculate_metaclass(PythonClass cls, PTuple bases, GetClassNode getMetaclassNode) {
+            AbstractPythonClass winner = cls;
             for (Object base : bases.getArray()) {
-                PythonClass typ = getMetaclassNode.execute(base);
+                AbstractPythonClass typ = getMetaclassNode.execute(base);
                 if (isSubType(winner, typ)) {
                     continue;
                 } else if (isSubType(typ, winner)) {
@@ -2080,7 +2081,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return winner;
         }
 
-        private boolean isSubType(PythonClass subclass, PythonClass superclass) {
+        private boolean isSubType(AbstractPythonClass subclass, AbstractPythonClass superclass) {
             if (isSubtypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isSubtypeNode = insert(IsSubtypeNode.create());
@@ -2176,7 +2177,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "NotImplementedType", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNotImplemented, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
-        protected PythonClass getNotImplementedClass() {
+        protected PythonBuiltinClass getNotImplementedClass() {
             return getCore().lookupType(PythonBuiltinClassType.PNotImplemented);
         }
 
@@ -2203,7 +2204,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "NoneType", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNone, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NoneTypeNode extends PythonBuiltinNode {
-        protected PythonClass getNoneClass() {
+        protected PythonBuiltinClass getNoneClass() {
             return getCore().lookupType(PythonBuiltinClassType.PNone);
         }
 

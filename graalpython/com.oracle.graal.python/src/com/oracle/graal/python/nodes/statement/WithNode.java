@@ -32,7 +32,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
@@ -150,7 +150,7 @@ public class WithNode extends StatementNode {
     protected void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException e) {
         e.getExceptionObject().reifyException();
         PBaseException value = e.getExceptionObject();
-        PythonClass type = getClassNode.execute(value);
+        AbstractPythonClass type = getClassNode.execute(value);
         Object trace = e.getExceptionObject().getTraceback(factory());
         Object returnValue = exitDispatch.execute(frame, exitCallable, new Object[]{withObject, type, value, trace}, PKeyword.EMPTY_KEYWORDS);
         // If exit handler returns 'true', suppress

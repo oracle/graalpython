@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
@@ -112,11 +113,11 @@ public class TypeBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public String repr(PythonClass self,
+        public String repr(AbstractPythonClass self,
                         @Cached("create()") ReadAttributeFromObjectNode readModuleNode,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode readQualNameNode) {
+                        @Cached("create()") ReadAttributeFromObjectNode readQualNameNode) {
             Object moduleName = readModuleNode.execute(self, __MODULE__);
-            Object qualName = readQualNameNode.executeObject(self, __QUALNAME__);
+            Object qualName = readQualNameNode.execute(self, __QUALNAME__);
             return concat(moduleName, qualName);
         }
 
@@ -142,8 +143,9 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MroNode extends PythonBuiltinNode {
         @Specialization
-        Object doit(PythonClass klass) {
-            PythonClass[] mro = klass.getMethodResolutionOrder();
+        Object doit(PythonClass klass,
+                        @Cached("create()") GetMroNode getMroNode) {
+            AbstractPythonClass[] mro = getMroNode.execute(klass);
             return factory().createList(Arrays.copyOf(mro, mro.length, Object[].class));
         }
 
@@ -161,6 +163,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private CallVarargsMethodNode dispatchInit = CallVarargsMethodNode.create();
         @Child private LookupAttributeInMRONode lookupInit = LookupAttributeInMRONode.create(__INIT__);
         @Child private GetClassNode getClass = GetClassNode.create();
+        @Child private TypeNodes.IsSameTypeNode isSameTypeNode;
 
         private final IsBuiltinClassProfile isClassClassProfile = IsBuiltinClassProfile.create();
 
@@ -206,8 +209,8 @@ public class TypeBuiltins extends PythonBuiltins {
                 CompilerAsserts.partialEvaluationConstant(doCreateArgs);
                 Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments, arguments.length) : arguments;
                 Object newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
-                PythonClass newInstanceKlass = getClass.execute(newInstance);
-                if (newInstanceKlass == self) {
+                AbstractPythonClass newInstanceKlass = getClass.execute(newInstance);
+                if (isSameType(newInstanceKlass, self)) {
                     if (arguments.length == 2 && isClassClassProfile.profileClass(self, PythonBuiltinClassType.PythonClass)) {
                         // do not call init if we are creating a new instance of type and we are
                         // passing keywords or more than one argument see:
@@ -234,6 +237,14 @@ public class TypeBuiltins extends PythonBuiltins {
             } else {
                 throw raise(TypeError, "cannot create '%s' instances", self.getName());
             }
+        }
+
+        private boolean isSameType(AbstractPythonClass left, AbstractPythonClass right) {
+            if (isSameTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSameTypeNode = insert(TypeNodes.IsSameTypeNode.create());
+            }
+            return isSameTypeNode.execute(left, right);
         }
     }
 
@@ -472,7 +483,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object[] toArray(Set<PythonClass> subclasses) {
+        private static <T> Object[] toArray(Set<T> subclasses) {
             return subclasses.toArray();
         }
     }
@@ -508,23 +519,25 @@ public class TypeBuiltins extends PythonBuiltins {
     static abstract class ModuleNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(value)")
-        @TruffleBoundary
-        Object getModule(PythonClass cls, @SuppressWarnings("unused") PNone value) {
-            if (cls instanceof PythonBuiltinClass) {
-                String module = ((PythonBuiltinClass) cls).getType().getPublicInModule();
-                return module == null ? "builtins" : module;
-            }
-            Object module = cls.getAttribute(__MODULE__);
+        Object getModule(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
+            String module = cls.getType().getPublicInModule();
+            return module == null ? "builtins" : module;
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        Object getModule(PythonClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
+            Object module = readAttrNode.execute(cls, __MODULE__);
             if (module == PNone.NO_VALUE) {
-                throw raise(AttributeError, "");
+                throw raise(AttributeError);
             }
             return module;
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        @TruffleBoundary
-        Object setModule(PythonClass cls, Object value) {
-            cls.setAttribute(__MODULE__, value);
+        Object setModule(PythonClass cls, Object value,
+                        @Cached("create()") WriteAttributeToObjectNode writeAttrNode) {
+            writeAttrNode.execute(cls, __MODULE__, value);
             return PNone.NONE;
         }
     }

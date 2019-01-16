@@ -40,41 +40,106 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+
 import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass.FlagsContainer;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class TypeNodes {
 
     public abstract static class GetTypeFlagsNode extends PNodeWithContext {
 
-        public abstract long execute(PythonClass clazz);
+        public abstract long execute(AbstractPythonClass clazz);
 
         @Specialization(guards = "isInitialized(clazz)")
-        long doInitialized(PythonClass clazz) {
+        long doInitialized(ManagedPythonClass clazz) {
             return clazz.getFlagsContainer().flags;
         }
 
         @Specialization
-        long doGeneric(PythonClass clazz) {
+        long doGeneric(ManagedPythonClass clazz) {
             if (!isInitialized(clazz)) {
-                return clazz.getFlags();
+                return getValue(clazz.getFlagsContainer());
             }
             return clazz.getFlagsContainer().flags;
         }
 
-        protected static boolean isInitialized(PythonClass clazz) {
+        @Specialization
+        long doNative(PythonNativeClass clazz,
+                        @Cached("createReadNode()") Node readNode) {
+            return doNativeGeneric(clazz, readNode);
+        }
+
+        @TruffleBoundary
+        private static long getValue(FlagsContainer fc) {
+            // This method is only called from C code, i.e., the flags of the initial super class
+            // must be available.
+            if (fc.initialDominantBase != null) {
+                fc.flags = doSlowPath(fc.initialDominantBase);
+                fc.initialDominantBase = null;
+            }
+            return fc.flags;
+        }
+
+        @TruffleBoundary
+        public static long doSlowPath(AbstractPythonClass clazz) {
+            if (clazz instanceof ManagedPythonClass) {
+                ManagedPythonClass mclazz = (ManagedPythonClass) clazz;
+                if (isInitialized(mclazz)) {
+                    return mclazz.getFlagsContainer().flags;
+                } else {
+                    return getValue(mclazz.getFlagsContainer());
+                }
+            } else if (clazz instanceof PythonNativeClass) {
+                return doNativeGeneric((PythonNativeClass) clazz, createReadNode());
+            }
+            throw new IllegalStateException("unknown type");
+
+        }
+
+        static long doNativeGeneric(PythonNativeClass clazz, Node readNode) {
+            try {
+                return (long) ForeignAccess.sendRead(readNode, (TruffleObject) clazz.getPtr(), NativeMemberNames.TP_FLAGS);
+            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw e.raise();
+            }
+        }
+
+        protected static boolean isInitialized(ManagedPythonClass clazz) {
             return clazz.getFlagsContainer().initialDominantBase == null;
+        }
+
+        protected static Node createReadNode() {
+            return Message.READ.createNode();
         }
 
         public static GetTypeFlagsNode create() {
@@ -84,24 +149,26 @@ public abstract class TypeNodes {
 
     public abstract static class GetMroNode extends PNodeWithContext {
 
-        public abstract PythonClass[] execute(Object obj);
+        public abstract AbstractPythonClass[] execute(Object obj);
 
         @Specialization
-        PythonClass[] doPythonClass(PythonClass obj) {
+        AbstractPythonClass[] doPythonClass(PythonClass obj) {
             return obj.getMethodResolutionOrder();
         }
 
         @Specialization
-        PythonClass[] doPythonClass(PythonBuiltinClassType obj) {
+        AbstractPythonClass[] doPythonClass(PythonBuiltinClassType obj) {
             return getBuiltinPythonClass(obj).getMethodResolutionOrder();
         }
 
         @TruffleBoundary
-        public static PythonClass[] doSlowPath(Object obj) {
-            if (obj instanceof PythonClass) {
-                return ((PythonClass) obj).getMethodResolutionOrder();
+        public static AbstractPythonClass[] doSlowPath(Object obj) {
+            if (obj instanceof ManagedPythonClass) {
+                return ((ManagedPythonClass) obj).getMethodResolutionOrder();
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
+            } else if (obj instanceof PythonNativeClass) {
+                // TODO implement
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -116,7 +183,7 @@ public abstract class TypeNodes {
         public abstract String execute(Object obj);
 
         @Specialization
-        String doPythonClass(PythonClass obj) {
+        String doPythonClass(ManagedPythonClass obj) {
             return obj.getName();
         }
 
@@ -127,14 +194,16 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         public static String doSlowPath(Object obj) {
-            if (obj instanceof PythonClass) {
-                return ((PythonClass) obj).getName();
+            if (obj instanceof ManagedPythonClass) {
+                return ((ManagedPythonClass) obj).getName();
             } else if (obj instanceof PythonBuiltinClassType) {
                 // TODO(fa): remove this special case
                 if (obj == PythonBuiltinClassType.TruffleObject) {
                     return BuiltinNames.FOREIGN;
                 }
                 return ((PythonBuiltinClassType) obj).getName();
+            } else if (obj instanceof PythonNativeClass) {
+                // TODO implement
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -150,7 +219,7 @@ public abstract class TypeNodes {
         public abstract LazyPythonClass execute(Object obj);
 
         @Specialization
-        LazyPythonClass doPythonClass(PythonClass obj) {
+        LazyPythonClass doPythonClass(ManagedPythonClass obj) {
             return obj.getSuperClass();
         }
 
@@ -161,10 +230,12 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         public static LazyPythonClass doSlowPath(Object obj) {
-            if (obj instanceof PythonClass) {
-                return ((PythonClass) obj).getSuperClass();
+            if (obj instanceof ManagedPythonClass) {
+                return ((ManagedPythonClass) obj).getSuperClass();
             } else if (obj instanceof PythonBuiltinClassType) {
                 return ((PythonBuiltinClassType) obj).getBase();
+            } else if (obj instanceof PythonNativeClass) {
+                // TODO implement
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -177,30 +248,108 @@ public abstract class TypeNodes {
 
     public abstract static class GetSubclassesNode extends PNodeWithContext {
 
-        public abstract Set<PythonClass> execute(Object obj);
+        public abstract Set<AbstractPythonClass> execute(Object obj);
 
         @Specialization
-        Set<PythonClass> doPythonClass(PythonClass obj) {
+        Set<AbstractPythonClass> doPythonClass(ManagedPythonClass obj) {
             return obj.getSubClasses();
         }
 
         @Specialization
-        Set<PythonClass> doPythonClass(PythonBuiltinClassType obj) {
+        Set<AbstractPythonClass> doPythonClass(PythonBuiltinClassType obj) {
             return getBuiltinPythonClass(obj).getSubClasses();
         }
 
         @TruffleBoundary
-        public static Set<PythonClass> doSlowPath(Object obj) {
-            if (obj instanceof PythonClass) {
-                return ((PythonClass) obj).getSubClasses();
+        public static Set<AbstractPythonClass> doSlowPath(Object obj) {
+            if (obj instanceof ManagedPythonClass) {
+                return ((ManagedPythonClass) obj).getSubClasses();
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getSubClasses();
+            } else if (obj instanceof PythonNativeClass) {
+                // TODO implement
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
 
         public static GetSubclassesNode create() {
             return GetSubclassesNodeGen.create();
+        }
+
+    }
+
+    @ImportStatic(SpecialMethodNames.class)
+    public abstract static class IsSameTypeNode extends PNodeWithContext {
+
+        public abstract boolean execute(Object left, Object right);
+
+        @Specialization
+        boolean doManaged(ManagedPythonClass left, ManagedPythonClass right) {
+            return left == right;
+        }
+
+        @Specialization
+        boolean doNative(PythonNativeClass left, PythonNativeClass right,
+                        @Cached("create(__EQ__)") CExtNodes.PointerCompareNode pointerCompareNode) {
+            return pointerCompareNode.execute(left, right);
+        }
+
+        @Fallback
+        boolean doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
+            return false;
+        }
+
+        @TruffleBoundary
+        public static boolean doSlowPath(Object left, Object right) {
+            if (left instanceof ManagedPythonClass && right instanceof ManagedPythonClass) {
+                return left == right;
+            } else if (left instanceof PythonNativeClass && right instanceof PythonNativeClass) {
+                return CExtNodes.PointerCompareNode.create(__EQ__).execute((PythonNativeClass) left, (PythonNativeClass) right);
+            }
+            return false;
+        }
+
+        public static IsSameTypeNode create() {
+            return IsSameTypeNodeGen.create();
+        }
+
+    }
+
+    /** accesses the Sulong type of a class; does no recursive resolving */
+    public abstract static class GetSulongTypeNode extends Node {
+
+        public abstract Object execute(AbstractPythonClass clazz);
+
+        @Specialization
+        Object doInitialized(ManagedPythonClass clazz) {
+            return clazz.getSulongType();
+        }
+
+        @Specialization
+        Object doNative(@SuppressWarnings("unused") PythonNativeClass clazz) {
+            return null;
+        }
+
+        @TruffleBoundary
+        public static Object getSlowPath(AbstractPythonClass clazz) {
+            if (clazz instanceof ManagedPythonClass) {
+                return ((ManagedPythonClass) clazz).getSulongType();
+            } else if (clazz instanceof PythonNativeClass) {
+                return null;
+            }
+            throw new IllegalStateException("unknown type " + clazz.getClass().getName());
+        }
+
+        @TruffleBoundary
+        public static void setSlowPath(AbstractPythonClass clazz, Object sulongType) {
+            if (clazz instanceof ManagedPythonClass) {
+                ((ManagedPythonClass) clazz).setSulongType(sulongType);
+            }
+            throw new IllegalStateException("cannot set Sulong type for " + clazz.getClass().getName());
+        }
+
+        public static GetSulongTypeNode create() {
+            return GetSulongTypeNodeGen.create();
         }
 
     }

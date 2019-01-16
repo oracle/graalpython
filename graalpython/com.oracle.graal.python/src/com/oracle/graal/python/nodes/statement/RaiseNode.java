@@ -31,6 +31,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -44,7 +45,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -86,7 +86,7 @@ public abstract class RaiseNode extends StatementNode {
         if (simpleBaseCheckProfile.profileClass(pythonClass, BaseException)) {
             return;
         }
-        for (PythonClass klass : getMro(pythonClass)) {
+        for (AbstractPythonClass klass : getMro(pythonClass)) {
             if (iterativeBaseCheckProfile.profileClass(klass, BaseException)) {
                 return;
             }
@@ -115,7 +115,7 @@ public abstract class RaiseNode extends StatementNode {
         throw raise(TypeError, "exceptions must derive from BaseException");
     }
 
-    private PythonClass[] getMro(PythonClass clazz) {
+    private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
         if (getMroNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             getMroNode = insert(GetMroNode.create());

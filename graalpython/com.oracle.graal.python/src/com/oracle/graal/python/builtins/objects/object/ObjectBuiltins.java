@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -119,7 +120,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         private static final String ERROR_MESSAGE = "__class__ assignment only supported for heap types or ModuleType subclasses";
 
         @Specialization(guards = "isNoValue(value)")
-        PythonClass getClass(Object self, @SuppressWarnings("unused") PNone value,
+        AbstractPythonClass getClass(Object self, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") GetClassNode getClass) {
             return getClass.execute(self);
         }
@@ -135,7 +136,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone setClass(PythonObject self, PythonClass value,
+        PNone setClass(PythonObject self, AbstractPythonClass value,
                         @Cached("create()") BranchProfile errorValueBranch,
                         @Cached("create()") BranchProfile errorSelfBranch,
                         @Cached("create()") BranchProfile errorSlotsBranch,
@@ -299,7 +300,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             if (self == PNone.NONE) {
                 return "None";
             }
-            PythonClass type = getClass.execute(self);
+            AbstractPythonClass type = getClass.execute(self);
             Object moduleName = readModuleNode.execute(type, __MODULE__);
             Object qualName = readQualNameNode.execute(type, __QUALNAME__);
             if (moduleName != PNone.NO_VALUE && !moduleName.equals(getCore().getBuiltins().getModuleName())) {
@@ -489,7 +490,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             LazyPythonClass type = getObjectClassNode.execute(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
-                PythonClass dataDescClass = getDataClassNode.execute(descr);
+                AbstractPythonClass dataDescClass = getDataClassNode.execute(descr);
                 Object set = lookupSetNode.execute(dataDescClass);
                 if (PGuards.isCallable(set)) {
                     callSetNode.execute(set, descr, object, value);
@@ -522,7 +523,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             LazyPythonClass type = getObjectClassNode.execute(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
-                PythonClass dataDescClass = getDataClassNode.execute(descr);
+                AbstractPythonClass dataDescClass = getDataClassNode.execute(descr);
                 Object set = lookupDeleteNode.execute(dataDescClass);
                 if (PGuards.isCallable(set)) {
                     callSetNode.executeObject(set, descr, object);

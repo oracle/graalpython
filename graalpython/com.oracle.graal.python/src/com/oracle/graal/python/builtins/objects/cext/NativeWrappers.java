@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.Pyth
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -149,6 +150,16 @@ public abstract class NativeWrappers {
             // important: native wrappers are cached
             DynamicObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
             if (noWrapperProfile.profile(nativeWrapper == null)) {
+                nativeWrapper = new PythonObjectNativeWrapper(obj);
+                obj.setNativeWrapper(nativeWrapper);
+            }
+            return nativeWrapper;
+        }
+
+        public static DynamicObjectNativeWrapper wrapSlowPath(PythonAbstractObject obj) {
+            // important: native wrappers are cached
+            DynamicObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
+            if (nativeWrapper == null) {
                 nativeWrapper = new PythonObjectNativeWrapper(obj);
                 obj.setNativeWrapper(nativeWrapper);
             }
@@ -275,7 +286,7 @@ public abstract class NativeWrappers {
         private Object getBufferProc;
         private Object releaseBufferProc;
 
-        public PythonClassNativeWrapper(PythonClass object, String typeName) {
+        public PythonClassNativeWrapper(ManagedPythonClass object, String typeName) {
             super(object);
             this.nameWrapper = new CStringWrapper(typeName);
         }
@@ -300,7 +311,7 @@ public abstract class NativeWrappers {
             this.releaseBufferProc = releaseBufferProc;
         }
 
-        public static PythonClassNativeWrapper wrap(PythonClass obj, String typeName) {
+        public static PythonClassNativeWrapper wrap(ManagedPythonClass obj, String typeName) {
             // important: native wrappers are cached
             PythonClassNativeWrapper nativeWrapper = obj.getNativeWrapper();
             if (nativeWrapper == null) {

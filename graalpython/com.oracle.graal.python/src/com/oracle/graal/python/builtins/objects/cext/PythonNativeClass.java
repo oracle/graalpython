@@ -40,7 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.object.Shape;
 
 /**
  * A simple wrapper around types objects created through the Python C API that can be cast to
@@ -48,11 +51,30 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
  * types are assumed to be mutated afterwards, so accessing the struct in native mode would work,
  * but our copy should just never become stale.
  */
-public class PythonNativeClass extends PythonClass {
-    public final Object object;
+public final class PythonNativeClass extends PythonAbstractObject implements AbstractPythonClass {
+    public final Object ptr;
 
-    public PythonNativeClass(Object obj, PythonClass type, String name, PythonClass... bases) {
-        super(type, name, type.getInstanceShape(), bases);
-        object = obj;
+    public PythonNativeClass(Object ptr) {
+        this.ptr = ptr;
+    }
+
+    public Object getPtr() {
+        return ptr;
+    }
+
+    public int compareTo(Object o) {
+        CompilerDirectives.transferToInterpreter();
+        throw new UnsupportedOperationException("cannot compare native class to anything else");
+    }
+
+    public Shape getInstanceShape() {
+        CompilerDirectives.transferToInterpreter();
+        throw new UnsupportedOperationException("native class does not have a shape");
+    }
+
+    public void lookupChanged() {
+        // TODO invalidate cached native MRO
+        CompilerDirectives.transferToInterpreter();
+        throw new UnsupportedOperationException("not yet implemented");
     }
 }

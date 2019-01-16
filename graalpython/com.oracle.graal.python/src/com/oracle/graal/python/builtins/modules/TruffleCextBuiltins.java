@@ -129,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -212,7 +213,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public void initialize(PythonCore core) {
         super.initialize(core);
         PythonClass errorHandlerClass = core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, "CErrorHandler",
-                        new PythonClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
+                        new AbstractPythonClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
         builtinConstants.put("CErrorHandler", errorHandlerClass);
         builtinConstants.put(ERROR_HANDLER, core.factory().createPythonObject(errorHandlerClass));
         builtinConstants.put(NATIVE_NULL, new PythonNativeNull());
@@ -519,17 +520,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyType_Dict", fixedNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyType_DictNode extends PythonBuiltinNode {
-        @Specialization
-        PHashingCollection getDict(PythonNativeClass object) {
-            PHashingCollection dict = object.getDict();
-            assert dict instanceof PDict;
-            return dict;
-        }
-    }
-
     @Builtin(name = "PyTruffle_SetAttr", fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyObject_Setattr extends PythonBuiltinNode {
@@ -684,7 +674,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return (long) item;
         }
 
-        private PythonClass[] getMro(PythonClass clazz) {
+        private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());
@@ -1483,13 +1473,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         long doPythonObject(PythonNativeWrapper nativeWrapper) {
-            PythonClass pclass = getClassNode().execute(nativeWrapper.getDelegate());
+            AbstractPythonClass pclass = getClassNode().execute(nativeWrapper.getDelegate());
             return getTypeFlagsNode().execute(pclass);
         }
 
         @Specialization
         long doPythonObject(PythonAbstractObject object) {
-            PythonClass pclass = getClassNode().execute(object);
+            AbstractPythonClass pclass = getClassNode().execute(object);
             return getTypeFlagsNode().execute(pclass);
         }
 
@@ -1598,29 +1588,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             } catch (ArithmeticException e) {
                 throw raiseIndexError();
             }
-        }
-    }
-
-    @Builtin(name = "PyTruffle_Add_Subclass", fixedNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class PyTruffle_Add_Subclass extends NativeBuiltin {
-
-        @Specialization
-        int doManagedSubclass(PythonClassNativeWrapper base, @SuppressWarnings("unused") Object key, PythonClassNativeWrapper value,
-                        @Cached("create()") TypeNodes.GetSubclassesNode getSubclassesNode) {
-            Set<PythonClass> subclasses = getSubclassesNode.execute(base.getPythonObject());
-            addToSet(subclasses, (PythonClass) value.getPythonObject());
-            return 0;
-        }
-
-        @Fallback
-        int doGeneric(@SuppressWarnings("unused") Object base, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value) {
-            return raiseNative(-1, SystemError, "Builtin can only handle managed base class.");
-        }
-
-        @TruffleBoundary
-        private static void addToSet(Set<PythonClass> subclasses, PythonClass value) {
-            subclasses.add(value);
         }
     }
 

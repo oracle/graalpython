@@ -145,11 +145,10 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
 
     @Specialization(replaces = "readDirect")
     protected Object readIndirect(DynamicObject dynamicObject, Object key) {
-        Object value = dynamicObject.get(attrKey(key));
-        if (value == null) {
-            return PNone.NO_VALUE;
-        } else {
-            return value;
-        }
+        return doSlowPath(dynamicObject, key);
+    }
+
+    public static Object doSlowPath(DynamicObject dynamicObject, Object key) {
+        return dynamicObject.get(ObjectAttributeNode.attrKey(key), PNone.NO_VALUE);
     }
 }

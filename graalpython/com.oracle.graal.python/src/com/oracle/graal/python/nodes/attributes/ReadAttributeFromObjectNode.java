@@ -41,8 +41,12 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeDictNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeDictNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -50,6 +54,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -131,13 +136,21 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         return Message.READ.createNode();
     }
 
-    @Specialization(guards = {
-                    "!isHiddenKey(key)",
-                    "!isPythonObject(object)"
-    })
-    protected Object readNative(PythonNativeObject object, Object key,
+    @Specialization(guards = {"!isHiddenKey(key)"})
+    protected Object readNativeObject(PythonNativeObject object, Object key,
                     @Cached("create()") GetObjectDictNode getNativeDict,
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+        return readNative(object, key, getNativeDict, getItemNode);
+    }
+
+    @Specialization(guards = {"!isHiddenKey(key)"})
+    protected Object readNativeClass(PythonNativeClass object, Object key,
+                    @Cached("create()") GetTypeDictNode getNativeDict,
+                    @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+        return readNative(object, key, getNativeDict, getItemNode);
+    }
+
+    private Object readNative(Object object, Object key, GetNativeDictNode getNativeDict, HashingStorageNodes.GetItemNode getItemNode) {
         Object d = getNativeDict.execute(object);
         Object value = null;
         if (d instanceof PHashingCollection) {
@@ -166,5 +179,38 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {"!isPythonObject(object)", "!isForeignObject(object)"})
     protected PNone readUnboxed(Object object, Object key) {
         return PNone.NO_VALUE;
+    }
+
+    @TruffleBoundary
+    public static Object doSlowPath(Object object, Object key) {
+        if (object instanceof PythonObject) {
+            PythonObject po = (PythonObject) object;
+            if (ObjectAttributeNode.isDictUnsetOrSameAsStorage(po)) {
+                HashingStorage dictStorage = po.getDict().getDictStorage();
+                Object value = dictStorage.getItem(key, HashingStorage.getSlowPathEquivalence(key));
+                if (value == null) {
+                    return PNone.NO_VALUE;
+                } else {
+                    return value;
+                }
+            } else {
+                return ReadAttributeFromDynamicObjectNode.doSlowPath(po.getStorage(), key);
+            }
+        } else if (object instanceof PythonNativeObject || object instanceof PythonNativeClass) {
+            Object d = GetObjectDictNode.doSlowPath(object);
+            Object value = null;
+            if (d instanceof PHashingCollection) {
+                HashingStorage dictStorage = ((PHashingCollection) d).getDictStorage();
+                value = dictStorage.getItem(key, HashingStorage.getSlowPathEquivalence(key));
+            }
+            if (value == null) {
+                return PNone.NO_VALUE;
+            } else {
+                return value;
+            }
+
+        }
+        return null;
+
     }
 }
