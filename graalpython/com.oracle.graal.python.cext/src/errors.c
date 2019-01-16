@@ -159,9 +159,6 @@ int PyErr_ExceptionMatches(PyObject *exc) {
     return PyErr_GivenExceptionMatches(PyErr_Occurred(), exc);
 }
 
-// defined without header in unicodeobject.c
-extern PyObject* PyTruffle_Unicode_FromFormat(const char*, va_list, void**, int);
-
 PyObject* PyErr_Format(PyObject* exception, const char* fmt, ...) {
     CallWithPolyglotArgs(PyObject* formatted_msg, fmt, 2, PyTruffle_Unicode_FromFormat, fmt);
     UPCALL_CEXT_VOID(_jls_PyErr_CreateAndSetException, native_to_java(exception), native_to_java(formatted_msg));

@@ -310,6 +310,9 @@ extern PyObject* wrapped_null;
 /* DICT */
 void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position);
 
+/* STR */
+PyObject* PyTruffle_Unicode_FromFormat(const char*, va_list, void**, int);
+
 /* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
 int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
