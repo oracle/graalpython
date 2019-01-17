@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,27 +27,45 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.source.SourceSection;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+
 public class ModuleRootNode extends PClosureRootNode {
 
     private final String name;
+    private final String doc;
 
     @Child private ExpressionNode body;
+    @Child private WriteGlobalNode writeModuleDoc;
 
-    public ModuleRootNode(PythonLanguage language, String name, ExpressionNode file, FrameDescriptor descriptor, FrameSlot[] freeVarSlots) {
+    public ModuleRootNode(PythonLanguage language, String name, String doc, ExpressionNode file, FrameDescriptor descriptor, FrameSlot[] freeVarSlots) {
         super(language, descriptor, freeVarSlots);
         this.name = "<module '" + name + "'>";
+        this.doc = doc;
         this.body = file;
+    }
+
+    private WriteGlobalNode getWriteModuleDoc() {
+        if (writeModuleDoc == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            writeModuleDoc = insert(WriteGlobalNode.create(__DOC__));
+        }
+        return writeModuleDoc;
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
         addClosureCellsToLocals(frame);
+        if (doc != null) {
+            getWriteModuleDoc().doWrite(frame, doc);
+        }
         return body.execute(frame);
     }
 
@@ -64,6 +82,10 @@ public class ModuleRootNode extends PClosureRootNode {
     @Override
     public String getName() {
         return name;
+    }
+
+    public String getDoc() {
+        return doc;
     }
 
     @Override
