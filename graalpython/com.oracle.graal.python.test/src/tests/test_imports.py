@@ -51,6 +51,13 @@ def test_relative_import():
         raise e
 
 
+def test_module_docstring():
+    import package
+    assert package.__doc__ == "PACKAGE DOC"
+    from package import moduleA
+    assert moduleA.__doc__ == "MODULE A DOC"
+
+
 def test_dotted_import():
     # this is to prevent ides from optimising out the unused import
     try:

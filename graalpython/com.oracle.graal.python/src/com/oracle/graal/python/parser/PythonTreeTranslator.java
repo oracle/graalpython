@@ -113,6 +113,8 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     protected final AssignmentTranslator assigns;
     protected final Source source;
     protected final String name;
+    protected String moduleDoc;
+    protected boolean firstStatement = true;
 
     protected final boolean isInlineMode;
 
@@ -232,7 +234,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ExpressionNode file = asExpression(super.visitFile_input(ctx));
         deriveSourceSection(ctx, file);
         environment.popScope();
-        return factory.createModuleRoot(name, file, ctx.scope.getFrameDescriptor());
+        return factory.createModuleRoot(name, moduleDoc, file, ctx.scope.getFrameDescriptor());
     }
 
     @Override
@@ -256,7 +258,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         if (isInlineMode) {
             return body;
         } else {
-            return factory.createModuleRoot("<expression>", body, ctx.scope.getFrameDescriptor());
+            return factory.createModuleRoot("<expression>", moduleDoc, body, ctx.scope.getFrameDescriptor());
         }
     }
 
@@ -1284,7 +1286,14 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     @Override
     public Object visitExpr_stmt(Python3Parser.Expr_stmtContext ctx) {
         if (ctx.normassign().isEmpty() && ctx.annassign() == null && ctx.augassign() == null) {
-            return super.visitExpr_stmt(ctx);
+            Object exprNode = super.visitExpr_stmt(ctx);
+            if (firstStatement) {
+                firstStatement = false;
+                if (exprNode instanceof StringLiteralNode) {
+                    moduleDoc = ((StringLiteralNode) exprNode).getValue();
+                }
+            }
+            return exprNode;
         } else {
             return assigns.translate(ctx);
         }
