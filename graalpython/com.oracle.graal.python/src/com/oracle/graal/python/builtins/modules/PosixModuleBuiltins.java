@@ -600,7 +600,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw raiseOSError(frame, OSErrorEnum.ENOENT, path);
             } catch (SecurityException | IOException e) {
                 gotException.enter();
-                System.out.println("OSError Pos02");
                 throw raise(OSError, path);
             }
         }
@@ -1801,7 +1800,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class StrErrorNode extends PythonBuiltinNode {
 
-        private final static HashMap<Integer, String> STR_ERROR_MAP = new HashMap<Integer, String>();
+        private final static HashMap<Integer, String> STR_ERROR_MAP = new HashMap<>();
 
         @Specialization
         String getStrError(int errno) {
