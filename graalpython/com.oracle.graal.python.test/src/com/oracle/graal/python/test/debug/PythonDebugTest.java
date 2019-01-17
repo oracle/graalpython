@@ -412,17 +412,20 @@ public class PythonDebugTest {
             Path importingFile = tempDir.resolve("importing.py");
             Files.write(importedFile, ("def sum(a, b):\n" +
                             "  return a + b\n").getBytes());
-            Files.write(importingFile, ("import imported\n" +
+            Files.write(importingFile, ("import sys\n" +
+                            "sys.path.insert(0, '" + tempDir.toString() + "')\n" +
+                            "import imported\n" +
                             "imported.sum(2, 3)\n").getBytes());
             Source source = Source.newBuilder("python", importingFile.toFile()).build();
             try (DebuggerSession session = tester.startSession()) {
-                session.suspendNextExecution();
+                Breakpoint breakpoint = Breakpoint.newBuilder(importingFile.toUri()).lineIs(4).build();
+                session.install(breakpoint);
                 tester.startEval(source);
                 expectSuspended((SuspendedEvent event) -> {
                     assertEquals(importingFile.toUri(), event.getSourceSection().getSource().getURI());
                     DebugStackFrame frame = event.getTopStackFrame();
-                    assertEquals(1, frame.getSourceSection().getStartLine());
-                    event.prepareStepInto(2);
+                    assertEquals(4, frame.getSourceSection().getStartLine());
+                    event.prepareStepInto(1);
                 });
                 expectSuspended((SuspendedEvent event) -> {
                     assertEquals(importedFile.toUri(), event.getSourceSection().getSource().getURI());
