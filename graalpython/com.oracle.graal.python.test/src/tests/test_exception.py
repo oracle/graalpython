@@ -5,6 +5,7 @@
 
 import unittest
 import sys
+import errno
 
 class ExceptionTests(unittest.TestCase):
 
@@ -50,3 +51,60 @@ class ExceptionTests(unittest.TestCase):
         self.assertIsInstance(e, MyException)
         # TODO this dosn't work yet
         #self.assertEqual(e.__traceback__, tb)
+
+    def test_aliases(self):
+        self.assertTrue (IOError is OSError)
+        self.assertTrue (EnvironmentError is OSError)
+
+    def test_new_oserror(self):
+        self.assertTrue(type(OSError(2)) is OSError)
+        self.assertTrue(type(OSError(errno.EISDIR)) is OSError)
+        self.assertTrue(type(OSError(2, "a message")) is FileNotFoundError)
+        
+        self.assertTrue(type(OSError(errno.EISDIR, "a message")) is IsADirectoryError)
+        self.assertTrue(type(OSError(errno.EAGAIN, "a message")) is BlockingIOError)
+        self.assertTrue(type(OSError(errno.EALREADY, "a message")) is BlockingIOError)
+        self.assertTrue(type(OSError(errno.EINPROGRESS, "a message")) is BlockingIOError)
+        self.assertTrue(type(OSError(errno.EWOULDBLOCK, "a message")) is BlockingIOError)
+        self.assertTrue(type(OSError(errno.EPIPE, "a message")) is BrokenPipeError)
+        self.assertTrue(type(OSError(errno.ESHUTDOWN, "a message")) is BrokenPipeError)
+        self.assertTrue(type(OSError(errno.ECHILD, "a message")) is ChildProcessError)
+        self.assertTrue(type(OSError(errno.ECONNABORTED, "a message")) is ConnectionAbortedError)
+        self.assertTrue(type(OSError(errno.ECONNREFUSED, "a message")) is ConnectionRefusedError)
+        self.assertTrue(type(OSError(errno.ECONNRESET, "a message")) is ConnectionResetError)
+        self.assertTrue(type(OSError(errno.EEXIST, "a message")) is FileExistsError)
+        self.assertTrue(type(OSError(errno.ENOENT, "a message")) is FileNotFoundError)
+        self.assertTrue(type(OSError(errno.ENOTDIR, "a message")) is NotADirectoryError)
+        self.assertTrue(type(OSError(errno.EINTR, "a message")) is InterruptedError)
+        self.assertTrue(type(OSError(errno.EACCES, "a message")) is PermissionError)
+        self.assertTrue(type(OSError(errno.EPERM, "a message")) is PermissionError)
+        self.assertTrue(type(OSError(errno.ESRCH, "a message")) is ProcessLookupError)
+        self.assertTrue(type(OSError(errno.ETIMEDOUT, "a message")) is TimeoutError)
+
+    def test_oserror_empty_attributes(self):
+        e = OSError(errno.EISDIR)
+        self.assertEqual(e.errno, None)
+        self.assertEqual(e.strerror, None)
+        self.assertEqual(e.filename, None)
+        self.assertEqual(e.filename2, None)
+
+    def test_oserror_two_attributes(self):
+        e = OSError(errno.EISDIR, "message")
+        self.assertEqual(e.errno, 21)
+        self.assertEqual(e.strerror, "message")
+        self.assertEqual(e.filename, None)
+        self.assertEqual(e.filename2, None)
+
+    def test_oserror_four_attribute(self):
+        e = OSError(errno.EISDIR, "message", "file1")
+        self.assertEqual(e.errno, 21)
+        self.assertEqual(e.strerror, "message")
+        self.assertEqual(e.filename, "file1")
+        self.assertEqual(e.filename2, None)
+
+    def test_oserror_four_attribute(self):
+        e = OSError(errno.EISDIR, "message", "file1", None, "file2")
+        self.assertEqual(e.errno, 21)
+        self.assertEqual(e.strerror, "message")
+        self.assertEqual(e.filename, "file1")
+        self.assertEqual(e.filename2, "file2")
