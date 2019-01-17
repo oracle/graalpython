@@ -570,36 +570,38 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(Object typestruct, PythonClass metaClass, PTuple baseClasses, PDict nativeMembers) {
-            Object[] array = baseClasses.getArray();
-            PythonClass[] bases = new PythonClass[array.length];
-            for (int i = 0; i < array.length; i++) {
-                bases[i] = (PythonClass) array[i];
-            }
-
-            if (castToIntNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIntNode = insert(CastToIndexNode.create());
-            }
-
-            // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String fqname = getStringItem(nativeMembers, TP_NAME);
-            String doc = getStringItem(nativeMembers, TP_DOC);
-            // the qualified name (i.e. without module name) like 'A.B...'
-            String qualName = getQualName(fqname);
-            PythonNativeClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, qualName, bases);
-            writeAttrNode.execute(cclass, SpecialAttributeNames.__DOC__, doc);
-
-            long basicsize = castToIntNode.execute(getLongItem(nativeMembers, TP_BASICSIZE));
-            long itemsize = castToIntNode.execute(getLongItem(nativeMembers, TP_ITEMSIZE));
-            writeAttrNode.execute(cclass, __BASICSIZE__, basicsize);
-            writeAttrNode.execute(cclass, __ITEMSIZE__, itemsize);
-            computeAndSetDictoffset(getLongItem(nativeMembers, TP_DICTOFFSET), cclass, basicsize, itemsize);
-
-            String moduleName = getModuleName(fqname);
-            if (moduleName != null) {
-                writeAttrNode.execute(cclass, SpecialAttributeNames.__MODULE__, moduleName);
-            }
-            return new PythonClassInitNativeWrapper(cclass);
+// Object[] array = baseClasses.getArray();
+// PythonClass[] bases = new PythonClass[array.length];
+// for (int i = 0; i < array.length; i++) {
+// bases[i] = (PythonClass) array[i];
+// }
+//
+// if (castToIntNode == null) {
+// CompilerDirectives.transferToInterpreterAndInvalidate();
+// castToIntNode = insert(CastToIndexNode.create());
+// }
+//
+// // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
+// String fqname = getStringItem(nativeMembers, TP_NAME);
+// String doc = getStringItem(nativeMembers, TP_DOC);
+// // the qualified name (i.e. without module name) like 'A.B...'
+// String qualName = getQualName(fqname);
+// PythonNativeClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, qualName,
+// bases);
+// writeAttrNode.execute(cclass, SpecialAttributeNames.__DOC__, doc);
+//
+// long basicsize = castToIntNode.execute(getLongItem(nativeMembers, TP_BASICSIZE));
+// long itemsize = castToIntNode.execute(getLongItem(nativeMembers, TP_ITEMSIZE));
+// writeAttrNode.execute(cclass, __BASICSIZE__, basicsize);
+// writeAttrNode.execute(cclass, __ITEMSIZE__, itemsize);
+// computeAndSetDictoffset(getLongItem(nativeMembers, TP_DICTOFFSET), cclass, basicsize, itemsize);
+//
+// String moduleName = getModuleName(fqname);
+// if (moduleName != null) {
+// writeAttrNode.execute(cclass, SpecialAttributeNames.__MODULE__, moduleName);
+// }
+// return new PythonClassInitNativeWrapper(cclass);
+            return null;
         }
 
         // may also update '__basicsize__' if necessary
