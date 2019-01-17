@@ -45,6 +45,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -398,6 +404,52 @@ public class PythonDebugTest {
         }
     }
 
+    @Test
+    public void testSourceFileURI() throws Throwable {
+        Path tempDir = Files.createTempDirectory("pySourceTest");
+        try {
+            Path importedFile = tempDir.resolve("imported.py");
+            Path importingFile = tempDir.resolve("importing.py");
+            Files.write(importedFile, ("def sum(a, b):\n" +
+                            "  return a + b\n").getBytes());
+            Files.write(importingFile, ("import imported\n" +
+                            "imported.sum(2, 3)\n").getBytes());
+            Source source = Source.newBuilder("python", importingFile.toFile()).build();
+            try (DebuggerSession session = tester.startSession()) {
+                session.suspendNextExecution();
+                tester.startEval(source);
+                expectSuspended((SuspendedEvent event) -> {
+                    assertEquals(importingFile.toUri(), event.getSourceSection().getSource().getURI());
+                    DebugStackFrame frame = event.getTopStackFrame();
+                    assertEquals(1, frame.getSourceSection().getStartLine());
+                    event.prepareStepInto(2);
+                });
+                expectSuspended((SuspendedEvent event) -> {
+                    assertEquals(importedFile.toUri(), event.getSourceSection().getSource().getURI());
+                    DebugStackFrame frame = event.getTopStackFrame();
+                    assertEquals(2, frame.getSourceSection().getStartLine());
+                    event.prepareContinue();
+                });
+            }
+            tester.expectDone();
+            // Test that breakpoint on the imported file is hit:
+            try (DebuggerSession session = tester.startSession()) {
+                Breakpoint breakpoint = Breakpoint.newBuilder(importedFile.toUri()).lineIs(2).build();
+                session.install(breakpoint);
+                tester.startEval(source);
+                expectSuspended((SuspendedEvent event) -> {
+                    DebugStackFrame frame = event.getTopStackFrame();
+                    assertEquals(2, frame.getSourceSection().getStartLine());
+                    checkStack(frame, "sum", "a", "2", "b", "3");
+                    event.prepareContinue();
+                });
+                tester.expectDone();
+            }
+        } finally {
+            deleteRecursively(tempDir);
+        }
+    }
+
     private void expectSuspended(SuspendedCallback callback) {
         tester.expectSuspended(callback);
     }
@@ -423,4 +475,19 @@ public class PythonDebugTest {
         }
     }
 
+    private static void deleteRecursively(Path path) throws IOException {
+        Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
 }
