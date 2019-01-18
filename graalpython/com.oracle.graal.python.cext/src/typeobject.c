@@ -192,7 +192,7 @@ int PyType_Ready(PyTypeObject* cls) {
     if (meth) {                                                                             \
         polyglot_invoke(PY_TRUFFLE_CEXT,                                                    \
                        "AddFunction",                                                       \
-                       javacls,                                                             \
+                       cls,                                                             \
                        polyglot_from_string((name), SRC_CS),                                \
                        (meth),                                                              \
                        (clanding),                                                          \
@@ -260,22 +260,6 @@ int PyType_Ready(PyTypeObject* cls) {
     PyDict_SetItemString(native_members, "tp_itemsize", PyLong_FromSsize_t(cls->tp_itemsize));
     PyDict_SetItemString(native_members, "tp_dictoffset", PyLong_FromSsize_t(cls->tp_dictoffset));
     const char* class_name = cls->tp_name;
-    PyTypeObject* javacls = polyglot_invoke(PY_TRUFFLE_CEXT,
-                                            "PyType_Ready",
-                                            // no conversion of cls here, because we
-                                            // store this into the PyTypeObject
-                                            cls,
-                                            native_to_java((PyObject*)metaclass),
-                                            native_to_java(bases),
-                                            native_to_java(native_members));
-
-    // remember the managed wrapper
-    ((PyObject*)cls)->ob_refcnt = javacls;
-    if (cls->tp_dict != NULL) {
-        javacls->tp_dict = native_to_java(cls->tp_dict);
-    } else {
-        cls->tp_dict = javacls->tp_dict;
-    }
 
     PyMethodDef* methods = cls->tp_methods;
     if (methods) {
@@ -295,7 +279,7 @@ int PyType_Ready(PyTypeObject* cls) {
         int i = 0;
         PyMemberDef member = members[i];
         while (member.name != NULL) {
-        	ADD_MEMBER(javacls, polyglot_from_string(member.name, SRC_CS), member.type, member.offset, member.flags, member.doc);
+        	ADD_MEMBER(cls, polyglot_from_string(member.name, SRC_CS), member.type, member.offset, member.flags, member.doc);
             member = members[++i];
         }
     }
@@ -310,7 +294,7 @@ int PyType_Ready(PyTypeObject* cls) {
             polyglot_invoke(PY_TRUFFLE_CEXT,
                             "AddGetSet",
                             // TODO(fa): there should actually be 'native_to_java' just in case 'javacls' goes to native in between
-                            javacls,
+                            cls,
                             polyglot_from_string(getset.name, SRC_CS),
                             getter_fun != NULL ? (getter)getter_fun : native_to_java(Py_None),
                             wrap_direct,
@@ -445,10 +429,11 @@ int PyType_Ready(PyTypeObject* cls) {
     // CPython doesn't do that in 'PyType_Ready' but we must because a native type can inherit
     // dynamic slots from a managed Python class. Since the managed Python class may be created
     // when the C API is not loaded, we need to do that later.
-    PyObject* inherited_slots_tuple = UPCALL_CEXT_O(_jls_PyTruffle_Type_Slots, native_to_java((PyObject*)javacls));
-//    PyObject* inherited_slots_tuple = PyObject_GetAttrString(javacls, "__slots__");
+//    PyObject* inherited_slots_tuple = UPCALL_CEXT_O(_jls_PyTruffle_Type_Slots, native_to_java((PyObject*)javacls));
+    PyObject* inherited_slots_tuple = PyObject_GetAttrString(cls, "__slots__");
     if(inherited_slots_tuple != NULL) {
-    	PyTruffle_Type_AddSlots(javacls, inherited_slots_tuple);
+    	PyTruffle_Debug(native_to_java(inherited_slots_tuple));
+    	PyTruffle_Type_AddSlots(cls, inherited_slots_tuple);
     }
 
     /* Link into each base class's list of subclasses */
@@ -463,10 +448,6 @@ int PyType_Ready(PyTypeObject* cls) {
         	return -1;
         }
     }
-
-    // down-sync possibly re-computed attributes
-    cls->tp_dictoffset = javacls->tp_dictoffset;
-    cls->tp_basicsize = javacls->tp_basicsize;
 
     // done
     cls->tp_flags = cls->tp_flags & ~Py_TPFLAGS_READYING;

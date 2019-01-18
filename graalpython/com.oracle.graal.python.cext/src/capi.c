@@ -233,15 +233,8 @@ void* native_long_to_java(uint64_t val) {
         return Py_None;
     } else if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
-    } else {
-        void* refcnt = obj->ob_refcnt;
-        if (!truffle_cannot_be_handle(refcnt)) {
-            return resolve_handle(cache, refcnt);
-        } else if (IS_POINTER(refcnt)) {
-            return refcnt;
-        }
-        return obj;
     }
+    return obj;
 }
 
 __attribute__((always_inline))
@@ -259,25 +252,11 @@ PyObject* to_sulong(void *o) {
 
 /** to be used from Java code only; reads native 'ob_type' field */
 void* get_ob_type(PyObject* obj) {
-    PyTypeObject*  type = obj->ob_type;
+    PyTypeObject* type = obj->ob_type;
     if (!truffle_cannot_be_handle(type)) {
         return resolve_handle(cache, (uint64_t)type);
-    } else {
-        PyObject* cast_type = ((PyObject*)type);
-        if (!polyglot_is_value(cast_type)) {
-            // we have stored a handle to the Java class in ob_refcnt
-            void* handle = (void*)(cast_type->ob_refcnt);
-            if (!truffle_cannot_be_handle(handle)) {
-                return resolve_handle(cache, (uint64_t)handle);
-            } else {
-                // assume handle is a TruffleObject
-                return handle;
-            }
-        } else {
-            // the type is already the right value (e.g. on sandboxed it's a managed pointer)
-            return cast_type;
-        }
     }
+    return (void *)type;
 }
 
 /** to be used from Java code only; reads native 'tp_dict' field */
