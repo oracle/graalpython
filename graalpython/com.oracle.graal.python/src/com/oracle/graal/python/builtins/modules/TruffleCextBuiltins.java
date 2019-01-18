@@ -106,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CastToByteNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -162,6 +163,7 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -2431,4 +2433,32 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     }
 
+    @Builtin(name = "_PyBytes_Resize", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PyBytes_Resize extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        int resize(PBytes self, long newSizeL,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
+                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached("create()") CastToIndexNode castToIndexNode,
+                        @Cached("create()") CastToByteNode castToByteNode) {
+
+            SequenceStorage storage = self.getSequenceStorage();
+            int newSize = castToIndexNode.execute(newSizeL);
+            int len = lenNode.execute(storage);
+            byte[] smaller = new byte[newSize];
+            for (int i = 0; i < newSize && i < len; i++) {
+                smaller[i] = castToByteNode.execute(getItemNode.execute(storage, i));
+            }
+            self.setSequenceStorage(new ByteSequenceStorage(smaller));
+            return 0;
+        }
+
+        @Fallback
+        int add(Object self, @SuppressWarnings("unused") Object o) {
+            return NativeBuiltin.raiseNative(this, -1, SystemError, "expected a set object, not %p", self);
+        }
+
+    }
 }
