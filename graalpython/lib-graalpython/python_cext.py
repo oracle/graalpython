@@ -1305,6 +1305,16 @@ def PyThread_allocate_lock():
 
 
 @may_raise
+def PyThread_acquire_lock(lock, waitflag):
+    return lock.acquire(waitflag)
+
+
+@may_raise
+def PyThread_release_lock(lock):
+    return lock.release()
+
+
+@may_raise
 def PySlice_GetIndicesEx(start, stop, step, length):
     return PyTruffleSlice_GetIndicesEx(start, stop, step, length)
 
