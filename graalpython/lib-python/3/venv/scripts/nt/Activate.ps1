@@ -15,6 +15,12 @@ function global:deactivate ([switch]$NonDestructive) {
         remove-item env:_OLD_VIRTUAL_PATH
     }
 
+    remove-item env:GRAAL_PYTHON_OPTIONS
+    if (Test-Path env:_OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS) {
+        copy-item env:_OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS env:GRAAL_PYTHON_OPTIONS
+        remove-item env:_OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS
+    }
+
     if (Test-Path env:VIRTUAL_ENV) {
         remove-item env:VIRTUAL_ENV
     }
@@ -49,3 +55,6 @@ if (Test-Path env:PYTHONHOME) {
 # Add the venv to the PATH
 copy-item env:PATH env:_OLD_VIRTUAL_PATH
 $env:PATH = "$env:VIRTUAL_ENV\__VENV_BIN_NAME__;$env:PATH"
+
+copy-item env:GRAAL_PYTHON_OPTIONS env:_OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS
+$env:GRAAL_PYTHON_OPTIONS = "$env:__VENV_GRAAL_PYTHON_OPTIONS__ $env:GRAAL_PYTHON_OPTIONS"
