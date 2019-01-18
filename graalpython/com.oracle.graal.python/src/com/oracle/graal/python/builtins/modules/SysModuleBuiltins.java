@@ -168,6 +168,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         PythonOptions.getFlag(core.getContext(), PythonOptions.QuietFlag), // quiet
                         PythonOptions.getFlag(core.getContext(), PythonOptions.VerboseFlag), // verbose
         }));
+        builtinConstants.put("graal_python_home", core.getContext().getLanguage().getHome());
         builtinConstants.put("graal_python_core_home", PythonOptions.getOption(core.getContext(), PythonOptions.CoreHome));
         builtinConstants.put("graal_python_stdlib_home", PythonOptions.getOption(core.getContext(), PythonOptions.StdLibHome));
         builtinConstants.put("graal_python_opaque_filesystem", PythonOptions.getOption(core.getContext(), PythonOptions.OpaqueFilesystem));
