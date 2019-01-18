@@ -41,6 +41,7 @@ import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PThreadState;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -237,7 +238,9 @@ public final class PythonContext {
     private void setupRuntimeInformation() {
         PythonModule sysModule = core.initializeSysModule();
         if (ImageInfo.inImageRuntimeCode() && isExecutableAccessAllowed()) {
-            sysModule.setAttribute("executable", ProcessProperties.getExecutableName());
+            if (sysModule.getAttribute("executable") == PNone.NONE) {
+                sysModule.setAttribute("executable", ProcessProperties.getExecutableName());
+            }
         }
         sysModules = (PDict) sysModule.getAttribute("modules");
         builtinsModule = (PythonModule) sysModules.getItem("builtins");

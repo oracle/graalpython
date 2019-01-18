@@ -112,7 +112,11 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "little" : "big");
         builtinConstants.put("copyright", LICENSE);
         builtinConstants.put("dont_write_bytecode", true);
-        if (TruffleOptions.AOT || !core.getContext().isExecutableAccessAllowed()) {
+
+        String executable = PythonOptions.getOption(core.getContext(), PythonOptions.ExecutablePath);
+        if (!executable.isEmpty() && core.getContext().isExecutableAccessAllowed()) {
+            builtinConstants.put("executable", executable);
+        } else if (TruffleOptions.AOT || !core.getContext().isExecutableAccessAllowed()) {
             // cannot set the path at this time since the binary is not yet known; will be patched
             // in the context
             builtinConstants.put("executable", PNone.NONE);
@@ -140,6 +144,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             builtinConstants.put("executable", sb.toString());
             builtinConstants.put("executable_list", core.factory().createList(exec_list.toArray()));
         }
+
         builtinConstants.put("modules", core.factory().createDict());
         builtinConstants.put("path", core.factory().createList());
         builtinConstants.put("builtin_module_names", core.factory().createTuple(core.builtinModuleNames()));

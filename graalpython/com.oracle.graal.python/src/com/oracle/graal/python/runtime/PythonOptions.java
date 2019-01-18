@@ -128,6 +128,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Set by the launcher to the terminal height.") //
     public static final OptionKey<Integer> TerminalHeight = new OptionKey<>(25);
 
+    @Option(category = OptionCategory.EXPERT, help = "The sys.executable path") //
+    public static final OptionKey<String> ExecutablePath = new OptionKey<>("");
+
     public static OptionDescriptors createDescriptors() {
         return new PythonOptionsOptionDescriptors();
     }
