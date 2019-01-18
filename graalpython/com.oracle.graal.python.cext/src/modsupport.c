@@ -110,8 +110,6 @@ UPCALL_ID(__bool__);
             		__return_code__; \
             		return 0; \
             	} \
-                __return_code__; \
-                return 0; \
             } else if (arg == Py_None) { \
                 if (c == 'z') { \
                     PyTruffle_WriteOut(output_idx, const char*, NULL); \
