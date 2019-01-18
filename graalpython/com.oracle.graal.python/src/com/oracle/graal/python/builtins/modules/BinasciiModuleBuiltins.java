@@ -60,7 +60,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -136,7 +136,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     static abstract class A2bHexNode extends PythonBinaryBuiltinNode {
         private ReadAttributeFromObjectNode getAttrNode;
 
-        private PException raise(PythonClass klass, String string) {
+        private PException raise(LazyPythonClass klass, String string) {
             return raise(factory().createBaseException(klass, string, new Object[0]));
         }
 
@@ -159,11 +159,11 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         private PException oddLengthError(PythonModule self) {
-            return raise((PythonClass) getAttrNode().execute(self, ERROR), "Odd-length string");
+            return raise((LazyPythonClass) getAttrNode().execute(self, ERROR), "Odd-length string");
         }
 
         private PException nonHexError(PythonModule self) {
-            return raise((PythonClass) getAttrNode().execute(self, ERROR), "Non-hexadecimal digit found");
+            return raise((LazyPythonClass) getAttrNode().execute(self, ERROR), "Non-hexadecimal digit found");
         }
 
         private ReadAttributeFromObjectNode getAttrNode() {

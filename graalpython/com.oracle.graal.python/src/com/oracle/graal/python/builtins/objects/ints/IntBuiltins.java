@@ -1972,7 +1972,7 @@ public class IntBuiltins extends PythonBuiltins {
             throw raise(PythonErrorType.ValueError, "byteorder must be either 'little' or 'big'");
         }
 
-        private Object createIntObject(PythonClass cl, BigInteger number) {
+        private Object createIntObject(LazyPythonClass cl, BigInteger number) {
             if (PGuards.isPythonBuiltinClass(cl)) {
                 return factory().createInt(number);
             }
@@ -1983,87 +1983,87 @@ public class IntBuiltins extends PythonBuiltins {
             return constructNode.execute(null, cl, new Object[]{cl, factory().createInt(number)});
         }
 
-        private Object compute(PythonClass cl, byte[] bytes, String byteorder, boolean signed) {
+        private Object compute(LazyPythonClass cl, byte[] bytes, String byteorder, boolean signed) {
             BigInteger bi = createBigInteger(bytes, isBigEndian(byteorder), signed);
             return createIntObject(cl, bi);
         }
 
         // from PBytes
         @Specialization
-        public Object fromPBytes(PythonClass cl, PBytes bytes, String byteorder, Object[] args, boolean signed) {
+        public Object fromPBytes(LazyPythonClass cl, PBytes bytes, String byteorder, Object[] args, boolean signed) {
             return compute(cl, getToBytesNode().execute(bytes), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPBytes(PythonClass cl, PBytes bytes, String byteorder, Object[] args, PNone signed) {
+        public Object fromPBytes(LazyPythonClass cl, PBytes bytes, String byteorder, Object[] args, PNone signed) {
             return fromPBytes(cl, bytes, byteorder, args, false);
         }
 
         // from PByteArray
         @Specialization
-        public Object fromPByteArray(PythonClass cl, PByteArray bytes, String byteorder, Object[] args, boolean signed) {
+        public Object fromPByteArray(LazyPythonClass cl, PByteArray bytes, String byteorder, Object[] args, boolean signed) {
             return compute(cl, getToBytesNode().execute(bytes), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPByteArray(PythonClass cl, PByteArray bytes, String byteorder, Object[] args, PNone signed) {
+        public Object fromPByteArray(LazyPythonClass cl, PByteArray bytes, String byteorder, Object[] args, PNone signed) {
             return fromPByteArray(cl, bytes, byteorder, args, false);
         }
 
         // from PArray
         @Specialization
-        public Object fromPArray(PythonClass cl, PArray array, String byteorder, Object[] args, boolean signed,
+        public Object fromPArray(LazyPythonClass cl, PArray array, String byteorder, Object[] args, boolean signed,
                         @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
             return compute(cl, fromSequenceStorageNode.execute(array.getSequenceStorage()), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPArray(PythonClass cl, PArray array, String byteorder, Object[] args, PNone signed,
+        public Object fromPArray(LazyPythonClass cl, PArray array, String byteorder, Object[] args, PNone signed,
                         @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
             return fromPArray(cl, array, byteorder, args, false, fromSequenceStorageNode);
         }
 
         // from PMemoryView
         @Specialization
-        public Object fromPMemoryView(PythonClass cl, PMemoryView view, String byteorder, Object[] args, boolean signed) {
+        public Object fromPMemoryView(LazyPythonClass cl, PMemoryView view, String byteorder, Object[] args, boolean signed) {
             return compute(cl, getToBytesNode().execute(view), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPMemoryView(PythonClass cl, PMemoryView view, String byteorder, Object[] args, PNone signed) {
+        public Object fromPMemoryView(LazyPythonClass cl, PMemoryView view, String byteorder, Object[] args, PNone signed) {
             return fromPMemoryView(cl, view, byteorder, args, false);
         }
 
         // from PList, only if it is not extended
         @Specialization(guards = "cannotBeOverridden(getClass(list))")
-        public Object fromPList(PythonClass cl, PList list, String byteorder, Object[] args, boolean signed) {
+        public Object fromPList(LazyPythonClass cl, PList list, String byteorder, Object[] args, boolean signed) {
             return compute(cl, getFromSequenceNode().execute(list), byteorder, signed);
         }
 
         @Specialization(guards = "cannotBeOverridden(getClass(list))")
-        public Object fromPList(PythonClass cl, PList list, String byteorder, Object[] args, PNone signed) {
+        public Object fromPList(LazyPythonClass cl, PList list, String byteorder, Object[] args, PNone signed) {
             return fromPList(cl, list, byteorder, args, false);
         }
 
         // from PTuple, only if it is not extended
         @Specialization(guards = "cannotBeOverridden(getClass(tuple))")
-        public Object fromPTuple(PythonClass cl, PTuple tuple, String byteorder, Object[] args, boolean signed) {
+        public Object fromPTuple(LazyPythonClass cl, PTuple tuple, String byteorder, Object[] args, boolean signed) {
             return compute(cl, getFromSequenceNode().execute(tuple), byteorder, signed);
         }
 
         @Specialization(guards = "cannotBeOverridden(getClass(tuple))")
-        public Object fromPTuple(PythonClass cl, PTuple tuple, String byteorder, Object[] args, PNone signed) {
+        public Object fromPTuple(LazyPythonClass cl, PTuple tuple, String byteorder, Object[] args, PNone signed) {
             return fromPTuple(cl, tuple, byteorder, args, false);
         }
 
         // rest objects
         @Specialization
-        public Object fromObject(PythonClass cl, PythonObject object, String byteorder, Object[] args, PNone signed) {
+        public Object fromObject(LazyPythonClass cl, PythonObject object, String byteorder, Object[] args, PNone signed) {
             return fromObject(cl, object, byteorder, args, false);
         }
 
         @Specialization
-        public Object fromObject(PythonClass cl, PythonObject object, String byteorder, Object[] args, boolean signed) {
+        public Object fromObject(LazyPythonClass cl, PythonObject object, String byteorder, Object[] args, boolean signed) {
             if (callBytesNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callBytesNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__BYTES__));

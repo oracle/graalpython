@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.classes;
 import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -62,6 +63,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
     @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
     @Child private GetMroNode getMroNode;
+    @Child private IsSameTypeNode isSameTypeNode;
 
     private final ConditionProfile exceptionDerivedProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile exceptionClsProfile = ConditionProfile.createBinaryProfile();
@@ -74,11 +76,11 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     @Specialization(guards = {"derived == cachedDerived", "cls == cachedCls"}, limit = "getVariableArgumentInlineCacheLimit()")
     @ExplodeLoop
-    boolean isSubtypeOfConstantType(@SuppressWarnings("unused") PythonClass derived, @SuppressWarnings("unused") PythonClass cls,
-                    @Cached("derived") PythonClass cachedDerived,
-                    @Cached("cls") PythonClass cachedCls) {
+    boolean isSubtypeOfConstantType(@SuppressWarnings("unused") AbstractPythonClass derived, @SuppressWarnings("unused") AbstractPythonClass cls,
+                    @Cached("derived") AbstractPythonClass cachedDerived,
+                    @Cached("cls") AbstractPythonClass cachedCls) {
         for (AbstractPythonClass n : getMro(cachedDerived)) {
-            if (n == cachedCls) {
+            if (isSameType(n, cachedCls)) {
                 return true;
             }
         }
@@ -87,10 +89,10 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     @Specialization(guards = {"derived == cachedDerived"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "isSubtypeOfConstantType")
     @ExplodeLoop
-    boolean isSubtypeOfVariableType(@SuppressWarnings("unused") PythonClass derived, PythonClass cls,
-                    @Cached("derived") PythonClass cachedDerived) {
+    boolean isSubtypeOfVariableType(@SuppressWarnings("unused") AbstractPythonClass derived, PythonClass cls,
+                    @Cached("derived") AbstractPythonClass cachedDerived) {
         for (AbstractPythonClass n : getMro(cachedDerived)) {
-            if (n == cls) {
+            if (isSameType(n, cls)) {
                 return true;
             }
         }
@@ -98,9 +100,9 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = {"isSubtypeOfConstantType", "isSubtypeOfVariableType"})
-    boolean issubTypeGeneric(PythonClass derived, PythonClass cls) {
+    boolean issubTypeGeneric(AbstractPythonClass derived, AbstractPythonClass cls) {
         for (AbstractPythonClass n : getMro(derived)) {
-            if (n == cls) {
+            if (isSameType(n, cls)) {
                 return true;
             }
         }
@@ -126,5 +128,13 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
             getMroNode = insert(GetMroNode.create());
         }
         return getMroNode.execute(clazz);
+    }
+
+    private boolean isSameType(AbstractPythonClass left, AbstractPythonClass right) {
+        if (isSameTypeNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            isSameTypeNode = insert(IsSameTypeNode.create());
+        }
+        return isSameTypeNode.execute(left, right);
     }
 }

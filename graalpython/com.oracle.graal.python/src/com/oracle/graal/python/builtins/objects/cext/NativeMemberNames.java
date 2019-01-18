@@ -56,6 +56,7 @@ public final class NativeMemberNames {
     public static final String TP_FLAGS = "tp_flags";
     public static final String TP_NAME = "tp_name";
     public static final String TP_BASE = "tp_base";
+    public static final String TP_BASES = "tp_bases";
     public static final String TP_BASICSIZE = "tp_basicsize";
     public static final String TP_ITEMSIZE = "tp_itemsize";
     public static final String TP_DICTOFFSET = "tp_dictoffset";

@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
@@ -78,16 +78,16 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     protected boolean isAttrWritable(PythonObject self, Object key) {
-        if (isHiddenKey(key) || self instanceof PythonClass || self instanceof PFunction || self instanceof PMethod || self instanceof PythonModule || self instanceof PBaseException) {
+        if (isHiddenKey(key) || self instanceof ManagedPythonClass || self instanceof PFunction || self instanceof PMethod || self instanceof PythonModule || self instanceof PBaseException) {
             return true;
         }
         return !exactBuiltinInstanceProfile.profileIsAnyBuiltinObject(self);
     }
 
     private void handlePythonClass(PythonObject object, Object key) {
-        if (isClassProfile.profile(object instanceof PythonClass)) {
+        if (isClassProfile.profile(object instanceof ManagedPythonClass)) {
             if (key instanceof String) {
-                ((PythonClass) object).invalidateAttributeInMROFinalAssumptions((String) key);
+                ((ManagedPythonClass) object).invalidateAttributeInMROFinalAssumptions((String) key);
             }
         }
     }

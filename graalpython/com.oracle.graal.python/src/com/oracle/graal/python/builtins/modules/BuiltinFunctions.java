@@ -1038,7 +1038,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public abstract boolean executeWith(Object instance, Object cls);
 
         @Specialization
-        public boolean isInstance(Object instance, PythonClass cls,
+        public boolean isInstance(Object instance, AbstractPythonClass cls,
                         @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
                         @Cached("create()") IsSubtypeNode isSubtypeNode) {
             AbstractPythonClass instanceClass = getClassNode.execute(instance);

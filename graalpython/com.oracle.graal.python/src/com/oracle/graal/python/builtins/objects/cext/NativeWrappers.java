@@ -278,8 +278,8 @@ public abstract class NativeWrappers {
     }
 
     /**
-     * Used to wrap {@link PythonClass} when used in native code. This wrapper mimics the correct
-     * shape of the corresponding native type {@code struct _typeobject}.
+     * Used to wrap {@link ManagedPythonClass} when used in native code. This wrapper mimics the
+     * correct shape of the corresponding native type {@code struct _typeobject}.
      */
     public static class PythonClassNativeWrapper extends PythonObjectNativeWrapper {
         private final CStringWrapper nameWrapper;
@@ -328,13 +328,13 @@ public abstract class NativeWrappers {
     }
 
     /**
-     * Used to wrap {@link PythonClass} just for the time when a natively defined type is processed
-     * in {@code PyType_Ready} and we need to pass the mirroring managed class to native to marry
-     * these two objects.
+     * Used to wrap {@link ManagedPythonClass} just for the time when a natively defined type is
+     * processed in {@code PyType_Ready} and we need to pass the mirroring managed class to native
+     * to marry these two objects.
      */
     public static class PythonClassInitNativeWrapper extends PythonObjectNativeWrapper {
 
-        public PythonClassInitNativeWrapper(PythonClass object) {
+        public PythonClassInitNativeWrapper(ManagedPythonClass object) {
             super(object);
         }
 

@@ -26,14 +26,14 @@
 package com.oracle.graal.python.builtins.objects.enumerate;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public final class PEnumerate extends PythonBuiltinObject {
 
     private final Object iterator;
     private long index;
 
-    public PEnumerate(PythonClass clazz, Object iterator, long start) {
+    public PEnumerate(LazyPythonClass clazz, Object iterator, long start) {
         super(clazz);
         this.iterator = iterator;
         this.index = start;

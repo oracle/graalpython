@@ -55,9 +55,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -98,6 +98,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
 
         @Child private GetMroNode getMroNode;
         @Child private GetNameNode getNameNode;
+        @Child private IsSameTypeNode isSameTypeNode;
 
         private final IsBuiltinClassProfile isNoneBuiltinClassProfile = IsBuiltinClassProfile.create();
         private final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
@@ -105,7 +106,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         private final BranchProfile errorBranch = BranchProfile.create();
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
-        protected boolean descr_check(LazyPythonClass descrType, String name, Object obj, AbstractPythonClass type) {
+        protected boolean descr_check(LazyPythonClass descrType, String name, Object obj, LazyPythonClass type) {
             if (PGuards.isNone(obj)) {
                 if (!isNoneBuiltinClassProfile.profileClass(type, PythonBuiltinClassType.PNone)) {
                     return true;
@@ -120,7 +121,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 }
             } else {
                 for (AbstractPythonClass o : getMro(type)) {
-                    if (o == descrType) {
+                    if (isSameType(o, descrType)) {
                         return false;
                     }
                 }
@@ -129,7 +130,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             throw raise(TypeError, "descriptor '%s' for '%s' objects doesn't apply to '%s' object", name, getTypeName(descrType), getTypeName(type));
         }
 
-        private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
+        private AbstractPythonClass[] getMro(LazyPythonClass clazz) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());
@@ -144,6 +145,14 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             }
             return getNameNode.execute(descrType);
         }
+
+        private boolean isSameType(Object left, Object right) {
+            if (isSameTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSameTypeNode = insert(IsSameTypeNode.create());
+            }
+            return isSameTypeNode.execute(left, right);
+        }
     }
 
     @Builtin(name = __GET__, fixedNumOfPositionalArgs = 3)
@@ -153,7 +162,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L149
         @Specialization
-        Object get(GetSetDescriptor descr, Object obj, PythonClass type,
+        Object get(GetSetDescriptor descr, Object obj, LazyPythonClass type,
                         @Cached("create()") CallUnaryMethodNode callNode) {
             if (descr_check(descr.getType(), descr.getName(), obj, type)) {
                 return descr;
@@ -167,7 +176,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object getSlot(HiddenKeyDescriptor descr, Object obj, PythonClass type,
+        Object getSlot(HiddenKeyDescriptor descr, Object obj, LazyPythonClass type,
                         @Cached("create()") ReadAttributeFromObjectNode readNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             if (descr_check(descr.getType(), descr.getKey().getName(), obj, type)) {

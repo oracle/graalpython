@@ -40,15 +40,15 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -92,7 +92,7 @@ public class ZipImportModuleBuiltins extends PythonBuiltins {
     public abstract static class ZipImporterNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public PZipImporter createNew(PythonClass cls, @SuppressWarnings("unused") Object path,
+        public PZipImporter createNew(LazyPythonClass cls, @SuppressWarnings("unused") Object path,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             PythonModule module = getCore().lookupBuiltinModule(ZIPIMPORT_MODULE_NAME);
             return factory().createZipImporter(cls, (PDict) readNode.execute(module, ZIP_DIRECTORY_CACHE_NAME));

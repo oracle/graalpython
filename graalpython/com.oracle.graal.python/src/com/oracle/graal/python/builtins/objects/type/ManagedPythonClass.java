@@ -199,7 +199,7 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
         methodResolutionOrder = currentMRO;
     }
 
-    PythonClass[] mergeMROs(MROMergeState[] toMerge, List<AbstractPythonClass> mro) {
+    AbstractPythonClass[] mergeMROs(MROMergeState[] toMerge, List<AbstractPythonClass> mro) {
         int idx;
         scan: for (idx = 0; idx < toMerge.length; idx++) {
             if (toMerge[idx].isMerged()) {
@@ -229,7 +229,7 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
             }
         }
 
-        return mro.toArray(new PythonClass[mro.size()]);
+        return mro.toArray(new AbstractPythonClass[mro.size()]);
     }
 
     @Override

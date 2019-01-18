@@ -45,12 +45,12 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -137,7 +137,18 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
     }
 
     @Specialization
-    protected static PythonClass getIt(PythonNativeObject object,
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") PythonBuiltinClassType object) {
+        return PythonBuiltinClassType.PythonClass;
+    }
+
+    @Specialization
+    protected static PythonNativeClass getIt(PythonNativeObject object,
+                    @Cached("create()") GetNativeClassNode getNativeClassNode) {
+        return getNativeClassNode.execute(object);
+    }
+
+    @Specialization
+    protected static PythonNativeClass getIt(PythonNativeClass object,
                     @Cached("create()") GetNativeClassNode getNativeClassNode) {
         return getNativeClassNode.execute(object);
     }
@@ -178,11 +189,14 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
             return PythonBuiltinClassType.PFloat;
         } else if (o instanceof Integer || o instanceof Long || o instanceof Short || o instanceof Byte || o instanceof PythonNativeVoidPtr) {
             return PythonBuiltinClassType.PInt;
+        } else if (o instanceof PythonBuiltinClassType) {
+            return PythonBuiltinClassType.PythonClass;
         } else if (o instanceof PythonObject) {
             return ((PythonObject) o).getLazyPythonClass();
         } else if (o instanceof PythonNativeObject) {
-            // TODO(fa): implement
-            throw new UnsupportedOperationException("get class of native object on slow path not yet implemented");
+            return GetNativeClassNode.doSlowPath((PythonNativeObject) o);
+        } else if (o instanceof PythonNativeClass) {
+            return GetNativeClassNode.doSlowPath((PythonNativeClass) o);
         } else if (o instanceof PEllipsis) {
             return PythonBuiltinClassType.PEllipsis;
         } else if (o instanceof PNotImplemented) {

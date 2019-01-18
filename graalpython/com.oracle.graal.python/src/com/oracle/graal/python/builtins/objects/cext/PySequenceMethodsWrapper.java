@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
@@ -50,7 +50,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
  */
 public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
-    public PySequenceMethodsWrapper(PythonClass delegate) {
+    public PySequenceMethodsWrapper(ManagedPythonClass delegate) {
         super(delegate);
     }
 
@@ -63,7 +63,7 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
         return PySequenceMethodsWrapperMRForeign.ACCESS;
     }
 
-    public PythonClass getPythonClass() {
-        return (PythonClass) getDelegate();
+    public ManagedPythonClass getPythonClass() {
+        return (ManagedPythonClass) getDelegate();
     }
 }

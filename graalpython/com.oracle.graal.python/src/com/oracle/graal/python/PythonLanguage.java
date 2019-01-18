@@ -48,9 +48,10 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NodeFactory;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -396,9 +397,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             return callable.getCallTarget().getRootNode().getSourceSection();
         } else if (value instanceof PCode) {
             return ((PCode) value).getRootNode().getSourceSection();
-        } else if (value instanceof PythonClass) {
-            for (String k : ((PythonClass) value).getAttributeNames()) {
-                SourceSection attrSourceLocation = findSourceLocation(context, ((PythonClass) value).getAttribute(k));
+        } else if (value instanceof ManagedPythonClass) {
+            for (String k : ((ManagedPythonClass) value).getAttributeNames()) {
+                Object attrValue = ReadAttributeFromDynamicObjectNode.doSlowPath(((ManagedPythonClass) value).getStorage(), k);
+                SourceSection attrSourceLocation = findSourceLocation(context, attrValue);
                 if (attrSourceLocation != null) {
                     return attrSourceLocation;
                 }

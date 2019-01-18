@@ -47,9 +47,13 @@ import java.util.Set;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass.FlagsContainer;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
@@ -72,6 +76,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class TypeNodes {
 
@@ -152,7 +157,7 @@ public abstract class TypeNodes {
         public abstract AbstractPythonClass[] execute(Object obj);
 
         @Specialization
-        AbstractPythonClass[] doPythonClass(PythonClass obj) {
+        AbstractPythonClass[] doPythonClass(ManagedPythonClass obj) {
             return obj.getMethodResolutionOrder();
         }
 
@@ -274,6 +279,62 @@ public abstract class TypeNodes {
 
         public static GetSubclassesNode create() {
             return GetSubclassesNodeGen.create();
+        }
+
+    }
+
+    @ImportStatic(NativeMemberNames.class)
+    public abstract static class GetBaseClassesNode extends PNodeWithContext {
+
+        // TODO(fa): this should not return a Java array; maybe a SequenceStorage would fit
+        public abstract AbstractPythonClass[] execute(Object obj);
+
+        @Specialization
+        AbstractPythonClass[] doPythonClass(ManagedPythonClass obj) {
+            return obj.getBaseClasses();
+        }
+
+        @Specialization
+        AbstractPythonClass[] doPythonClass(PythonBuiltinClassType obj) {
+            return getBuiltinPythonClass(obj).getBaseClasses();
+        }
+
+        @Specialization
+        AbstractPythonClass[] doNative(PythonNativeClass obj,
+                        @Cached("create(TP_BASES)") GetTypeMemberNode getTpBasesNode,
+                        @Cached("createClassProfile()") ValueProfile resultTypeProfile,
+                        @Cached("createToArray()") SequenceStorageNodes.ToArrayNode toArrayNode) {
+            Object result = resultTypeProfile.profile(getTpBasesNode.execute(obj));
+            if (result instanceof PTuple) {
+                Object[] values = toArrayNode.execute(((PTuple) result).getSequenceStorage());
+                try {
+                    return (AbstractPythonClass[]) values;
+                } catch (ClassCastException e) {
+                    throw raise(PythonBuiltinClassType.SystemError, "unsupported object in 'tp_bases'");
+                }
+            }
+            throw raise(PythonBuiltinClassType.SystemError, "type does not provide bases");
+        }
+
+        @TruffleBoundary
+        public static AbstractPythonClass[] doSlowPath(Object obj) {
+            if (obj instanceof ManagedPythonClass) {
+                return ((ManagedPythonClass) obj).getBaseClasses();
+            } else if (obj instanceof PythonBuiltinClassType) {
+                return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getBaseClasses();
+            } else if (obj instanceof PythonNativeClass) {
+                // TODO implement
+                throw new UnsupportedOperationException("not yet implemented");
+            }
+            throw new IllegalStateException("unknown type " + obj.getClass().getName());
+        }
+
+        protected static SequenceStorageNodes.ToArrayNode createToArray() {
+            return SequenceStorageNodes.ToArrayNode.create(false);
+        }
+
+        public static GetBaseClassesNode create() {
+            return GetBaseClassesNodeGen.create();
         }
 
     }

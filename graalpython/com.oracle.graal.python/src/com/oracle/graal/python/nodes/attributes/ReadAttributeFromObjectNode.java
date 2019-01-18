@@ -43,7 +43,8 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeDictNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeDictNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -65,7 +66,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 
-@ImportStatic({PGuards.class, PythonOptions.class})
+@ImportStatic({PGuards.class, PythonOptions.class, NativeMemberNames.class})
 public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     public static ReadAttributeFromObjectNode create() {
         return ReadAttributeFromObjectNodeGen.create();
@@ -145,7 +146,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     @Specialization(guards = {"!isHiddenKey(key)"})
     protected Object readNativeClass(PythonNativeClass object, Object key,
-                    @Cached("create()") GetTypeDictNode getNativeDict,
+                    @Cached("create(TP_DICT)") GetTypeMemberNode getNativeDict,
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
         return readNative(object, key, getNativeDict, getItemNode);
     }
@@ -186,6 +187,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         if (object instanceof PythonObject) {
             PythonObject po = (PythonObject) object;
             if (ObjectAttributeNode.isDictUnsetOrSameAsStorage(po)) {
+                return ReadAttributeFromDynamicObjectNode.doSlowPath(po.getStorage(), key);
+            } else {
                 HashingStorage dictStorage = po.getDict().getDictStorage();
                 Object value = dictStorage.getItem(key, HashingStorage.getSlowPathEquivalence(key));
                 if (value == null) {
@@ -193,8 +196,6 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                 } else {
                     return value;
                 }
-            } else {
-                return ReadAttributeFromDynamicObjectNode.doSlowPath(po.getStorage(), key);
             }
         } else if (object instanceof PythonNativeObject || object instanceof PythonNativeClass) {
             Object d = GetObjectDictNode.doSlowPath(object);

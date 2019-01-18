@@ -69,7 +69,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -126,12 +125,12 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PythonClass setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonBuiltinClass klass) {
+        LazyPythonClass setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonBuiltinClass klass) {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
         @Specialization
-        PythonClass setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonNativeClass klass) {
+        LazyPythonClass setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonNativeClass klass) {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
@@ -187,12 +186,12 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPythonObject(self)")
-        PythonClass getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonClass value) {
+        LazyPythonClass getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") AbstractPythonClass value) {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
         @Fallback
-        PythonClass getClass(@SuppressWarnings("unused") Object self, Object value) {
+        LazyPythonClass getClass(@SuppressWarnings("unused") Object self, Object value) {
             throw raise(TypeError, "__class__ must be set to a class, not '%p' object", value);
         }
 

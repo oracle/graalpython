@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
@@ -205,6 +206,12 @@ public abstract class GetClassNode extends PNodeWithContext {
         return getNativeClassNode.execute(object);
     }
 
+    @Specialization
+    protected static PythonNativeClass getIt(PythonNativeClass object,
+                    @Cached("create()") GetNativeClassNode getNativeClassNode) {
+        return getNativeClassNode.execute(object);
+    }
+
     @Specialization(assumptions = "singleContextAssumption()")
     protected PythonBuiltinClass getIt(@SuppressWarnings("unused") PythonNativeVoidPtr object,
                     @Cached("getIt(object)") PythonBuiltinClass klass) {
@@ -252,8 +259,9 @@ public abstract class GetClassNode extends PNodeWithContext {
         } else if (o instanceof PythonObject) {
             return ((PythonObject) o).getPythonClass();
         } else if (o instanceof PythonNativeObject) {
-            // TODO(fa): implement
-            throw new UnsupportedOperationException("get class of native object on slow path not yet implemented");
+            return GetNativeClassNode.doSlowPath((PythonNativeObject) o);
+        } else if (o instanceof PythonNativeClass) {
+            return GetNativeClassNode.doSlowPath((PythonNativeClass) o);
         } else if (o instanceof PEllipsis) {
             return core.lookupType(PythonBuiltinClassType.PEllipsis);
         } else if (o instanceof PNotImplemented) {

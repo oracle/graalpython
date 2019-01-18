@@ -30,8 +30,8 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
@@ -57,6 +57,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     @Child private WriteNode exceptName;
     @Child private GetLazyClassNode getClass;
     @Child private GetMroNode getMroNode;
+    @Child private IsSameTypeNode isSameTypeNode;
 
     // "object" is the uninitialized value (since it's not a valid error type)
     @CompilationFinal private PythonBuiltinClassType singleBuiltinError = PythonBuiltinClassType.PythonObject;
@@ -109,7 +110,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
             if (error != null) {
                 // check that the class is a subclass of BaseException
                 if (!derivesFromBaseException(error)) {
-                    throw raise(PythonErrorType.TypeError, "catching classes that do not inherit from BaseException is not allowed");
+                    raiseNoException();
                 }
                 singleBuiltinError = error;
             }
@@ -153,7 +154,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
             }
         } else {
             // non-builtin class: look through MRO
-            AbstractPythonClass[] mro = getMro((PythonClass) lazyClass);
+            AbstractPythonClass[] mro = getMro(lazyClass);
             for (AbstractPythonClass current : mro) {
                 if (isClassProfile.profileClass(current, cachedError)) {
                     matches = true;
@@ -195,7 +196,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
                 matches = matches(expectedType, builtinType);
             }
         } else {
-            PythonClass clazz = (PythonClass) lazyClass;
+            AbstractPythonClass clazz = (AbstractPythonClass) lazyClass;
             if (isTupleProfile.profile(expectedType instanceof PTuple)) {
                 // check for every type in the tuple
                 for (Object etype : ((PTuple) expectedType).getArray()) {
@@ -212,9 +213,9 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         return writeResult(frame, e, matches);
     }
 
-    private boolean matches(Object expectedType, PythonClass clazz) {
+    private boolean matches(Object expectedType, AbstractPythonClass clazz) {
         // TODO: check whether expected type derives from BaseException
-        if (equalsProfile.profile(expectedType == clazz)) {
+        if (equalsProfile.profile(isSameType(expectedType, clazz))) {
             return true;
         }
         AbstractPythonClass[] mro = getMro(clazz);
@@ -227,12 +228,12 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     }
 
     private boolean matches(Object expectedType, PythonBuiltinClassType clazz) {
-        if (!(expectedType instanceof PythonClass)) {
+        if (!(expectedType instanceof AbstractPythonClass)) {
             errorProfile.enter();
-            throw raise(PythonErrorType.TypeError, "catching classes that do not inherit from BaseException is not allowed");
+            throw raiseNoException();
         }
 
-        PythonClass expectedClass = (PythonClass) expectedType;
+        AbstractPythonClass expectedClass = (AbstractPythonClass) expectedType;
 
         // TODO: check whether expected type derives from BaseException
         PythonBuiltinClassType builtinClass = clazz;
@@ -243,6 +244,10 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
             builtinClass = builtinClass.getBase();
         }
         return false;
+    }
+
+    private PException raiseNoException() {
+        throw raise(PythonErrorType.TypeError, "catching classes that do not inherit from BaseException is not allowed");
     }
 
     private boolean derivesFromBaseException(PythonBuiltinClassType error) {
@@ -276,11 +281,19 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         return getSourceSection() != null;
     }
 
-    private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
+    private AbstractPythonClass[] getMro(LazyPythonClass clazz) {
         if (getMroNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             getMroNode = insert(GetMroNode.create());
         }
         return getMroNode.execute(clazz);
+    }
+
+    private boolean isSameType(Object left, Object right) {
+        if (isSameTypeNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            isSameTypeNode = insert(IsSameTypeNode.create());
+        }
+        return isSameTypeNode.execute(left, right);
     }
 }

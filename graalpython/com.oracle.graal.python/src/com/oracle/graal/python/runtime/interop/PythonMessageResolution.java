@@ -588,7 +588,7 @@ public class PythonMessageResolution {
     @Resolve(message = "IS_INSTANTIABLE")
     abstract static class IsInstantiableNode extends Node {
         public Object access(Object obj) {
-            return obj instanceof PythonClass;
+            return obj instanceof LazyPythonClass;
         }
     }
 

@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -256,7 +256,7 @@ public class PThreadStateMR {
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
-        PythonClass doCurExcType(@SuppressWarnings("unused") String key, PythonClass value) {
+        LazyPythonClass doCurExcType(@SuppressWarnings("unused") String key, LazyPythonClass value) {
             setCurrentException(factory().createBaseException(value));
             return value;
         }
@@ -274,7 +274,7 @@ public class PThreadStateMR {
         }
 
         @Specialization(guards = "eq(key, EXC_TYPE)")
-        PythonClass doExcType(@SuppressWarnings("unused") String key, PythonClass value) {
+        LazyPythonClass doExcType(@SuppressWarnings("unused") String key, LazyPythonClass value) {
             setCaughtException(factory().createBaseException(value));
             return value;
         }

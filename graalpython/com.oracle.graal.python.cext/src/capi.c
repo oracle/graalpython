@@ -281,8 +281,13 @@ void* get_ob_type(PyObject* obj) {
 }
 
 /** to be used from Java code only; reads native 'tp_dict' field */
-void* get_tp_dict(PyTypeObject* obj) {
-	return obj->tp_dict;
+PyObject* get_tp_dict(PyTypeObject* obj) {
+	return native_to_java(obj->tp_dict);
+}
+
+/** to be used from Java code only; reads native 'tp_dict' field */
+PyObject* get_tp_bases(PyTypeObject* obj) {
+	return native_to_java(obj->tp_bases);
 }
 
 /** to be used from Java code only; returns the type ID for a byte array */

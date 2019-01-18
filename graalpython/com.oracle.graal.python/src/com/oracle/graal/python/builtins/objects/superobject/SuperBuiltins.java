@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.SuperInitNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -357,9 +356,9 @@ public final class SuperBuiltins extends PythonBuiltins {
             } else {
                 try {
                     Object classObject = getGetAttr().executeObject(object, SpecialAttributeNames.__CLASS__);
-                    if (classObject instanceof PythonClass) {
+                    if (classObject instanceof AbstractPythonClass) {
                         if (getIsSubtype().execute(classObject, cls)) {
-                            return (PythonClass) classObject;
+                            return (AbstractPythonClass) classObject;
                         }
                     }
                 } catch (PException e) {

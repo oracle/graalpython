@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -57,7 +56,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 @ImportStatic(PythonOptions.class)
@@ -89,7 +87,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
 
         @Specialization(replaces = "lookupConstantMRO")
-        protected Object lookup(PythonClass klass, Object key,
+        protected Object lookup(ManagedPythonClass klass, Object key,
                         @Cached("create()") GetMroNode getMroNode,
                         @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
             return LookupAttributeInMRONode.lookupSlow(klass, key, getMroNode, readAttrNode);
@@ -150,7 +148,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
     }
 
-    protected PythonClassAssumptionPair findAttrClassAndAssumptionInMRO(PythonClass klass) {
+    protected PythonClassAssumptionPair findAttrClassAndAssumptionInMRO(ManagedPythonClass klass) {
         AbstractPythonClass[] mro = getMro(klass);
         Assumption attrAssumption = klass.createAttributeInMROFinalAssumption(key);
         for (int i = 0; i < mro.length; i++) {
@@ -179,8 +177,8 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
     @Specialization(guards = {"klass == cachedKlass", "cachedClassInMROInfo != null"}, limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", assumptions = {
                     "cachedClassInMROInfo.assumption"})
-    protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonClass klass,
-                    @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
+    protected Object lookupConstantMROCached(@SuppressWarnings("unused") ManagedPythonClass klass,
+                    @Cached("klass") @SuppressWarnings("unused") ManagedPythonClass cachedKlass,
                     @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") PythonClassAssumptionPair cachedClassInMROInfo) {
         return cachedClassInMROInfo.value;
     }

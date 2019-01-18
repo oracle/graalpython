@@ -32,7 +32,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -40,7 +39,6 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -82,7 +80,7 @@ public abstract class RaiseNode extends StatementNode {
         throw raise(exception);
     }
 
-    private void checkBaseClass(PythonClass pythonClass) {
+    private void checkBaseClass(AbstractPythonClass pythonClass) {
         if (simpleBaseCheckProfile.profileClass(pythonClass, BaseException)) {
             return;
         }
@@ -92,17 +90,17 @@ public abstract class RaiseNode extends StatementNode {
             }
         }
         baseCheckFailedProfile.enter();
-        throw raise(PythonErrorType.TypeError, "exceptions must derive from BaseException");
+        throw raiseNoException();
     }
 
     @Specialization
-    public void doRaise(PythonClass pythonClass, PNone cause) {
+    public void doRaise(AbstractPythonClass pythonClass, PNone cause) {
         checkBaseClass(pythonClass);
         throw raise(pythonClass);
     }
 
     @Specialization(guards = "!isPNone(cause)")
-    public void doRaise(PythonClass pythonClass, Object cause,
+    public void doRaise(AbstractPythonClass pythonClass, Object cause,
                     @Cached("create()") WriteAttributeToObjectNode writeCause) {
         checkBaseClass(pythonClass);
         PBaseException pythonException = factory().createBaseException(pythonClass);
@@ -112,6 +110,10 @@ public abstract class RaiseNode extends StatementNode {
 
     @Fallback
     public void doRaise(Object exception, Object cause) {
+        throw raiseNoException();
+    }
+
+    private PException raiseNoException() {
         throw raise(TypeError, "exceptions must derive from BaseException");
     }
 

@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.random;
 import java.util.Random;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class PRandom extends PythonBuiltinObject {
@@ -59,7 +59,7 @@ public class PRandom extends PythonBuiltinObject {
 
     private PythonRandom javaRandom;
 
-    public PRandom(PythonClass cls) {
+    public PRandom(LazyPythonClass cls) {
         super(cls);
         resetJavaRandom();
     }

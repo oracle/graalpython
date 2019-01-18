@@ -37,7 +37,6 @@ import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -68,7 +67,7 @@ public class PythonObject extends PythonAbstractObject {
             CompilerDirectives.transferToInterpreter();
             // special case for base type class
             assert this instanceof PythonBuiltinClass;
-            this.pythonClass = (PythonClass) this;
+            this.pythonClass = (PythonBuiltinClass) this;
         } else {
             this.pythonClass = pythonClass;
         }
@@ -78,8 +77,8 @@ public class PythonObject extends PythonAbstractObject {
     public final AbstractPythonClass getPythonClass() {
         CompilerAsserts.neverPartOfCompilation();
         assert pythonClass != null;
-        if (pythonClass instanceof PythonClass) {
-            return (PythonClass) pythonClass;
+        if (pythonClass instanceof AbstractPythonClass) {
+            return (AbstractPythonClass) pythonClass;
         } else {
             return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) pythonClass);
         }

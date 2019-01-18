@@ -411,19 +411,19 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_FLAGS, key)")
-        long doTpFlags(PythonClass object, @SuppressWarnings("unused") String key,
+        long doTpFlags(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") GetTypeFlagsNode getTypeFlagsNode) {
             return getTypeFlagsNode.execute(object);
         }
 
         @Specialization(guards = "eq(TP_NAME, key)")
-        Object doTpName(PythonClass object, @SuppressWarnings("unused") String key) {
+        Object doTpName(ManagedPythonClass object, @SuppressWarnings("unused") String key) {
             // return a C string wrapper that really allocates 'char*' on TO_NATIVE
             return object.getNativeWrapper().getNameWrapper();
         }
 
         @Specialization(guards = "eq(TP_BASE, key)")
-        Object doTpBase(PythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpBase(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") GetSuperClassNode getSuperClassNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             LazyPythonClass superClass = getSuperClassNode.execute(object);
@@ -434,20 +434,20 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_ALLOC, key)")
-        Object doTpAlloc(PythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpAlloc(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__ALLOC__)") LookupAttributeInMRONode getAllocNode) {
             Object result = getAllocNode.execute(object);
             return getToSulongNode().execute(result);
         }
 
         @Specialization(guards = "eq(TP_AS_NUMBER, key)")
-        Object doTpAsNumber(PythonClass object, @SuppressWarnings("unused") String key) {
+        Object doTpAsNumber(ManagedPythonClass object, @SuppressWarnings("unused") String key) {
             // TODO check for type and return 'NULL'
             return new PyNumberMethodsWrapper(object);
         }
 
         @Specialization(guards = "eq(TP_AS_BUFFER, key)")
-        Object doTpAsBuffer(PythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpAsBuffer(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") IsSubtypeNode isSubtype,
                         @Cached("create()") BranchProfile notBytes,
                         @Cached("create()") BranchProfile notBytearray,
@@ -479,7 +479,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_AS_SEQUENCE, key)")
-        Object doTpAsSequence(PythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpAsSequence(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__LEN__)") LookupAttributeInMRONode getAttrNode) {
             if (getAttrNode.execute(object) != PNone.NO_VALUE) {
                 return new PySequenceMethodsWrapper(object);
@@ -489,25 +489,25 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_NEW, key)")
-        Object doTpNew(PythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpNew(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__NEW__)") LookupAttributeInMRONode getAttrNode) {
             return ManagedMethodWrappers.createKeywords(getAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_HASH, key)")
-        Object doTpHash(PythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpHash(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__HASH__)") LookupAttributeInMRONode getHashNode) {
             return getToSulongNode().execute(getHashNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
-        Object doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpBasicsize(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__BASICSIZE__)") LookupAttributeInMRONode getAttrNode) {
             return getAttrNode.execute(object);
         }
 
         @Specialization(guards = "eq(TP_ITEMSIZE, key)")
-        Object doTpItemsize(PythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpItemsize(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__ITEMSIZE__)") LookupAttributeInMRONode getAttrNode) {
             return getAttrNode.execute(object);
         }
@@ -525,44 +525,44 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
-        Object doTpRichcompare(PythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpRichcompare(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(RICHCMP)") LookupAttributeInMRONode getCmpNode) {
             return getToSulongNode().execute(getCmpNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_SUBCLASSES, key)")
-        Object doTpSubclasses(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpSubclasses(@SuppressWarnings("unused") ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
             // TODO create dict view on subclasses set
             return PythonObjectNativeWrapper.wrap(factory().createDict(), noWrapperProfile);
         }
 
         @Specialization(guards = "eq(TP_GETATTR, key)")
-        Object doTpGetattr(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key) {
+        Object doTpGetattr(@SuppressWarnings("unused") ManagedPythonClass object, @SuppressWarnings("unused") String key) {
             // we do not provide 'tp_getattr'; code will usually then use 'tp_getattro'
             return getToSulongNode().execute(PNone.NO_VALUE);
         }
 
         @Specialization(guards = "eq(TP_SETATTR, key)")
-        Object doTpSetattr(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key) {
+        Object doTpSetattr(@SuppressWarnings("unused") ManagedPythonClass object, @SuppressWarnings("unused") String key) {
             // we do not provide 'tp_setattr'; code will usually then use 'tp_setattro'
             return getToSulongNode().execute(PNone.NO_VALUE);
         }
 
         @Specialization(guards = "eq(TP_GETATTRO, key)")
-        Object doTpGetattro(PythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpGetattro(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__GETATTRIBUTE__)") LookupAttributeInMRONode lookupAttrNode) {
             return PyProcsWrapper.createGetAttrWrapper(lookupAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_SETATTRO, key)")
-        Object doTpSetattro(PythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpSetattro(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__SETATTR__)") LookupAttributeInMRONode lookupAttrNode) {
             return PyProcsWrapper.createSetAttrWrapper(lookupAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_ITERNEXT, key)")
-        Object doTpIternext(PythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpIternext(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__NEXT__)") LookupAttributeInMRONode lookupAttrNode) {
             return getToSulongNode().execute(lookupAttrNode.execute(object));
         }
@@ -866,19 +866,19 @@ public class PythonObjectNativeWrapperMR {
         abstract Object execute(Object receiver, String key, Object value);
 
         @Specialization(guards = "eq(OB_TYPE, key)")
-        Object doObType(PythonObject object, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PythonClass value,
+        Object doObType(PythonObject object, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") ManagedPythonClass value,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
             // At this point, we do not support changing the type of an object.
             return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
         }
 
         @Specialization(guards = "eq(TP_FLAGS, key)")
-        long doTpFlags(PythonClass object, @SuppressWarnings("unused") String key, long flags) {
+        long doTpFlags(ManagedPythonClass object, @SuppressWarnings("unused") String key, long flags) {
             object.setFlags(flags);
             return flags;
         }
 
-        @Specialization(guards = {"eq(TP_BASICSIZE, key)", "isPythonBuiltinClass(object)"})
+        @Specialization(guards = "eq(TP_BASICSIZE, key)")
         @TruffleBoundary
         long doTpBasicsize(PythonBuiltinClass object, @SuppressWarnings("unused") String key, long basicsize) {
             // We have to use the 'setAttributeUnsafe' because this properly cannot be modified by
@@ -887,7 +887,7 @@ public class PythonObjectNativeWrapperMR {
             return basicsize;
         }
 
-        @Specialization(guards = {"eq(TP_BASICSIZE, key)", "isPythonUserClass(object)"})
+        @Specialization(guards = "eq(TP_BASICSIZE, key)")
         @TruffleBoundary
         long doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key, long basicsize) {
             // Do deliberately not use "SetAttributeNode" because we want to directly set the
@@ -898,7 +898,7 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_SUBCLASSES, key)")
         @TruffleBoundary
-        Object doTpSubclasses(PythonClass object, @SuppressWarnings("unused") String key, PythonObjectNativeWrapper value) {
+        Object doTpSubclasses(ManagedPythonClass object, @SuppressWarnings("unused") String key, PythonObjectNativeWrapper value) {
             // TODO more type checking; do fast path
             PDict dict = (PDict) value.getPythonObject();
             for (Object item : dict.items()) {
@@ -916,7 +916,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_DICT, key)")
-        Object doTpDict(PythonClass object, @SuppressWarnings("unused") String key, Object nativeValue,
+        Object doTpDict(ManagedPythonClass object, @SuppressWarnings("unused") String key, Object nativeValue,
                         @Cached("create()") CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached("create()") HashingStorageNodes.GetItemNode getItem,
                         @Cached("create()") WriteAttributeToObjectNode writeAttrNode,

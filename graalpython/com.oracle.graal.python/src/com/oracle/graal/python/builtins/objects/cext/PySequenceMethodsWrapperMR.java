@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -60,7 +60,7 @@ public class PySequenceMethodsWrapperMR {
         @Child private ToSulongNode toSulongNode;
 
         public Object access(PySequenceMethodsWrapper object, String key) {
-            PythonClass delegate = object.getPythonClass();
+            ManagedPythonClass delegate = object.getPythonClass();
             Object result;
             switch (key) {
                 case NativeMemberNames.SQ_REPEAT:

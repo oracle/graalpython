@@ -57,7 +57,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.PyNumberMethodsWrapperMRFactory.ReadMethodNodeGen;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -78,7 +78,7 @@ public class PyNumberMethodsWrapperMR {
 
         public Object access(PyNumberMethodsWrapper object, String key) {
             // translate key to attribute name
-            PythonClass delegate = object.getPythonClass();
+            ManagedPythonClass delegate = object.getPythonClass();
             return getToSulongNode().execute(readMethodNode.execute(delegate, key));
         }
 
@@ -93,10 +93,10 @@ public class PyNumberMethodsWrapperMR {
 
     abstract static class ReadMethodNode extends PNodeWithContext {
 
-        public abstract Object execute(PythonClass clazz, String key);
+        public abstract Object execute(ManagedPythonClass clazz, String key);
 
         @Specialization(limit = "99", guards = {"eq(cachedKey, key)"})
-        Object getMethod(PythonClass clazz, @SuppressWarnings("unused") String key,
+        Object getMethod(ManagedPythonClass clazz, @SuppressWarnings("unused") String key,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Cached("createLookupNode(cachedKey)") LookupAttributeInMRONode lookupNode) {
             if (lookupNode != null) {

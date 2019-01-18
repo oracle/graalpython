@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -848,17 +847,17 @@ public abstract class CExtNodes {
 
     public abstract static class GetNativeClassNode extends CExtBaseNode {
 
-        @Child PCallNativeNode callGetObTypeNode;
-        @Child ToJavaNode toJavaNode;
+        @Child private PCallCapiFunction callGetObTypeNode;
+        @Child private ToJavaNode toJavaNode;
 
         @CompilationFinal private TruffleObject func;
 
-        public abstract PythonClass execute(PythonNativeObject object);
+        public abstract PythonNativeClass execute(PythonAbstractObject object);
 
         @Specialization(guards = "object == cachedObject", limit = "1")
-        PythonClass getNativeClassCached(@SuppressWarnings("unused") PythonNativeObject object,
+        PythonNativeClass getNativeClassCached(@SuppressWarnings("unused") PythonNativeObject object,
                         @SuppressWarnings("unused") @Cached("object") PythonNativeObject cachedObject,
-                        @Cached("getNativeClass(cachedObject)") PythonClass cachedClass) {
+                        @Cached("getNativeClass(cachedObject)") PythonNativeClass cachedClass) {
             // TODO: (tfel) is this really something we can do? It's so rare for this class to
             // change that it shouldn't be worth the effort, but in native code, anything can
             // happen. OTOH, CPython also has caches that can become invalid when someone just goes
@@ -867,10 +866,36 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        PythonClass getNativeClass(PythonNativeObject object) {
+        PythonNativeClass getNativeClass(PythonNativeObject object) {
             // do not convert wrap 'object.object' since that is really the native pointer object
-            Object[] args = new Object[]{object.object};
-            return (PythonClass) getToJavaNode().execute(getCallGetObTypeNode().execute(getObTypeFunction(), args));
+            return (PythonNativeClass) getToJavaNode().execute(getCallGetObTypeNode().call(object.object));
+        }
+
+        @Specialization(guards = "object == cachedObject", limit = "1")
+        PythonNativeClass getNativeClassCached(@SuppressWarnings("unused") PythonNativeClass object,
+                        @SuppressWarnings("unused") @Cached("object") PythonNativeClass cachedObject,
+                        @Cached("getNativeClass(cachedObject)") PythonNativeClass cachedClass) {
+            // TODO: (tfel) is this really something we can do? It's so rare for this class to
+            // change that it shouldn't be worth the effort, but in native code, anything can
+            // happen. OTOH, CPython also has caches that can become invalid when someone just goes
+            // and changes the ob_type of an object.
+            return cachedClass;
+        }
+
+        @Specialization
+        PythonNativeClass getNativeClass(PythonNativeClass object) {
+            // do not convert wrap 'object.object' since that is really the native pointer object
+            return (PythonNativeClass) getToJavaNode().execute(getCallGetObTypeNode().call(object.getPtr()));
+        }
+
+        @TruffleBoundary
+        public static PythonNativeClass doSlowPath(PythonNativeObject object) {
+            return (PythonNativeClass) ToJavaNode.doSlowPath(PCallCapiFunction.doSlowPath(NativeCAPISymbols.FUN_GET_OB_TYPE, object.object), true);
+        }
+
+        @TruffleBoundary
+        public static PythonNativeClass doSlowPath(PythonNativeClass object) {
+            return (PythonNativeClass) ToJavaNode.doSlowPath(PCallCapiFunction.doSlowPath(NativeCAPISymbols.FUN_GET_OB_TYPE, object.getPtr()), true);
         }
 
         private ToJavaNode getToJavaNode() {
@@ -881,20 +906,13 @@ public abstract class CExtNodes {
             return toJavaNode;
         }
 
-        private PCallNativeNode getCallGetObTypeNode() {
+        private PCallCapiFunction getCallGetObTypeNode() {
             if (callGetObTypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callGetObTypeNode = insert(PCallNativeNode.create());
+                callGetObTypeNode = insert(PCallCapiFunction.create(NativeCAPISymbols.FUN_GET_OB_TYPE));
+
             }
             return callGetObTypeNode;
-        }
-
-        TruffleObject getObTypeFunction() {
-            if (func == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                func = importCAPISymbol(NativeCAPISymbols.FUN_GET_OB_TYPE);
-            }
-            return func;
         }
 
         public static GetNativeClassNode create() {
@@ -1618,29 +1636,40 @@ public abstract class CExtNodes {
         }
     }
 
-    public static class GetTypeDictNode extends GetNativeDictNode {
+    public static class GetTypeMemberNode extends GetNativeDictNode {
         @Child private ToSulongNode toSulong;
-        @Child private ToJavaNode toJava;
+        @Child private AsPythonObjectNode toJava;
         @Child private PCallCapiFunction callGetTpDictNode;
+
+        private GetTypeMemberNode(String memberName) {
+            String getterFuncName = "get_" + memberName;
+            if (!NativeCAPISymbols.isValid(getterFuncName)) {
+                throw new IllegalArgumentException("invalid native member getter function " + getterFuncName);
+            }
+            callGetTpDictNode = PCallCapiFunction.create(getterFuncName);
+        }
 
         @Override
         public Object execute(Object self) {
-            if (callGetTpDictNode == null) {
+            if (toSulong == null || toJava == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callGetTpDictNode = PCallCapiFunction.create(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT);
                 toSulong = insert(ToSulongNode.create());
-                toJava = insert(ToJavaNode.create());
+                toJava = insert(AsPythonObjectNode.create());
             }
             return toJava.execute(callGetTpDictNode.call(toSulong.execute(self)));
         }
 
         @TruffleBoundary
-        public static Object doSlowPath(Object self) {
-            return ToJavaNode.doSlowPath(PCallCapiFunction.doSlowPath(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT, ToSulongNode.doSlowPath(self)), true);
+        public static Object doSlowPath(Object self, String memberName) {
+            String getterFuncName = "get_" + memberName;
+            if (!NativeCAPISymbols.isValid(getterFuncName)) {
+                throw new IllegalArgumentException("invalid native member getter function " + getterFuncName);
+            }
+            return AsPythonObjectNode.doSlowPath(PCallCapiFunction.doSlowPath(getterFuncName, ToSulongNode.doSlowPath(self)));
         }
 
-        public static GetTypeDictNode create() {
-            return new GetTypeDictNode();
+        public static GetTypeMemberNode create(String typeMember) {
+            return new GetTypeMemberNode(typeMember);
         }
     }
 }

@@ -26,14 +26,14 @@
 package com.oracle.graal.python.builtins.objects.reversed;
 
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public final class PSequenceReverseIterator extends PBuiltinIterator {
 
     private final Object sequence;
     int index;
 
-    public PSequenceReverseIterator(PythonClass clazz, Object sequence, int lengthHint) {
+    public PSequenceReverseIterator(LazyPythonClass clazz, Object sequence, int lengthHint) {
         super(clazz);
         this.sequence = sequence;
         this.index = lengthHint - 1;

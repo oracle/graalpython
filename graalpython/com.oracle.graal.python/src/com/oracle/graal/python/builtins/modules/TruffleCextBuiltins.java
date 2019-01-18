@@ -42,14 +42,8 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_BASICSIZE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_DICTOFFSET;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_DOC;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_ITEMSIZE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_NAME;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
@@ -63,7 +57,6 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -105,7 +98,6 @@ import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeA
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CastToByteNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
@@ -130,9 +122,10 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -326,7 +319,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class CreateFunctionNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(cwrapper)")
         @TruffleBoundary
-        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, PythonClass type) {
+        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, LazyPythonClass type) {
             CompilerDirectives.transferToInterpreter();
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable));
             return factory().createBuiltinFunction(name, type, createArity(name), callTarget);
@@ -350,7 +343,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(cwrapper)")
         @TruffleBoundary
-        PBuiltinFunction run(String name, TruffleObject callable, TruffleObject cwrapper, PythonClass type) {
+        PBuiltinFunction run(String name, TruffleObject callable, TruffleObject cwrapper, LazyPythonClass type) {
             CompilerDirectives.transferToInterpreter();
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable));
             return factory().createBuiltinFunction(name, type, createArity(name), callTarget);
@@ -372,7 +365,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(@SuppressWarnings("unused") PythonClass typ, PBaseException val, @SuppressWarnings("unused") PTraceback tb) {
+        Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, @SuppressWarnings("unused") PTraceback tb) {
             val.reifyException();
             if (val.getException() != null) {
                 getContext().setCurrentException(val.getException());
@@ -432,7 +425,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(@SuppressWarnings("unused") PythonClass typ, PBaseException val, @SuppressWarnings("unused") PTraceback tb) {
+        Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, @SuppressWarnings("unused") PTraceback tb) {
             val.reifyException();
             if (val.getException() != null) {
                 getContext().setCaughtException(val.getException());
@@ -454,7 +447,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         @SuppressWarnings("unused")
-        Object run(PythonClass typ, PBaseException val, PTraceback tb) {
+        Object run(LazyPythonClass typ, PBaseException val, PTraceback tb) {
             if (val.getException() != null) {
                 ExceptionUtils.printPythonLikeStackTrace(val.getException());
             }
@@ -698,7 +691,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
          *
          */
         @Specialization
-        Object slots(Object module, PythonClass pythonClass,
+        Object slots(Object module, LazyPythonClass pythonClass,
                         @Cached("create(__SLOTS__)") LookupAttributeInMRONode lookupSlotsNode) {
             Object execute = lookupSlotsNode.execute(pythonClass);
             if (execute != PNone.NO_VALUE) {
@@ -1508,7 +1501,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doPythonObject(PythonClassNativeWrapper klass, Object ptr) {
-            ((PythonClass) klass.getPythonObject()).setSulongType(ptr);
+            ((ManagedPythonClass) klass.getPythonObject()).setSulongType(ptr);
             return ptr;
         }
     }
@@ -1525,7 +1518,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPythonObject(PythonClass obj, Object getBufferProc, Object releaseBufferProc) {
+        Object doPythonObject(ManagedPythonClass obj, Object getBufferProc, Object releaseBufferProc) {
             return doNativeWrapper(obj.getNativeWrapper(), getBufferProc, releaseBufferProc);
         }
     }
@@ -1597,17 +1590,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isNoValue(get)", "!isNoValue(set)"})
-        Object call(Object get, Object set, String name, PythonClass owner) {
+        Object call(Object get, Object set, String name, LazyPythonClass owner) {
             return factory().createGetSetDescriptor(get, set, name, owner);
         }
 
         @Specialization(guards = {"!isNoValue(get)", "isNoValue(set)"})
-        Object call(Object get, @SuppressWarnings("unused") PNone set, String name, PythonClass owner) {
+        Object call(Object get, @SuppressWarnings("unused") PNone set, String name, LazyPythonClass owner) {
             return factory().createGetSetDescriptor(get, null, name, owner);
         }
 
         @Specialization(guards = {"isNoValue(get)", "!isNoValue(set)"})
-        Object call(@SuppressWarnings("unused") PNone get, Object set, String name, PythonClass owner) {
+        Object call(@SuppressWarnings("unused") PNone get, Object set, String name, LazyPythonClass owner) {
             return factory().createGetSetDescriptor(null, set, name, owner);
         }
     }

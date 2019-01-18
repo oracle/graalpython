@@ -187,7 +187,7 @@ public final class PythonObjectFactory extends Node {
 
     @CompilationFinal private Optional<Shape> cachedInstanceShape = Optional.empty();
 
-    public PythonObject createPythonObject(PythonClass cls) {
+    public PythonObject createPythonObject(LazyPythonClass cls) {
         assert cls != null;
         Optional<Shape> cached = cachedInstanceShape;
         if (cached != null) {
@@ -214,7 +214,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PythonNativeVoidPtr(obj));
     }
 
-    public SuperObject createSuperObject(AbstractPythonClass self) {
+    public SuperObject createSuperObject(LazyPythonClass self) {
         return trace(new SuperObject(self));
     }
 
@@ -338,7 +338,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PSlice(PythonBuiltinClassType.PSlice, start, stop, step));
     }
 
-    public PRandom createRandom(PythonClass cls) {
+    public PRandom createRandom(LazyPythonClass cls) {
         return trace(new PRandom(cls));
     }
 
@@ -350,7 +350,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PythonModule(PythonBuiltinClassType.PythonModule, name));
     }
 
-    public PythonModule createPythonModule(PythonClass cls, String name) {
+    public PythonModule createPythonModule(LazyPythonClass cls, String name) {
         return trace(new PythonModule(cls, name));
     }
 
@@ -473,7 +473,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PSet(PythonBuiltinClassType.PSet, storage));
     }
 
-    public PFrozenSet createFrozenSet(PythonClass cls) {
+    public PFrozenSet createFrozenSet(LazyPythonClass cls) {
         return trace(new PFrozenSet(cls));
     }
 
@@ -493,7 +493,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PDict(PythonBuiltinClassType.PDict, keywords));
     }
 
-    public PDict createDict(PythonClass cls) {
+    public PDict createDict(LazyPythonClass cls) {
         return trace(new PDict(cls));
     }
 
@@ -612,27 +612,27 @@ public final class PythonObjectFactory extends Node {
      * Arrays
      */
 
-    public PArray createArray(PythonClass cls, byte[] array) {
+    public PArray createArray(LazyPythonClass cls, byte[] array) {
         return trace(new PArray(cls, new ByteSequenceStorage(array)));
     }
 
-    public PArray createArray(PythonClass cls, int[] array) {
+    public PArray createArray(LazyPythonClass cls, int[] array) {
         return trace(new PArray(cls, new IntSequenceStorage(array)));
     }
 
-    public PArray createArray(PythonClass cls, double[] array) {
+    public PArray createArray(LazyPythonClass cls, double[] array) {
         return trace(new PArray(cls, new DoubleSequenceStorage(array)));
     }
 
-    public PArray createArray(PythonClass cls, char[] array) {
+    public PArray createArray(LazyPythonClass cls, char[] array) {
         return trace(new PArray(cls, new CharSequenceStorage(array)));
     }
 
-    public PArray createArray(PythonClass cls, long[] array) {
+    public PArray createArray(LazyPythonClass cls, long[] array) {
         return trace(new PArray(cls, new LongSequenceStorage(array)));
     }
 
-    public PArray createArray(PythonClass cls, SequenceStorage store) {
+    public PArray createArray(LazyPythonClass cls, SequenceStorage store) {
         return trace(new PArray(cls, store));
     }
 
@@ -684,7 +684,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PStringIterator(PythonBuiltinClassType.PIterator, str));
     }
 
-    public PStringReverseIterator createStringReverseIterator(PythonClass cls, String str) {
+    public PStringReverseIterator createStringReverseIterator(LazyPythonClass cls, String str) {
         return trace(new PStringReverseIterator(cls, str));
     }
 
@@ -704,7 +704,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PSequenceIterator(PythonBuiltinClassType.PIterator, sequence));
     }
 
-    public PSequenceReverseIterator createSequenceReverseIterator(PythonClass cls, Object sequence, int lengthHint) {
+    public PSequenceReverseIterator createSequenceReverseIterator(LazyPythonClass cls, Object sequence, int lengthHint) {
         return trace(new PSequenceReverseIterator(cls, sequence, lengthHint));
     }
 
@@ -742,11 +742,11 @@ public final class PythonObjectFactory extends Node {
         return trace(new PSentinelIterator(PythonBuiltinClassType.PSentinelIterator, callable, sentinel));
     }
 
-    public PEnumerate createEnumerate(PythonClass cls, Object iterator, long start) {
+    public PEnumerate createEnumerate(LazyPythonClass cls, Object iterator, long start) {
         return trace(new PEnumerate(cls, iterator, start));
     }
 
-    public PZip createZip(PythonClass cls, Object[] iterables) {
+    public PZip createZip(LazyPythonClass cls, Object[] iterables) {
         return trace(new PZip(cls, iterables));
     }
 
@@ -754,7 +754,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PForeignArrayIterator(PythonBuiltinClassType.PForeignArrayIterator, iterable, size));
     }
 
-    public PBuffer createBuffer(PythonClass cls, Object iterable, boolean readonly) {
+    public PBuffer createBuffer(LazyPythonClass cls, Object iterable, boolean readonly) {
         return trace(new PBuffer(cls, iterable, readonly));
     }
 
@@ -791,7 +791,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PSocket(PythonBuiltinClassType.PSocket, family, type, proto));
     }
 
-    public PSocket createSocket(PythonClass cls, int family, int type, int proto) {
+    public PSocket createSocket(LazyPythonClass cls, int family, int type, int proto) {
         return trace(new PSocket(cls, family, type, proto));
     }
 
@@ -803,7 +803,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PLock(PythonBuiltinClassType.PLock));
     }
 
-    public PLock createLock(PythonClass cls) {
+    public PLock createLock(LazyPythonClass cls) {
         return trace(new PLock(cls));
     }
 
@@ -811,7 +811,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PRLock(PythonBuiltinClassType.PRLock));
     }
 
-    public PRLock createRLock(PythonClass cls) {
+    public PRLock createRLock(LazyPythonClass cls) {
         return trace(new PRLock(cls));
     }
 
@@ -819,11 +819,11 @@ public final class PythonObjectFactory extends Node {
         return trace(new PThread(PythonBuiltinClassType.PThread, thread));
     }
 
-    public PThread createPythonThread(PythonClass cls, Thread thread) {
+    public PThread createPythonThread(LazyPythonClass cls, Thread thread) {
         return trace(new PThread(cls, thread));
     }
 
-    public PScandirIterator createScandirIterator(PythonClass cls, String path, DirectoryStream<TruffleFile> next) {
+    public PScandirIterator createScandirIterator(LazyPythonClass cls, String path, DirectoryStream<TruffleFile> next) {
         return trace(new PScandirIterator(cls, path, next));
     }
 
@@ -831,7 +831,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, name, file));
     }
 
-    public Object createDirEntry(PythonClass cls, String name, TruffleFile file) {
+    public Object createDirEntry(LazyPythonClass cls, String name, TruffleFile file) {
         return trace(new PDirEntry(cls, name, file));
     }
 }
