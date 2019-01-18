@@ -513,7 +513,13 @@ def main(argv):
     args = parser.parse_args(argv)
 
     if args.command == "list":
-        user_site = site.getusersitepackages()
+        if site.ENABLE_USER_SITE:
+            user_site = site.getusersitepackages()
+        else:
+            for s in site.getsitepackages():
+                if s.endswith("site-packages"):
+                    user_site = s
+                    break
         print("Installed packages:")
         for p in sys.path:
             if p.startswith(user_site):
