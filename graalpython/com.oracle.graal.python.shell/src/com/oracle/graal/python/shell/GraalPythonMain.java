@@ -74,9 +74,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private String sulongLibraryPath = null;
 
     @Override
-    protected List<String> preprocessArguments(List<String> arguments, Map<String, String> polyglotOptions) {
+    protected List<String> preprocessArguments(List<String> givenArguments, Map<String, String> polyglotOptions) {
         ArrayList<String> unrecognized = new ArrayList<>();
-        List<String> inputArgs = new ArrayList<>(arguments);
+        ArrayList<String> inputArgs = new ArrayList<>(getDefaultEnvironmentArgs());
+        inputArgs.addAll(givenArguments);
+        List<String> arguments = new ArrayList<>(inputArgs);
         List<String> subprocessArgs = new ArrayList<>();
         programArgs = new ArrayList<>();
         for (int i = 0; i < arguments.size(); i++) {
@@ -199,6 +201,60 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
 
         return unrecognized;
+    }
+
+    private static enum State {
+        NORMAL,
+        SINGLE_QUOTE,
+        DOUBLE_QUOTE,
+        ESCAPE_SINGLE_QUOTE,
+        ESCAPE_DOUBLE_QUOTE,
+    }
+
+    private static List<String> getDefaultEnvironmentArgs() {
+        String envArgsOpt = System.getenv("GRAAL_PYTHON_OPTIONS");
+        ArrayList<String> envArgs = new ArrayList<>();
+        State s = State.NORMAL;
+        StringBuilder sb = new StringBuilder();
+        if (envArgsOpt != null) {
+            for (char x : envArgsOpt.toCharArray()) {
+                if (s == State.NORMAL && Character.isWhitespace(x)) {
+                    if (sb.length() > 0) {
+                        envArgs.add(sb.toString());
+                        sb.setLength(0);
+                    }
+                } else {
+                    if (x == '"') {
+                        if (s == State.NORMAL) {
+                            s = State.DOUBLE_QUOTE;
+                        } else if (s == State.DOUBLE_QUOTE) {
+                            s = State.NORMAL;
+                        } else if (s == State.ESCAPE_DOUBLE_QUOTE) {
+                            s = State.DOUBLE_QUOTE;
+                            sb.append(x);
+                        }
+                    } else if (x == '\'') {
+                        if (s == State.NORMAL) {
+                            s = State.SINGLE_QUOTE;
+                        } else if (s == State.SINGLE_QUOTE) {
+                            s = State.NORMAL;
+                        } else if (s == State.ESCAPE_SINGLE_QUOTE) {
+                            s = State.SINGLE_QUOTE;
+                            sb.append(x);
+                        }
+                    } else if (x == '\\') {
+                        if (s == State.SINGLE_QUOTE) {
+                            s = State.ESCAPE_SINGLE_QUOTE;
+                        } else if (s == State.DOUBLE_QUOTE) {
+                            s = State.ESCAPE_DOUBLE_QUOTE;
+                        }
+                    } else {
+                        sb.append(x);
+                    }
+                }
+            }
+        }
+        return envArgs;
     }
 
     private static void printShortHelp() {
@@ -423,7 +479,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "   str, bytes and datetime objects.  It can also be set to an integer\n" +
                         "   in the range [0,4294967295] to get hash values with a predictable seed.\n" +
                         "SULONG_LIBRARY_PATH: Specifies the library path for Sulong.\n" +
-                        "   This is required when starting subprocesses of python.");
+                        "   This is required when starting subprocesses of python." +
+                        "GRAAL_PYTHON_OPTIONS: This environment variable can include default options that\n" +
+                        "   are always passed to the launcher. These are not shell expanded and given to\n" +
+                        "   the launcher as-is.");
         if (maxCategory.compareTo(OptionCategory.DEBUG) >= 0) {
             print("\nGraalPython performance debugging options:\n" +
                             "-debug-perf                  : Enable tracing of Truffle compilations and its warnings\n" +
