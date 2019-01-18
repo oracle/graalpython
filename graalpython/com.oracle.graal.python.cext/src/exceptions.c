@@ -83,6 +83,7 @@ PyObject * PyExc_NotImplementedError = NULL;
 PyObject * PyExc_RecursionError = NULL;
 PyObject * PyExc_UnicodeEncodeError = NULL;
 PyObject * PyExc_GeneratorExit = NULL;
+PyObject * PyExc_EOFError = NULL;
 
 void initialize_exceptions() {
     PyExc_AttributeError = PY_EXCEPTION("AttributeError");
@@ -122,6 +123,7 @@ void initialize_exceptions() {
     PyExc_NotImplementedError = PY_EXCEPTION("NotImplementedError");
     PyExc_UnicodeEncodeError = PY_EXCEPTION("UnicodeEncodeError");
     PyExc_GeneratorExit = PY_EXCEPTION("GeneratorExit");
+    PyExc_EOFError = PY_EXCEPTION("EOFError");
 }
 
 
