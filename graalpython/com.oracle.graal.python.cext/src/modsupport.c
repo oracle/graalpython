@@ -42,6 +42,19 @@
 
 #include <stdio.h>
 
+static int getbuffer(PyObject *arg, Py_buffer *view, const char **errmsg) {
+    if (PyObject_GetBuffer(arg, view, PyBUF_SIMPLE) != 0) {
+        *errmsg = "bytes-like object";
+        return -1;
+    }
+//    if (!PyBuffer_IsContiguous(view, 'C')) {
+//        PyBuffer_Release(view);
+//        *errmsg = "contiguous buffer";
+//        return -1;
+//    }
+    return 0;
+}
+
 typedef struct _positional_argstack {
     PyObject* argv;
     int argnum;
@@ -89,8 +102,14 @@ UPCALL_ID(__bool__);
         case 'y': \
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only); \
             if (format[format_idx + 1] == '*') { \
+                void** p = (void**)PyTruffle_ArgN(output_idx); \
+                const char* buf; \
                 format_idx++; /* skip over '*' */ \
-                PyErr_Format(PyExc_TypeError, "%c* not supported", c); \
+            	if (getbuffer(arg, (Py_buffer*)p, &buf) < 0) { \
+            		PyErr_Format(PyExc_TypeError, "expected bytes, got %R", Py_TYPE(arg)); \
+            		__return_code__; \
+            		return 0; \
+            	} \
                 __return_code__; \
                 return 0; \
             } else if (arg == Py_None) { \
