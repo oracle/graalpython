@@ -842,3 +842,19 @@ int PyArg_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssize
 #define PyArg_UnpackTuple _backup_PyArg_UnpackTuple
 #undef _backup_PyArg_UnpackTuple
 #endif
+
+// taken from CPython 3.6.5 "Python/getargs.c"
+int _PyArg_NoKeywords(const char *funcname, PyObject *kw) {
+    if (kw == NULL)
+        return 1;
+    if (!PyDict_CheckExact(kw)) {
+        PyErr_BadInternalCall();
+        return 0;
+    }
+    if (PyDict_Size(kw) == 0)
+        return 1;
+
+    PyErr_Format(PyExc_TypeError, "%s does not take keyword arguments",
+                    funcname);
+    return 0;
+}
