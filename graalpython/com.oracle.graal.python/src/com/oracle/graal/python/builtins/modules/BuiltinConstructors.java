@@ -2341,9 +2341,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object call(PythonClass cls, int argcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         String codestring, PTuple constants, PTuple names,
-                        PTuple varnames, PTuple freevars, PTuple cellvars,
-                        Object filename, Object name, int firstlineno,
-                        String lnotab) {
+                        PTuple varnames, Object filename, Object name,
+                        int firstlineno, String lnotab,
+                        PTuple freevars, PTuple cellvars) {
             return factory().createCode(cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
                             toBytes(codestring), constants.getArray(), names.getArray(),
@@ -2356,9 +2356,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object call(PythonClass cls, int argcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         PBytes codestring, PTuple constants, PTuple names,
-                        PTuple varnames, PTuple freevars, PTuple cellvars,
-                        Object filename, Object name, int firstlineno,
-                        PBytes lnotab,
+                        PTuple varnames, Object filename, Object name,
+                        int firstlineno, PBytes lnotab,
+                        PTuple freevars, PTuple cellvars,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
             byte[] codeBytes = toByteArrayNode.execute(codestring.getSequenceStorage());
             byte[] lnotabBytes = toByteArrayNode.execute(lnotab.getSequenceStorage());
@@ -2376,9 +2376,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object call(Object cls, Object argcount, Object kwonlyargcount,
                         Object nlocals, Object stacksize, Object flags,
                         Object codestring, Object constants, Object names,
-                        Object varnames, Object freevars, Object cellvars,
-                        Object filename, Object name, Object firstlineno,
-                        Object lnotab) {
+                        Object varnames, Object filename, Object name,
+                        Object firstlineno, Object lnotab,
+                        Object freevars, Object cellvars) {
             throw raise(SystemError, "bad argument to internal function");
         }
 
