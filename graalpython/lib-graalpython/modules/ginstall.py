@@ -331,19 +331,19 @@ index e450a66..ed538b4 100644
             numpy(*args)
 
 
-        try: 
+        try:
             import pytz as _dummy_pytz
         except ImportError:
             print("Installing required dependency: pytz")
             pytz(*args)
 
-        try: 
+        try:
             import six as _dummy_six
         except ImportError:
             print("Installing required dependency: six")
             six(*args)
 
-        try: 
+        try:
             import dateutil as __dummy_dateutil
         except ImportError:
             print("Installing required dependency: dateutil")
@@ -360,7 +360,7 @@ index 19f810e..2f01238 100644
                       PyExc_ValueError,
 -                     "abstime out of range (0.0 - 86400.0): %f", abstime);
 +                     "abstime out of range (0.0 - 86400.0): %f", (long long)abstime);
- 
+
      /* Calculate the date */
      if (dInfoCalc_SetFromAbsDate(dinfo, absdate, calendar)) goto onError;
 diff --git a/pandas/_libs/src/period_helper.c b/pandas/_libs/src/period_helper.c
@@ -373,9 +373,9 @@ index 2f01238..6c79eb5 100644
              PyExc_ValueError,
 -            "second out of range (0.0 - <60.0; <61.0 for 23:59): %f", second);
 +            "second out of range (0.0 - <60.0; <61.0 for 23:59): %f", (long long)second);
- 
+
          dinfo->abstime = (double)(hour * 3600 + minute * 60) + second;
- 
+
 """
         cflags = "-allowcpp" if sys.implementation.name == "graalpython" else ""
         install_from_url("https://files.pythonhosted.org/packages/ee/aa/90c06f249cf4408fa75135ad0df7d64c09cf74c9870733862491ed5f3a50/pandas-0.20.3.tar.gz", patch=patch, extra_opts=args, cflags=cflags)
@@ -410,7 +410,7 @@ def install_from_url(url, patch=None, extra_opts=[], cflags=""):
     elif name.endswith(".zip"):
         system("unzip -u %s/%s -d %s" % (tempdir, name, tempdir))
         bare_name = name[:-len(".zip")]
-        
+
     if patch:
         with open("%s/%s.patch" % (tempdir, bare_name), "w") as f:
             f.write(patch)
