@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -120,7 +121,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             // builder
             PythonModule sysModule = getCore().lookupBuiltinModule("sys");
             if (!TruffleOptions.AOT && !argStrings.isEmpty() && argStrings.get(0).equals(sysModule.getAttribute("executable"))) {
-                PList exec_list = (PList) sysModule.getAttribute("executable_list");
+                PList exec_list = (PList) sysModule.getAttribute(SpecialAttributeNames.GRAAL_PYTHON_EXECUTABLE_LIST);
                 Object[] internalArray = exec_list.getSequenceStorage().getCopyOfInternalArray();
                 argStrings.remove(0);
                 for (int i = internalArray.length - 1; i >= 0; i--) {

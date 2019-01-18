@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PThreadState
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
@@ -241,6 +242,7 @@ public final class PythonContext {
             if (sysModule.getAttribute("executable") == PNone.NONE) {
                 sysModule.setAttribute("executable", ProcessProperties.getExecutableName());
             }
+            sysModule.setAttribute(SpecialAttributeNames.GRAAL_PYTHON_EXECUTABLE_LIST, core.factory().createList(new Object[]{ProcessProperties.getExecutableName()}));
         }
         sysModules = (PDict) sysModule.getAttribute("modules");
         builtinsModule = (PythonModule) sysModules.getItem("builtins");

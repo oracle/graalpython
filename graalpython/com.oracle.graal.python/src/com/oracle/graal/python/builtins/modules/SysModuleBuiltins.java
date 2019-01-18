@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -114,12 +115,11 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("dont_write_bytecode", true);
 
         String executable = PythonOptions.getOption(core.getContext(), PythonOptions.ExecutablePath);
-        if (!executable.isEmpty() && core.getContext().isExecutableAccessAllowed()) {
-            builtinConstants.put("executable", executable);
-        } else if (TruffleOptions.AOT || !core.getContext().isExecutableAccessAllowed()) {
+        if (TruffleOptions.AOT || !core.getContext().isExecutableAccessAllowed()) {
             // cannot set the path at this time since the binary is not yet known; will be patched
             // in the context
             builtinConstants.put("executable", PNone.NONE);
+            builtinConstants.put(SpecialAttributeNames.GRAAL_PYTHON_EXECUTABLE_LIST, PNone.NONE);
         } else {
             StringBuilder sb = new StringBuilder();
             ArrayList<String> exec_list = new ArrayList<>();
@@ -142,7 +142,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
             sb.append("com.oracle.graal.python.shell.GraalPythonMain");
             exec_list.add("com.oracle.graal.python.shell.GraalPythonMain");
             builtinConstants.put("executable", sb.toString());
-            builtinConstants.put("executable_list", core.factory().createList(exec_list.toArray()));
+            builtinConstants.put(SpecialAttributeNames.GRAAL_PYTHON_EXECUTABLE_LIST, core.factory().createList(exec_list.toArray()));
+        }
+
+        String executable = PythonOptions.getOption(core.getContext(), PythonOptions.ExecutablePath);
+        if (!executable.isEmpty() && core.getContext().isExecutableAccessAllowed()) {
+            builtinConstants.put("executable", executable);
         }
 
         builtinConstants.put("modules", core.factory().createDict());
