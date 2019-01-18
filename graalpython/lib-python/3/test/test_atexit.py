@@ -3,6 +3,7 @@ import unittest
 import io
 import atexit
 from test import support
+from test.support import script_helper
 
 ### helpers
 def h1():
@@ -22,6 +23,9 @@ def raise1():
 
 def raise2():
     raise SystemError
+
+def exit():
+    raise SystemExit
 
 
 class GeneralTest(unittest.TestCase):
@@ -75,6 +79,13 @@ class GeneralTest(unittest.TestCase):
 
         self.assertRaises(ZeroDivisionError, atexit._run_exitfuncs)
         self.assertIn("ZeroDivisionError", self.stream.getvalue())
+
+    def test_exit(self):
+        # be sure a SystemExit is handled properly
+        atexit.register(exit)
+
+        self.assertRaises(SystemExit, atexit._run_exitfuncs)
+        self.assertEqual(self.stream.getvalue(), '')
 
     def test_print_tracebacks(self):
         # Issue #18776: the tracebacks should be printed when errors occur.
@@ -142,10 +153,25 @@ class GeneralTest(unittest.TestCase):
         atexit._run_exitfuncs()
         self.assertEqual(l, [5])
 
+    def test_shutdown(self):
+        # Actually test the shutdown mechanism in a subprocess
+        code = """if 1:
+            import atexit
 
+            def f(msg):
+                print(msg)
+
+            atexit.register(f, "one")
+            atexit.register(f, "two")
+            """
+        res = script_helper.assert_python_ok("-c", code)
+        self.assertEqual(res.out.decode().splitlines(), ["two", "one"])
+        self.assertFalse(res.err)
+
+
+@support.cpython_only
 class SubinterpreterTest(unittest.TestCase):
 
-    @support.cpython_only
     def test_callbacks_leak(self):
         # This test shows a leak in refleak mode if atexit doesn't
         # take care to free callbacks in its per-subinterpreter module
@@ -162,7 +188,6 @@ class SubinterpreterTest(unittest.TestCase):
         self.assertEqual(ret, 0)
         self.assertEqual(atexit._ncallbacks(), n)
 
-    @support.cpython_only
     def test_callbacks_leak_refcycle(self):
         # Similar to the above, but with a refcycle through the atexit
         # module.

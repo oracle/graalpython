@@ -4,14 +4,16 @@
 import os
 import pickle
 import random
+import re
 import subprocess
 import sys
+import sysconfig
 import textwrap
 import time
 import unittest
 from test import support
 from test.support import MISSING_C_DOCSTRINGS
-from test.support.script_helper import assert_python_failure
+from test.support.script_helper import assert_python_failure, assert_python_ok
 try:
     import _posixsubprocess
 except ImportError:
@@ -26,11 +28,6 @@ _testcapi = support.import_module('_testcapi')
 # Were we compiled --with-pydebug or with #define Py_DEBUG?
 Py_DEBUG = hasattr(sys, 'gettotalrefcount')
 
-skips = []
-if support.check_impl_detail(pypy=True):
-    skips += [
-            'test_widechar',
-            ]
 
 def testfunction(self):
     """some doc"""
@@ -101,7 +98,7 @@ class CAPITest(unittest.TestCase):
             def __len__(self):
                 return 1
         self.assertRaises(TypeError, _posixsubprocess.fork_exec,
-                          1,Z(),3,[1, 2],5,6,7,8,9,10,11,12,13,14,15,16,17)
+                          1,Z(),3,(1, 2),5,6,7,8,9,10,11,12,13,14,15,16,17)
         # Issue #15736: overflow in _PySequence_BytesToCharpArray()
         class Z(object):
             def __len__(self):
@@ -109,7 +106,7 @@ class CAPITest(unittest.TestCase):
             def __getitem__(self, i):
                 return b'x'
         self.assertRaises(MemoryError, _posixsubprocess.fork_exec,
-                          1,Z(),3,[1, 2],5,6,7,8,9,10,11,12,13,14,15,16,17)
+                          1,Z(),3,(1, 2),5,6,7,8,9,10,11,12,13,14,15,16,17)
 
     @unittest.skipUnless(_posixsubprocess, '_posixsubprocess required for this test.')
     def test_subprocess_fork_exec(self):
@@ -119,7 +116,7 @@ class CAPITest(unittest.TestCase):
 
         # Issue #15738: crash in subprocess_fork_exec()
         self.assertRaises(TypeError, _posixsubprocess.fork_exec,
-                          Z(),[b'1'],3,[1, 2],5,6,7,8,9,10,11,12,13,14,15,16,17)
+                          Z(),[b'1'],3,(1, 2),5,6,7,8,9,10,11,12,13,14,15,16,17)
 
     @unittest.skipIf(MISSING_C_DOCSTRINGS,
                      "Signature information for builtins requires docstrings")
@@ -225,8 +222,8 @@ class CAPITest(unittest.TestCase):
                                 br'result with an error set\n'
                              br'ValueError\n'
                              br'\n'
-                             br'During handling of the above exception, '
-                                br'another exception occurred:\n'
+                             br'The above exception was the direct cause '
+                                br'of the following exception:\n'
                              br'\n'
                              br'SystemError: <built-in '
                                 br'function return_result_with_error> '
@@ -244,9 +241,39 @@ class CAPITest(unittest.TestCase):
     def test_buildvalue_N(self):
         _testcapi.test_buildvalue_N()
 
+    def test_set_nomemory(self):
+        code = """if 1:
+            import _testcapi
 
-@unittest.skipIf(support.check_impl_detail(pypy=True),
-                 'Py_AddPendingCall not currently supported.')
+            class C(): pass
+
+            # The first loop tests both functions and that remove_mem_hooks()
+            # can be called twice in a row. The second loop checks a call to
+            # set_nomemory() after a call to remove_mem_hooks(). The third
+            # loop checks the start and stop arguments of set_nomemory().
+            for outer_cnt in range(1, 4):
+                start = 10 * outer_cnt
+                for j in range(100):
+                    if j == 0:
+                        if outer_cnt != 3:
+                            _testcapi.set_nomemory(start)
+                        else:
+                            _testcapi.set_nomemory(start, start + 1)
+                    try:
+                        C()
+                    except MemoryError as e:
+                        if outer_cnt != 3:
+                            _testcapi.remove_mem_hooks()
+                        print('MemoryError', outer_cnt, j)
+                        _testcapi.remove_mem_hooks()
+                        break
+        """
+        rc, out, err = assert_python_ok('-c', code)
+        self.assertIn(b'MemoryError 1 10', out)
+        self.assertIn(b'MemoryError 2 20', out)
+        self.assertIn(b'MemoryError 3 30', out)
+
+
 @unittest.skipUnless(threading, 'Threading required for this test.')
 class TestPendingCalls(unittest.TestCase):
 
@@ -348,10 +375,7 @@ class SubinterpreterTest(unittest.TestCase):
 # Bug #6012
 class Test6012(unittest.TestCase):
     def test(self):
-        # PyPy change: Mask out higher bits of reference count.  PyPy increases
-        # the reference count by a high number if the object is linked to a
-        # PyPy object.
-        self.assertEqual(_testcapi.argparsing("Hello", "World") & 0xfffffff, 1)
+        self.assertEqual(_testcapi.argparsing("Hello", "World"), 1)
 
 
 class EmbeddingTests(unittest.TestCase):
@@ -377,23 +401,30 @@ class EmbeddingTests(unittest.TestCase):
     def tearDown(self):
         os.chdir(self.oldcwd)
 
-    def run_embedded_interpreter(self, *args):
+    def run_embedded_interpreter(self, *args, env=None):
         """Runs a test in the embedded interpreter"""
         cmd = [self.test_exe]
         cmd.extend(args)
+        if env is not None and sys.platform == 'win32':
+            # Windows requires at least the SYSTEMROOT environment variable to
+            # start Python.
+            env = env.copy()
+            env['SYSTEMROOT'] = os.environ['SYSTEMROOT']
+
         p = subprocess.Popen(cmd,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
-                             universal_newlines=True)
+                             universal_newlines=True,
+                             env=env)
         (out, err) = p.communicate()
         self.assertEqual(p.returncode, 0,
                          "bad returncode %d, stderr is %r" %
                          (p.returncode, err))
         return out, err
 
-    def test_subinterps(self):
+    def test_repeated_init_and_subinterpreters(self):
         # This is just a "don't crash" test
-        out, err = self.run_embedded_interpreter()
+        out, err = self.run_embedded_interpreter('repeated_init_and_subinterpreters')
         if support.verbose:
             print()
             print(out)
@@ -411,13 +442,14 @@ class EmbeddingTests(unittest.TestCase):
 
     def test_forced_io_encoding(self):
         # Checks forced configuration of embedded interpreter IO streams
-        out, err = self.run_embedded_interpreter("forced_io_encoding")
+        env = dict(os.environ, PYTHONIOENCODING="utf-8:surrogateescape")
+        out, err = self.run_embedded_interpreter("forced_io_encoding", env=env)
         if support.verbose:
             print()
             print(out)
             print(err)
-        expected_errors = sys.__stdout__.errors
-        expected_stdin_encoding = sys.__stdin__.encoding
+        expected_stream_encoding = "utf-8"
+        expected_errors = "surrogateescape"
         expected_pipe_encoding = self._get_default_pipe_encoding()
         expected_output = '\n'.join([
         "--- Use defaults ---",
@@ -445,12 +477,23 @@ class EmbeddingTests(unittest.TestCase):
         "stdout: latin-1:replace",
         "stderr: latin-1:backslashreplace"])
         expected_output = expected_output.format(
-                                in_encoding=expected_stdin_encoding,
-                                out_encoding=expected_pipe_encoding,
+                                in_encoding=expected_stream_encoding,
+                                out_encoding=expected_stream_encoding,
                                 errors=expected_errors)
         # This is useful if we ever trip over odd platform behaviour
         self.maxDiff = None
         self.assertEqual(out.strip(), expected_output)
+
+    def test_pre_initialization_api(self):
+        """
+        Checks the few parts of the C-API that work before the runtine
+        is initialized (via Py_Initialize()).
+        """
+        env = dict(os.environ, PYTHONPATH=os.pathsep.join(sys.path))
+        out, err = self.run_embedded_interpreter("pre_initialization_api", env=env)
+        self.assertEqual(out, '')
+        self.assertEqual(err, '')
+
 
 class SkipitemTest(unittest.TestCase):
 
@@ -497,23 +540,22 @@ class SkipitemTest(unittest.TestCase):
             # test the format unit when not skipped
             format = c + "i"
             try:
-                # (note: the format string must be bytes!)
                 _testcapi.parse_tuple_and_keywords(tuple_1, dict_b,
-                    format.encode("ascii"), keywords)
+                    format, keywords)
                 when_not_skipped = False
-            except TypeError as e:
+            except SystemError as e:
                 s = "argument 1 (impossible<bad format char>)"
                 when_not_skipped = (str(e) == s)
-            except RuntimeError as e:
+            except TypeError:
                 when_not_skipped = False
 
             # test the format unit when skipped
             optional_format = "|" + format
             try:
                 _testcapi.parse_tuple_and_keywords(empty_tuple, dict_b,
-                    optional_format.encode("ascii"), keywords)
+                    optional_format, keywords)
                 when_skipped = False
-            except RuntimeError as e:
+            except SystemError as e:
                 s = "impossible<bad format char>: '{}'".format(format)
                 when_skipped = (str(e) == s)
 
@@ -524,18 +566,66 @@ class SkipitemTest(unittest.TestCase):
             self.assertIs(when_skipped, when_not_skipped, message)
 
     def test_parse_tuple_and_keywords(self):
-        # parse_tuple_and_keywords error handling tests
+        # Test handling errors in the parse_tuple_and_keywords helper itself
         self.assertRaises(TypeError, _testcapi.parse_tuple_and_keywords,
                           (), {}, 42, [])
         self.assertRaises(ValueError, _testcapi.parse_tuple_and_keywords,
-                          (), {}, b'', 42)
+                          (), {}, '', 42)
         self.assertRaises(ValueError, _testcapi.parse_tuple_and_keywords,
-                          (), {}, b'', [''] * 42)
+                          (), {}, '', [''] * 42)
         self.assertRaises(ValueError, _testcapi.parse_tuple_and_keywords,
-                          (), {}, b'', [42])
+                          (), {}, '', [42])
 
-@unittest.skipIf(support.check_impl_detail(pypy=True),
-                 'Not currently supported under PyPy')
+    def test_bad_use(self):
+        # Test handling invalid format and keywords in
+        # PyArg_ParseTupleAndKeywords()
+        self.assertRaises(SystemError, _testcapi.parse_tuple_and_keywords,
+                          (1,), {}, '||O', ['a'])
+        self.assertRaises(SystemError, _testcapi.parse_tuple_and_keywords,
+                          (1, 2), {}, '|O|O', ['a', 'b'])
+        self.assertRaises(SystemError, _testcapi.parse_tuple_and_keywords,
+                          (), {'a': 1}, '$$O', ['a'])
+        self.assertRaises(SystemError, _testcapi.parse_tuple_and_keywords,
+                          (), {'a': 1, 'b': 2}, '$O$O', ['a', 'b'])
+        self.assertRaises(SystemError, _testcapi.parse_tuple_and_keywords,
+                          (), {'a': 1}, '$|O', ['a'])
+        self.assertRaises(SystemError, _testcapi.parse_tuple_and_keywords,
+                          (), {'a': 1, 'b': 2}, '$O|O', ['a', 'b'])
+        self.assertRaises(SystemError, _testcapi.parse_tuple_and_keywords,
+                          (1,), {}, '|O', ['a', 'b'])
+        self.assertRaises(SystemError, _testcapi.parse_tuple_and_keywords,
+                          (1,), {}, '|OO', ['a'])
+        self.assertRaises(SystemError, _testcapi.parse_tuple_and_keywords,
+                          (), {}, '|$O', [''])
+        self.assertRaises(SystemError, _testcapi.parse_tuple_and_keywords,
+                          (), {}, '|OO', ['a', ''])
+
+    def test_positional_only(self):
+        parse = _testcapi.parse_tuple_and_keywords
+
+        parse((1, 2, 3), {}, 'OOO', ['', '', 'a'])
+        parse((1, 2), {'a': 3}, 'OOO', ['', '', 'a'])
+        with self.assertRaisesRegex(TypeError,
+               r'Function takes at least 2 positional arguments \(1 given\)'):
+            parse((1,), {'a': 3}, 'OOO', ['', '', 'a'])
+        parse((1,), {}, 'O|OO', ['', '', 'a'])
+        with self.assertRaisesRegex(TypeError,
+               r'Function takes at least 1 positional arguments \(0 given\)'):
+            parse((), {}, 'O|OO', ['', '', 'a'])
+        parse((1, 2), {'a': 3}, 'OO$O', ['', '', 'a'])
+        with self.assertRaisesRegex(TypeError,
+               r'Function takes exactly 2 positional arguments \(1 given\)'):
+            parse((1,), {'a': 3}, 'OO$O', ['', '', 'a'])
+        parse((1,), {}, 'O|O$O', ['', '', 'a'])
+        with self.assertRaisesRegex(TypeError,
+               r'Function takes at least 1 positional arguments \(0 given\)'):
+            parse((), {}, 'O|O$O', ['', '', 'a'])
+        with self.assertRaisesRegex(SystemError, r'Empty parameter name after \$'):
+            parse((1,), {}, 'O|$OO', ['', '', 'a'])
+        with self.assertRaisesRegex(SystemError, 'Empty keyword'):
+            parse((1,), {}, 'O|OO', ['', 'a', ''])
+
+
 @unittest.skipUnless(threading, 'Threading required for this test.')
 class TestThreadState(unittest.TestCase):
 
@@ -560,13 +650,94 @@ class TestThreadState(unittest.TestCase):
         t.start()
         t.join()
 
+
 class Test_testcapi(unittest.TestCase):
     def test__testcapi(self):
         for name in dir(_testcapi):
-            if name.startswith('test_') and name not in skips:
+            if name.startswith('test_'):
                 with self.subTest("internal", name=name):
                     test = getattr(_testcapi, name)
                     test()
+
+
+class PyMemDebugTests(unittest.TestCase):
+    PYTHONMALLOC = 'debug'
+    # '0x04c06e0' or '04C06E0'
+    PTR_REGEX = r'(?:0x)?[0-9a-fA-F]+'
+
+    def check(self, code):
+        with support.SuppressCrashReport():
+            out = assert_python_failure('-c', code,
+                                        PYTHONMALLOC=self.PYTHONMALLOC)
+        stderr = out.err
+        return stderr.decode('ascii', 'replace')
+
+    def test_buffer_overflow(self):
+        out = self.check('import _testcapi; _testcapi.pymem_buffer_overflow()')
+        regex = (r"Debug memory block at address p={ptr}: API 'm'\n"
+                 r"    16 bytes originally requested\n"
+                 r"    The [0-9] pad bytes at p-[0-9] are FORBIDDENBYTE, as expected.\n"
+                 r"    The [0-9] pad bytes at tail={ptr} are not all FORBIDDENBYTE \(0x[0-9a-f]{{2}}\):\n"
+                 r"        at tail\+0: 0x78 \*\*\* OUCH\n"
+                 r"        at tail\+1: 0xfb\n"
+                 r"        at tail\+2: 0xfb\n"
+                 r"        .*\n"
+                 r"    The block was made by call #[0-9]+ to debug malloc/realloc.\n"
+                 r"    Data at p: cb cb cb .*\n"
+                 r"\n"
+                 r"Fatal Python error: bad trailing pad byte")
+        regex = regex.format(ptr=self.PTR_REGEX)
+        regex = re.compile(regex, flags=re.DOTALL)
+        self.assertRegex(out, regex)
+
+    def test_api_misuse(self):
+        out = self.check('import _testcapi; _testcapi.pymem_api_misuse()')
+        regex = (r"Debug memory block at address p={ptr}: API 'm'\n"
+                 r"    16 bytes originally requested\n"
+                 r"    The [0-9] pad bytes at p-[0-9] are FORBIDDENBYTE, as expected.\n"
+                 r"    The [0-9] pad bytes at tail={ptr} are FORBIDDENBYTE, as expected.\n"
+                 r"    The block was made by call #[0-9]+ to debug malloc/realloc.\n"
+                 r"    Data at p: cb cb cb .*\n"
+                 r"\n"
+                 r"Fatal Python error: bad ID: Allocated using API 'm', verified using API 'r'\n")
+        regex = regex.format(ptr=self.PTR_REGEX)
+        self.assertRegex(out, regex)
+
+    @unittest.skipUnless(threading, 'Test requires a GIL (multithreading)')
+    def check_malloc_without_gil(self, code):
+        out = self.check(code)
+        expected = ('Fatal Python error: Python memory allocator called '
+                    'without holding the GIL')
+        self.assertIn(expected, out)
+
+    def test_pymem_malloc_without_gil(self):
+        # Debug hooks must raise an error if PyMem_Malloc() is called
+        # without holding the GIL
+        code = 'import _testcapi; _testcapi.pymem_malloc_without_gil()'
+        self.check_malloc_without_gil(code)
+
+    def test_pyobject_malloc_without_gil(self):
+        # Debug hooks must raise an error if PyObject_Malloc() is called
+        # without holding the GIL
+        code = 'import _testcapi; _testcapi.pyobject_malloc_without_gil()'
+        self.check_malloc_without_gil(code)
+
+
+class PyMemMallocDebugTests(PyMemDebugTests):
+    PYTHONMALLOC = 'malloc_debug'
+
+
+@unittest.skipUnless(sysconfig.get_config_var('WITH_PYMALLOC') == 1,
+                     'need pymalloc')
+class PyMemPymallocDebugTests(PyMemDebugTests):
+    PYTHONMALLOC = 'pymalloc_debug'
+
+
+@unittest.skipUnless(Py_DEBUG, 'need Py_DEBUG')
+class PyMemDefaultTests(PyMemDebugTests):
+    # test default allocator of Python compiled in debug mode
+    PYTHONMALLOC = ''
+
 
 if __name__ == "__main__":
     unittest.main()

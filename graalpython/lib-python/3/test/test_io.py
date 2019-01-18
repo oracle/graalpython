@@ -36,6 +36,7 @@ from collections import deque, UserList
 from itertools import cycle, count
 from test import support
 from test.support.script_helper import assert_python_ok, run_python_until_end
+from test.support import FakePath
 
 import codecs
 import io  # C implementation of io
@@ -46,8 +47,6 @@ except ImportError:
     threading = None
 
 try:
-    if '__pypy__' in sys.builtin_module_names:
-        raise ImportError    # don't use ctypes, missing ctypes.resize()
     import ctypes
 except ImportError:
     def byteslike(*pos, **kw):
@@ -352,7 +351,10 @@ class IOTest(unittest.TestCase):
     def large_file_ops(self, f):
         assert f.readable()
         assert f.writable()
-        self.assertEqual(f.seek(self.LARGE), self.LARGE)
+        try:
+            self.assertEqual(f.seek(self.LARGE), self.LARGE)
+        except (OverflowError, ValueError):
+            self.skipTest("no largefile support")
         self.assertEqual(f.tell(), self.LARGE)
         self.assertEqual(f.write(b"xxx"), 3)
         self.assertEqual(f.tell(), self.LARGE + 3)
@@ -498,7 +500,11 @@ class IOTest(unittest.TestCase):
     def test_open_handles_NUL_chars(self):
         fn_with_NUL = 'foo\0bar'
         self.assertRaises(ValueError, self.open, fn_with_NUL, 'w')
-        self.assertRaises(ValueError, self.open, bytes(fn_with_NUL, 'ascii'), 'w')
+
+        bytes_fn = bytes(fn_with_NUL, 'ascii')
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            self.assertRaises(ValueError, self.open, bytes_fn, 'w')
 
     def test_raw_file_io(self):
         with self.open(support.TESTFN, "wb", buffering=0) as f:
@@ -538,6 +544,22 @@ class IOTest(unittest.TestCase):
         with self.open(support.TESTFN, "r") as f:
             self.assertRaises(TypeError, f.readline, 5.3)
 
+    def test_readline_nonsizeable(self):
+        # Issue #30061
+        # Crash when readline() returns an object without __len__
+        class R(self.IOBase):
+            def readline(self):
+                return None
+        self.assertRaises((TypeError, StopIteration), next, R())
+
+    def test_next_nonsizeable(self):
+        # Issue #30061
+        # Crash when __next__() returns an object without __len__
+        class R(self.IOBase):
+            def __next__(self):
+                return None
+        self.assertRaises(TypeError, R().readlines, 1)
+
     def test_raw_bytes_io(self):
         f = self.BytesIO()
         self.write_ops(f)
@@ -547,8 +569,8 @@ class IOTest(unittest.TestCase):
         self.read_ops(f, True)
 
     def test_large_file_ops(self):
-        # On Windows and Mac OSX this test comsumes large resources; It takes
-        # a long time to build the >2GB file and takes >2GB of disk space
+        # On Windows and Mac OSX this test consumes large resources; It takes
+        # a long time to build the >2 GiB file and takes >2 GiB of disk space
         # therefore the resource must be enabled to run this test.
         if sys.platform[:3] == 'win' or sys.platform == 'darwin':
             support.requires(
@@ -775,8 +797,8 @@ class IOTest(unittest.TestCase):
         self.assertRaises(ValueError, f.flush)
 
     def test_RawIOBase_read(self):
-        # Exercise the default RawIOBase.read() implementation (which calls
-        # readinto() internally).
+        # Exercise the default limited RawIOBase.read(n) implementation (which
+        # calls readinto() internally).
         rawio = self.MockRawIOWithoutRead((b"abc", b"d", None, b"efg", None))
         self.assertEqual(rawio.read(2), b"ab")
         self.assertEqual(rawio.read(2), b"c")
@@ -857,6 +879,83 @@ class IOTest(unittest.TestCase):
                 buffer = byteslike(5)
                 self.assertEqual(getattr(stream, method)(buffer), 5)
                 self.assertEqual(bytes(buffer), b"12345")
+
+    def test_fspath_support(self):
+        def check_path_succeeds(path):
+            with self.open(path, "w") as f:
+                f.write("egg\n")
+
+            with self.open(path, "r") as f:
+                self.assertEqual(f.read(), "egg\n")
+
+        check_path_succeeds(FakePath(support.TESTFN))
+        check_path_succeeds(FakePath(support.TESTFN.encode('utf-8')))
+
+        with self.open(support.TESTFN, "w") as f:
+            bad_path = FakePath(f.fileno())
+            with self.assertRaises(TypeError):
+                self.open(bad_path, 'w')
+
+        bad_path = FakePath(None)
+        with self.assertRaises(TypeError):
+            self.open(bad_path, 'w')
+
+        bad_path = FakePath(FloatingPointError)
+        with self.assertRaises(FloatingPointError):
+            self.open(bad_path, 'w')
+
+        # ensure that refcounting is correct with some error conditions
+        with self.assertRaisesRegex(ValueError, 'read/write/append mode'):
+            self.open(FakePath(support.TESTFN), 'rwxa')
+
+    def test_RawIOBase_readall(self):
+        # Exercise the default unlimited RawIOBase.read() and readall()
+        # implementations.
+        rawio = self.MockRawIOWithoutRead((b"abc", b"d", b"efg"))
+        self.assertEqual(rawio.read(), b"abcdefg")
+        rawio = self.MockRawIOWithoutRead((b"abc", b"d", b"efg"))
+        self.assertEqual(rawio.readall(), b"abcdefg")
+
+    def test_BufferedIOBase_readinto(self):
+        # Exercise the default BufferedIOBase.readinto() and readinto1()
+        # implementations (which call read() or read1() internally).
+        class Reader(self.BufferedIOBase):
+            def __init__(self, avail):
+                self.avail = avail
+            def read(self, size):
+                result = self.avail[:size]
+                self.avail = self.avail[size:]
+                return result
+            def read1(self, size):
+                """Returns no more than 5 bytes at once"""
+                return self.read(min(size, 5))
+        tests = (
+            # (test method, total data available, read buffer size, expected
+            #     read size)
+            ("readinto", 10, 5, 5),
+            ("readinto", 10, 6, 6),  # More than read1() can return
+            ("readinto", 5, 6, 5),  # Buffer larger than total available
+            ("readinto", 6, 7, 6),
+            ("readinto", 10, 0, 0),  # Empty buffer
+            ("readinto1", 10, 5, 5),  # Result limited to single read1() call
+            ("readinto1", 10, 6, 5),  # Buffer larger than read1() can return
+            ("readinto1", 5, 6, 5),  # Buffer larger than total available
+            ("readinto1", 6, 7, 5),
+            ("readinto1", 10, 0, 0),  # Empty buffer
+        )
+        UNUSED_BYTE = 0x81
+        for test in tests:
+            with self.subTest(test):
+                method, avail, request, result = test
+                reader = Reader(bytes(range(avail)))
+                buffer = bytearray((UNUSED_BYTE,) * request)
+                method = getattr(reader, method)
+                self.assertEqual(method(buffer), result)
+                self.assertEqual(len(buffer), request)
+                self.assertSequenceEqual(buffer[:result], range(result))
+                unused = (UNUSED_BYTE,) * (request - result)
+                self.assertSequenceEqual(buffer[result:], unused)
+                self.assertEqual(len(reader.avail), avail - result)
 
 
 class CIOTest(IOTest):
@@ -982,6 +1081,16 @@ class CommonBufferedTests:
         self.assertEqual(repr(b), "<%s name='dummy'>" % clsname)
         raw.name = b"dummy"
         self.assertEqual(repr(b), "<%s name=b'dummy'>" % clsname)
+
+    def test_recursive_repr(self):
+        # Issue #25455
+        raw = self.MockRawIO()
+        b = self.tp(raw)
+        with support.swap_attr(raw, 'name', b):
+            try:
+                repr(b)  # Should not crash
+            except RuntimeError:
+                pass
 
     def test_flush_error_on_close(self):
         # Test that buffered file is closed despite failed flush
@@ -1169,12 +1278,7 @@ class BufferedReaderTest(unittest.TestCase, CommonBufferedTests):
         b = bytearray(2*buffer_size)
         self.assertEqual(bufio.peek(3), b'fgh')
         self.assertEqual(rawio._reads, 3)
-        self.assertEqual(bufio.readinto1(b), 6)  # fails because of
-        # an apparent inconsistency in CPython: readinto1(), if the
-        # buffered amount is smaller, would always issue one raw read()
-        # call.  This differs from read1(), which if the buffered amount
-        # if smaller (but more than zero), would just return it without
-        # any raw read() call.  In PyPy both have the behavior of read1().
+        self.assertEqual(bufio.readinto1(b), 6)
         self.assertEqual(b[:6], b"fghjkl")
         self.assertEqual(rawio._reads, 4)
 
@@ -1403,7 +1507,7 @@ class CBufferedReaderTest(BufferedReaderTest, SizeofTest):
 
     def test_args_error(self):
         # Issue #17275
-        with self.assertRaisesRegex(TypeError, "BufferedReader|__init__"):
+        with self.assertRaisesRegex(TypeError, "BufferedReader"):
             self.tp(io.BytesIO(), 1024, 1024, 1024)
 
 
@@ -1602,6 +1706,23 @@ class BufferedWriterTest(unittest.TestCase, CommonBufferedTests):
         with self.open(support.TESTFN, "rb", buffering=0) as f:
             self.assertEqual(f.read(), b"abc")
 
+    def test_truncate_after_write(self):
+        # Ensure that truncate preserves the file position after
+        # writes longer than the buffer size.
+        # Issue: https://bugs.python.org/issue32228
+        with self.open(support.TESTFN, "wb") as f:
+            # Fill with some buffer
+            f.write(b'\x00' * 10000)
+        buffer_sizes = [8192, 4096, 200]
+        for buffer_size in buffer_sizes:
+            with self.open(support.TESTFN, "r+b", buffering=buffer_size) as f:
+                f.write(b'\x00' * (buffer_size + 1))
+                # After write write_pos and write_end are set to 0
+                f.read(1)
+                # read operation makes sure that pos != raw_pos
+                f.truncate()
+                self.assertEqual(f.tell(), buffer_size + 2)
+
     @unittest.skipUnless(threading, 'Threading required for this test.')
     @support.requires_resource('cpu')
     def test_threads(self):
@@ -1713,7 +1834,7 @@ class CBufferedWriterTest(BufferedWriterTest, SizeofTest):
 
     def test_args_error(self):
         # Issue #17275
-        with self.assertRaisesRegex(TypeError, "BufferedWriter|__init__"):
+        with self.assertRaisesRegex(TypeError, "BufferedWriter"):
             self.tp(io.BytesIO(), 1024, 1024, 1024)
 
 
@@ -1789,7 +1910,7 @@ class BufferedRWPairTest(unittest.TestCase):
             with self.subTest(method):
                 pair = self.tp(self.BytesIO(b"abcdef"), self.MockRawIO())
 
-                data = byteslike(5)
+                data = byteslike(b'\0' * 5)
                 self.assertEqual(getattr(pair, method)(data), 5)
                 self.assertEqual(bytes(data), b"abcde")
 
@@ -2163,7 +2284,7 @@ class CBufferedRandomTest(BufferedRandomTest, SizeofTest):
 
     def test_args_error(self):
         # Issue #17275
-        with self.assertRaisesRegex(TypeError, "BufferedRandom|__init__"):
+        with self.assertRaisesRegex(TypeError, "BufferedRandom"):
             self.tp(io.BytesIO(), 1024, 1024, 1024)
 
 
@@ -2397,6 +2518,16 @@ class TextIOWrapperTest(unittest.TestCase):
 
         t.buffer.detach()
         repr(t)  # Should not raise an exception
+
+    def test_recursive_repr(self):
+        # Issue #25455
+        raw = self.BytesIO()
+        t = self.TextIOWrapper(raw)
+        with support.swap_attr(raw, 'name', t):
+            try:
+                repr(t)  # Should not crash
+            except RuntimeError:
+                pass
 
     def test_line_buffering(self):
         r = self.BytesIO()
@@ -3101,6 +3232,14 @@ class TextIOWrapperTest(unittest.TestCase):
         t = self.TextIOWrapper(self.StringIO('a'))
         self.assertRaises(TypeError, t.read)
 
+    def test_illegal_encoder(self):
+        # Issue 31271: Calling write() while the return value of encoder's
+        # encode() is invalid shouldn't cause an assertion failure.
+        rot13 = codecs.lookup("rot13")
+        with support.swap_attr(rot13, '_is_text_encoding', True):
+            t = io.TextIOWrapper(io.BytesIO(b'foo'), encoding="rot13")
+        self.assertRaises(TypeError, t.write, 'bar')
+
     def test_illegal_decoder(self):
         # Issue #17106
         # Bypass the early encoding check added in issue 20404
@@ -3121,7 +3260,26 @@ class TextIOWrapperTest(unittest.TestCase):
         t = _make_illegal_wrapper()
         self.assertRaises(TypeError, t.read)
 
-    @support.impl_detail("PyPy does not call __del__ at shutdown", pypy=False)
+        # Issue 31243: calling read() while the return value of decoder's
+        # getstate() is invalid should neither crash the interpreter nor
+        # raise a SystemError.
+        def _make_very_illegal_wrapper(getstate_ret_val):
+            class BadDecoder:
+                def getstate(self):
+                    return getstate_ret_val
+            def _get_bad_decoder(dummy):
+                return BadDecoder()
+            quopri = codecs.lookup("quopri")
+            with support.swap_attr(quopri, 'incrementaldecoder',
+                                   _get_bad_decoder):
+                return _make_illegal_wrapper()
+        t = _make_very_illegal_wrapper(42)
+        self.assertRaises(TypeError, t.read, 42)
+        t = _make_very_illegal_wrapper(())
+        self.assertRaises(TypeError, t.read, 42)
+        t = _make_very_illegal_wrapper((1, 2))
+        self.assertRaises(TypeError, t.read, 42)
+
     def _check_create_at_shutdown(self, **kwargs):
         # Issue #20037: creating a TextIOWrapper at shutdown
         # shouldn't crash the interpreter.
@@ -3254,8 +3412,7 @@ class CTextIOWrapperTest(TextIOWrapperTest):
 
 class PyTextIOWrapperTest(TextIOWrapperTest):
     io = pyio
-    #shutdown_error = "LookupError: unknown encoding: ascii"
-    shutdown_error = "TypeError: 'NoneType' object is not iterable"
+    shutdown_error = "LookupError: unknown encoding: ascii"
 
 
 class IncrementalNewlineDecoderTest(unittest.TestCase):
@@ -3350,6 +3507,7 @@ class IncrementalNewlineDecoderTest(unittest.TestCase):
         decoder = codecs.getincrementaldecoder("utf-8")()
         decoder = self.IncrementalNewlineDecoder(decoder, translate=True)
         self.check_newline_decoding_utf8(decoder)
+        self.assertRaises(TypeError, decoder.setstate, 42)
 
     def test_newline_bytes(self):
         # Issue 5433: Excessive optimization in IncrementalNewlineDecoder
@@ -3454,6 +3612,7 @@ class MiscIOTest(unittest.TestCase):
                 self.assertRaises(ValueError, f.readinto1, bytearray(1024))
             self.assertRaises(ValueError, f.readline)
             self.assertRaises(ValueError, f.readlines)
+            self.assertRaises(ValueError, f.readlines, 1)
             self.assertRaises(ValueError, f.seek, 0)
             self.assertRaises(ValueError, f.tell)
             self.assertRaises(ValueError, f.truncate)
@@ -3659,6 +3818,7 @@ class CMiscIOTest(MiscIOTest):
             import sys
             import time
             import threading
+            from test.support import SuppressCrashReport
 
             file = sys.{stream_name}
 
@@ -3666,6 +3826,10 @@ class CMiscIOTest(MiscIOTest):
                 while True:
                     file.write('.')
                     file.flush()
+
+            crash = SuppressCrashReport()
+            crash.__enter__()
+            # don't call __exit__(): the crash occurs at Python shutdown
 
             thread = threading.Thread(target=run)
             thread.daemon = True
@@ -3715,31 +3879,6 @@ class SignalsTest(unittest.TestCase):
         """Check that a partial write, when it gets interrupted, properly
         invokes the signal handler, and bubbles up the exception raised
         in the latter."""
-
-        # XXX This test has three flaws that appear when objects are
-        # XXX not reference counted.
-
-        # - if wio.write() happens to trigger a garbage collection,
-        #   the signal exception may be raised when some __del__
-        #   method is running; it will not reach the assertRaises()
-        #   call.
-
-        # - more subtle, if the wio object is not destroyed at once
-        #   and survives this function, the next opened file is likely
-        #   to have the same fileno (since the file descriptor was
-        #   actively closed).  When wio.__del__ is finally called, it
-        #   will close the other's test file...  To trigger this with
-        #   CPython, try adding "global wio" in this function.
-
-        # - This happens only for streams created by the _pyio module,
-        #   because a wio.close() that fails still consider that the
-        #   file needs to be closed again.  You can try adding an
-        #   "assert wio.closed" at the end of the function.
-
-        # Fortunately, a little gc.gollect() seems to be enough to
-        # work around all these issues.
-        support.gc_collect()
-
         read_results = []
         def _read():
             if hasattr(signal, 'pthread_sigmask'):

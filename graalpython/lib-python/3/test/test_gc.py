@@ -527,7 +527,6 @@ class GCTests(unittest.TestCase):
 
         self.assertEqual(gc.get_referents(1, 'a', 4j), [])
 
-    @cpython_only
     def test_is_tracked(self):
         # Atomic built-in types are not tracked, user-defined objects and
         # mutable containers are.
@@ -685,7 +684,6 @@ class GCTests(unittest.TestCase):
         # Create a reference cycle through the __main__ module and check
         # it gets collected at interpreter shutdown.
         code = """if 1:
-            import weakref
             class C:
                 def __del__(self):
                     print('__del__ called')
@@ -700,7 +698,6 @@ class GCTests(unittest.TestCase):
         # Same as above, but with a non-__main__ module.
         with temp_dir() as script_dir:
             module = """if 1:
-                import weakref
                 class C:
                     def __del__(self):
                         print('__del__ called')

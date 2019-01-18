@@ -130,39 +130,26 @@ class UUID(object):
         overriding the given 'hex', 'bytes', 'bytes_le', 'fields', or 'int'.
         """
 
+        if [hex, bytes, bytes_le, fields, int].count(None) != 4:
+            raise TypeError('one of the hex, bytes, bytes_le, fields, '
+                            'or int arguments must be given')
         if hex is not None:
-            if (bytes is not None or bytes_le is not None or
-                    fields is not None or int is not None):
-                raise TypeError('if the hex argument is given, bytes,'
-                                ' bytes_le, fields,  and int need to be None')
             hex = hex.replace('urn:', '').replace('uuid:', '')
             hex = hex.strip('{}').replace('-', '')
             if len(hex) != 32:
                 raise ValueError('badly formed hexadecimal UUID string')
             int = int_(hex, 16)
-        elif bytes_le is not None:
-            if bytes is not None or fields is not None or int is not None:
-                raise TypeError('if the bytes_le argument is given, bytes,'
-                                ' fields, and int need to be None')
+        if bytes_le is not None:
             if len(bytes_le) != 16:
                 raise ValueError('bytes_le is not a 16-char string')
-            bytes = (bytes_(reversed(bytes_le[0:4])) +
-                     bytes_(reversed(bytes_le[4:6])) +
-                     bytes_(reversed(bytes_le[6:8])) +
-                     bytes_le[8:])
-            int = int_.from_bytes(bytes, byteorder='big')
-        elif bytes is not None:
-            if fields is not None or int is not None:
-                raise TypeError('if the bytes argument is given, fields '
-                                'and int need to be None')
+            bytes = (bytes_le[4-1::-1] + bytes_le[6-1:4-1:-1] +
+                     bytes_le[8-1:6-1:-1] + bytes_le[8:])
+        if bytes is not None:
             if len(bytes) != 16:
                 raise ValueError('bytes is not a 16-char string')
             assert isinstance(bytes, bytes_), repr(bytes)
             int = int_.from_bytes(bytes, byteorder='big')
-        elif fields is not None:
-            if int is not None:
-                raise TypeError('if the fields argument is given, int needs'
-                                ' to be None')
+        if fields is not None:
             if len(fields) != 6:
                 raise ValueError('fields is not a 6-tuple')
             (time_low, time_mid, time_hi_version,
@@ -182,12 +169,9 @@ class UUID(object):
             clock_seq = (clock_seq_hi_variant << 8) | clock_seq_low
             int = ((time_low << 96) | (time_mid << 80) |
                    (time_hi_version << 64) | (clock_seq << 48) | node)
-        elif int is not None:
+        if int is not None:
             if not 0 <= int < 1<<128:
                 raise ValueError('int is out of range (need a 128-bit value)')
-        else:
-            raise TypeError('one of hex, bytes, bytes_le, fields,'
-                            ' or int need to be not None')
         if version is not None:
             if not 1 <= version <= 5:
                 raise ValueError('illegal version number')
@@ -197,7 +181,7 @@ class UUID(object):
             # Set the version number.
             int &= ~(0xf000 << 64)
             int |= version << 76
-        object.__setattr__(self, 'int', int)
+        self.__dict__['int'] = int
 
     def __eq__(self, other):
         if isinstance(other, UUID):
@@ -365,15 +349,16 @@ def _find_mac(command, args, hw_identifiers, get_index):
 def _ifconfig_getnode():
     """Get the hardware address on Unix by running ifconfig."""
     # This works on Linux ('' or '-a'), Tru64 ('-av'), but not all Unixes.
+    keywords = (b'hwaddr', b'ether', b'address:', b'lladdr')
     for args in ('', '-a', '-av'):
-        mac = _find_mac('ifconfig', args, [b'hwaddr', b'ether'], lambda i: i+1)
+        mac = _find_mac('ifconfig', args, keywords, lambda i: i+1)
         if mac:
             return mac
 
 def _ip_getnode():
     """Get the hardware address on Unix by running ip."""
     # This works on Linux with iproute2.
-    mac = _find_mac('ip', 'link list', [b'link/ether'], lambda i: i+1)
+    mac = _find_mac('ip', 'link', [b'link/ether'], lambda i: i+1)
     if mac:
         return mac
 
@@ -386,7 +371,20 @@ def _arp_getnode():
         return None
 
     # Try getting the MAC addr from arp based on our IP address (Solaris).
-    return _find_mac('arp', '-an', [os.fsencode(ip_addr)], lambda i: -1)
+    mac = _find_mac('arp', '-an', [os.fsencode(ip_addr)], lambda i: -1)
+    if mac:
+        return mac
+
+    # This works on OpenBSD
+    mac = _find_mac('arp', '-an', [os.fsencode(ip_addr)], lambda i: i+1)
+    if mac:
+        return mac
+
+    # This works on Linux, FreeBSD and NetBSD
+    mac = _find_mac('arp', '-an', [os.fsencode('(%s)' % ip_addr)],
+                    lambda i: i+2)
+    if mac:
+        return mac
 
 def _lanscan_getnode():
     """Get the hardware address on Unix by running lanscan."""
@@ -421,7 +419,7 @@ def _netstat_getnode():
 
 def _ipconfig_getnode():
     """Get the hardware address on Windows by running ipconfig.exe."""
-    import os, re
+    import os, re, subprocess
     dirs = ['', r'c:\windows\system32', r'c:\winnt\system32']
     try:
         import ctypes
@@ -432,11 +430,13 @@ def _ipconfig_getnode():
         pass
     for dir in dirs:
         try:
-            pipe = os.popen(os.path.join(dir, 'ipconfig') + ' /all')
+            proc = subprocess.Popen([os.path.join(dir, 'ipconfig'), '/all'],
+                                    stdout=subprocess.PIPE,
+                                    encoding="oem")
         except OSError:
             continue
-        with pipe:
-            for line in pipe:
+        with proc:
+            for line in proc.stdout:
                 value = line.split(':')[-1].strip().lower()
                 if re.match('([0-9a-f][0-9a-f]-){5}[0-9a-f][0-9a-f]', value):
                     return int(value.replace('-', ''), 16)
@@ -503,7 +503,6 @@ try:
     # Assume that the uuid_generate functions are broken from 10.5 onward,
     # the test can be adjusted when a later version is fixed.
     if sys.platform == 'darwin':
-        import os
         if int(os.uname().release.split('.')[0]) >= 9:
             _uuid_generate_time = None
 
@@ -543,6 +542,11 @@ def _random_getnode():
 
 _node = None
 
+_NODE_GETTERS_WIN32 = [_windll_getnode, _netbios_getnode, _ipconfig_getnode]
+
+_NODE_GETTERS_UNIX = [_unixdll_getnode, _ifconfig_getnode, _ip_getnode,
+                      _arp_getnode, _lanscan_getnode, _netstat_getnode]
+
 def getnode():
     """Get the hardware address as a 48-bit positive integer.
 
@@ -558,18 +562,18 @@ def getnode():
 
     import sys
     if sys.platform == 'win32':
-        getters = [_windll_getnode, _netbios_getnode, _ipconfig_getnode]
+        getters = _NODE_GETTERS_WIN32
     else:
-        getters = [_unixdll_getnode, _ifconfig_getnode, _ip_getnode,
-                   _arp_getnode, _lanscan_getnode, _netstat_getnode]
+        getters = _NODE_GETTERS_UNIX
 
     for getter in getters + [_random_getnode]:
         try:
             _node = getter()
         except:
             continue
-        if _node is not None:
+        if (_node is not None) and (0 <= _node < (1 << 48)):
             return _node
+    assert False, '_random_getnode() returned invalid value: {}'.format(_node)
 
 _last_timestamp = None
 

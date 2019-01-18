@@ -4,7 +4,6 @@ from itertools import *
 import weakref
 from decimal import Decimal
 from fractions import Fraction
-import sys
 import operator
 import random
 import copy
@@ -184,9 +183,6 @@ class TestBasicOps(unittest.TestCase):
         for proto in range(pickle.HIGHEST_PROTOCOL + 1):
             self.pickletest(proto, chain('abc', 'def'), compare=list('abcdef'))
 
-    @support.impl_detail("XXX chain.__setstate__ does not do all checks"
-                         " on PyPy, will just complain later (but could"
-                         " be fixed if important)")
     def test_chain_setstate(self):
         self.assertRaises(TypeError, chain().__setstate__, ())
         self.assertRaises(TypeError, chain().__setstate__, [])
@@ -647,26 +643,58 @@ class TestBasicOps(unittest.TestCase):
         for proto in range(pickle.HIGHEST_PROTOCOL + 1):
             self.pickletest(proto, cycle('abc'))
 
-    @support.impl_detail("XXX cycle.__reduce__ and __setstate__ differ"
-                         " on PyPy (but could be fixed if important)")
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            # test with partial consumed input iterable
+            it = iter('abcde')
+            c = cycle(it)
+            _ = [next(c) for i in range(2)]      # consume 2 of 5 inputs
+            p = pickle.dumps(c, proto)
+            d = pickle.loads(p)                  # rebuild the cycle object
+            self.assertEqual(take(20, d), list('cdeabcdeabcdeabcdeab'))
+
+            # test with completely consumed input iterable
+            it = iter('abcde')
+            c = cycle(it)
+            _ = [next(c) for i in range(7)]      # consume 7 of 5 inputs
+            p = pickle.dumps(c, proto)
+            d = pickle.loads(p)                  # rebuild the cycle object
+            self.assertEqual(take(20, d), list('cdeabcdeabcdeabcdeab'))
+
     def test_cycle_setstate(self):
+        # Verify both modes for restoring state
+
+        # Mode 0 is efficient.  It uses an incompletely consumed input
+        # iterator to build a cycle object and then passes in state with
+        # a list of previously consumed values.  There is no data
+        # overlap between the two.
+        c = cycle('defg')
+        c.__setstate__((list('abc'), 0))
+        self.assertEqual(take(20, c), list('defgabcdefgabcdefgab'))
+
+        # Mode 1 is inefficient.  It starts with a cycle object built
+        # from an iterator over the remaining elements in a partial
+        # cycle and then passes in state with all of the previously
+        # seen values (this overlaps values included in the iterator).
+        c = cycle('defg')
+        c.__setstate__((list('abcdefg'), 1))
+        self.assertEqual(take(20, c), list('defgabcdefgabcdefgab'))
+
+        # The first argument to setstate needs to be a tuple
+        with self.assertRaises(TypeError):
+            cycle('defg').__setstate__([list('abcdefg'), 0])
+
+        # The first argument in the setstate tuple must be a list
+        with self.assertRaises(TypeError):
+            c = cycle('defg')
+            c.__setstate__((tuple('defg'), 0))
+        take(20, c)
+
+        # The second argument in the setstate tuple must be an int
+        with self.assertRaises(TypeError):
+            cycle('defg').__setstate__((list('abcdefg'), 'x'))
+
         self.assertRaises(TypeError, cycle('').__setstate__, ())
-        self.assertRaises(TypeError, cycle('').__setstate__, [])
-        self.assertRaises(TypeError, cycle('').__setstate__, 0)
         self.assertRaises(TypeError, cycle('').__setstate__, ([],))
-        self.assertRaises(TypeError, cycle('').__setstate__, ((), 0))
-        it = cycle('abc')
-        it.__setstate__((['de', 'fg'], 0))
-        self.assertEqual(list(islice(it, 15)),
-                         ['a', 'b', 'c', 'de', 'fg',
-                          'a', 'b', 'c', 'de', 'fg',
-                          'a', 'b', 'c', 'de', 'fg'])
-        it = cycle('abc')
-        it.__setstate__((['de', 'fg'], 1))
-        self.assertEqual(list(islice(it, 15)),
-                         ['a', 'b', 'c', 'de', 'fg',
-                          'de', 'fg', 'de', 'fg', 'de',
-                          'fg', 'de', 'fg', 'de', 'fg'])
 
     def test_groupby(self):
         # Check whether it accepts arguments correctly
@@ -1336,7 +1364,6 @@ class TestBasicOps(unittest.TestCase):
         p = weakref.proxy(a)
         self.assertEqual(getattr(p, '__class__'), type(b))
         del a
-        support.gc_collect()
         self.assertRaises(ReferenceError, getattr, p, '__class__')
 
         ans = list('abc')
@@ -1879,7 +1906,6 @@ class TestVariousIteratorArgs(unittest.TestCase):
 
 class LengthTransparency(unittest.TestCase):
 
-    @support.impl_detail("__length_hint__() API is undocumented")
     def test_repeat(self):
         self.assertEqual(operator.length_hint(repeat(None, 50)), 50)
         self.assertEqual(operator.length_hint(repeat(None, 0)), 0)
@@ -1949,6 +1975,38 @@ class RegressionTests(unittest.TestCase):
         hist = []
         self.assertRaises(AssertionError, list, cycle(gen1()))
         self.assertEqual(hist, [0,1])
+
+    def test_long_chain_of_empty_iterables(self):
+        # Make sure itertools.chain doesn't run into recursion limits when
+        # dealing with long chains of empty iterables. Even with a high
+        # number this would probably only fail in Py_DEBUG mode.
+        it = chain.from_iterable(() for unused in range(10000000))
+        with self.assertRaises(StopIteration):
+            next(it)
+
+    def test_issue30347_1(self):
+        def f(n):
+            if n == 5:
+                list(b)
+            return n != 6
+        for (k, b) in groupby(range(10), f):
+            list(b)  # shouldn't crash
+
+    def test_issue30347_2(self):
+        class K:
+            def __init__(self, v):
+                pass
+            def __eq__(self, other):
+                nonlocal i
+                i += 1
+                if i == 1:
+                    next(g, None)
+                return True
+        i = 0
+        g = next(groupby(range(10), K))[1]
+        for j in range(2):
+            next(g, None)  # shouldn't crash
+
 
 class SubclassWithKwargsTest(unittest.TestCase):
     def test_keywords_in_subclass(self):
@@ -2171,6 +2229,30 @@ Samuele
 ...     # first_true([a,b], x, f) --> a if f(a) else b if f(b) else x
 ...     return next(filter(pred, iterable), default)
 
+>>> def nth_combination(iterable, r, index):
+...     'Equivalent to list(combinations(iterable, r))[index]'
+...     pool = tuple(iterable)
+...     n = len(pool)
+...     if r < 0 or r > n:
+...         raise ValueError
+...     c = 1
+...     k = min(r, n-r)
+...     for i in range(1, k+1):
+...         c = c * (n - k + i) // i
+...     if index < 0:
+...         index += c
+...     if index < 0 or index >= c:
+...         raise IndexError
+...     result = []
+...     while r:
+...         c, n, r = c*r//n, n-1, r-1
+...         while index >= c:
+...             index -= c
+...             c, n = c*(n-r)//n, n-1
+...         result.append(pool[-1-n])
+...     return tuple(result)
+
+
 This is not part of the examples but it tests to make sure the definitions
 perform as purported.
 
@@ -2253,6 +2335,15 @@ True
 
 >>> first_true('ABC0DEF1', '9', str.isdigit)
 '0'
+
+>>> population = 'ABCDEFGH'
+>>> for r in range(len(population) + 1):
+...     seq = list(combinations(population, r))
+...     for i in range(len(seq)):
+...         assert nth_combination(population, r, i) == seq[i]
+...     for i in range(-len(seq), 0):
+...         assert nth_combination(population, r, i) == seq[i]
+
 
 """
 

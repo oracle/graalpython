@@ -43,11 +43,7 @@ from importlib.machinery import BuiltinImporter
 _loader = __loader__ if __loader__ is BuiltinImporter else type(__loader__)
 print('__loader__==%a' % _loader)
 print('__file__==%a' % __file__)
-if __cached__ is not None:
-    # XXX: test_script_compiled on PyPy
-    assertEqual(__file__, __cached__)
-    if not __cached__.endswith(('pyc', 'pyo')):
-        raise AssertionError('has __cached__ but not compiled')
+print('__cached__==%a' % __cached__)
 print('__package__==%r' % __package__)
 # Check PEP 451 details
 import os.path
@@ -143,9 +139,8 @@ class CmdLineTest(unittest.TestCase):
                             expected_argv0, expected_path0,
                             expected_package, expected_loader,
                             *cmd_line_switches):
-        if not __debug__:
-            cmd_line_switches += ('-' + 'O' * sys.flags.optimize,)
-        run_args = cmd_line_switches + (script_name,) + tuple(example_args)
+        run_args = [*support.optim_args_from_interpreter_flags(),
+                    *cmd_line_switches, script_name, *example_args]
         rc, out, err = assert_python_ok(*run_args, __isolated=False)
         self._check_output(script_name, rc, out + err, expected_file,
                            expected_argv0, expected_path0,
@@ -189,21 +184,11 @@ class CmdLineTest(unittest.TestCase):
             stderr = p.stdout
         try:
             # Drain stderr until prompt
-            if support.check_impl_detail(pypy=True):
-                ps1 = b">>>> "
-                # PyPy: the prompt is still printed to stdout, like it
-                # is in CPython 2.7.  This messes up the logic below
-                # if stdout and stderr are different.  Skip for now.
-                if separate_stderr:
-                    self.skipTest("the prompt is still written to "
-                                  "stdout in pypy")
-            else:
-                ps1 = b">>> "
-            # logic fixed to support the case of lines that are shorter
-            # than len(ps1) characters
-            got = b""
-            while not got.endswith(ps1):
-                got += stderr.read(1)
+            while True:
+                data = stderr.read(4)
+                if data == b">>> ":
+                    break
+                stderr.readline()
             yield p
         finally:
             kill_python(p)
@@ -239,9 +224,8 @@ class CmdLineTest(unittest.TestCase):
     def test_basic_script(self):
         with support.temp_dir() as script_dir:
             script_name = _make_test_script(script_dir, 'script')
-            package = '' if support.check_impl_detail(pypy=True) else None
             self._check_script(script_name, script_name, script_name,
-                               script_dir, package,
+                               script_dir, None,
                                importlib.machinery.SourceFileLoader)
 
     def test_script_compiled(self):
@@ -250,9 +234,8 @@ class CmdLineTest(unittest.TestCase):
             py_compile.compile(script_name, doraise=True)
             os.remove(script_name)
             pyc_file = support.make_legacy_pyc(script_name)
-            package = '' if support.check_impl_detail(pypy=True) else None
             self._check_script(pyc_file, pyc_file,
-                               pyc_file, script_dir, package,
+                               pyc_file, script_dir, None,
                                importlib.machinery.SourcelessFileLoader)
 
     def test_directory(self):
@@ -446,7 +429,7 @@ class CmdLineTest(unittest.TestCase):
             ('builtins.x', br'Error while finding module specification.*'
                 br'AttributeError'),
             ('builtins.x.y', br'Error while finding module specification.*'
-                br'ImportError.*No module named.*not a package'),
+                br'ModuleNotFoundError.*No module named.*not a package'),
             ('os.path', br'loader.*cannot handle'),
             ('importlib', br'No module named.*'
                 br'is a package and cannot be directly executed'),
@@ -589,6 +572,73 @@ class CmdLineTest(unittest.TestCase):
             self.assertNotIn("\f", text)
             self.assertIn("\n    1 + 1 = 2\n    ^", text)
 
+    def test_consistent_sys_path_for_direct_execution(self):
+        # This test case ensures that the following all give the same
+        # sys.path configuration:
+        #
+        #    ./python -s script_dir/__main__.py
+        #    ./python -s script_dir
+        #    ./python -I script_dir
+        script = textwrap.dedent("""\
+            import sys
+            for entry in sys.path:
+                print(entry)
+            """)
+        # Always show full path diffs on errors
+        self.maxDiff = None
+        with support.temp_dir() as work_dir, support.temp_dir() as script_dir:
+            script_name = _make_test_script(script_dir, '__main__', script)
+            # Reference output comes from directly executing __main__.py
+            # We omit PYTHONPATH and user site to align with isolated mode
+            p = spawn_python("-Es", script_name, cwd=work_dir)
+            out_by_name = kill_python(p).decode().splitlines()
+            self.assertEqual(out_by_name[0], script_dir)
+            self.assertNotIn(work_dir, out_by_name)
+            # Directory execution should give the same output
+            p = spawn_python("-Es", script_dir, cwd=work_dir)
+            out_by_dir = kill_python(p).decode().splitlines()
+            self.assertEqual(out_by_dir, out_by_name)
+            # As should directory execution in isolated mode
+            p = spawn_python("-I", script_dir, cwd=work_dir)
+            out_by_dir_isolated = kill_python(p).decode().splitlines()
+            self.assertEqual(out_by_dir_isolated, out_by_dir, out_by_name)
+
+    def test_consistent_sys_path_for_module_execution(self):
+        # This test case ensures that the following both give the same
+        # sys.path configuration:
+        #    ./python -sm script_pkg.__main__
+        #    ./python -sm script_pkg
+        #
+        # And that this fails as unable to find the package:
+        #    ./python -Im script_pkg
+        script = textwrap.dedent("""\
+            import sys
+            for entry in sys.path:
+                print(entry)
+            """)
+        # Always show full path diffs on errors
+        self.maxDiff = None
+        with support.temp_dir() as work_dir:
+            script_dir = os.path.join(work_dir, "script_pkg")
+            os.mkdir(script_dir)
+            script_name = _make_test_script(script_dir, '__main__', script)
+            # Reference output comes from `-m script_pkg.__main__`
+            # We omit PYTHONPATH and user site to better align with the
+            # direct execution test cases
+            p = spawn_python("-sm", "script_pkg.__main__", cwd=work_dir)
+            out_by_module = kill_python(p).decode().splitlines()
+            self.assertEqual(out_by_module[0], '')
+            self.assertNotIn(script_dir, out_by_module)
+            # Package execution should give the same output
+            p = spawn_python("-sm", "script_pkg", cwd=work_dir)
+            out_by_package = kill_python(p).decode().splitlines()
+            self.assertEqual(out_by_package, out_by_module)
+            # Isolated mode should fail with an import error
+            exitcode, stdout, stderr = assert_python_failure(
+                "-Im", "script_pkg", cwd=work_dir
+            )
+            traceback_lines = stderr.decode().splitlines()
+            self.assertIn("No module named script_pkg", traceback_lines[-1])
 
 def test_main():
     support.run_unittest(CmdLineTest)

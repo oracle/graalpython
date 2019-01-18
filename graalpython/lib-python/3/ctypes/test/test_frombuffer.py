@@ -2,7 +2,6 @@ from ctypes import *
 import array
 import gc
 import unittest
-from ctypes.test import xfail
 
 class X(Structure):
     _fields_ = [("c_int", c_int)]
@@ -11,7 +10,6 @@ class X(Structure):
         self._init_called = True
 
 class Test(unittest.TestCase):
-    @xfail
     def test_from_buffer(self):
         a = array.array("i", range(16))
         x = (c_int * 16).from_buffer(a)
@@ -66,7 +64,6 @@ class Test(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "not C contiguous"):
             (c_char * 16).from_buffer(array)
 
-    @xfail
     def test_from_buffer_with_offset(self):
         a = array.array("i", range(16))
         x = (c_int * 15).from_buffer(a, sizeof(c_int))
@@ -85,7 +82,6 @@ class Test(unittest.TestCase):
         del a
         gc.collect()  # Should not crash
 
-    @xfail
     def test_from_buffer_copy(self):
         a = array.array("i", range(16))
         x = (c_int * 16).from_buffer_copy(a)
@@ -112,7 +108,6 @@ class Test(unittest.TestCase):
         with self.assertRaises(TypeError):
             (c_char * 16).from_buffer_copy("a" * 16)
 
-    @xfail
     def test_from_buffer_copy_with_offset(self):
         a = array.array("i", range(16))
         x = (c_int * 15).from_buffer_copy(a, sizeof(c_int))
@@ -126,12 +121,21 @@ class Test(unittest.TestCase):
             (c_int * 1).from_buffer_copy(a, 16 * sizeof(c_int))
 
     def test_abstract(self):
+        from ctypes import _Pointer, _SimpleCData, _CFuncPtr
+
         self.assertRaises(TypeError, Array.from_buffer, bytearray(10))
         self.assertRaises(TypeError, Structure.from_buffer, bytearray(10))
         self.assertRaises(TypeError, Union.from_buffer, bytearray(10))
+        self.assertRaises(TypeError, _CFuncPtr.from_buffer, bytearray(10))
+        self.assertRaises(TypeError, _Pointer.from_buffer, bytearray(10))
+        self.assertRaises(TypeError, _SimpleCData.from_buffer, bytearray(10))
+
         self.assertRaises(TypeError, Array.from_buffer_copy, b"123")
         self.assertRaises(TypeError, Structure.from_buffer_copy, b"123")
         self.assertRaises(TypeError, Union.from_buffer_copy, b"123")
+        self.assertRaises(TypeError, _CFuncPtr.from_buffer_copy, b"123")
+        self.assertRaises(TypeError, _Pointer.from_buffer_copy, b"123")
+        self.assertRaises(TypeError, _SimpleCData.from_buffer_copy, b"123")
 
 if __name__ == '__main__':
     unittest.main()

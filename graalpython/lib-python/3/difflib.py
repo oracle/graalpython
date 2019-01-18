@@ -1083,7 +1083,7 @@ class Differ:
 
 import re
 
-def IS_LINE_JUNK(line, pat=re.compile(r"\s*#?\s*$").match):
+def IS_LINE_JUNK(line, pat=re.compile(r"\s*(?:#\s*)?$").match):
     r"""
     Return 1 for ignorable line: iff `line` is blank or contains a single '#'.
 
@@ -1415,7 +1415,7 @@ def _mdiff(fromlines, tolines, context=None, linejunk=None,
     import re
 
     # regular expression for finding intraline change indices
-    change_re = re.compile('(\++|\-+|\^+)')
+    change_re = re.compile(r'(\++|\-+|\^+)')
 
     # create the difference iterator to generate the differences
     diff_lines_iterator = ndiff(fromlines,tolines,linejunk,charjunk)

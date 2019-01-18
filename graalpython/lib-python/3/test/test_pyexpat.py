@@ -643,9 +643,6 @@ class ChardataBufferTest(unittest.TestCase):
         self.assertEqual(self.n, 4)
 
 class MalformedInputTest(unittest.TestCase):
-    # CPython seems to ship its own version of expat, they fixed it on this commit :
-    # http://svn.python.org/view?revision=74429&view=revision
-    @unittest.skipIf(sys.platform == "darwin", "Expat is broken on Mac OS X 10.6.6")
     def test1(self):
         xml = b"\0\r\n"
         parser = expat.ParserCreate()
@@ -655,7 +652,6 @@ class MalformedInputTest(unittest.TestCase):
         except expat.ExpatError as e:
             self.assertEqual(str(e), 'unclosed token: line 2, column 0')
 
-    @unittest.skipIf(sys.platform == "darwin", "Expat is broken on Mac OS X 10.6.6")
     def test2(self):
         # \xc2\x85 is UTF-8 encoded U+0085 (NEXT LINE)
         xml = b"<?xml version\xc2\x85='1.0'?>\r\n"

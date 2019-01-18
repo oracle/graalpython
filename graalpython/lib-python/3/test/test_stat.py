@@ -1,7 +1,7 @@
 import unittest
 import os
 import sys
-from test.support import TESTFN, import_fresh_module, check_impl_detail
+from test.support import TESTFN, import_fresh_module
 
 c_stat = import_fresh_module('stat', fresh=['_stat'])
 py_stat = import_fresh_module('stat', blocked=['_stat'])
@@ -169,7 +169,10 @@ class TestFilemode:
 
     @unittest.skipUnless(hasattr(os, 'mkfifo'), 'os.mkfifo not available')
     def test_fifo(self):
-        os.mkfifo(TESTFN, 0o700)
+        try:
+            os.mkfifo(TESTFN, 0o700)
+        except PermissionError as e:
+            self.skipTest('os.mkfifo(): %s' % e)
         st_mode, modestr = self.get_mode()
         self.assertEqual(modestr, 'prwx------')
         self.assertS_IS("FIFO", st_mode)
@@ -215,8 +218,6 @@ class TestFilemode:
             self.assertEqual(value, modvalue, key)
 
 
-@unittest.skipIf(check_impl_detail(pypy=True),
-                 "No _stat module on PyPy")
 class TestFilemodeCStat(TestFilemode, unittest.TestCase):
     statmod = c_stat
 

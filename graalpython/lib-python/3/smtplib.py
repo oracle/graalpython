@@ -250,6 +250,7 @@ class SMTP:
         if host:
             (code, msg) = self.connect(host, port)
             if code != 220:
+                self.close()
                 raise SMTPConnectError(code, msg)
         if local_hostname is not None:
             self.local_hostname = local_hostname
@@ -759,6 +760,10 @@ class SMTP:
             if context is not None and certfile is not None:
                 raise ValueError("context and certfile arguments are mutually "
                                  "exclusive")
+            if keyfile is not None or certfile is not None:
+                import warnings
+                warnings.warn("keyfile and certfile are deprecated, use a"
+                              "custom context instead", DeprecationWarning, 2)
             if context is None:
                 context = ssl._create_stdlib_context(certfile=certfile,
                                                      keyfile=keyfile)
@@ -928,6 +933,7 @@ class SMTP:
             from_addr = (msg[header_prefix + 'Sender']
                            if (header_prefix + 'Sender') in msg
                            else msg[header_prefix + 'From'])
+            from_addr = email.utils.getaddresses([from_addr])[0][1]
         if to_addrs is None:
             addr_fields = [f for f in (msg[header_prefix + 'To'],
                                        msg[header_prefix + 'Bcc'],
@@ -1011,6 +1017,10 @@ if _have_ssl:
             if context is not None and certfile is not None:
                 raise ValueError("context and certfile arguments are mutually "
                                  "exclusive")
+            if keyfile is not None or certfile is not None:
+                import warnings
+                warnings.warn("keyfile and certfile are deprecated, use a"
+                              "custom context instead", DeprecationWarning, 2)
             self.keyfile = keyfile
             self.certfile = certfile
             if context is None:
