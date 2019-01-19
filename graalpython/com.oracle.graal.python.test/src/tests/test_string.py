@@ -881,6 +881,55 @@ class UnicodeTest(unittest.TestCase):
                     self.assertEqual(rem, 0, '%s != 0 for %s' % (rem, i))
                     self.assertEqual(r1, r2, '%s != %s for %s' % (r1, r2, i))
 
+    def test_startswith(self):
+        self.checkequal(True, 'hello', 'startswith', 'he')
+        self.checkequal(True, 'hello', 'startswith', 'hello')
+        self.checkequal(False, 'hello', 'startswith', 'hello world')
+        self.checkequal(True, 'hello', 'startswith', '')
+        self.checkequal(False, 'hello', 'startswith', 'ello')
+        self.checkequal(True, 'hello', 'startswith', 'ello', 1)
+        self.checkequal(True, 'hello', 'startswith', 'o', 4)
+        self.checkequal(False, 'hello', 'startswith', 'o', 5)
+        self.checkequal(True, 'hello', 'startswith', '', 5)
+        self.checkequal(False, 'hello', 'startswith', 'lo', 6)
+        self.checkequal(True, 'helloworld', 'startswith', 'lowo', 3)
+        self.checkequal(True, 'helloworld', 'startswith', 'lowo', 3, 7)
+        self.checkequal(False, 'helloworld', 'startswith', 'lowo', 3, 6)
+        self.checkequal(True, '', 'startswith', '', 0, 1)
+        self.checkequal(True, '', 'startswith', '', 0, 0)
+        self.checkequal(False, '', 'startswith', '', 1, 0)
+
+        # test negative indices
+        self.checkequal(True, 'hello', 'startswith', 'he', 0, -1)
+        self.checkequal(True, 'hello', 'startswith', 'he', -53, -1)
+        self.checkequal(False, 'hello', 'startswith', 'hello', 0, -1)
+        self.checkequal(False, 'hello', 'startswith', 'hello world', -1, -10)
+        self.checkequal(False, 'hello', 'startswith', 'ello', -5)
+        self.checkequal(True, 'hello', 'startswith', 'ello', -4)
+        self.checkequal(False, 'hello', 'startswith', 'o', -2)
+        self.checkequal(True, 'hello', 'startswith', 'o', -1)
+        self.checkequal(True, 'hello', 'startswith', '', -3, -3)
+        self.checkequal(False, 'hello', 'startswith', 'lo', -9)
+        
+        self.checkraises(TypeError, 'hello', 'startswith')
+        #self.checkraises(TypeError, 'hello', 'startswith', 42)
+        
+        # test tuple arguments
+        self.checkequal(True, 'hello', 'startswith', ('he', 'ha'))
+        self.checkequal(False, 'hello', 'startswith', ('lo', 'llo'))
+        self.checkequal(True, 'hello', 'startswith', ('hellox', 'hello'))
+        self.checkequal(False, 'hello', 'startswith', ())
+        self.checkequal(True, 'helloworld', 'startswith', ('hellowo',
+                                                           'rld', 'lowo'), 3)
+        self.checkequal(False, 'helloworld', 'startswith', ('hellowo', 'ello',
+                                                            'rld'), 3)
+        self.checkequal(True, 'hello', 'startswith', ('lo', 'he'), 0, -1)
+        self.checkequal(False, 'hello', 'startswith', ('he', 'hel'), 0, 1)
+        self.checkequal(True, 'hello', 'startswith', ('he', 'hel'), 0, 2)
+        
+        self.checkraises(TypeError, 'hello', 'startswith', (42,))
+        self.checkequal(True, 'hello', 'startswith', ('he', 42))
+        self.checkraises(TypeError, 'hello', 'startswith', ('ne', 42,))
 
 def test_same_id():
     empty_ids = set([id(str()) for i in range(100)])

@@ -54,6 +54,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.Node;
+import java.util.function.Function;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
@@ -61,10 +62,21 @@ public abstract class CastToIntegerFromIndexNode extends PNodeWithContext {
 
     @Node.Child private LookupAndCallUnaryNode callIndexNode;
 
+    private final Function<Object, Byte> typeErrorHandler;
+
     public abstract Object execute(Object x);
 
     public static CastToIntegerFromIndexNode create() {
-        return CastToIntegerFromIndexNodeGen.create();
+        return CastToIntegerFromIndexNodeGen.create(null);
+    }
+
+    public static CastToIntegerFromIndexNode create(Function<Object, Byte> typeErrorHandler) {
+        return CastToIntegerFromIndexNodeGen.create(typeErrorHandler);
+    }
+
+    public CastToIntegerFromIndexNode(Function<Object, Byte> typeErrorHandler) {
+        super();
+        this.typeErrorHandler = typeErrorHandler;
     }
 
     @Specialization
@@ -79,6 +91,9 @@ public abstract class CastToIntegerFromIndexNode extends PNodeWithContext {
 
     @Specialization
     public long toInt(double x) {
+        if (typeErrorHandler != null) {
+            return typeErrorHandler.apply(x);
+        }
         throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
     }
 
@@ -90,6 +105,9 @@ public abstract class CastToIntegerFromIndexNode extends PNodeWithContext {
         }
         Object result = callIndexNode.executeObject(x);
         if (result == PNone.NONE) {
+            if (typeErrorHandler != null) {
+                return typeErrorHandler.apply(x);
+            }
             throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
         }
         if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
