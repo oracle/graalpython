@@ -1,3 +1,8 @@
+/* Copyright (c) 2019, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 /* _bz2 - Low-level Python interface to libbzip2. */
 
 #define PY_SSIZE_T_CLEAN
