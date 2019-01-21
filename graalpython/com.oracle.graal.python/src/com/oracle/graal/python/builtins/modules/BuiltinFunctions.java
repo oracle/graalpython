@@ -74,6 +74,8 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.math.BigInteger;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.CharBuffer;
 import java.util.List;
 import java.util.function.Supplier;
@@ -720,7 +722,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         PCode compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
-            Source source = PythonLanguage.newSource(getContext(), expression, filename);
+            URI uri = null;
+            try {
+                uri = new URI("file://" + filename);
+            } catch (URISyntaxException e) {
+            }
+            Source source = PythonLanguage.newSource(getContext(), expression, filename, uri);
             ParserMode pm;
             if (mode.equals("exec")) {
                 pm = ParserMode.File;
