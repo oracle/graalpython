@@ -457,7 +457,7 @@ public final class Python3Core implements PythonCore {
                         false, // hash_randomization
                         PythonOptions.getFlag(context, PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
                         PythonOptions.getFlag(context, PythonOptions.InspectFlag), // inspect
-                        PythonOptions.getFlag(context, PythonOptions.InspectFlag), // interactive
+                        PythonOptions.getFlag(context, PythonOptions.TerminalIsInteractive), // interactive
                         !context.isExecutableAccessAllowed(), // isolated
                         PythonOptions.getFlag(context, PythonOptions.NoSiteFlag), // no_site
                         PythonOptions.getFlag(context, PythonOptions.NoUserSiteFlag), // no_user_site
