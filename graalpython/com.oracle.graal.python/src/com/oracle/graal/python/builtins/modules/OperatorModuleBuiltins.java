@@ -83,7 +83,7 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public boolean doNone(PNone value) {
+        public boolean doNone(@SuppressWarnings("unused") PNone value) {
             return false;
         }
 
