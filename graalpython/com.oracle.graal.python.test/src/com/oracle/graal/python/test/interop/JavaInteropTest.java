@@ -455,7 +455,7 @@ public class JavaInteropTest {
             private Builder builder;
 
             OptionsChecker(String option, String code, String... values) {
-                this.builder = Context.newBuilder("python").engine(engine);
+                this.builder = Context.newBuilder("python").engine(engine).allowAllAccess(true);
                 this.option = "python." + option;
                 this.source = Source.create("python", code);
                 this.values = values;
