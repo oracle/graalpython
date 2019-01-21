@@ -146,12 +146,11 @@ public abstract class PNodeWithContext extends Node {
         return raiseOSError(frame, args);
     }
 
-    public final PException raiseOSError(VirtualFrame frame, Object[] arg) {
+    public final PException raiseOSError(VirtualFrame frame, Object[] args) {
         if (callNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callNode = insert(CallVarargsMethodNode.create());
         }
-        Object[] args = PositionalArgumentsNode.prependArgument(getBuiltinPythonClass(PythonBuiltinClassType.OSError), arg, arg.length);
         PBaseException error = (PBaseException) callNode.execute(frame, getBuiltinPythonClass(PythonBuiltinClassType.OSError), args, new PKeyword[]{});
         return raise(error);
     }
