@@ -35,6 +35,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.ProcessBuilder.Redirect;
 import java.math.BigInteger;
 import java.net.InetAddress;
@@ -673,6 +674,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class OpenNode extends PythonFileNode {
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+
         private final BranchProfile gotException = BranchProfile.create();
 
         @Specialization(guards = {"isNoValue(mode)", "isNoValue(dir_fd)"})
@@ -691,6 +694,28 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 gotException.enter();
                 throw raise(OSError, e);
+            }
+        }
+
+        @Specialization(guards = {"isNoValue(dir_fd)"})
+        Object open(PBytes pathname, int flags, int fileMode, PNone dir_fd) {
+            return open(decode(getByteArray(pathname)), flags, fileMode, dir_fd);
+        }
+
+        private byte[] getByteArray(PIBytesLike pByteArray) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(ToByteArrayNode.create());
+            }
+            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
+        }
+
+        @TruffleBoundary
+        private String decode(byte[] raw) {
+            try {
+                return new String(raw, "ascii");
+            } catch (UnsupportedEncodingException e) {
+                throw raise(PythonBuiltinClassType.UnicodeDecodeError, e.getMessage());
             }
         }
 
