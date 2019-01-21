@@ -588,6 +588,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Fallback
+        @SuppressWarnings("unused")
         boolean general(Object self, Object prefix, Object start, Object end) {
             throw raise(TypeError, "startswith first arg must be str or a tuple of str, not %p", prefix);
         }

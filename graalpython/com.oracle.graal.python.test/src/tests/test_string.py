@@ -897,7 +897,8 @@ class UnicodeTest(unittest.TestCase):
         self.checkequal(False, 'helloworld', 'startswith', 'lowo', 3, 6)
         self.checkequal(True, '', 'startswith', '', 0, 1)
         self.checkequal(True, '', 'startswith', '', 0, 0)
-        self.checkequal(False, '', 'startswith', '', 1, 0)
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            self.checkequal(False, '', 'startswith', '', 1, 0)
 
         # test negative indices
         self.checkequal(True, 'hello', 'startswith', 'he', 0, -1)
