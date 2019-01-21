@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -129,6 +130,16 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             } else {
                 return currentSignalHandler;
             }
+        }
+    }
+
+    @Builtin(name = "default_int_handler", minNumOfPositionalArgs = 0, takesVarArgs = true, takesVarKeywordArgs = false)
+    @GenerateNodeFactory
+    abstract static class DefaultIntHandlerNode extends PythonBuiltinNode {
+        @Specialization
+        Object defaultIntHandler(Object[] args) {
+            // TODO should be implemented properly.
+            throw raise(PythonErrorType.KeyboardInterrupt);
         }
     }
 
