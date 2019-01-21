@@ -135,6 +135,7 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(PythonCore core) {
+        super.initialize(core);
         builtinConstants.put("version", getUnicodeVersion());
         PythonObject ucd_3_2_0 = core.factory().createPythonObject(core.lookupType(PythonBuiltinClassType.PythonObject));
         ucd_3_2_0.setAttribute("unidata_version", "3.2.0");
