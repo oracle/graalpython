@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
@@ -66,8 +67,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.util.ArrayList;
-import java.util.List;
 
 public abstract class PNodeWithContext extends Node {
     @Child private PythonObjectFactory factory;
@@ -130,54 +129,31 @@ public abstract class PNodeWithContext extends Node {
     }
 
     public final PException raiseOSError(VirtualFrame frame, int errno) {
-        return raiseOSError(frame, errno, null, null, null);
+        return raiseOSError(frame, new Object[]{errno});
     }
 
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror) {
-        return raiseOSError(frame, oserror.getNumber(), oserror.getMessage(), null, null);
+        return raiseOSError(frame, new Object[]{oserror.getNumber(), oserror.getMessage()});
     }
 
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename) {
-        return raiseOSError(frame, oserror.getNumber(), oserror.getMessage(), filename, null);
+        Object[] args = new Object[]{oserror.getNumber(), oserror.getMessage(), filename};
+        return raiseOSError(frame, args);
     }
 
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename, String filename2) {
-        return raiseOSError(frame, oserror.getNumber(), oserror.getMessage(), filename, filename2);
+        Object[] args = new Object[]{oserror.getNumber(), oserror.getMessage(), filename, PNone.NONE, filename2};
+        return raiseOSError(frame, args);
     }
 
-    public final PException raiseOSError(VirtualFrame frame, int errno, String errorstr, String filename, String filename2) {
-        if (getNewFuncNode == null) {
+    public final PException raiseOSError(VirtualFrame frame, Object[] arg) {
+        if (callNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getNewFuncNode = insert(LookupAttributeInMRONode.create("__new__"));
+            callNode = insert(CallVarargsMethodNode.create());
         }
-        Object newFunc = getNewFuncNode.execute(PythonBuiltinClassType.OSError);
-        if (newFunc != PNone.NO_VALUE) {
-            if (callNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNode = insert(CallVarargsMethodNode.create());
-            }
-            Object[] args = createArgumentsForOSError(errno, errorstr, filename, filename2);
-            PBaseException error = (PBaseException) callNode.execute(frame, newFunc, args, new PKeyword[]{});
-            return raise(error);
-        }
-        return raise(factory().createBaseException(PythonBuiltinClassType.OSError));
-    }
-
-    private Object[] createArgumentsForOSError(int errno, String errorstr, String filename, String filename2) {
-        List<Object> result = new ArrayList<>();
-        result.add(getBuiltinPythonClass(PythonBuiltinClassType.OSError));
-        result.add(errno);
-        if (errorstr != null && !errorstr.isEmpty()) {
-            result.add(errorstr);
-        }
-        if (filename != null && !filename.isEmpty()) {
-            result.add(filename);
-            if (filename2 != null && !filename2.isEmpty()) {
-                result.add(PNone.NONE); // instead winerror
-                result.add(filename2);
-            }
-        }
-        return result.toArray();
+        Object[] args = PositionalArgumentsNode.prependArgument(getBuiltinPythonClass(PythonBuiltinClassType.OSError), arg, arg.length + 1);
+        PBaseException error = (PBaseException) callNode.execute(frame, getBuiltinPythonClass(PythonBuiltinClassType.OSError), args, new PKeyword[]{});
+        return raise(error);
     }
 
     public final PythonClass getPythonClass(LazyPythonClass lazyClass, ConditionProfile profile) {
