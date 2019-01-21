@@ -61,6 +61,10 @@ def setdefaulttimeout(timeout):
     __default_timeout = timeout
 
 
-_sock = socket()
-SocketType = type(_sock)
-del _sock
+try:
+    _sock = socket()
+    SocketType = type(_sock)
+    del _sock
+except:
+    pass
+
