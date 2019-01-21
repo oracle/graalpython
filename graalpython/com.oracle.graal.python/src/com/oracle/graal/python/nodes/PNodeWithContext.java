@@ -151,7 +151,7 @@ public abstract class PNodeWithContext extends Node {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callNode = insert(CallVarargsMethodNode.create());
         }
-        Object[] args = PositionalArgumentsNode.prependArgument(getBuiltinPythonClass(PythonBuiltinClassType.OSError), arg, arg.length + 1);
+        Object[] args = PositionalArgumentsNode.prependArgument(getBuiltinPythonClass(PythonBuiltinClassType.OSError), arg, arg.length);
         PBaseException error = (PBaseException) callNode.execute(frame, getBuiltinPythonClass(PythonBuiltinClassType.OSError), args, new PKeyword[]{});
         return raise(error);
     }
