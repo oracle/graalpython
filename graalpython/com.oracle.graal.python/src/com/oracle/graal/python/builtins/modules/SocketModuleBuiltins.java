@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -69,8 +70,28 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "socket", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 5, keywordArguments = {"family", "type", "proto", "fileno"}, constructsClass = PythonBuiltinClassType.PSocket)
     @GenerateNodeFactory
     public abstract static class SocketNode extends PythonBuiltinNode {
-        @Specialization
+        @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
+        Object socket(PythonClass cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto,
+                        @SuppressWarnings("unused") PNone fileno) {
+            return createSocketInternal(cls, PSocket.AF_INET, PSocket.SOCK_STREAM, 0);
+        }
+
+        @Specialization(guards = {"isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
+        Object socket(PythonClass cls, int family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno) {
+            return createSocketInternal(cls, family, PSocket.SOCK_STREAM, 0);
+        }
+
+        @Specialization(guards = {"isNoValue(proto)", "isNoValue(fileno)"})
+        Object socket(PythonClass cls, int family, int type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno) {
+            return createSocketInternal(cls, family, type, 0);
+        }
+
+        @Specialization(guards = {"isNoValue(fileno)"})
         Object socket(PythonClass cls, int family, int type, int proto, @SuppressWarnings("unused") PNone fileno) {
+            return createSocketInternal(cls, family, type, proto);
+        }
+
+        private Object createSocketInternal(PythonClass cls, int family, int type, int proto) {
             if (getContext().getEnv().isNativeAccessAllowed()) {
                 return factory().createSocket(cls, family, type, proto);
             } else {
