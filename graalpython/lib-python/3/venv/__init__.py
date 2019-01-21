@@ -48,7 +48,7 @@ class EnvBuilder:
         self.with_pip = with_pip
         # Truffle change
         if with_pip:
-            logger.warning("Not install pip on GraalPython")
+            logger.warning("We cannot install pip on Graal Python, yet")
         self.with_pip = False
         # End Truffle change
         self.prompt = prompt
@@ -119,45 +119,37 @@ class EnvBuilder:
         context.python_dir = dirname
         context.python_exe = exename
 
-        # Truffle change: when our executable is not just a file (e.g. we're
-        # running through java), we need to provide a script for launching
-        if hasattr(sys, "executable_list"):
-            # our 'sys.executable' is really a full commandline, so we need a
-            # script to launch it
-            import atexit, tempfile
-            tempdir = tempfile.mkdtemp()
-            script = os.path.join(tempdir, "graalpython")
-            if sys.platform == 'win32':
-                script += ".bat"
+        # Truffle change: our executable may not just be a file (e.g. we're
+        # running through java), we always provide a script for launching in
+        # venv
+        import atexit, tempfile
+        tempdir = tempfile.mkdtemp()
+        script = os.path.join(tempdir, "graalpython")
+        if sys.platform == 'win32':
+            script += ".bat"
 
-            with open(script, "w") as f:
-                if sys.platform != "win32":
-                    f.write("#!/bin/sh\n")
-                for s in sys.executable_list:
-                    if " " in s:
-                        f.write('"')
-                        f.write(s.replace('"', '\\"'))
-                        f.write('" ')
-                    else:
-                        f.write(s)
-                        f.write(" ")
-                if sys.platform == "win32":
-                    f.write("%*")
-                else:
-                    f.write("$@")
-
+        with open(script, "w") as f:
             if sys.platform != "win32":
-                os.chmod(script, 0o777)
+                f.write("#!/bin/sh\n")
+            f.write(sys.executable)
+            if sys.platform == "win32":
+                f.write(" %*")
+            else:
+                f.write(" $@")
 
-            atexit.register(lambda: os.unlink(script))
-            atexit.register(lambda: os.rmdir(tempdir))
+        if sys.platform != "win32":
+            os.chmod(script, 0o777)
 
-            dirname, exename = context.python_dir, context.python_exe = sys.graal_python_home, "graalpython"
-            context.executable = script
+        atexit.register(lambda: os.unlink(script))
+        atexit.register(lambda: os.rmdir(tempdir))
 
-            if self.symlinks:
-                logger.warning("We're not using symlinks on GraalPython")
-            self.symlinks = False
+        dirname = context.python_dir = sys.graal_python_home
+        exename = context.python_exe = "graalpython"
+        context.executable = script
+
+        if self.symlinks:
+            logger.warning("We're not using symlinks in a Graal Python venv")
+        self.symlinks = False
         # End of Truffle change
 
         if sys.platform == 'win32':
@@ -335,7 +327,7 @@ class EnvBuilder:
         # Truffle change: we need to set some extra options for the launcher to work
         text = text.replace(
             '__VENV_GRAAL_PYTHON_OPTIONS__',
-            "--python.CoreHome='%s' --python.StdLibHome='%s' --python.ExecutablePath='%s'" % (
+            "--python.CoreHome='%s' --python.StdLibHome='%s' --python.Executable='%s'" % (
                 sys.graal_python_core_home,
                 sys.graal_python_stdlib_home,
                 context.env_exe,

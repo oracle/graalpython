@@ -45,10 +45,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -60,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -113,43 +110,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "little" : "big");
         builtinConstants.put("copyright", LICENSE);
         builtinConstants.put("dont_write_bytecode", true);
-
-        String executable = PythonOptions.getOption(core.getContext(), PythonOptions.ExecutablePath);
-        if (TruffleOptions.AOT || !core.getContext().isExecutableAccessAllowed()) {
-            // cannot set the path at this time since the binary is not yet known; will be patched
-            // in the context
-            builtinConstants.put("executable", PNone.NONE);
-            builtinConstants.put(SpecialAttributeNames.GRAAL_PYTHON_EXECUTABLE_LIST, PNone.NONE);
-        } else {
-            StringBuilder sb = new StringBuilder();
-            ArrayList<String> exec_list = new ArrayList<>();
-            sb.append(System.getProperty("java.home")).append(PythonCore.FILE_SEPARATOR).append("bin").append(PythonCore.FILE_SEPARATOR).append("java");
-            exec_list.add(sb.toString());
-            sb.append(' ');
-            for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
-                if (arg.matches("-Xrunjdwp:transport=dt_socket,server=y,address=\\d+,suspend=y")) {
-                    arg = arg.replace("suspend=y", "suspend=n");
-                }
-                sb.append(arg).append(' ');
-                exec_list.add(arg);
-            }
-            sb.append("-classpath ");
-            exec_list.add("-classpath");
-            sb.append(System.getProperty("java.class.path")).append(' ');
-            exec_list.add(System.getProperty("java.class.path"));
-            // we really don't care what the main class or its arguments were - this should
-            // always help us launch Graal.Python
-            sb.append("com.oracle.graal.python.shell.GraalPythonMain");
-            exec_list.add("com.oracle.graal.python.shell.GraalPythonMain");
-            builtinConstants.put("executable", sb.toString());
-            builtinConstants.put(SpecialAttributeNames.GRAAL_PYTHON_EXECUTABLE_LIST, core.factory().createList(exec_list.toArray()));
-        }
-
-        String executable = PythonOptions.getOption(core.getContext(), PythonOptions.ExecutablePath);
-        if (!executable.isEmpty() && core.getContext().isExecutableAccessAllowed()) {
-            builtinConstants.put("executable", executable);
-        }
-
         builtinConstants.put("modules", core.factory().createDict());
         builtinConstants.put("path", core.factory().createList());
         builtinConstants.put("builtin_module_names", core.factory().createTuple(core.builtinModuleNames()));

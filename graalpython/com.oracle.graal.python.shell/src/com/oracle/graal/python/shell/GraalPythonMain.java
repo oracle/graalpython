@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.graalvm.launcher.AbstractLanguageLauncher;
+import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.polyglot.Context;
@@ -72,9 +73,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean runLLI = false;
     private VersionAction versionAction = VersionAction.None;
     private String sulongLibraryPath = null;
+    private List<String> givenArguments;
 
     @Override
-    protected List<String> preprocessArguments(List<String> givenArguments, Map<String, String> polyglotOptions) {
+    protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
+        givenArguments = new ArrayList<>(givenArgs);
         ArrayList<String> unrecognized = new ArrayList<>();
         ArrayList<String> inputArgs = new ArrayList<>(getDefaultEnvironmentArgs());
         inputArgs.addAll(givenArguments);
@@ -266,6 +269,43 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         System.out.println(string);
     }
 
+    private static String[] getExecutableList() {
+        if (ImageInfo.inImageCode()) {
+            return new String[]{getExecutable()};
+        } else {
+            StringBuilder sb = new StringBuilder();
+            ArrayList<String> exec_list = new ArrayList<>();
+            sb.append(System.getProperty("java.home")).append(File.separator).append("bin").append(File.separator).append("java");
+            exec_list.add(sb.toString());
+            for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+                if (arg.matches("-Xrunjdwp:transport=dt_socket,server=y,address=\\d+,suspend=y")) {
+                    arg = arg.replace("suspend=y", "suspend=n");
+                }
+                exec_list.add(arg);
+            }
+            exec_list.add("-classpath");
+            exec_list.add(System.getProperty("java.class.path"));
+            exec_list.add(GraalPythonMain.class.getName());
+            return exec_list.toArray(new String[exec_list.size()]);
+        }
+    }
+
+    private static String getExecutable() {
+        if (ImageInfo.inImageRuntimeCode()) {
+            return ProcessProperties.getExecutableName();
+        } else if (ImageInfo.inImageBuildtimeCode()) {
+            return "";
+        } else {
+            // we quote all arguments here, because using sys.executable directly will only work on
+            // a shell, anyways.
+            String[] executableList = getExecutableList();
+            for (int i = 0; i < executableList.length; i++) {
+                executableList[i] = executableList[i].replace("'", "\\'");
+            }
+            return "'" + String.join("' '", executableList) + "'";
+        }
+    }
+
     @Override
     protected void launch(Builder contextBuilder) {
         if (runLLI) {
@@ -289,7 +329,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             noUserSite = noUserSite || System.getenv("PYTHONNOUSERSITE") != null;
             verboseFlag = verboseFlag || System.getenv("PYTHONVERBOSE") != null;
         }
-        sulongLibraryPath = System.getenv("SULONG_LIBRARY_PATH");
+
+        // The unlikely separator is used because options need to be strings. See
+        // PythonOptions.getExecutableList()
+        contextBuilder.option("python.ExecutableList", String.join("🏆", getExecutableList()));
+        setContextOptionIfUnset(contextBuilder, "python.Executable", getExecutable());
 
         // setting this to make sure our TopLevelExceptionHandler calls the excepthook
         // to print Python exceptions
@@ -302,6 +346,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.QuietFlag", Boolean.toString(quietFlag));
         contextBuilder.option("python.NoUserSiteFlag", Boolean.toString(noUserSite));
         contextBuilder.option("python.NoSiteFlag", Boolean.toString(noSite));
+
+        sulongLibraryPath = System.getenv("SULONG_LIBRARY_PATH");
         if (sulongLibraryPath != null) {
             contextBuilder.option("llvm.libraryPath", sulongLibraryPath);
         }
@@ -356,6 +402,12 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             consoleHandler.setContext(null);
         }
         System.exit(rc);
+    }
+
+    private void setContextOptionIfUnset(Builder contextBuilder, String key, String value) {
+        if (!givenArguments.contains("--" + key) && System.getProperty("polyglot." + key) == null) {
+            contextBuilder.option(key, value);
+        }
     }
 
     private static void printFileNotFoundException(NoSuchFileException e) {

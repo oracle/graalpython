@@ -35,6 +35,7 @@ import com.oracle.truffle.api.Option;
 
 @Option.Group(PythonLanguage.ID)
 public final class PythonOptions {
+    private static final String EXECUTABLE_LIST_SEPARATOR = "🏆";
 
     private PythonOptions() {
         // no instances
@@ -128,8 +129,11 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Set by the launcher to the terminal height.") //
     public static final OptionKey<Integer> TerminalHeight = new OptionKey<>(25);
 
-    @Option(category = OptionCategory.EXPERT, help = "The sys.executable path") //
-    public static final OptionKey<String> ExecutablePath = new OptionKey<>("");
+    @Option(category = OptionCategory.EXPERT, help = "The sys.executable path. Set by the launcher, but can may need to be overridden in certain special situations.") //
+    public static final OptionKey<String> Executable = new OptionKey<>("");
+
+    @Option(category = OptionCategory.EXPERT, help = "The executed command list as string joined by the executable list separator char. This must always correspond to the real, valid command list used to run GraalPython.") //
+    public static final OptionKey<String> ExecutableList = new OptionKey<>("");
 
     public static OptionDescriptors createDescriptors() {
         return new PythonOptionsOptionDescriptors();
@@ -189,5 +193,10 @@ public final class PythonOptions {
 
     public static int getTerminalWidth() {
         return getOption(PythonLanguage.getContextRef().get(), TerminalWidth);
+    }
+
+    @TruffleBoundary
+    public static String[] getExecutableList() {
+        return getOption(PythonLanguage.getContextRef().get(), ExecutableList).split(EXECUTABLE_LIST_SEPARATOR);
     }
 }

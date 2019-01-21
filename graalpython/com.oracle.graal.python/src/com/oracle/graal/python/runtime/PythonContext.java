@@ -36,18 +36,14 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PThreadState;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
@@ -238,12 +234,7 @@ public final class PythonContext {
 
     private void setupRuntimeInformation() {
         PythonModule sysModule = core.initializeSysModule();
-        if (ImageInfo.inImageRuntimeCode() && isExecutableAccessAllowed()) {
-            if (sysModule.getAttribute("executable") == PNone.NONE) {
-                sysModule.setAttribute("executable", ProcessProperties.getExecutableName());
-            }
-            sysModule.setAttribute(SpecialAttributeNames.GRAAL_PYTHON_EXECUTABLE_LIST, core.factory().createList(new Object[]{ProcessProperties.getExecutableName()}));
-        }
+        sysModule.setAttribute("executable", PythonOptions.getOption(core.getContext(), PythonOptions.Executable));
         sysModules = (PDict) sysModule.getAttribute("modules");
         builtinsModule = (PythonModule) sysModules.getItem("builtins");
         mainModule = core.factory().createPythonModule(__MAIN__);

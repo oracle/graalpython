@@ -72,7 +72,4 @@ public abstract class SpecialAttributeNames {
     public static final String __DICTOFFSET__ = "__dictoffset__";
     public static final String __ITEMSIZE__ = "__itemsize__";
     public static final String __WEAKREF__ = "__weakref__";
-
-    // GraalPython specific
-    public static final String GRAAL_PYTHON_EXECUTABLE_LIST = "graal_python_executable_list";
 }
