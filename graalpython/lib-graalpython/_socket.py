@@ -49,6 +49,10 @@ SOCK_SEQPACKET = 5
 
 has_ipv6 = False  #: TODO implement me
 error = OSError
+
+class timeout(OSError):
+    pass
+
 __default_timeout = None
 
 def getdefaulttimeout():
