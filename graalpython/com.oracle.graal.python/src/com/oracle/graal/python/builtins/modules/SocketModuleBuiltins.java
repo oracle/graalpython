@@ -70,22 +70,23 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "socket", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 5, keywordArguments = {"family", "type", "proto", "fileno"}, constructsClass = PythonBuiltinClassType.PSocket)
     @GenerateNodeFactory
     public abstract static class SocketNode extends PythonBuiltinNode {
-        @Specialization
-        Object socket(PythonClass cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno) {
+        @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
+        Object socket(PythonClass cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto,
+                        @SuppressWarnings("unused") PNone fileno) {
             return createSocketInternal(cls, PSocket.AF_INET, PSocket.SOCK_STREAM, 0);
         }
 
-        @Specialization
+        @Specialization(guards = {"isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(PythonClass cls, int family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno) {
             return createSocketInternal(cls, family, PSocket.SOCK_STREAM, 0);
         }
 
-        @Specialization
+        @Specialization(guards = {"isNoValue(proto)", "isNoValue(fileno)"})
         Object socket(PythonClass cls, int family, int type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno) {
             return createSocketInternal(cls, family, type, 0);
         }
 
-        @Specialization
+        @Specialization(guards = {"isNoValue(fileno)"})
         Object socket(PythonClass cls, int family, int type, int proto, @SuppressWarnings("unused") PNone fileno) {
             return createSocketInternal(cls, family, type, proto);
         }
