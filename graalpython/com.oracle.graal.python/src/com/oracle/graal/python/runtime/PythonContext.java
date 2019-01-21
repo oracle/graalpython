@@ -27,6 +27,7 @@ package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
+import static com.oracle.graal.python.nodes.BuiltinNames.__DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
@@ -234,9 +235,11 @@ public final class PythonContext {
 
     private void setupRuntimeInformation() {
         PythonModule sysModule = core.initializeSysModule();
-        sysModule.setAttribute("executable", PythonOptions.getOption(core.getContext(), PythonOptions.Executable));
         sysModules = (PDict) sysModule.getAttribute("modules");
+
         builtinsModule = (PythonModule) sysModules.getItem("builtins");
+        builtinsModule.setAttribute(__DEBUG__, !PythonOptions.getOption(PythonLanguage.getContextRef().get(), PythonOptions.PythonOptimizeFlag));
+
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
         mainModule.setDict(core.factory().createDictFixedStorage(mainModule));

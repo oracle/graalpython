@@ -66,6 +66,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -s flag. Don't add user site directory to sys.path.") //
     public static final OptionKey<Boolean> NoUserSiteFlag = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -E flag. Ignore PYTHON* environment variables.") //
+    public static final OptionKey<Boolean> IgnoreEnvironmentFlag = new OptionKey<>(false);
+
     @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONPATH environment variable for the standard launcher. ':'-separated list of directories prefixed to the default module search path.") //
     public static final OptionKey<String> PythonPath = new OptionKey<>("");
 

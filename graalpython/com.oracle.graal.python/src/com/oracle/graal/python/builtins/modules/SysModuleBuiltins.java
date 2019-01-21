@@ -67,7 +67,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -118,25 +117,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("version", PythonLanguage.VERSION +
                         " (" + COMPILE_TIME + ")" +
                         "\n[" + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + "]");
-        builtinConstants.put("flags", core.factory().createTuple(new Object[]{
-                        false, // bytes_warning
-                        false, // debug
-                        true,  // dont_write_bytecode
-                        false, // hash_randomization
-                        false, // ignore_environment
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.InspectFlag), // inspect
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.InspectFlag), // interactive
-                        false, // isolated
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.NoSiteFlag), // no_site
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.NoUserSiteFlag), // no_user_site
-                        false, // optimize
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.QuietFlag), // quiet
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.VerboseFlag), // verbose
-        }));
-        builtinConstants.put("graal_python_home", core.getContext().getLanguage().getHome());
-        builtinConstants.put("graal_python_core_home", PythonOptions.getOption(core.getContext(), PythonOptions.CoreHome));
-        builtinConstants.put("graal_python_stdlib_home", PythonOptions.getOption(core.getContext(), PythonOptions.StdLibHome));
-        builtinConstants.put("graal_python_opaque_filesystem", PythonOptions.getOption(core.getContext(), PythonOptions.OpaqueFilesystem));
         builtinConstants.put("graal_python_is_native", TruffleOptions.AOT);
         // the default values taken from JPython
         builtinConstants.put("float_info", core.factory().createTuple(new Object[]{

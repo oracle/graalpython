@@ -346,6 +346,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.QuietFlag", Boolean.toString(quietFlag));
         contextBuilder.option("python.NoUserSiteFlag", Boolean.toString(noUserSite));
         contextBuilder.option("python.NoSiteFlag", Boolean.toString(noSite));
+        contextBuilder.option("python.IgnoreEnvironmentFlag", Boolean.toString(ignoreEnv));
 
         sulongLibraryPath = System.getenv("SULONG_LIBRARY_PATH");
         if (sulongLibraryPath != null) {
