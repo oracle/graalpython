@@ -875,3 +875,20 @@ int _PyArg_NoKeywords(const char *funcname, PyObject *kw) {
                     funcname);
     return 0;
 }
+
+int
+_PyArg_NoPositional(const char *funcname, PyObject *args)
+{
+    if (args == NULL)
+        return 1;
+    if (!PyTuple_CheckExact(args)) {
+        PyErr_BadInternalCall();
+        return 0;
+    }
+    if (PyTuple_GET_SIZE(args) == 0)
+        return 1;
+
+    PyErr_Format(PyExc_TypeError, "%s does not take positional arguments",
+                    funcname);
+    return 0;
+}
