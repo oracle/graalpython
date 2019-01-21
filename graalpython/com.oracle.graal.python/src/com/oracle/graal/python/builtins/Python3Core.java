@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
@@ -325,6 +326,7 @@ public final class Python3Core implements PythonCore {
                         new ReadlineModuleBuiltins(),
                         new PyExpatModuleBuiltins(),
                         new SysConfigModuleBuiltins(),
+                        new OperatorModuleBuiltins(),
                         new ZipImporterBuiltins(),
                         new ZipImportModuleBuiltins(),
                         new ZLibModuleBuiltins(),
