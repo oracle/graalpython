@@ -47,6 +47,9 @@ SOCK_RAW = 3
 SOCK_RDM = 4
 SOCK_SEQPACKET = 5
 
+IPPROTO_TCP = 6
+TCP_NODELAY = 1
+
 has_ipv6 = False  #: TODO implement me
 error = OSError
 
