@@ -102,14 +102,15 @@ UPCALL_ID(__bool__);
         case 'y': \
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only); \
             if (format[format_idx + 1] == '*') { \
-                void** p = (void**)PyTruffle_ArgN(output_idx); \
+                Py_buffer* p = (Py_buffer*)PyTruffle_ArgN(output_idx); \
                 const char* buf; \
                 format_idx++; /* skip over '*' */ \
-            	if (getbuffer(arg, (Py_buffer*)p, &buf) < 0) { \
+            	if (getbuffer(arg, p, &buf) < 0) { \
             		PyErr_Format(PyExc_TypeError, "expected bytes, got %R", Py_TYPE(arg)); \
             		__return_code__; \
             		return 0; \
             	} \
+                PyTruffle_WriteOut(output_idx, Py_buffer, *p); \
             } else if (arg == Py_None) { \
                 if (c == 'z') { \
                     PyTruffle_WriteOut(output_idx, const char*, NULL); \
