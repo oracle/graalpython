@@ -77,10 +77,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
-        givenArguments = new ArrayList<>(givenArgs);
         ArrayList<String> unrecognized = new ArrayList<>();
         ArrayList<String> inputArgs = new ArrayList<>(getDefaultEnvironmentArgs());
-        inputArgs.addAll(givenArguments);
+        inputArgs.addAll(givenArgs);
+        givenArguments = new ArrayList<>(inputArgs);
         List<String> arguments = new ArrayList<>(inputArgs);
         List<String> subprocessArgs = new ArrayList<>();
         programArgs = new ArrayList<>();
@@ -406,9 +406,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private void setContextOptionIfUnset(Builder contextBuilder, String key, String value) {
-        if (!givenArguments.contains("--" + key) && System.getProperty("polyglot." + key) == null) {
-            contextBuilder.option(key, value);
+        if (System.getProperty("polyglot." + key) != null) {
+            return;
         }
+        for (String f : givenArguments) {
+            if (f.startsWith("--" + key)) {
+                return;
+            }
+        }
+        contextBuilder.option(key, value);
     }
 
     private static void printFileNotFoundException(NoSuchFileException e) {
