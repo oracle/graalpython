@@ -238,7 +238,7 @@ public final class PythonContext {
         sysModules = (PDict) sysModule.getAttribute("modules");
 
         builtinsModule = (PythonModule) sysModules.getItem("builtins");
-        builtinsModule.setAttribute(__DEBUG__, !PythonOptions.getOption(PythonLanguage.getContextRef().get(), PythonOptions.PythonOptimizeFlag));
+        builtinsModule.setAttribute(__DEBUG__, !PythonOptions.getOption(core.getContext(), PythonOptions.PythonOptimizeFlag));
 
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
