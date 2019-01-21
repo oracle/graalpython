@@ -38,6 +38,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.net.JarURLConnection;
 import java.net.URLConnection;
@@ -81,11 +82,24 @@ public class PythonTests {
     private static Engine engine = Engine.newBuilder().out(PythonTests.outStream).err(PythonTests.errStream).build();
     private static Context context = null;
 
+    private static final String executable;
+    static {
+        StringBuilder sb = new StringBuilder();
+        sb.append(System.getProperty("java.home")).append(File.separator).append("bin").append(File.separator).append("java");
+        for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+            sb.append(' ').append(arg);
+        }
+        sb.append(" -classpath ");
+        sb.append(System.getProperty("java.class.path"));
+        sb.append(" com.oracle.graal.python.shell.GraalPythonMain");
+        executable = sb.toString();
+    }
+
     public static void enterContext(String... newArgs) {
         PythonTests.outArray.reset();
         PythonTests.errArray.reset();
         Context prevContext = context;
-        context = Context.newBuilder().engine(engine).allowAllAccess(true).arguments("python", newArgs).build();
+        context = Context.newBuilder().engine(engine).allowAllAccess(true).arguments("python", newArgs).option("python.Executable", executable).build();
         context.initialize("python");
         if (prevContext != null) {
             closeContext(prevContext);

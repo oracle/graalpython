@@ -200,6 +200,11 @@ public final class PythonOptions {
 
     @TruffleBoundary
     public static String[] getExecutableList() {
-        return getOption(PythonLanguage.getContextRef().get(), ExecutableList).split(EXECUTABLE_LIST_SEPARATOR);
+        String option = getOption(PythonLanguage.getContextRef().get(), ExecutableList);
+        if (option.isEmpty()) {
+            return getOption(PythonLanguage.getContextRef().get(), Executable).split(" ");
+        } else {
+            return getOption(PythonLanguage.getContextRef().get(), ExecutableList).split(EXECUTABLE_LIST_SEPARATOR);
+        }
     }
 }
