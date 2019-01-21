@@ -2156,7 +2156,6 @@ public abstract class SequenceStorageNodes {
     public abstract static class RepeatNode extends SequenceStorageBaseNode {
         private static final String ERROR_MSG = "can't multiply sequence by non-int of type '%p'";
 
-        @Child private SetItemScalarNode setItemNode;
         @Child private GetItemScalarNode getItemNode;
         @Child private GetItemScalarNode getRightItemNode;
         @Child private IsIndexNode isIndexNode;
@@ -2174,8 +2173,8 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "times <= 0")
         SequenceStorage doZeroRepeat(SequenceStorage s, @SuppressWarnings("unused") int times,
-                        @Cached("createClassProfile()") ValueProfile storageTypeProfile) {
-            return storageTypeProfile.profile(s).createEmpty(0);
+                        @Cached("create()") CreateEmptyNode createEmptyNode) {
+            return createEmptyNode.execute(s, 0);
         }
 
         @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"times > 0", "!isNative(s)", "s.getClass() == cachedClass"})
@@ -2200,21 +2199,26 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(replaces = "doManaged", guards = "times > 0")
         SequenceStorage doGeneric(SequenceStorage s, int times,
+                        @Cached("create()") CreateEmptyNode createEmptyNode,
                         @Cached("create()") BranchProfile outOfMemProfile,
+                        @Cached("create()") SetItemScalarNode setItemNode,
+                        @Cached("create()") GetItemScalarNode getDestItemNode,
                         @Cached("create()") LenNode lenNode) {
             try {
                 int len = lenNode.execute(s);
+                SequenceStorage repeated = createEmptyNode.execute(s, Math.multiplyExact(len, times));
 
-                ObjectSequenceStorage repeated = new ObjectSequenceStorage(Math.multiplyExact(len, times));
-
-                // TODO avoid temporary array
-                Object[] values = new Object[len];
                 for (int i = 0; i < len; i++) {
-                    values[i] = getGetItemNode().execute(s, i);
+                    setItemNode.execute(repeated, i, getGetItemNode().execute(s, i));
                 }
 
-                Object destArr = repeated.getInternalArrayObject();
-                repeat(destArr, values, len, times);
+                // read from destination since that is potentially faster
+                for (int j = 1; j < times; j++) {
+                    for (int i = 0; i < len; i++) {
+                        setItemNode.execute(repeated, j * len + i, getDestItemNode.execute(repeated, i));
+                    }
+                }
+
                 return repeated;
             } catch (OutOfMemoryError | ArithmeticException e) {
                 outOfMemProfile.enter();

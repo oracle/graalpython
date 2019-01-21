@@ -668,6 +668,7 @@ def import_python_sources(args):
         "_memoryview.c": "memoryobject.c",
         "_cpython_sre.c": "_sre.c",
         "_cpython_unicodedata.c": "unicodedata.c",
+        "_bz2.c": "_bz2module.c",
     }
 
     parser = ArgumentParser(prog='mx python-src-import')
