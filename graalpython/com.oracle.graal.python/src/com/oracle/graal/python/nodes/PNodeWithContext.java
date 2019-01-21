@@ -71,7 +71,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class PNodeWithContext extends Node {
     @Child private PythonObjectFactory factory;
     @Child private WriteAttributeToObjectNode writeCause;
-    @Child private LookupAttributeInMRONode getNewFuncNode;
     @Child private CallVarargsMethodNode callNode;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
@@ -151,7 +150,7 @@ public abstract class PNodeWithContext extends Node {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callNode = insert(CallVarargsMethodNode.create());
         }
-        PBaseException error = (PBaseException) callNode.execute(frame, getBuiltinPythonClass(PythonBuiltinClassType.OSError), args, new PKeyword[]{});
+        PBaseException error = (PBaseException) callNode.execute(frame, getBuiltinPythonClass(PythonBuiltinClassType.OSError), args, PKeyword.EMPTY_KEYWORDS);
         return raise(error);
     }
 
