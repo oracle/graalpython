@@ -280,7 +280,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             }
             if (compileNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                compileNode = insert(CompileNode.create());
+                compileNode = insert(CompileNode.create(false));
             }
             ModuleCodeData md = self.getModuleCode(fullname);
             if (canNotFind.profile(md == null)) {
