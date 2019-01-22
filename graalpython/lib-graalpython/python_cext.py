@@ -789,10 +789,10 @@ def PyMethod_New(func, self):
     return bound_function
 
 
-def AddMember(primary, name, memberType, offset, canSet, doc):
+def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
     # the ReadMemberFunctions and WriteMemberFunctions don't have a wrapper to
     # convert arguments to Sulong, so we can avoid boxing the offsets into PInts
-    pclass = primary
+    pclass = to_java_type(primary)
     member = property()
     getter = ReadMemberFunctions[memberType]
     def member_getter(self):
@@ -804,7 +804,8 @@ def AddMember(primary, name, memberType, offset, canSet, doc):
             setter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8), to_sulong(value))
         member.setter(member_setter)
     member.__doc__ = doc
-    object.__setattr__(pclass, name, member)
+    type_dict = to_java(tpDict)
+    type_dict[name] = member
 
 
 getset_descriptor = type(type(AddMember).__code__)
