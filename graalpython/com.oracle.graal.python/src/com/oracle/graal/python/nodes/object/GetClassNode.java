@@ -207,7 +207,7 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @Specialization
-    protected static PythonNativeClass getIt(PythonNativeClass object,
+    protected static AbstractPythonClass getIt(PythonNativeClass object,
                     @Cached("create()") GetNativeClassNode getNativeClassNode) {
         return getNativeClassNode.execute(object);
     }

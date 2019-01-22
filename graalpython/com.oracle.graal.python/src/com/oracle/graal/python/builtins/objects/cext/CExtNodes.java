@@ -905,13 +905,13 @@ public abstract class CExtNodes {
         }
 
         @TruffleBoundary
-        public static PythonNativeClass doSlowPath(PythonNativeObject object) {
-            return (PythonNativeClass) AsPythonObjectNode.doSlowPath(PCallCapiFunction.doSlowPath(NativeCAPISymbols.FUN_GET_OB_TYPE, object.object), true);
+        public static AbstractPythonClass doSlowPath(PythonNativeObject object) {
+            return (AbstractPythonClass) AsPythonObjectNode.doSlowPath(PCallCapiFunction.doSlowPath(NativeCAPISymbols.FUN_GET_OB_TYPE, object.object), true);
         }
 
         @TruffleBoundary
-        public static PythonNativeClass doSlowPath(PythonNativeClass object) {
-            return (PythonNativeClass) AsPythonObjectNode.doSlowPath(PCallCapiFunction.doSlowPath(NativeCAPISymbols.FUN_GET_OB_TYPE, object.getPtr()), true);
+        public static AbstractPythonClass doSlowPath(PythonNativeClass object) {
+            return (AbstractPythonClass) AsPythonObjectNode.doSlowPath(PCallCapiFunction.doSlowPath(NativeCAPISymbols.FUN_GET_OB_TYPE, object.getPtr()), true);
         }
 
         private AsPythonObjectNode getToJavaNode() {

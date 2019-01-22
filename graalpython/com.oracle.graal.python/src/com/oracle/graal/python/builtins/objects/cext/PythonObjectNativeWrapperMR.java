@@ -1249,8 +1249,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         protected static boolean isManagedPythonClass(PythonClassNativeWrapper wrapper) {
-            assert wrapper.getDelegate() instanceof PythonClass;
-            return !(wrapper.getDelegate() instanceof PythonNativeClass);
+            return !PGuards.isNativeClass(wrapper.getDelegate());
         }
 
         private Object callUnaryIntoCapi(TruffleObject fun, Object arg) {

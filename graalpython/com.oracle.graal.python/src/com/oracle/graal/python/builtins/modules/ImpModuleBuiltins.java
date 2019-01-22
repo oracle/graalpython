@@ -204,7 +204,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // restore previous exception state
                 getContext().setCaughtException(exceptionState);
 
-                Object result = AsPythonObjectNode.doSlowPath(nativeResult);
+                Object result = AsPythonObjectNode.doSlowPath(nativeResult, false);
                 if (!(result instanceof PythonModule)) {
                     // PyModuleDef_Init(pyModuleDef)
                     // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);

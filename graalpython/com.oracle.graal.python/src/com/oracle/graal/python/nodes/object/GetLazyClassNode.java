@@ -142,13 +142,13 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
     }
 
     @Specialization
-    protected static PythonNativeClass getIt(PythonNativeObject object,
+    protected static LazyPythonClass getIt(PythonNativeObject object,
                     @Cached("create()") GetNativeClassNode getNativeClassNode) {
         return getNativeClassNode.execute(object);
     }
 
     @Specialization
-    protected static PythonNativeClass getIt(PythonNativeClass object,
+    protected static LazyPythonClass getIt(PythonNativeClass object,
                     @Cached("create()") GetNativeClassNode getNativeClassNode) {
         return getNativeClassNode.execute(object);
     }
