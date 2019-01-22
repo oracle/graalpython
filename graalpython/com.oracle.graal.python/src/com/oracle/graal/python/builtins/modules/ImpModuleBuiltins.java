@@ -274,15 +274,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private PException reportImportError(RuntimeException e, String path) {
             StringBuilder sb = new StringBuilder();
+            Object pythonCause = PNone.NONE;
             if (e instanceof PException) {
                 PBaseException excObj = ((PException) e).getExceptionObject();
+                pythonCause = excObj;
                 sb.append(callReprNode.executeObject(excObj));
             } else {
                 // that call will cause problems if the format string contains '%p'
                 sb.append(e.getMessage());
             }
             Throwable cause = e;
-            Object pythonCause = PNone.NONE;
             while ((cause = cause.getCause()) != null) {
                 if (e instanceof PException) {
                     if (pythonCause != PNone.NONE) {

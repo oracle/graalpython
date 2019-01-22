@@ -782,12 +782,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 if (!errOccurred) {
                     throw raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
                 } else {
+                    currentException.getExceptionObject().reifyException();
                     throw currentException;
                 }
             } else if (errOccurred) {
                 // consume exception
                 context.setCurrentException(null);
                 PBaseException sysExc = factory().createBaseException(PythonErrorType.SystemError, "%s returned a result with an error set", new Object[]{name});
+                currentException.getExceptionObject().reifyException();
                 sysExc.setAttribute(SpecialAttributeNames.__CAUSE__, currentException.getExceptionObject());
                 throw PException.fromObject(sysExc, this);
             }

@@ -1501,6 +1501,7 @@ public abstract class CExtNodes {
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
+                e.getExceptionObject().reifyException();
                 return errorResult;
             }
         }
@@ -1526,6 +1527,7 @@ public abstract class CExtNodes {
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
+                e.getExceptionObject().reifyException();
                 return errorResult;
             }
         }
@@ -1551,6 +1553,7 @@ public abstract class CExtNodes {
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
+                e.getExceptionObject().reifyException();
                 return errorResult;
             }
         }
@@ -1580,6 +1583,7 @@ public abstract class CExtNodes {
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
+                e.getExceptionObject().reifyException();
                 return errorResult;
             }
         }
