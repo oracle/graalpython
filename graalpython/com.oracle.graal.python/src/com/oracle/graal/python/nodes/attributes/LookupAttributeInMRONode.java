@@ -216,6 +216,13 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return lookupSlow(klass, key, getMroNode, readAttrNode);
     }
 
+    @Specialization
+    protected Object lookup(PythonNativeClass klass,
+                    @Cached("create()") GetMroNode getMroNode,
+                    @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
+        return lookupSlow(klass, key, getMroNode, readAttrNode);
+    }
+
     protected AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
         if (getMroNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -224,8 +231,8 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return getMroNode.execute(clazz);
     }
 
-    protected static Object lookupSlow(ManagedPythonClass klass, Object key, GetMroNode getMroNode, ReadAttributeFromObjectNode readAttrNode) {
-        AbstractPythonClass[] mro = getMroNode.doSlowPath(klass);
+    protected static Object lookupSlow(AbstractPythonClass klass, Object key, GetMroNode getMroNode, ReadAttributeFromObjectNode readAttrNode) {
+        AbstractPythonClass[] mro = getMroNode.execute(klass);
         for (int i = 0; i < mro.length; i++) {
             AbstractPythonClass kls = mro[i];
             Object value = readAttrNode.execute(kls, key);

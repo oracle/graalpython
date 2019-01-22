@@ -51,6 +51,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
@@ -3125,6 +3126,15 @@ public abstract class SequenceStorageNodes {
 
         public static ToArrayNode create(boolean exact) {
             return ToArrayNodeGen.create(exact);
+        }
+
+        @TruffleBoundary
+        public static Object[] doSlowPath(SequenceStorage s) {
+            if (s instanceof BasicSequenceStorage) {
+                return s.getInternalArray();
+            }
+            // TODO implement remaining cases
+            throw PythonLanguage.getCore().raise(TypeError, "unsupported sequence type");
         }
     }
 

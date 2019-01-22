@@ -264,9 +264,19 @@ PyObject* get_tp_dict(PyTypeObject* obj) {
 	return native_to_java(obj->tp_dict);
 }
 
-/** to be used from Java code only; reads native 'tp_dict' field */
+/** to be used from Java code only; reads native 'tp_bases' field */
 PyObject* get_tp_bases(PyTypeObject* obj) {
 	return native_to_java(obj->tp_bases);
+}
+
+/** to be used from Java code only; reads native 'tp_name' field */
+PyObject* get_tp_name(PyTypeObject* obj) {
+	return polyglot_from_string(obj->tp_name, SRC_CS);
+}
+
+/** to be used from Java code only; reads native 'tp_mro' field */
+PyObject* get_tp_mro(PyTypeObject* obj) {
+	return native_to_java(obj->tp_mro);
 }
 
 /** to be used from Java code only; returns the type ID for a byte array */

@@ -541,7 +541,7 @@ public abstract class CExtNodes {
                     return PythonLanguage.getCore().factory().createNativeClassWrapper(object);
                 }
                 return PythonLanguage.getCore().factory().createNativeObjectWrapper((TruffleObject) object);
-            } else if (object instanceof Number || object instanceof Boolean) {
+            } else if (object instanceof String || object instanceof Number || object instanceof Boolean || object instanceof PythonNativeNull || object instanceof PythonAbstractObject) {
                 return object;
             }
             throw PythonLanguage.getCore().raise(PythonErrorType.SystemError, "invalid object from native: %s", object);
@@ -561,6 +561,10 @@ public abstract class CExtNodes {
 
         static AsPythonObjectNode create(boolean forceNativeClass) {
             return AsPythonObjectNodeGen.create(forceNativeClass);
+        }
+
+        public static AsPythonObjectNode createForceClass() {
+            return AsPythonObjectNodeGen.create(true);
         }
     }
 
@@ -917,7 +921,7 @@ public abstract class CExtNodes {
         private AsPythonObjectNode getToJavaNode() {
             if (toJavaNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toJavaNode = insert(AsPythonObjectNode.create(true));
+                toJavaNode = insert(AsPythonObjectNode.createForceClass());
             }
             return toJavaNode;
         }

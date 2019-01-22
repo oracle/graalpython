@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -343,12 +344,17 @@ public class TypeBuiltins extends PythonBuiltins {
             throw raise(AttributeError, "type object '%s' has no attribute %s", getTypeName(object), key);
         }
 
-        private Object readAttribute(Object object, Object key) {
+        @Specialization
+        protected Object doIt(PythonNativeObject object, Object key) {
+            return doIt(new PythonNativeClass(object.object), key);
+        }
+
+        private Object readAttribute(LazyPythonClass object, Object key) {
             if (lookupAsClass == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupAsClass = insert(LookupAttributeInMRONode.Dynamic.create());
             }
-            return lookupAsClass.execute((LazyPythonClass) object, key);
+            return lookupAsClass.execute(object, key);
         }
 
         private Object lookupDelete(LazyPythonClass dataDescClass) {

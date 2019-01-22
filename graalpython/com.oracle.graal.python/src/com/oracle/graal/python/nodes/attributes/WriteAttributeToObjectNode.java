@@ -42,6 +42,9 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -63,7 +66,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@ImportStatic(PythonOptions.class)
+@ImportStatic({PythonOptions.class, NativeMemberNames.class})
 public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     private final ConditionProfile isClassProfile = ConditionProfile.createBinaryProfile();
@@ -162,12 +165,22 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return true;
     }
 
-    @Specialization(guards = {
-                    "!isHiddenKey(key)",
-                    "!isPythonObject(object)"
-    })
-    protected boolean readNative(PythonNativeObject object, Object key, Object value,
+    @Specialization(guards = "!isHiddenKey(key)")
+    protected boolean writeNative(PythonNativeObject object, Object key, Object value,
                     @Cached("create()") GetObjectDictNode getNativeDict,
+                    @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
+        Object d = getNativeDict.execute(object);
+        if (d instanceof PHashingCollection) {
+            setItemNode.execute(((PHashingCollection) d), key, value);
+            return true;
+        } else {
+            return raise(object, key, value);
+        }
+    }
+
+    @Specialization(guards = "!isHiddenKey(key)")
+    protected boolean writeNativeClass(PythonNativeClass object, Object key, Object value,
+                    @Cached("create(TP_DICT)") GetTypeMemberNode getNativeDict,
                     @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
         Object d = getNativeDict.execute(object);
         if (d instanceof PHashingCollection) {

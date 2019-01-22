@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -50,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass.FlagsContainer;
@@ -64,6 +67,9 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameType
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -152,6 +158,7 @@ public abstract class TypeNodes {
         }
     }
 
+    @ImportStatic(NativeMemberNames.class)
     public abstract static class GetMroNode extends PNodeWithContext {
 
         public abstract AbstractPythonClass[] execute(Object obj);
@@ -166,6 +173,19 @@ public abstract class TypeNodes {
             return getBuiltinPythonClass(obj).getMethodResolutionOrder();
         }
 
+        @Specialization
+        AbstractPythonClass[] doNativeClass(PythonNativeClass obj,
+                        @Cached("create(TP_MRO)") GetTypeMemberNode getTpMroNode) {
+            Object tupleObj = getTpMroNode.execute(obj);
+            if (tupleObj instanceof PTuple) {
+                SequenceStorage sequenceStorage = ((PTuple) tupleObj).getSequenceStorage();
+                if (sequenceStorage instanceof MroSequenceStorage) {
+                    return ((MroSequenceStorage) sequenceStorage).getInternalClassArray();
+                }
+            }
+            throw raise(PythonBuiltinClassType.SystemError, "invalid mro object");
+        }
+
         @TruffleBoundary
         public static AbstractPythonClass[] doSlowPath(Object obj) {
             if (obj instanceof ManagedPythonClass) {
@@ -173,7 +193,14 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
             } else if (obj instanceof PythonNativeClass) {
-                // TODO implement
+                Object tupleObj = GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_MRO);
+                if (tupleObj instanceof PTuple) {
+                    SequenceStorage sequenceStorage = ((PTuple) tupleObj).getSequenceStorage();
+                    if (sequenceStorage instanceof MroSequenceStorage) {
+                        return ((MroSequenceStorage) sequenceStorage).getInternalClassArray();
+                    }
+                }
+                throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, "invalid mro object");
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -183,18 +210,25 @@ public abstract class TypeNodes {
         }
     }
 
+    @ImportStatic(NativeMemberNames.class)
     public abstract static class GetNameNode extends PNodeWithContext {
 
         public abstract String execute(Object obj);
 
         @Specialization
-        String doPythonClass(ManagedPythonClass obj) {
+        String doManagedClass(ManagedPythonClass obj) {
             return obj.getName();
         }
 
         @Specialization
-        String doPythonClass(PythonBuiltinClassType obj) {
+        String doBuiltinClassType(PythonBuiltinClassType obj) {
             return obj.getName();
+        }
+
+        @Specialization
+        String doNativeClass(PythonNativeClass obj,
+                        @Cached("create(TP_NAME)") CExtNodes.GetTypeMemberNode getTpNameNode) {
+            return (String) getTpNameNode.execute(obj);
         }
 
         @TruffleBoundary
@@ -208,7 +242,7 @@ public abstract class TypeNodes {
                 }
                 return ((PythonBuiltinClassType) obj).getName();
             } else if (obj instanceof PythonNativeClass) {
-                // TODO implement
+                return (String) CExtNodes.GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_NAME);
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -308,7 +342,7 @@ public abstract class TypeNodes {
             if (result instanceof PTuple) {
                 Object[] values = toArrayNode.execute(((PTuple) result).getSequenceStorage());
                 try {
-                    return (AbstractPythonClass[]) values;
+                    return cast(values);
                 } catch (ClassCastException e) {
                     throw raise(PythonBuiltinClassType.SystemError, "unsupported object in 'tp_bases'");
                 }
@@ -323,8 +357,16 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getBaseClasses();
             } else if (obj instanceof PythonNativeClass) {
-                // TODO implement
-                throw new UnsupportedOperationException("not yet implemented");
+                Object basesObj = GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_BASES);
+                if (!(basesObj instanceof PTuple)) {
+                    throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, "invalid type of tp_bases (was %p)", basesObj);
+                }
+                PTuple basesTuple = (PTuple) basesObj;
+                try {
+                    return cast(SequenceStorageNodes.ToArrayNode.doSlowPath(basesTuple.getSequenceStorage()));
+                } catch (ClassCastException e) {
+                    throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, "unsupported object in 'tp_bases' (msg: %s)", e.getMessage());
+                }
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -335,6 +377,15 @@ public abstract class TypeNodes {
 
         public static GetBaseClassesNode create() {
             return GetBaseClassesNodeGen.create();
+        }
+
+        // TODO: get rid of this
+        private static AbstractPythonClass[] cast(Object[] arr) {
+            AbstractPythonClass[] bases = new AbstractPythonClass[arr.length];
+            for (int i = 0; i < arr.length; i++) {
+                bases[i] = (AbstractPythonClass) arr[i];
+            }
+            return bases;
         }
 
     }
@@ -355,6 +406,12 @@ public abstract class TypeNodes {
             return pointerCompareNode.execute(left, right);
         }
 
+        @Specialization
+        boolean doNative(PythonNativeObject left, PythonNativeObject right,
+                        @Cached("create(__EQ__)") CExtNodes.PointerCompareNode pointerCompareNode) {
+            return pointerCompareNode.execute(left, right);
+        }
+
         @Fallback
         boolean doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
             return false;
@@ -366,6 +423,8 @@ public abstract class TypeNodes {
                 return left == right;
             } else if (left instanceof PythonNativeClass && right instanceof PythonNativeClass) {
                 return CExtNodes.PointerCompareNode.create(__EQ__).execute((PythonNativeClass) left, (PythonNativeClass) right);
+            } else if (left instanceof PythonNativeObject && right instanceof PythonNativeObject) {
+                return CExtNodes.PointerCompareNode.create(__EQ__).execute((PythonNativeObject) left, (PythonNativeObject) right);
             }
             return false;
         }
@@ -411,6 +470,91 @@ public abstract class TypeNodes {
 
         public static GetSulongTypeNode create() {
             return GetSulongTypeNodeGen.create();
+        }
+
+    }
+
+    public abstract static class ComputeMroNode extends Node {
+
+        @TruffleBoundary
+        public static AbstractPythonClass[] doSlowPath(AbstractPythonClass cls) {
+            return computeMethodResolutionOrder(cls);
+        }
+
+        private static AbstractPythonClass[] computeMethodResolutionOrder(AbstractPythonClass cls) {
+            CompilerAsserts.neverPartOfCompilation();
+
+            AbstractPythonClass[] currentMRO = null;
+
+            AbstractPythonClass[] baseClasses = GetBaseClassesNode.doSlowPath(cls);
+            if (baseClasses.length == 0) {
+                currentMRO = new AbstractPythonClass[]{cls};
+            } else if (baseClasses.length == 1) {
+                AbstractPythonClass[] baseMRO = GetMroNode.doSlowPath(baseClasses[0]);
+
+                if (baseMRO == null) {
+                    currentMRO = new AbstractPythonClass[]{cls};
+                } else {
+                    currentMRO = new AbstractPythonClass[baseMRO.length + 1];
+                    System.arraycopy(baseMRO, 0, currentMRO, 1, baseMRO.length);
+                    currentMRO[0] = cls;
+                }
+            } else {
+                MROMergeState[] toMerge = new MROMergeState[baseClasses.length + 1];
+
+                for (int i = 0; i < baseClasses.length; i++) {
+                    toMerge[i] = new MROMergeState();
+                    toMerge[i].mro = GetMroNode.doSlowPath(baseClasses[i]);
+                }
+
+                toMerge[baseClasses.length] = new MROMergeState();
+                toMerge[baseClasses.length].mro = baseClasses;
+                ArrayList<AbstractPythonClass> mro = new ArrayList<>();
+                mro.add(cls);
+                currentMRO = mergeMROs(toMerge, mro);
+            }
+
+// for (AbstractPythonClass c : currentMRO) {
+// if (c instanceof PythonNativeClass) {
+// needsNativeAllocation = true;
+// break;
+// }
+// }
+
+            return currentMRO;
+        }
+
+        private static AbstractPythonClass[] mergeMROs(MROMergeState[] toMerge, List<AbstractPythonClass> mro) {
+            int idx;
+            scan: for (idx = 0; idx < toMerge.length; idx++) {
+                if (toMerge[idx].isMerged()) {
+                    continue scan;
+                }
+
+                AbstractPythonClass candidate = toMerge[idx].getCandidate();
+                for (MROMergeState mergee : toMerge) {
+                    if (mergee.pastnextContains(candidate)) {
+                        continue scan;
+                    }
+                }
+
+                mro.add(candidate);
+
+                for (MROMergeState element : toMerge) {
+                    element.noteMerged(candidate);
+                }
+
+                // restart scan
+                idx = -1;
+            }
+
+            for (MROMergeState mergee : toMerge) {
+                if (!mergee.isMerged()) {
+                    throw new IllegalStateException();
+                }
+            }
+
+            return mro.toArray(new AbstractPythonClass[mro.size()]);
         }
 
     }

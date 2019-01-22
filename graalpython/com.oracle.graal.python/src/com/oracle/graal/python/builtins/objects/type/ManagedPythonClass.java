@@ -15,10 +15,10 @@ import java.util.WeakHashMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.ComputeMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -67,7 +67,8 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
         this.lookupStableAssumption = new CyclicAssumption(className);
 
         // Compute MRO
-        computeMethodResolutionOrder();
+        this.methodResolutionOrder = ComputeMroNode.doSlowPath(this);
+        computeNeedsNativeAllocation();
 
         setAttribute(__NAME__, getBaseName(name));
         setAttribute(__QUALNAME__, className);
@@ -157,79 +158,14 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
         return className;
     }
 
-    private void computeMethodResolutionOrder() {
-        CompilerAsserts.neverPartOfCompilation();
-
-        AbstractPythonClass[] currentMRO = null;
-
-        if (getBaseClasses().length == 0) {
-            currentMRO = new AbstractPythonClass[]{this};
-        } else if (getBaseClasses().length == 1) {
-            AbstractPythonClass[] baseMRO = GetMroNode.doSlowPath(getBaseClasses()[0]);
-
-            if (baseMRO == null) {
-                currentMRO = new AbstractPythonClass[]{this};
-            } else {
-                currentMRO = new AbstractPythonClass[baseMRO.length + 1];
-                System.arraycopy(baseMRO, 0, currentMRO, 1, baseMRO.length);
-                currentMRO[0] = this;
-            }
-        } else {
-            MROMergeState[] toMerge = new MROMergeState[getBaseClasses().length + 1];
-
-            for (int i = 0; i < getBaseClasses().length; i++) {
-                toMerge[i] = new MROMergeState();
-                toMerge[i].mro = GetMroNode.doSlowPath(getBaseClasses()[i]);
-            }
-
-            toMerge[getBaseClasses().length] = new MROMergeState();
-            toMerge[getBaseClasses().length].mro = getBaseClasses();
-            ArrayList<AbstractPythonClass> mro = new ArrayList<>();
-            mro.add(this);
-            currentMRO = mergeMROs(toMerge, mro);
-        }
-
-        for (AbstractPythonClass cls : currentMRO) {
-            if (cls instanceof PythonNativeClass) {
+    private void computeNeedsNativeAllocation() {
+        for (AbstractPythonClass cls : getMethodResolutionOrder()) {
+            if (PGuards.isNativeClass(cls)) {
                 needsNativeAllocation = true;
-                break;
+                return;
             }
         }
-
-        methodResolutionOrder = currentMRO;
-    }
-
-    AbstractPythonClass[] mergeMROs(MROMergeState[] toMerge, List<AbstractPythonClass> mro) {
-        int idx;
-        scan: for (idx = 0; idx < toMerge.length; idx++) {
-            if (toMerge[idx].isMerged()) {
-                continue scan;
-            }
-
-            AbstractPythonClass candidate = toMerge[idx].getCandidate();
-            for (MROMergeState mergee : toMerge) {
-                if (mergee.pastnextContains(candidate)) {
-                    continue scan;
-                }
-            }
-
-            mro.add(candidate);
-
-            for (MROMergeState element : toMerge) {
-                element.noteMerged(candidate);
-            }
-
-            // restart scan
-            idx = -1;
-        }
-
-        for (MROMergeState mergee : toMerge) {
-            if (!mergee.isMerged()) {
-                throw new IllegalStateException();
-            }
-        }
-
-        return mro.toArray(new AbstractPythonClass[mro.size()]);
+        needsNativeAllocation = false;
     }
 
     @Override
@@ -258,7 +194,7 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
                 GetSubclassesNode.doSlowPath(base).add(this);
             }
         }
-        computeMethodResolutionOrder();
+        this.methodResolutionOrder = ComputeMroNode.doSlowPath(this);
     }
 
     final Set<AbstractPythonClass> getSubClasses() {

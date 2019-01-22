@@ -183,7 +183,14 @@ UPCALL_ID(AddMember);
 
 
 UPCALL_ID(PyTruffle_Type_Slots);
+UPCALL_ID(PyTruffle_Compute_Mro);
 int PyType_Ready(PyTypeObject* cls) {
+#define RETURN_ERROR(__type__) \
+	do { \
+      	(__type__)->tp_flags &= ~Py_TPFLAGS_READYING; \
+        return -1; \
+	} while(0)
+
 #define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
 #define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, get_method_flags_cwrapper(m.ml_flags), m.ml_meth, m.ml_flags, m.ml_doc)
 #define ADD_SLOT(name, meth, flags) ADD_METHOD_OR_SLOT(name, get_method_flags_cwrapper(flags), meth, flags, name)
@@ -192,7 +199,8 @@ int PyType_Ready(PyTypeObject* cls) {
     if (meth) {                                                                             \
         polyglot_invoke(PY_TRUFFLE_CEXT,                                                    \
                        "AddFunction",                                                       \
-                       cls,                                                             \
+                       cls,                                                                 \
+                       native_to_java(dict),                                                \
                        polyglot_from_string((name), SRC_CS),                                \
                        (meth),                                                              \
                        (clanding),                                                          \
@@ -227,8 +235,7 @@ int PyType_Ready(PyTypeObject* cls) {
     /* Initialize the base class */
     if (base != NULL && !(base->tp_flags % Py_TPFLAGS_READY)) {
         if (PyType_Ready(base) < 0) {
-        	cls->tp_flags &= ~Py_TPFLAGS_READYING;
-        	return -1;
+        	RETURN_ERROR(cls);
         }
     }
 
@@ -260,6 +267,17 @@ int PyType_Ready(PyTypeObject* cls) {
     PyDict_SetItemString(native_members, "tp_itemsize", PyLong_FromSsize_t(cls->tp_itemsize));
     PyDict_SetItemString(native_members, "tp_dictoffset", PyLong_FromSsize_t(cls->tp_dictoffset));
     const char* class_name = cls->tp_name;
+
+    /* Initialize tp_dict */
+    PyObject* dict = cls->tp_dict;
+    if (dict == NULL) {
+        dict = PyDict_New();
+        if (dict == NULL) {
+        	RETURN_ERROR(cls);
+        }
+        cls->tp_dict = dict;
+    }
+
 
     PyMethodDef* methods = cls->tp_methods;
     if (methods) {
@@ -293,7 +311,6 @@ int PyType_Ready(PyTypeObject* cls) {
             setter setter_fun = getset.set;
             polyglot_invoke(PY_TRUFFLE_CEXT,
                             "AddGetSet",
-                            // TODO(fa): there should actually be 'native_to_java' just in case 'javacls' goes to native in between
                             cls,
                             polyglot_from_string(getset.name, SRC_CS),
                             getter_fun != NULL ? (getter)getter_fun : native_to_java(Py_None),
@@ -307,6 +324,9 @@ int PyType_Ready(PyTypeObject* cls) {
             getset = getsets[++i];
         }
     }
+
+    // initialize mro
+    cls->tp_mro = UPCALL_CEXT_O(_jls_PyTruffle_Compute_Mro, cls);
 
     ADD_IF_MISSING(cls->tp_alloc, PyType_GenericAlloc);
     ADD_IF_MISSING(cls->tp_new, PyType_GenericNew);
@@ -444,8 +464,7 @@ int PyType_Ready(PyTypeObject* cls) {
         PyObject* base_class_object = PyTuple_GetItem(bases, i);
         PyTypeObject* b = (PyTypeObject*) base_class_object;
         if (PyType_Check(b) && add_subclass(b, cls) < 0) {
-        	cls->tp_flags &= ~Py_TPFLAGS_READYING;
-        	return -1;
+        	RETURN_ERROR(cls);
         }
     }
 

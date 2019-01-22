@@ -126,6 +126,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -161,6 +162,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -213,8 +215,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     }
 
     /**
-     * Called mostly from our C code to convert arguments into a wrapped representation for
-     * consumption in Java.
+     * Called mostly from Python code to convert arguments into a wrapped representation for
+     * consumption in Python or Java.
      */
     @Builtin(name = "to_java", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
@@ -222,6 +224,16 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object run(Object object,
                         @Cached("create()") CExtNodes.AsPythonObjectNode toJavaNode) {
+            return toJavaNode.execute(object);
+        }
+    }
+
+    @Builtin(name = "to_java_type", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class AsPythonClassNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object run(Object object,
+                        @Cached("createForceClass()") CExtNodes.AsPythonObjectNode toJavaNode) {
             return toJavaNode.execute(object);
         }
     }
@@ -529,6 +541,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             object.getStorage().define(key, value);
             return PNone.NONE;
         }
+
+        @Specialization
+        Object setattr(PythonNativeClass object, String key, Object value,
+                        @Cached("create()") WriteAttributeToObjectNode writeAttrNode) {
+            writeAttrNode.execute(object, key, value);
+            return PNone.NONE;
+        }
     }
 
     @Builtin(name = "PyType_Ready", fixedNumOfPositionalArgs = 4)
@@ -768,7 +787,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             } else if (errOccurred) {
                 // consume exception
                 context.setCurrentException(null);
-                throw raise(PythonErrorType.SystemError, "%s returned a result with an error set", name);
+                PBaseException sysExc = factory().createBaseException(PythonErrorType.SystemError, "%s returned a result with an error set", new Object[]{name});
+                sysExc.setAttribute(SpecialAttributeNames.__CAUSE__, currentException.getExceptionObject());
+                throw PException.fromObject(sysExc, this);
             }
         }
 
@@ -2436,5 +2457,16 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return NativeBuiltin.raiseNative(this, -1, SystemError, "expected a set object, not %p", self);
         }
 
+    }
+
+    @Builtin(name = "PyTruffle_Compute_Mro", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyTruffle_Compute_Mro extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object doIt(PythonNativeObject self) {
+            AbstractPythonClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(PythonNativeClass.cast(self));
+            return factory().createTuple(new MroSequenceStorage(doSlowPath));
+        }
     }
 }

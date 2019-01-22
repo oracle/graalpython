@@ -77,4 +77,8 @@ public final class PythonNativeClass extends PythonAbstractObject implements Abs
         CompilerDirectives.transferToInterpreter();
         throw new UnsupportedOperationException("not yet implemented");
     }
+
+    public static PythonNativeClass cast(PythonNativeObject object) {
+        return new PythonNativeClass(object.object);
+    }
 }

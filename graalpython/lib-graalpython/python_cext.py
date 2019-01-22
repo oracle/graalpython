@@ -748,8 +748,9 @@ class cstaticmethod():
         return self.__func__(None, *args, **kwargs)
 
 
-def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
-    owner = to_java(primary)
+def AddFunction(primary, tpDict, name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
+    owner = to_java_type(primary)
+    type_dict = to_java(tpDict)
     if isinstance(owner, moduletype):
         # module case, we create the bound function-or-method
         func = PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, owner, owner.__name__, doc)
@@ -766,9 +767,9 @@ def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, iss
             def __init__(self, *args, **kwargs):
                 if func(self, *args, **kwargs) != 0:
                     raise TypeError("__init__ failed")
-            object.__setattr__(owner, name, __init__)
+            type_dict[name] = __init__
         else:
-            object.__setattr__(owner, name, func)
+            type_dict[name] = func
 
 
 def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
@@ -808,7 +809,7 @@ def AddMember(primary, name, memberType, offset, canSet, doc):
 
 getset_descriptor = type(type(AddMember).__code__)
 def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc, closure):
-    pclass = to_java(primary)
+    pclass = to_java_type(primary)
     fset = fget = None
     if getter:
         getter_w = CreateFunction(name, getter, getter_wrapper, pclass)
