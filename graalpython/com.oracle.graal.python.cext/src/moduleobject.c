@@ -53,6 +53,7 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
         polyglot_invoke(PY_TRUFFLE_CEXT,
                        "AddFunction",
                        native_to_java(mod),
+					   NULL,
                        polyglot_from_string((const char*)(def.ml_name), SRC_CS),
                        def.ml_meth,
                        get_method_flags_cwrapper(def.ml_flags),

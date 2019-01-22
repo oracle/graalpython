@@ -750,7 +750,6 @@ class cstaticmethod():
 
 def AddFunction(primary, tpDict, name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
     owner = to_java_type(primary)
-    type_dict = to_java(tpDict)
     if isinstance(owner, moduletype):
         # module case, we create the bound function-or-method
         func = PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, owner, owner.__name__, doc)
@@ -763,6 +762,7 @@ def AddFunction(primary, tpDict, name, cfunc, cwrapper, wrapper, doc, isclass=Fa
             func = cstaticmethod(func)
         PyTruffle_SetAttr(func, "__name__", name)
         PyTruffle_SetAttr(func, "__doc__", doc)
+        type_dict = to_java(tpDict)
         if name == "__init__":
             def __init__(self, *args, **kwargs):
                 if func(self, *args, **kwargs) != 0:
