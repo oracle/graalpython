@@ -718,8 +718,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(dir_fd)"})
-        Object open(PBytes pathname, int flags, int fileMode, PNone dir_fd) {
-            return open(decode(getByteArray(pathname)), flags, fileMode, dir_fd);
+        Object open(VirtualFrame frame, PBytes pathname, int flags, int fileMode, PNone dir_fd) {
+            return open(frame, decode(getByteArray(pathname)), flags, fileMode, dir_fd);
         }
 
         private byte[] getByteArray(PIBytesLike pByteArray) {
