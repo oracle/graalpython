@@ -74,6 +74,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.math.BigInteger;
+import java.net.URI;
 import java.nio.CharBuffer;
 import java.util.List;
 import java.util.function.Supplier;
@@ -156,6 +157,7 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
@@ -167,6 +169,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -546,7 +549,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EvalNode extends PythonBuiltinNode {
         protected final String funcname = "eval";
-        @Child protected CompileNode compileNode = CompileNode.create();
+        @Child protected CompileNode compileNode = CompileNode.create(false);
         @Child private IndirectCallNode indirectCallNode = IndirectCallNode.create();
         @Child private HasInheritedAttributeNode hasGetItemNode;
 
@@ -700,6 +703,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class CompileNode extends PythonBuiltinNode {
+        /**
+         * Decides wether this node should attempt to map the filename to a URI for the benefit of
+         * Truffle tooling
+         */
+        private final boolean mapFilenameToUri;
+
+        public CompileNode(boolean mapFilenameToUri) {
+            this.mapFilenameToUri = mapFilenameToUri;
+        }
+
+        public CompileNode() {
+            this.mapFilenameToUri = true;
+        }
 
         public abstract PCode execute(Object source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize);
 
@@ -720,7 +736,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         PCode compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
-            Source source = PythonLanguage.newSource(getContext(), expression, filename);
+            PythonContext context = getContext();
+            URI uri = mapToUri(expression, filename, context);
+            Source source = PythonLanguage.newSource(context, expression, filename, uri);
             ParserMode pm;
             if (mode.equals("exec")) {
                 pm = ParserMode.File;
@@ -739,14 +757,35 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
+        private URI mapToUri(String expression, String filename, PythonContext context) {
+            if (mapFilenameToUri) {
+                URI uri = null;
+                try {
+                    TruffleFile truffleFile = context.getEnv().getTruffleFile(filename);
+                    if (truffleFile.exists()) {
+                        // XXX: (tfel): We don't know if the expression has anything to do with the
+                        // filename that's given. We would really have to compare the entire
+                        // contents, but as a first approximation, we compare the content lengths
+                        if (expression.length() == truffleFile.size()) {
+                            uri = truffleFile.toUri();
+                        }
+                    }
+                } catch (SecurityException | IOException e) {
+                }
+                return uri;
+            } else {
+                return null;
+            }
+        }
+
         @SuppressWarnings("unused")
         @Specialization
         PCode compile(PCode code, String filename, String mode, Object flags, Object dontInherit, Object optimize) {
             return code;
         }
 
-        public static CompileNode create() {
-            return BuiltinFunctionsFactory.CompileNodeFactory.create(new ReadArgumentNode[]{});
+        public static CompileNode create(boolean mapFilenameToUri) {
+            return BuiltinFunctionsFactory.CompileNodeFactory.create(mapFilenameToUri, new ReadArgumentNode[]{});
         }
     }
 
