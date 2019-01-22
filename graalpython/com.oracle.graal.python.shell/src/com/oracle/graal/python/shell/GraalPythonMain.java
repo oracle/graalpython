@@ -296,13 +296,13 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         } else if (ImageInfo.inImageBuildtimeCode()) {
             return "";
         } else {
-            // we quote all arguments here, because using sys.executable directly will only work on
-            // a shell, anyways.
             String[] executableList = getExecutableList();
             for (int i = 0; i < executableList.length; i++) {
-                executableList[i] = executableList[i].replace("'", "\\'");
+                if (executableList[i].matches("\\s")) {
+                    executableList[i] = "'" + executableList[i].replace("'", "\\'") + "'";
+                }
             }
-            return "'" + String.join("' '", executableList) + "'";
+            return String.join(" ", executableList);
         }
     }
 
