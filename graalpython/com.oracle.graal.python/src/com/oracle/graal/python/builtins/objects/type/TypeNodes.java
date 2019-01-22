@@ -464,8 +464,9 @@ public abstract class TypeNodes {
         public static void setSlowPath(AbstractPythonClass clazz, Object sulongType) {
             if (clazz instanceof ManagedPythonClass) {
                 ((ManagedPythonClass) clazz).setSulongType(sulongType);
+            } else {
+                throw new IllegalStateException("cannot set Sulong type for " + clazz.getClass().getName());
             }
-            throw new IllegalStateException("cannot set Sulong type for " + clazz.getClass().getName());
         }
 
         public static GetSulongTypeNode create() {
