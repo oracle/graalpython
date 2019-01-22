@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.graalvm.launcher.AbstractLanguageLauncher;
+import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.polyglot.Context;
@@ -72,11 +73,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean runLLI = false;
     private VersionAction versionAction = VersionAction.None;
     private String sulongLibraryPath = null;
+    private List<String> givenArguments;
 
     @Override
-    protected List<String> preprocessArguments(List<String> arguments, Map<String, String> polyglotOptions) {
+    protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
         ArrayList<String> unrecognized = new ArrayList<>();
-        List<String> inputArgs = new ArrayList<>(arguments);
+        ArrayList<String> inputArgs = new ArrayList<>(getDefaultEnvironmentArgs());
+        inputArgs.addAll(givenArgs);
+        givenArguments = new ArrayList<>(inputArgs);
+        List<String> arguments = new ArrayList<>(inputArgs);
         List<String> subprocessArgs = new ArrayList<>();
         programArgs = new ArrayList<>();
         for (int i = 0; i < arguments.size(); i++) {
@@ -201,6 +206,60 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         return unrecognized;
     }
 
+    private static enum State {
+        NORMAL,
+        SINGLE_QUOTE,
+        DOUBLE_QUOTE,
+        ESCAPE_SINGLE_QUOTE,
+        ESCAPE_DOUBLE_QUOTE,
+    }
+
+    private static List<String> getDefaultEnvironmentArgs() {
+        String envArgsOpt = System.getenv("GRAAL_PYTHON_OPTIONS");
+        ArrayList<String> envArgs = new ArrayList<>();
+        State s = State.NORMAL;
+        StringBuilder sb = new StringBuilder();
+        if (envArgsOpt != null) {
+            for (char x : envArgsOpt.toCharArray()) {
+                if (s == State.NORMAL && Character.isWhitespace(x)) {
+                    if (sb.length() > 0) {
+                        envArgs.add(sb.toString());
+                        sb.setLength(0);
+                    }
+                } else {
+                    if (x == '"') {
+                        if (s == State.NORMAL) {
+                            s = State.DOUBLE_QUOTE;
+                        } else if (s == State.DOUBLE_QUOTE) {
+                            s = State.NORMAL;
+                        } else if (s == State.ESCAPE_DOUBLE_QUOTE) {
+                            s = State.DOUBLE_QUOTE;
+                            sb.append(x);
+                        }
+                    } else if (x == '\'') {
+                        if (s == State.NORMAL) {
+                            s = State.SINGLE_QUOTE;
+                        } else if (s == State.SINGLE_QUOTE) {
+                            s = State.NORMAL;
+                        } else if (s == State.ESCAPE_SINGLE_QUOTE) {
+                            s = State.SINGLE_QUOTE;
+                            sb.append(x);
+                        }
+                    } else if (x == '\\') {
+                        if (s == State.SINGLE_QUOTE) {
+                            s = State.ESCAPE_SINGLE_QUOTE;
+                        } else if (s == State.DOUBLE_QUOTE) {
+                            s = State.ESCAPE_DOUBLE_QUOTE;
+                        }
+                    } else {
+                        sb.append(x);
+                    }
+                }
+            }
+        }
+        return envArgs;
+    }
+
     private static void printShortHelp() {
         print("usage: python [option] ... [-c cmd | -m mod | file | -] [arg] ...\n" +
                         "Try `python -h' for more information.");
@@ -208,6 +267,43 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     private static void print(String string) {
         System.out.println(string);
+    }
+
+    private static String[] getExecutableList() {
+        if (ImageInfo.inImageCode()) {
+            return new String[]{getExecutable()};
+        } else {
+            StringBuilder sb = new StringBuilder();
+            ArrayList<String> exec_list = new ArrayList<>();
+            sb.append(System.getProperty("java.home")).append(File.separator).append("bin").append(File.separator).append("java");
+            exec_list.add(sb.toString());
+            for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+                if (arg.matches("-Xrunjdwp:transport=dt_socket,server=y,address=\\d+,suspend=y")) {
+                    arg = arg.replace("suspend=y", "suspend=n");
+                }
+                exec_list.add(arg);
+            }
+            exec_list.add("-classpath");
+            exec_list.add(System.getProperty("java.class.path"));
+            exec_list.add(GraalPythonMain.class.getName());
+            return exec_list.toArray(new String[exec_list.size()]);
+        }
+    }
+
+    private static String getExecutable() {
+        if (ImageInfo.inImageRuntimeCode()) {
+            return ProcessProperties.getExecutableName();
+        } else if (ImageInfo.inImageBuildtimeCode()) {
+            return "";
+        } else {
+            String[] executableList = getExecutableList();
+            for (int i = 0; i < executableList.length; i++) {
+                if (executableList[i].matches("\\s")) {
+                    executableList[i] = "'" + executableList[i].replace("'", "\\'") + "'";
+                }
+            }
+            return String.join(" ", executableList);
+        }
     }
 
     @Override
@@ -233,7 +329,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             noUserSite = noUserSite || System.getenv("PYTHONNOUSERSITE") != null;
             verboseFlag = verboseFlag || System.getenv("PYTHONVERBOSE") != null;
         }
-        sulongLibraryPath = System.getenv("SULONG_LIBRARY_PATH");
+
+        // The unlikely separator is used because options need to be strings. See
+        // PythonOptions.getExecutableList()
+        contextBuilder.option("python.ExecutableList", String.join("🏆", getExecutableList()));
+        setContextOptionIfUnset(contextBuilder, "python.Executable", getExecutable());
 
         // setting this to make sure our TopLevelExceptionHandler calls the excepthook
         // to print Python exceptions
@@ -246,6 +346,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.QuietFlag", Boolean.toString(quietFlag));
         contextBuilder.option("python.NoUserSiteFlag", Boolean.toString(noUserSite));
         contextBuilder.option("python.NoSiteFlag", Boolean.toString(noSite));
+        contextBuilder.option("python.IgnoreEnvironmentFlag", Boolean.toString(ignoreEnv));
+
+        sulongLibraryPath = System.getenv("SULONG_LIBRARY_PATH");
         if (sulongLibraryPath != null) {
             contextBuilder.option("llvm.libraryPath", sulongLibraryPath);
         }
@@ -300,6 +403,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             consoleHandler.setContext(null);
         }
         System.exit(rc);
+    }
+
+    private void setContextOptionIfUnset(Builder contextBuilder, String key, String value) {
+        if (System.getProperty("polyglot." + key) != null) {
+            return;
+        }
+        for (String f : givenArguments) {
+            if (f.startsWith("--" + key)) {
+                return;
+            }
+        }
+        contextBuilder.option(key, value);
     }
 
     private static void printFileNotFoundException(NoSuchFileException e) {
@@ -423,7 +538,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "   str, bytes and datetime objects.  It can also be set to an integer\n" +
                         "   in the range [0,4294967295] to get hash values with a predictable seed.\n" +
                         "SULONG_LIBRARY_PATH: Specifies the library path for Sulong.\n" +
-                        "   This is required when starting subprocesses of python.");
+                        "   This is required when starting subprocesses of python.\n" +
+                        "GRAAL_PYTHON_OPTIONS: This environment variable can include default options that\n" +
+                        "   are always passed to the launcher. These are not shell expanded and given to\n" +
+                        "   the launcher as-is.");
         if (maxCategory.compareTo(OptionCategory.DEBUG) >= 0) {
             print("\nGraalPython performance debugging options:\n" +
                             "-debug-perf                  : Enable tracing of Truffle compilations and its warnings\n" +

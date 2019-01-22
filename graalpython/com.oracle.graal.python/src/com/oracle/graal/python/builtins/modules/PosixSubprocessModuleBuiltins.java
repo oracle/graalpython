@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -59,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
@@ -69,8 +70,8 @@ import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -118,13 +119,13 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             // TODO: fix this better? sys.executable is often used in subprocess tests, but on Java
             // that actually gives you a whole cmdline, which we need to split up for process
             // builder
-            PythonModule sysModule = getCore().lookupBuiltinModule("sys");
-            if (!TruffleOptions.AOT && !argStrings.isEmpty() && argStrings.get(0).equals(sysModule.getAttribute("executable"))) {
-                PList exec_list = (PList) sysModule.getAttribute("executable_list");
-                Object[] internalArray = exec_list.getSequenceStorage().getCopyOfInternalArray();
-                argStrings.remove(0);
-                for (int i = internalArray.length - 1; i >= 0; i--) {
-                    argStrings.add(0, (String) internalArray[i]);
+            if (!ImageInfo.inImageCode() && !argStrings.isEmpty()) {
+                if (argStrings.get(0).equals(PythonOptions.getOption(context, PythonOptions.Executable))) {
+                    String[] executableList = PythonOptions.getExecutableList();
+                    argStrings.remove(0);
+                    for (int i = executableList.length - 1; i >= 0; i--) {
+                        argStrings.add(0, executableList[i]);
+                    }
                 }
             }
 

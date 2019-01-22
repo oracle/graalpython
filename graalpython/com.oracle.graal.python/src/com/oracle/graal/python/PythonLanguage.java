@@ -325,6 +325,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return null;
     }
 
+    public String getHome() {
+        return getLanguageHome();
+    }
+
     public static PythonLanguage getCurrent() {
         return getCurrentLanguage(PythonLanguage.class);
     }

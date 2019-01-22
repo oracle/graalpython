@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,10 +45,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -69,7 +67,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -112,34 +109,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "little" : "big");
         builtinConstants.put("copyright", LICENSE);
         builtinConstants.put("dont_write_bytecode", true);
-        if (TruffleOptions.AOT || !core.getContext().isExecutableAccessAllowed()) {
-            // cannot set the path at this time since the binary is not yet known; will be patched
-            // in the context
-            builtinConstants.put("executable", PNone.NONE);
-        } else {
-            StringBuilder sb = new StringBuilder();
-            ArrayList<String> exec_list = new ArrayList<>();
-            sb.append(System.getProperty("java.home")).append(PythonCore.FILE_SEPARATOR).append("bin").append(PythonCore.FILE_SEPARATOR).append("java");
-            exec_list.add(sb.toString());
-            sb.append(' ');
-            for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
-                if (arg.matches("-Xrunjdwp:transport=dt_socket,server=y,address=\\d+,suspend=y")) {
-                    arg = arg.replace("suspend=y", "suspend=n");
-                }
-                sb.append(arg).append(' ');
-                exec_list.add(arg);
-            }
-            sb.append("-classpath ");
-            exec_list.add("-classpath");
-            sb.append(System.getProperty("java.class.path")).append(' ');
-            exec_list.add(System.getProperty("java.class.path"));
-            // we really don't care what the main class or its arguments were - this should
-            // always help us launch Graal.Python
-            sb.append("com.oracle.graal.python.shell.GraalPythonMain");
-            exec_list.add("com.oracle.graal.python.shell.GraalPythonMain");
-            builtinConstants.put("executable", sb.toString());
-            builtinConstants.put("executable_list", core.factory().createList(exec_list.toArray()));
-        }
         builtinConstants.put("modules", core.factory().createDict());
         builtinConstants.put("path", core.factory().createList());
         builtinConstants.put("builtin_module_names", core.factory().createTuple(core.builtinModuleNames()));
@@ -148,24 +117,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("version", PythonLanguage.VERSION +
                         " (" + COMPILE_TIME + ")" +
                         "\n[" + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + "]");
-        builtinConstants.put("flags", core.factory().createTuple(new Object[]{
-                        false, // bytes_warning
-                        false, // debug
-                        true,  // dont_write_bytecode
-                        false, // hash_randomization
-                        false, // ignore_environment
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.InspectFlag), // inspect
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.InspectFlag), // interactive
-                        false, // isolated
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.NoSiteFlag), // no_site
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.NoUserSiteFlag), // no_user_site
-                        false, // optimize
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.QuietFlag), // quiet
-                        PythonOptions.getFlag(core.getContext(), PythonOptions.VerboseFlag), // verbose
-        }));
-        builtinConstants.put("graal_python_core_home", PythonOptions.getOption(core.getContext(), PythonOptions.CoreHome));
-        builtinConstants.put("graal_python_stdlib_home", PythonOptions.getOption(core.getContext(), PythonOptions.StdLibHome));
-        builtinConstants.put("graal_python_opaque_filesystem", PythonOptions.getOption(core.getContext(), PythonOptions.OpaqueFilesystem));
         builtinConstants.put("graal_python_is_native", TruffleOptions.AOT);
         // the default values taken from JPython
         builtinConstants.put("float_info", core.factory().createTuple(new Object[]{

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,6 +27,7 @@ package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
+import static com.oracle.graal.python.nodes.BuiltinNames.__DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
@@ -36,8 +37,6 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -236,11 +235,11 @@ public final class PythonContext {
 
     private void setupRuntimeInformation() {
         PythonModule sysModule = core.initializeSysModule();
-        if (ImageInfo.inImageRuntimeCode() && isExecutableAccessAllowed()) {
-            sysModule.setAttribute("executable", ProcessProperties.getExecutableName());
-        }
         sysModules = (PDict) sysModule.getAttribute("modules");
+
         builtinsModule = (PythonModule) sysModules.getItem("builtins");
+        builtinsModule.setAttribute(__DEBUG__, !PythonOptions.getOption(core.getContext(), PythonOptions.PythonOptimizeFlag));
+
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
         mainModule.setDict(core.factory().createDictFixedStorage(mainModule));

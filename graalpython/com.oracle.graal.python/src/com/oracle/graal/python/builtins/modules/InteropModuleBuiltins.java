@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -90,7 +90,6 @@ import com.oracle.truffle.api.source.Source.SourceBuilder;
 
 @CoreFunctions(defineModule = "polyglot")
 public final class InteropModuleBuiltins extends PythonBuiltins {
-
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
         return InteropModuleBuiltinsFactory.getFactories();

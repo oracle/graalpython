@@ -234,9 +234,15 @@ def python_build_svm(args):
     shutil.copy(__get_svm_binary_from_graalvm(), _get_svm_binary())
 
 
+_SVM_ARGS = ["--dynamicimports", "/vm,/tools,/substratevm",
+             "--disable-polyglot", "--disable-libpolyglot"]
+
+
 def python_svm(args):
-    python_build_svm(args)
-    svm_image = __get_svm_binary_from_graalvm()
+    mx.run_mx(_SVM_ARGS + ["build"])
+    out = mx.OutputCapture()
+    mx.run_mx(_SVM_ARGS + ["graalvm-home"], out=mx.TeeOutputCapture(out))
+    svm_image = os.path.join(out.data.strip(), "bin", "graalpython")
     mx.run([svm_image] + args)
     return svm_image
 
@@ -328,14 +334,8 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
-            svm_image_name = "./graalpython-svm"
-            if not os.path.exists(svm_image_name):
-                svm_image_name = python_svm(["-h"])
-            llvm_home = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
-            args = ["--python.CoreHome=%s" % os.path.join(SUITE.dir, "graalpython", "lib-graalpython"),
-                    "--python.StdLibHome=%s" % os.path.join(SUITE.dir, "graalpython", "lib-python/3"),
-                    llvm_home]
-            run_python_unittests(svm_image_name, args)
+            svm_image_name = python_svm(["-h"])
+            run_python_unittests(svm_image_name)
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
@@ -360,11 +360,6 @@ def graalpython_gate_runner(args, tasks):
             ])
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-            llvm_home = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
-            args = ["--python.CoreHome=%s" % os.path.join(SUITE.dir, "graalpython", "lib-graalpython"),
-                    "--python.StdLibHome=%s" % os.path.join(SUITE.dir, "graalpython", "lib-python/3"),
-                    llvm_home]
-            run_python_unittests(svm_image, args)
 
 
 mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)
