@@ -46,8 +46,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
@@ -153,11 +153,11 @@ public abstract class PNodeWithContext extends Node {
         return raise(error);
     }
 
-    public final ManagedPythonClass getPythonClass(LazyPythonClass lazyClass, ConditionProfile profile) {
-        if (profile.profile(lazyClass instanceof ManagedPythonClass)) {
-            return (ManagedPythonClass) lazyClass;
-        } else {
+    public final AbstractPythonClass getPythonClass(LazyPythonClass lazyClass, ConditionProfile profile) {
+        if (profile.profile(lazyClass instanceof PythonBuiltinClassType)) {
             return getCore().lookupType((PythonBuiltinClassType) lazyClass);
+        } else {
+            return (AbstractPythonClass) lazyClass;
         }
     }
 

@@ -225,9 +225,8 @@ public class PythonObjectNativeWrapperMR {
         @Specialization(replaces = "doBuiltinCached")
         Object doBuiltinGeneric(PythonBuiltinClassType clazz,
                         @Cached("create()") TypeNodes.GetSulongTypeNode getSulongTypeNode,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
                         @Cached("createBinaryProfile()") ConditionProfile hasSulongTypeProfile) {
-            ManagedPythonClass pythonClass = getPythonClass(clazz, profile);
+            PythonBuiltinClass pythonClass = getBuiltinPythonClass(clazz);
             return doManagedGeneric(pythonClass, getSulongTypeNode, hasSulongTypeProfile);
         }
 
