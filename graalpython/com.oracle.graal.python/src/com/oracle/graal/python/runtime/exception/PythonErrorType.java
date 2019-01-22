@@ -36,7 +36,7 @@ public abstract class PythonErrorType {
     public static final PythonBuiltinClassType DeprecationWarning = PythonBuiltinClassType.DeprecationWarning;
     public static final PythonBuiltinClassType Exception = PythonBuiltinClassType.Exception;
     public static final PythonBuiltinClassType FloatingPointError = PythonBuiltinClassType.FloatingPointError;
-    public static final PythonBuiltinClassType IOError = PythonBuiltinClassType.IOError;
+    public static final PythonBuiltinClassType IOError = PythonBuiltinClassType.OSError;
     public static final PythonBuiltinClassType ImportError = PythonBuiltinClassType.ImportError;
     public static final PythonBuiltinClassType ImportWarning = PythonBuiltinClassType.ImportWarning;
     public static final PythonBuiltinClassType IndexError = PythonBuiltinClassType.IndexError;

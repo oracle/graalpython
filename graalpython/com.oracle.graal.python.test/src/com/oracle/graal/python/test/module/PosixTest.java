@@ -75,7 +75,7 @@ public class PosixTest {
 
     @Test
     public void openFail() {
-        assertLastLineErrorContains("OSError",
+        assertLastLineErrorContains("FileNotFoundError",
                         "import posix; print(posix.open('prettysurethisisnthere', 0) > 2)");
     }
 
