@@ -140,8 +140,7 @@ class EnvBuilder:
         if sys.platform != "win32":
             os.chmod(script, 0o777)
 
-        atexit.register(lambda: os.unlink(script))
-        atexit.register(lambda: os.rmdir(tempdir))
+        atexit.register(lambda: shutil.rmtree(tempdir, ignore_errors=True))
 
         dirname = context.python_dir = sys.graal_python_home
         exename = context.python_exe = "graalpython"
