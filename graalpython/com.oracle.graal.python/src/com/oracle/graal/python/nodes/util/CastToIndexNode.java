@@ -70,9 +70,9 @@ public abstract class CastToIndexNode extends PNodeWithContext {
 
     private final PythonBuiltinClassType errorType;
     private final boolean recursive;
-    private final Function<Object, Byte> typeErrorHandler;
+    private final Function<Object, Integer> typeErrorHandler;
 
-    protected CastToIndexNode(PythonBuiltinClassType errorType, boolean recursive, Function<Object, Byte> typeErrorHandler) {
+    protected CastToIndexNode(PythonBuiltinClassType errorType, boolean recursive, Function<Object, Integer> typeErrorHandler) {
         this.errorType = errorType;
         this.recursive = recursive;
         this.typeErrorHandler = typeErrorHandler;
@@ -166,7 +166,7 @@ public abstract class CastToIndexNode extends PNodeWithContext {
         return CastToIndexNodeGen.create(OverflowError, true, null);
     }
 
-    public static CastToIndexNode create(PythonBuiltinClassType errorType, Function<Object, Byte> typeErrorHandler) {
+    public static CastToIndexNode create(PythonBuiltinClassType errorType, Function<Object, Integer> typeErrorHandler) {
         return CastToIndexNodeGen.create(errorType, true, typeErrorHandler);
     }
 }

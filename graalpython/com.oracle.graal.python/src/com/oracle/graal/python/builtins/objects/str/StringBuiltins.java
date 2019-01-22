@@ -538,8 +538,13 @@ public final class StringBuiltins extends PythonBuiltins {
             return doIt(self, prefix, correctIndex(start, self), correctIndex(end, self));
         }
 
-        @Specialization
+        @Specialization (rewriteOn = ArithmeticException.class)
         boolean startsWith(String self, String prefix, PInt start, @SuppressWarnings("unused") PNone end) {
+            return startsWith(self, prefix, start.intValueExact(), self.length());
+        }
+        
+        @Specialization
+        boolean startsWithPIntOvf(String self, String prefix, PInt start, @SuppressWarnings("unused") PNone end) {
             return doIt(self, prefix, correctIndex(start, self), self.length());
         }
 
@@ -563,11 +568,16 @@ public final class StringBuiltins extends PythonBuiltins {
             return doIt(self, prefix, correctIndex(start, self), correctIndex(end, self));
         }
 
-        @Specialization
+        @Specialization (rewriteOn = ArithmeticException.class)
         boolean startsWith(String self, PTuple prefix, PInt start, @SuppressWarnings("unused") PNone end) {
+            return startsWith(self, prefix, start.intValueExact(), end);
+        }
+        
+        @Specialization
+        boolean startsWithPIntOvf(String self, PTuple prefix, PInt start, @SuppressWarnings("unused") PNone end) {
             return doIt(self, prefix, correctIndex(start, self), self.length());
         }
-
+        
         @Specialization
         boolean startsWith(String self, PTuple prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
             return startsWith(self, prefix, 0, self.length());
