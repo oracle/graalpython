@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -36,7 +36,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.util.List;
 
@@ -250,7 +249,8 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isBuiltinFunction(self)")
         Object setCode(PFunction self, PCode code) {
-            throw raise(NotImplementedError, "setting __code__");
+            self.setCode(code);
+            return PNone.NONE;
         }
 
         @SuppressWarnings("unused")

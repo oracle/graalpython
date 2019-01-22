@@ -667,7 +667,10 @@ def import_python_sources(args):
     mapping = {
         "_memoryview.c": "memoryobject.c",
         "_cpython_sre.c": "_sre.c",
+        "_cpython_unicodedata.c": "unicodedata.c",
+        "_bz2.c": "_bz2module.c",
     }
+
     parser = ArgumentParser(prog='mx python-src-import')
     parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
     parser.add_argument('--pypy', action='store', help='Path to PyPy sources', required=True)
@@ -722,9 +725,11 @@ def import_python_sources(args):
     """.format(mapping)
     raw_input("Got it?")
 
-    files = []
+    cpy_files = []
+    pypy_files = []
     with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
-        files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "python.copyright"]
+        cpy_files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "python.copyright"]
+        pypy_files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "pypy.copyright"]
 
     # move to orphaned branch with sources
     if SUITE.vc.isDirty(SUITE.dir):
@@ -734,7 +739,28 @@ def import_python_sources(args):
     SUITE.vc.git_command(SUITE.dir, ["clean", "-fdx"])
     shutil.rmtree("graalpython")
 
-    for inlined_file in files:
+    for inlined_file in pypy_files:
+        original_file = None
+        name = os.path.basename(inlined_file)
+        name = mapping.get(name, name)
+        if inlined_file.endswith(".py"):
+            # these files don't need to be updated, they inline some unittest code only
+            if name.startswith("test_") or name.endswith("_tests.py"):
+                original_file = inlined_file
+            else:
+                for root, dirs, files in os.walk(pypy_sources):
+                    if os.path.basename(name) in files:
+                        original_file = os.path.join(root, name)
+                        try:
+                            os.makedirs(os.path.dirname(inlined_file))
+                        except:
+                            pass
+                        shutil.copy(original_file, inlined_file)
+                        break
+        if original_file is None:
+            mx.warn("Could not update %s - original file not found" % inlined_file)
+
+    for inlined_file in cpy_files:
         # C files are mostly just copied
         original_file = None
         name = os.path.basename(inlined_file)
@@ -757,8 +783,7 @@ def import_python_sources(args):
             mx.warn("Could not update %s - original file not found" % inlined_file)
 
     # re-copy lib-python
-    libdir = os.path.join(SUITE.dir, "graalpython/lib-python/3")
-    shutil.copytree(os.path.join(pypy_sources, "lib-python", "3"), libdir)
+    shutil.copytree(os.path.join(python_sources, "Lib"), _get_stdlib_home())
 
     # commit and check back
     SUITE.vc.git_command(SUITE.dir, ["add", "."])

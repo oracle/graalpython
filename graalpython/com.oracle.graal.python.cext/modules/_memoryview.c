@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -689,7 +689,7 @@ mbuf_add_view(_PyManagedBufferObject *mbuf, const Py_buffer *src)
     Py_INCREF(mbuf);
     mbuf->exports++;
 
-    return (PyObject *)mv;
+    return (PyObject *)polyglot_from_PyMemoryViewObject(mv);
 }
 
 /* Register an incomplete view: shape, strides, suboffsets and flags still
@@ -720,7 +720,7 @@ mbuf_add_incomplete_view(_PyManagedBufferObject *mbuf, const Py_buffer *src,
     Py_INCREF(mbuf);
     mbuf->exports++;
 
-    return (PyObject *)mv;
+    return (PyObject *)polyglot_from_PyMemoryViewObject(mv);
 }
 
 /* Expose a raw memory area as a view of contiguous bytes. flags can be
@@ -941,7 +941,7 @@ PyMemoryView_GetContiguous(PyObject *obj, int buffertype, char order)
     }
 
     if (PyBuffer_IsContiguous(view, order))
-        return (PyObject *)mv;
+    	return (PyObject *)polyglot_from_PyMemoryViewObject(mv);
 
     if (buffertype == PyBUF_WRITE) {
         PyErr_SetString(PyExc_BufferError,
@@ -1403,7 +1403,7 @@ memory_cast(PyMemoryViewObject *self, PyObject *args, PyObject *kwds)
     if (shape && cast_to_ND(mv, shape, (int)ndim) < 0)
         goto error;
 
-    return (PyObject *)mv;
+  	return (PyObject *)polyglot_from_PyMemoryViewObject(mv);
 
 error:
     Py_DECREF(mv);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,19 @@
 #include "capi.h"
 
 #include <stdio.h>
+
+static int getbuffer(PyObject *arg, Py_buffer *view, const char **errmsg) {
+    if (PyObject_GetBuffer(arg, view, PyBUF_SIMPLE) != 0) {
+        *errmsg = "bytes-like object";
+        return -1;
+    }
+//    if (!PyBuffer_IsContiguous(view, 'C')) {
+//        PyBuffer_Release(view);
+//        *errmsg = "contiguous buffer";
+//        return -1;
+//    }
+    return 0;
+}
 
 typedef struct _positional_argstack {
     PyObject* argv;
@@ -89,10 +102,15 @@ UPCALL_ID(__bool__);
         case 'y': \
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only); \
             if (format[format_idx + 1] == '*') { \
+                Py_buffer* p = (Py_buffer*)PyTruffle_ArgN(output_idx); \
+                const char* buf; \
                 format_idx++; /* skip over '*' */ \
-                PyErr_Format(PyExc_TypeError, "%c* not supported", c); \
-                __return_code__; \
-                return 0; \
+            	if (getbuffer(arg, p, &buf) < 0) { \
+            		PyErr_Format(PyExc_TypeError, "expected bytes, got %R", Py_TYPE(arg)); \
+            		__return_code__; \
+            		return 0; \
+            	} \
+                PyTruffle_WriteOut(output_idx, Py_buffer, *p); \
             } else if (arg == Py_None) { \
                 if (c == 'z') { \
                     PyTruffle_WriteOut(output_idx, const char*, NULL); \
@@ -842,3 +860,36 @@ int PyArg_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssize
 #define PyArg_UnpackTuple _backup_PyArg_UnpackTuple
 #undef _backup_PyArg_UnpackTuple
 #endif
+
+// taken from CPython 3.6.5 "Python/getargs.c"
+int _PyArg_NoKeywords(const char *funcname, PyObject *kw) {
+    if (kw == NULL)
+        return 1;
+    if (!PyDict_CheckExact(kw)) {
+        PyErr_BadInternalCall();
+        return 0;
+    }
+    if (PyDict_Size(kw) == 0)
+        return 1;
+
+    PyErr_Format(PyExc_TypeError, "%s does not take keyword arguments",
+                    funcname);
+    return 0;
+}
+
+int
+_PyArg_NoPositional(const char *funcname, PyObject *args)
+{
+    if (args == NULL)
+        return 1;
+    if (!PyTuple_CheckExact(args)) {
+        PyErr_BadInternalCall();
+        return 0;
+    }
+    if (PyTuple_GET_SIZE(args) == 0)
+        return 1;
+
+    PyErr_Format(PyExc_TypeError, "%s does not take positional arguments",
+                    funcname);
+    return 0;
+}

@@ -40,6 +40,7 @@ public abstract class PythonErrorType {
     public static final PythonBuiltinClassType ImportError = PythonBuiltinClassType.ImportError;
     public static final PythonBuiltinClassType ImportWarning = PythonBuiltinClassType.ImportWarning;
     public static final PythonBuiltinClassType IndexError = PythonBuiltinClassType.IndexError;
+    public static final PythonBuiltinClassType KeyboardInterrupt = PythonBuiltinClassType.KeyboardInterrupt;
     public static final PythonBuiltinClassType KeyError = PythonBuiltinClassType.KeyError;
     public static final PythonBuiltinClassType LookupError = PythonBuiltinClassType.LookupError;
     public static final PythonBuiltinClassType MemoryError = PythonBuiltinClassType.MemoryError;
