@@ -54,6 +54,15 @@ def _get_stdlib_home():
     return os.path.join(SUITE.dir, "graalpython", "lib-python", "3")
 
 
+def _get_svm_binary():
+    return os.path.join(SUITE.dir, "graalpython-svm")
+
+
+def __get_svm_binary_from_graalvm():
+    vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
+    return os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "graalpython")
+
+
 def _extract_graalpython_internal_options(args):
     non_internal = []
     additional_dists = []
@@ -213,6 +222,16 @@ def find_eclipse():
             if os.path.exists(eclipse_exe):
                 os.environ["ECLIPSE_EXE"] = eclipse_exe
                 return
+
+
+def python_build_svm(args):
+    mx.run_mx(
+        ["--dynamicimports", "/substratevm,/vm", "build",
+         "--force-deprecation-as-warning", "--dependencies",
+         "GRAAL_MANAGEMENT,graalpython.image"],
+        nonZeroIsFatal=True
+    )
+    shutil.copy(__get_svm_binary_from_graalvm(), _get_svm_binary())
 
 
 _SVM_ARGS = ["--dynamicimports", "/vm,/tools,/substratevm",
@@ -857,6 +876,7 @@ mx.update_commands(SUITE, {
     'python-update-import': [update_import_cmd, 'import name'],
     'delete-graalpython-if-testdownstream': [delete_self_if_testdownstream, ''],
     'python-checkcopyrights': [python_checkcopyrights, 'Make sure code files have copyright notices'],
+    'python-build-svm': [python_build_svm, 'build svm image if it is outdated'],
     'python-svm': [python_svm, 'run python svm image (building it if it is outdated'],
     'punittest': [punittest, ''],
     'python3-unittests': [python3_unittests, 'run the cPython stdlib unittests'],
