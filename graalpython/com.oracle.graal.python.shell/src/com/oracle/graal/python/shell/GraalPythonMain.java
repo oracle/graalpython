@@ -538,7 +538,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "   str, bytes and datetime objects.  It can also be set to an integer\n" +
                         "   in the range [0,4294967295] to get hash values with a predictable seed.\n" +
                         "SULONG_LIBRARY_PATH: Specifies the library path for Sulong.\n" +
-                        "   This is required when starting subprocesses of python." +
+                        "   This is required when starting subprocesses of python.\n" +
                         "GRAAL_PYTHON_OPTIONS: This environment variable can include default options that\n" +
                         "   are always passed to the launcher. These are not shell expanded and given to\n" +
                         "   the launcher as-is.");
