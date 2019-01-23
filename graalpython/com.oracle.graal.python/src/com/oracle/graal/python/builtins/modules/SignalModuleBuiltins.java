@@ -40,11 +40,14 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static java.lang.StrictMath.toIntExact;
+
 import java.util.Hashtable;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -202,6 +205,16 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object signal(int signum, PFunction handler) {
             return installSignalHandler(signum, handler, handler.getCallTarget(), createArgs.execute(new Object[]{signum, PNone.NONE}));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object signal(long signum, PFunction handler) {
+            try {
+                return installSignalHandler(toIntExact(signum), handler, handler.getCallTarget(), createArgs.execute(new Object[]{signum, PNone.NONE}));
+            } catch (ArithmeticException ae) {
+                throw raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to C int");
+            }
         }
     }
 }
