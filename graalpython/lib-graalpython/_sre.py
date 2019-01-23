@@ -168,10 +168,11 @@ class SRE_Match():
 
     def groupdict(self, default=None):
         d = {}
-        assert _interop.__has_keys__(self.compiled_regex.groups)
-        for k in _interop.__keys__(self.compiled_regex.groups):
-            idx = self.compiled_regex.groups[k]
-            d[k] = self.__group__(idx)
+        if self.compiled_regex.groups:
+            assert _interop.__has_keys__(self.compiled_regex.groups)
+            for k in _interop.__keys__(self.compiled_regex.groups):
+                idx = self.compiled_regex.groups[k]
+                d[k] = self.__group__(idx)
         return d
 
     def span(self, groupnum=0):
