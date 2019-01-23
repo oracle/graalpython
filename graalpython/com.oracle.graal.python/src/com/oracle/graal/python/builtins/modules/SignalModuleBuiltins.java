@@ -65,6 +65,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 
+import static java.lang.StrictMath.toIntExact;
+
 @CoreFunctions(defineModule = "_signal")
 public class SignalModuleBuiltins extends PythonBuiltins {
     private static Hashtable<Integer, Object> signalHandlers = new Hashtable<>();
@@ -202,6 +204,12 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object signal(int signum, PFunction handler) {
             return installSignalHandler(signum, handler, handler.getCallTarget(), createArgs.execute(new Object[]{signum, PNone.NONE}));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object signal(long signum, PFunction handler) {
+            return installSignalHandler(toIntExact(signum), handler, handler.getCallTarget(), createArgs.execute(new Object[]{signum, PNone.NONE}));
         }
     }
 }
