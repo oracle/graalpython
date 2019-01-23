@@ -37,3 +37,12 @@ class BuiltinTest(unittest.TestCase):
         self.assertRaises(TypeError, divmod, c1, c2)
         self.assertRaises(TypeError, divmod, 10, c2)
         self.assertRaises(TypeError, divmod, c1, 10)
+
+    def test_getitem_typeerror(self):
+        a = object()
+        try:
+            a[1]
+        except TypeError :
+            pass
+        else:
+            self.assertTrue(False)

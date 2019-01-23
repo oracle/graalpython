@@ -61,8 +61,8 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callGetitemNode = insert(LookupAndCallBinaryNode.create(__GETITEM__, null, () -> new LookupAndCallBinaryNode.NotImplementedHandler() {
                 @Override
-                public Object execute(@SuppressWarnings("unused") Object arg, Object arg2) {
-                    throw raise(TypeError, "'%p' object is not subscriptable", arg2);
+                public Object execute(Object arg, @SuppressWarnings("unused") Object arg2) {
+                    throw raise(TypeError, "'%p' object is not subscriptable", arg);
                 }
             }));
         }
