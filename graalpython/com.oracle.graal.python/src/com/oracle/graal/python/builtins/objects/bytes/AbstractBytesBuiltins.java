@@ -784,7 +784,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
     public abstract static class MakeTransNode extends PythonBuiltinNode {
 
         @Specialization
-        public PBytes maketrans(PythonClass cls, Object from, Object to,
+        public PBytes maketrans(@SuppressWarnings("unused") PythonClass cls, Object from, Object to,
                         @Cached("create()") BytesNodes.ToBytesNode toByteNode) {
             byte[] fromB = toByteNode.execute(from);
             byte[] toB = toByteNode.execute(to);
