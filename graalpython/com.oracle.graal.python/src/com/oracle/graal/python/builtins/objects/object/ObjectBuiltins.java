@@ -28,8 +28,6 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
@@ -71,6 +69,8 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -93,6 +93,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -289,19 +290,20 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
+    @ImportStatic(SpecialAttributeNames.class)
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         String repr(Object self,
                         @Cached("create()") GetClassNode getClass,
-                        @Cached("create()") ReadAttributeFromObjectNode readModuleNode,
-                        @Cached("create()") ReadAttributeFromObjectNode readQualNameNode) {
+                        @Cached("create(__MODULE__)") GetFixedAttributeNode readModuleNode,
+                        @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
             if (self == PNone.NONE) {
                 return "None";
             }
             AbstractPythonClass type = getClass.execute(self);
-            Object moduleName = readModuleNode.execute(type, __MODULE__);
-            Object qualName = readQualNameNode.execute(type, __QUALNAME__);
+            Object moduleName = readModuleNode.executeObject(type);
+            Object qualName = readQualNameNode.executeObject(type);
             if (moduleName != PNone.NO_VALUE && !moduleName.equals(getCore().getBuiltins().getModuleName())) {
                 return String.format("<%s.%s object at 0x%x>", moduleName, qualName, self.hashCode());
             }

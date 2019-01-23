@@ -32,7 +32,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MRO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
@@ -58,7 +57,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -72,7 +73,9 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNod
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -116,14 +119,15 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
+    @ImportStatic(SpecialAttributeNames.class)
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public String repr(AbstractPythonClass self,
-                        @Cached("create()") ReadAttributeFromObjectNode readModuleNode,
-                        @Cached("create()") ReadAttributeFromObjectNode readQualNameNode) {
-            Object moduleName = readModuleNode.execute(self, __MODULE__);
-            Object qualName = readQualNameNode.execute(self, __QUALNAME__);
+        String repr(AbstractPythonClass self,
+                        @Cached("create(__MODULE__)") GetFixedAttributeNode readModuleNode,
+                        @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
+            Object moduleName = readModuleNode.executeObject(self);
+            Object qualName = readQualNameNode.executeObject(self);
             return concat(moduleName, qualName);
         }
 
@@ -557,6 +561,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
+    @ImportStatic(NativeMemberNames.class)
     static abstract class NameNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
         String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
@@ -579,10 +584,34 @@ public class TypeBuiltins extends PythonBuiltins {
                         @Cached("create()") WriteAttributeToObjectNode setName) {
             return setName.execute(cls, __NAME__, value);
         }
+
+        @Specialization(guards = "isNoValue(value)")
+        Object getModule(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create(TP_NAME)") GetTypeMemberNode getTpNameNode) {
+            // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
+            String tpName = (String) getTpNameNode.execute(cls);
+            return getQualName(tpName);
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object getModule(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
+        }
+
+        @TruffleBoundary
+        private static String getQualName(String fqname) {
+            int firstDot = fqname.indexOf('.');
+            if (firstDot != -1) {
+                return fqname.substring(firstDot + 1);
+            }
+            return fqname;
+        }
+
     }
 
     @Builtin(name = __MODULE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
+    @ImportStatic(NativeMemberNames.class)
     static abstract class ModuleNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(value)")
@@ -606,6 +635,28 @@ public class TypeBuiltins extends PythonBuiltins {
                         @Cached("create()") WriteAttributeToObjectNode writeAttrNode) {
             writeAttrNode.execute(cls, __MODULE__, value);
             return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        Object getModule(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create(TP_NAME)") GetTypeMemberNode getTpNameNode) {
+            // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
+            String tpName = (String) getTpNameNode.execute(cls);
+            return getModuleName(tpName);
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object getModule(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
+        }
+
+        @TruffleBoundary
+        private static String getModuleName(String fqname) {
+            int firstDotIdx = fqname.indexOf('.');
+            if (firstDotIdx != -1) {
+                return fqname.substring(0, firstDotIdx);
+            }
+            return null;
         }
     }
 }
