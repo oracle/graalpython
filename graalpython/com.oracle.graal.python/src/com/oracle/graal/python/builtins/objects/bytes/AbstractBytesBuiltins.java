@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -774,5 +775,35 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         protected AbstractSplitNode createRecursiveNode() {
             return AbstractBytesBuiltinsFactory.RSplitNodeFactory.create(new ReadArgumentNode[]{});
         }
+    }
+
+    // static bytes.maketrans()
+    // static bytearray.maketrans()
+    @Builtin(name = "maketrans", fixedNumOfPositionalArgs = 3, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class MakeTransNode extends PythonBuiltinNode {
+
+        @Specialization
+        public PBytes maketrans(PythonClass cls, Object from, Object to,
+                        @Cached("create()") BytesNodes.ToBytesNode toByteNode) {
+            byte[] fromB = toByteNode.execute(from);
+            byte[] toB = toByteNode.execute(to);
+            if (fromB.length != toB.length) {
+                throw raise(PythonErrorType.ValueError, "maketrans arguments must have same length");
+            }
+
+            byte[] table = new byte[256];
+            for (int i = 0; i < 256; i++) {
+                table[i] = (byte) i;
+            }
+
+            for (int i = 0; i < fromB.length; i++) {
+                byte value = fromB[i];
+                table[value < 0 ? value + 256 : value] = toB[i];
+            }
+
+            return factory().createBytes(table);
+        }
+
     }
 }
