@@ -634,12 +634,16 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static String getModuleName(String fqname) {
+        private Object getModuleName(String fqname) {
             int firstDotIdx = fqname.indexOf('.');
             if (firstDotIdx != -1) {
                 return fqname.substring(0, firstDotIdx);
             }
-            return null;
+            return getBuiltinsName();
+        }
+
+        protected String getBuiltinsName() {
+            return getCore().getBuiltins().getModuleName();
         }
     }
 
@@ -692,5 +696,4 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
     }
-
 }
