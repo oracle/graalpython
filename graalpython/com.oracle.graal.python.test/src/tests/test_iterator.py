@@ -129,3 +129,15 @@ def test_itertools_zip_longest():
     x = [1,2,3]
     y = [4,5,6,7]
     assert list(zip_longest(x,y)) == [(1, 4), (2, 5), (3, 6), (None, 7)], list(zip_longest(x,y))
+
+
+def test_itertools_cycle():
+    from itertools import cycle
+    x = [1,2,3]
+    r = []
+    for i in cycle(x):
+        r.append(i)
+        if len(r) > 10:
+            break
+    assert r == [1,2,3,1,2,3,1,2,3,1,2], r
+    assert [x for x in cycle([])] == []
