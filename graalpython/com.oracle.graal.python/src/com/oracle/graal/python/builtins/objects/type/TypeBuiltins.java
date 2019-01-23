@@ -32,6 +32,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MRO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
@@ -659,4 +660,55 @@ public class TypeBuiltins extends PythonBuiltins {
             return null;
         }
     }
+
+    @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    @ImportStatic(NativeMemberNames.class)
+    static abstract class QualNameNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
+            return cls.getName();
+        }
+
+        @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(cls)"})
+        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") ReadAttributeFromObjectNode getName) {
+            return getName.execute(cls, __QUALNAME__);
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
+        Object setName(PythonClass cls, Object value,
+                        @Cached("create()") WriteAttributeToObjectNode setName) {
+            return setName.execute(cls, __QUALNAME__, value);
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        String getNative(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create(TP_NAME)") GetTypeMemberNode getTpNameNode) {
+            // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
+            String tpName = (String) getTpNameNode.execute(cls);
+            return getQualName(tpName);
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object getModule(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
+        }
+
+        @TruffleBoundary
+        private static String getQualName(String fqname) {
+            int firstDot = fqname.indexOf('.');
+            if (firstDot != -1) {
+                return fqname.substring(firstDot + 1);
+            }
+            return fqname;
+        }
+
+    }
+
 }
