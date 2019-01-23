@@ -1760,7 +1760,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         visitCallArglist(ctx.arglist(), argumentNodes, keywords, splatArguments);
 
         environment.pushScope(ctx.scope);
-
+        environment.registerSpecialClassCellVar();
         ExpressionNode body = asClassBody(ctx.suite().accept(this), qualName);
         ClassBodyRootNode classBodyRoot = factory.createClassBodyRoot(deriveSourceSection(ctx), className, environment.getCurrentFrame(), body, environment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
@@ -1778,7 +1778,8 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
         ReadNode tempLocal = environment.makeTempLocalVariable();
         ExpressionNode newClass = ((ExpressionNode) tempLocal).withSideEffect(
-                        factory.createBlock(tempLocal.makeWriteNode(classDef), factory.createWriteCellVar((ExpressionNode) tempLocal, classBodyRoot, __CLASS__)));
+                        factory.createBlock(tempLocal.makeWriteNode(classDef),
+                                        factory.createWriteCellVar((ExpressionNode) tempLocal, classBodyRoot, __CLASS__)));
         return read.makeWriteNode(newClass);
     }
 
