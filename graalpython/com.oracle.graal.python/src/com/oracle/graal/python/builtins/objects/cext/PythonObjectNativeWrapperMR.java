@@ -508,7 +508,13 @@ public class PythonObjectNativeWrapperMR {
         @Specialization(guards = "eq(TP_ITEMSIZE, key)")
         Object doTpItemsize(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__ITEMSIZE__)") LookupAttributeInMRONode getAttrNode) {
-            return getAttrNode.execute(object);
+            Object val = getAttrNode.execute(object);
+            // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
+            // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
+            if (val == PNone.NO_VALUE) {
+                return 0L;
+            }
+            return val;
         }
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
@@ -521,6 +527,18 @@ public class PythonObjectNativeWrapperMR {
             }
             Object dictoffset = getAttrNode.execute(object);
             return castToIntNode.execute(dictoffset);
+        }
+
+        @Specialization(guards = "eq(TP_WEAKLISTOFFSET, key)")
+        Object doTpWeaklistoffset(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create(__WEAKLISTOFFSET__)") LookupAttributeInMRONode getAttrNode) {
+            Object val = getAttrNode.execute(object);
+            // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
+            // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
+            if (val == PNone.NO_VALUE) {
+                return 0L;
+            }
+            return val;
         }
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
