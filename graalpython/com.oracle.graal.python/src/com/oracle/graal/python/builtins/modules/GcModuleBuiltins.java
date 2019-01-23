@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
+import java.lang.ref.Reference;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -34,12 +35,16 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "gc")
 public final class GcModuleBuiltins extends PythonBuiltins {
@@ -53,10 +58,23 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
+        int collect(VirtualFrame frame,
+                        @Cached("create()") CallNode callNode) {
+            doGc();
+            int cnt = 0;
+            Reference<? extends Object> r;
+            while ((r = getContext().pollWeakReferenceQueue()) != null) {
+                cnt++;
+                if (r instanceof PReferenceType.WeakRefStorage) {
+                    ((PReferenceType.WeakRefStorage) r).runCallback(frame, callNode);
+                }
+            }
+            return cnt;
+        }
+
         @TruffleBoundary
-        int collect() {
+        private static void doGc() {
             System.gc();
-            return 0;
         }
     }
 

@@ -557,12 +557,8 @@ public final class PythonObjectFactory extends Node {
         return trace(new PMappingproxy(cls, storage));
     }
 
-    public PReferenceType createReferenceType(LazyPythonClass cls, PythonObject object, PFunction callback) {
-        return trace(new PReferenceType(cls, object, callback));
-    }
-
-    public PReferenceType createReferenceType(PythonObject object, PFunction callback) {
-        return createReferenceType(PythonBuiltinClassType.PReferenceType, object, callback);
+    public PReferenceType createReferenceType(LazyPythonClass cls, Object object, TruffleObject callback) {
+        return trace(new PReferenceType(cls, object, callback, getContextRef().get().getWeakReferenceQueue()));
     }
 
     /*

@@ -33,6 +33,8 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -63,6 +65,7 @@ public final class PythonContext {
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
+    private final ReferenceQueue<Object> weakRefQueue = new ReferenceQueue<>();
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -320,5 +323,14 @@ public final class PythonContext {
 
     public PosixResources getResources() {
         return resources;
+    }
+
+    public ReferenceQueue<Object> getWeakReferenceQueue() {
+        return weakRefQueue;
+    }
+
+    @TruffleBoundary
+    public Reference<? extends Object> pollWeakReferenceQueue() {
+        return weakRefQueue.poll();
     }
 }
