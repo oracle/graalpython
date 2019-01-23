@@ -6,6 +6,7 @@
 import unittest
 import binascii
 import array
+import sys
 
 class MyInt():
     def __init__(self, value):
@@ -22,37 +23,42 @@ class BinASCIITest(unittest.TestCase):
         b = self.type2test(b'hello')
         self.assertEqual(binascii.b2a_base64(b),
                          b'aGVsbG8=\n')
-        self.assertEqual(binascii.b2a_base64(b, newline=True),
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            self.assertEqual(binascii.b2a_base64(b, newline=True),
                          b'aGVsbG8=\n')
-        self.assertEqual(binascii.b2a_base64(b, newline=False),
+            self.assertEqual(binascii.b2a_base64(b, newline=False),
                          b'aGVsbG8=')
 
     def test_b2a_base64_int_newline(self):
         b = self.type2test(b'hello')
-        self.assertEqual(binascii.b2a_base64(b, newline=125),
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            self.assertEqual(binascii.b2a_base64(b, newline=125),
                          b'aGVsbG8=\n')
-        self.assertEqual(binascii.b2a_base64(b, newline=-10),
+            self.assertEqual(binascii.b2a_base64(b, newline=-10),
                          b'aGVsbG8=\n')
-        self.assertEqual(binascii.b2a_base64(b, newline=0),
+            self.assertEqual(binascii.b2a_base64(b, newline=0),
                          b'aGVsbG8=')
 
     def test_b2a_base64_object_newline(self):
         b = self.type2test(b'hello')
-        self.assertEqual(binascii.b2a_base64(b, newline=MyInt(125)),
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            self.assertEqual(binascii.b2a_base64(b, newline=MyInt(125)),
                          b'aGVsbG8=\n')
-        self.assertEqual(binascii.b2a_base64(b, newline=MyInt(-10)),
+            self.assertEqual(binascii.b2a_base64(b, newline=MyInt(-10)),
                          b'aGVsbG8=\n')
-        self.assertEqual(binascii.b2a_base64(b, newline=MyInt(0)),
+            self.assertEqual(binascii.b2a_base64(b, newline=MyInt(0)),
                          b'aGVsbG8=')
 
     def test_b2a_base64_wrong_newline(self):
         b = self.type2test(b'hello')
-        self.assertRaises(TypeError, binascii.b2a_base64, b, newline='ahoj')
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            self.assertRaises(TypeError, binascii.b2a_base64, b, newline='ahoj')
 
     def test_b2a_base64_return_type(self):
         b = self.type2test(b'hello')
         self.assertEqual(type(binascii.b2a_base64(b)), bytes)
-        self.assertEqual(type(binascii.b2a_base64(b, newline=False)), bytes)
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            self.assertEqual(type(binascii.b2a_base64(b, newline=False)), bytes)
 
 class ArrayBinASCIITest(BinASCIITest):
     def type2test(self, s):
@@ -69,5 +75,6 @@ class MemoryviewBinASCIITest(BinASCIITest):
 class IndependetTest(unittest.TestCase):
 
     def test_b2a_base64_wrong_first_arg(self):
-        self.assertRaises(TypeError, binascii.b2a_base64, 'Ahoj', newline=True)
-        self.assertRaises(TypeError, binascii.b2a_base64, 10, newline=True)
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            self.assertRaises(TypeError, binascii.b2a_base64, 'Ahoj', newline=True)
+            self.assertRaises(TypeError, binascii.b2a_base64, 10, newline=True)
