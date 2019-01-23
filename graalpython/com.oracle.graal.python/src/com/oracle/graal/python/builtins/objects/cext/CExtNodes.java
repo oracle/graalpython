@@ -538,7 +538,7 @@ public abstract class CExtNodes {
                 return ((PythonNativeWrapper) object).getDelegate();
             } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getItSlowPath(object), PythonBuiltinClassType.TruffleObject)) {
                 if (forceNativeClass) {
-                    return PythonLanguage.getCore().factory().createNativeClassWrapper(object);
+                    return PythonLanguage.getCore().factory().createNativeClassWrapper((TruffleObject) object);
                 }
                 return PythonLanguage.getCore().factory().createNativeObjectWrapper((TruffleObject) object);
             } else if (object instanceof String || object instanceof Number || object instanceof Boolean || object instanceof PythonNativeNull || object instanceof PythonAbstractObject) {
@@ -980,15 +980,11 @@ public abstract class CExtNodes {
             }
         }
 
-        public boolean execute(PythonNativeClass a, PythonNativeClass b) {
-            return executeCFunction(a.getPtr(), b.getPtr());
-        }
-
-        public boolean execute(PythonNativeObject a, PythonNativeObject b) {
+        public boolean execute(PythonAbstractNativeObject a, PythonAbstractNativeObject b) {
             return executeCFunction(a.object, b.object);
         }
 
-        public boolean execute(PythonNativeObject a, long b) {
+        public boolean execute(PythonAbstractNativeObject a, long b) {
             return executeCFunction(a.object, b);
         }
 

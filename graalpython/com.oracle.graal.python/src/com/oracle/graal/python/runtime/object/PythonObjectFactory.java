@@ -358,7 +358,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PythonClass(metaclass, name, PythonLanguage.freshShape(), bases));
     }
 
-    public PythonNativeClass createNativeClassWrapper(Object ptr) {
+    public PythonNativeClass createNativeClassWrapper(TruffleObject ptr) {
         return trace(new PythonNativeClass(ptr));
     }
 

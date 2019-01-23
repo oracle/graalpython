@@ -41,7 +41,7 @@
 package com.oracle.graal.python.nodes.expression;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -164,7 +164,7 @@ public abstract class IsNode extends BinaryOpNode {
     }
 
     @Specialization
-    boolean doNative(PythonNativeObject left, PythonNativeObject right,
+    boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
                     @Cached("create(__EQ__)") CExtNodes.PointerCompareNode isNode) {
         return isNode.execute(left, right);
     }

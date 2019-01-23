@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,20 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
  * A simple wrapper around objects created through the Python C API that can be cast to PyObject*.
  */
-public class PythonNativeObject extends PythonAbstractObject {
-    public final TruffleObject object;
+public class PythonNativeObject extends PythonAbstractNativeObject {
 
     public PythonNativeObject(TruffleObject obj) {
-        object = obj;
-    }
-
-    public int compareTo(Object o) {
-        return 0;
+        super(obj);
     }
 }

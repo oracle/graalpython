@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,39 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.object.Shape;
 
-/**
- * A simple wrapper around types objects created through the Python C API that can be cast to
- * PyTypeObject*. This wrapper exists because we eagerly create Python classes in PyTypeReady, and
- * types are assumed to be mutated afterwards, so accessing the struct in native mode would work,
- * but our copy should just never become stale.
- */
-public final class PythonNativeClass extends PythonAbstractNativeObject implements AbstractPythonClass {
+public class PythonAbstractNativeObject extends PythonAbstractObject {
 
-    public PythonNativeClass(TruffleObject ptr) {
-        super(ptr);
+    public final TruffleObject object;
+
+    public PythonAbstractNativeObject(TruffleObject object) {
+        this.object = object;
     }
 
-    public TruffleObject getPtr() {
-        return object;
+    public int compareTo(Object o) {
+        return 0;
     }
 
-    public Shape getInstanceShape() {
-        CompilerDirectives.transferToInterpreter();
-        throw new UnsupportedOperationException("native class does not have a shape");
-    }
-
-    public void lookupChanged() {
-        // TODO invalidate cached native MRO
-        CompilerDirectives.transferToInterpreter();
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
-    public static PythonNativeClass cast(PythonNativeObject object) {
-        return new PythonNativeClass(object.object);
-    }
 }
