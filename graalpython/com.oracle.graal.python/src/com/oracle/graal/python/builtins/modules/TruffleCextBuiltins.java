@@ -154,6 +154,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -622,7 +623,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             if (initialDictoffset == 0) {
                 for (Object cls : getMro(cclass)) {
                     if (cls != cclass) {
-                        if (cls instanceof PythonNativeClass) {
+                        if (PGuards.isNativeClass(cls)) {
                             int baseDictoffset = castToIntNode.execute(ensureReadAttrNode().execute(cls, __DICTOFFSET__));
                             if (baseDictoffset != 0) {
                                 long dictoffset;
@@ -922,6 +923,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @TypeSystemReference(PythonTypes.class)
     abstract static class NativeBuiltin extends PythonBuiltinNode {
 
         @Child private Node hasSizeNode;
@@ -2177,7 +2179,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object doPointer(PythonNativeObject n, @SuppressWarnings("unused") int signed,
                         @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(factory().createNativeVoidPtr(n.object));
+            return toSulongNode.execute(factory().createNativeVoidPtr(n.getPtr()));
         }
     }
 
@@ -2317,7 +2319,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         PBytes doGeneric(PythonNativeObject object) {
-            return factory().createBytes(getByteArray(object.object));
+            return factory().createBytes(getByteArray(object.getPtr()));
         }
     }
 

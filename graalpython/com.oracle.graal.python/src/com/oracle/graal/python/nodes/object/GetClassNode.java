@@ -46,8 +46,7 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -201,13 +200,7 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @Specialization
-    protected AbstractPythonClass getIt(PythonNativeObject object,
-                    @Cached("create()") GetNativeClassNode getNativeClassNode) {
-        return getNativeClassNode.execute(object);
-    }
-
-    @Specialization
-    protected static AbstractPythonClass getIt(PythonNativeClass object,
+    protected AbstractPythonClass getIt(PythonAbstractNativeObject object,
                     @Cached("create()") GetNativeClassNode getNativeClassNode) {
         return getNativeClassNode.execute(object);
     }
@@ -258,10 +251,8 @@ public abstract class GetClassNode extends PNodeWithContext {
             return core.lookupType(PythonBuiltinClassType.PInt);
         } else if (o instanceof PythonObject) {
             return ((PythonObject) o).getPythonClass();
-        } else if (o instanceof PythonNativeObject) {
-            return GetNativeClassNode.doSlowPath((PythonNativeObject) o);
-        } else if (o instanceof PythonNativeClass) {
-            return GetNativeClassNode.doSlowPath((PythonNativeClass) o);
+        } else if (o instanceof PythonAbstractNativeObject) {
+            return GetNativeClassNode.doSlowPath((PythonAbstractNativeObject) o);
         } else if (o instanceof PEllipsis) {
             return core.lookupType(PythonBuiltinClassType.PEllipsis);
         } else if (o instanceof PNotImplemented) {

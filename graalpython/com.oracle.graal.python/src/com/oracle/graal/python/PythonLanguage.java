@@ -37,7 +37,6 @@ import org.graalvm.options.OptionDescriptors;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -51,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NodeFactory;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
@@ -312,7 +312,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (value != null) {
             if (value instanceof PythonObject) {
                 return ((PythonObject) value).asPythonClass();
-            } else if (value instanceof PythonNativeObject) {
+            } else if (PGuards.isNativeObject(value)) {
+                // TODO(fa): we could also use 'GetClassNode.getItSlowPath(value)' here
                 return null;
             } else if (value instanceof PythonAbstractObject ||
                             value instanceof Number ||

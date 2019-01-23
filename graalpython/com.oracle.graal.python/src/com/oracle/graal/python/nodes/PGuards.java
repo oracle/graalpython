@@ -256,11 +256,11 @@ public abstract class PGuards {
     }
 
     public static boolean isNativeObject(Object object) {
-        return object instanceof PythonNativeObject;
+        return PythonNativeObject.isInstance(object);
     }
 
     public static boolean isNativeClass(Object klass) {
-        return klass instanceof PythonNativeClass;
+        return PythonNativeClass.isInstance(klass);
     }
 
     public static boolean isPRange(Object obj) {

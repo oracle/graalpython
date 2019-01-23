@@ -45,9 +45,16 @@ import com.oracle.truffle.api.interop.TruffleObject;
 /**
  * A simple wrapper around objects created through the Python C API that can be cast to PyObject*.
  */
-public class PythonNativeObject extends PythonAbstractNativeObject {
+public interface PythonNativeObject {
 
-    public PythonNativeObject(TruffleObject obj) {
-        super(obj);
+    TruffleObject getPtr();
+
+    static boolean isInstance(Object object) {
+        return object instanceof PythonAbstractNativeObject;
+    }
+
+    static PythonNativeObject cast(Object object) {
+        assert isInstance(object);
+        return (PythonAbstractNativeObject) object;
     }
 }

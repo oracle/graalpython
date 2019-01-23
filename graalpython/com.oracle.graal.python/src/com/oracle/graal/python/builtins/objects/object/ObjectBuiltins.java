@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -141,12 +142,12 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached("create()") BranchProfile errorSelfBranch,
                         @Cached("create()") BranchProfile errorSlotsBranch,
                         @Cached("create()") GetLazyClassNode getLazyClass) {
-            if (value instanceof PythonBuiltinClass || value instanceof PythonNativeClass) {
+            if (value instanceof PythonBuiltinClass || PGuards.isNativeClass(value)) {
                 errorValueBranch.enter();
                 throw raise(TypeError, ERROR_MESSAGE);
             }
             LazyPythonClass lazyClass = getLazyClass.execute(self);
-            if (lazyClass instanceof PythonBuiltinClassType || lazyClass instanceof PythonBuiltinClass || lazyClass instanceof PythonNativeClass) {
+            if (lazyClass instanceof PythonBuiltinClassType || lazyClass instanceof PythonBuiltinClass || PGuards.isNativeClass(lazyClass)) {
                 errorSelfBranch.enter();
                 throw raise(TypeError, ERROR_MESSAGE);
             }
@@ -236,7 +237,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public boolean eq(PythonNativeObject self, PythonNativeObject other,
+        public boolean eq(PythonAbstractNativeObject self, PythonAbstractNativeObject other,
                         @Cached("create(__EQ__)") CExtNodes.PointerCompareNode nativeIsNode) {
             return nativeIsNode.execute(self, other);
         }
@@ -255,7 +256,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private CastToBooleanNode ifFalseNode;
 
         @Specialization
-        public boolean ne(PythonNativeObject self, PythonNativeObject other,
+        public boolean ne(PythonAbstractNativeObject self, PythonAbstractNativeObject other,
                         @Cached("create(__NE__)") CExtNodes.PointerCompareNode nativeNeNode) {
             return nativeNeNode.execute(self, other);
         }

@@ -41,9 +41,11 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.object.Shape;
 
-public class PythonAbstractNativeObject extends PythonAbstractObject {
+public class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
     public final TruffleObject object;
 
@@ -53,6 +55,21 @@ public class PythonAbstractNativeObject extends PythonAbstractObject {
 
     public int compareTo(Object o) {
         return 0;
+    }
+
+    public Shape getInstanceShape() {
+        CompilerDirectives.transferToInterpreter();
+        throw new UnsupportedOperationException("native class does not have a shape");
+    }
+
+    public void lookupChanged() {
+        // TODO invalidate cached native MRO
+        CompilerDirectives.transferToInterpreter();
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    public TruffleObject getPtr() {
+        return object;
     }
 
 }

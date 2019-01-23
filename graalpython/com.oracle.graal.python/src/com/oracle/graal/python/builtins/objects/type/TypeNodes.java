@@ -51,8 +51,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass.FlagsContainer;
@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperCl
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -78,7 +79,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.Message;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
@@ -129,7 +129,7 @@ public abstract class TypeNodes {
                 } else {
                     return getValue(mclazz.getFlagsContainer());
                 }
-            } else if (clazz instanceof PythonNativeClass) {
+            } else if (PGuards.isNativeClass(clazz)) {
                 return doNativeGeneric((PythonNativeClass) clazz, createReadNode());
             }
             throw new IllegalStateException("unknown type");
@@ -138,7 +138,7 @@ public abstract class TypeNodes {
 
         static long doNativeGeneric(PythonNativeClass clazz, Node readNode) {
             try {
-                return (long) ForeignAccess.sendRead(readNode, (TruffleObject) clazz.getPtr(), NativeMemberNames.TP_FLAGS);
+                return (long) ForeignAccess.sendRead(readNode, clazz.getPtr(), NativeMemberNames.TP_FLAGS);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw e.raise();
@@ -192,7 +192,7 @@ public abstract class TypeNodes {
                 return ((ManagedPythonClass) obj).getMethodResolutionOrder();
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
-            } else if (obj instanceof PythonNativeClass) {
+            } else if (PGuards.isNativeClass(obj)) {
                 Object tupleObj = GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_MRO);
                 if (tupleObj instanceof PTuple) {
                     SequenceStorage sequenceStorage = ((PTuple) tupleObj).getSequenceStorage();
@@ -241,7 +241,7 @@ public abstract class TypeNodes {
                     return BuiltinNames.FOREIGN;
                 }
                 return ((PythonBuiltinClassType) obj).getName();
-            } else if (obj instanceof PythonNativeClass) {
+            } else if (PGuards.isNativeClass(obj)) {
                 return (String) CExtNodes.GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_NAME);
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
@@ -273,7 +273,7 @@ public abstract class TypeNodes {
                 return ((ManagedPythonClass) obj).getSuperClass();
             } else if (obj instanceof PythonBuiltinClassType) {
                 return ((PythonBuiltinClassType) obj).getBase();
-            } else if (obj instanceof PythonNativeClass) {
+            } else if (PGuards.isNativeClass(obj)) {
                 // TODO implement
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
@@ -305,7 +305,7 @@ public abstract class TypeNodes {
                 return ((ManagedPythonClass) obj).getSubClasses();
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getSubClasses();
-            } else if (obj instanceof PythonNativeClass) {
+            } else if (PGuards.isNativeClass(obj)) {
                 // TODO implement
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
@@ -356,7 +356,7 @@ public abstract class TypeNodes {
                 return ((ManagedPythonClass) obj).getBaseClasses();
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getBaseClasses();
-            } else if (obj instanceof PythonNativeClass) {
+            } else if (PGuards.isNativeClass(obj)) {
                 Object basesObj = GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_BASES);
                 if (!(basesObj instanceof PTuple)) {
                     throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, "invalid type of tp_bases (was %p)", basesObj);
@@ -401,13 +401,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        boolean doNative(PythonNativeClass left, PythonNativeClass right,
-                        @Cached("create(__EQ__)") CExtNodes.PointerCompareNode pointerCompareNode) {
-            return pointerCompareNode.execute(left, right);
-        }
-
-        @Specialization
-        boolean doNative(PythonNativeObject left, PythonNativeObject right,
+        boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
                         @Cached("create(__EQ__)") CExtNodes.PointerCompareNode pointerCompareNode) {
             return pointerCompareNode.execute(left, right);
         }
@@ -421,10 +415,8 @@ public abstract class TypeNodes {
         public static boolean doSlowPath(Object left, Object right) {
             if (left instanceof ManagedPythonClass && right instanceof ManagedPythonClass) {
                 return left == right;
-            } else if (left instanceof PythonNativeClass && right instanceof PythonNativeClass) {
-                return CExtNodes.PointerCompareNode.create(__EQ__).execute((PythonNativeClass) left, (PythonNativeClass) right);
-            } else if (left instanceof PythonNativeObject && right instanceof PythonNativeObject) {
-                return CExtNodes.PointerCompareNode.create(__EQ__).execute((PythonNativeObject) left, (PythonNativeObject) right);
+            } else if (left instanceof PythonAbstractNativeObject && right instanceof PythonAbstractNativeObject) {
+                return CExtNodes.PointerCompareNode.create(__EQ__).execute((PythonAbstractNativeObject) left, (PythonAbstractNativeObject) right);
             }
             return false;
         }
@@ -454,7 +446,7 @@ public abstract class TypeNodes {
         public static Object getSlowPath(AbstractPythonClass clazz) {
             if (clazz instanceof ManagedPythonClass) {
                 return ((ManagedPythonClass) clazz).getSulongType();
-            } else if (clazz instanceof PythonNativeClass) {
+            } else if (PGuards.isNativeClass(clazz)) {
                 return null;
             }
             throw new IllegalStateException("unknown type " + clazz.getClass().getName());
@@ -514,14 +506,6 @@ public abstract class TypeNodes {
                 mro.add(cls);
                 currentMRO = mergeMROs(toMerge, mro);
             }
-
-// for (AbstractPythonClass c : currentMRO) {
-// if (c instanceof PythonNativeClass) {
-// needsNativeAllocation = true;
-// break;
-// }
-// }
-
             return currentMRO;
         }
 

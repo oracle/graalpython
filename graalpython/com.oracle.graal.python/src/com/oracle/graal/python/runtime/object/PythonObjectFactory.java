@@ -37,6 +37,7 @@ import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -207,7 +208,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PythonNativeObject createNativeObjectWrapper(TruffleObject obj) {
-        return trace(new PythonNativeObject(obj));
+        return trace(new PythonAbstractNativeObject(obj));
     }
 
     public PythonNativeVoidPtr createNativeVoidPtr(TruffleObject obj) {
@@ -359,7 +360,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PythonNativeClass createNativeClassWrapper(TruffleObject ptr) {
-        return trace(new PythonNativeClass(ptr));
+        return trace(new PythonAbstractNativeObject(ptr));
     }
 
     public PMemoryView createMemoryView(LazyPythonClass metaclass, Object value) {

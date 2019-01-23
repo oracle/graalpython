@@ -312,13 +312,8 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doNativeClass(PythonNativeClass nativeClass) {
+        Object doNativeClass(PythonAbstractNativeObject nativeClass) {
             return nativeClass.getPtr();
-        }
-
-        @Specialization
-        Object doNativeObject(PythonNativeObject nativeObject) {
-            return nativeObject.object;
         }
 
         @Specialization
@@ -369,10 +364,6 @@ public abstract class CExtNodes {
             return o instanceof AbstractPythonClass;
         }
 
-        protected static boolean isNativeObject(PythonAbstractObject o) {
-            return o instanceof PythonNativeObject;
-        }
-
         protected static PythonClassNativeWrapper wrapNativeClass(ManagedPythonClass object) {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
@@ -391,10 +382,10 @@ public abstract class CExtNodes {
                 return PrimitiveNativeWrapper.createLong((Long) o);
             } else if (o instanceof Double) {
                 return PrimitiveNativeWrapper.createDouble((Double) o);
-            } else if (o instanceof PythonNativeClass) {
+            } else if (PythonNativeClass.isInstance(o)) {
                 return ((PythonNativeClass) o).getPtr();
-            } else if (o instanceof PythonNativeObject) {
-                return ((PythonNativeObject) o).object;
+            } else if (PythonNativeObject.isInstance(o)) {
+                return PythonNativeObject.cast(o).getPtr();
             } else if (o instanceof PythonNativeNull) {
                 return ((PythonNativeNull) o).getPtr();
             } else if (o instanceof ManagedPythonClass) {
@@ -417,12 +408,6 @@ public abstract class CExtNodes {
     public abstract static class AsPythonObjectNode extends CExtBaseNode {
         @Child private MaterializeDelegateNode materializeNode;
         @Child private IsPointerNode isPointerNode;
-
-        private final boolean forceNativeClass;
-
-        public AsPythonObjectNode(boolean forceNativeClass) {
-            this.forceNativeClass = forceNativeClass;
-        }
 
         public abstract Object execute(Object value);
 
@@ -462,12 +447,9 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
-        PythonAbstractObject doNativeObject(TruffleObject object,
+        Object doNativeObject(TruffleObject object,
                         @SuppressWarnings("unused") @Cached("create()") GetLazyClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached("create()") IsBuiltinClassProfile isForeignClassProfile) {
-            if (forceNativeClass) {
-                return factory().createNativeClassWrapper(object);
-            }
             return factory().createNativeObjectWrapper(object);
         }
 
@@ -556,15 +538,11 @@ public abstract class CExtNodes {
         }
 
         public static AsPythonObjectNode create() {
-            return AsPythonObjectNodeGen.create(false);
-        }
-
-        static AsPythonObjectNode create(boolean forceNativeClass) {
-            return AsPythonObjectNodeGen.create(forceNativeClass);
+            return AsPythonObjectNodeGen.create();
         }
 
         public static AsPythonObjectNode createForceClass() {
-            return AsPythonObjectNodeGen.create(true);
+            return AsPythonObjectNodeGen.create();
         }
     }
 
@@ -872,11 +850,11 @@ public abstract class CExtNodes {
 
         @CompilationFinal private TruffleObject func;
 
-        public abstract AbstractPythonClass execute(PythonAbstractObject object);
+        public abstract AbstractPythonClass execute(PythonAbstractNativeObject object);
 
         @Specialization(guards = "object == cachedObject", limit = "1")
-        AbstractPythonClass getNativeClassCached(@SuppressWarnings("unused") PythonNativeObject object,
-                        @SuppressWarnings("unused") @Cached("object") PythonNativeObject cachedObject,
+        AbstractPythonClass getNativeClassCached(@SuppressWarnings("unused") PythonAbstractNativeObject object,
+                        @SuppressWarnings("unused") @Cached("object") PythonAbstractNativeObject cachedObject,
                         @Cached("getNativeClass(cachedObject)") AbstractPythonClass cachedClass) {
             // TODO: (tfel) is this really something we can do? It's so rare for this class to
             // change that it shouldn't be worth the effort, but in native code, anything can
@@ -886,35 +864,13 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        AbstractPythonClass getNativeClass(PythonNativeObject object) {
+        AbstractPythonClass getNativeClass(PythonAbstractNativeObject object) {
             // do not convert wrap 'object.object' since that is really the native pointer object
             return (AbstractPythonClass) getToJavaNode().execute(getCallGetObTypeNode().call(object.object));
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "1")
-        AbstractPythonClass getNativeClassCached(@SuppressWarnings("unused") PythonNativeClass object,
-                        @SuppressWarnings("unused") @Cached("object") PythonNativeClass cachedObject,
-                        @Cached("getNativeClass(cachedObject)") AbstractPythonClass cachedClass) {
-            // TODO: (tfel) is this really something we can do? It's so rare for this class to
-            // change that it shouldn't be worth the effort, but in native code, anything can
-            // happen. OTOH, CPython also has caches that can become invalid when someone just goes
-            // and changes the ob_type of an object.
-            return cachedClass;
-        }
-
-        @Specialization
-        AbstractPythonClass getNativeClass(PythonNativeClass object) {
-            // do not convert wrap 'object.object' since that is really the native pointer object
-            return (AbstractPythonClass) getToJavaNode().execute(getCallGetObTypeNode().call(object.getPtr()));
-        }
-
         @TruffleBoundary
-        public static AbstractPythonClass doSlowPath(PythonNativeObject object) {
-            return (AbstractPythonClass) AsPythonObjectNode.doSlowPath(PCallCapiFunction.doSlowPath(NativeCAPISymbols.FUN_GET_OB_TYPE, object.object), true);
-        }
-
-        @TruffleBoundary
-        public static AbstractPythonClass doSlowPath(PythonNativeClass object) {
+        public static AbstractPythonClass doSlowPath(PythonAbstractNativeObject object) {
             return (AbstractPythonClass) AsPythonObjectNode.doSlowPath(PCallCapiFunction.doSlowPath(NativeCAPISymbols.FUN_GET_OB_TYPE, object.getPtr()), true);
         }
 

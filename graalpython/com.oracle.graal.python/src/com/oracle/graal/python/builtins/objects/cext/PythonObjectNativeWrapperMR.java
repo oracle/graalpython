@@ -736,9 +736,9 @@ public class PythonObjectNativeWrapperMR {
                         @Cached("createReadNode()") Node readNode,
                         @Cached("createBinaryProfile()") ConditionProfile isNativeObject) {
             Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
-            if (isNativeObject.profile(delegateObj instanceof PythonNativeObject)) {
+            if (isNativeObject.profile(PythonNativeObject.isInstance(delegateObj))) {
                 try {
-                    return ForeignAccess.sendRead(readNode, ((PythonNativeObject) delegateObj).object, key);
+                    return ForeignAccess.sendRead(readNode, PythonNativeObject.cast(delegateObj).getPtr(), key);
                 } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                     throw e.raise();
                 }
@@ -958,9 +958,9 @@ public class PythonObjectNativeWrapperMR {
                         @Cached("createWriteNode()") Node writeNode,
                         @Cached("createBinaryProfile()") ConditionProfile isNativeObject) {
             Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
-            if (isNativeObject.profile(delegateObj instanceof PythonNativeObject)) {
+            if (isNativeObject.profile(PythonNativeObject.isInstance(delegateObj))) {
                 try {
-                    return ForeignAccess.sendWrite(writeNode, ((PythonNativeObject) delegateObj).object, key, value);
+                    return ForeignAccess.sendWrite(writeNode, PythonNativeObject.cast(delegateObj).getPtr(), key, value);
                 } catch (UnsupportedMessageException | UnknownIdentifierException | UnsupportedTypeException e) {
                     throw e.raise();
                 }

@@ -53,8 +53,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -71,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -139,7 +138,7 @@ public class PythonMessageResolution {
         @Child private GetLazyClassNode getClass;
 
         public boolean execute(Object object) {
-            if (object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject || object instanceof PythonNativeClass || object instanceof PythonNativeObject) {
+            if (object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject || PGuards.isNativeClass(object) || PGuards.isNativeObject(object)) {
                 return true;
             } else if (object instanceof PythonClass) {
                 return false;
@@ -149,7 +148,7 @@ public class PythonMessageResolution {
                     getClass = insert(GetLazyClassNode.create());
                 }
                 LazyPythonClass klass = getClass.execute(object);
-                return klass instanceof PythonBuiltinClassType || klass instanceof PythonBuiltinClass || klass instanceof PythonNativeClass;
+                return klass instanceof PythonBuiltinClassType || klass instanceof PythonBuiltinClass || PGuards.isNativeClass(klass);
             }
         }
     }
@@ -773,6 +772,7 @@ public class PythonMessageResolution {
     @Resolve(message = "KEY_INFO")
     abstract static class PKeyInfoNode extends Node {
         @Child private ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.create();
+        @Child private ReadAttributeFromObjectNode readTypeAttrNode;
         @Child private IsCallableNode isCallableNode;
         @Child private LookupInheritedAttributeNode getGetNode;
         @Child private LookupInheritedAttributeNode getSetNode;
@@ -798,7 +798,11 @@ public class PythonMessageResolution {
 
             AbstractPythonClass klass = getClassNode.execute(object);
             for (AbstractPythonClass c : getMro(klass)) {
-                attr = readNode.execute(c, fieldName);
+                if (readTypeAttrNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    readTypeAttrNode = insert(ReadAttributeFromObjectNode.createForceType());
+                }
+                attr = readTypeAttrNode.execute(c, fieldName);
                 if (attr != PNone.NO_VALUE) {
                     owner = c;
                     break;

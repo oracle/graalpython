@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -89,7 +90,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         @Specialization(replaces = "lookupConstantMRO")
         protected Object lookup(ManagedPythonClass klass, Object key,
                         @Cached("create()") GetMroNode getMroNode,
-                        @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
             return LookupAttributeInMRONode.lookupSlow(klass, key, getMroNode, readAttrNode);
         }
     }
@@ -168,7 +169,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                     }
                 }
             } else {
-                assert clsObj instanceof PythonNativeClass;
+                assert PGuards.isNativeClass(clsObj);
                 return null;
             }
         }
@@ -186,7 +187,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     protected ReadAttributeFromObjectNode[] create(int size) {
         ReadAttributeFromObjectNode[] nodes = new ReadAttributeFromObjectNode[size];
         for (int i = 0; i < size; i++) {
-            nodes[i] = ReadAttributeFromObjectNode.create();
+            nodes[i] = ReadAttributeFromObjectNode.createForceType();
         }
         return nodes;
     }
@@ -212,14 +213,14 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     @Specialization(replaces = {"lookupConstantMROCached", "lookupConstantMRO"})
     protected Object lookup(ManagedPythonClass klass,
                     @Cached("create()") GetMroNode getMroNode,
-                    @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
+                    @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
         return lookupSlow(klass, key, getMroNode, readAttrNode);
     }
 
     @Specialization
     protected Object lookup(PythonNativeClass klass,
                     @Cached("create()") GetMroNode getMroNode,
-                    @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
+                    @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
         return lookupSlow(klass, key, getMroNode, readAttrNode);
     }
 
@@ -247,7 +248,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         AbstractPythonClass[] mro = GetMroNode.doSlowPath(klass);
         for (int i = 0; i < mro.length; i++) {
             AbstractPythonClass kls = mro[i];
-            Object value = ReadAttributeFromObjectNode.doSlowPath(kls, key);
+            Object value = ReadAttributeFromObjectNode.doSlowPath(kls, key, true);
             if (value != PNone.NO_VALUE) {
                 return value;
             }

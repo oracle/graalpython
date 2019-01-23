@@ -41,9 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.object.Shape;
 
 /**
  * A simple wrapper around types objects created through the Python C API that can be cast to
@@ -51,28 +49,16 @@ import com.oracle.truffle.api.object.Shape;
  * types are assumed to be mutated afterwards, so accessing the struct in native mode would work,
  * but our copy should just never become stale.
  */
-public final class PythonNativeClass extends PythonAbstractNativeObject implements AbstractPythonClass {
+public interface PythonNativeClass extends AbstractPythonClass {
 
-    public PythonNativeClass(TruffleObject ptr) {
-        super(ptr);
+    TruffleObject getPtr();
+
+    static boolean isInstance(Object object) {
+        return object instanceof PythonAbstractNativeObject;
     }
 
-    public TruffleObject getPtr() {
-        return object;
-    }
-
-    public Shape getInstanceShape() {
-        CompilerDirectives.transferToInterpreter();
-        throw new UnsupportedOperationException("native class does not have a shape");
-    }
-
-    public void lookupChanged() {
-        // TODO invalidate cached native MRO
-        CompilerDirectives.transferToInterpreter();
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
-    public static PythonNativeClass cast(PythonNativeObject object) {
-        return new PythonNativeClass(object.object);
+    static PythonNativeClass cast(Object object) {
+        assert isInstance(object);
+        return (PythonAbstractNativeObject) object;
     }
 }

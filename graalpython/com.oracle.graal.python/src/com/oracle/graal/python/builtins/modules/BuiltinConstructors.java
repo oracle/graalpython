@@ -1379,8 +1379,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private static PythonNativeClass findFirstNativeBaseClass(AbstractPythonClass[] methodResolutionOrder) {
             for (AbstractPythonClass cls : methodResolutionOrder) {
-                if (cls instanceof PythonNativeClass) {
-                    return (PythonNativeClass) cls;
+                if (PGuards.isNativeClass(cls)) {
+                    return PythonNativeClass.cast(cls);
                 }
             }
             throw new IllegalStateException("class needs native allocation but has not native base class");
@@ -2042,7 +2042,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             boolean addedNewDict = false;
             if (pythonClass.needsNativeAllocation()) {
                 for (Object cls : getMro(pythonClass)) {
-                    if (cls instanceof PythonNativeClass) {
+                    if (PGuards.isNativeClass(cls)) {
                         long dictoffset = ensureCastToIntNode().execute(ensureReadAttrNode().execute(cls, SpecialAttributeNames.__DICTOFFSET__));
                         long basicsize = ensureCastToIntNode().execute(ensureReadAttrNode().execute(cls, SpecialAttributeNames.__BASICSIZE__));
                         long itemsize = ensureCastToIntNode().execute(ensureReadAttrNode().execute(cls, SpecialAttributeNames.__ITEMSIZE__));

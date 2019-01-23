@@ -108,7 +108,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonClass)
 public class TypeBuiltins extends PythonBuiltins {
@@ -193,23 +192,14 @@ public class TypeBuiltins extends PythonBuiltins {
             return ary[0];
         }
 
-        protected static boolean isClass(Object object) {
-            return PGuards.isClass(object) || PGuards.isNativeObject(object);
-        }
-
         protected static boolean accept(Object[] ary, Object cachedSelf) {
             Object first = first(ary);
-            return first == cachedSelf && isClass(first);
+            return first == cachedSelf && PGuards.isClass(first);
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"accept(arguments, cachedSelf)"})
         protected Object doItUnboxed(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords,
-                        @Cached("first(arguments)") Object cachedSelf,
-                        @Cached("createClassProfile()") ValueProfile profile) {
-            Object profiled = profile.profile(cachedSelf);
-            if (profiled instanceof PythonNativeObject) {
-                return op(frame, PythonNativeClass.cast((PythonNativeObject) cachedSelf), arguments, keywords, false);
-            }
+                        @Cached("first(arguments)") Object cachedSelf) {
             return op(frame, (AbstractPythonClass) cachedSelf, arguments, keywords, false);
 
         }
@@ -217,9 +207,6 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doItUnboxed")
         protected Object doItUnboxedIndirect(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords) {
             Object self = arguments[0];
-            if (self instanceof PythonNativeObject) {
-                return op(frame, PythonNativeClass.cast((PythonNativeObject) self), arguments, keywords, false);
-            }
             return op(frame, (AbstractPythonClass) self, arguments, keywords, false);
         }
 
@@ -377,11 +364,6 @@ public class TypeBuiltins extends PythonBuiltins {
             }
             errorProfile.enter();
             throw raise(AttributeError, "type object '%s' has no attribute %s", getTypeName(object), key);
-        }
-
-        @Specialization
-        protected Object doIt(PythonNativeObject object, Object key) {
-            return doIt(new PythonNativeClass(object.object), key);
         }
 
         private Object readAttribute(LazyPythonClass object, Object key) {
