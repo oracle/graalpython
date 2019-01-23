@@ -36,6 +36,9 @@ import java.io.OutputStream;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.util.HashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -47,6 +50,8 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PThreadState
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
@@ -56,6 +61,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 public final class PythonContext {
 
@@ -66,6 +72,10 @@ public final class PythonContext {
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
     private final ReferenceQueue<Object> weakRefQueue = new ReferenceQueue<>();
+
+    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    private volatile boolean triggerCollection = false;
+    private static final int COLLECTIONS_N_MILLISECONDS = 5;
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -248,6 +258,11 @@ public final class PythonContext {
         mainModule.setDict(core.factory().createDictFixedStorage(mainModule));
         sysModules.setItem(__MAIN__, mainModule);
         OpaqueBytes.initializeForNewContext(this);
+        executor.scheduleWithFixedDelay(new Runnable() {
+            public void run() {
+                triggerCollection = true;
+            }
+        }, COLLECTIONS_N_MILLISECONDS, COLLECTIONS_N_MILLISECONDS, TimeUnit.MILLISECONDS);
         currentException = null;
         isInitialized = true;
     }
@@ -330,7 +345,26 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
-    public Reference<? extends Object> pollWeakReferenceQueue() {
+    private Reference<? extends Object> pollWeakReferenceQueue() {
         return weakRefQueue.poll();
+    }
+
+    public boolean shouldTriggerCollection() {
+        if (triggerCollection) {
+            triggerCollection = false;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean collectWeakReferences(VirtualFrame frame, CallNode callNode) {
+        Reference<? extends Object> r = pollWeakReferenceQueue();
+        if (r instanceof PReferenceType.WeakRefStorage) {
+            ((PReferenceType.WeakRefStorage) r).runCallback(frame, callNode);
+            return true;
+        } else {
+            return false;
+        }
     }
 }

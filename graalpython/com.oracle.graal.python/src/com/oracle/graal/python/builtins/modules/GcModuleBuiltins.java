@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.modules;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
-import java.lang.ref.Reference;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -35,7 +34,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -62,12 +60,9 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") CallNode callNode) {
             doGc();
             int cnt = 0;
-            Reference<? extends Object> r;
-            while ((r = getContext().pollWeakReferenceQueue()) != null) {
+            // collect all weak references now
+            while (getContext().collectWeakReferences(frame, callNode)) {
                 cnt++;
-                if (r instanceof PReferenceType.WeakRefStorage) {
-                    ((PReferenceType.WeakRefStorage) r).runCallback(frame, callNode);
-                }
             }
             return cnt;
         }

@@ -29,10 +29,14 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.cell.CellSupplier;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -47,7 +51,7 @@ import com.oracle.truffle.api.source.SourceSection;
  * RootNode of a Python Function body. It is invoked by a CallTarget.
  */
 public class FunctionRootNode extends PClosureFunctionRootNode implements CellSupplier {
-
+    private final ContextReference<PythonContext> contextRef;
     private final PCell[] cells;
     private final ExecutionCellSlots executionCellSlots;
     private final String functionName;
@@ -57,11 +61,13 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     private boolean isRewritten = false;
 
     @Child private ExpressionNode body;
+    @Child private CallNode callNode;
     private ExpressionNode uninitializedBody;
 
     public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
                     ExecutionCellSlots executionCellSlots) {
         super(language, frameDescriptor, executionCellSlots);
+        this.contextRef = language.getContextReference();
         this.executionCellSlots = executionCellSlots;
         this.cells = new PCell[this.cellVarSlots.length];
 
@@ -138,6 +144,14 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
 
     @Override
     public Object execute(VirtualFrame frame) {
+        PythonContext pythonContext = contextRef.get();
+        if (pythonContext.shouldTriggerCollection()) {
+            if (callNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNode = insert(CallNode.create());
+            }
+            pythonContext.collectWeakReferences(frame, callNode);
+        }
         initClosureAndCellVars(frame);
         return body.execute(frame);
     }

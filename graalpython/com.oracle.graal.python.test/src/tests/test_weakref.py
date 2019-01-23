@@ -43,7 +43,8 @@ def test_weakref_finalizer():
     class A(): pass
     for i in range(2):
         w = weakref.ref(A(), cleanup)
-    gc.collect()
+    while not cleaned_up:
+        gc.collect()
     assert not w()
     assert cleaned_up
 
