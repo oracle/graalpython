@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.classes;
 
 import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -89,7 +88,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     @Specialization(guards = {"derived == cachedDerived"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "isSubtypeOfConstantType")
     @ExplodeLoop
-    boolean isSubtypeOfVariableType(@SuppressWarnings("unused") AbstractPythonClass derived, PythonClass cls,
+    boolean isSubtypeOfVariableType(@SuppressWarnings("unused") AbstractPythonClass derived, AbstractPythonClass cls,
                     @Cached("derived") AbstractPythonClass cachedDerived) {
         for (AbstractPythonClass n : getMro(cachedDerived)) {
             if (isSameType(n, cls)) {

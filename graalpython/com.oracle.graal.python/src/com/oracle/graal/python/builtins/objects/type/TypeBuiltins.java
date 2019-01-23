@@ -154,7 +154,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MroNode extends PythonBuiltinNode {
         @Specialization
-        Object doit(PythonClass klass,
+        Object doit(AbstractPythonClass klass,
                         @Cached("create()") GetMroNode getMroNode) {
             AbstractPythonClass[] mro = getMroNode.execute(klass);
             return factory().createList(Arrays.copyOf(mro, mro.length, Object[].class));
@@ -492,7 +492,7 @@ public class TypeBuiltins extends PythonBuiltins {
         public abstract boolean executeWith(Object cls, Object instance);
 
         @Specialization
-        public boolean isInstance(PythonClass cls, Object instance,
+        public boolean isInstance(AbstractPythonClass cls, Object instance,
                         @Cached("create()") IsSubtypeNode isSubtypeNode,
                         @Cached("create()") GetClassNode getClass) {
             if (instance instanceof PythonObject && isSubtypeNode.execute(getClass.execute(instance), cls)) {
@@ -530,7 +530,7 @@ public class TypeBuiltins extends PythonBuiltins {
     static abstract class SubclassesNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PList getSubclasses(PythonClass cls,
+        PList getSubclasses(LazyPythonClass cls,
                         @Cached("create()") GetSubclassesNode getSubclassesNode) {
             // TODO: missing: keep track of subclasses
             return factory().createList(toArray(getSubclassesNode.execute(cls)));

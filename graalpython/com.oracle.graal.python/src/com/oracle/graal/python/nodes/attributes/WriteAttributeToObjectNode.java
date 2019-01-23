@@ -44,8 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -72,12 +71,22 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     private final ConditionProfile isClassProfile = ConditionProfile.createBinaryProfile();
     private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
 
+    protected final boolean forceType;
+
+    public WriteAttributeToObjectNode(boolean forceType) {
+        this.forceType = forceType;
+    }
+
     public abstract boolean execute(Object primary, Object key, Object value);
 
     public abstract boolean execute(Object primary, String key, Object value);
 
     public static WriteAttributeToObjectNode create() {
-        return WriteAttributeToObjectNodeGen.create();
+        return WriteAttributeToObjectNodeGen.create(false);
+    }
+
+    public static WriteAttributeToObjectNode createForceType() {
+        return WriteAttributeToObjectNodeGen.create(true);
     }
 
     protected boolean isAttrWritable(PythonObject self, Object key) {
@@ -165,24 +174,21 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return true;
     }
 
-    @Specialization(guards = "!isHiddenKey(key)")
-    protected boolean writeNative(PythonNativeObject object, Object key, Object value,
+    @Specialization(guards = {"!forceType", "!isHiddenKey(key)"})
+    protected boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
                     @Cached("create()") GetObjectDictNode getNativeDict,
                     @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
-        Object d = getNativeDict.execute(object);
-        if (d instanceof PHashingCollection) {
-            setItemNode.execute(((PHashingCollection) d), key, value);
-            return true;
-        } else {
-            return raise(object, key, value);
-        }
+        return writeNativeGeneric(object, key, value, getNativeDict.execute(object), setItemNode);
     }
 
-    @Specialization(guards = "!isHiddenKey(key)")
-    protected boolean writeNativeClass(PythonNativeClass object, Object key, Object value,
+    @Specialization(guards = {"forceType", "!isHiddenKey(key)"})
+    protected boolean writeNativeClass(PythonAbstractNativeObject object, Object key, Object value,
                     @Cached("create(TP_DICT)") GetTypeMemberNode getNativeDict,
                     @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
-        Object d = getNativeDict.execute(object);
+        return writeNativeGeneric(object, key, value, getNativeDict.execute(object), setItemNode);
+    }
+
+    private boolean writeNativeGeneric(PythonAbstractNativeObject object, Object key, Object value, Object d, HashingCollectionNodes.SetItemNode setItemNode) {
         if (d instanceof PHashingCollection) {
             setItemNode.execute(((PHashingCollection) d), key, value);
             return true;

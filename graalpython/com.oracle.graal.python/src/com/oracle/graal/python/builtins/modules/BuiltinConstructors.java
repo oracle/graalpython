@@ -2141,7 +2141,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private WriteAttributeToObjectNode ensureWriteAttrNode() {
             if (writeAttrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeAttrNode = insert(WriteAttributeToObjectNode.create());
+                writeAttrNode = insert(WriteAttributeToObjectNode.createForceType());
             }
             return writeAttrNode;
         }
@@ -2167,7 +2167,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ModuleNode extends PythonBuiltinNode {
-        @Child WriteAttributeToObjectNode writeFile = WriteAttributeToObjectNode.create();
+        @Child private WriteAttributeToObjectNode writeFile = WriteAttributeToObjectNode.create();
 
         @Specialization
         public PythonModule module(LazyPythonClass cls, String name, @SuppressWarnings("unused") PNone path) {

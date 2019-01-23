@@ -545,7 +545,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setattr(PythonNativeClass object, String key, Object value,
-                        @Cached("create()") WriteAttributeToObjectNode writeAttrNode) {
+                        @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
             writeAttrNode.execute(object, key, value);
             return PNone.NONE;
         }
