@@ -35,14 +35,11 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "gc")
 public final class GcModuleBuiltins extends PythonBuiltins {
@@ -56,15 +53,11 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
-        int collect(VirtualFrame frame,
-                        @Cached("create()") CallNode callNode) {
+        int collect() {
             doGc();
-            int cnt = 0;
-            // collect all weak references now
-            while (getContext().collectWeakReferences(frame, callNode)) {
-                cnt++;
-            }
-            return cnt;
+            // collect some weak references now
+            getContext().triggerAsyncActions();
+            return 0;
         }
 
         @TruffleBoundary

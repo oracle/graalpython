@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.runtime.object;
 
+import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
 import java.nio.file.DirectoryStream;
 import java.util.Map;
@@ -557,8 +558,8 @@ public final class PythonObjectFactory extends Node {
         return trace(new PMappingproxy(cls, storage));
     }
 
-    public PReferenceType createReferenceType(LazyPythonClass cls, Object object, TruffleObject callback) {
-        return trace(new PReferenceType(cls, object, callback, getContextRef().get().getWeakReferenceQueue()));
+    public PReferenceType createReferenceType(LazyPythonClass cls, Object object, Object callback, ReferenceQueue<Object> queue) {
+        return trace(new PReferenceType(cls, object, callback, queue));
     }
 
     /*

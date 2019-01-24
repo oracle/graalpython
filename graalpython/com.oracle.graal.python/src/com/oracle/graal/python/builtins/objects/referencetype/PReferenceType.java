@@ -46,41 +46,25 @@ import java.lang.ref.WeakReference;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.TruffleObject;
 
 public class PReferenceType extends PythonBuiltinObject {
     public static class WeakRefStorage extends WeakReference<Object> {
-        private final TruffleObject callback;
+        private final Object callback;
         private final PReferenceType ref;
 
-        public WeakRefStorage(PReferenceType ref, Object referent, TruffleObject callback, ReferenceQueue<Object> referenceQueue) {
-            super(referent, referenceQueue);
+        public WeakRefStorage(PReferenceType ref, Object referent, Object callback, ReferenceQueue<Object> queue) {
+            super(referent, queue);
             this.callback = callback;
             this.ref = ref;
         }
 
-        /**
-         * Run the callback (if any).
-         *
-         * @param callNode - must be inserted into the AST by the caller unless run on the slow path
-         */
-        public void runCallback(VirtualFrame frame, CallNode callNode) {
-            if (callback != null) {
-                try {
-                    // TODO: check: the referent must no longer be available at this
-                    // point
-                    callNode.execute(frame, callback, ref);
-                } catch (RuntimeException e) {
-                    // TODO: Exceptions raised by the callback will be noted on the
-                    // standard error output, but cannot be propagated; they are
-                    // handled in exactly the same way as exceptions raised
-                    // from an object’s __del__() method.
-                    e.printStackTrace();
-                }
-            }
+        public Object getCallback() {
+            return callback;
+        }
+
+        public PReferenceType getRef() {
+            return ref;
         }
     }
 
@@ -88,9 +72,9 @@ public class PReferenceType extends PythonBuiltinObject {
     private int hash = -1;
 
     @TruffleBoundary
-    public PReferenceType(LazyPythonClass cls, Object pythonObject, TruffleObject callback, ReferenceQueue<Object> referenceQueue) {
+    public PReferenceType(LazyPythonClass cls, Object pythonObject, Object callback, ReferenceQueue<Object> queue) {
         super(cls);
-        this.store = new WeakRefStorage(this, pythonObject, callback, referenceQueue);
+        this.store = new WeakRefStorage(this, pythonObject, callback, queue);
     }
 
     public Object getCallback() {
