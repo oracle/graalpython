@@ -9,15 +9,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFrameNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.Node.Child;
 import com.oracle.truffle.api.nodes.RootNode;
 
@@ -41,9 +39,10 @@ public class AsyncHandler {
         public Object[] arguments();
 
         /**
-         * If the arguments include an element for the currently executing frame upon which this
-         * async action is triggered, this method should return something >= 0. The array returned
-         * by {@link #arguments()} should have a space for the frame already.
+         * If the arguments need to include an element for the currently executing frame upon which
+         * this async action is triggered, this method should return something >= 0. The array
+         * returned by {@link #arguments()} should have a space for the frame already, as it will be
+         * filled in without growing the arguments array.
          */
         default int frameIndex() {
             return -1;
@@ -74,6 +73,7 @@ public class AsyncHandler {
 
     private static class CallRootNode extends RootNode {
         @Child CallNode callNode = CallNode.create();
+        @Child GetFrameNode getFrameNode = GetFrameNode.create();
 
         protected CallRootNode(TruffleLanguage<?> language) {
             super(language);
@@ -83,7 +83,11 @@ public class AsyncHandler {
         public Object execute(VirtualFrame frame) {
             Object[] frameArguments = frame.getArguments();
             Object callable = frameArguments[0];
-            Object[] arguments = Arrays.copyOfRange(frameArguments, 1, frameArguments.length);
+            int frameIndex = (int) frameArguments[1];
+            Object[] arguments = Arrays.copyOfRange(frameArguments, 2, frameArguments.length);
+            if (frameIndex >= 0) {
+                arguments[frameIndex] = getFrameNode.execute(2);
+            }
             return callNode.execute(frame, callable, arguments);
         }
     }
@@ -99,7 +103,7 @@ public class AsyncHandler {
         executorService.scheduleWithFixedDelay(new AsyncRunnable(actionSupplier), ASYNC_ACTION_DELAY, ASYNC_ACTION_DELAY, TimeUnit.MILLISECONDS);
     }
 
-    void triggerAsyncActions(Frame frame, Node location, PythonObjectFactory factory) {
+    void triggerAsyncActions() {
         if (executingActions.compareAndSet(false, true)) {
             if (hasScheduledAction.compareAndSet(true, false)) {
                 CompilerDirectives.transferToInterpreter();
@@ -107,12 +111,10 @@ public class AsyncHandler {
                 ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions;
                 for (AsyncAction action : actions) {
                     Object[] arguments = action.arguments();
-                    Object[] args = new Object[arguments.length + 1];
-                    System.arraycopy(arguments, 0, args, 1, arguments.length);
+                    Object[] args = new Object[arguments.length + 2];
+                    System.arraycopy(arguments, 0, args, 2, arguments.length);
                     args[0] = action.callable();
-                    if (action.frameIndex() >= 0) {
-                        args[action.frameIndex() + 1] = factory.createPFrame(frame, location);
-                    }
+                    args[1] = action.frameIndex();
                     try {
                         callTarget.call(args);
                     } catch (RuntimeException e) {

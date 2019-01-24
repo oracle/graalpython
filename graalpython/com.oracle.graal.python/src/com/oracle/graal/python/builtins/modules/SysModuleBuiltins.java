@@ -55,6 +55,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsFactory.GetFrameNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -66,6 +67,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttri
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -274,7 +276,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_getframe", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public static abstract class GetFrameNode extends PythonBuiltinNode {
+    public static abstract class GetFrameNode extends PythonUnaryBuiltinNode {
+        public static GetFrameNode create() {
+            return GetFrameNodeFactory.create();
+        }
 
         @Child private DirectCallNode call;
 

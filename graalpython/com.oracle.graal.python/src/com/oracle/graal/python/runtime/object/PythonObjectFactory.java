@@ -574,10 +574,6 @@ public final class PythonObjectFactory extends Node {
         return trace(new PFrame(PythonBuiltinClassType.PFrame, frame));
     }
 
-    public PFrame createPFrame(Frame frame, Node location) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, frame, location));
-    }
-
     public PFrame createPFrame(Frame frame, Object locals) {
         return trace(new PFrame(PythonBuiltinClassType.PFrame, frame, locals));
     }

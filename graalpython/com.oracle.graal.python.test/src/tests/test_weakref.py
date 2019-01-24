@@ -50,6 +50,6 @@ def test_weakref_finalizer():
 
 
 cleaned_up = False
-def cleanup(_=None):
+def cleanup(ref):
     global cleaned_up
     cleaned_up = True

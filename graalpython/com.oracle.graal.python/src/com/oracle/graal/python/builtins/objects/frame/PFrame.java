@@ -77,15 +77,6 @@ public final class PFrame extends PythonBuiltinObject {
         this.inClassScope = PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
     }
 
-    public PFrame(LazyPythonClass cls, Frame frame, Node location) {
-        super(cls);
-        this.exception = null;
-        this.index = -1;
-        this.frame = frame;
-        this.location = location;
-        this.inClassScope = PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
-    }
-
     public PFrame(LazyPythonClass cls, Frame frame, Object locals) {
         super(cls);
         this.exception = null;
