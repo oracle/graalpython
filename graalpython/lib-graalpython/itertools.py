@@ -648,3 +648,52 @@ class zip_longest():
         self.active = len(args) + 1
         self.iterators = [iter(iter1)] + [iter(arg) for arg in args]
         return self
+
+
+class cycle():
+    """
+    Make an iterator returning elements from the iterable and
+    saving a copy of each. When the iterable is exhausted, return
+    elements from the saved copy. Repeats indefinitely.
+
+    Equivalent to :
+
+    def cycle(iterable):
+        saved = []
+        for element in iterable:
+            yield element
+            saved.append(element)
+        while saved:
+            for element in saved:
+                yield element
+    """
+
+    def __init__(self, iterable):
+        self.saved = []
+        self.iterable = iter(iterable)
+        self.index = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.index > 0:
+            if not self.saved:
+                raise StopIteration
+            if len(self.saved) > self.index:
+                obj = self.saved[self.index]
+                self.index += 1
+            else:
+                obj = self.saved[0]
+                self.index = 1
+        else:
+            try:
+                obj = next(self.iterable)
+            except StopIteration:
+                if not self.saved:
+                    raise
+                obj = self.saved[0]
+                self.index = 1
+            else:
+                self.saved.append(obj)
+        return obj
