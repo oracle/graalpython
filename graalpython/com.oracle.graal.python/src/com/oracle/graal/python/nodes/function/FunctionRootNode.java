@@ -143,7 +143,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
 
     @Override
     public Object execute(VirtualFrame frame) {
-        contextRef.get().triggerAsyncActions();
+        contextRef.get().triggerAsyncActions(frame);
         initClosureAndCellVars(frame);
         return body.execute(frame);
     }
