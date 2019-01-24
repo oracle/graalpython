@@ -104,6 +104,12 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         signalModule.setAttribute(signalQueueKey, signalQueue);
 
         core.getContext().registerAsyncAction(() -> {
+            synchronized (signalQueue) {
+                try {
+                    signalQueue.wait();
+                } catch (InterruptedException e) {
+                }
+            }
             return signalQueue.poll();
         });
     }
@@ -232,6 +238,9 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             try {
                 retval = Signals.setSignalHandler(signum, () -> {
                     queue.add(signalTrigger);
+                    synchronized (queue) {
+                        queue.notify();
+                    }
                 });
             } catch (IllegalArgumentException e) {
                 throw raise(PythonErrorType.ValueError, e);
