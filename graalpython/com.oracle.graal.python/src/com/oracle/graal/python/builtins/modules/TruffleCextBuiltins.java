@@ -42,8 +42,6 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
@@ -97,7 +95,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CastToByteNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
@@ -127,7 +124,6 @@ import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -548,153 +544,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                         @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
             writeAttrNode.execute(object, key, value);
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "PyType_Ready", fixedNumOfPositionalArgs = 4)
-    @GenerateNodeFactory
-    abstract static class PyType_ReadyNode extends PythonBuiltinNode {
-        @Child private WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.create();
-        @Child private HashingStorageNodes.GetItemNode getItemNode;
-        @Child private CastToIndexNode castToIntNode;
-        @Child private ReadAttributeFromObjectNode readAttrNode;
-        @Child private SequenceStorageNodes.LenNode slotLenNode;
-        @Child private SequenceStorageNodes.GetItemNode getSlotItemNode;
-        @Child private SequenceStorageNodes.AppendNode setSlotItemNode;
-        @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
-        @Child private CExtNodes.PCallCapiFunction callAddNativeSlotsNode;
-        @Child private CExtNodes.ToSulongNode toSulongNode;
-        @Child private GetMroNode getMroNode;
-
-        private HashingStorageNodes.GetItemNode getGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(HashingStorageNodes.GetItemNode.create());
-            }
-            return getItemNode;
-        }
-
-        @Specialization
-        Object run(Object typestruct, PythonObjectNativeWrapper metaClass, PythonObjectNativeWrapper baseClasses, PythonObjectNativeWrapper nativeMembers,
-                        @Cached("create()") CExtNodes.ToJavaNode toJavaNode) {
-            // TODO(fa) use recursive node
-            return run(typestruct, (PythonClass) toJavaNode.execute(metaClass), (PTuple) toJavaNode.execute(baseClasses), (PDict) toJavaNode.execute(nativeMembers));
-        }
-
-        @Specialization
-        Object run(Object typestruct, PythonClass metaClass, PTuple baseClasses, PDict nativeMembers) {
-// Object[] array = baseClasses.getArray();
-// PythonClass[] bases = new PythonClass[array.length];
-// for (int i = 0; i < array.length; i++) {
-// bases[i] = (PythonClass) array[i];
-// }
-//
-// if (castToIntNode == null) {
-// CompilerDirectives.transferToInterpreterAndInvalidate();
-// castToIntNode = insert(CastToIndexNode.create());
-// }
-//
-// // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-// String fqname = getStringItem(nativeMembers, TP_NAME);
-// String doc = getStringItem(nativeMembers, TP_DOC);
-// // the qualified name (i.e. without module name) like 'A.B...'
-// String qualName = getQualName(fqname);
-// PythonNativeClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, qualName,
-// bases);
-// writeAttrNode.execute(cclass, SpecialAttributeNames.__DOC__, doc);
-//
-// long basicsize = castToIntNode.execute(getLongItem(nativeMembers, TP_BASICSIZE));
-// long itemsize = castToIntNode.execute(getLongItem(nativeMembers, TP_ITEMSIZE));
-// writeAttrNode.execute(cclass, __BASICSIZE__, basicsize);
-// writeAttrNode.execute(cclass, __ITEMSIZE__, itemsize);
-// computeAndSetDictoffset(getLongItem(nativeMembers, TP_DICTOFFSET), cclass, basicsize, itemsize);
-//
-// String moduleName = getModuleName(fqname);
-// if (moduleName != null) {
-// writeAttrNode.execute(cclass, SpecialAttributeNames.__MODULE__, moduleName);
-// }
-// return new PythonClassInitNativeWrapper(cclass);
-            return null;
-        }
-
-        // may also update '__basicsize__' if necessary
-        private void computeAndSetDictoffset(Object tpDictoffset, PythonNativeClass cclass, long basicsize, long itemsize) {
-            int initialDictoffset = castToIntNode.execute(tpDictoffset);
-            if (initialDictoffset == 0) {
-                for (Object cls : getMro(cclass)) {
-                    if (cls != cclass) {
-                        if (PGuards.isNativeClass(cls)) {
-                            int baseDictoffset = castToIntNode.execute(ensureReadAttrNode().execute(cls, __DICTOFFSET__));
-                            if (baseDictoffset != 0) {
-                                long dictoffset;
-                                // add_dict
-                                if (itemsize != 0) {
-                                    dictoffset = -Long.BYTES;
-                                } else {
-                                    dictoffset = basicsize;
-                                }
-                                writeAttrNode.execute(cclass, __DICTOFFSET__, dictoffset);
-                                writeAttrNode.execute(cclass, __BASICSIZE__, basicsize + Long.BYTES);
-                                return;
-                            }
-                        } else if (!(cls instanceof PythonBuiltinClass)) {
-                            writeAttrNode.execute(cclass, __DICTOFFSET__, itemsize == 0 ? basicsize : -Long.BYTES);
-                            writeAttrNode.execute(cclass, __BASICSIZE__, basicsize + Long.BYTES);
-                            return;
-                        }
-                    }
-                }
-            }
-            writeAttrNode.execute(cclass, __DICTOFFSET__, 0);
-            return;
-        }
-
-        private ReadAttributeFromObjectNode ensureReadAttrNode() {
-            if (readAttrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readAttrNode = insert(ReadAttributeFromObjectNode.create());
-            }
-            return readAttrNode;
-        }
-
-        private static String getQualName(String fqname) {
-            int firstDot = fqname.indexOf('.');
-            if (firstDot != -1) {
-                return fqname.substring(firstDot + 1);
-            }
-            return fqname;
-        }
-
-        private static String getModuleName(String fqname) {
-            int firstDotIdx = fqname.indexOf('.');
-            if (firstDotIdx != -1) {
-                return fqname.substring(0, firstDotIdx);
-            }
-            return null;
-        }
-
-        private String getStringItem(PDict nativeMembers, String key) {
-            Object item = getGetItemNode().execute(nativeMembers.getDictStorage(), key);
-            if (item instanceof PString) {
-                return ((PString) item).getValue();
-            }
-            return (String) item;
-        }
-
-        private Object getLongItem(PDict nativeMembers, String key) {
-            Object item = getGetItemNode().execute(nativeMembers.getDictStorage(), key);
-            if (item instanceof PInt || item instanceof Number) {
-                return item;
-            }
-            return (long) item;
-        }
-
-        private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
-            if (getMroNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getMroNode = insert(GetMroNode.create());
-            }
-            return getMroNode.execute(clazz);
         }
     }
 
