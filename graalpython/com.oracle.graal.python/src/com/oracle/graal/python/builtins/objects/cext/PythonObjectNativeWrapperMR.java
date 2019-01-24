@@ -503,12 +503,15 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
         Object doTpBasicsize(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") CastToIndexNode castToIntNode,
                         @Cached("create(__BASICSIZE__)") GetFixedAttributeNode getAttrNode) {
-            return getAttrNode.executeObject(object);
+            Object val = getAttrNode.executeObject(object);
+            return val != PNone.NO_VALUE ? castToIntNode.execute(val) : 0L;
         }
 
         @Specialization(guards = "eq(TP_ITEMSIZE, key)")
-        Object doTpItemsize(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        long doTpItemsize(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") CastToIndexNode castToIntNode,
                         @Cached("create(__ITEMSIZE__)") GetFixedAttributeNode getAttrNode) {
             Object val = getAttrNode.executeObject(object);
             // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
@@ -516,11 +519,11 @@ public class PythonObjectNativeWrapperMR {
             if (val == PNone.NO_VALUE) {
                 return 0L;
             }
-            return val;
+            return val != PNone.NO_VALUE ? castToIntNode.execute(val) : 0L;
         }
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
-        Object doTpDictoffset(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        long doTpDictoffset(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") CastToIndexNode castToIntNode,
                         @Cached("create(__DICTOFFSET__)") GetFixedAttributeNode getAttrNode) {
             // TODO properly implement 'tp_dictoffset' for builtin classes
@@ -528,7 +531,7 @@ public class PythonObjectNativeWrapperMR {
                 return 0L;
             }
             Object dictoffset = getAttrNode.executeObject(object);
-            return castToIntNode.execute(dictoffset);
+            return dictoffset != PNone.NO_VALUE ? castToIntNode.execute(dictoffset) : 0L;
         }
 
         @Specialization(guards = "eq(TP_WEAKLISTOFFSET, key)")
