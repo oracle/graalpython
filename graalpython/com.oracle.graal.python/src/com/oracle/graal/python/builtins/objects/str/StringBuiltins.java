@@ -104,6 +104,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.math.BigInteger;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
 public final class StringBuiltins extends PythonBuiltins {
@@ -436,54 +437,170 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.startswith(prefix[, start[, end]])
-    @Builtin(name = "startswith", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 5)
+    @Builtin(name = "startswith", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class StartsWithNode extends PythonBuiltinNode {
-        @Specialization
-        boolean startsWith(String self, String prefix, int start, int end) {
-            if (end - start < prefix.length()) {
-                return false;
-            } else if (self.startsWith(prefix, start)) {
-                return true;
+
+        private @Child CastToIndexNode startNode;
+        private @Child CastToIndexNode endNode;
+
+        private CastToIndexNode getStartNode() {
+            if (startNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                startNode = insert(CastToIndexNode.create(TypeError, val -> {
+                    throw raise(PythonBuiltinClassType.TypeError, "slice indices must be integers or None or have an __index__ method");
+                }));
             }
-            return false;
+            return startNode;
         }
 
-        @Specialization
-        boolean startsWith(String self, PTuple prefix, int start, int end) {
+        private CastToIndexNode getEndNode() {
+            if (endNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                endNode = insert(CastToIndexNode.create(TypeError, val -> {
+                    throw raise(PythonBuiltinClassType.TypeError, "slice indices must be integers or None or have an __index__ method");
+                }));
+            }
+            return endNode;
+        }
+
+        @TruffleBoundary
+        private static int correctIndex(PInt index, String text) {
+            int textLength = text.length();
+            BigInteger bIndex = index.getValue();
+            BigInteger bTextLength = BigInteger.valueOf(textLength);
+            if (bIndex.compareTo(BigInteger.ZERO) < 0) {
+                BigInteger result = bIndex.add(bTextLength);
+                return result.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0 ? Integer.MIN_VALUE : result.intValue();
+            }
+            return bIndex.compareTo(bTextLength) > 0 ? textLength : bIndex.intValue();
+        }
+
+        private static int correctIndex(int index, String text) {
+            return index < 0 ? index + text.length() : index;
+        }
+
+        private static int correctIndex(long index, String text) {
+            if (index < 0) {
+                long result = index + text.length();
+                return result < Integer.MIN_VALUE ? Integer.MIN_VALUE : (int) result;
+            }
+            return index > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) index;
+        }
+
+        private static boolean doIt(String text, String prefix, int start, int end) {
+            if (end - start < prefix.length()) {
+                return false;
+            }
+            return text.startsWith(prefix, start < 0 ? 0 : start);
+        }
+
+        private boolean doIt(String self, PTuple prefix, int start, int end) {
             for (Object o : prefix.getArray()) {
                 if (o instanceof String) {
-                    if (startsWith(self, (String) o, start, end)) {
+                    if (doIt(self, (String) o, start, end)) {
                         return true;
                     }
                 } else if (o instanceof PString) {
-                    if (startsWith(self, ((PString) o).getValue(), start, end)) {
+                    if (doIt(self, ((PString) o).getValue(), start, end)) {
                         return true;
                     }
+                } else {
+                    throw raise(TypeError, "tuple for startswith must only contain str, not %p", o);
                 }
             }
             return false;
         }
 
         @Specialization
+        boolean startsWith(String self, String prefix, int start, int end) {
+            return doIt(self, prefix, correctIndex(start, self), correctIndex(end, self));
+        }
+
+        @Specialization
+        boolean startsWith(String self, PTuple prefix, int start, int end) {
+            return doIt(self, prefix, correctIndex(start, self), correctIndex(end, self));
+        }
+
+        @Specialization
         boolean startsWith(String self, String prefix, int start, @SuppressWarnings("unused") PNone end) {
-            return startsWith(self, prefix, start, self.length());
+            return doIt(self, prefix, correctIndex(start, self), self.length());
+        }
+
+        @Specialization
+        boolean startsWith(String self, String prefix, long start, @SuppressWarnings("unused") PNone end) {
+            return doIt(self, prefix, correctIndex(start, self), self.length());
+        }
+
+        @Specialization
+        boolean startsWith(String self, String prefix, long start, long end) {
+            return doIt(self, prefix, correctIndex(start, self), correctIndex(end, self));
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        boolean startsWith(String self, String prefix, PInt start, @SuppressWarnings("unused") PNone end) {
+            return startsWith(self, prefix, start.intValueExact(), self.length());
+        }
+
+        @Specialization
+        boolean startsWithPIntOvf(String self, String prefix, PInt start, @SuppressWarnings("unused") PNone end) {
+            return doIt(self, prefix, correctIndex(start, self), self.length());
         }
 
         @Specialization
         boolean startsWith(String self, String prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return startsWith(self, prefix, 0, self.length());
+            return doIt(self, prefix, 0, self.length());
         }
 
         @Specialization
         boolean startsWith(String self, PTuple prefix, int start, @SuppressWarnings("unused") PNone end) {
-            return startsWith(self, prefix, start, self.length());
+            return doIt(self, prefix, correctIndex(start, self), self.length());
+        }
+
+        @Specialization
+        boolean startsWith(String self, PTuple prefix, long start, @SuppressWarnings("unused") PNone end) {
+            return doIt(self, prefix, correctIndex(start, self), self.length());
+        }
+
+        @Specialization
+        boolean startsWith(String self, PTuple prefix, long start, long end) {
+            return doIt(self, prefix, correctIndex(start, self), correctIndex(end, self));
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        boolean startsWith(String self, PTuple prefix, PInt start, @SuppressWarnings("unused") PNone end) {
+            return startsWith(self, prefix, start.intValueExact(), end);
+        }
+
+        @Specialization
+        boolean startsWithPIntOvf(String self, PTuple prefix, PInt start, @SuppressWarnings("unused") PNone end) {
+            return doIt(self, prefix, correctIndex(start, self), self.length());
         }
 
         @Specialization
         boolean startsWith(String self, PTuple prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
             return startsWith(self, prefix, 0, self.length());
+        }
+
+        @Specialization
+        boolean startsWith(String self, String prefix, Object start, Object end) {
+            int sIndex = getStartNode().execute(start);
+            int eIndex = getEndNode().execute(end);
+            return doIt(self, prefix, correctIndex(sIndex, self), correctIndex(eIndex, self));
+        }
+
+        @Specialization
+        boolean startsWith(String self, PTuple prefix, Object start, Object end) {
+            int sIndex = getStartNode().execute(start);
+            int eIndex = getEndNode().execute(end);
+            return doIt(self, prefix, correctIndex(sIndex, self), correctIndex(eIndex, self));
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        boolean general(Object self, Object prefix, Object start, Object end) {
+            throw raise(TypeError, "startswith first arg must be str or a tuple of str, not %p", prefix);
         }
     }
 

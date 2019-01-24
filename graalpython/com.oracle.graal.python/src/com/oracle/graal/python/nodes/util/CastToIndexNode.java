@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,16 +46,21 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
+import java.util.function.Function;
 
 /**
  * Converts an arbitrary object to an index-sized integer (which is a Java {@code int}).
  */
+@TypeSystemReference(PythonArithmeticTypes.class)
 public abstract class CastToIndexNode extends PNodeWithContext {
 
     private static final String ERROR_MESSAGE = "cannot fit 'int' into an index-sized integer";
@@ -65,10 +70,12 @@ public abstract class CastToIndexNode extends PNodeWithContext {
 
     private final PythonBuiltinClassType errorType;
     private final boolean recursive;
+    private final Function<Object, Integer> typeErrorHandler;
 
-    protected CastToIndexNode(PythonBuiltinClassType errorType, boolean recursive) {
+    protected CastToIndexNode(PythonBuiltinClassType errorType, boolean recursive, Function<Object, Integer> typeErrorHandler) {
         this.errorType = errorType;
         this.recursive = recursive;
+        this.typeErrorHandler = typeErrorHandler;
     }
 
     public abstract int execute(Object x);
@@ -117,6 +124,14 @@ public abstract class CastToIndexNode extends PNodeWithContext {
         }
     }
 
+    @Specialization
+    public int toInt(double x) {
+        if (typeErrorHandler != null) {
+            return typeErrorHandler.apply(x);
+        }
+        throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+    }
+
     @Fallback
     int doGeneric(Object x) {
         if (recursive) {
@@ -124,20 +139,34 @@ public abstract class CastToIndexNode extends PNodeWithContext {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callIndexNode = insert(LookupAndCallUnaryNode.create(__INDEX__));
             }
+            Object result = callIndexNode.executeObject(x);
+            if (result == PNone.NONE) {
+                if (typeErrorHandler != null) {
+                    return typeErrorHandler.apply(x);
+                }
+                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+            }
             if (recursiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                recursiveNode = insert(CastToIndexNodeGen.create(errorType, false));
+                recursiveNode = insert(CastToIndexNodeGen.create(errorType, false, typeErrorHandler));
             }
             return recursiveNode.execute(callIndexNode.executeObject(x));
+        }
+        if (typeErrorHandler != null) {
+            return typeErrorHandler.apply(x);
         }
         throw raise(TypeError, "__index__ returned non-int (type %p)", x);
     }
 
     public static CastToIndexNode create() {
-        return CastToIndexNodeGen.create(IndexError, true);
+        return CastToIndexNodeGen.create(IndexError, true, null);
     }
 
     public static CastToIndexNode createOverflow() {
-        return CastToIndexNodeGen.create(OverflowError, true);
+        return CastToIndexNodeGen.create(OverflowError, true, null);
+    }
+
+    public static CastToIndexNode create(PythonBuiltinClassType errorType, Function<Object, Integer> typeErrorHandler) {
+        return CastToIndexNodeGen.create(errorType, true, typeErrorHandler);
     }
 }
