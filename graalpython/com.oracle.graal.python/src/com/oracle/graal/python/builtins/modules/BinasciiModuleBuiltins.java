@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,24 +51,34 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 @CoreFunctions(defineModule = "binascii")
@@ -163,26 +173,124 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "b2a_base64", fixedNumOfPositionalArgs = 1, keywordArguments = {"newline"})
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     static abstract class B2aBase64Node extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isNoValue(newline)")
+
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArray;
+        @Child private CastToIntegerFromIntNode castToIntNode;
+        @Child private B2aBase64Node recursiveNode;
+
+        private SequenceStorageNodes.ToByteArrayNode getToByteArrayNode() {
+            if (toByteArray == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArray = insert(SequenceStorageNodes.ToByteArrayNode.create());
+            }
+            return toByteArray;
+        }
+
+        private CastToIntegerFromIntNode getCastToIntNode() {
+            if (castToIntNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToIntNode = insert(CastToIntegerFromIntNode.create(val -> {
+                    throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
+                }));
+            }
+            return castToIntNode;
+        }
+
+        private B2aBase64Node getRecursiveNode() {
+            if (recursiveNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                recursiveNode = insert(BinasciiModuleBuiltinsFactory.B2aBase64NodeFactory.create());
+            }
+            return recursiveNode;
+        }
+
         @TruffleBoundary
-        String b2a(PBytes data, @SuppressWarnings("unused") PNone newline,
-                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArray) {
-            return b2a(data, true, toByteArray);
+        private PBytes b2a(byte[] data, boolean newline) {
+            String encode = Base64.encode(data);
+            if (newline) {
+                return factory().createBytes((encode + "\n").getBytes());
+            }
+            return factory().createBytes((encode).getBytes());
+        }
+
+        @Specialization(guards = "isNoValue(newline)")
+        PBytes b2aBytesLike(PIBytesLike data, @SuppressWarnings("unused") PNone newline) {
+            return b2aBytesLike(data, 1);
         }
 
         @Specialization
-        @TruffleBoundary
-        String b2a(PBytes data, boolean newline,
-                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArray) {
-            String encode = Base64.encode(toByteArray.execute(data.getSequenceStorage()));
-            if (newline) {
-                return encode + "\n";
-            } else {
-                return encode;
-            }
+        PBytes b2aBytesLike(PIBytesLike data, long newline) {
+            return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), newline != 0);
         }
+
+        @Specialization
+        PBytes b2aBytesLike(PIBytesLike data, PInt newline) {
+            return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), !newline.isZero());
+        }
+
+        @Specialization
+        PBytes b2aBytesLike(PIBytesLike data, Object newline) {
+            return (PBytes) getRecursiveNode().execute(data, getCastToIntNode().execute(newline));
+        }
+
+        @Specialization(guards = "isNoValue(newline)")
+        PBytes b2aArray(PArray data, @SuppressWarnings("unused") PNone newline) {
+            return b2aArray(data, 1);
+        }
+
+        @Specialization
+        PBytes b2aArray(PArray data, long newline) {
+            return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), newline != 0);
+        }
+
+        @Specialization
+        PBytes b2aArray(PArray data, PInt newline) {
+            return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), !newline.isZero());
+        }
+
+        @Specialization
+        PBytes b2aArray(PArray data, Object newline) {
+            return (PBytes) getRecursiveNode().execute(data, getCastToIntNode().execute(newline));
+        }
+
+        @Specialization(guards = "isNoValue(newline)")
+        PBytes b2aMmeory(PMemoryView data, @SuppressWarnings("unused") PNone newline,
+                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
+                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile) {
+            return b2aMemory(data, 1, toBytesNode, isBytesProfile);
+        }
+
+        @Specialization
+        PBytes b2aMemory(PMemoryView data, long newline,
+                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
+                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile) {
+            Object bytesObj = toBytesNode.executeObject(data);
+            if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
+                return b2aBytesLike((PBytes) bytesObj, newline);
+            }
+            throw raise(SystemError, "could not get bytes of memoryview");
+        }
+
+        @Specialization
+        PBytes b2aMmeory(PMemoryView data, PInt newline,
+                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
+                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile) {
+            return b2aMemory(data, newline.isZero() ? 0 : 1, toBytesNode, isBytesProfile);
+        }
+
+        @Specialization
+        PBytes b2aMmeory(PMemoryView data, Object newline) {
+            return (PBytes) getRecursiveNode().execute(data, getCastToIntNode().execute(newline));
+        }
+
+        @Fallback
+        PBytes b2sGeneral(Object data, @SuppressWarnings("unused") Object newline) {
+            throw raise(PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'", data);
+        }
+
     }
 
     @Builtin(name = "b2a_hex", fixedNumOfPositionalArgs = 1)

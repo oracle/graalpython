@@ -195,6 +195,7 @@ graalpython/com.oracle.graal.python.test/src/tests/seq_tests.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/slice-test.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_basicobject_pressure.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_binary_arithmetic.py,zippy.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_binascii.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_bisect-right.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_builtin-list-intrinsification.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_call-bimorphic.py,zippy.copyright
