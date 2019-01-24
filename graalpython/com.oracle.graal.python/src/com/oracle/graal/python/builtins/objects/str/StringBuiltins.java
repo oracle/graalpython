@@ -755,6 +755,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return new String(translatedChars);
         }
 
+        @TruffleBoundary
         private static String translateFromByteTable(String text, byte[] table) {
             byte[] translatedChars = text.getBytes();
             for (int i = 0; i < translatedChars.length; i++) {
