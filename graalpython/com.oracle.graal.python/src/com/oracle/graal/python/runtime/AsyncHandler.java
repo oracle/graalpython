@@ -93,7 +93,7 @@ public class AsyncHandler {
     private ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
     private AtomicBoolean hasScheduledAction = new AtomicBoolean(false);
     private AtomicBoolean executingActions = new AtomicBoolean(false);
-    private static final int ASYNC_ACTION_DELAY = 100;
+    private static final int ASYNC_ACTION_DELAY = 15; // chosen by a fair D20 dice roll
 
     private class AsyncRunnable implements Runnable {
         private final Supplier<AsyncAction> actionSupplier;
