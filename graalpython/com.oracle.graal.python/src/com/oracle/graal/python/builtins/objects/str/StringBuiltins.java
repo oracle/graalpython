@@ -755,12 +755,11 @@ public final class StringBuiltins extends PythonBuiltins {
             return new String(translatedChars);
         }
 
-        private static String translateFromByteTable(String text, Object table, BytesNodes.ToBytesNode toBytesNode) {
+        private static String translateFromByteTable(String text, byte[] table) {
             byte[] translatedChars = text.getBytes();
-            byte[] byteTable = toBytesNode.execute(table);
             for (int i = 0; i < translatedChars.length; i++) {
                 byte original = translatedChars[i];
-                translatedChars[i] = byteTable[original];
+                translatedChars[i] = table[original];
             }
             return new String(translatedChars);
         }
@@ -768,13 +767,13 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         public String translate(String self, PIBytesLike table,
                         @Cached("create()") BytesNodes.ToBytesNode getBytesNode) {
-            return translateFromByteTable(self, table, getBytesNode);
+            return translateFromByteTable(self, getBytesNode.execute(table));
         }
 
         @Specialization
         public String translate(String self, PMemoryView table,
                         @Cached("create()") BytesNodes.ToBytesNode getBytesNode) {
-            return translateFromByteTable(self, table, getBytesNode);
+            return translateFromByteTable(self, getBytesNode.execute(table));
         }
 
     }
