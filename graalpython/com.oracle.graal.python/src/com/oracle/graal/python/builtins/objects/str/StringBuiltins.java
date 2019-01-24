@@ -64,6 +64,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -71,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListReverseNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.SpliceNodeGen;
@@ -751,6 +754,29 @@ public final class StringBuiltins extends PythonBuiltins {
 
             return new String(translatedChars);
         }
+
+        private static String translateFromByteTable(String text, Object table, BytesNodes.ToBytesNode toBytesNode) {
+            byte[] translatedChars = text.getBytes();
+            byte[] byteTable = toBytesNode.execute(table);
+            for (int i = 0; i < translatedChars.length; i++) {
+                byte original = translatedChars[i];
+                translatedChars[i] = byteTable[original];
+            }
+            return new String(translatedChars);
+        }
+
+        @Specialization
+        public String translate(String self, PIBytesLike table,
+                        @Cached("create()") BytesNodes.ToBytesNode getBytesNode) {
+            return translateFromByteTable(self, table, getBytesNode);
+        }
+
+        @Specialization
+        public String translate(String self, PMemoryView table,
+                        @Cached("create()") BytesNodes.ToBytesNode getBytesNode) {
+            return translateFromByteTable(self, table, getBytesNode);
+        }
+
     }
 
     protected abstract static class SpliceNode extends PNodeWithContext {

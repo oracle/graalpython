@@ -1,9 +1,9 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import unittest
-
+import string
 import sys
 
 
@@ -902,6 +902,11 @@ def test_translate():
     else:
         assert False, "should raise"
 
+def test_translate_from_byte_table():
+    table = bytes.maketrans(bytes(string.ascii_lowercase, 'ascii'), bytes(string.ascii_uppercase, 'ascii'))
+    assert "ahoj".translate(table) == "AHOJ"
+    assert "ahoj".translate(bytearray(table)) == "AHOJ"
+    assert "ahoj".translate(memoryview(table)) == "AHOJ"
 
 def test_splitlines():
     assert len(str.splitlines("\n\n")) == 2
