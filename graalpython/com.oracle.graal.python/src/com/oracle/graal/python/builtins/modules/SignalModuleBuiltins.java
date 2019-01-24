@@ -186,6 +186,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @Builtin(name = "signal", fixedNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
