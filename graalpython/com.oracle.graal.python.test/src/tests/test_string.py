@@ -3,7 +3,7 @@
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import unittest
-
+import string
 import sys
 
 
@@ -952,6 +952,24 @@ def test_translate():
     else:
         assert False, "should raise"
 
+def test_translate_from_byte_table():
+    table = bytes.maketrans(bytes(string.ascii_lowercase, 'ascii'), bytes(string.ascii_uppercase, 'ascii'))
+    assert "ahoj".translate(table) == "AHOJ"
+    assert "ahoj".translate(bytearray(table)) == "AHOJ"
+    assert "ahoj".translate(memoryview(table)) == "AHOJ"
+    
+def test_tranlslate_from_short_table():
+    table = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`ABCDEFGH'
+    assert "ahoj".translate(table) == "AHoj"
+
+def test_translate_nonascii_from_byte_table():
+    table = bytes.maketrans(bytes(string.ascii_lowercase, 'ascii'), bytes(string.ascii_uppercase, 'ascii'))
+    assert "ačhřožj".translate(table) == "AčHřOžJ"
+
+def test_translate_from_long_byte_table():
+    table = bytes.maketrans(bytes(string.ascii_lowercase, 'ascii'), bytes(string.ascii_uppercase, 'ascii'))
+    table *= 30
+    assert 'ahoj453875287ščřžýáí'.translate(table) == 'AHOJ453875287A\rY~ýáí'
 
 def test_splitlines():
     assert len(str.splitlines("\n\n")) == 2
