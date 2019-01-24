@@ -89,7 +89,7 @@ public class AsyncHandler {
         }
     }
 
-    private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
     private ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
     private AtomicBoolean hasScheduledAction = new AtomicBoolean(false);
     private AtomicBoolean executingActions = new AtomicBoolean(false);
