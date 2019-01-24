@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -266,5 +266,15 @@ if sys.implementation.name == "graalpython":
             assert al.size() == al["size"]()
         except IndexError:
             assert False, "using __getitem__ to access keys of an array-like foreign object should work"
+        except NotImplementedError as e:
+            assert "host lookup is not allowed" in str(e)
+
+    def test_direct_call_of_truffle_object_methods():
+        import java
+        try:
+            al = java.type("java.util.ArrayList")()
+            assert al.__len__() == al.size() == len(al)
+        except IndexError:
+            assert False, "calling the python equivalents for well-known functions directly should work"
         except NotImplementedError as e:
             assert "host lookup is not allowed" in str(e)

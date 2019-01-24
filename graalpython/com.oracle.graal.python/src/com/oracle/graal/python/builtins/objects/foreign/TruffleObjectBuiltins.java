@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -34,6 +34,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
@@ -872,6 +873,22 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(TruffleObject object, Object key) {
             return getForeignItemNode.execute(object, key);
+        }
+    }
+
+    @Builtin(name = __GETATTR__, fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class GetattrNode extends PythonBinaryBuiltinNode {
+        @Child Node readNode = Message.READ.createNode();
+        @Child PForeignToPTypeNode toPythonNode = PForeignToPTypeNode.create();
+
+        @Specialization
+        protected Object doIt(TruffleObject object, Object key) {
+            try {
+                return toPythonNode.executeConvert(ForeignAccess.sendRead(readNode, object, key));
+            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                throw raise(PythonErrorType.AttributeError, "foreign object %s has no attribute %s", object, key);
+            }
         }
     }
 
