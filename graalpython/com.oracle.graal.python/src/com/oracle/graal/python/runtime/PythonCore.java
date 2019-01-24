@@ -58,12 +58,6 @@ public interface PythonCore extends ParserErrorCallback {
     public void initialize(PythonContext pythonContext);
 
     /**
-     * Initialize the runtime information in the sys module, capturing command line arguments,
-     * executable paths and so on.
-     */
-    public PythonModule initializeSysModule();
-
-    /**
      * Run post-initialization code that needs a fully working Python environment. This will be run
      * eagerly when the context is initialized on the JVM or a new context is created on SVM, but is
      * omitted when the native image is generated.

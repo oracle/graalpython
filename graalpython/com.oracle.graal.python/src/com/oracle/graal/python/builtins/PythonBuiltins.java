@@ -54,6 +54,10 @@ public abstract class PythonBuiltins {
 
     protected abstract List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories();
 
+    /**
+     * Initialize everything that is truly independent of commandline arguments and that can be
+     * initialized and frozen into an SVM image.
+     */
     public void initialize(PythonCore core) {
         if (builtinFunctions.size() > 0) {
             return;
@@ -99,6 +103,14 @@ public abstract class PythonBuiltins {
                 setBuiltinFunction(builtin.name(), callable);
             }
         });
+    }
+
+    /**
+     * Run any actions that can only be run in the post-initialization step, that is, if we're
+     * actually going to start running rather than just pre-initializing.
+     */
+    public void postInitialize(@SuppressWarnings("unused") PythonCore core) {
+        // nothing to do by default
     }
 
     private void initializeEachFactoryWith(BiConsumer<NodeFactory<? extends PythonBuiltinBaseNode>, Builtin> func) {
@@ -150,5 +162,4 @@ public abstract class PythonBuiltins {
     protected Map<String, Object> getBuiltinConstants() {
         return builtinConstants;
     }
-
 }

@@ -247,22 +247,18 @@ public final class PythonContext {
     }
 
     private void setupRuntimeInformation() {
-        PythonModule sysModule = core.initializeSysModule();
-        sysModules = (PDict) sysModule.getAttribute("modules");
-
-        builtinsModule = (PythonModule) sysModules.getItem("builtins");
-        builtinsModule.setAttribute(__DEBUG__, !PythonOptions.getOption(core.getContext(), PythonOptions.PythonOptimizeFlag));
+        builtinsModule = core.lookupBuiltinModule("builtins");
 
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
         mainModule.setDict(core.factory().createDictFixedStorage(mainModule));
+
+        PythonModule sysModule = core.lookupBuiltinModule("sys");
+        sysModules = (PDict) sysModule.getAttribute("modules");
         sysModules.setItem(__MAIN__, mainModule);
+
         OpaqueBytes.initializeForNewContext(this);
-        executor.scheduleWithFixedDelay(new Runnable() {
-            public void run() {
-                triggerCollection = true;
-            }
-        }, COLLECTIONS_N_MILLISECONDS, COLLECTIONS_N_MILLISECONDS, TimeUnit.MILLISECONDS);
+
         currentException = null;
         isInitialized = true;
     }
