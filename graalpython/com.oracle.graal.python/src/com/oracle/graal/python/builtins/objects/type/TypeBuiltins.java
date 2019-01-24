@@ -111,11 +111,16 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonClass)
 public class TypeBuiltins extends PythonBuiltins {
+
+    public static final HiddenKey TYPE_DICTOFFSET = new HiddenKey(__DICTOFFSET__);
+    public static final HiddenKey TYPE_ITEMSIZE = new HiddenKey(__ITEMSIZE__);
+    public static final HiddenKey TYPE_BASICSIZE = new HiddenKey(__BASICSIZE__);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -703,14 +708,15 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __DICTOFFSET__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     static abstract class DictoffsetNode extends AbstractSlotNode {
-        @Specialization(guards = "isNoValue(value)")
-        String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
-            return cls.getName();
-        }
 
-        @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value,
+        @Specialization(guards = "isNoValue(value)")
+        Object getName(ManagedPythonClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") IsBuiltinClassProfile profile,
                         @Cached("create()") ReadAttributeFromObjectNode getName) {
+            // recursion anchor; since the metaclass of 'type' is 'type'
+            if (profile.profileClass(cls, PythonBuiltinClassType.PythonClass)) {
+                return getName.execute(cls, TYPE_DICTOFFSET);
+            }
             return getName.execute(cls, __DICTOFFSET__);
         }
 
@@ -739,14 +745,15 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __ITEMSIZE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     static abstract class ItemsizeNode extends AbstractSlotNode {
-        @Specialization(guards = "isNoValue(value)")
-        String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
-            return cls.getName();
-        }
 
-        @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value,
+        @Specialization(guards = "isNoValue(value)")
+        Object getName(ManagedPythonClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") IsBuiltinClassProfile profile,
                         @Cached("create()") ReadAttributeFromObjectNode getName) {
+            // recursion anchor; since the metaclass of 'type' is 'type'
+            if (profile.profileClass(cls, PythonBuiltinClassType.PythonClass)) {
+                return getName.execute(cls, TYPE_ITEMSIZE);
+            }
             return getName.execute(cls, __ITEMSIZE__);
         }
 
@@ -775,14 +782,15 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __BASICSIZE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     static abstract class BasicsizeNode extends AbstractSlotNode {
-        @Specialization(guards = "isNoValue(value)")
-        String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
-            return cls.getName();
-        }
 
-        @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value,
+        @Specialization(guards = "isNoValue(value)")
+        Object getName(ManagedPythonClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") IsBuiltinClassProfile profile,
                         @Cached("create()") ReadAttributeFromObjectNode getName) {
+            // recursion anchor; since the metaclass of 'type' is 'type'
+            if (profile.profileClass(cls, PythonBuiltinClassType.PythonClass)) {
+                return getName.execute(cls, TYPE_BASICSIZE);
+            }
             return getName.execute(cls, __BASICSIZE__);
         }
 

@@ -62,6 +62,10 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
         public void execute(Object object, Object key, Object value) {
             call.execute(object, key, value);
         }
+
+        public static Dynamic create() {
+            return new Dynamic();
+        }
     }
 
     private final String key;

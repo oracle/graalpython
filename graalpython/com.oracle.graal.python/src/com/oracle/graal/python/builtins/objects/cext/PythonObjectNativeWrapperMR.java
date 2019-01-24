@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -108,6 +109,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -501,14 +503,14 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
         Object doTpBasicsize(ManagedPythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__BASICSIZE__)") LookupAttributeInMRONode getAttrNode) {
-            return getAttrNode.execute(object);
+                        @Cached("create(__BASICSIZE__)") GetFixedAttributeNode getAttrNode) {
+            return getAttrNode.executeObject(object);
         }
 
         @Specialization(guards = "eq(TP_ITEMSIZE, key)")
         Object doTpItemsize(ManagedPythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__ITEMSIZE__)") LookupAttributeInMRONode getAttrNode) {
-            Object val = getAttrNode.execute(object);
+                        @Cached("create(__ITEMSIZE__)") GetFixedAttributeNode getAttrNode) {
+            Object val = getAttrNode.executeObject(object);
             // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
             // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
             if (val == PNone.NO_VALUE) {
@@ -520,12 +522,12 @@ public class PythonObjectNativeWrapperMR {
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
         Object doTpDictoffset(ManagedPythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") CastToIndexNode castToIntNode,
-                        @Cached("create(__DICTOFFSET__)") LookupAttributeInMRONode getAttrNode) {
+                        @Cached("create(__DICTOFFSET__)") GetFixedAttributeNode getAttrNode) {
             // TODO properly implement 'tp_dictoffset' for builtin classes
             if (object instanceof PythonBuiltinClass) {
                 return 0L;
             }
-            Object dictoffset = getAttrNode.execute(object);
+            Object dictoffset = getAttrNode.executeObject(object);
             return castToIntNode.execute(dictoffset);
         }
 
@@ -876,7 +878,7 @@ public class PythonObjectNativeWrapperMR {
         }
     }
 
-    @ImportStatic({NativeMemberNames.class, PGuards.class, SpecialMethodNames.class})
+    @ImportStatic({NativeMemberNames.class, PGuards.class, SpecialMethodNames.class, SpecialAttributeNames.class})
     abstract static class WriteNativeMemberNode extends PNodeWithContext {
         @Child private HashingStorageNodes.SetItemNode setItemNode;
 
@@ -896,20 +898,14 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
-        @TruffleBoundary
-        long doTpBasicsize(PythonBuiltinClass object, @SuppressWarnings("unused") String key, long basicsize) {
-            // We have to use the 'setAttributeUnsafe' because this properly cannot be modified by
-            // the user and we need to initialize it.
-            object.setAttributeUnsafe(SpecialAttributeNames.__BASICSIZE__, basicsize);
-            return basicsize;
-        }
-
-        @Specialization(guards = "eq(TP_BASICSIZE, key)")
-        @TruffleBoundary
-        long doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key, long basicsize) {
-            // Do deliberately not use "SetAttributeNode" because we want to directly set the
-            // attribute an bypass any user code.
-            object.setAttribute(SpecialAttributeNames.__BASICSIZE__, basicsize);
+        long doTpBasicsize(AbstractPythonClass object, @SuppressWarnings("unused") String key, long basicsize,
+                        @Cached("create()") WriteAttributeToObjectNode writeAttrNode,
+                        @Cached("create()") IsBuiltinClassProfile profile) {
+            if (profile.profileClass(object, PythonBuiltinClassType.PythonClass)) {
+                writeAttrNode.execute(object, TypeBuiltins.TYPE_BASICSIZE, basicsize);
+            } else {
+                writeAttrNode.execute(object, SpecialAttributeNames.__BASICSIZE__, basicsize);
+            }
             return basicsize;
         }
 

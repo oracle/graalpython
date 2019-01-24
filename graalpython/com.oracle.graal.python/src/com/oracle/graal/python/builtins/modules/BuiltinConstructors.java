@@ -131,6 +131,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttribute
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
@@ -1744,7 +1745,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class TypeNode extends PythonBuiltinNode {
         private static final long SIZEOF_PY_OBJECT_PTR = Long.BYTES;
         @Child private ReadAttributeFromObjectNode readAttrNode;
-        @Child private WriteAttributeToObjectNode writeAttrNode;
+        @Child private SetAttributeNode.Dynamic writeAttrNode;
         @Child private GetAnyAttributeNode getAttrNode;
         @Child private CastToIndexNode castToInt;
         @Child private CastToListNode castToList;
@@ -2154,10 +2155,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return getAttrNode;
         }
 
-        private WriteAttributeToObjectNode ensureWriteAttrNode() {
+        private SetAttributeNode.Dynamic ensureWriteAttrNode() {
             if (writeAttrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeAttrNode = insert(WriteAttributeToObjectNode.createForceType());
+                writeAttrNode = insert(SetAttributeNode.Dynamic.create());
             }
             return writeAttrNode;
         }
