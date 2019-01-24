@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
@@ -58,6 +59,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     @Child private GetLazyClassNode getClass;
     @Child private GetMroNode getMroNode;
     @Child private IsSameTypeNode isSameTypeNode;
+    @Child private IsTypeNode isTypeNode;
 
     // "object" is the uninitialized value (since it's not a valid error type)
     @CompilationFinal private PythonBuiltinClassType singleBuiltinError = PythonBuiltinClassType.PythonObject;
@@ -228,7 +230,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     }
 
     private boolean matches(Object expectedType, PythonBuiltinClassType clazz) {
-        if (!(expectedType instanceof AbstractPythonClass)) {
+        if (!isType(expectedType)) {
             errorProfile.enter();
             throw raiseNoException();
         }
@@ -295,5 +297,13 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
             isSameTypeNode = insert(IsSameTypeNode.create());
         }
         return isSameTypeNode.execute(left, right);
+    }
+
+    private boolean isType(Object expectedType) {
+        if (isTypeNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            isTypeNode = insert(IsTypeNode.create());
+        }
+        return isTypeNode.execute(expectedType);
     }
 }

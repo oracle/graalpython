@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.SuperInitNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -158,6 +159,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Child private GetClassNode getClassNode;
         @Child private LookupAndCallBinaryNode getAttrNode;
         @Child private CellBuiltins.GetRefNode getRefNode;
+        @Child private TypeNodes.IsTypeNode isTypeNode;
 
         @Override
         public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
@@ -321,6 +323,14 @@ public final class SuperBuiltins extends PythonBuiltins {
             return getClassNode;
         }
 
+        private TypeNodes.IsTypeNode ensureIsTypeNode() {
+            if (isTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isTypeNode = insert(TypeNodes.IsTypeNode.create());
+            }
+            return isTypeNode;
+        }
+
         private LookupAndCallBinaryNode getGetAttr() {
             if (getAttrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -345,7 +355,7 @@ public final class SuperBuiltins extends PythonBuiltins {
              * not a subclass of type, but obj.__class__ is! This will allow using super() with a
              * proxy for obj.
              */
-            if (object instanceof AbstractPythonClass) {
+            if (ensureIsTypeNode().execute(object)) {
                 if (getIsSubtype().execute(object, cls)) {
                     return (AbstractPythonClass) object;
                 }
@@ -356,7 +366,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             } else {
                 try {
                     Object classObject = getGetAttr().executeObject(object, SpecialAttributeNames.__CLASS__);
-                    if (classObject instanceof AbstractPythonClass) {
+                    if (ensureIsTypeNode().execute(classObject)) {
                         if (getIsSubtype().execute(classObject, cls)) {
                             return (AbstractPythonClass) classObject;
                         }

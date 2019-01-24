@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -586,8 +587,14 @@ public class PythonMessageResolution {
 
     @Resolve(message = "IS_INSTANTIABLE")
     abstract static class IsInstantiableNode extends Node {
+        @Child private TypeNodes.IsTypeNode isTypeNode;
+
         public Object access(Object obj) {
-            return obj instanceof LazyPythonClass;
+            if (isTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isTypeNode = insert(TypeNodes.IsTypeNode.create());
+            }
+            return isTypeNode.execute(obj);
         }
     }
 

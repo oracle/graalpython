@@ -71,10 +71,13 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongT
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -663,6 +666,37 @@ public abstract class TypeNodes {
             return mro.toArray(new AbstractPythonClass[mro.size()]);
         }
 
+    }
+
+    public abstract static class IsTypeNode extends Node {
+
+        public abstract boolean execute(Object obj);
+
+        @Specialization
+        boolean doManagedClass(@SuppressWarnings("unused") ManagedPythonClass obj) {
+            return true;
+        }
+
+        @Specialization
+        boolean doBuiltinType(@SuppressWarnings("unused") PythonBuiltinClassType obj) {
+            return true;
+        }
+
+        @Specialization
+        boolean doManagedClass(PythonAbstractNativeObject obj,
+                        @Cached("create()") IsBuiltinClassProfile profile,
+                        @Cached("create()") GetLazyClassNode getClassNode) {
+            return profile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.PythonClass);
+        }
+
+        @Fallback
+        boolean doGeneric(@SuppressWarnings("unused") Object obj) {
+            return false;
+        }
+
+        public static IsTypeNode create() {
+            return IsTypeNodeGen.create();
+        }
     }
 
 }

@@ -334,7 +334,7 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = {"cachedClass == object.getClass()", "!isPythonClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, limit = "3")
+        @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, limit = "3")
         Object runAbstractObjectCached(PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
                         @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass) {
@@ -342,7 +342,7 @@ public abstract class CExtNodes {
             return PythonObjectNativeWrapper.wrap(CompilerDirectives.castExact(object, cachedClass), noWrapperProfile);
         }
 
-        @Specialization(guards = {"!isPythonClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, replaces = "runAbstractObjectCached")
+        @Specialization(guards = {"!isClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, replaces = "runAbstractObjectCached")
         Object runAbstractObject(PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
             assert object != PNone.NO_VALUE;
@@ -358,10 +358,6 @@ public abstract class CExtNodes {
         Object run(Object obj) {
             assert obj != null : "Java 'null' cannot be a Sulong value";
             return obj;
-        }
-
-        protected static boolean isPythonClass(PythonAbstractObject o) {
-            return o instanceof AbstractPythonClass;
         }
 
         protected static PythonClassNativeWrapper wrapNativeClass(ManagedPythonClass object) {
@@ -391,7 +387,7 @@ public abstract class CExtNodes {
             } else if (o instanceof ManagedPythonClass) {
                 return wrapNativeClass((ManagedPythonClass) o);
             } else if (o instanceof PythonAbstractObject) {
-                assert !(o instanceof AbstractPythonClass);
+                assert !PGuards.isClass(o);
                 return PythonObjectNativeWrapper.wrapSlowPath((PythonAbstractObject) o);
             } else if (PGuards.isForeignObject(o)) {
                 return TruffleObjectNativeWrapper.wrap((TruffleObject) o);
@@ -1616,6 +1612,9 @@ public abstract class CExtNodes {
         @Child private ToSulongNode toSulong;
         @Child private AsPythonObjectNode toJava;
         @Child private PCallCapiFunction callGetTpDictNode;
+        @Child private GetLazyClassNode getNativeClassNode;
+
+        @CompilationFinal private IsBuiltinClassProfile isTypeProfile;
 
         private GetTypeMemberNode(String memberName) {
             String getterFuncName = "get_" + memberName;
@@ -1632,7 +1631,17 @@ public abstract class CExtNodes {
                 toSulong = insert(ToSulongNode.create());
                 toJava = insert(AsPythonObjectNode.create());
             }
+            assert isNativeTypeObject(self);
             return toJava.execute(callGetTpDictNode.call(toSulong.execute(self)));
+        }
+
+        private boolean isNativeTypeObject(Object self) {
+            if (getNativeClassNode == null || isTypeProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getNativeClassNode = insert(GetLazyClassNode.create());
+                isTypeProfile = IsBuiltinClassProfile.create();
+            }
+            return isTypeProfile.profileClass(getNativeClassNode.execute(self), PythonBuiltinClassType.PythonClass);
         }
 
         @TruffleBoundary
