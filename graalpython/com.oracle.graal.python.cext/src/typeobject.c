@@ -168,6 +168,70 @@ static PyObject* wrap_reverse_binop(binaryfunc f, PyObject* a, PyObject* b) {
     return f(b, a);
 }
 
+static void
+inherit_special(PyTypeObject *type, PyTypeObject *base)
+{
+
+    /* Copying basicsize is connected to the GC flags */
+    if (!(type->tp_flags & Py_TPFLAGS_HAVE_GC) &&
+        (base->tp_flags & Py_TPFLAGS_HAVE_GC) &&
+        (!type->tp_traverse && !type->tp_clear)) {
+        type->tp_flags |= Py_TPFLAGS_HAVE_GC;
+        if (type->tp_traverse == NULL)
+            type->tp_traverse = base->tp_traverse;
+        if (type->tp_clear == NULL)
+            type->tp_clear = base->tp_clear;
+    }
+    {
+        /* The condition below could use some explanation.
+           It appears that tp_new is not inherited for static types
+           whose base class is 'object'; this seems to be a precaution
+           so that old extension types don't suddenly become
+           callable (object.__new__ wouldn't insure the invariants
+           that the extension type's own factory function ensures).
+           Heap types, of course, are under our control, so they do
+           inherit tp_new; static extension types that specify some
+           other built-in type as the default also
+           inherit object.__new__. */
+        if (base != &PyBaseObject_Type ||
+            (type->tp_flags & Py_TPFLAGS_HEAPTYPE)) {
+            if (type->tp_new == NULL)
+                type->tp_new = base->tp_new;
+        }
+    }
+    if (type->tp_basicsize == 0)
+        type->tp_basicsize = base->tp_basicsize;
+
+    /* Copy other non-function slots */
+
+#undef COPYVAL
+#define COPYVAL(SLOT) \
+    if (type->SLOT == 0) type->SLOT = base->SLOT
+
+    COPYVAL(tp_itemsize);
+    COPYVAL(tp_weaklistoffset);
+    COPYVAL(tp_dictoffset);
+
+    /* Setup fast subclass flags */
+    if (PyType_IsSubtype(base, (PyTypeObject*)PyExc_BaseException))
+        type->tp_flags |= Py_TPFLAGS_BASE_EXC_SUBCLASS;
+    else if (PyType_IsSubtype(base, &PyType_Type))
+        type->tp_flags |= Py_TPFLAGS_TYPE_SUBCLASS;
+    else if (PyType_IsSubtype(base, &PyLong_Type))
+        type->tp_flags |= Py_TPFLAGS_LONG_SUBCLASS;
+    else if (PyType_IsSubtype(base, &PyBytes_Type))
+        type->tp_flags |= Py_TPFLAGS_BYTES_SUBCLASS;
+    else if (PyType_IsSubtype(base, &PyUnicode_Type))
+        type->tp_flags |= Py_TPFLAGS_UNICODE_SUBCLASS;
+    else if (PyType_IsSubtype(base, &PyTuple_Type))
+        type->tp_flags |= Py_TPFLAGS_TUPLE_SUBCLASS;
+    else if (PyType_IsSubtype(base, &PyList_Type))
+        type->tp_flags |= Py_TPFLAGS_LIST_SUBCLASS;
+    else if (PyType_IsSubtype(base, &PyDict_Type))
+        type->tp_flags |= Py_TPFLAGS_DICT_SUBCLASS;
+}
+
+
 // TODO(fa): there should actually be 'native_to_java' just in case 'javacls' goes to native in between
 // TODO support member flags other than READONLY
 UPCALL_ID(AddMember);
@@ -251,7 +315,7 @@ int PyType_Ready(PyTypeObject* cls) {
         if (base == NULL) {
             bases = PyTuple_New(0);
         } else {
-            bases = PyTuple_Pack(1, native_to_java(base));
+            bases = PyTuple_Pack(1, base);
         }
     } else {
     	// we need to resolve pointers to Python classes
@@ -327,8 +391,12 @@ int PyType_Ready(PyTypeObject* cls) {
         }
     }
 
-    // initialize mro
+    /* initialize mro */
     cls->tp_mro = UPCALL_CEXT_O(_jls_PyTruffle_Compute_Mro, cls);
+
+    /* Inherit special flags from dominant base */
+    if (cls->tp_base != NULL)
+        inherit_special(cls, cls->tp_base);
 
     ADD_IF_MISSING(cls->tp_alloc, PyType_GenericAlloc);
     ADD_IF_MISSING(cls->tp_new, PyType_GenericNew);
@@ -451,12 +519,10 @@ int PyType_Ready(PyTypeObject* cls) {
     // CPython doesn't do that in 'PyType_Ready' but we must because a native type can inherit
     // dynamic slots from a managed Python class. Since the managed Python class may be created
     // when the C API is not loaded, we need to do that later.
-//    PyObject* inherited_slots_tuple = UPCALL_CEXT_O(_jls_PyTruffle_Type_Slots, native_to_java((PyObject*)javacls));
-//    PyObject* inherited_slots_tuple = PyObject_GetAttrString(cls, "__slots__");
-//    if(inherited_slots_tuple != NULL) {
-//    	PyTruffle_Debug(native_to_java(inherited_slots_tuple));
-//    	PyTruffle_Type_AddSlots(cls, inherited_slots_tuple);
-//    }
+    PyObject* inherited_slots_tuple = UPCALL_CEXT_O(_jls_PyTruffle_Type_Slots, native_to_java((PyObject*)cls));
+    if(inherited_slots_tuple != NULL) {
+    	PyTruffle_Type_AddSlots(cls, inherited_slots_tuple);
+    }
 
     /* Link into each base class's list of subclasses */
     bases = cls->tp_bases;
