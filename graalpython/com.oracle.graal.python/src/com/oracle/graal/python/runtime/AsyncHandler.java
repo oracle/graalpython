@@ -6,15 +6,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node.Child;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -49,7 +51,7 @@ public class AsyncHandler {
     }
 
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-    private ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
+    private AtomicMarkableReference<ConcurrentLinkedQueue<AsyncAction>> scheduledActions = new AtomicMarkableReference<>(new ConcurrentLinkedQueue<>(), false);
     private AtomicBoolean hasScheduledAction = new AtomicBoolean(false);
     private static final int ASYNC_ACTION_DELAY = 3;
 
@@ -63,7 +65,7 @@ public class AsyncHandler {
         public void run() {
             AsyncAction asyncAction = actionSupplier.get();
             if (asyncAction != null) {
-                scheduledActions.add(asyncAction);
+                scheduledActions.getReference().add(asyncAction);
                 hasScheduledAction.set(true);
             }
         }
@@ -80,7 +82,7 @@ public class AsyncHandler {
         public Object execute(VirtualFrame frame) {
             Object[] frameArguments = frame.getArguments();
             Object callable = frameArguments[0];
-            Object arguments = Arrays.copyOfRange(frameArguments, 1, frameArguments.length);
+            Object[] arguments = Arrays.copyOfRange(frameArguments, 1, frameArguments.length);
             return callNode.execute(frame, callable, arguments);
         }
     }
@@ -96,19 +98,29 @@ public class AsyncHandler {
         executorService.scheduleWithFixedDelay(new AsyncRunnable(actionSupplier), ASYNC_ACTION_DELAY, ASYNC_ACTION_DELAY, TimeUnit.MILLISECONDS);
     }
 
-    void triggerAsyncActions(PFrame pFrame) {
+    void triggerAsyncActions(Frame frame, PythonObjectFactory factory) {
         if (hasScheduledAction.getAndSet(false)) {
-            CompilerDirectives.transferToInterpreter();
             // TODO: (tfel) - for now all async actions are slow path
-            for (AsyncAction action : scheduledActions) {
-                Object[] arguments = action.arguments();
-                Object[] args = new Object[arguments.length + 1];
-                System.arraycopy(arguments, 0, args, 1, arguments.length);
-                args[0] = action.callable();
-                if (action.frameIndex() >= 0) {
-                    args[action.frameIndex() + 1] = pFrame;
+            CompilerDirectives.transferToInterpreter();
+            ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions.getReference();
+            if (scheduledActions.compareAndSet(actions, actions, false, true)) {
+                // if we're here, we marked the scheduled actions as executing, so no other thread
+                // will enter this branch (other threads would just return)
+                try {
+                    for (AsyncAction action : actions) {
+                        Object[] arguments = action.arguments();
+                        Object[] args = new Object[arguments.length + 1];
+                        System.arraycopy(arguments, 0, args, 1, arguments.length);
+                        args[0] = action.callable();
+                        if (action.frameIndex() >= 0) {
+                            args[action.frameIndex() + 1] = factory.createPFrame(frame);
+                        }
+                        callTarget.call(args);
+                    }
+                } finally {
+                    // unmark, we're done here
+                    scheduledActions.compareAndSet(actions, actions, true, false);
                 }
-                callTarget.call(args);
             }
         }
     }

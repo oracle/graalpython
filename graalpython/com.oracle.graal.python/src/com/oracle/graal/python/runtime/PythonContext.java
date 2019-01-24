@@ -333,7 +333,7 @@ public final class PythonContext {
      * Trigger any pending asynchronous actions
      */
     public void triggerAsyncActions(Frame frame) {
-        handler.triggerAsyncActions(core.factory().createPFrame(frame));
+        handler.triggerAsyncActions(frame, core.factory());
     }
 
     public void registerAsyncAction(Supplier<AsyncAction> actionSupplier) {
