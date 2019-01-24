@@ -107,6 +107,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.nio.charset.StandardCharsets;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
 public final class StringBuiltins extends PythonBuiltins {
@@ -757,10 +758,15 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String translateFromByteTable(String text, byte[] table) {
-            byte[] translatedChars = text.getBytes();
-            for (int i = 0; i < translatedChars.length; i++) {
-                byte original = translatedChars[i];
-                translatedChars[i] = table[original];
+            char[] translatedChars = new char[text.length()];
+            // convert only ascii or up to the lenght of table
+            for (int i = 0; i < text.length(); i++) {
+                char code = text.charAt(i);
+                if (code < table.length) {
+                    translatedChars[i] = (char) (table[code] & 0xFF);
+                } else {
+                    translatedChars[i] = code;
+                }
             }
             return new String(translatedChars);
         }
