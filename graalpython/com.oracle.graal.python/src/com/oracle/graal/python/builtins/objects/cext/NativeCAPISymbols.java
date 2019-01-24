@@ -65,6 +65,9 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_GET_TP_NAME = "get_tp_name";
     public static final String FUN_GET_TP_MRO = "get_tp_mro";
     public static final String FUN_GET_TP_SUBCLASSES = "get_tp_subclasses";
+    public static final String FUN_GET_TP_DICTOFFSET = "get_tp_dictoffset";
+    public static final String FUN_GET_TP_BASICSIZE = "get_tp_basicsize";
+    public static final String FUN_GET_TP_ITEMSIZE = "get_tp_itemsize";
     public static final String FUN_DEREF_HANDLE = "truffle_deref_handle_for_managed";
     public static final String FUN_GET_BYTE_ARRAY_TYPE_ID = "get_byte_array_typeid";
     public static final String FUN_GET_PTR_ARRAY_TYPE_ID = "get_ptr_array_typeid";

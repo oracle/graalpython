@@ -284,6 +284,21 @@ PyObject* get_tp_subclasses(PyTypeObject* obj) {
 	return native_to_java(obj->tp_subclasses);
 }
 
+/** to be used from Java code only; reads native 'tp_dictoffset' field */
+Py_ssize_t get_tp_dictoffset(PyTypeObject* obj) {
+	return obj->tp_dictoffset;
+}
+
+/** to be used from Java code only; reads native 'tp_itemsize' field */
+Py_ssize_t get_tp_itemsize(PyTypeObject* obj) {
+	return obj->tp_itemsize;
+}
+
+/** to be used from Java code only; reads native 'tp_basicsize' field */
+Py_ssize_t get_tp_basicsize(PyTypeObject* obj) {
+	return obj->tp_basicsize;
+}
+
 /** to be used from Java code only; returns the type ID for a byte array */
 polyglot_typeid get_byte_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_i8_typeid(), len);
