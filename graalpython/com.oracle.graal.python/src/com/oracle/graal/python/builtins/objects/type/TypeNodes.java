@@ -43,6 +43,9 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -53,7 +56,11 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalence;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass.FlagsContainer;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
@@ -68,6 +75,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -77,8 +85,10 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
@@ -285,6 +295,8 @@ public abstract class TypeNodes {
 
     }
 
+    @TypeSystemReference(PythonTypes.class)
+    @ImportStatic(NativeMemberNames.class)
     public abstract static class GetSubclassesNode extends PNodeWithContext {
 
         public abstract Set<AbstractPythonClass> execute(Object obj);
@@ -299,6 +311,21 @@ public abstract class TypeNodes {
             return getBuiltinPythonClass(obj).getSubClasses();
         }
 
+        @Specialization
+        @TruffleBoundary
+        Set<AbstractPythonClass> doNativeClass(PythonNativeClass obj,
+                        @Cached("create(TP_SUBCLASSES)") GetTypeMemberNode getTpSubclassesNode,
+                        @Cached("createClassProfile()") ValueProfile profile) {
+            Object tpSubclasses = getTpSubclassesNode.execute(obj);
+
+            Object profiled = profile.profile(tpSubclasses);
+            if (profiled instanceof PDict) {
+                return wrapDict(profiled);
+            }
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("invalid subclasses dict " + profiled.getClass().getName());
+        }
+
         @TruffleBoundary
         public static Set<AbstractPythonClass> doSlowPath(Object obj) {
             if (obj instanceof ManagedPythonClass) {
@@ -306,9 +333,84 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getSubClasses();
             } else if (PGuards.isNativeClass(obj)) {
-                // TODO implement
+                Object tpSubclasses = GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_SUBCLASSES);
+                if (tpSubclasses instanceof PDict) {
+                    return wrapDict(tpSubclasses);
+                }
+                throw new IllegalStateException("invalid subclasses dict " + tpSubclasses.getClass().getName());
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
+        }
+
+        private static Set<AbstractPythonClass> wrapDict(Object tpSubclasses) {
+            return new Set<AbstractPythonClass>() {
+                private final PDict dict = (PDict) tpSubclasses;
+
+                public int size() {
+                    return dict.getDictStorage().length();
+                }
+
+                public boolean isEmpty() {
+                    return size() == 0;
+                }
+
+                public boolean contains(Object o) {
+                    HashingStorage s = dict.getDictStorage();
+                    Equivalence equiv = HashingStorage.getSlowPathEquivalence(o);
+                    for (Object val : s.values()) {
+                        if (equiv.equals(o, val)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+
+                @SuppressWarnings("unchecked")
+                public Iterator<AbstractPythonClass> iterator() {
+                    return (Iterator<AbstractPythonClass>) dict.getDictStorage().values();
+                }
+
+                public Object[] toArray() {
+                    return dict.getDictStorage().valuesAsArray();
+                }
+
+                public <T> T[] toArray(T[] a) {
+                    throw new UnsupportedOperationException();
+                }
+
+                public boolean add(AbstractPythonClass e) {
+                    if (PGuards.isNativeClass(e)) {
+                        dict.setItem(PythonNativeClass.cast(e).getPtr(), e);
+                    }
+                    dict.setItem(new PythonNativeVoidPtr((TruffleObject) e), e);
+                    return true;
+                }
+
+                public boolean remove(Object o) {
+                    throw new UnsupportedOperationException();
+                }
+
+                public boolean containsAll(Collection<?> c) {
+                    throw new UnsupportedOperationException();
+                }
+
+                public boolean addAll(Collection<? extends AbstractPythonClass> c) {
+                    throw new UnsupportedOperationException();
+                }
+
+                public boolean retainAll(Collection<?> c) {
+                    throw new UnsupportedOperationException();
+                }
+
+                public boolean removeAll(Collection<?> c) {
+                    throw new UnsupportedOperationException();
+                }
+
+                public void clear() {
+                    throw new UnsupportedOperationException();
+                }
+
+            };
         }
 
         public static GetSubclassesNode create() {

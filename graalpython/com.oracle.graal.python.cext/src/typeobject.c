@@ -326,14 +326,6 @@ int PyType_Ready(PyTypeObject* cls) {
     }
     cls->tp_bases = bases;
 
-    PyObject* native_members = PyDict_New();
-    PyDict_SetItemString(native_members, "tp_name", polyglot_from_string(cls->tp_name, SRC_CS));
-    PyDict_SetItemString(native_members, "tp_doc", polyglot_from_string(cls->tp_doc ? cls->tp_doc : "", SRC_CS));
-    PyDict_SetItemString(native_members, "tp_basicsize", PyLong_FromSsize_t(cls->tp_basicsize));
-    PyDict_SetItemString(native_members, "tp_itemsize", PyLong_FromSsize_t(cls->tp_itemsize));
-    PyDict_SetItemString(native_members, "tp_dictoffset", PyLong_FromSsize_t(cls->tp_dictoffset));
-    const char* class_name = cls->tp_name;
-
     /* Initialize tp_dict */
     PyObject* dict = cls->tp_dict;
     if (dict == NULL) {
@@ -343,7 +335,6 @@ int PyType_Ready(PyTypeObject* cls) {
         }
         cls->tp_dict = dict;
     }
-
 
     PyMethodDef* methods = cls->tp_methods;
     if (methods) {
@@ -523,6 +514,9 @@ int PyType_Ready(PyTypeObject* cls) {
     if(inherited_slots_tuple != NULL) {
     	PyTruffle_Type_AddSlots(cls, inherited_slots_tuple);
     }
+
+    /* Initialize this classes' tp_subclasses dict. This is necessary because our managed classes won't do. */
+    cls->tp_subclasses = PyDict_New();
 
     /* Link into each base class's list of subclasses */
     bases = cls->tp_bases;
