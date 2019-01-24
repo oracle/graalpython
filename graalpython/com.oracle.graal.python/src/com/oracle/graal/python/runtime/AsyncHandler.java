@@ -6,7 +6,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -18,6 +17,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.Node.Child;
 import com.oracle.truffle.api.nodes.RootNode;
 
@@ -51,9 +51,10 @@ public class AsyncHandler {
     }
 
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-    private AtomicMarkableReference<ConcurrentLinkedQueue<AsyncAction>> scheduledActions = new AtomicMarkableReference<>(new ConcurrentLinkedQueue<>(), false);
+    private ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
     private AtomicBoolean hasScheduledAction = new AtomicBoolean(false);
-    private static final int ASYNC_ACTION_DELAY = 3;
+    private AtomicBoolean executingActions = new AtomicBoolean(false);
+    private static final int ASYNC_ACTION_DELAY = 100;
 
     private class AsyncRunnable implements Runnable {
         private final Supplier<AsyncAction> actionSupplier;
@@ -65,7 +66,7 @@ public class AsyncHandler {
         public void run() {
             AsyncAction asyncAction = actionSupplier.get();
             if (asyncAction != null) {
-                scheduledActions.getReference().add(asyncAction);
+                scheduledActions.add(asyncAction);
                 hasScheduledAction.set(true);
             }
         }
@@ -98,30 +99,32 @@ public class AsyncHandler {
         executorService.scheduleWithFixedDelay(new AsyncRunnable(actionSupplier), ASYNC_ACTION_DELAY, ASYNC_ACTION_DELAY, TimeUnit.MILLISECONDS);
     }
 
-    void triggerAsyncActions(Frame frame, PythonObjectFactory factory) {
-        if (hasScheduledAction.getAndSet(false)) {
-            // TODO: (tfel) - for now all async actions are slow path
-            CompilerDirectives.transferToInterpreter();
-            ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions.getReference();
-            if (scheduledActions.compareAndSet(actions, actions, false, true)) {
-                // if we're here, we marked the scheduled actions as executing, so no other thread
-                // will enter this branch (other threads would just return)
-                try {
-                    for (AsyncAction action : actions) {
-                        Object[] arguments = action.arguments();
-                        Object[] args = new Object[arguments.length + 1];
-                        System.arraycopy(arguments, 0, args, 1, arguments.length);
-                        args[0] = action.callable();
-                        if (action.frameIndex() >= 0) {
-                            args[action.frameIndex() + 1] = factory.createPFrame(frame);
-                        }
-                        callTarget.call(args);
+    void triggerAsyncActions(Frame frame, Node location, PythonObjectFactory factory) {
+        if (executingActions.compareAndSet(false, true)) {
+            if (hasScheduledAction.compareAndSet(true, false)) {
+                CompilerDirectives.transferToInterpreter();
+                // TODO: (tfel) - for now all async actions are slow path
+                ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions;
+                for (AsyncAction action : actions) {
+                    Object[] arguments = action.arguments();
+                    Object[] args = new Object[arguments.length + 1];
+                    System.arraycopy(arguments, 0, args, 1, arguments.length);
+                    args[0] = action.callable();
+                    if (action.frameIndex() >= 0) {
+                        args[action.frameIndex() + 1] = factory.createPFrame(frame, location);
                     }
-                } finally {
-                    // unmark, we're done here
-                    scheduledActions.compareAndSet(actions, actions, true, false);
+                    try {
+                        callTarget.call(args);
+                    } catch (RuntimeException e) {
+                        // we cannot raise the exception here (well, we could, but CPython
+                        // doesn't), so we do what they do and just print it
+
+                        // TODO: print a nice Python stacktrace
+                        e.printStackTrace();
+                    }
                 }
             }
+            executingActions.set(false);
         }
     }
 }

@@ -57,7 +57,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         int collect(VirtualFrame frame) {
             doGc();
             // collect some weak references now
-            getContext().triggerAsyncActions(frame);
+            getContext().triggerAsyncActions(frame, this);
             return 0;
         }
 
