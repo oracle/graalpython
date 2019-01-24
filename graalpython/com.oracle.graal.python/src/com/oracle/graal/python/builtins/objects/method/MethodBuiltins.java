@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__KWDEFAULTS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -47,6 +48,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -131,6 +133,18 @@ public class MethodBuiltins extends PythonBuiltins {
             // TODO we should not override '__reduce__' but properly distinguish between heap/non
             // heap types
             throw raise(TypeError, "can't pickle function objects");
+        }
+    }
+
+    @Builtin(name = __GET__, fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        PMethod doGeneric(@SuppressWarnings("unused") PMethod self, Object obj, @SuppressWarnings("unused") Object cls) {
+            if (self.getSelf() != null) {
+                return self;
+            }
+            return factory().createMethod(obj, self.getFunction());
         }
     }
 }
