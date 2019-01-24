@@ -40,11 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -92,6 +92,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class TypeNodes {
@@ -263,18 +264,32 @@ public abstract class TypeNodes {
 
     }
 
+    @TypeSystemReference(PythonTypes.class)
+    @ImportStatic(NativeMemberNames.class)
     public abstract static class GetSuperClassNode extends PNodeWithContext {
 
         public abstract LazyPythonClass execute(Object obj);
 
         @Specialization
-        LazyPythonClass doPythonClass(ManagedPythonClass obj) {
+        LazyPythonClass doManaged(ManagedPythonClass obj) {
             return obj.getSuperClass();
         }
 
         @Specialization
-        LazyPythonClass doPythonClass(PythonBuiltinClassType obj) {
+        LazyPythonClass doBuiltin(PythonBuiltinClassType obj) {
             return obj.getBase();
+        }
+
+        @Specialization
+        LazyPythonClass doNative(PythonNativeClass obj,
+                        @Cached("create(TP_BASE)") GetTypeMemberNode getTpBaseNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+            Object tpBaseObj = getTpBaseNode.execute(obj);
+            if (profile.profile(PGuards.isClass(tpBaseObj))) {
+                return (AbstractPythonClass) tpBaseObj;
+            }
+            CompilerDirectives.transferToInterpreter();
+            throw raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), tpBaseObj);
         }
 
         @TruffleBoundary
@@ -284,7 +299,11 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return ((PythonBuiltinClassType) obj).getBase();
             } else if (PGuards.isNativeClass(obj)) {
-                // TODO implement
+                Object tpBaseObj = GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_BASE);
+                if (PGuards.isClass(tpBaseObj)) {
+                    return (AbstractPythonClass) tpBaseObj;
+                }
+                PythonLanguage.getCore().raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), tpBaseObj);
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
