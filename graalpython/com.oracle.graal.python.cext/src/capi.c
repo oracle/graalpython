@@ -279,6 +279,11 @@ PyObject* get_tp_mro(PyTypeObject* obj) {
 	return native_to_java(obj->tp_mro);
 }
 
+/** to be used from Java code only; reads native 'tp_subclasses' field */
+PyObject* get_tp_subclasses(PyTypeObject* obj) {
+	return native_to_java(obj->tp_subclasses);
+}
+
 /** to be used from Java code only; returns the type ID for a byte array */
 polyglot_typeid get_byte_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_i8_typeid(), len);

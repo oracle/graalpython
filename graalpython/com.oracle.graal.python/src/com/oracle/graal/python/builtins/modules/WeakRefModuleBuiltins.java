@@ -49,6 +49,10 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -56,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
@@ -63,6 +68,10 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -70,8 +79,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 
-@SuppressWarnings("unused")
 @CoreFunctions(defineModule = "_weakref")
 public class WeakRefModuleBuiltins extends PythonBuiltins {
     private final static HiddenKey weakRefQueueKey = new HiddenKey("weakRefQueue");
@@ -123,16 +132,47 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "ReferenceType", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PReferenceType)
     @GenerateNodeFactory
     public abstract static class ReferenceTypeNode extends PythonBuiltinNode {
-        @Child ReadAttributeFromObjectNode readQueue = ReadAttributeFromObjectNode.create();
+        @Child private ReadAttributeFromObjectNode readQueue = ReadAttributeFromObjectNode.create();
+        @Child private CExtNodes.GetTypeMemberNode getTpWeaklistoffsetNode;
 
-        @Specialization
-        public PReferenceType refType(LazyPythonClass cls, Object object, PNone none) {
+        @Specialization(guards = "!isNativeObject(object)")
+        public PReferenceType refType(LazyPythonClass cls, Object object, @SuppressWarnings("unused") PNone none) {
             return factory().createReferenceType(cls, object, null, getWeakReferenceQueue());
         }
 
-        @Specialization
+        @Specialization(guards = "!isNativeObject(object)")
         public PReferenceType refType(LazyPythonClass cls, Object object, Object callback) {
             return factory().createReferenceType(cls, object, callback, getWeakReferenceQueue());
+        }
+
+        @Specialization
+        public PReferenceType refType(LazyPythonClass cls, PythonAbstractNativeObject pythonObject, Object callback,
+                        @Cached("create()") GetLazyClassNode getClassNode,
+                        @Cached("create()") IsBuiltinClassProfile profile) {
+            LazyPythonClass clazz = getClassNode.execute(pythonObject);
+
+            // if the object is a type, a weak ref is allowed
+            if (profile.profileClass(clazz, PythonBuiltinClassType.PythonClass)) {
+                return factory().createReferenceType(cls, pythonObject, callback, getWeakReferenceQueue());
+            }
+
+            // if the object's type is a native type, we need to consider 'tp_weaklistoffset'
+            if (PGuards.isNativeClass(clazz)) {
+                if (getTpWeaklistoffsetNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getTpWeaklistoffsetNode = insert(GetTypeMemberNode.create(NativeMemberNames.TP_WEAKLISTOFFSET));
+                }
+                Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(clazz);
+                if (tpWeaklistoffset != PNone.NO_VALUE) {
+                    return factory().createReferenceType(cls, pythonObject, callback, getWeakReferenceQueue());
+                }
+            }
+            return refType(cls, pythonObject, callback);
+        }
+
+        @Fallback
+        public PReferenceType refType(Object cls, Object object, Object callback) {
+            throw raise(PythonErrorType.TypeError, "cannot create weak reference to '%p' object", object);
         }
 
         private ReferenceQueue<Object> getWeakReferenceQueue() {
@@ -144,11 +184,6 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             } else {
                 throw new IllegalStateException("the weak reference queue was modified!");
             }
-        }
-
-        @Fallback
-        public PReferenceType refType(Object cls, Object object, Object callback) {
-            throw raise(PythonErrorType.TypeError, "cannot create weak reference to '%p' object", object);
         }
     }
 
@@ -162,7 +197,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object getCount(PNone none) {
+        public Object getCount(@SuppressWarnings("unused") PNone none) {
             return 0;
         }
     }
@@ -172,7 +207,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetWeakRefsNode extends PythonBuiltinNode {
         @Specialization
-        public Object getRefs(PythonObject pythonObject) {
+        public Object getRefs(@SuppressWarnings("unused") PythonObject pythonObject) {
             return PNone.NONE;
         }
     }
@@ -182,7 +217,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RemoveDeadWeakRefsNode extends PythonBuiltinNode {
         @Specialization
-        public Object removeDeadRefs(PDict dict, Object key) {
+        public Object removeDeadRefs(@SuppressWarnings("unused") PDict dict, @SuppressWarnings("unused") Object key) {
             // TODO: do the removal from the dict ... (_weakref.c:60)
             return PNone.NONE;
         }

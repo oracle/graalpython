@@ -33,6 +33,7 @@ import java.util.Optional;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -562,6 +563,10 @@ public final class PythonObjectFactory extends Node {
 
     public PReferenceType createReferenceType(LazyPythonClass cls, Object object, Object callback, ReferenceQueue<Object> queue) {
         return trace(new PReferenceType(cls, object, callback, queue));
+    }
+
+    public PReferenceType createReferenceType(Object object, Object callback, ReferenceQueue<Object> queue) {
+        return createReferenceType(PythonBuiltinClassType.PReferenceType, object, callback, queue);
     }
 
     /*
