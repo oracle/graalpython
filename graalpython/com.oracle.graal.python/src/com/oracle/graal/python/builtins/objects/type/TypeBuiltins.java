@@ -27,8 +27,11 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MRO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -95,6 +98,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -105,6 +109,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -542,10 +547,14 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     @ImportStatic(NativeMemberNames.class)
-    static abstract class NameNode extends PythonBinaryBuiltinNode {
+    @TypeSystemReference(PythonTypes.class)
+    static abstract class AbstractSlotNode extends PythonBinaryBuiltinNode {
+    }
+
+    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    static abstract class NameNode extends AbstractSlotNode {
         @Specialization(guards = "isNoValue(value)")
         String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
             return cls.getName();
@@ -593,9 +602,7 @@ public class TypeBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __MODULE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
-    @GenerateNodeFactory
-    @ImportStatic(NativeMemberNames.class)
-    static abstract class ModuleNode extends PythonBinaryBuiltinNode {
+    static abstract class ModuleNode extends AbstractSlotNode {
 
         @Specialization(guards = "isNoValue(value)")
         Object getModule(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
@@ -621,7 +628,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        Object getModule(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
+        Object getModule(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached("create(TP_NAME)") GetTypeMemberNode getTpNameNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
             String tpName = (String) getTpNameNode.execute(cls);
@@ -629,7 +636,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object getModule(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
+        Object setNative(@SuppressWarnings("unused") PythonNativeClass cls, @SuppressWarnings("unused") Object value) {
             throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
         }
 
@@ -648,9 +655,7 @@ public class TypeBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
-    @GenerateNodeFactory
-    @ImportStatic(NativeMemberNames.class)
-    static abstract class QualNameNode extends PythonBinaryBuiltinNode {
+    static abstract class QualNameNode extends AbstractSlotNode {
         @Specialization(guards = "isNoValue(value)")
         String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
             return cls.getName();
@@ -674,7 +679,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        String getNative(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
+        String getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached("create(TP_NAME)") GetTypeMemberNode getTpNameNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
             String tpName = (String) getTpNameNode.execute(cls);
@@ -682,7 +687,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object getModule(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
+        Object setNative(@SuppressWarnings("unused") PythonNativeClass cls, @SuppressWarnings("unused") Object value) {
             throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
         }
 
@@ -694,6 +699,113 @@ public class TypeBuiltins extends PythonBuiltins {
             }
             return fqname;
         }
+    }
 
+    @Builtin(name = __DICTOFFSET__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    static abstract class DictoffsetNode extends AbstractSlotNode {
+        @Specialization(guards = "isNoValue(value)")
+        String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
+            return cls.getName();
+        }
+
+        @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(cls)"})
+        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") ReadAttributeFromObjectNode getName) {
+            return getName.execute(cls, __DICTOFFSET__);
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
+        Object setName(PythonClass cls, Object value,
+                        @Cached("create()") WriteAttributeToObjectNode setName) {
+            return setName.execute(cls, __DICTOFFSET__, value);
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create(TP_DICTOFFSET)") GetTypeMemberNode getTpDictoffsetNode) {
+            return getTpDictoffsetNode.execute(cls);
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setNative(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
+        }
+    }
+
+    @Builtin(name = __ITEMSIZE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    static abstract class ItemsizeNode extends AbstractSlotNode {
+        @Specialization(guards = "isNoValue(value)")
+        String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
+            return cls.getName();
+        }
+
+        @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(cls)"})
+        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") ReadAttributeFromObjectNode getName) {
+            return getName.execute(cls, __ITEMSIZE__);
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
+        Object setName(PythonClass cls, Object value,
+                        @Cached("create()") WriteAttributeToObjectNode setName) {
+            return setName.execute(cls, __ITEMSIZE__, value);
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create(TP_ITEMSIZE)") GetTypeMemberNode getTpDictoffsetNode) {
+            return getTpDictoffsetNode.execute(cls);
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setNative(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
+        }
+    }
+
+    @Builtin(name = __BASICSIZE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    static abstract class BasicsizeNode extends AbstractSlotNode {
+        @Specialization(guards = "isNoValue(value)")
+        String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
+            return cls.getName();
+        }
+
+        @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(cls)"})
+        Object getName(PythonClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") ReadAttributeFromObjectNode getName) {
+            return getName.execute(cls, __BASICSIZE__);
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of built-in/extension 'type'");
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
+        Object setName(PythonClass cls, Object value,
+                        @Cached("create()") WriteAttributeToObjectNode setName) {
+            return setName.execute(cls, __BASICSIZE__, value);
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("create(TP_BASICSIZE)") GetTypeMemberNode getTpDictoffsetNode) {
+            return getTpDictoffsetNode.execute(cls);
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setNative(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
+        }
     }
 }

@@ -49,8 +49,11 @@ import static com.oracle.graal.python.nodes.BuiltinNames.SUPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
@@ -123,8 +126,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -1342,6 +1345,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         Object doDirectConstruct(@SuppressWarnings("unused") PNone ignored, Object[] arguments, @SuppressWarnings("unused") PKeyword[] kwargs) {
+            if (PGuards.isNativeClass(arguments[0])) {
+                throw raise(PythonBuiltinClassType.SystemError, "cannot instantiate native class here");
+            }
             return factory().createPythonObject((LazyPythonClass) arguments[0]);
         }
 
@@ -1739,6 +1745,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private static final long SIZEOF_PY_OBJECT_PTR = Long.BYTES;
         @Child private ReadAttributeFromObjectNode readAttrNode;
         @Child private WriteAttributeToObjectNode writeAttrNode;
+        @Child private GetAnyAttributeNode getAttrNode;
         @Child private CastToIndexNode castToInt;
         @Child private CastToListNode castToList;
         @Child private CastToStringNode castToStringNode;
@@ -2043,9 +2050,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (pythonClass.needsNativeAllocation()) {
                 for (Object cls : getMro(pythonClass)) {
                     if (PGuards.isNativeClass(cls)) {
-                        long dictoffset = ensureCastToIntNode().execute(ensureReadAttrNode().execute(cls, SpecialAttributeNames.__DICTOFFSET__));
-                        long basicsize = ensureCastToIntNode().execute(ensureReadAttrNode().execute(cls, SpecialAttributeNames.__BASICSIZE__));
-                        long itemsize = ensureCastToIntNode().execute(ensureReadAttrNode().execute(cls, SpecialAttributeNames.__ITEMSIZE__));
+                        // Use GetAnyAttributeNode since these are get-set-descriptors
+                        long dictoffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(cls, __DICTOFFSET__));
+                        long basicsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(cls, __BASICSIZE__));
+                        long itemsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(cls, __ITEMSIZE__));
                         if (dictoffset == 0) {
                             addedNewDict = true;
                             // add_dict
@@ -2056,9 +2064,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                                 basicsize += SIZEOF_PY_OBJECT_PTR;
                             }
                         }
-                        ensureWriteAttrNode().execute(pythonClass, SpecialAttributeNames.__DICTOFFSET__, dictoffset);
-                        ensureWriteAttrNode().execute(pythonClass, SpecialAttributeNames.__BASICSIZE__, basicsize);
-                        ensureWriteAttrNode().execute(pythonClass, SpecialAttributeNames.__ITEMSIZE__, itemsize);
+                        ensureWriteAttrNode().execute(pythonClass, __DICTOFFSET__, dictoffset);
+                        ensureWriteAttrNode().execute(pythonClass, __BASICSIZE__, basicsize);
+                        ensureWriteAttrNode().execute(pythonClass, __ITEMSIZE__, itemsize);
                         break;
                     }
                 }
@@ -2136,6 +2144,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 readAttrNode = insert(ReadAttributeFromObjectNode.create());
             }
             return readAttrNode;
+        }
+
+        private GetAnyAttributeNode ensureGetAttributeNode() {
+            if (getAttrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getAttrNode = insert(GetAnyAttributeNode.create());
+            }
+            return getAttrNode;
         }
 
         private WriteAttributeToObjectNode ensureWriteAttrNode() {
