@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -59,6 +60,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DumpsNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
+        @CompilerDirectives.TruffleBoundary
         @Specialization
         Object doit(Object value, Object version) {
             // TODO this is just fake implemention, which satisfy pip installer
