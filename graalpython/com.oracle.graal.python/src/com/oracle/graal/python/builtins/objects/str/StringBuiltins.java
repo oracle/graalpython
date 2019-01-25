@@ -1203,6 +1203,7 @@ public final class StringBuiltins extends PythonBuiltins {
             int splits = 0;
             int end = self.length();
             String remainder = self;
+            int sepLength = Math.max(1, sep.length());
             while (splits < maxsplit) {
                 int idx = remainder.lastIndexOf(sep);
 
@@ -1210,7 +1211,7 @@ public final class StringBuiltins extends PythonBuiltins {
                     break;
                 }
 
-                getAppendNode().execute(list, self.substring(idx + 1, end));
+                getAppendNode().execute(list, self.substring(idx + sepLength, end));
                 end = idx;
                 splits++;
                 remainder = remainder.substring(0, end);
