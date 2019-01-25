@@ -134,6 +134,7 @@ import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
+import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -331,7 +332,8 @@ public final class Python3Core implements PythonCore {
                         new ZipImportModuleBuiltins(),
                         new ZLibModuleBuiltins(),
                         new MMapModuleBuiltins(),
-                        new FcntlModuleBuiltins()));
+                        new FcntlModuleBuiltins(),
+                        new MMapBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
             for (PythonBuiltins builtin : providers) {

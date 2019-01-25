@@ -40,22 +40,81 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PMMap;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+
+import java.nio.channels.Channel;
+import java.nio.channels.FileChannel.MapMode;
+import java.nio.channels.SeekableByteChannel;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.mmap.PMMap;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "mmap")
 public class MMapModuleBuiltins extends PythonBuiltins {
+    private static final int ACCESS_DEFAULT = 0;
+    private static final int ACCESS_READ = 1;
+    private static final int ACCESS_WRITE = 2;
+    private static final int ACCESS_COPY = 3;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return ZipImportModuleBuiltinsFactory.getFactories();
+        return MMapModuleBuiltinsFactory.getFactories();
     }
 
     public MMapModuleBuiltins() {
+        builtinConstants.put("ACCESS_DEFAULT", ACCESS_DEFAULT);
+        builtinConstants.put("ACCESS_READ", ACCESS_READ);
+        builtinConstants.put("ACCESS_WRITE", ACCESS_WRITE);
+        builtinConstants.put("ACCESS_COPY", ACCESS_COPY);
     }
 
+    @Builtin(name = "mmap", fixedNumOfPositionalArgs = 3, keywordArguments = {"tagname", "access"}, constructsClass = PMMap)
+    @GenerateNodeFactory
+    public abstract static class MMapNode extends PythonBuiltinNode {
+
+        private final ValueProfile classProfile = ValueProfile.createClassProfile();
+
+        @Specialization(guards = {"isNoValue(access)"})
+        PMMap doIt(LazyPythonClass clazz, int fd, int length, Object tagname, @SuppressWarnings("unused") PNone access) {
+            return doGeneric(clazz, fd, length, tagname, ACCESS_DEFAULT);
+        }
+
+        // mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset])
+        @Specialization
+        PMMap doGeneric(LazyPythonClass clazz, int fd, int length, @SuppressWarnings("unused") Object tagname, int access) {
+            Channel fileChannel = getContext().getResources().getFileChannel(fd, classProfile);
+            if (fileChannel instanceof SeekableByteChannel) {
+                MapMode mode = convertAccessToMapMode(access);
+                return factory().createMMap(clazz, (SeekableByteChannel) fileChannel);
+            }
+            throw raise(ValueError, "cannot mmap file");
+        }
+
+        private MapMode convertAccessToMapMode(int access) {
+            switch (access) {
+                case 0:
+                    return MapMode.READ_WRITE;
+                case 1:
+                    return MapMode.READ_ONLY;
+                case 2:
+                    return MapMode.READ_WRITE;
+                case 3:
+                    return MapMode.PRIVATE;
+            }
+            throw raise(ValueError, "mmap invalid access parameter.");
+        }
+
+    }
 }

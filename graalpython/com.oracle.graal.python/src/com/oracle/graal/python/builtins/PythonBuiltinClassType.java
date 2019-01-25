@@ -67,6 +67,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PMappingproxy("mappingproxy"),
     PMemoryView("memoryview", "builtins"),
     PMethod("method"),
+    PMMap("mmap", "mmap"),
     PNone("NoneType"),
     PNotImplemented("NotImplementedType"),
     PRandom("Random", "_random"),

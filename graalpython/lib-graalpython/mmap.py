@@ -48,20 +48,3 @@ MAP_ANONYMOUS=0x20
 PROT_READ=0x1
 PROT_WRITE=0x2
 PROT_EXEC=0x4
-
-ACCESS_DEFAULT=0
-ACCESS_READ=1
-ACCESS_WRITE=2
-ACCESS_COPY=3
-
-
-class mmap:
-    def __init__(self, fileno, length, flags=MAP_SHARED, prot=PROT_WRITE|PROT_READ, access=ACCESS_DEFAULT):
-        pass
-    
-    def readline(self):
-        # TODO(fa): implement
-        raise NotImplementedError
-
-
-
