@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
@@ -144,11 +145,16 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getSlot(HiddenKeyDescriptor descr, Object obj, PythonClass type,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+                        @Cached("create()") ReadAttributeFromObjectNode readNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
             if (descr_check(descr.getType(), descr.getKey().getName(), obj, type)) {
                 return descr;
             }
-            return readNode.execute(obj, descr.getKey());
+            Object val = readNode.execute(obj, descr.getKey());
+            if (profile.profile(val != PNone.NO_VALUE)) {
+                return val;
+            }
+            throw raise(AttributeError, descr.getKey().getName());
         }
     }
 
