@@ -46,3 +46,5 @@ def test_eq():
 
     # empty ranges are always equal
     assert range(10, 20, -30) == range(20, 30, -40)
+
+    assert range(True) == range(1)
