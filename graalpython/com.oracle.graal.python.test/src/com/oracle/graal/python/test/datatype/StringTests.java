@@ -89,18 +89,6 @@ public class StringTests {
     }
 
     @Test
-    public void stringRSplitLimit() {
-        String source = "print(' a b c '.rsplit(None, 1))\n";
-        assertPrints("['a b', 'c']\n", source);
-    }
-
-    @Test
-    public void stringRSplitSep() {
-        String source = "print('----a---b--c-'.rsplit('-'))\n";
-        assertPrints("['', '', '', '', 'a', '', '', 'b', '', 'c']\n", source);
-    }
-
-    @Test
     public void stringRSplitSepLimit() {
         String source = "print('----a---b--c-'.rsplit('-', 5))\n";
         assertPrints("['----a-', '', 'b', '', 'c', '']\n", source);
