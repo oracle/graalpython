@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -139,6 +139,11 @@ class TestCase(object):
         if not msg:
             msg = "Expected '%r' to be '%r'" % (actual, expected)
         assert actual is expected, msg
+
+    def assertIsNot(self, actual, expected, msg=""):
+        if not msg:
+            msg = "Expected '%r' not to be '%r'" % (actual, expected)
+        assert actual is not expected, msg
 
     def assertEqual(self, expected, actual, msg=None):
         if not msg:

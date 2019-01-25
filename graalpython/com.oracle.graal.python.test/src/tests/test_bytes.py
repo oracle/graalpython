@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 import unittest
+import sys
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -640,8 +641,59 @@ class BaseLikeBytes:
         self.assertRaises(ValueError, self.type2test.maketrans, b'abc', b'xyzq')
         self.assertRaises(TypeError, self.type2test.maketrans, 'abc', 'def')
 
+    def test_translate(self):
+        b = self.type2test(b'hello')
+        rosetta = bytearray(range(256))
+        rosetta[ord('o')] = ord('e')
+
+        self.assertRaises(TypeError, b.translate)
+        self.assertRaises(TypeError, b.translate, None, None)
+        self.assertRaises(ValueError, b.translate, bytes(range(255)))
+
+        c = b.translate(rosetta, b'hello')
+        self.assertEqual(b, b'hello')
+        self.assertIsInstance(c, self.type2test)
+
+        c = b.translate(rosetta)
+        d = b.translate(rosetta, b'')
+        self.assertEqual(c, d)
+        self.assertEqual(c, b'helle')
+
+        c = b.translate(rosetta, b'l')
+        self.assertEqual(c, b'hee')
+
+        c = b.translate(None, b'e')
+        self.assertEqual(c, b'hllo')
+
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            # test delete as a keyword argument
+            c = b.translate(rosetta, delete=b'')
+            self.assertEqual(c, b'helle')
+            c = b.translate(rosetta, delete=b'l')
+            self.assertEqual(c, b'hee')
+            c = b.translate(None, delete=b'e')
+            self.assertEqual(c, b'hllo')
+
 class BytesTest(BaseLikeBytes, unittest.TestCase):
     type2test = bytes
 
+    def test_translate_no_change(self):
+        b = b'ahoj'
+        self.assertIs(b, b.translate(None))
+        self.assertIs(b, b.translate(None, b''))
+        table = bytearray(range(256))
+        self.assertIs(b, b.translate(table))
+        self.assertIs(b, b.translate(table), b'')
+        self.assertIs(b, b.translate(table), b'klp')
+
 class ByteArrayTest(BaseLikeBytes, unittest.TestCase):
     type2test = bytearray
+    
+    def test_translate_no_change(self):
+        b = bytearray(b'ahoj')
+        self.assertIsNot(b, b.translate(None))
+        self.assertIsNot(b, b.translate(None, b''))
+        table = bytearray(range(256))
+        self.assertIsNot(b, b.translate(table))
+        self.assertIsNot(b, b.translate(table), b'')
+        self.assertIsNot(b, b.translate(table), b'klp')

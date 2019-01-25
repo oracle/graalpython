@@ -806,4 +806,192 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
 
     }
+
+    // bytes.translate(table, delete=b'')
+    // bytearray.translate(table, delete=b'')
+    @Builtin(name = "translate", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, keywordArguments = {"delete"})
+    @GenerateNodeFactory
+    public abstract static class TranslateNode extends PythonBuiltinNode {
+
+        @Child BytesNodes.ToBytesNode toBytesNode;
+
+        @CompilationFinal private ConditionProfile isLenTable256Profile;
+
+        private BytesNodes.ToBytesNode getToBytesNode() {
+            if (toBytesNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toBytesNode = insert(BytesNodes.ToBytesNode.create());
+            }
+            return toBytesNode;
+        }
+
+        private void checkLengthOfTable(byte[] table) {
+            if (isLenTable256Profile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isLenTable256Profile = ConditionProfile.createBinaryProfile();
+            }
+
+            if (isLenTable256Profile.profile(table.length != 256)) {
+                throw raise(PythonErrorType.ValueError, "translation table must be 256 characters long");
+            }
+        }
+
+        private static class Result {
+            byte[] array;
+            // we have to know, whether the result array was changed ->
+            // if not in bytes case it has to return the input bytes
+            // in bytearray case it has to return always new bytearray
+            boolean changed;
+
+            public Result(byte[] array, boolean changed) {
+                this.array = array;
+                this.changed = changed;
+            }
+        }
+
+        private static boolean[] createDeleteTable(byte[] delete) {
+            boolean[] result = new boolean[256];
+            for (int i = 0; i < 256; i++) {
+                result[i] = false;
+            }
+            for (int i = 0; i < delete.length; i++) {
+                result[delete[i]] = true;
+            }
+            return result;
+        }
+
+        private static Result delete(byte[] self, byte[] table) {
+            final int length = self.length;
+            byte[] result = new byte[length];
+            int resultLen = 0;
+            boolean[] toDelete = createDeleteTable(table);
+
+            for (int i = 0; i < length; i++) {
+                if (!toDelete[self[i] & 0xFF]) {
+                    result[resultLen] = self[i];
+                    resultLen++;
+                }
+            }
+            if (resultLen == length) {
+                return new Result(result, false);
+            }
+            return new Result(Arrays.copyOf(result, resultLen), true);
+        }
+
+        private static Result translate(byte[] self, byte[] table) {
+            final int length = self.length;
+            byte[] result = new byte[length];
+            boolean changed = false;
+            for (int i = 0; i < length; i++) {
+                byte b = table[self[i]];
+                if (!changed && b != self[i]) {
+                    changed = true;
+                }
+                result[i] = b;
+            }
+            return new Result(result, changed);
+        }
+
+        private static Result translateAndDelete(byte[] self, byte[] table, byte[] delete) {
+            final int length = self.length;
+            byte[] result = new byte[length];
+            int resultLen = 0;
+            boolean changed = false;
+            boolean[] toDelete = createDeleteTable(delete);
+
+            for (int i = 0; i < length; i++) {
+                if (!toDelete[self[i]]) {
+                    byte b = table[self[i]];
+                    if (!changed && b != self[i]) {
+                        changed = true;
+                    }
+                    result[resultLen] = b;
+                    resultLen++;
+                }
+            }
+            if (resultLen == length) {
+                return new Result(result, changed);
+            }
+            return new Result(Arrays.copyOf(result, resultLen), true);
+        }
+
+        @Specialization(guards = "isNoValue(delete)")
+        public PBytes translate(PBytes self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete) {
+            return self;
+        }
+
+        @Specialization(guards = "isNoValue(delete)")
+        public PByteArray translate(PByteArray self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete) {
+            return factory().createByteArray(self.getSequenceStorage().copy());
+        }
+
+        @Specialization
+        public PBytes translate(PBytes self, Object table, @SuppressWarnings("unused") PNone delete) {
+            byte[] bTable = getToBytesNode().execute(table);
+            checkLengthOfTable(bTable);
+            byte[] bSelf = getToBytesNode().execute(self);
+
+            Result result = translate(bSelf, bTable);
+            if (result.changed) {
+                return factory().createBytes(result.array);
+            }
+            return self;
+        }
+
+        @Specialization
+        public PByteArray translate(PByteArray self, Object table, @SuppressWarnings("unused") PNone delete) {
+            byte[] bTable = getToBytesNode().execute(table);
+            checkLengthOfTable(bTable);
+            byte[] bSelf = getToBytesNode().execute(self);
+
+            Result result = translate(bSelf, bTable);
+            return factory().createByteArray(result.array);
+        }
+
+        @Specialization(guards = "isNone(table)")
+        public PBytes delete(PBytes self, @SuppressWarnings("unused") PNone table, Object delete) {
+            byte[] bSelf = getToBytesNode().execute(self);
+            byte[] bDelete = getToBytesNode().execute(delete);
+
+            Result result = delete(bSelf, bDelete);
+            if (result.changed) {
+                return factory().createBytes(result.array);
+            }
+            return self;
+        }
+
+        @Specialization(guards = "isNone(table)")
+        public PByteArray delete(PByteArray self, @SuppressWarnings("unused") PNone table, Object delete) {
+            byte[] bSelf = getToBytesNode().execute(self);
+            byte[] bDelete = getToBytesNode().execute(delete);
+
+            Result result = delete(bSelf, bDelete);
+            return factory().createByteArray(result.array);
+        }
+
+        @Specialization(guards = {"!isPNone(table)", "!isPNone(delete)"})
+        public PBytes translateAndDelete(PBytes self, Object table, Object delete) {
+            byte[] bTable = getToBytesNode().execute(table);
+            checkLengthOfTable(bTable);
+            byte[] bDelete = getToBytesNode().execute(delete);
+            byte[] bSelf = getToBytesNode().execute(self);
+
+            Result result = translateAndDelete(bSelf, bTable, bDelete);
+            if (result.changed) {
+                return factory().createBytes(result.array);
+            }
+            return self;
+        }
+
+        @Specialization(guards = {"!isPNone(table)", "!isPNone(delete)"})
+        public PByteArray translateAndDelete(PByteArray self, Object table, Object delete) {
+            byte[] bTable = getToBytesNode().execute(table);
+            checkLengthOfTable(bTable);
+            byte[] bDelete = getToBytesNode().execute(delete);
+            byte[] bSelf = getToBytesNode().execute(self);
+
+            Result result = translateAndDelete(bSelf, bTable, bDelete);
+            return factory().createByteArray(result.array);
+        }
+    }
 }
