@@ -54,7 +54,7 @@ public final class PythonOptions {
                     "but all other access to the contents of the file is disabled, so the files are kept secret.") //
     public static final OptionKey<Boolean> OpaqueFilesystem = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.USER, help = "List of root paths for the opaque file system (default: \"/\"); use system-specific path separator.") //
+    @Option(category = OptionCategory.USER, help = "List of root paths for the opaque file system (default: '/'); use system-specific path separator.") //
     public static final OptionKey<String> OpaqueFilesystemPrefixes = new OptionKey<>("/");
 
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -i flag. Inspect interactively after running a script.") //
