@@ -61,7 +61,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object doit(Object value, Object version) {
-            throw raise(NotImplementedError, "marshal.dumps");
+            // TODO this is just fake implemention, which satisfy pip installer
+            return factory().createBytes(value.toString().getBytes());
         }
     }
 
