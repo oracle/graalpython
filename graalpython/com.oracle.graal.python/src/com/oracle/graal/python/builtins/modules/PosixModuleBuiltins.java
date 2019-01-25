@@ -513,9 +513,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 size = 0;
             }
+            TruffleFile canonical;
+            try {
+                canonical = f.getCanonicalFile();
+            } catch (IOException e) {
+                // best effort
+                canonical = f.getAbsoluteFile();
+            }
+            int inode = getContext().getResources().getInodeId(canonical.getPath());
             return factory().createTuple(new Object[]{
                             mode,
-                            0, // ino
+                            inode, // ino
                             0, // dev
                             0, // nlink
                             uid,

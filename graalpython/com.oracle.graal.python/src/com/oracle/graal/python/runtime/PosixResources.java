@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,8 @@ import java.nio.channels.Pipe;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -65,6 +67,8 @@ public class PosixResources {
     private final List<Channel> files;
     private final List<String> filePaths;
     private final List<Process> children;
+    private final Map<String, Integer> inodes;
+    private int inodeCnt = 0;
 
     public PosixResources() {
         files = Collections.synchronizedList(new ArrayList<>());
@@ -82,6 +86,7 @@ public class PosixResources {
         files.add(null);
         files.add(null);
         files.add(null);
+        inodes = new ConcurrentHashMap<>();
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -197,5 +202,17 @@ public class PosixResources {
         int exitStatus = process.waitFor();
         children.set(pid, null);
         return exitStatus;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public int getInodeId(String canonical) {
+        int inodeId;
+        if (!inodes.containsKey(canonical)) {
+            inodeId = inodeCnt++;
+            inodes.put(canonical, inodeId);
+        } else {
+            inodeId = inodes.get(canonical);
+        }
+        return inodeId;
     }
 }
