@@ -25,12 +25,12 @@
  */
 package com.oracle.graal.python.runtime;
 
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Option;
 
 @Option.Group(PythonLanguage.ID)
@@ -53,6 +53,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "This option makes reading from files return opaque objects. Imports can work with such data, " +
                     "but all other access to the contents of the file is disabled, so the files are kept secret.") //
     public static final OptionKey<Boolean> OpaqueFilesystem = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "List of root paths for the opaque file system (default: \"/\"); use system-specific path separator.") //
+    public static final OptionKey<String> OpaqueFilesystemPrefixes = new OptionKey<>("/");
 
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -i flag. Inspect interactively after running a script.") //
     public static final OptionKey<Boolean> InspectFlag = new OptionKey<>(false);

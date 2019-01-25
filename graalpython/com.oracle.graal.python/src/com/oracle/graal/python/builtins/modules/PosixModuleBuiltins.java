@@ -47,8 +47,12 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystemException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
@@ -59,6 +63,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -126,11 +131,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.sun.security.auth.UnixNumericGroupPrincipal;
 import com.sun.security.auth.UnixNumericUserPrincipal;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileSystemException;
-import java.nio.file.NoSuchFileException;
-import java.util.HashMap;
 
 @CoreFunctions(defineModule = "posix")
 public class PosixModuleBuiltins extends PythonBuiltins {
@@ -1074,25 +1074,29 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class ReadNode extends PythonFileNode {
         private static final int MAX_READ = Integer.MAX_VALUE / 2;
 
+        @CompilationFinal private BranchProfile tooLargeProfile = BranchProfile.create();
+
         @Specialization(guards = "readOpaque(frame)")
-        Object readOpaque(@SuppressWarnings("unused") VirtualFrame frame, int fd, @SuppressWarnings("unused") Object requestedSize,
+        Object readOpaque(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Cached("create()") ReadFromChannelNode readNode) {
-            Channel channel = getResources().getFileChannel(fd, channelClassProfile);
-            ByteSequenceStorage bytes = readNode.execute(channel, MAX_READ);
-            return new OpaqueBytes(Arrays.copyOf(bytes.getInternalByteArray(), bytes.length()));
+            if (OpaqueBytes.isInOpaqueFilesystem(getResources().getFilePath(fd), getContext())) {
+                Channel channel = getResources().getFileChannel(fd, channelClassProfile);
+                ByteSequenceStorage bytes = readNode.execute(channel, MAX_READ);
+                return new OpaqueBytes(Arrays.copyOf(bytes.getInternalByteArray(), bytes.length()));
+            }
+            return read(frame, fd, requestedSize, channelClassProfile, readNode);
         }
 
         @Specialization(guards = "!readOpaque(frame)")
         Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Cached("create()") BranchProfile tooLarge,
                         @Cached("create()") ReadFromChannelNode readNode) {
             int size;
             try {
                 size = Math.toIntExact(requestedSize);
             } catch (ArithmeticException e) {
-                tooLarge.enter();
+                tooLargeProfile.enter();
                 size = MAX_READ;
             }
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
