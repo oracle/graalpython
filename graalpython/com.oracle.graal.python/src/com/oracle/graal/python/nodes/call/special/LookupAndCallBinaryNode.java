@@ -270,20 +270,14 @@ public abstract class LookupAndCallBinaryNode extends Node {
     Object callObject(Object left, Object right,
                     @Cached("create(name)") LookupInheritedAttributeNode getattr) {
         Object leftCallable = getattr.execute(left);
-        Object result;
         if (leftCallable == PNone.NO_VALUE) {
-            result = PNotImplemented.NOT_IMPLEMENTED;
-        } else {
-            result = ensureDispatch().executeObject(leftCallable, left, right);
-        }
-        if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
-            if (handler == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                handler = insert(handlerFactory.get());
+            if (handlerFactory != null) {
+                return runErrorHandler(left, right);
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return handler.execute(left, right);
         }
-        return result;
+        return ensureDispatch().executeObject(leftCallable, left, right);
     }
 
     @Specialization(guards = "isReversible()")
@@ -319,12 +313,16 @@ public abstract class LookupAndCallBinaryNode extends Node {
             result = ensureReverseDispatch().executeObject(rightCallable, right, left);
         }
         if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
-            if (handler == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                handler = insert(handlerFactory.get());
-            }
-            return handler.execute(left, right);
+            return runErrorHandler(left, right);
         }
         return result;
+    }
+
+    private Object runErrorHandler(Object left, Object right) {
+        if (handler == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            handler = insert(handlerFactory.get());
+        }
+        return handler.execute(left, right);
     }
 }
