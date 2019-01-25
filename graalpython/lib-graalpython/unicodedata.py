@@ -41,6 +41,7 @@
 
 c_unicodedata_module = None
 
+
 @__builtin__
 def __get_c_unicodedata():
     if c_unicodedata_module is None:
@@ -52,3 +53,12 @@ def __get_c_unicodedata():
 
 east_asian_width = lambda arg: __get_c_unicodedata().east_asian_width(arg)
 
+
+@__builtin__
+def lookup(name):
+    return __get_c_unicodedata().lookup(name)
+
+
+@__builtin__
+def category(char):
+    return __get_c_unicodedata().category(char)
