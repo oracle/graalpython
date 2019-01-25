@@ -34,6 +34,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -141,7 +142,9 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
 
     @Override
     public Object execute(VirtualFrame frame) {
-        contextRef.get().triggerAsyncActions();
+        if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
+            contextRef.get().triggerAsyncActions();
+        }
         initClosureAndCellVars(frame);
         return body.execute(frame);
     }
