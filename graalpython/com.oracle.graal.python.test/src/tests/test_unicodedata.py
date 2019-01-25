@@ -52,3 +52,12 @@ def test_normalize():
     assert_raises(TypeError, unicodedata.normalize)
     assert_raises(ValueError, unicodedata.normalize, 'unknown', 'xx')
     assert unicodedata.normalize('NFKC', '') == ''
+
+
+def test_category():
+    import unicodedata
+    assert unicodedata.category('\uFFFE') == 'Cn'
+    assert unicodedata.category('a') == 'Ll'
+    assert unicodedata.category('A') == 'Lu'
+    assert_raises(TypeError, unicodedata.category)
+    assert_raises(TypeError, unicodedata.category, 'xx')
