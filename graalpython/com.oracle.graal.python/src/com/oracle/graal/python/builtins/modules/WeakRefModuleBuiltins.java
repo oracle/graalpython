@@ -126,13 +126,13 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         @Child ReadAttributeFromObjectNode readQueue = ReadAttributeFromObjectNode.create();
 
         @Specialization
-        public PReferenceType refType(PythonClass cls, PythonObject pythonObject, PNone none) {
-            return factory().createReferenceType(cls, pythonObject, null, getWeakReferenceQueue());
+        public PReferenceType refType(PythonClass cls, Object object, PNone none) {
+            return factory().createReferenceType(cls, object, null, getWeakReferenceQueue());
         }
 
         @Specialization
-        public PReferenceType refType(PythonClass cls, PythonObject pythonObject, Object callback) {
-            return factory().createReferenceType(cls, pythonObject, callback, getWeakReferenceQueue());
+        public PReferenceType refType(PythonClass cls, Object object, Object callback) {
+            return factory().createReferenceType(cls, object, callback, getWeakReferenceQueue());
         }
 
         private ReferenceQueue<Object> getWeakReferenceQueue() {
