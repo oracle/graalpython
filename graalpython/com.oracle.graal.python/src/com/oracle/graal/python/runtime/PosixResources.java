@@ -46,9 +46,9 @@ import java.nio.channels.Channels;
 import java.nio.channels.Pipe;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -86,7 +86,7 @@ public class PosixResources {
         files.add(null);
         files.add(null);
         files.add(null);
-        inodes = new ConcurrentHashMap<>();
+        inodes = new HashMap<>();
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -206,13 +206,15 @@ public class PosixResources {
 
     @TruffleBoundary(allowInlining = true)
     public int getInodeId(String canonical) {
-        int inodeId;
-        if (!inodes.containsKey(canonical)) {
-            inodeId = inodeCnt++;
-            inodes.put(canonical, inodeId);
-        } else {
-            inodeId = inodes.get(canonical);
+        synchronized (inodes) {
+            int inodeId;
+            if (!inodes.containsKey(canonical)) {
+                inodeId = inodeCnt++;
+                inodes.put(canonical, inodeId);
+            } else {
+                inodeId = inodes.get(canonical);
+            }
+            return inodeId;
         }
-        return inodeId;
     }
 }
