@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -86,18 +86,6 @@ public class StringTests {
     public void stringRSplitNoLimit() {
         String source = "print(' a b c '.rsplit())\n";
         assertPrints("['a', 'b', 'c']\n", source);
-    }
-
-    @Test
-    public void stringRSplitLimit() {
-        String source = "print(' a b c '.rsplit(None, 1))\n";
-        assertPrints("['a b', 'c']\n", source);
-    }
-
-    @Test
-    public void stringRSplitSep() {
-        String source = "print('----a---b--c-'.rsplit('-'))\n";
-        assertPrints("['', '', '', '', 'a', '', '', 'b', '', 'c']\n", source);
     }
 
     @Test

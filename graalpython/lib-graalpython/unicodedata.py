@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 
 c_unicodedata_module = None
 
+
 @__builtin__
 def __get_c_unicodedata():
     if c_unicodedata_module is None:
@@ -52,3 +53,12 @@ def __get_c_unicodedata():
 
 east_asian_width = lambda arg: __get_c_unicodedata().east_asian_width(arg)
 
+
+@__builtin__
+def lookup(name):
+    return __get_c_unicodedata().lookup(name)
+
+
+@__builtin__
+def category(char):
+    return __get_c_unicodedata().category(char)

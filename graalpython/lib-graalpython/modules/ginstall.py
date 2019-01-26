@@ -60,7 +60,7 @@ def known_packages():
         install_from_pypi("six==1.12.0", args)
 
     def Cython(*args):
-        install_from_pypi("Cython==0.29.2", ['--no-cython-compile'] + args)
+        install_from_pypi("Cython==0.29.2", ('--no-cython-compile',) + args)
 
     def setuptools(*args):
         install_from_pypi("setuptools==40.6.3", args)

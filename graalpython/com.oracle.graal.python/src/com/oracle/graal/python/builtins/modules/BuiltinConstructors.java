@@ -1401,6 +1401,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = RANGE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PRange)
     @GenerateNodeFactory
     @SuppressWarnings("unused")
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RangeNode extends PythonBuiltinNode {
 
         @Specialization(guards = "caseStop(start,step)")

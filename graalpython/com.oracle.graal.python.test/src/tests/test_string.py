@@ -911,10 +911,10 @@ class UnicodeTest(unittest.TestCase):
         self.checkequal(True, 'hello', 'startswith', 'o', -1)
         self.checkequal(True, 'hello', 'startswith', '', -3, -3)
         self.checkequal(False, 'hello', 'startswith', 'lo', -9)
-        
+
         self.checkraises(TypeError, 'hello', 'startswith')
         #self.checkraises(TypeError, 'hello', 'startswith', 42)
-        
+
         # test tuple arguments
         self.checkequal(True, 'hello', 'startswith', ('he', 'ha'))
         self.checkequal(False, 'hello', 'startswith', ('lo', 'llo'))
@@ -927,10 +927,81 @@ class UnicodeTest(unittest.TestCase):
         self.checkequal(True, 'hello', 'startswith', ('lo', 'he'), 0, -1)
         self.checkequal(False, 'hello', 'startswith', ('he', 'hel'), 0, 1)
         self.checkequal(True, 'hello', 'startswith', ('he', 'hel'), 0, 2)
-        
+
         self.checkraises(TypeError, 'hello', 'startswith', (42,))
         self.checkequal(True, 'hello', 'startswith', ('he', 42))
         self.checkraises(TypeError, 'hello', 'startswith', ('ne', 42,))
+
+    def test_rsplit(self):
+        # by a char
+        self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'rsplit', '|')
+        self.checkequal(['a|b|c', 'd'], 'a|b|c|d', 'rsplit', '|', 1)
+        self.checkequal(['a|b', 'c', 'd'], 'a|b|c|d', 'rsplit', '|', 2)
+        self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'rsplit', '|', 3)
+        self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'rsplit', '|', 4)
+        self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'rsplit', '|',
+                        sys.maxsize-100)
+        self.checkequal(['a|b|c|d'], 'a|b|c|d', 'rsplit', '|', 0)
+        self.checkequal(['a||b||c', '', 'd'], 'a||b||c||d', 'rsplit', '|', 2)
+        self.checkequal(['abcd'], 'abcd', 'rsplit', '|')
+        self.checkequal([''], '', 'rsplit', '|')
+        self.checkequal(['', ' begincase'], '| begincase', 'rsplit', '|')
+        self.checkequal(['endcase ', ''], 'endcase |', 'rsplit', '|')
+        self.checkequal(['', 'bothcase', ''], '|bothcase|', 'rsplit', '|')
+
+        self.checkequal(['a\x00\x00b', 'c', 'd'], 'a\x00\x00b\x00c\x00d', 'rsplit', '\x00', 2)
+
+        self.checkequal(['a']*20, ('a|'*20)[:-1], 'rsplit', '|')
+        self.checkequal(['a|a|a|a|a']+['a']*15,
+                        ('a|'*20)[:-1], 'rsplit', '|', 15)
+
+        # by string
+        self.checkequal(['a', 'b', 'c', 'd'], 'a//b//c//d', 'rsplit', '//')
+        self.checkequal(['a//b//c', 'd'], 'a//b//c//d', 'rsplit', '//', 1)
+        self.checkequal(['a//b', 'c', 'd'], 'a//b//c//d', 'rsplit', '//', 2)
+        self.checkequal(['a', 'b', 'c', 'd'], 'a//b//c//d', 'rsplit', '//', 3)
+        self.checkequal(['a', 'b', 'c', 'd'], 'a//b//c//d', 'rsplit', '//', 4)
+        self.checkequal(['a', 'b', 'c', 'd'], 'a//b//c//d', 'rsplit', '//',
+                        sys.maxsize-5)
+        self.checkequal(['a//b//c//d'], 'a//b//c//d', 'rsplit', '//', 0)
+        self.checkequal(['a////b////c', '', 'd'], 'a////b////c////d', 'rsplit', '//', 2)
+        self.checkequal(['', ' begincase'], 'test begincase', 'rsplit', 'test')
+        self.checkequal(['endcase ', ''], 'endcase test', 'rsplit', 'test')
+        self.checkequal(['', ' bothcase ', ''], 'test bothcase test',
+                        'rsplit', 'test')
+        self.checkequal(['ab', 'c'], 'abbbc', 'rsplit', 'bb')
+        self.checkequal(['', ''], 'aaa', 'rsplit', 'aaa')
+        self.checkequal(['aaa'], 'aaa', 'rsplit', 'aaa', 0)
+        self.checkequal(['ab', 'ab'], 'abbaab', 'rsplit', 'ba')
+        self.checkequal(['aaaa'], 'aaaa', 'rsplit', 'aab')
+        self.checkequal([''], '', 'rsplit', 'aaa')
+        self.checkequal(['aa'], 'aa', 'rsplit', 'aaa')
+        self.checkequal(['bbob', 'A'], 'bbobbbobbA', 'rsplit', 'bbobb')
+        self.checkequal(['', 'B', 'A'], 'bbobbBbbobbA', 'rsplit', 'bbobb')
+
+        self.checkequal(['a']*20, ('aBLAH'*20)[:-4], 'rsplit', 'BLAH')
+        self.checkequal(['a']*20, ('aBLAH'*20)[:-4], 'rsplit', 'BLAH', 19)
+        self.checkequal(['aBLAHa'] + ['a']*18, ('aBLAH'*20)[:-4],
+                        'rsplit', 'BLAH', 18)
+
+        # with keyword args
+        self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'rsplit', sep='|')
+        self.checkequal(['a|b|c', 'd'],
+                        'a|b|c|d', 'rsplit', '|', maxsplit=1)
+        self.checkequal(['a|b|c', 'd'],
+                        'a|b|c|d', 'rsplit', sep='|', maxsplit=1)
+        self.checkequal(['a|b|c', 'd'],
+                        'a|b|c|d', 'rsplit', maxsplit=1, sep='|')
+        self.checkequal(['a b c', 'd'],
+                        'a b c d', 'rsplit', maxsplit=1)
+
+        # argument type
+        self.checkraises(TypeError, 'hello', 'rsplit', 42, 42, 42)
+
+        # null case
+        self.checkraises(ValueError, 'hello', 'rsplit', '')
+        self.checkraises(ValueError, 'hello', 'rsplit', '', 0)
+
 
 def test_same_id():
     empty_ids = set([id(str()) for i in range(100)])
@@ -957,7 +1028,7 @@ def test_translate_from_byte_table():
     assert "ahoj".translate(table) == "AHOJ"
     assert "ahoj".translate(bytearray(table)) == "AHOJ"
     assert "ahoj".translate(memoryview(table)) == "AHOJ"
-    
+
 def test_tranlslate_from_short_table():
     table = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`ABCDEFGH'
     assert "ahoj".translate(table) == "AHoj"
@@ -983,4 +1054,3 @@ def test_literals():
     assert "hello\[world\]"[6] == "["
     assert "hello\[world\]"[12] == "\\"
     assert "hello\[world\]"[13] == "]"
-

@@ -1174,7 +1174,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.split
-    @Builtin(name = "rsplit", maxNumOfPositionalArgs = 3)
+    @Builtin(name = "rsplit", fixedNumOfPositionalArgs = 1, keywordArguments = {"sep", "maxsplit"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RSplitNode extends SplitBaseNode {
@@ -1185,24 +1185,21 @@ public final class StringBuiltins extends PythonBuiltins {
             return rsplitfields(self, -1);
         }
 
-        @SuppressWarnings("unused")
-        @TruffleBoundary
         @Specialization
-        public PList doSplit(String self, String sep, PNone maxsplit) {
-            PList list = factory().createList();
-            String[] strs = self.split(Pattern.quote(sep));
-            for (String s : strs) {
-                getAppendNode().execute(list, s);
-            }
-            return list;
+        public PList doSplit(String self, String sep, @SuppressWarnings("unused") PNone maxsplit) {
+            return doSplit(self, sep, Integer.MAX_VALUE);
         }
 
         @Specialization
         public PList doSplit(String self, String sep, int maxsplit) {
+            if (sep.length() == 0) {
+                throw raise(ValueError, "empty separator");
+            }
             PList list = factory().createList();
             int splits = 0;
             int end = self.length();
             String remainder = self;
+            int sepLength = sep.length();
             while (splits < maxsplit) {
                 int idx = remainder.lastIndexOf(sep);
 
@@ -1210,16 +1207,13 @@ public final class StringBuiltins extends PythonBuiltins {
                     break;
                 }
 
-                getAppendNode().execute(list, self.substring(idx + 1, end));
+                getAppendNode().execute(list, self.substring(idx + sepLength, end));
                 end = idx;
                 splits++;
                 remainder = remainder.substring(0, end);
             }
 
-            if (!remainder.isEmpty()) {
-                getAppendNode().execute(list, remainder);
-            }
-
+            getAppendNode().execute(list, remainder);
             getReverseNode().execute(list);
             return list;
         }
@@ -1276,18 +1270,19 @@ public final class StringBuiltins extends PythonBuiltins {
                     // The next segment runs up to the next next whitespace or end
                     for (index = end; index >= 0; index--) {
                         if (isWhitespace(s.codePointAt(index))) {
-                            // Break leaving index pointing at whitespace
+                            // Break leaving index pointing after the found whitespace
+                            index++;
                             break;
                         }
                     }
                 }
 
                 // Make a piece from start up to index
-                getAppendNode().execute(list, s.substring(index + 1, end + 1));
+                getAppendNode().execute(list, s.substring(index, end + 1));
                 splits++;
 
-                // Start next segment search at that point
-                end = index;
+                // Start next segment search at the whitespace
+                end = index - 1;
             }
 
             getReverseNode().execute(list);
