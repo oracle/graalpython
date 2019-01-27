@@ -126,10 +126,7 @@ public abstract class CastToIndexNode extends PNodeWithContext {
 
     @Specialization
     public int toInt(double x) {
-        if (typeErrorHandler != null) {
-            return typeErrorHandler.apply(x);
-        }
-        throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+        return handleError("'%p' object cannot be interpreted as an integer", x);
     }
 
     @Fallback
@@ -140,22 +137,23 @@ public abstract class CastToIndexNode extends PNodeWithContext {
                 callIndexNode = insert(LookupAndCallUnaryNode.create(__INDEX__));
             }
             Object result = callIndexNode.executeObject(x);
-            if (result == PNone.NONE) {
-                if (typeErrorHandler != null) {
-                    return typeErrorHandler.apply(x);
-                }
-                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+            if (result == PNone.NO_VALUE) {
+                return handleError("'%p' object cannot be interpreted as an integer", x);
             }
             if (recursiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 recursiveNode = insert(CastToIndexNodeGen.create(errorType, false, typeErrorHandler));
             }
-            return recursiveNode.execute(callIndexNode.executeObject(x));
+            return recursiveNode.execute(result);
         }
+        return handleError("__index__ returned non-int (type %p)", x);
+    }
+
+    private int handleError(String fmt, Object x) {
         if (typeErrorHandler != null) {
             return typeErrorHandler.apply(x);
         }
-        throw raise(TypeError, "__index__ returned non-int (type %p)", x);
+        throw raise(TypeError, fmt, x);
     }
 
     public static CastToIndexNode create() {
