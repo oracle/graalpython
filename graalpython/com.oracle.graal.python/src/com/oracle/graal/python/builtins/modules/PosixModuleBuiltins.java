@@ -66,6 +66,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -89,10 +91,12 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -242,6 +246,22 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
         builtinConstants.put("_have_functions", core.factory().createList());
         builtinConstants.put("environ", core.factory().createDict());
+    }
+
+    @Override
+    public void postInitialize(PythonCore core) {
+        super.postInitialize(core);
+
+        // fill the environ dictionary with the current environment
+        Map<String, String> getenv = System.getenv();
+        PDict environ = core.factory().createDict();
+        for (Entry<String, String> entry : getenv.entrySet()) {
+            environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes(entry.getValue().getBytes()));
+        }
+
+        PythonModule posix = core.lookupBuiltinModule("posix");
+        Object environAttr = posix.getAttribute("environ");
+        ((PDict) environAttr).setDictStorage(environ.getDictStorage());
     }
 
     @Builtin(name = "getcwd", fixedNumOfPositionalArgs = 0)

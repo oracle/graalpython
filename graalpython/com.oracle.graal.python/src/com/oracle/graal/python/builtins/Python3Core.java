@@ -429,10 +429,6 @@ public final class Python3Core implements PythonCore {
 
             loadFile(__BUILTINS_PATCHES__, PythonCore.getCoreHomeOrFail());
 
-            PythonModule os = lookupBuiltinModule("posix");
-            Object environAttr = os.getAttribute("environ");
-            ((PDict) environAttr).setDictStorage(createEnvironDict().getDictStorage());
-
             initialized = true;
         }
     }
@@ -637,16 +633,6 @@ public final class Python3Core implements PythonCore {
             mod = factory().createPythonModule("__anonymous__");
         }
         callTarget.call(PArguments.withGlobals(mod));
-    }
-
-    @TruffleBoundary
-    private PDict createEnvironDict() {
-        Map<String, String> getenv = System.getenv();
-        PDict environ = factory.createDict();
-        for (Entry<String, String> entry : getenv.entrySet()) {
-            environ.setItem(factory.createBytes(entry.getKey().getBytes()), factory.createBytes(entry.getValue().getBytes()));
-        }
-        return environ;
     }
 
     public PythonObjectFactory factory() {
