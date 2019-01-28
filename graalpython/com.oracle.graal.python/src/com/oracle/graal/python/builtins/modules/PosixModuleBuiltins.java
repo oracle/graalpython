@@ -445,18 +445,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } else if (f.isSymbolicLink()) {
                 mode |= S_IFLNK;
             } else {
-                // TODO: remove the additional check for symlink once GR-13265 is fixed
-                TruffleFile canonicalFile = null;
-                try {
-                    canonicalFile = f.getCanonicalFile();
-                } catch (IOException e) {
-                }
-                if (!f.getAbsoluteFile().equals(canonicalFile)) {
-                    mode |= S_IFLNK;
-                } else {
-                    // TODO: differentiate these
-                    mode |= S_IFSOCK | S_IFBLK | S_IFCHR | S_IFIFO;
-                }
+                // TODO: differentiate these
+                mode |= S_IFSOCK | S_IFBLK | S_IFCHR | S_IFIFO;
             }
             try {
                 mtime = fileTimeToSeconds(f.getLastModifiedTime(linkOptions));
