@@ -150,19 +150,22 @@ public class AsyncHandler {
                 // TODO: (tfel) - for now all async actions are slow path
                 ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions;
                 for (AsyncAction action : actions) {
-                    Object[] arguments = action.arguments();
-                    Object[] args = new Object[arguments.length + 2];
-                    System.arraycopy(arguments, 0, args, 2, arguments.length);
-                    args[0] = action.callable();
-                    args[1] = action.frameIndex();
-                    try {
-                        callTarget.call(args);
-                    } catch (RuntimeException e) {
-                        // we cannot raise the exception here (well, we could, but CPython
-                        // doesn't), so we do what they do and just print it
+                    Object callable = action.callable();
+                    if (callable != null) {
+                        Object[] arguments = action.arguments();
+                        Object[] args = new Object[arguments.length + 2];
+                        System.arraycopy(arguments, 0, args, 2, arguments.length);
+                        args[0] = callable;
+                        args[1] = action.frameIndex();
+                        try {
+                            callTarget.call(args);
+                        } catch (RuntimeException e) {
+                            // we cannot raise the exception here (well, we could, but CPython
+                            // doesn't), so we do what they do and just print it
 
-                        // TODO: print a nice Python stacktrace
-                        e.printStackTrace();
+                            // TODO: print a nice Python stacktrace
+                            e.printStackTrace();
+                        }
                     }
                 }
             }
