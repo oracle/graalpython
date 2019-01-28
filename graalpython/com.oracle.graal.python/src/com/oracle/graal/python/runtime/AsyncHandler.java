@@ -55,9 +55,9 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFrameNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node.Child;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -155,6 +155,7 @@ public class AsyncHandler {
 
     void triggerAsyncActions() {
         if (hasScheduledAction.compareAndSet(true, false)) {
+            CompilerDirectives.transferToInterpreter();
             processAsyncActions();
         }
     }
