@@ -765,7 +765,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PCode(PythonBuiltinClassType.PCode, result, getCore()));
     }
 
-    public PCode createCode(PythonClass cls, int argcount, int kwonlyargcount,
+    public PCode createCode(LazyPythonClass cls, int argcount, int kwonlyargcount,
                     int nlocals, int stacksize, int flags,
                     byte[] codestring, Object[] constants, Object[] names,
                     Object[] varnames, Object[] freevars, Object[] cellvars,

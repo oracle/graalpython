@@ -51,7 +51,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -135,16 +134,12 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization
         Object get(PFrame self) {
-            Node callNode = self.getCallNode();
-            if (callNode == null) {
-                return PNone.NONE;
-            }
-            RootNode rootNode = callNode.getRootNode();
-            if (rootNode == null) {
-                return PNone.NONE;
-            } else {
+            RootNode rootNode = self.getTarget();
+            if (rootNode != null) {
                 return factory().createCode(rootNode);
             }
+            return factory().createCode(PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, new byte[0], new Object[0], new Object[0], new Object[0], new Object[0], new Object[0], "<internal>",
+                            "<internal>", -1, new byte[0]);
         }
     }
 
