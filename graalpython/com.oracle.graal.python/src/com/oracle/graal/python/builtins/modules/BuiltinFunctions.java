@@ -74,7 +74,6 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.math.BigInteger;
-import java.net.URI;
 import java.nio.CharBuffer;
 import java.util.List;
 import java.util.function.Supplier;
@@ -167,7 +166,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -698,14 +696,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
          * Decides wether this node should attempt to map the filename to a URI for the benefit of
          * Truffle tooling
          */
-        private final boolean mapFilenameToUri;
+        private final boolean mayBeFromFile;
 
-        public CompileNode(boolean mapFilenameToUri) {
-            this.mapFilenameToUri = mapFilenameToUri;
+        public CompileNode(boolean mayBeFromFile) {
+            this.mayBeFromFile = mayBeFromFile;
         }
 
         public CompileNode() {
-            this.mapFilenameToUri = true;
+            this.mayBeFromFile = true;
         }
 
         public abstract PCode execute(Object source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize);
@@ -728,8 +726,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         PCode compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
             PythonContext context = getContext();
-            URI uri = mapToUri(expression, filename, context);
-            Source source = PythonLanguage.newSource(context, expression, filename, uri);
+            Source source = PythonLanguage.newSource(context, expression, filename, mayBeFromFile);
             ParserMode pm;
             if (mode.equals("exec")) {
                 pm = ParserMode.File;
@@ -745,27 +742,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return createCode.get();
             } else {
                 return getCore().getLanguage().cacheCode(filename, createCode);
-            }
-        }
-
-        private URI mapToUri(String expression, String filename, PythonContext context) {
-            if (mapFilenameToUri) {
-                URI uri = null;
-                try {
-                    TruffleFile truffleFile = context.getEnv().getTruffleFile(filename);
-                    if (truffleFile.exists()) {
-                        // XXX: (tfel): We don't know if the expression has anything to do with the
-                        // filename that's given. We would really have to compare the entire
-                        // contents, but as a first approximation, we compare the content lengths
-                        if (expression.length() == truffleFile.size()) {
-                            uri = truffleFile.toUri();
-                        }
-                    }
-                } catch (SecurityException | IOException e) {
-                }
-                return uri;
-            } else {
-                return null;
             }
         }
 
