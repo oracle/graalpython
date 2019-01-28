@@ -46,6 +46,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -55,6 +57,7 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node.Child;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -90,9 +93,9 @@ public class AsyncHandler {
     }
 
     private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
-    private ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
-    private AtomicBoolean hasScheduledAction = new AtomicBoolean(false);
-    private AtomicBoolean executingActions = new AtomicBoolean(false);
+    private final ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
+    private final AtomicBoolean hasScheduledAction = new AtomicBoolean(false);
+    private final Lock executingScheduledActions = new ReentrantLock();
     private static final int ASYNC_ACTION_DELAY = 15; // chosen by a fair D20 dice roll
 
     private class AsyncRunnable implements Runnable {
@@ -105,8 +108,15 @@ public class AsyncHandler {
         public void run() {
             AsyncAction asyncAction = actionSupplier.get();
             if (asyncAction != null) {
-                scheduledActions.add(asyncAction);
-                hasScheduledAction.set(true);
+                // If there's thread executing scheduled actions right now,
+                // we wait until adding the next work item
+                executingScheduledActions.lock();
+                try {
+                    scheduledActions.add(asyncAction);
+                    hasScheduledAction.set(true);
+                } finally {
+                    executingScheduledActions.unlock();
+                }
             }
         }
     }
@@ -144,10 +154,23 @@ public class AsyncHandler {
     }
 
     void triggerAsyncActions() {
-        if (executingActions.compareAndSet(false, true)) {
-            if (hasScheduledAction.compareAndSet(true, false)) {
-                CompilerDirectives.transferToInterpreter();
-                // TODO: (tfel) - for now all async actions are slow path
+        if (hasScheduledAction.compareAndSet(true, false)) {
+            processAsyncActions();
+        }
+    }
+
+    @TruffleBoundary
+    private void processAsyncActions() {
+        // We'll likely be able to get the lock and start working through the async actions. But
+        // there could be a race between the atomic switch of the hasScheduledAction flag, an
+        // AsyncRunnable thread and the acquisition of the lock, so a second thread may end up
+        // clearing the flag again. In that case, both would get here, but only will get the lock
+        // and the other will skip over this and return. In any case, by the time a thread has
+        // this lock and is handling async actions, nothing new will be pushed to the
+        // scheduledActions queue, so we won't have a race between finishing the while loop and
+        // returning from this method.
+        if (executingScheduledActions.tryLock()) {
+            try {
                 ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions;
                 AsyncAction action;
                 while ((action = actions.poll()) != null) {
@@ -169,8 +192,9 @@ public class AsyncHandler {
                         }
                     }
                 }
+            } finally {
+                executingScheduledActions.unlock();
             }
-            executingActions.set(false);
         }
     }
 }
