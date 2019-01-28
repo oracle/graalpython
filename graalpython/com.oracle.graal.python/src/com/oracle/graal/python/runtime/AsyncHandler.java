@@ -149,7 +149,8 @@ public class AsyncHandler {
                 CompilerDirectives.transferToInterpreter();
                 // TODO: (tfel) - for now all async actions are slow path
                 ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions;
-                for (AsyncAction action : actions) {
+                AsyncAction action;
+                while ((action = actions.poll()) != null) {
                     Object callable = action.callable();
                     if (callable != null) {
                         Object[] arguments = action.arguments();
