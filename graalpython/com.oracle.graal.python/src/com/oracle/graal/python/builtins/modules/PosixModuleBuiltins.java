@@ -35,6 +35,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.ProcessBuilder.Redirect;
 import java.math.BigInteger;
 import java.net.InetAddress;
@@ -45,8 +46,13 @@ import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystemException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
@@ -57,6 +63,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -72,6 +79,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.Conve
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.ReadFromChannelNodeGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -81,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -373,6 +382,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StatNode extends PythonBinaryBuiltinNode {
+        @Child private ToBytesNode toBytesNode;
+
         private final BranchProfile fileNotFound = BranchProfile.create();
 
         private static final int S_IFIFO = 0010000;
@@ -390,9 +401,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return stat(path, followSymlinks);
         }
 
+        @Specialization
+        Object doStatDefault(PIBytesLike path, boolean followSymlinks) {
+            return stat(toJavaString(path), followSymlinks);
+        }
+
         @Specialization(guards = "isNoValue(followSymlinks)")
         Object doStatDefault(String path, @SuppressWarnings("unused") PNone followSymlinks) {
             return stat(path, true);
+        }
+
+        @Specialization(guards = "isNoValue(followSymlinks)")
+        Object doStatDefault(PIBytesLike path, @SuppressWarnings("unused") PNone followSymlinks) {
+            return stat(toJavaString(path), true);
         }
 
         @TruffleBoundary
@@ -424,8 +445,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } else if (f.isSymbolicLink()) {
                 mode |= S_IFLNK;
             } else {
-                // TODO: differentiate these
-                mode |= S_IFSOCK | S_IFBLK | S_IFCHR | S_IFIFO;
+                // TODO: remove the additional check for symlink once GR-13265 is fixed
+                TruffleFile canonicalFile = null;
+                try {
+                    canonicalFile = f.getCanonicalFile();
+                } catch (IOException e) {
+                }
+                if (!f.getAbsoluteFile().equals(canonicalFile)) {
+                    mode |= S_IFLNK;
+                } else {
+                    // TODO: differentiate these
+                    mode |= S_IFSOCK | S_IFBLK | S_IFCHR | S_IFIFO;
+                }
             }
             try {
                 mtime = fileTimeToSeconds(f.getLastModifiedTime(linkOptions));
@@ -539,6 +570,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return mode;
         }
 
+        @TruffleBoundary
+        private String toJavaString(PIBytesLike bytesLike) {
+            if (toBytesNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toBytesNode = insert(ToBytesNode.create());
+            }
+            return new String(toBytesNode.execute(bytesLike), StandardCharsets.UTF_8);
+        }
+
         public static StatNode create() {
             return StatNodeFactory.create();
         }
@@ -551,12 +591,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final BranchProfile gotException = BranchProfile.create();
 
         @Specialization
-        Object listdir(String path) {
+        Object listdir(VirtualFrame frame, String path) {
             try {
                 TruffleFile file = getContext().getEnv().getTruffleFile(path);
                 Collection<TruffleFile> listFiles = file.list();
                 Object[] filenames = listToArray(listFiles);
                 return factory().createList(filenames);
+            } catch (NoSuchFileException e) {
+                throw raiseOSError(frame, OSErrorEnum.ENOENT, path);
             } catch (SecurityException | IOException e) {
                 gotException.enter();
                 throw raise(OSError, path);
@@ -640,24 +682,60 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class OpenNode extends PythonFileNode {
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+
         private final BranchProfile gotException = BranchProfile.create();
 
         @Specialization(guards = {"isNoValue(mode)", "isNoValue(dir_fd)"})
-        Object open(String pathname, int flags, @SuppressWarnings("unused") PNone mode, PNone dir_fd) {
-            return open(pathname, flags, 0777, dir_fd);
+        Object open(VirtualFrame frame, String pathname, int flags, @SuppressWarnings("unused") PNone mode, PNone dir_fd) {
+            return open(frame, pathname, flags, 0777, dir_fd);
         }
 
         @Specialization(guards = {"isNoValue(dir_fd)"})
-        Object open(String pathname, int flags, int fileMode, @SuppressWarnings("unused") PNone dir_fd) {
+        Object open(VirtualFrame frame, String pathname, int flags, int fileMode, @SuppressWarnings("unused") PNone dir_fd) {
             Set<StandardOpenOption> options = flagsToOptions(flags);
             FileAttribute<Set<PosixFilePermission>>[] attributes = modeToAttributes(fileMode);
             TruffleFile truffleFile = getContext().getEnv().getTruffleFile(pathname);
             try {
                 SeekableByteChannel fc = truffleFile.newByteChannel(options, attributes);
                 return getResources().open(truffleFile, fc);
+            } catch (NoSuchFileException e) {
+                gotException.enter();
+                throw raiseOSError(frame, OSErrorEnum.ENOENT, e.getFile());
+            } catch (AccessDeniedException e) {
+                gotException.enter();
+                throw raiseOSError(frame, OSErrorEnum.EACCES, e.getFile());
+            } catch (FileSystemException e) {
+                gotException.enter();
+                // TODO FileSystemException can have more reasons, not only is a directory -> should
+                // be handled more accurate
+                throw raiseOSError(frame, OSErrorEnum.EISDIR, e.getFile());
             } catch (IOException e) {
                 gotException.enter();
-                throw raise(OSError, e);
+                // if this happen, we should raise OSError with appropriate errno
+                throw raiseOSError(frame, -1);
+            }
+        }
+
+        @Specialization(guards = {"isNoValue(dir_fd)"})
+        Object open(VirtualFrame frame, PBytes pathname, int flags, int fileMode, PNone dir_fd) {
+            return open(frame, decode(getByteArray(pathname)), flags, fileMode, dir_fd);
+        }
+
+        private byte[] getByteArray(PIBytesLike pByteArray) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(ToByteArrayNode.create());
+            }
+            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
+        }
+
+        @TruffleBoundary
+        private String decode(byte[] raw) {
+            try {
+                return new String(raw, "ascii");
+            } catch (UnsupportedEncodingException e) {
+                throw raise(PythonBuiltinClassType.UnicodeDecodeError, e.getMessage());
             }
         }
 
@@ -718,18 +796,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final ConditionProfile noFile = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        Object lseek(int fd, long pos, int how,
+        Object lseek(VirtualFrame frame, int fd, long pos, int how,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
             if (noFile.profile(channel == null || !(channel instanceof SeekableByteChannel))) {
-                throw raise(OSError, "Illegal seek");
+                throw raiseOSError(frame, OSErrorEnum.ESPIPE);
             }
             SeekableByteChannel fc = (SeekableByteChannel) channel;
             try {
                 return setPosition(pos, how, fc);
             } catch (IOException e) {
                 gotException.enter();
-                throw raise(OSError, e);
+                // if this happen, we should raise OSError with appropriate errno
+                throw raiseOSError(frame, -1);
             }
         }
 
@@ -816,17 +895,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final BranchProfile gotException = BranchProfile.create();
 
         @Specialization
-        Object mkdir(String path, @SuppressWarnings("unused") PNone mode, PNone dirFd) {
-            return mkdir(path, 511, dirFd);
+        Object mkdir(VirtualFrame frame, String path, @SuppressWarnings("unused") PNone mode, PNone dirFd) {
+            return mkdir(frame, path, 511, dirFd);
         }
 
         @Specialization
-        Object mkdir(String path, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") PNone dirFd) {
+        Object mkdir(VirtualFrame frame, String path, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") PNone dirFd) {
             try {
                 getContext().getEnv().getTruffleFile(path).createDirectory();
+            } catch (FileAlreadyExistsException e) {
+                throw raiseOSError(frame, OSErrorEnum.EEXIST, path);
             } catch (RuntimeException | IOException e) {
                 gotException.enter();
-                throw raise(OSError, e);
+                // if this happen, we should raise OSError with appropriate errno
+                throw raiseOSError(frame, -1);
             }
             return PNone.NONE;
         }
@@ -992,25 +1074,29 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class ReadNode extends PythonFileNode {
         private static final int MAX_READ = Integer.MAX_VALUE / 2;
 
+        @CompilationFinal private BranchProfile tooLargeProfile = BranchProfile.create();
+
         @Specialization(guards = "readOpaque(frame)")
-        Object readOpaque(@SuppressWarnings("unused") VirtualFrame frame, int fd, @SuppressWarnings("unused") Object requestedSize,
+        Object readOpaque(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Cached("create()") ReadFromChannelNode readNode) {
-            Channel channel = getResources().getFileChannel(fd, channelClassProfile);
-            ByteSequenceStorage bytes = readNode.execute(channel, MAX_READ);
-            return new OpaqueBytes(Arrays.copyOf(bytes.getInternalByteArray(), bytes.length()));
+            if (OpaqueBytes.isInOpaqueFilesystem(getResources().getFilePath(fd), getContext())) {
+                Channel channel = getResources().getFileChannel(fd, channelClassProfile);
+                ByteSequenceStorage bytes = readNode.execute(channel, MAX_READ);
+                return new OpaqueBytes(Arrays.copyOf(bytes.getInternalByteArray(), bytes.length()));
+            }
+            return read(frame, fd, requestedSize, channelClassProfile, readNode);
         }
 
         @Specialization(guards = "!readOpaque(frame)")
         Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Cached("create()") BranchProfile tooLarge,
                         @Cached("create()") ReadFromChannelNode readNode) {
             int size;
             try {
                 size = Math.toIntExact(requestedSize);
             } catch (ArithmeticException e) {
-                tooLarge.enter();
+                tooLargeProfile.enter();
                 size = MAX_READ;
             }
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
@@ -1717,6 +1803,46 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         protected GetTerminalSizeNode create() {
             return PosixModuleBuiltinsFactory.GetTerminalSizeNodeFactory.create();
+        }
+    }
+
+    @Builtin(name = "readlink", fixedNumOfPositionalArgs = 1, keywordArguments = {"dirFd"}, doc = "readlink(path, *, dir_fd=None) -> path\n" +
+                    "\nReturn a string representing the path to which the symbolic link points.\n")
+    @GenerateNodeFactory
+    abstract static class ReadlinkNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        String readlinkPString(PString str, PNone none) {
+            return readlink(str.getValue(), none);
+        }
+
+        @Specialization
+        String readlink(String str, @SuppressWarnings("unused") PNone none) {
+            try {
+                return getContext().getEnv().getTruffleFile(str).getCanonicalFile().getPath();
+            } catch (IOException e) {
+                throw raise(OSError, e.getMessage());
+            }
+        }
+    }
+
+    @Builtin(name = "strerror", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class StrErrorNode extends PythonBuiltinNode {
+
+        private final static HashMap<Integer, String> STR_ERROR_MAP = new HashMap<>();
+
+        @Specialization
+        String getStrError(int errno) {
+            if (STR_ERROR_MAP.isEmpty()) {
+                for (OSErrorEnum error : OSErrorEnum.values()) {
+                    STR_ERROR_MAP.put(error.getNumber(), error.getMessage());
+                }
+            }
+            String result = STR_ERROR_MAP.get(errno);
+            if (result == null) {
+                result = "Unknown error " + errno;
+            }
+            return result;
         }
     }
 }

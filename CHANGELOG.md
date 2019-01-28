@@ -3,6 +3,17 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 1.0.0 RC12
+
+* Support the `__class__` variable in the class scope
+* Support module-level docstrings
+* Initial support for the `venv` standard-library tool
+* Initial support for the built-in `_bz2` module
+* Initial support for the `pandas` package
+* Initial support for OSError subclasses based on the `errno` of the exception
+* Fix bytearray inplace add to return the same object
+* Fix access to standard Python methods (`__repr__`, `__str__`, `__len__` and the like) for foreign objects
+
 ## Version 1.0.0 RC11
 
 * Support running setuptools to build and install various packages

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes;
 
 public abstract class SpecialMethodNames {
+
     public static final String __NEW__ = "__new__";
     public static final String __ALLOC__ = "__alloc__";
     public static final String __INIT__ = "__init__";
@@ -159,7 +160,14 @@ public abstract class SpecialMethodNames {
     public static final String __FSPATH__ = "__fspath__";
     public static final String TOBYTES = "tobytes";
     public static final String DECODE = "decode";
+    public static final String __SIZEOF__ = "__sizeof__";
 
     public static final String RICHCMP = "__truffle_richcompare__";
     public static final String TRUFFLE_SOURCE = "__truffle_source__";
+
+    // (tfel): The order of these matches the one in CPython, and thus is assumed to remain the same
+    // in various places
+    public static final String[] COMPARE_OPSTRINGS = new String[]{"<", "<=", "==", "!=", ">", ">="};
+    public static final String[] COMPARE_OPNAMES = new String[]{__LT__, __LE__, __EQ__, __NE__, __GT__, __GE__};
+    public static final String[] COMPARE_REVERSALS = new String[]{__GT__, __GE__, __EQ__, __NE__, __GT__, __GE__};
 }

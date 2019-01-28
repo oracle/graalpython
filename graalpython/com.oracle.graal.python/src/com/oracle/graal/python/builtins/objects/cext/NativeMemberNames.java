@@ -92,6 +92,7 @@ public final class NativeMemberNames {
     public static final String UNICODE_STATE_COMPACT = "compact";
     public static final String UNICODE_STATE_ASCII = "ascii";
     public static final String UNICODE_STATE_READY = "ready";
+    public static final String UNICODE_HASH = "hash";
     public static final String MD_STATE = "md_state";
     public static final String MD_DEF = "md_def";
     public static final String MD_DICT = "md_dict";
@@ -121,6 +122,8 @@ public final class NativeMemberNames {
     public static final String D_NAME = "d_name";
     public static final String D_TYPE = "d_type";
     public static final String M_ML = "m_ml";
+    public static final String DATETIME_DATA = "data";
+    public static final String SET_USED = "used";
 
     @CompilationFinal(dimensions = 1) public static final String[] values;
     static {

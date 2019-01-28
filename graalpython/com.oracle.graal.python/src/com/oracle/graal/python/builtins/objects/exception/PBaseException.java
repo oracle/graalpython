@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -149,15 +150,14 @@ public final class PBaseException extends PythonObject {
     }
 
     public Object[] getMessageArgs() {
-        return messageArgs;
+        // clone message args to ensure that they stay unmodified
+        return messageArgs.clone();
     }
 
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
+    public String getFormattedMessage(GetLazyClassNode getClassNode) {
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return getLazyPythonClass().getName() + ": " + FORMATTER.format(messageFormat, messageArgs);
+                return getLazyPythonClass().getName() + ": " + FORMATTER.format(getClassNode, messageFormat, getMessageArgs());
             }
             return getLazyPythonClass().getName() + ": " + messageFormat;
         } else if (args.getSequenceStorage().length() == 0) {
@@ -169,6 +169,12 @@ public final class PBaseException extends PythonObject {
         } else {
             return getLazyPythonClass().getName() + ": " + args.toString();
         }
+    }
+
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        return getFormattedMessage(null);
     }
 
     public List<TruffleStackTraceElement> getStackTrace() {

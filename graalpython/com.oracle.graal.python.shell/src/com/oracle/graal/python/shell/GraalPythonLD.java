@@ -244,11 +244,13 @@ public class GraalPythonLD extends GraalPythonCompiler {
         // in the build process, because such a smart linker should not be assumed for POSIX, but it
         // seems ok to emulate this at least for the very common case of ar archives with symbol
         // definitions that overlap what's defined in explicitly include .o files
-        for (String f : members) {
+        outer: for (String f : members) {
             if (Files.probeContentType(Paths.get(f)).contains(LLVM_IR_BITCODE)) {
-                HashSet<String> definedHere = new HashSet<>();
+                HashSet<String> definedFuncs = new HashSet<>();
+                HashSet<String> definedGlobals = new HashSet<>();
+
                 ProcessBuilder nm = new ProcessBuilder();
-                nm.command(LLVM_NM, "-g", "--defined-only", f);
+                nm.command(LLVM_NM, "--defined-only", f);
                 nm.redirectInput(Redirect.INHERIT);
                 nm.redirectError(Redirect.INHERIT);
                 nm.redirectOutput(Redirect.PIPE);
@@ -257,8 +259,17 @@ public class GraalPythonLD extends GraalPythonCompiler {
                     String line = null;
                     while ((line = buffer.readLine()) != null) {
                         String[] symboldef = line.split(" ");
-                        if (symboldef.length >= 2) {
-                            definedHere.add(symboldef[symboldef.length - 1]);
+                        if (symboldef.length == 3) {
+                            // format is ------- CHAR FUNCNAME
+                            if (symboldef[1].toLowerCase().equals("t")) {
+                                definedFuncs.add(symboldef[2].trim());
+                            } else if (symboldef[1].toLowerCase().equals("d")) {
+                                definedGlobals.add(symboldef[2].trim());
+                            } else {
+                                // keep all if we have symbols that we wouldn't know what to do with
+                                logV("Not extracting from ", f, " because there are non-strong function or global symbols");
+                                continue outer;
+                            }
                         }
                     }
                 }
@@ -266,11 +277,19 @@ public class GraalPythonLD extends GraalPythonCompiler {
 
                 ArrayList<String> extractCmd = new ArrayList<>();
                 extractCmd.add("llvm-extract");
-                for (String def : definedHere) {
-                    if (undefinedSymbols.contains(def)) {
+                for (String def : definedFuncs) {
+                    if (!definedSymbols.contains(def)) {
                         definedSymbols.add(def);
                         undefinedSymbols.remove(def);
                         extractCmd.add("-func");
+                        extractCmd.add(def);
+                    }
+                }
+                for (String def : definedGlobals) {
+                    if (!definedSymbols.contains(def)) {
+                        definedSymbols.add(def);
+                        undefinedSymbols.remove(def);
+                        extractCmd.add("-glob");
                         extractCmd.add(def);
                     }
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,14 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static java.lang.StrictMath.toIntExact;
+
 import java.util.Hashtable;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -52,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -132,6 +136,16 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "default_int_handler", minNumOfPositionalArgs = 0, takesVarArgs = true, takesVarKeywordArgs = false)
+    @GenerateNodeFactory
+    abstract static class DefaultIntHandlerNode extends PythonBuiltinNode {
+        @Specialization
+        Object defaultIntHandler(@SuppressWarnings("unused") Object[] args) {
+            // TODO should be implemented properly.
+            throw raise(PythonErrorType.KeyboardInterrupt);
+        }
+    }
+
     @Builtin(name = "signal", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonBinaryBuiltinNode {
@@ -191,6 +205,16 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object signal(int signum, PFunction handler) {
             return installSignalHandler(signum, handler, handler.getCallTarget(), createArgs.execute(new Object[]{signum, PNone.NONE}));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object signal(long signum, PFunction handler) {
+            try {
+                return installSignalHandler(toIntExact(signum), handler, handler.getCallTarget(), createArgs.execute(new Object[]{signum, PNone.NONE}));
+            } catch (ArithmeticException ae) {
+                throw raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to C int");
+            }
         }
     }
 }

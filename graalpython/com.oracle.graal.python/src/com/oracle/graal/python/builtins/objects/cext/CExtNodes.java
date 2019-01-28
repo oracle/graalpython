@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -597,6 +597,19 @@ public abstract class CExtNodes {
         @CompilationFinal private TruffleObject nativeToJavaFunction;
         @CompilationFinal private TruffleObject nativePointerToJavaFunction;
 
+        /**
+         * This should be set to {@code true} if the target of a value assignment is known to be a
+         * {@code PyObject*}. For example, if native code assigns to
+         * {@code ((PyTupleObject*)obj)->ob_item[i] = val} where {@code ob_item} is of type
+         * {@code PyObject**}, then we know that {@code val} should be interpreted as pointer and
+         * must point to a full Python object.
+         */
+        private final boolean forcePointer;
+
+        protected ToJavaNode(boolean forcePointer) {
+            this.forcePointer = forcePointer;
+        }
+
         public abstract Object execute(Object value);
 
         public abstract boolean executeBool(boolean value);
@@ -630,10 +643,9 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doInt(int i) {
-            // Unfortunately, an int could be a native pointer and therefore a handle. So, we must
-            // try resolving it. At least we know that it's not a native type.
-            return native_pointer_to_java(i);
+        int doInt(int i) {
+            // Note: Sulong guarantees that an integer won't be a pointer
+            return i;
         }
 
         @Specialization
@@ -660,7 +672,8 @@ public abstract class CExtNodes {
         private Object native_pointer_to_java(Object value) {
             if (nativePointerToJavaFunction == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativePointerToJavaFunction = importCAPISymbol(NativeCAPISymbols.FUN_NATIVE_POINTER_TO_JAVA);
+                String funName = forcePointer ? NativeCAPISymbols.FUN_NATIVE_LONG_TO_JAVA : NativeCAPISymbols.FUN_NATIVE_POINTER_TO_JAVA;
+                nativePointerToJavaFunction = importCAPISymbol(funName);
             }
             return call_native_conversion(nativePointerToJavaFunction, value);
         }
@@ -674,7 +687,11 @@ public abstract class CExtNodes {
         }
 
         public static ToJavaNode create() {
-            return ToJavaNodeGen.create();
+            return ToJavaNodeGen.create(true);
+        }
+
+        public static ToJavaNode create(boolean forcePointer) {
+            return ToJavaNodeGen.create(forcePointer);
         }
     }
 
@@ -848,17 +865,34 @@ public abstract class CExtNodes {
         }
     }
 
-    public static class IsNode extends CExtBaseNode {
+    public static final class PointerCompareNode extends CExtBaseNode {
+        private final int op;
         @CompilationFinal private TruffleObject isFunc = null;
         @Child Node executeNode = Message.EXECUTE.createNode();
 
-        public boolean execute(PythonNativeObject a, PythonNativeObject b) {
+        private PointerCompareNode(int op) {
+            this.op = op;
+        }
+
+        private boolean executeCFunction(Object a, Object b) {
             try {
-                return (int) ForeignAccess.sendExecute(executeNode, getNativeFunction(), a.object, b.object) != 0;
+                return (int) ForeignAccess.sendExecute(executeNode, getNativeFunction(), a, b, op) != 0;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw new IllegalStateException(NativeCAPISymbols.FUN_PTR_COMPARE + " didn't work!");
             }
+        }
+
+        public boolean execute(PythonNativeObject a, PythonNativeObject b) {
+            return executeCFunction(a.object, b.object);
+        }
+
+        public boolean execute(PythonNativeObject a, long b) {
+            return executeCFunction(a.object, b);
+        }
+
+        public boolean execute(PythonNativeVoidPtr a, long b) {
+            return executeCFunction(a.object, b);
         }
 
         private TruffleObject getNativeFunction() {
@@ -869,10 +903,14 @@ public abstract class CExtNodes {
             return isFunc;
         }
 
-        public static IsNode create() {
-            return new CExtNodes.IsNode();
+        public static PointerCompareNode create(String specialMethodName) {
+            for (int i = 0; i < SpecialMethodNames.COMPARE_OPNAMES.length; i++) {
+                if (SpecialMethodNames.COMPARE_OPNAMES[i].equals(specialMethodName)) {
+                    return new CExtNodes.PointerCompareNode(i);
+                }
+            }
+            throw new RuntimeException("The special method used for Python C API pointer comparison must be a constant literal (i.e., interned) string");
         }
-
     }
 
     public abstract static class AllToJavaNode extends PNodeWithContext {
@@ -1194,6 +1232,11 @@ public abstract class CExtNodes {
 
         public abstract long execute(Object arg);
 
+        @Specialization(guards = "value.length() == 1")
+        long run(String value) {
+            return value.charAt(0);
+        }
+
         @Specialization
         long run(boolean value) {
             return value ? 1 : 0;
@@ -1216,7 +1259,7 @@ public abstract class CExtNodes {
 
         @Specialization
         long run(PInt value) {
-            // TODO(fa) longValueExact ?
+            // TODO(fa) should we use longValueExact ?
             return value.longValue();
         }
 
@@ -1260,8 +1303,7 @@ public abstract class CExtNodes {
         }
     }
 
-    public static class PCallBinaryCapiFunction extends CExtBaseNode {
-
+    public static class PCallCapiFunction extends CExtBaseNode {
         @Child private Node callNode;
 
         private final String name;
@@ -1269,13 +1311,13 @@ public abstract class CExtNodes {
 
         @CompilationFinal TruffleObject receiver;
 
-        public PCallBinaryCapiFunction(String name) {
+        public PCallCapiFunction(String name) {
             this.name = name;
         }
 
-        public Object execute(Object arg0, Object arg1) {
+        public Object call(Object... args) {
             try {
-                return ForeignAccess.sendExecute(getCallNode(), getFunction(), arg0, arg1);
+                return ForeignAccess.sendExecute(getCallNode(), getFunction(), args);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 profile.enter();
                 throw e.raise();
@@ -1298,9 +1340,10 @@ public abstract class CExtNodes {
             return receiver;
         }
 
-        public static PCallBinaryCapiFunction create(String name) {
-            return new PCallBinaryCapiFunction(name);
+        public static PCallCapiFunction create(String name) {
+            return new PCallCapiFunction(name);
         }
+
     }
 
     public static class MayRaiseNodeFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {

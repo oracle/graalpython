@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,6 +82,8 @@ PyObject * PyExc_UnboundLocalError = NULL;
 PyObject * PyExc_NotImplementedError = NULL;
 PyObject * PyExc_RecursionError = NULL;
 PyObject * PyExc_UnicodeEncodeError = NULL;
+PyObject * PyExc_GeneratorExit = NULL;
+PyObject * PyExc_EOFError = NULL;
 
 void initialize_exceptions() {
     PyExc_AttributeError = PY_EXCEPTION("AttributeError");
@@ -120,6 +122,8 @@ void initialize_exceptions() {
     PyExc_RecursionError = PY_EXCEPTION("RecursionError");
     PyExc_NotImplementedError = PY_EXCEPTION("NotImplementedError");
     PyExc_UnicodeEncodeError = PY_EXCEPTION("UnicodeEncodeError");
+    PyExc_GeneratorExit = PY_EXCEPTION("GeneratorExit");
+    PyExc_EOFError = PY_EXCEPTION("EOFError");
 }
 
 

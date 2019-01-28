@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,8 @@ public class GraalPythonCC extends GraalPythonCompiler {
     private List<String> clangArgs;
     private List<String> execLinkArgs;
     private List<String> fileInputs;
+    private boolean isCpp;
+    private boolean allowCpp;
 
     GraalPythonCC() {
     }
@@ -103,6 +105,20 @@ public class GraalPythonCC extends GraalPythonCompiler {
 
     private void run(String[] args) {
         parseOptions(args);
+        if (!allowCpp && isCpp) {
+            // cannot use streaming API anyMatch for this on SVM
+            for (String s : clangArgs) {
+                if (s.contains("--sysroot")) {
+                    // nasty, nasty
+                    logV("Refusing to compile C++ code in sandboxed mode, because we cannot actually do it");
+                    try {
+                        Files.createFile(Paths.get(outputFilename));
+                    } catch (IOException e) {
+                    }
+                    return;
+                }
+            }
+        }
         launchCC();
     }
 
@@ -116,6 +132,7 @@ public class GraalPythonCC extends GraalPythonCompiler {
         clangArgs = new ArrayList<>(clangPrefix);
         execLinkArgs = new ArrayList<>(execLinkPrefix);
         fileInputs = new ArrayList<>();
+        isCpp = false;
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             switch (arg) {
@@ -143,6 +160,9 @@ public class GraalPythonCC extends GraalPythonCompiler {
                         continue; // the first verbose is not passed on to clang
                     }
                     break;
+                case "-allowcpp":
+                    allowCpp = true;
+                    continue;
                 default:
                     if (arg.endsWith(".o") || arg.endsWith(".bc")) {
                         if (compile == null) {
@@ -152,6 +172,9 @@ public class GraalPythonCC extends GraalPythonCompiler {
                         }
                         fileInputs.add(arg);
                     } else if (arg.endsWith(".c") || arg.endsWith(".cpp") || arg.endsWith(".cxx")) {
+                        if (arg.endsWith(".cpp") || arg.endsWith(".cxx")) {
+                            isCpp = true;
+                        }
                         if (compile == null) {
                             compile = true;
                         } else if (compile != true) {
@@ -167,6 +190,9 @@ public class GraalPythonCC extends GraalPythonCompiler {
         String targetFlags = System.getenv("LLVM_TARGET_FLAGS");
         if (targetFlags != null) {
             clangArgs.addAll(Arrays.asList(targetFlags.split(" ")));
+        }
+        if (isCpp) {
+            clangArgs.add("-stdlib=libc++");
         }
     }
 

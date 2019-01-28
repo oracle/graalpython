@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -31,11 +31,11 @@ import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.argument.keywords.KeywordArgumentsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNodeGen.GetCallAttributeNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadNameNode;
@@ -179,7 +179,7 @@ public abstract class PythonCallNode extends ExpressionNode {
     @NodeChild("object")
     protected abstract static class GetCallAttributeNode extends ExpressionNode {
 
-        private final String key;
+        protected final String key;
 
         protected GetCallAttributeNode(String key) {
             this.key = key;
@@ -192,8 +192,8 @@ public abstract class PythonCallNode extends ExpressionNode {
 
         @Specialization(guards = "!isForeignObject(object)")
         Object getCallAttribute(Object object,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttributeNode) {
-            return getAttributeNode.executeObject(object, key);
+                        @Cached("create(key)") GetAttributeNode getAttributeNode) {
+            return getAttributeNode.executeObject(object);
         }
     }
 
@@ -232,10 +232,9 @@ public abstract class PythonCallNode extends ExpressionNode {
     Object call(VirtualFrame frame, ForeignInvoke callable,
                     @Cached("create()") PForeignToPTypeNode fromForeign,
                     @Cached("create()") BranchProfile keywordsError,
-                    @Cached("create()") BranchProfile nameError,
                     @Cached("create()") BranchProfile typeError,
                     @Cached("create()") BranchProfile invokeError,
-                    @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttrNode,
+                    @Cached("create()") GetAnyAttributeNode getAttrNode,
                     @Cached("createInvoke()") Node invokeNode) {
         Object[] arguments = evaluateArguments(frame);
         PKeyword[] keywords = evaluateKeywords(frame);
@@ -245,13 +244,10 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
         try {
             return fromForeign.executeConvert(ForeignAccess.sendInvoke(invokeNode, callable.receiver, callable.identifier, arguments));
-        } catch (UnknownIdentifierException e) {
-            nameError.enter();
-            throw raise(PythonErrorType.NameError, e);
         } catch (ArityException | UnsupportedTypeException e) {
             typeError.enter();
             throw raise(PythonErrorType.TypeError, e);
-        } catch (UnsupportedMessageException e) {
+        } catch (UnknownIdentifierException | UnsupportedMessageException e) {
             invokeError.enter();
             // the interop contract is to revert to READ and then EXECUTE
             Object member = getAttrNode.executeObject(callable.receiver, callable.identifier);

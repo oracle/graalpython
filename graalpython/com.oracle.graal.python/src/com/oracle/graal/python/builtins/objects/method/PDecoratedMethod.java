@@ -42,9 +42,11 @@ package com.oracle.graal.python.builtins.objects.method;
 
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 
 /**
  * Storage for both classmethods and staticmethods
@@ -71,5 +73,15 @@ public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuilti
 
     public Object boundToObject(PythonBuiltinClassType binding, PythonObjectFactory factory) {
         return this;
+    }
+
+    public String getName() {
+        CompilerDirectives.transferToInterpreter();
+        throw new UnsupportedOperationException();
+    }
+
+    public Arity getArity() {
+        CompilerDirectives.transferToInterpreter();
+        throw new UnsupportedOperationException();
     }
 }

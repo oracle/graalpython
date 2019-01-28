@@ -58,6 +58,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBaseException)
@@ -83,8 +84,9 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object repr(PBaseException self) {
-            return self.toString();
+        public Object repr(PBaseException self,
+                        @Cached("create()") GetLazyClassNode getClassNode) {
+            return self.getFormattedMessage(getClassNode);
         }
     }
 
@@ -136,6 +138,8 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             self.setArgs(factory().createTuple(list.getSequenceStorage().getCopyOfInternalArray()));
             return PNone.NONE;
         }
+
+        public abstract Object executeObject(VirtualFrame frame, Object excObj);
     }
 
     @Builtin(name = __CAUSE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)

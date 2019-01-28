@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -1485,6 +1486,12 @@ public class IntBuiltins extends PythonBuiltins {
             return fromNativeNode.execute(x) < y;
         }
 
+        @Specialization
+        boolean doVoidPtr(PythonNativeVoidPtr x, long y,
+                        @Cached("create(__LT__)") CExtNodes.PointerCompareNode ltNode) {
+            return ltNode.execute(x, y);
+        }
+
         @SuppressWarnings("unused")
         @Fallback
         PNotImplemented doGeneric(Object a, Object b) {
@@ -2265,6 +2272,11 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization(guards = "!cannotBeOverridden(getClass(self))")
         PInt doPIntOverriden(PInt self) {
             return factory().createInt(self.getValue());
+        }
+
+        @Specialization
+        PythonNativeVoidPtr doL(PythonNativeVoidPtr self) {
+            return self;
         }
     }
 

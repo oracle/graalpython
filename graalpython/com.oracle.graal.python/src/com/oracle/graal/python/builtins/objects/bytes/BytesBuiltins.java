@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -54,20 +54,20 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -77,6 +77,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBytes)
 public class BytesBuiltins extends PythonBuiltins {
@@ -260,6 +261,20 @@ public class BytesBuiltins extends PythonBuiltins {
             return factory().createBytes(res);
         }
 
+        @Specialization
+        public Object add(PBytes self, PMemoryView other,
+                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
+                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
+                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+
+            Object bytesObj = toBytesNode.executeObject(other);
+            if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
+                SequenceStorage res = concatNode.execute(self.getSequenceStorage(), ((PBytes) bytesObj).getSequenceStorage());
+                return factory().createByteArray(res);
+            }
+            throw raise(SystemError, "could not get bytes of memoryview");
+        }
+
         @SuppressWarnings("unused")
         @Fallback
         public Object add(Object self, Object other) {
@@ -273,7 +288,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         public Object mul(PBytes self, int times,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
-            ByteSequenceStorage res = (ByteSequenceStorage) repeatNode.execute(self.getSequenceStorage(), times);
+            SequenceStorage res = repeatNode.execute(self.getSequenceStorage(), times);
             return factory().createBytes(res);
         }
 
@@ -367,21 +382,31 @@ public class BytesBuiltins extends PythonBuiltins {
         @Child private SequenceStorageNodes.LenNode lenNode;
 
         @Specialization
-        @TruffleBoundary
         boolean contains(PBytes self, PBytes other,
                         @Cached("create()") BytesNodes.FindNode findNode) {
             return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
         }
 
         @Specialization
-        @TruffleBoundary
         boolean contains(PBytes self, PByteArray other,
                         @Cached("create()") BytesNodes.FindNode findNode) {
             return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
         }
 
-        @Specialization(guards = "!isBytes(other)")
-        boolean contains(@SuppressWarnings("unused") PBytes self, Object other) {
+        @Specialization
+        boolean contains(PBytes self, int other,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
+        }
+
+        @Specialization
+        boolean contains(PBytes self, long other,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
+        }
+
+        @Fallback
+        boolean contains(@SuppressWarnings("unused") Object self, Object other) {
             throw raise(TypeError, "a bytes-like object is required, not '%p'", other);
         }
 
@@ -515,32 +540,6 @@ public class BytesBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object getitem(PBytes self, Object idx, Object value) {
             throw raise(TypeError, "'bytes' object does not support item assignment");
-        }
-    }
-
-    // static str.maketrans()
-    @Builtin(name = "maketrans", fixedNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class MakeTransNode extends PythonBuiltinNode {
-
-        @Specialization
-        public PDict maketrans(PBytes from, PBytes to,
-                        @Cached("create()") SetItemNode setItemNode,
-                        @Cached("create()") ToByteArrayNode toByteArrayNode) {
-            byte[] fromB = toByteArrayNode.execute(from.getSequenceStorage());
-            byte[] toB = toByteArrayNode.execute(to.getSequenceStorage());
-            if (fromB.length != toB.length) {
-                throw new RuntimeException("maketrans arguments must have same length");
-            }
-
-            PDict translation = factory().createDict();
-            for (int i = 0; i < fromB.length; i++) {
-                int key = fromB[i];
-                int value = toB[i];
-                setItemNode.execute(translation, key, value);
-            }
-
-            return translation;
         }
     }
 

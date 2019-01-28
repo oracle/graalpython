@@ -20,6 +20,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -95,6 +96,8 @@ public class StringFormatter {
                 return ((PInt) o).intValue();
             } else if (o instanceof Double) {
                 return ((Double) o).intValue();
+            } else if (o instanceof PFloat) {
+                return (int) ((PFloat) o).getValue();
             }
             throw core.raise(TypeError, "* wants int");
         } else {
@@ -118,6 +121,8 @@ public class StringFormatter {
         } else if (arg instanceof Double) {
             // A common case where it is safe to return arg.__int__()
             return ((Double) arg).intValue();
+        } else if (arg instanceof PFloat) {
+            return (int) ((PFloat) arg).getValue();
         } else if (arg instanceof PythonAbstractObject) {
             // Try again with arg.__int__()
             try {
@@ -135,6 +140,8 @@ public class StringFormatter {
         if (arg instanceof Double) {
             // arg is already acceptable
             return arg;
+        } else if (arg instanceof PFloat) {
+            return ((PFloat) arg).getValue();
         } else {
             try {
                 Object attribute = lookupAttribute.apply(arg, __FLOAT__);
@@ -370,7 +377,6 @@ public class StringFormatter {
                 case 'u': // Obsolete type identical to 'd'.
                 case 'i': // Compatibility with scanf().
                     // Format the argument using this Spec.
-                    f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
 
                     arg = getarg(getItemNode);
 
@@ -379,14 +385,23 @@ public class StringFormatter {
 
                     // We have to check what we got back.
                     if (argAsNumber instanceof Integer) {
+                        f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
                         fi.format((Integer) argAsNumber);
                     } else if (argAsNumber instanceof Long) {
+                        f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
                         fi.format(((Long) argAsNumber).intValue());
                     } else if (argAsNumber instanceof PInt) {
+                        f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
                         fi.format(((PInt) argAsNumber).intValue());
+                    } else if (arg instanceof String && ((String) arg).length() == 1) {
+                        f = ft = new TextFormatter(core, buffer, spec);
+                        ft.format((String) arg);
+                    } else if (arg instanceof PString && ((PString) arg).getValue().length() == 1) {
+                        f = ft = new TextFormatter(core, buffer, spec);
+                        ft.format(((PString) arg).getCharSequence());
                     } else {
                         // It couldn't be converted, raise the error here
-                        throw core.raise(TypeError, "%%%c format: a number is required, not %p", spec.type, arg);
+                        throw core.raise(TypeError, "%%%c requires int or char");
                     }
 
                     break;
@@ -408,6 +423,8 @@ public class StringFormatter {
                     // We have to check what we got back..
                     if (argAsFloat instanceof Double) {
                         ff.format((Double) argAsFloat);
+                    } else if (argAsFloat instanceof PFloat) {
+                        ff.format(((PFloat) argAsFloat).getValue());
                     } else {
                         // It couldn't be converted, raise the error here
                         throw core.raise(TypeError, "float argument required, not %p", arg);

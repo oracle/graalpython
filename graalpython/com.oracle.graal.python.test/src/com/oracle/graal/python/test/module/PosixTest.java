@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -34,6 +34,7 @@ import static com.oracle.graal.python.test.PythonTests.assertLastLineErrorContai
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.junit.After;
 import org.junit.Before;
@@ -74,7 +75,7 @@ public class PosixTest {
 
     @Test
     public void openFail() {
-        assertLastLineErrorContains("OSError",
+        assertLastLineErrorContains("FileNotFoundError",
                         "import posix; print(posix.open('prettysurethisisnthere', 0) > 2)");
     }
 
@@ -178,5 +179,18 @@ public class PosixTest {
                         "f = _io.FileIO(fd, mode='w')\n" +
                         "print('hello', file=f)");
         assertEquals("hello\n", new String(Files.readAllBytes(tmpfile)));
+    }
+
+    @Test
+    public void readlink() throws IOException {
+        Path realPath = tmpfile.toRealPath();
+        Path symlinkPath = realPath.getParent().resolve(tmpfile.getFileName() + "__symlink");
+        try {
+            Path symlink = Files.createSymbolicLink(symlinkPath, Paths.get(tmpfile.toUri()));
+            assertPrints(realPath.toString() + "\n", "import posix\n" +
+                            "print(posix.readlink('" + symlink.toString() + "'))\n");
+        } finally {
+            Files.deleteIfExists(symlinkPath);
+        }
     }
 }

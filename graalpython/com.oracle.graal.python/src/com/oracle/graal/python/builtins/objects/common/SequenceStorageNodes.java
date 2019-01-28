@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -51,7 +51,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallBinaryCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.AppendNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CastToByteNodeGen;
@@ -538,10 +539,11 @@ public abstract class SequenceStorageNodes {
             return storage.getItemNormalized(idx);
         }
 
-        @Specialization(guards = "!isByteStorage(storage)")
-        protected Object doNative(NativeSequenceStorage storage, int idx) {
+        @Specialization(guards = "isObject(storage)")
+        protected Object doNativeObject(NativeSequenceStorage storage, int idx,
+                        @Cached("create()") CExtNodes.ToJavaNode toJavaNode) {
             try {
-                return verifyResult(storage, ForeignAccess.sendRead(getReadNode(), (TruffleObject) storage.getPtr(), idx));
+                return verifyResult(storage, toJavaNode.execute(ForeignAccess.sendRead(getReadNode(), (TruffleObject) storage.getPtr(), idx)));
             } catch (InteropException e) {
                 throw e.raise();
             }
@@ -551,6 +553,15 @@ public abstract class SequenceStorageNodes {
         protected int doNativeByte(NativeSequenceStorage storage, int idx) {
             Object result = doNative(storage, idx);
             return (byte) result & 0xFF;
+        }
+
+        @Specialization(guards = {"!isByteStorage(storage)", "!isObject(storage)"})
+        protected Object doNative(NativeSequenceStorage storage, int idx) {
+            try {
+                return verifyResult(storage, ForeignAccess.sendRead(getReadNode(), (TruffleObject) storage.getPtr(), idx));
+            } catch (InteropException e) {
+                throw e.raise();
+            }
         }
 
         private Object verifyResult(NativeSequenceStorage storage, Object item) {
@@ -1121,32 +1132,37 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         NativeSequenceStorage doByte(byte[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Byte);
+                        @Cached("create(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE)") PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.call(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Byte);
         }
 
         @Specialization
         NativeSequenceStorage doInt(int[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Int);
+                        @Cached("create(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE)") PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.call(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Int);
         }
 
         @Specialization
         NativeSequenceStorage doLong(long[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Long);
+                        @Cached("create(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE)") PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.call(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Long);
         }
 
         @Specialization
         NativeSequenceStorage doDouble(double[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Double);
+                        @Cached("create(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE)") PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.call(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Double);
         }
 
         @Specialization
         NativeSequenceStorage doObject(Object[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Generic);
+                        @Cached("create(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE)") PCallCapiFunction callNode,
+                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
+            Object[] wrappedValues = new Object[arr.length];
+            for (int i = 0; i < wrappedValues.length; i++) {
+                wrappedValues[i] = toSulongNode.execute(arr[i]);
+            }
+            return new NativeSequenceStorage(callNode.call(wrap(wrappedValues), wrappedValues.length), wrappedValues.length, wrappedValues.length, ListStorageType.Generic);
         }
 
         private Object wrap(Object arr) {
@@ -2140,7 +2156,6 @@ public abstract class SequenceStorageNodes {
     public abstract static class RepeatNode extends SequenceStorageBaseNode {
         private static final String ERROR_MSG = "can't multiply sequence by non-int of type '%p'";
 
-        @Child private SetItemScalarNode setItemNode;
         @Child private GetItemScalarNode getItemNode;
         @Child private GetItemScalarNode getRightItemNode;
         @Child private IsIndexNode isIndexNode;
@@ -2158,8 +2173,8 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "times <= 0")
         SequenceStorage doZeroRepeat(SequenceStorage s, @SuppressWarnings("unused") int times,
-                        @Cached("createClassProfile()") ValueProfile storageTypeProfile) {
-            return storageTypeProfile.profile(s).createEmpty(0);
+                        @Cached("create()") CreateEmptyNode createEmptyNode) {
+            return createEmptyNode.execute(s, 0);
         }
 
         @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"times > 0", "!isNative(s)", "s.getClass() == cachedClass"})
@@ -2184,21 +2199,26 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(replaces = "doManaged", guards = "times > 0")
         SequenceStorage doGeneric(SequenceStorage s, int times,
+                        @Cached("create()") CreateEmptyNode createEmptyNode,
                         @Cached("create()") BranchProfile outOfMemProfile,
+                        @Cached("create()") SetItemScalarNode setItemNode,
+                        @Cached("create()") GetItemScalarNode getDestItemNode,
                         @Cached("create()") LenNode lenNode) {
             try {
                 int len = lenNode.execute(s);
+                SequenceStorage repeated = createEmptyNode.execute(s, Math.multiplyExact(len, times));
 
-                ObjectSequenceStorage repeated = new ObjectSequenceStorage(Math.multiplyExact(len, times));
-
-                // TODO avoid temporary array
-                Object[] values = new Object[len];
                 for (int i = 0; i < len; i++) {
-                    values[i] = getGetItemNode().execute(s, i);
+                    setItemNode.execute(repeated, i, getGetItemNode().execute(s, i));
                 }
 
-                Object destArr = repeated.getInternalArrayObject();
-                repeat(destArr, values, len, times);
+                // read from destination since that is potentially faster
+                for (int j = 1; j < times; j++) {
+                    for (int i = 0; i < len; i++) {
+                        setItemNode.execute(repeated, j * len + i, getDestItemNode.execute(repeated, i));
+                    }
+                }
+
                 return repeated;
             } catch (OutOfMemoryError | ArithmeticException e) {
                 outOfMemProfile.enter();

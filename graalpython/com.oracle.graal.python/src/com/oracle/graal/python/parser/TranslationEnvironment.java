@@ -281,6 +281,9 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         if (isCellInCurrentScope(name)) {
             cellSlot = currentScope.findFrameSlot(name);
         }
+        if (name.equals(__CLASS__)) {
+            return (ReadNode) factory.createReadClassAttributeNode(name, null, currentScope.isFreeVar(name));
+        }
         return (ReadNode) factory.createReadClassAttributeNode(name, cellSlot, currentScope.isFreeVar(name));
     }
 

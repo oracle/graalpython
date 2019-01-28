@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,3 +37,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# Taken from pypy
+class CDLL(object):
+    """An instance of this class represents a loaded dll/shared
+    library, exporting functions using the standard C calling
+    convention (named 'cdecl' on Windows).
+
+    The exported functions can be accessed as attributes, or by
+    indexing with the function name.  Examples:
+
+    <obj>.qsort -> callable object
+    <obj>['qsort'] -> callable object
+
+    Calling the functions releases the Python GIL during the call and
+    reacquires it afterwards.
+    """
+    pass

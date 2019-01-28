@@ -102,8 +102,8 @@ void PyErr_SetNone(PyObject *exception) {
 }
 
 UPCALL_ID(PyErr_Fetch);
-static void _PyErr_GetOrFetchExcInfo(int consume, PyObject **p_type, PyObject **p_value, PyObject **p_traceback) {
-    PyObject* result = UPCALL_CEXT_O(_jls_PyErr_Fetch, (consume ? Py_True : Py_False), ERROR_MARKER);
+void PyErr_Fetch(PyObject **p_type, PyObject **p_value, PyObject **p_traceback) {
+    PyObject* result = UPCALL_CEXT_O(_jls_PyErr_Fetch);
     if(result == NULL) {
     	*p_type = NULL;
     	*p_value = NULL;
@@ -115,12 +115,18 @@ static void _PyErr_GetOrFetchExcInfo(int consume, PyObject **p_type, PyObject **
     }
 }
 
-void PyErr_Fetch(PyObject **p_type, PyObject **p_value, PyObject **p_traceback) {
-    _PyErr_GetOrFetchExcInfo(1, p_type, p_value, p_traceback);
-}
-
+UPCALL_ID(PyErr_GetExcInfo);
 void PyErr_GetExcInfo(PyObject **p_type, PyObject **p_value, PyObject **p_traceback) {
-    _PyErr_GetOrFetchExcInfo(0, p_type, p_value, p_traceback);
+    PyObject* result = UPCALL_CEXT_O(_jls_PyErr_GetExcInfo);
+    if(result == NULL) {
+    	*p_type = NULL;
+    	*p_value = NULL;
+    	*p_traceback = NULL;
+    } else {
+    	*p_type = PyTuple_GetItem(result, 0);
+    	*p_value = PyTuple_GetItem(result, 1);
+    	*p_traceback = PyTuple_GetItem(result, 2);
+    }
     Py_XINCREF(*p_type);
     Py_XINCREF(*p_value);
     Py_XINCREF(*p_traceback);
@@ -175,6 +181,20 @@ void PyErr_NormalizeException(PyObject **exc, PyObject **val, PyObject **tb) {
     return;
 }
 
+UPCALL_ID(PyErr_SetExcInfo);
 void PyErr_SetExcInfo(PyObject *p_type, PyObject *p_value, PyObject *p_traceback) {
-    PyErr_Restore(p_type, p_value, p_traceback);
+    UPCALL_CEXT_VOID(_jls_PyErr_SetExcInfo, native_to_java(p_type), native_to_java(p_value), native_to_java(p_traceback));
+}
+
+
+UPCALL_ID(PyErr_NewExceptionWithDoc);
+PyObject * PyErr_NewExceptionWithDoc(const char *name, const char *doc, PyObject *base, PyObject *dict) {
+    if (base == NULL) {
+        base = PyExc_Exception;
+    }
+    if (dict == NULL) {
+        dict = PyDict_New();
+    }
+    return UPCALL_CEXT_O(_jls_PyErr_NewExceptionWithDoc, polyglot_from_string(name, SRC_CS), polyglot_from_string(doc, SRC_CS), native_to_java(base), native_to_java(dict));
+
 }

@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import java.util.Iterator;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -129,6 +130,23 @@ public final class SetBuiltins extends PythonBuiltins {
 
             delItemNode.execute(self, self.getDictStorage(), other);
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "pop", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PopNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object remove(PBaseSet self,
+                        @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
+
+            Iterator<Object> iterator = self.getDictStorage().keys().iterator();
+            if (iterator.hasNext()) {
+                Object next = iterator.next();
+                delItemNode.execute(self, self.getDictStorage(), next);
+                return next;
+            }
+            throw raise(PythonErrorType.KeyError, "pop from an emtpy set");
         }
     }
 

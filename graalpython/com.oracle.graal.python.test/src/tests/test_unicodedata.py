@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -52,3 +52,12 @@ def test_normalize():
     assert_raises(TypeError, unicodedata.normalize)
     assert_raises(ValueError, unicodedata.normalize, 'unknown', 'xx')
     assert unicodedata.normalize('NFKC', '') == ''
+
+
+def test_category():
+    import unicodedata
+    assert unicodedata.category('\uFFFE') == 'Cn'
+    assert unicodedata.category('a') == 'Ll'
+    assert unicodedata.category('A') == 'Lu'
+    assert_raises(TypeError, unicodedata.category)
+    assert_raises(TypeError, unicodedata.category, 'xx')

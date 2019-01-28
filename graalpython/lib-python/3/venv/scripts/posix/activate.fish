@@ -7,6 +7,11 @@ function deactivate  -d "Exit virtualenv and return to normal shell environment"
         set -gx PATH $_OLD_VIRTUAL_PATH
         set -e _OLD_VIRTUAL_PATH
     end
+    set -e GRAAL_PYTHON_OPTIONS
+    if test -n "$_OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS"
+        set -gx GRAAL_PYTHON_OPTIONS $_OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS
+        set -e _OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS
+    end
     if test -n "$_OLD_VIRTUAL_PYTHONHOME"
         set -gx PYTHONHOME $_OLD_VIRTUAL_PYTHONHOME
         set -e _OLD_VIRTUAL_PYTHONHOME
@@ -33,6 +38,9 @@ set -gx VIRTUAL_ENV "__VENV_DIR__"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/__VENV_BIN_NAME__" $PATH
+
+set -gx _OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS $GRAAL_PYTHON_OPTIONS
+set -gx GRAAL_PYTHON_OPTIONS "__VENV_GRAAL_PYTHON_OPTIONS__ " $GRAAL_PYTHON_OPTIONS
 
 # unset PYTHONHOME if set
 if set -q PYTHONHOME

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -122,7 +122,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         dists.append('SULONG')
         if mx.suite("sulong-managed", fatalIfMissing=False):
             dists.append('SULONG_MANAGED')
-            vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>:<path:SULONG_MANAGED_LIBS>'))
+            vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_MANAGED_LIBS>'))
         else:
             vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>'))
 
@@ -234,9 +234,15 @@ def python_build_svm(args):
     shutil.copy(__get_svm_binary_from_graalvm(), _get_svm_binary())
 
 
+_SVM_ARGS = ["--dynamicimports", "/vm,/tools,/substratevm",
+             "--disable-polyglot", "--disable-libpolyglot"]
+
+
 def python_svm(args):
-    python_build_svm(args)
-    svm_image = __get_svm_binary_from_graalvm()
+    mx.run_mx(_SVM_ARGS + ["build"])
+    out = mx.OutputCapture()
+    mx.run_mx(_SVM_ARGS + ["graalvm-home"], out=mx.TeeOutputCapture(out))
+    svm_image = os.path.join(out.data.strip(), "bin", "graalpython")
     mx.run([svm_image] + args)
     return svm_image
 
@@ -328,14 +334,8 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
-            svm_image_name = "./graalpython-svm"
-            if not os.path.exists(svm_image_name):
-                svm_image_name = python_svm(["-h"])
-            llvm_home = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
-            args = ["--python.CoreHome=%s" % os.path.join(SUITE.dir, "graalpython", "lib-graalpython"),
-                    "--python.StdLibHome=%s" % os.path.join(SUITE.dir, "graalpython", "lib-python/3"),
-                    llvm_home]
-            run_python_unittests(svm_image_name, args)
+            svm_image_name = python_svm(["-h"])
+            run_python_unittests(svm_image_name)
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
@@ -360,11 +360,6 @@ def graalpython_gate_runner(args, tasks):
             ])
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-            llvm_home = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
-            args = ["--python.CoreHome=%s" % os.path.join(SUITE.dir, "graalpython", "lib-graalpython"),
-                    "--python.StdLibHome=%s" % os.path.join(SUITE.dir, "graalpython", "lib-python/3"),
-                    llvm_home]
-            run_python_unittests(svm_image, args)
 
 
 mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)
@@ -667,7 +662,10 @@ def import_python_sources(args):
     mapping = {
         "_memoryview.c": "memoryobject.c",
         "_cpython_sre.c": "_sre.c",
+        "_cpython_unicodedata.c": "unicodedata.c",
+        "_bz2.c": "_bz2module.c",
     }
+
     parser = ArgumentParser(prog='mx python-src-import')
     parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
     parser.add_argument('--pypy', action='store', help='Path to PyPy sources', required=True)
@@ -722,9 +720,11 @@ def import_python_sources(args):
     """.format(mapping)
     raw_input("Got it?")
 
-    files = []
+    cpy_files = []
+    pypy_files = []
     with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
-        files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "python.copyright"]
+        cpy_files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "python.copyright"]
+        pypy_files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "pypy.copyright"]
 
     # move to orphaned branch with sources
     if SUITE.vc.isDirty(SUITE.dir):
@@ -734,7 +734,28 @@ def import_python_sources(args):
     SUITE.vc.git_command(SUITE.dir, ["clean", "-fdx"])
     shutil.rmtree("graalpython")
 
-    for inlined_file in files:
+    for inlined_file in pypy_files:
+        original_file = None
+        name = os.path.basename(inlined_file)
+        name = mapping.get(name, name)
+        if inlined_file.endswith(".py"):
+            # these files don't need to be updated, they inline some unittest code only
+            if name.startswith("test_") or name.endswith("_tests.py"):
+                original_file = inlined_file
+            else:
+                for root, dirs, files in os.walk(pypy_sources):
+                    if os.path.basename(name) in files:
+                        original_file = os.path.join(root, name)
+                        try:
+                            os.makedirs(os.path.dirname(inlined_file))
+                        except:
+                            pass
+                        shutil.copy(original_file, inlined_file)
+                        break
+        if original_file is None:
+            mx.warn("Could not update %s - original file not found" % inlined_file)
+
+    for inlined_file in cpy_files:
         # C files are mostly just copied
         original_file = None
         name = os.path.basename(inlined_file)
@@ -757,8 +778,7 @@ def import_python_sources(args):
             mx.warn("Could not update %s - original file not found" % inlined_file)
 
     # re-copy lib-python
-    libdir = os.path.join(SUITE.dir, "graalpython/lib-python/3")
-    shutil.copytree(os.path.join(pypy_sources, "lib-python", "3"), libdir)
+    shutil.copytree(os.path.join(python_sources, "Lib"), _get_stdlib_home())
 
     # commit and check back
     SUITE.vc.git_command(SUITE.dir, ["add", "."])

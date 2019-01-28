@@ -304,6 +304,9 @@ def getsitepackages(prefixes=None):
         seen.add(prefix)
 
         if os.sep == '/':
+            sitepackages.append(os.path.join(prefix, "lib",
+                                        "python%d.%d" % sys.version_info[:2],
+                                        "site-packages"))
             # TRUFFLE: our path for system site-packages is slightly different
             sitepackages.append(os.path.join(prefix, "lib-python",
                                         "%d" % sys.version_info[0],

@@ -8,8 +8,8 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "1.0.0-rc11",
-    "release": True,
+    "version": "1.0.0-rc12",
+    "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
 
@@ -244,7 +244,6 @@ suite = {
             "subDir": "graalpython",
             "native": True,
             "vpath": False,
-            "results": ["graalpython/lib-python/3/site-packages"],
             "output": ".",
             "license": ["MIT"],
             "defaultBuild": False,

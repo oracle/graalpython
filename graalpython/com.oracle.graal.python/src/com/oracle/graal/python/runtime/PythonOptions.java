@@ -25,16 +25,17 @@
  */
 package com.oracle.graal.python.runtime;
 
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Option;
 
 @Option.Group(PythonLanguage.ID)
 public final class PythonOptions {
+    private static final String EXECUTABLE_LIST_SEPARATOR = "🏆";
 
     private PythonOptions() {
         // no instances
@@ -53,6 +54,9 @@ public final class PythonOptions {
                     "but all other access to the contents of the file is disabled, so the files are kept secret.") //
     public static final OptionKey<Boolean> OpaqueFilesystem = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.USER, help = "List of root paths for the opaque file system (default: '/'); use system-specific path separator.") //
+    public static final OptionKey<String> OpaqueFilesystemPrefixes = new OptionKey<>("/");
+
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -i flag. Inspect interactively after running a script.") //
     public static final OptionKey<Boolean> InspectFlag = new OptionKey<>(false);
 
@@ -64,6 +68,9 @@ public final class PythonOptions {
 
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -s flag. Don't add user site directory to sys.path.") //
     public static final OptionKey<Boolean> NoUserSiteFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -E flag. Ignore PYTHON* environment variables.") //
+    public static final OptionKey<Boolean> IgnoreEnvironmentFlag = new OptionKey<>(false);
 
     @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONPATH environment variable for the standard launcher. ':'-separated list of directories prefixed to the default module search path.") //
     public static final OptionKey<String> PythonPath = new OptionKey<>("");
@@ -128,6 +135,12 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Set by the launcher to the terminal height.") //
     public static final OptionKey<Integer> TerminalHeight = new OptionKey<>(25);
 
+    @Option(category = OptionCategory.EXPERT, help = "The sys.executable path. Set by the launcher, but can may need to be overridden in certain special situations.") //
+    public static final OptionKey<String> Executable = new OptionKey<>("");
+
+    @Option(category = OptionCategory.EXPERT, help = "The executed command list as string joined by the executable list separator char. This must always correspond to the real, valid command list used to run GraalPython.") //
+    public static final OptionKey<String> ExecutableList = new OptionKey<>("");
+
     public static OptionDescriptors createDescriptors() {
         return new PythonOptionsOptionDescriptors();
     }
@@ -186,5 +199,15 @@ public final class PythonOptions {
 
     public static int getTerminalWidth() {
         return getOption(PythonLanguage.getContextRef().get(), TerminalWidth);
+    }
+
+    @TruffleBoundary
+    public static String[] getExecutableList() {
+        String option = getOption(PythonLanguage.getContextRef().get(), ExecutableList);
+        if (option.isEmpty()) {
+            return getOption(PythonLanguage.getContextRef().get(), Executable).split(" ");
+        } else {
+            return getOption(PythonLanguage.getContextRef().get(), ExecutableList).split(EXECUTABLE_LIST_SEPARATOR);
+        }
     }
 }

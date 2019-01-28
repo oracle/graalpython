@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -38,12 +38,14 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
@@ -68,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -225,7 +226,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         public boolean eq(PythonNativeObject self, PythonNativeObject other,
-                        @Cached("create()") CExtNodes.IsNode nativeIsNode) {
+                        @Cached("create(__EQ__)") CExtNodes.PointerCompareNode nativeIsNode) {
             return nativeIsNode.execute(self, other);
         }
 
@@ -244,8 +245,8 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         public boolean ne(PythonNativeObject self, PythonNativeObject other,
-                        @Cached("create()") CExtNodes.IsNode nativeIsNode) {
-            return !nativeIsNode.execute(self, other);
+                        @Cached("create(__NE__)") CExtNodes.PointerCompareNode nativeNeNode) {
+            return nativeNeNode.execute(self, other);
         }
 
         @Fallback
@@ -403,15 +404,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 }
             }
             errorProfile.enter();
-            return fallbackGetattr(object, key);
-        }
-
-        private Object fallbackGetattr(Object object, Object key) {
-            if (getattrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getattrNode = insert(LookupAndCallBinaryNode.create(SpecialMethodNames.__GETATTR__));
-            }
-            return getattrNode.executeObject(object, key);
+            throw raise(AttributeError, "'%p' object has no attribute '%s'", object, key);
         }
 
         private Object readAttribute(Object object, Object key) {
@@ -463,7 +456,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GETATTR__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETATTR__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetattrNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -472,7 +465,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__SETATTR__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = __SETATTR__, fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization

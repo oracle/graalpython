@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2015, Regents of the University of California
  *
  * All rights reserved.
@@ -26,6 +26,7 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -88,6 +89,7 @@ import com.oracle.truffle.api.object.Layout;
 import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.Source.LiteralBuilder;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -323,6 +325,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return null;
     }
 
+    public String getHome() {
+        return getLanguageHome();
+    }
+
     public static PythonLanguage getCurrent() {
         return getCurrentLanguage(PythonLanguage.class);
     }
@@ -422,9 +428,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return TruffleLogger.getLogger(ID);
     }
 
-    public static Source newSource(PythonContext ctxt, String src, String name) {
+    public static Source newSource(PythonContext ctxt, String src, String name, URI uri) {
         try {
-            return newSource(ctxt, Source.newBuilder(ID, src, name), name);
+            LiteralBuilder sourceBuilder = Source.newBuilder(ID, src, name);
+            if (uri != null) {
+                sourceBuilder.uri(uri);
+            }
+            return newSource(ctxt, sourceBuilder, name);
         } catch (IOException e) {
             throw new AssertionError();
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -280,11 +280,11 @@ public final class PythonObjectFactory extends Node {
         return trace(new PBytes(cls, array));
     }
 
-    public PBytes createBytes(ByteSequenceStorage storage) {
+    public PBytes createBytes(SequenceStorage storage) {
         return trace(new PBytes(PythonBuiltinClassType.PBytes, storage));
     }
 
-    public PBytes createBytes(LazyPythonClass cls, ByteSequenceStorage storage) {
+    public PBytes createBytes(LazyPythonClass cls, SequenceStorage storage) {
         return trace(new PBytes(cls, storage));
     }
 
@@ -364,11 +364,11 @@ public final class PythonObjectFactory extends Node {
         return trace(new PMemoryView(metaclass, value));
     }
 
-    public final PMethod createMethod(LazyPythonClass cls, Object self, PFunction function) {
+    public final PMethod createMethod(LazyPythonClass cls, Object self, Object function) {
         return trace(new PMethod(cls, self, function));
     }
 
-    public final PMethod createMethod(Object self, PFunction function) {
+    public final PMethod createMethod(Object self, Object function) {
         return createMethod(PythonBuiltinClassType.PMethod, self, function);
     }
 

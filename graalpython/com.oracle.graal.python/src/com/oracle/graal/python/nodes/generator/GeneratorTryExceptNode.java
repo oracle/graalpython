@@ -127,7 +127,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             // we tried and haven't found a matching except node
             throw exception;
         }
-        getContext().setCurrentException(exceptionState);
+        getContext().setCaughtException(exceptionState);
     }
 
     private void runExceptionHandler(VirtualFrame frame, PException exception, ExceptNode exceptNode, PException exceptionState) {
@@ -138,7 +138,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         } catch (ControlFlowException e) {
             // restore previous exception state, this won't happen if the except block raises an
             // exception
-            getContext().setCurrentException(exceptionState);
+            getContext().setCaughtException(exceptionState);
             throw e;
         }
     }

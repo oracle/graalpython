@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -162,6 +162,9 @@ extern cache_t cache;
 
 #define resolve_handle(__cache__, __addr__) (__cache__)(__addr__)
 
+void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid);
+Py_ssize_t PyTruffle_Type_AddSlots(PyTypeObject* cls, PyObject* slotsTuple);
+
 __attribute__((always_inline))
 inline void* native_to_java(PyObject* obj) {
     if (obj == NULL) {
@@ -211,21 +214,21 @@ void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *var
 void* wrap_fastcall(_PyCFunctionFast        fun, PyObject *  self, PyObject   **args, PyObject  *nargs, PyObject *kwnames);
 void* wrap_unsupported(void *fun, ...);
 
-#define TDEBUG __asm__("int $3")
+#define TDEBUG __builtin_debugtrap()
 #define get_method_flags_wrapper(flags)                                 \
     (((flags) < 0) ?                                                    \
-     truffle_read(PY_TRUFFLE_CEXT, "METH_DIRECT") :                     \
+     polyglot_get_member(PY_TRUFFLE_CEXT, "METH_DIRECT") :              \
      (((flags) & METH_FASTCALL) ?                                       \
-      truffle_read(PY_TRUFFLE_CEXT, "METH_FASTCALL") :                  \
-      (((flags) & METH_KEYWORDS) ?                                       \
-       truffle_read(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :                  \
-       (((flags) & METH_VARARGS) ?                                       \
-        truffle_read(PY_TRUFFLE_CEXT, "METH_VARARGS") :                  \
-        (((flags) & METH_NOARGS) ?                                           \
-         truffle_read(PY_TRUFFLE_CEXT, "METH_NOARGS") :                      \
-         (((flags) & METH_O) ?                                   \
-          truffle_read(PY_TRUFFLE_CEXT, "METH_O") :              \
-          truffle_read(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
+      polyglot_get_member(PY_TRUFFLE_CEXT, "METH_FASTCALL") :           \
+      (((flags) & METH_KEYWORDS) ?                                      \
+       polyglot_get_member(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :          \
+       (((flags) & METH_VARARGS) ?                                      \
+        polyglot_get_member(PY_TRUFFLE_CEXT, "METH_VARARGS") :          \
+        (((flags) & METH_NOARGS) ?                                      \
+         polyglot_get_member(PY_TRUFFLE_CEXT, "METH_NOARGS") :          \
+         (((flags) & METH_O) ?                                          \
+          polyglot_get_member(PY_TRUFFLE_CEXT, "METH_O") :              \
+          polyglot_get_member(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
 
 #define get_method_flags_cwrapper(flags)                                \
     (void*)((((flags) < 0) ?                                            \
@@ -284,6 +287,11 @@ void* wrap_unsupported(void *fun, ...);
     0,                                          /* tp_free */\
     0,                                          /* tp_is_gc */\
 }
+
+/** to be used from Java code only; returns a type's basic size */
+#define BASICSIZE_GETTER(__typename__)extern Py_ssize_t get_ ## __typename__ ## _basicsize() { \
+	return sizeof(__typename__); \
+} \
 
 
 int PyTruffle_Debug(void *arg);

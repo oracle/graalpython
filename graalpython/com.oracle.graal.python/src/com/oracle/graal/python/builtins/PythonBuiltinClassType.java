@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -122,7 +122,6 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     NameError("NameError", "builtins"),
     UnboundLocalError("UnboundLocalError", "builtins"),
     OSError("OSError", "builtins"),
-    IOError("IOError", "builtins"),
     BlockingIOError("BlockingIOError", "builtins"),
     ChildProcessError("ChildProcessError", "builtins"),
     ConnectionError("ConnectionError", "builtins"),
@@ -253,7 +252,6 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         NameError.base = Exception;
         UnboundLocalError.base = NameError;
         OSError.base = Exception;
-        IOError.base = Exception;
         BlockingIOError.base = OSError;
         ChildProcessError.base = OSError;
         ConnectionError.base = OSError;

@@ -72,7 +72,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
     private int castStart(Object o) {
         if (castStartNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castStartNode = insert(CastToSliceComponentNode.create(MISSING_INDEX));
+            castStartNode = insert(CastToSliceComponentNode.create(MISSING_INDEX, MISSING_INDEX));
         }
         return castStartNode.execute(o);
     }
@@ -80,7 +80,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
     private int castStop(Object o) {
         if (castStopNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castStopNode = insert(CastToSliceComponentNode.create(MISSING_INDEX));
+            castStopNode = insert(CastToSliceComponentNode.create(MISSING_INDEX, MISSING_INDEX));
         }
         return castStopNode.execute(o);
     }
@@ -88,7 +88,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
     private int castStep(Object o) {
         if (castStepNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castStepNode = insert(CastToSliceComponentNode.create(1));
+            castStepNode = insert(CastToSliceComponentNode.create(1, Integer.MAX_VALUE));
         }
         return castStepNode.execute(o);
     }
@@ -110,10 +110,12 @@ public abstract class SliceLiteralNode extends ExpressionNode {
     abstract static class CastToSliceComponentNode extends PNodeWithContext {
 
         private final int defaultValue;
+        private final int overflowValue;
         private final BranchProfile indexErrorProfile = BranchProfile.create();
 
-        public CastToSliceComponentNode(int defaultValue) {
+        public CastToSliceComponentNode(int defaultValue, int overflowValue) {
             this.defaultValue = defaultValue;
+            this.overflowValue = overflowValue;
         }
 
         public abstract int execute(int i);
@@ -143,7 +145,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
                 return PInt.intValueExact(i);
             } catch (ArithmeticException e) {
                 indexErrorProfile.enter();
-                throw raiseIndexError();
+                return overflowValue;
             }
         }
 
@@ -153,12 +155,12 @@ public abstract class SliceLiteralNode extends ExpressionNode {
                 return i.intValueExact();
             } catch (ArithmeticException e) {
                 indexErrorProfile.enter();
-                throw raiseIndexError();
+                return overflowValue;
             }
         }
 
-        public static CastToSliceComponentNode create(int defaultValue) {
-            return CastToSliceComponentNodeGen.create(defaultValue);
+        public static CastToSliceComponentNode create(int defaultValue, int overflowValue) {
+            return CastToSliceComponentNodeGen.create(defaultValue, overflowValue);
         }
     }
 }

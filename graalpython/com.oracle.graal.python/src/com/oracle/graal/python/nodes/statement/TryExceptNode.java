@@ -127,7 +127,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                     } catch (ControlFlowException e) {
                         // restore previous exception state, this won't happen if the except block
                         // raises an exception
-                        getContext().setCurrentException(exceptionState);
+                        getContext().setCaughtException(exceptionState);
                         throw e;
                     }
                 }
@@ -138,7 +138,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         }
         // restore previous exception state, this won't happen if the except block
         // raises an exception
-        getContext().setCurrentException(exceptionState);
+        getContext().setCaughtException(exceptionState);
     }
 
     public StatementNode getBody() {

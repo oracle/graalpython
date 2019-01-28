@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -37,3 +37,12 @@ class BuiltinTest(unittest.TestCase):
         self.assertRaises(TypeError, divmod, c1, c2)
         self.assertRaises(TypeError, divmod, 10, c2)
         self.assertRaises(TypeError, divmod, c1, 10)
+
+    def test_getitem_typeerror(self):
+        a = object()
+        try:
+            a[1]
+        except TypeError :
+            pass
+        else:
+            self.assertTrue(False)

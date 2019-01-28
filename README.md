@@ -36,6 +36,15 @@ If all goes well (you'll need to have `clang`, `llvm-link`, `llvm-extract`,
 `llvm-nm`, and `opt` in your `PATH` in addition to the normal NumPy build
 dependencies), you should be able to `import numpy` afterwards.
 
+Support for more extension modules is high priority for us. We are actively
+building out our support for the Python C API to make extensions such as NumPy,
+SciPy, Scikit-learn, Tensorflow and the like work. This work means that some
+other extensions might also already work, but we're not actively testing other
+extensions right now and cannot promise anything. Note that to try extensions on
+this implementation, you have to download, build, and install them manually for
+now. To do so, we recommend LLVM 6. Other versions might also work, but this
+version is what we're testing with in our CI.
+
 ### Licensing
 
 This Graal/Truffle-based implementation of Python is copyright (c) 2017, 2018

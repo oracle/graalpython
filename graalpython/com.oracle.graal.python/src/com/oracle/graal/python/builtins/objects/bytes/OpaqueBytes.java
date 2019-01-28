@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,15 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.interop.CanResolve;
 import com.oracle.truffle.api.interop.ForeignAccess;
@@ -88,6 +93,19 @@ public final class OpaqueBytes implements TruffleObject {
 
     private static Boolean checkOption(PythonContext context) {
         return PythonOptions.getOption(context, PythonOptions.OpaqueFilesystem);
+    }
+
+    @TruffleBoundary
+    public static boolean isInOpaqueFilesystem(String path, PythonContext context) {
+        Path filePath = Paths.get(path);
+        String prefixStr = PythonOptions.getOption(context, PythonOptions.OpaqueFilesystemPrefixes);
+        String[] prefixes = prefixStr.split(Python3Core.PATH_SEPARATOR);
+        for (int i = 0; i < prefixes.length; i++) {
+            if (filePath.startsWith(Paths.get(prefixes[i]))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static void initializeForNewContext(PythonContext context) {

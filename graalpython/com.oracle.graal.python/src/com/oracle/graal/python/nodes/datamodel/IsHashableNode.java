@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.datamodel;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -50,9 +49,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class IsHashableNode extends PDataModelEmulationNode {
-    protected PythonClass getBuiltinIntType() {
-        return getCore().lookupType(PythonBuiltinClassType.PInt);
-    }
 
     protected boolean isDouble(Object object) {
         return object instanceof Double || PGuards.isPFloat(object);
@@ -78,7 +74,7 @@ public abstract class IsHashableNode extends PDataModelEmulationNode {
                     @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
                     @Cached("create()") BuiltinFunctions.IsInstanceNode isInstanceNode) {
         Object hashValue = lookupHashAttributeNode.executeObject(object);
-        if (isInstanceNode.executeWith(hashValue, getBuiltinIntType())) {
+        if (isInstanceNode.executeWith(hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {
             return true;
         }
         throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");

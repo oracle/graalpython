@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -104,6 +105,13 @@ public abstract class CallNode extends PNodeWithContext {
             dispatch = insert(CallDispatchNode.create());
         }
         return dispatch;
+    }
+
+    @Specialization
+    protected Object decoratedMethodCall(VirtualFrame frame, PDecoratedMethod callable, Object[] arguments, PKeyword[] keywords,
+                    @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
+                    @Cached("create()") CallVarargsMethodNode callCallNode) {
+        return specialCall(frame, callable.getCallable(), arguments, keywords, callAttrGetterNode, callCallNode);
     }
 
     @Specialization(guards = "isFunction(callable.getFunction())")

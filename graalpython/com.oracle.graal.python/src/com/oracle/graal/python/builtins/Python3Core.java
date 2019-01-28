@@ -65,8 +65,10 @@ import com.oracle.graal.python.builtins.modules.InteropModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
@@ -222,7 +224,9 @@ public final class Python3Core implements PythonCore {
                         "ctypes",
                         "zlib",
                         "termios",
-                        "zipimport"));
+                        "zipimport",
+                        "mmap",
+                        "_ast"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
     }
@@ -322,9 +326,11 @@ public final class Python3Core implements PythonCore {
                         new ReadlineModuleBuiltins(),
                         new PyExpatModuleBuiltins(),
                         new SysConfigModuleBuiltins(),
+                        new OperatorModuleBuiltins(),
                         new ZipImporterBuiltins(),
                         new ZipImportModuleBuiltins(),
-                        new ZLibModuleBuiltins()));
+                        new ZLibModuleBuiltins(),
+                        new MMapModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
             for (PythonBuiltins builtin : providers) {
@@ -431,13 +437,38 @@ public final class Python3Core implements PythonCore {
 
     public PythonModule initializeSysModule() {
         PythonModule sys = builtinModules.get("sys");
-        String[] args = getContext().getEnv().getApplicationArguments();
+        PythonContext context = getContext();
+        String[] args = context.getEnv().getApplicationArguments();
         sys.setAttribute("argv", factory().createList(Arrays.copyOf(args, args.length, Object[].class)));
-        String prefix = PythonCore.getSysPrefix(getContext().getEnv());
+        String prefix = PythonCore.getSysPrefix(context.getEnv());
         for (String name : SysModuleBuiltins.SYS_PREFIX_ATTRIBUTES) {
             sys.setAttribute(name, prefix);
         }
+
+        sys.setAttribute("executable", PythonOptions.getOption(context, PythonOptions.Executable));
+        sys.setAttribute("graal_python_home", context.getLanguage().getHome());
+        sys.setAttribute("graal_python_core_home", PythonOptions.getOption(context, PythonOptions.CoreHome));
+        sys.setAttribute("graal_python_stdlib_home", PythonOptions.getOption(context, PythonOptions.StdLibHome));
+        sys.setAttribute("graal_python_opaque_filesystem", PythonOptions.getOption(context, PythonOptions.OpaqueFilesystem));
+        sys.setAttribute("graal_python_opaque_filesystem_prefix", PythonOptions.getOption(context, PythonOptions.OpaqueFilesystemPrefixes));
+        sys.setAttribute("__flags__", factory().createTuple(new Object[]{
+                        false, // bytes_warning
+                        !PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // debug
+                        true,  // dont_write_bytecode
+                        false, // hash_randomization
+                        PythonOptions.getFlag(context, PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
+                        PythonOptions.getFlag(context, PythonOptions.InspectFlag), // inspect
+                        PythonOptions.getFlag(context, PythonOptions.TerminalIsInteractive), // interactive
+                        !context.isExecutableAccessAllowed(), // isolated
+                        PythonOptions.getFlag(context, PythonOptions.NoSiteFlag), // no_site
+                        PythonOptions.getFlag(context, PythonOptions.NoUserSiteFlag), // no_user_site
+                        PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // optimize
+                        PythonOptions.getFlag(context, PythonOptions.QuietFlag), // quiet
+                        PythonOptions.getFlag(context, PythonOptions.VerboseFlag), // verbose
+        }));
+
         initializeSysPath(sys, args);
+
         return sys;
     }
 
@@ -459,7 +490,6 @@ public final class Python3Core implements PythonCore {
         path[pathIdx + 2] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
         PList sysPaths = factory().createList(path);
         sys.setAttribute("path", sysPaths);
-        // sysPaths.append(getPythonLibraryExtrasPath());
     }
 
     private static String getScriptPath(Env env, String[] args) {

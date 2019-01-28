@@ -3,7 +3,7 @@
 # Created by Davide Di Blasi <davidedb@gmail.com>.
 # Ported to Python 3.3 venv by Andrew Svetlov <andrew.svetlov@gmail.com>
 
-alias deactivate 'test $?_OLD_VIRTUAL_PATH != 0 && setenv PATH "$_OLD_VIRTUAL_PATH" && unset _OLD_VIRTUAL_PATH; rehash; test $?_OLD_VIRTUAL_PROMPT != 0 && set prompt="$_OLD_VIRTUAL_PROMPT" && unset _OLD_VIRTUAL_PROMPT; unsetenv VIRTUAL_ENV; test "\!:*" != "nondestructive" && unalias deactivate'
+alias deactivate 'unset GRAAL_PYTHON_OPTIONS; test $?_OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS != 0 && setenv GRAAL_PYTHON_OPTIONS "$_OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS" && unset _OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS; test $?_OLD_VIRTUAL_PATH != 0 && setenv PATH "$_OLD_VIRTUAL_PATH" && unset _OLD_VIRTUAL_PATH; rehash; test $?_OLD_VIRTUAL_PROMPT != 0 && set prompt="$_OLD_VIRTUAL_PROMPT" && unset _OLD_VIRTUAL_PROMPT; unsetenv VIRTUAL_ENV; test "\!:*" != "nondestructive" && unalias deactivate'
 
 # Unset irrelevant variables.
 deactivate nondestructive
@@ -13,6 +13,8 @@ setenv VIRTUAL_ENV "__VENV_DIR__"
 set _OLD_VIRTUAL_PATH="$PATH"
 setenv PATH "$VIRTUAL_ENV/__VENV_BIN_NAME__:$PATH"
 
+set _OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS="$GRAAL_PYTHON_OPTIONS"
+setenv GRAAL_PYTHON_OPTIONS "__VENV_GRAAL_PYTHON_OPTIONS__ $GRAAL_PYTHON_OPTIONS"
 
 set _OLD_VIRTUAL_PROMPT="$prompt"
 
