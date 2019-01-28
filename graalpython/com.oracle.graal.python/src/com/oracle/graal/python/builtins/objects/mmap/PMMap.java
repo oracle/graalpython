@@ -45,17 +45,28 @@ import java.nio.channels.SeekableByteChannel;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
-public class PMMap extends PythonObject {
+public final class PMMap extends PythonObject {
 
     private final SeekableByteChannel mappedByteBuffer;
+    private final long length;
+    private final long offset;
 
-    public PMMap(LazyPythonClass pythonClass, SeekableByteChannel mappedByteBuffer) {
+    public PMMap(LazyPythonClass pythonClass, SeekableByteChannel mappedByteBuffer, long length, long offset) {
         super(pythonClass);
         this.mappedByteBuffer = mappedByteBuffer;
+        this.length = length;
+        this.offset = offset;
     }
 
     public SeekableByteChannel getChannel() {
         return mappedByteBuffer;
     }
 
+    public long getLength() {
+        return length;
+    }
+
+    public long getOffset() {
+        return offset;
+    }
 }

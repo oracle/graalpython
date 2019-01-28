@@ -453,7 +453,8 @@ public class PythonObjectNativeWrapperMR {
                         @Cached("create()") BranchProfile notBytes,
                         @Cached("create()") BranchProfile notBytearray,
                         @Cached("create()") BranchProfile notMemoryview,
-                        @Cached("create()") BranchProfile notBuffer) {
+                        @Cached("create()") BranchProfile notBuffer,
+                        @Cached("create()") BranchProfile notMmap) {
             PythonCore core = getCore();
             PythonBuiltinClass pBytes = core.lookupType(PythonBuiltinClassType.PBytes);
             if (isSubtype.execute(object, pBytes)) {
@@ -475,6 +476,11 @@ public class PythonObjectNativeWrapperMR {
                 return new PyBufferProcsWrapper(pBuffer);
             }
             notBuffer.enter();
+            PythonBuiltinClass pMmap = core.lookupType(PythonBuiltinClassType.PMMap);
+            if (isSubtype.execute(object, pMmap)) {
+                return new PyBufferProcsWrapper(pMemoryview);
+            }
+            notMmap.enter();
             // NULL pointer
             return getToSulongNode().execute(PNone.NO_VALUE);
         }

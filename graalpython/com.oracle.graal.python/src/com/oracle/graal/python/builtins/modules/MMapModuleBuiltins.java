@@ -43,19 +43,24 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PMMap;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
-import java.nio.channels.Channel;
+import java.io.IOException;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.StandardOpenOption;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -80,26 +85,38 @@ public class MMapModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("ACCESS_COPY", ACCESS_COPY);
     }
 
-    @Builtin(name = "mmap", fixedNumOfPositionalArgs = 3, keywordArguments = {"tagname", "access"}, constructsClass = PMMap)
+    @Builtin(name = "mmap", fixedNumOfPositionalArgs = 3, keywordArguments = {"tagname", "access", "offset"}, constructsClass = PMMap)
     @GenerateNodeFactory
     public abstract static class MMapNode extends PythonBuiltinNode {
 
         private final ValueProfile classProfile = ValueProfile.createClassProfile();
 
-        @Specialization(guards = {"isNoValue(access)"})
-        PMMap doIt(LazyPythonClass clazz, int fd, int length, Object tagname, @SuppressWarnings("unused") PNone access) {
-            return doGeneric(clazz, fd, length, tagname, ACCESS_DEFAULT);
+        @Specialization(guards = {"isNoValue(access)", "isNoValue(offset)"})
+        PMMap doIt(LazyPythonClass clazz, int fd, int length, Object tagname, @SuppressWarnings("unused") PNone access, @SuppressWarnings("unused") PNone offset) {
+            return doGeneric(clazz, fd, length, tagname, ACCESS_DEFAULT, 0);
         }
 
         // mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset])
         @Specialization
-        PMMap doGeneric(LazyPythonClass clazz, int fd, int length, @SuppressWarnings("unused") Object tagname, int access) {
-            Channel fileChannel = getContext().getResources().getFileChannel(fd, classProfile);
-            if (fileChannel instanceof SeekableByteChannel) {
-                MapMode mode = convertAccessToMapMode(access);
-                return factory().createMMap(clazz, (SeekableByteChannel) fileChannel);
+        PMMap doGeneric(LazyPythonClass clazz, int fd, int length, @SuppressWarnings("unused") Object tagname, int access, long offset) {
+            String path = getContext().getResources().getFilePath(fd);
+            TruffleFile truffleFile = getContext().getEnv().getTruffleFile(path);
+
+            // TODO(fa) correctly honor access flags
+            MapMode mode = convertAccessToMapMode(access);
+            Set<StandardOpenOption> options = new HashSet<>();
+            options.add(StandardOpenOption.READ);
+            options.add(StandardOpenOption.WRITE);
+
+            // we create a new channel otherwise we cannot guarantee that the cursor is exclusive
+            SeekableByteChannel fileChannel;
+            try {
+                fileChannel = truffleFile.newByteChannel(options);
+                fileChannel.position(offset);
+                return new PMMap(PythonBuiltinClassType.PMMap, fileChannel, length, offset);
+            } catch (IOException e) {
+                throw raise(ValueError, "cannot mmap file");
             }
-            throw raise(ValueError, "cannot mmap file");
         }
 
         private MapMode convertAccessToMapMode(int access) {

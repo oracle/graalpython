@@ -842,11 +842,11 @@ public final class PythonObjectFactory extends Node {
         return trace(new PDirEntry(cls, name, file));
     }
 
-    public PMMap createMMap(SeekableByteChannel channel) {
-        return trace(new PMMap(PythonBuiltinClassType.PMMap, channel));
+    public PMMap createMMap(SeekableByteChannel channel, long length, long offset) {
+        return trace(new PMMap(PythonBuiltinClassType.PMMap, channel, length, offset));
     }
 
-    public PMMap createMMap(LazyPythonClass clazz, SeekableByteChannel channel) {
-        return trace(new PMMap(clazz, channel));
+    public PMMap createMMap(LazyPythonClass clazz, SeekableByteChannel channel, long length, long offset) {
+        return trace(new PMMap(clazz, channel, length, offset));
     }
 }
