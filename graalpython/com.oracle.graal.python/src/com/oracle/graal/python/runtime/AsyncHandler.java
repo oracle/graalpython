@@ -126,7 +126,7 @@ public class AsyncHandler {
             int frameIndex = (int) frameArguments[1];
             Object[] arguments = Arrays.copyOfRange(frameArguments, 2, frameArguments.length);
             if (frameIndex >= 0) {
-                arguments[frameIndex] = getFrameNode.execute(2);
+                arguments[frameIndex] = getFrameNode.execute(1);
             }
             return callNode.execute(frame, callable, arguments);
         }

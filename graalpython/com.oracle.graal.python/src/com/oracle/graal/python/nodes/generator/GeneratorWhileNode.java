@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -28,6 +28,7 @@ package com.oracle.graal.python.nodes.generator;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.BreakException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -68,12 +69,14 @@ public final class GeneratorWhileNode extends LoopNode implements GeneratorContr
         }
         boolean nextFlag = false;
         int count = 0;
+        PythonContext context = getContext();
         try {
             do {
                 body.executeVoid(frame);
                 if (CompilerDirectives.inInterpreter()) {
                     count++;
                 }
+                context.triggerAsyncActions();
             } while (condition.executeBoolean(frame));
             return;
         } catch (YieldException e) {
