@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -76,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGe
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsFactory.InternalLenNodeGen;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
@@ -456,7 +458,7 @@ public class MMapBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ReadNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "!isNoValue(n)")
+        @Specialization(guards = "isNoValue(n)")
         PBytes read(PMMap self, @SuppressWarnings("unused") PNone n,
                         @Cached("create()") ReadFromChannelNode readChannelNode) {
             ByteSequenceStorage res = readChannelNode.execute(self.getChannel(), ReadFromChannelNode.MAX_READ);
@@ -517,10 +519,34 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "write", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class WriteNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        int writeBytesLike(PMMap self, PIBytesLike bytesLike,
+                        @Cached("create()") WriteToChannelNode writeNode,
+                        @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode) {
+            SeekableByteChannel channel = self.getChannel();
+            return writeNode.execute(channel, getStorageNode.execute(bytesLike), Integer.MAX_VALUE);
+        }
+
+        @Specialization
+        int writeMemoryview(PMMap self, PMemoryView memoryView,
+                        @Cached("create()") WriteToChannelNode writeNode,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            byte[] data = toBytesNode.execute(memoryView);
+            return writeNode.execute(self.getChannel(), new ByteSequenceStorage(data), Integer.MAX_VALUE);
+        }
+    }
+
     @Builtin(name = "seek", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SeekNode extends PythonBuiltinNode {
+        @Child private CastToIndexNode castToLongNode;
+
+        private final BranchProfile errorProfile = BranchProfile.create();
 
         @Specialization(guards = "isNoValue(how)")
         Object seek(VirtualFrame frame, PMMap self, long dist, @SuppressWarnings("unused") PNone how) {
@@ -528,39 +554,59 @@ public class MMapBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object seek(VirtualFrame frame, PMMap self, long dist, int how) {
+        Object seek(VirtualFrame frame, PMMap self, long dist, Object how) {
             try {
-                return doSeek(self, dist, how);
+                SeekableByteChannel channel = self.getChannel();
+                long size;
+                if (self.getLength() == 0) {
+                    size = channel.size() - self.getOffset();
+                } else {
+                    size = self.getLength();
+                }
+                long where;
+                int ihow = castToInt(how);
+                switch (ihow) {
+                    case 0: /* relative to start */
+                        where = dist;
+                        break;
+                    case 1: /* relative to current position */
+                        where = position(channel) + dist;
+                        break;
+                    case 2: /* relative to end */
+                        where = size + dist;
+                        break;
+                    default:
+                        errorProfile.enter();
+                        throw raise(PythonBuiltinClassType.ValueError, "unknown seek type");
+                }
+                if (where > size || where < 0) {
+                    errorProfile.enter();
+                    throw raise(PythonBuiltinClassType.ValueError, "seek out of range");
+                }
+                doSeek(channel, where);
+                return PNone.NONE;
             } catch (IOException e) {
+                errorProfile.enter();
                 throw raiseOSError(frame, OSErrorEnum.EIO, e.getMessage());
             }
         }
 
-        @TruffleBoundary
-        private Object doSeek(PMMap self, long dist, int how) throws IOException {
-            SeekableByteChannel channel = self.getChannel();
-            long where;
-            switch (how) {
-                case 0: /* relative to start */
-                    where = dist;
-                    break;
-                case 1: /* relative to current position */
-                    where = channel.position() + dist;
-                    break;
-                case 2: /* relative to end */
-                    long size;
-                    if (self.getLength() == 0) {
-                        size = channel.size() - self.getOffset();
-                    } else {
-                        size = self.getLength();
-                    }
-                    where = size + dist;
-                    break;
-                default:
-                    throw raise(PythonBuiltinClassType.ValueError, "unknown seek type");
-            }
+        @TruffleBoundary(allowInlining = true)
+        private static long position(SeekableByteChannel channel) throws IOException {
+            return channel.position();
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static void doSeek(SeekableByteChannel channel, long where) throws IOException {
             channel.position(where);
-            return PNone.NONE;
+        }
+
+        private int castToInt(Object val) {
+            if (castToLongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToLongNode = insert(CastToIndexNode.create());
+            }
+            return castToLongNode.execute(val);
         }
     }
 
