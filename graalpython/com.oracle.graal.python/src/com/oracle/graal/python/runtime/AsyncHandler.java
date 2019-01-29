@@ -161,16 +161,40 @@ public class AsyncHandler {
         }
     }
 
+    /**
+     * It's fine that there is a race between checking the hasScheduledAction flag and processing
+     * actions, we use the executingScheduledActions lock to ensure that only one thread is
+     * processing and that no asynchronous handler thread would set it again while we're processing.
+     * While the nice scenario would be any variation of:
+     *
+     * <ul>
+     * <li>Thread2 - acquireLock, pushWork, setFlag, releaseLock</li>
+     * <li>Thread1 - checkFlag, acquireLock, resetFlag, processActions, releaseLock</li>
+     * </ul>
+     *
+     * <ul>
+     * <li>Thread1 - checkFlag</li>
+     * <li>Thread2 - acquireLock, pushWork, setFlag, releaseLock</li>
+     * <li>Thread1 - acquireLock, resetFlag, processActions, releaseLock</li>
+     * </ul>
+     *
+     * it's also fine if we get into a race for example like this:
+     *
+     * <ul>
+     * <li>Thread2 - acquireLock, pushWork, setFlag</li>
+     * <li>Thread1 - checkFlag, tryAcquireLock, bail out</li>
+     * <li>Thread2 - releaseLock</li>
+     * </ul>
+     *
+     * because Thread1 is sure to check the flag again soon enough, and very likely much sooner than
+     * the {@value #ASYNC_ACTION_DELAY} ms delay between successive runs of the async handler
+     * threads (Thread2 in this example). Of course, there can be more than one handler thread, but
+     * it's unlikely that there are so many that it would completely saturate the ability to process
+     * async actions on the main thread, because there's only one per "type" of async thing (e.g. 1
+     * for weakref finalizers, 1 for signals, 1 for destructors).
+     */
     @TruffleBoundary
     private void processAsyncActions() {
-        // We'll likely be able to get the lock and start working through the async actions. But
-        // there could be a race between the atomic switch of the hasScheduledAction flag, an
-        // AsyncRunnable thread and the acquisition of the lock, so a second thread may end up
-        // clearing the flag again. In that case, both would get here, but only will get the lock
-        // and the other will skip over this and return. In any case, by the time a thread has
-        // this lock and is handling async actions, nothing new will be pushed to the
-        // scheduledActions queue, so we won't have a race between finishing the while loop and
-        // returning from this method.
         if (executingScheduledActions.tryLock()) {
             hasScheduledAction = false;
             try {
