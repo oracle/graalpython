@@ -516,7 +516,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             TruffleFile canonical;
             try {
                 canonical = f.getCanonicalFile();
-            } catch (IOException e) {
+            } catch (IOException | SecurityException e) {
                 // best effort
                 canonical = f.getAbsoluteFile();
             }
