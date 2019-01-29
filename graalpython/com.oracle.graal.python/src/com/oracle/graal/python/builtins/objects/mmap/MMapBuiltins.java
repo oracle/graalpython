@@ -68,6 +68,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -77,6 +79,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadByteFromChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
@@ -84,7 +87,6 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -290,23 +292,42 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class ReadlineNode extends PythonBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        Object readline(PMMap self) {
+        Object readline(PMMap self,
+                        @Cached("createAppend()") SequenceStorageNodes.AppendNode appendNode) {
 
             try {
                 ByteBuffer buf = ByteBuffer.allocate(4096);
                 SeekableByteChannel channel = self.getChannel();
+                ByteSequenceStorage res = new ByteSequenceStorage(16);
                 // search for newline char
-                int nread;
-                while ((nread = channel.read(buf)) > 0) {
-                    for (int i = 0; i < buf.remaining(); i++) {
-
+                outer: while (readIntoBuffer(channel, buf) > 0) {
+                    buf.flip();
+                    while (buf.hasRemaining()) {
+                        byte b = buf.get();
+                        // CPython really tests for '\n' only
+                        if (b != (byte) '\n') {
+                            appendNode.execute(res, b);
+                        } else {
+                            // recover correct position (i.e. number of remaining bytes in buffer)
+                            channel.position(channel.position() - buf.remaining() - 1);
+                            break outer;
+                        }
                     }
+                    buf.clear();
                 }
-                return null;
+                return factory().createBytes(res);
             } catch (IOException e) {
                 throw raise(PythonBuiltinClassType.OSError, e.getMessage());
             }
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static int readIntoBuffer(SeekableByteChannel ch, ByteBuffer dst) throws IOException {
+            return ch.read(dst);
+        }
+
+        protected static SequenceStorageNodes.AppendNode createAppend() {
+            return SequenceStorageNodes.AppendNode.create(() -> NoGeneralizationNode.create(CastToByteNode.INVALID_BYTE_VALUE));
         }
     }
 
