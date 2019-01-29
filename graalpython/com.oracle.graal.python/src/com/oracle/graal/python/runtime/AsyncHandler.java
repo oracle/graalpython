@@ -45,7 +45,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -94,7 +93,7 @@ public class AsyncHandler {
 
     private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
     private final ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
-    private final AtomicBoolean hasScheduledAction = new AtomicBoolean(false);
+    private boolean hasScheduledAction = false;
     private final Lock executingScheduledActions = new ReentrantLock();
     private static final int ASYNC_ACTION_DELAY = 15; // chosen by a fair D20 dice roll
 
@@ -113,7 +112,7 @@ public class AsyncHandler {
                 executingScheduledActions.lock();
                 try {
                     scheduledActions.add(asyncAction);
-                    hasScheduledAction.set(true);
+                    hasScheduledAction = true;
                 } finally {
                     executingScheduledActions.unlock();
                 }
@@ -154,7 +153,9 @@ public class AsyncHandler {
     }
 
     void triggerAsyncActions() {
-        if (hasScheduledAction.compareAndSet(true, false)) {
+        // Uses weakCompareAndSet because we just want to do it in a timely manner, but we don't
+        // need the ordering guarantees.
+        if (hasScheduledAction) {
             CompilerDirectives.transferToInterpreter();
             processAsyncActions();
         }
@@ -171,6 +172,7 @@ public class AsyncHandler {
         // scheduledActions queue, so we won't have a race between finishing the while loop and
         // returning from this method.
         if (executingScheduledActions.tryLock()) {
+            hasScheduledAction = false;
             try {
                 ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions;
                 AsyncAction action;
