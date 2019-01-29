@@ -39,6 +39,8 @@
 
 import polyglot as _interop
 
+from mmap import mmap
+
 def default(value, default):
     return default if not value else value
 
@@ -205,7 +207,7 @@ def _append_end_assert(pattern):
         return pattern if pattern.endswith(rb"\Z") else pattern + rb"\Z"
 
 def _is_bytes_like(object):
-    return isinstance(object, (bytes, bytearray, memoryview))
+    return isinstance(object, (bytes, bytearray, memoryview, mmap))
 
 class SRE_Pattern():
     def __init__(self, pattern, flags):
