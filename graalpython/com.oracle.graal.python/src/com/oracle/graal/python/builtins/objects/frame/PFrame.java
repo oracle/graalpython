@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PFrame extends PythonBuiltinObject {
@@ -197,5 +198,16 @@ public final class PFrame extends PythonBuiltinObject {
 
     public boolean inClassScope() {
         return inClassScope;
+    }
+
+    @TruffleBoundary
+    public RootNode getTarget() {
+        if (location != null) {
+            return location.getRootNode();
+        } else if (exception != null) {
+            return exception.getStackTrace().get(index).getTarget().getRootNode();
+        } else {
+            return null;
+        }
     }
 }

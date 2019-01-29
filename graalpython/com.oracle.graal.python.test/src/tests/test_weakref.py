@@ -37,27 +37,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def test_alarm2():
-    try:
-        import _signal
-    except ImportError:
-        import signal as _signal
-    import time
 
-    triggered = None
+def test_weakref_finalizer():
+    import gc, weakref
+    class A(): pass
+    for i in range(2):
+        w = weakref.ref(A(), cleanup)
+    while not cleaned_up:
+        gc.collect()
+    assert not w()
+    assert cleaned_up
 
-    def handler(signal, frame):
-        nonlocal triggered
-        triggered = (signal, frame)
 
-    oldhandler = _signal.signal(_signal.SIGALRM, handler)
-    assert oldhandler == _signal.SIG_DFL, "oldhandler != SIG_DFL"
-    assert _signal.getsignal(_signal.SIGALRM) is handler, "getsignal handler != handler"
-
-    _signal.alarm(1)
-
-    while not triggered:
-        time.sleep(0.5)
-
-    assert triggered[0] == _signal.SIGALRM
-    assert triggered[1].f_code.co_name == "test_alarm2", triggered[1].f_code
+cleaned_up = False
+def cleanup(ref):
+    global cleaned_up
+    cleaned_up = True

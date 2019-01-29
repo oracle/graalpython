@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -48,38 +50,100 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
+import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.object.HiddenKey;
 
 @SuppressWarnings("unused")
 @CoreFunctions(defineModule = "_weakref")
 public class WeakRefModuleBuiltins extends PythonBuiltins {
+    private final static HiddenKey weakRefQueueKey = new HiddenKey("weakRefQueue");
+    private final ReferenceQueue<Object> weakRefQueue = new ReferenceQueue<>();
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return WeakRefModuleBuiltinsFactory.getFactories();
+    }
+
+    private static class WeakrefCallbackAction implements AsyncHandler.AsyncAction {
+        private final WeakRefStorage reference;
+
+        public WeakrefCallbackAction(PReferenceType.WeakRefStorage reference) {
+            this.reference = reference;
+        }
+
+        public Object callable() {
+            return reference.getCallback();
+        }
+
+        public Object[] arguments() {
+            return new Object[]{reference.getRef()};
+        }
+    }
+
+    @Override
+    public void postInitialize(PythonCore core) {
+        super.postInitialize(core);
+        PythonModule weakrefModule = core.lookupBuiltinModule("_weakref");
+        weakrefModule.setAttribute(weakRefQueueKey, weakRefQueue);
+        core.lookupType(PythonBuiltinClassType.PReferenceType).setAttribute(weakRefQueueKey, weakRefQueue);
+
+        core.getContext().registerAsyncAction(() -> {
+            Reference<? extends Object> reference = null;
+            try {
+                reference = weakRefQueue.remove();
+            } catch (InterruptedException e) {
+            }
+            if (reference instanceof PReferenceType.WeakRefStorage) {
+                return new WeakrefCallbackAction((PReferenceType.WeakRefStorage) reference);
+            } else {
+                return null;
+            }
+        });
     }
 
     // ReferenceType constructor
     @Builtin(name = "ReferenceType", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PReferenceType)
     @GenerateNodeFactory
     public abstract static class ReferenceTypeNode extends PythonBuiltinNode {
+        @Child ReadAttributeFromObjectNode readQueue = ReadAttributeFromObjectNode.create();
+
         @Specialization
-        public PReferenceType refType(PythonClass cls, PythonObject pythonObject, PNone none) {
-            return factory().createReferenceType(cls, pythonObject, null);
+        public PReferenceType refType(PythonClass cls, Object object, PNone none) {
+            return factory().createReferenceType(cls, object, null, getWeakReferenceQueue());
         }
 
         @Specialization
-        public PReferenceType refType(PythonClass cls, PythonObject pythonObject, PFunction callback) {
-            return factory().createReferenceType(cls, pythonObject, callback);
+        public PReferenceType refType(PythonClass cls, Object object, Object callback) {
+            return factory().createReferenceType(cls, object, callback, getWeakReferenceQueue());
+        }
+
+        private ReferenceQueue<Object> getWeakReferenceQueue() {
+            Object queueObject = readQueue.execute(getCore().lookupType(PythonBuiltinClassType.PReferenceType), weakRefQueueKey);
+            if (queueObject instanceof ReferenceQueue) {
+                @SuppressWarnings("unchecked")
+                ReferenceQueue<Object> queue = (ReferenceQueue<Object>) queueObject;
+                return queue;
+            } else {
+                throw new IllegalStateException("the weak reference queue was modified!");
+            }
         }
 
         @Fallback

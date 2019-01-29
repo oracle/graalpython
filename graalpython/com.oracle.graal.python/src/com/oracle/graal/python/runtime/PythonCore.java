@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -56,12 +56,6 @@ public interface PythonCore extends ParserErrorCallback {
      * Load the core library and prepare all builtin classes and modules.
      */
     public void initialize(PythonContext pythonContext);
-
-    /**
-     * Initialize the runtime information in the sys module, capturing command line arguments,
-     * executable paths and so on.
-     */
-    public PythonModule initializeSysModule();
 
     /**
      * Run post-initialization code that needs a fully working Python environment. This will be run
