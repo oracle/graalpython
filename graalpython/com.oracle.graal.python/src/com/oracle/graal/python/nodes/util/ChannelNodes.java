@@ -133,6 +133,7 @@ public abstract class ChannelNodes {
 
         @TruffleBoundary(allowInlining = true)
         private static int get(ByteBuffer buf) {
+            buf.flip();
             return buf.get();
         }
 

@@ -68,9 +68,16 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsFactory.InternalLenNodeGen;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -81,9 +88,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadByteFromChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -91,7 +101,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMMap)
 public class MMapBuiltins extends PythonBuiltins {
@@ -163,7 +173,59 @@ public class MMapBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GetItemNode extends PythonBinaryBuiltinNode {
+    abstract static class GetItemNode extends PythonBuiltinNode {
+
+        @Specialization(guards = "!isPSlice(idxObj)")
+        int doSingle(VirtualFrame frame, PMMap self, Object idxObj,
+                        @Cached("create()") ReadByteFromChannelNode readByteNode,
+                        @Cached("createExact()") CastToJavaLongNode castToLongNode,
+                        @Cached("create()") InternalLenNode lenNode) {
+
+            try {
+                long i = castToLongNode.execute(idxObj);
+                long len = lenNode.execute(frame, self);
+                SeekableByteChannel channel = self.getChannel();
+                long idx = i < 0 ? i + len : i;
+
+                // save current position
+                long oldPos = channel.position();
+
+                channel.position(idx);
+                int res = readByteNode.execute(channel);
+
+                // restore position
+                channel.position(oldPos);
+
+                return res;
+
+            } catch (IOException e) {
+                throw raise(PythonBuiltinClassType.OSError, e.getMessage());
+            }
+        }
+
+        @Specialization
+        Object doSlice(VirtualFrame frame, PMMap self, PSlice idx,
+                        @Cached("create()") ReadFromChannelNode readNode,
+                        @Cached("create()") InternalLenNode lenNode) {
+            try {
+                long len = lenNode.execute(frame, self);
+                SliceInfo info = idx.computeIndices(PInt.intValueExact(len));
+                SeekableByteChannel channel = self.getChannel();
+
+                // save current position
+                long oldPos = channel.position();
+
+                channel.position(info.start);
+                ByteSequenceStorage s = readNode.execute(channel, info.length);
+
+                // restore position
+                channel.position(oldPos);
+
+                return factory().createBytes(s);
+            } catch (IOException e) {
+                throw raise(PythonBuiltinClassType.OSError, e.getMessage());
+            }
+        }
     }
 
     @Builtin(name = SpecialMethodNames.__SETITEM__, fixedNumOfPositionalArgs = 3)
@@ -176,12 +238,9 @@ public class MMapBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonBuiltinNode {
         @Specialization
-        long len(VirtualFrame frame, PMMap self) {
-            try {
-                return self.getChannel().size();
-            } catch (IOException e) {
-                throw raiseOSError(frame, OSErrorEnum.EIO, e.getMessage());
-            }
+        long len(VirtualFrame frame, PMMap self,
+                        @Cached("create()") InternalLenNode lenNode) {
+            return lenNode.execute(frame, self);
         }
     }
 
@@ -227,15 +286,8 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         long size(VirtualFrame frame, PMMap self,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
-            if (profile.profile(self.getLength() == 0)) {
-                try {
-                    return self.getChannel().size() - self.getOffset();
-                } catch (IOException e) {
-                    throw raiseOSError(frame, OSErrorEnum.EIO, e.getMessage());
-                }
-            }
-            return self.getLength();
+                        @Cached("create()") InternalLenNode lenNode) {
+            return lenNode.execute(frame, self);
         }
     }
 
@@ -375,6 +427,145 @@ public class MMapBuiltins extends PythonBuiltins {
             }
             channel.position(where);
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "find", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class FindNode extends PythonBuiltinNode {
+
+        @Child private NormalizeIndexNode normalizeIndexNode;
+        @Child private SequenceStorageNodes.GetItemNode getLeftItemNode;
+        @Child private SequenceStorageNodes.GetItemNode getRightItemNode;
+
+        public abstract long execute(PMMap bytes, Object sub, Object starting, Object ending);
+
+        @Specialization
+        long find(PMMap primary, PIBytesLike sub, Object starting, Object ending,
+                        @Cached("create()") ReadByteFromChannelNode readByteNode) {
+            try {
+                SeekableByteChannel channel = primary.getChannel();
+                long len1 = channel.size();
+
+                SequenceStorage needle = sub.getSequenceStorage();
+                int len2 = needle.length();
+
+                long s = castToLong(starting, 0);
+                long e = castToLong(ending, len1);
+
+                long start = s < 0 ? s + len1 : s;
+                long end = e < 0 ? e + len1 : e;
+
+                if (start >= len1 || len1 < len2) {
+                    return -1;
+                } else if (end > len1) {
+                    end = len1;
+                }
+
+                // TODO implement a more efficient algorithm
+                outer: for (long i = start; i < end; i++) {
+                    // TODO(fa) don't seek but use circular buffer
+                    channel.position(i);
+                    for (int j = 0; j < len2; j++) {
+                        int hb = readByteNode.execute(channel);
+                        int nb = getGetRightItemNode().executeInt(needle, j);
+                        if (nb != hb || i + j >= end) {
+                            continue outer;
+                        }
+                    }
+                    return i;
+                }
+                return -1;
+            } catch (IOException e) {
+                throw raise(PythonBuiltinClassType.OSError, e.getMessage());
+            }
+        }
+
+        @Specialization
+        long find(PMMap primary, int sub, Object starting, @SuppressWarnings("unused") Object ending,
+                        @Cached("create()") ReadByteFromChannelNode readByteNode) {
+            try {
+                SeekableByteChannel channel = primary.getChannel();
+                long len1 = channel.size();
+
+                long s = castToLong(starting, 0);
+                long e = castToLong(ending, len1);
+
+                long start = s < 0 ? s + len1 : s;
+                long end = Math.max(e < 0 ? e + len1 : e, len1);
+
+                channel.position(start);
+
+                for (long i = start; i < end; i++) {
+                    int hb = readByteNode.execute(channel);
+                    if (hb == sub) {
+                        return i;
+                    }
+                }
+                return -1;
+            } catch (IOException e) {
+                throw raise(PythonBuiltinClassType.OSError, e.getMessage());
+            }
+        }
+
+        // TODO(fa): use node
+        private static long castToLong(Object obj, long defaultVal) {
+            if (obj instanceof Integer || obj instanceof Long) {
+                return ((Number) obj).longValue();
+            } else if (obj instanceof PInt) {
+                try {
+                    return ((PInt) obj).longValueExact();
+                } catch (ArithmeticException e) {
+                    return defaultVal;
+                }
+            }
+            return defaultVal;
+        }
+
+        private SequenceStorageNodes.GetItemNode getGetRightItemNode() {
+            if (getRightItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getRightItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return getRightItemNode;
+        }
+    }
+
+    abstract static class InternalLenNode extends PNodeWithContext {
+
+        public abstract long execute(VirtualFrame frame, PMMap self);
+
+        @Specialization(guards = "self.getLength() == 0")
+        long doFull(VirtualFrame frame, PMMap self,
+                        @Cached("create()") BranchProfile profile) {
+            try {
+                return self.getChannel().size() - self.getOffset();
+            } catch (IOException e) {
+                profile.enter();
+                throw raiseOSError(frame, OSErrorEnum.EIO, e.getMessage());
+            }
+        }
+
+        @Specialization(guards = "self.getLength() > 0")
+        long doWindow(@SuppressWarnings("unused") VirtualFrame frame, PMMap self) {
+            return self.getLength();
+        }
+
+        @Specialization
+        long doGeneric(VirtualFrame frame, PMMap self) {
+            if (self.getLength() == 0) {
+                try {
+                    return self.getChannel().size() - self.getOffset();
+                } catch (IOException e) {
+                    throw raiseOSError(frame, OSErrorEnum.EIO, e.getMessage());
+                }
+            }
+            return self.getLength();
+        }
+
+        public static InternalLenNode create() {
+            return InternalLenNodeGen.create();
         }
     }
 
