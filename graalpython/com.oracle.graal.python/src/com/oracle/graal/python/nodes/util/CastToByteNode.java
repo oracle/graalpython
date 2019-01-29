@@ -45,8 +45,12 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.function.Function;
 
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -55,10 +59,12 @@ public abstract class CastToByteNode extends PNodeWithContext {
 
     private final Function<Object, Byte> rangeErrorHandler;
     private final Function<Object, Byte> typeErrorHandler;
+    protected final boolean coerce;
 
-    protected CastToByteNode(Function<Object, Byte> rangeErrorHandler, Function<Object, Byte> typeErrorHandler) {
+    protected CastToByteNode(Function<Object, Byte> rangeErrorHandler, Function<Object, Byte> typeErrorHandler, boolean coerce) {
         this.rangeErrorHandler = rangeErrorHandler;
         this.typeErrorHandler = typeErrorHandler;
+        this.coerce = coerce;
     }
 
     public abstract byte execute(Object val);
@@ -115,6 +121,13 @@ public abstract class CastToByteNode extends PNodeWithContext {
         return value ? (byte) 1 : (byte) 0;
     }
 
+    @Specialization(guards = "coerce")
+    protected byte doBytes(PIBytesLike value,
+                    @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode,
+                    @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
+        return doIntOvf(getItemNode.executeInt(getStorageNode.execute(value), 0));
+    }
+
     @Fallback
     protected byte doGeneric(@SuppressWarnings("unused") Object val) {
         if (typeErrorHandler != null) {
@@ -133,11 +146,18 @@ public abstract class CastToByteNode extends PNodeWithContext {
     }
 
     public static CastToByteNode create() {
-        return CastToByteNodeGen.create(null, null);
+        return CastToByteNodeGen.create(null, null, false);
+    }
+
+    public static CastToByteNode create(boolean coerce) {
+        return CastToByteNodeGen.create(null, null, coerce);
     }
 
     public static CastToByteNode create(Function<Object, Byte> rangeErrorHandler, Function<Object, Byte> typeErrorHandler) {
         return CastToByteNodeGen.create(rangeErrorHandler, typeErrorHandler);
     }
 
+    public static CastToByteNode create(Function<Object, Byte> rangeErrorHandler, Function<Object, Byte> typeErrorHandler, boolean coerce) {
+        return CastToByteNodeGen.create(rangeErrorHandler, typeErrorHandler, coerce);
+    }
 }
