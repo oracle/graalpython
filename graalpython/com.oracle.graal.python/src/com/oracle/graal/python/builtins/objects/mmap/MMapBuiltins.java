@@ -517,7 +517,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "seek", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "seek", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SeekNode extends PythonBuiltinNode {
@@ -701,6 +701,17 @@ public class MMapBuiltins extends PythonBuiltins {
         public static InternalLenNode create() {
             return InternalLenNodeGen.create();
         }
+    }
+
+    @Builtin(name = "flush", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class FlushNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object seek(@SuppressWarnings("unused") PMMap self) {
+            return PNone.NONE;
+        }
+
     }
 
 }
