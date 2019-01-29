@@ -45,6 +45,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 
 import java.io.IOException;
 import java.nio.channels.FileChannel.MapMode;
+import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
@@ -64,6 +66,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "mmap")
@@ -90,15 +93,24 @@ public class MMapModuleBuiltins extends PythonBuiltins {
     public abstract static class MMapNode extends PythonBuiltinNode {
 
         private final ValueProfile classProfile = ValueProfile.createClassProfile();
+        private final BranchProfile invalidLengthProfile = BranchProfile.create();
 
-        @Specialization(guards = {"isNoValue(access)", "isNoValue(offset)"})
+        @Specialization(guards = {"fd < 0", "isNoValue(access)", "isNoValue(offset)"})
+        PMMap doAnonymous(LazyPythonClass clazz, int fd, int length, Object tagname, @SuppressWarnings("unused") PNone access, @SuppressWarnings("unused") PNone offset) {
+            checkLength(length);
+            return new PMMap(clazz, new AnonymousMap(length), length, 0);
+        }
+
+        @Specialization(guards = {"fd >= 0", "isNoValue(access)", "isNoValue(offset)"})
         PMMap doIt(LazyPythonClass clazz, int fd, int length, Object tagname, @SuppressWarnings("unused") PNone access, @SuppressWarnings("unused") PNone offset) {
-            return doGeneric(clazz, fd, length, tagname, ACCESS_DEFAULT, 0);
+            return doFile(clazz, fd, length, tagname, ACCESS_DEFAULT, 0);
         }
 
         // mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset])
-        @Specialization
-        PMMap doGeneric(LazyPythonClass clazz, int fd, int length, @SuppressWarnings("unused") Object tagname, int access, long offset) {
+        @Specialization(guards = "fd >= 0")
+        PMMap doFile(LazyPythonClass clazz, int fd, int length, @SuppressWarnings("unused") Object tagname, int access, long offset) {
+            checkLength(length);
+
             String path = getContext().getResources().getFilePath(fd);
             TruffleFile truffleFile = getContext().getEnv().getTruffleFile(path);
 
@@ -131,6 +143,68 @@ public class MMapModuleBuiltins extends PythonBuiltins {
                     return MapMode.PRIVATE;
             }
             throw raise(ValueError, "mmap invalid access parameter.");
+        }
+
+        private void checkLength(int length) {
+            if (length < 0) {
+                invalidLengthProfile.enter();
+                throw raise(PythonBuiltinClassType.OverflowError, "memory mapped length must be positive");
+            }
+        }
+
+    }
+
+    private static class AnonymousMap implements SeekableByteChannel {
+        private final byte[] data;
+
+        private boolean open = true;
+        private int cur;
+
+        public AnonymousMap(int cap) {
+            this.data = new byte[cap];
+        }
+
+        public boolean isOpen() {
+            return open;
+        }
+
+        public void close() throws IOException {
+            open = false;
+        }
+
+        public int read(ByteBuffer dst) throws IOException {
+            int nread = Math.min(dst.remaining(), data.length - cur);
+            dst.put(data, cur, nread);
+            return nread;
+        }
+
+        public int write(ByteBuffer src) throws IOException {
+            int nwrite = Math.min(src.remaining(), data.length - cur);
+            src.get(data, cur, nwrite);
+            return nwrite;
+        }
+
+        public long position() throws IOException {
+            return cur;
+        }
+
+        public SeekableByteChannel position(long newPosition) throws IOException {
+            if (newPosition < 0 || newPosition >= data.length) {
+                throw new IllegalArgumentException();
+            }
+            cur = (int) newPosition;
+            return this;
+        }
+
+        public long size() throws IOException {
+            return data.length;
+        }
+
+        public SeekableByteChannel truncate(long size) throws IOException {
+            for (int i = 0; i < size; i++) {
+                data[i] = 0;
+            }
+            return this;
         }
 
     }
