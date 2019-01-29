@@ -44,9 +44,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PMMap;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import java.io.IOException;
-import java.nio.channels.FileChannel.MapMode;
 import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
+import java.nio.channels.FileChannel.MapMode;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
@@ -67,7 +66,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "mmap")
 public class MMapModuleBuiltins extends PythonBuiltins {
@@ -92,13 +90,13 @@ public class MMapModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MMapNode extends PythonBuiltinNode {
 
-        private final ValueProfile classProfile = ValueProfile.createClassProfile();
         private final BranchProfile invalidLengthProfile = BranchProfile.create();
 
-        @Specialization(guards = {"fd < 0", "isNoValue(access)", "isNoValue(offset)"})
-        PMMap doAnonymous(LazyPythonClass clazz, int fd, int length, Object tagname, @SuppressWarnings("unused") PNone access, @SuppressWarnings("unused") PNone offset) {
+        @Specialization(guards = {"isAnonymous(fd)", "isNoValue(access)", "isNoValue(offset)"})
+        PMMap doAnonymous(LazyPythonClass clazz, @SuppressWarnings("unused") int fd, int length, @SuppressWarnings("unused") Object tagname, @SuppressWarnings("unused") PNone access,
+                        @SuppressWarnings("unused") PNone offset) {
             checkLength(length);
-            return new PMMap(clazz, new AnonymousMap(length), length, 0);
+            return factory().createMMap(clazz, new AnonymousMap(length), length, 0);
         }
 
         @Specialization(guards = {"fd >= 0", "isNoValue(access)", "isNoValue(offset)"})
@@ -108,14 +106,13 @@ public class MMapModuleBuiltins extends PythonBuiltins {
 
         // mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset])
         @Specialization(guards = "fd >= 0")
-        PMMap doFile(LazyPythonClass clazz, int fd, int length, @SuppressWarnings("unused") Object tagname, int access, long offset) {
+        PMMap doFile(LazyPythonClass clazz, int fd, int length, @SuppressWarnings("unused") Object tagname, @SuppressWarnings("unused") int access, long offset) {
             checkLength(length);
 
             String path = getContext().getResources().getFilePath(fd);
             TruffleFile truffleFile = getContext().getEnv().getTruffleFile(path);
 
             // TODO(fa) correctly honor access flags
-            MapMode mode = convertAccessToMapMode(access);
             Set<StandardOpenOption> options = new HashSet<>();
             options.add(StandardOpenOption.READ);
             options.add(StandardOpenOption.WRITE);
@@ -125,12 +122,27 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             try {
                 fileChannel = truffleFile.newByteChannel(options);
                 fileChannel.position(offset);
-                return new PMMap(PythonBuiltinClassType.PMMap, fileChannel, length, offset);
+                return factory().createMMap(clazz, fileChannel, length, offset);
             } catch (IOException e) {
                 throw raise(ValueError, "cannot mmap file");
             }
         }
 
+        @Specialization(guards = "isIllegal(fd)")
+        @SuppressWarnings("unused")
+        PMMap doAnonymous(LazyPythonClass clazz, int fd, Object length, Object tagname, PNone access, PNone offset) {
+            throw raise(PythonBuiltinClassType.OSError);
+        }
+
+        protected static boolean isAnonymous(int fd) {
+            return fd == -1;
+        }
+
+        protected static boolean isIllegal(int fd) {
+            return fd < -1;
+        }
+
+        @SuppressWarnings("unused")
         private MapMode convertAccessToMapMode(int access) {
             switch (access) {
                 case 0:
@@ -189,7 +201,7 @@ public class MMapModuleBuiltins extends PythonBuiltins {
         }
 
         public SeekableByteChannel position(long newPosition) throws IOException {
-            if (newPosition < 0 || newPosition >= data.length) {
+            if (newPosition < 0) {
                 throw new IllegalArgumentException();
             }
             cur = (int) newPosition;

@@ -178,7 +178,7 @@ public abstract class ChannelNodes {
             if (readProfile.profile(read != 1)) {
                 return handleError(channel);
             }
-            return get(buf);
+            return get(buf) & 0xFF;
         }
 
         private int handleError(Channel channel) {

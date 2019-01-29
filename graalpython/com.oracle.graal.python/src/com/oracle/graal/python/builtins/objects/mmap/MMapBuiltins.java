@@ -246,7 +246,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 long oldPos = channel.position();
 
                 channel.position(idx);
-                int res = readByteNode.execute(channel);
+                int res = readByteNode.execute(channel) & 0xFF;
 
                 // restore position
                 channel.position(oldPos);
@@ -458,9 +458,11 @@ public class MMapBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ReadNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "isNoValue(n)")
-        PBytes read(PMMap self, @SuppressWarnings("unused") PNone n,
+        @Specialization
+        PBytes readUnlimited(PMMap self, @SuppressWarnings("unused") PNone n,
                         @Cached("create()") ReadFromChannelNode readChannelNode) {
+            // intentionally accept NO_VALUE and NONE; both mean that we read unlimited amount of
+            // bytes
             ByteSequenceStorage res = readChannelNode.execute(self.getChannel(), ReadFromChannelNode.MAX_READ);
             return factory().createBytes(res);
         }
@@ -468,8 +470,13 @@ public class MMapBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(n)")
         PBytes read(PMMap self, Object n,
                         @Cached("create()") ReadFromChannelNode readChannelNode,
-                        @Cached("create()") CastToIndexNode castToIndexNode) {
-            ByteSequenceStorage res = readChannelNode.execute(self.getChannel(), castToIndexNode.execute(n));
+                        @Cached("create()") CastToIndexNode castToIndexNode,
+                        @Cached("createBinaryProfile()") ConditionProfile negativeProfile) {
+            int nread = castToIndexNode.execute(n);
+            if (negativeProfile.profile(nread < 0)) {
+                return readUnlimited(self, PNone.NO_VALUE, readChannelNode);
+            }
+            ByteSequenceStorage res = readChannelNode.execute(self.getChannel(), nread);
             return factory().createBytes(res);
         }
 
