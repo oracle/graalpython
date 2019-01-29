@@ -26,7 +26,6 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -89,7 +88,6 @@ import com.oracle.truffle.api.object.Layout;
 import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.Source.LiteralBuilder;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -428,13 +426,31 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return TruffleLogger.getLogger(ID);
     }
 
-    public static Source newSource(PythonContext ctxt, String src, String name, URI uri) {
+    public static Source newSource(PythonContext ctxt, String src, String name, boolean mayBeFile) {
         try {
-            LiteralBuilder sourceBuilder = Source.newBuilder(ID, src, name);
-            if (uri != null) {
-                sourceBuilder.uri(uri);
+            SourceBuilder sourceBuilder = null;
+            if (mayBeFile) {
+                try {
+                    TruffleFile truffleFile = ctxt.getEnv().getTruffleFile(name);
+                    if (truffleFile.exists()) {
+                        // XXX: (tfel): We don't know if the expression has anything to do with the
+                        // filename that's given. We would really have to compare the entire
+                        // contents, but as a first approximation, we compare the content lengths.
+                        // We override the contents of the source builder with the given source
+                        // regardless.
+                        if (src.length() == truffleFile.size()) {
+                            sourceBuilder = Source.newBuilder(ID, truffleFile);
+                            sourceBuilder.content(src);
+                        }
+                    }
+                } catch (SecurityException | IOException e) {
+                    sourceBuilder = null;
+                }
             }
-            return newSource(ctxt, sourceBuilder, name);
+            if (sourceBuilder == null) {
+                sourceBuilder = Source.newBuilder(ID, src, name);
+            }
+            return newSource(ctxt, sourceBuilder);
         } catch (IOException e) {
             throw new AssertionError();
         }
@@ -446,7 +462,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         try {
             return cachedSources.computeIfAbsent(src, t -> {
                 try {
-                    return newSource(ctxt, Source.newBuilder(ID, src), name);
+                    return newSource(ctxt, Source.newBuilder(ID, src).name(name));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -460,7 +476,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         try {
             return cachedSources.computeIfAbsent(url, t -> {
                 try {
-                    return newSource(ctxt, Source.newBuilder(ID, url), name);
+                    return newSource(ctxt, Source.newBuilder(ID, url).name(name));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -470,14 +486,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder, String name) throws IOException {
-        SourceBuilder newBuilder = srcBuilder.name(name).mimeType(MIME_TYPE);
+    private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder) throws IOException {
         boolean coreIsInitialized = ctxt.getCore().isInitialized();
         boolean internal = !coreIsInitialized && !PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources);
         if (internal) {
             srcBuilder.internal(true);
         }
-        return newBuilder.build();
+        return srcBuilder.build();
     }
 
     @Override
