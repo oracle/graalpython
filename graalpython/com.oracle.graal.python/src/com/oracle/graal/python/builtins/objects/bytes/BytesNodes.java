@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -286,7 +287,7 @@ public abstract class BytesNodes {
     public static class FromSequenceStorageNode extends Node {
 
         @Node.Child private SequenceStorageNodes.GetItemNode getItemNode;
-        @Node.Child private SequenceStorageNodes.CastToByteNode castToByteNode;
+        @Node.Child private CastToByteNode castToByteNode;
         @Node.Child private SequenceStorageNodes.LenNode lenNode;
 
         public byte[] execute(SequenceStorage storage) {
@@ -307,10 +308,10 @@ public abstract class BytesNodes {
             return getItemNode;
         }
 
-        private SequenceStorageNodes.CastToByteNode getCastToByteNode() {
+        private CastToByteNode getCastToByteNode() {
             if (castToByteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToByteNode = insert(SequenceStorageNodes.CastToByteNode.create());
+                castToByteNode = insert(CastToByteNode.create());
             }
             return castToByteNode;
         }
@@ -355,7 +356,7 @@ public abstract class BytesNodes {
         public SequenceStorageNodes.AppendNode getAppendByteNode() {
             if (appendByteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                appendByteNode = insert(SequenceStorageNodes.AppendNode.create(() -> SequenceStorageNodes.NoGeneralizationNode.create("byte must be in range(0, 256)")));
+                appendByteNode = insert(SequenceStorageNodes.AppendNode.create(() -> SequenceStorageNodes.NoGeneralizationNode.create(CastToByteNode.INVALID_BYTE_VALUE)));
             }
             return appendByteNode;
         }
