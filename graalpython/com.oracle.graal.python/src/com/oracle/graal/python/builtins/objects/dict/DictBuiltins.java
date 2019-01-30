@@ -152,7 +152,7 @@ public final class DictBuiltins extends PythonBuiltins {
     // pop(key[, default])
     @Builtin(name = "pop", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class PopNode extends PythonBuiltinNode {
+    public abstract static class PopNode extends PythonTernaryBuiltinNode {
         @Child private HashingStorageNodes.GetItemNode getItemNode;
         @Child private HashingStorageNodes.DelItemNode delItemNode;
 
@@ -193,7 +193,7 @@ public final class DictBuiltins extends PythonBuiltins {
     // popitem()
     @Builtin(name = "popitem", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class PopItemNode extends PythonBuiltinNode {
+    public abstract static class PopItemNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -233,7 +233,7 @@ public final class DictBuiltins extends PythonBuiltins {
     // get(key[, default])
     @Builtin(name = "get", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class GetNode extends PythonBuiltinNode {
+    public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Child private HashingStorageNodes.GetItemNode getItemNode;
 
         @Specialization(guards = "!isNoValue(defaultValue)")
@@ -274,7 +274,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
     @Builtin(name = __MISSING__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class MissingNode extends PythonBuiltinNode {
+    public abstract static class MissingNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         Object run(Object self, PString key) {
@@ -312,7 +312,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
     @Builtin(name = __DELITEM__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class DelItemNode extends PythonBuiltinNode {
+    public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object run(PDict self, Object key,
                         @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
@@ -334,7 +334,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
     @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBuiltinNode {
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doDictDict(PDict self, PDict other,
                         @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
@@ -350,7 +350,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
     @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class ContainsNode extends PythonBuiltinNode {
+    public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
 
         @SuppressWarnings("unused")
@@ -391,7 +391,7 @@ public final class DictBuiltins extends PythonBuiltins {
     // copy()
     @Builtin(name = "copy", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class CopyNode extends PythonBuiltinNode {
+    public abstract static class CopyNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         public PDict copy(PDict dict,
@@ -403,7 +403,7 @@ public final class DictBuiltins extends PythonBuiltins {
     // clear()
     @Builtin(name = "clear", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ClearNode extends PythonBuiltinNode {
+    public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         public PDict copy(PDict dict) {
@@ -425,7 +425,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
     @Builtin(name = __HASH__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class HashNode extends PythonBuiltinNode {
+    public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doGeneric(Object self) {
             throw raise(TypeError, "unhashable type: '%p'", self);
