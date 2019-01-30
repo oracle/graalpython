@@ -458,7 +458,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @ImportStatic(NativeMemberNames.class)
     static abstract class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doManaged(ManagedPythonClass self) {
+        Object doManaged(PythonManagedClass self) {
             PHashingCollection dict = self.getDict();
             if (dict == null) {
                 dict = factory().createMappingproxy(self);
@@ -736,7 +736,7 @@ public class TypeBuiltins extends PythonBuiltins {
     static abstract class DictoffsetNode extends AbstractSlotNode {
 
         @Specialization(guards = "isNoValue(value)")
-        Object getName(ManagedPythonClass cls, @SuppressWarnings("unused") PNone value,
+        Object getName(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") IsBuiltinClassProfile profile,
                         @Cached("create()") ReadAttributeFromObjectNode getName) {
             // recursion anchor; since the metaclass of 'type' is 'type'
@@ -773,7 +773,7 @@ public class TypeBuiltins extends PythonBuiltins {
     static abstract class ItemsizeNode extends AbstractSlotNode {
 
         @Specialization(guards = "isNoValue(value)")
-        Object getName(ManagedPythonClass cls, @SuppressWarnings("unused") PNone value,
+        Object getName(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") IsBuiltinClassProfile profile,
                         @Cached("create()") ReadAttributeFromObjectNode getName) {
             // recursion anchor; since the metaclass of 'type' is 'type'
@@ -810,7 +810,7 @@ public class TypeBuiltins extends PythonBuiltins {
     static abstract class BasicsizeNode extends AbstractSlotNode {
 
         @Specialization(guards = "isNoValue(value)")
-        Object getName(ManagedPythonClass cls, @SuppressWarnings("unused") PNone value,
+        Object getName(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") IsBuiltinClassProfile profile,
                         @Cached("create()") ReadAttributeFromObjectNode getName) {
             // recursion anchor; since the metaclass of 'type' is 'type'

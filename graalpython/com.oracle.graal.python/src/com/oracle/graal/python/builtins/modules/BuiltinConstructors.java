@@ -119,7 +119,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -1353,13 +1353,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf", "!self.needsNativeAllocation()"})
-        Object doObjectDirect(@SuppressWarnings("unused") ManagedPythonClass self, Object[] varargs, PKeyword[] kwargs,
-                        @Cached("self") ManagedPythonClass cachedSelf) {
+        Object doObjectDirect(@SuppressWarnings("unused") PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
+                        @Cached("self") PythonManagedClass cachedSelf) {
             return doObjectIndirect(cachedSelf, varargs, kwargs);
         }
 
         @Specialization(guards = "!self.needsNativeAllocation()", replaces = "doObjectDirect")
-        Object doObjectIndirect(ManagedPythonClass self, Object[] varargs, PKeyword[] kwargs) {
+        Object doObjectIndirect(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs) {
             if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
@@ -1367,7 +1367,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.needsNativeAllocation()")
-        Object doNativeObjectIndirect(ManagedPythonClass self, Object[] varargs, PKeyword[] kwargs,
+        Object doNativeObjectIndirect(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
                         @Cached("create()") GetMroNode getMroNode) {
             if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
@@ -2030,7 +2030,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return readCallerFrameNode;
         }
 
-        private void addNativeSlots(ManagedPythonClass pythonClass, PTuple slots) {
+        private void addNativeSlots(PythonManagedClass pythonClass, PTuple slots) {
             if (callAddNativeSlotsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callAddNativeSlotsNode = insert(CExtNodes.PCallCapiFunction.create(NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS));
@@ -2046,7 +2046,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return castToList;
         }
 
-        private boolean addDictIfNative(ManagedPythonClass pythonClass) {
+        private boolean addDictIfNative(PythonManagedClass pythonClass) {
             boolean addedNewDict = false;
             if (pythonClass.needsNativeAllocation()) {
                 for (Object cls : getMro(pythonClass)) {

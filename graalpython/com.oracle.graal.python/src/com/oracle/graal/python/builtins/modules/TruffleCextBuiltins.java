@@ -120,7 +120,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -1375,7 +1375,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doPythonObject(PythonClassNativeWrapper klass, Object ptr) {
-            ((ManagedPythonClass) klass.getPythonObject()).setSulongType(ptr);
+            ((PythonManagedClass) klass.getPythonObject()).setSulongType(ptr);
             return ptr;
         }
     }
@@ -1392,7 +1392,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPythonObject(ManagedPythonClass obj, Object getBufferProc, Object releaseBufferProc) {
+        Object doPythonObject(PythonManagedClass obj, Object getBufferProc, Object releaseBufferProc) {
             return doNativeWrapper(obj.getNativeWrapper(), getBufferProc, releaseBufferProc);
         }
     }

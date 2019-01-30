@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.Pyth
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.ForeignAccess;
@@ -277,7 +277,7 @@ public abstract class NativeWrappers {
     }
 
     /**
-     * Used to wrap {@link ManagedPythonClass} when used in native code. This wrapper mimics the
+     * Used to wrap {@link PythonManagedClass} when used in native code. This wrapper mimics the
      * correct shape of the corresponding native type {@code struct _typeobject}.
      */
     public static class PythonClassNativeWrapper extends PythonObjectNativeWrapper {
@@ -285,7 +285,7 @@ public abstract class NativeWrappers {
         private Object getBufferProc;
         private Object releaseBufferProc;
 
-        public PythonClassNativeWrapper(ManagedPythonClass object, String typeName) {
+        public PythonClassNativeWrapper(PythonManagedClass object, String typeName) {
             super(object);
             this.nameWrapper = new CStringWrapper(typeName);
         }
@@ -310,7 +310,7 @@ public abstract class NativeWrappers {
             this.releaseBufferProc = releaseBufferProc;
         }
 
-        public static PythonClassNativeWrapper wrap(ManagedPythonClass obj, String typeName) {
+        public static PythonClassNativeWrapper wrap(PythonManagedClass obj, String typeName) {
             // important: native wrappers are cached
             PythonClassNativeWrapper nativeWrapper = obj.getNativeWrapper();
             if (nativeWrapper == null) {
@@ -327,13 +327,13 @@ public abstract class NativeWrappers {
     }
 
     /**
-     * Used to wrap {@link ManagedPythonClass} just for the time when a natively defined type is
+     * Used to wrap {@link PythonManagedClass} just for the time when a natively defined type is
      * processed in {@code PyType_Ready} and we need to pass the mirroring managed class to native
      * to marry these two objects.
      */
     public static class PythonClassInitNativeWrapper extends PythonObjectNativeWrapper {
 
-        public PythonClassInitNativeWrapper(ManagedPythonClass object) {
+        public PythonClassInitNativeWrapper(PythonManagedClass object) {
             super(object);
         }
 

@@ -62,7 +62,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalenc
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass.FlagsContainer;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass.FlagsContainer;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
@@ -105,12 +105,12 @@ public abstract class TypeNodes {
         public abstract long execute(PythonAbstractClass clazz);
 
         @Specialization(guards = "isInitialized(clazz)")
-        long doInitialized(ManagedPythonClass clazz) {
+        long doInitialized(PythonManagedClass clazz) {
             return clazz.getFlagsContainer().flags;
         }
 
         @Specialization
-        long doGeneric(ManagedPythonClass clazz) {
+        long doGeneric(PythonManagedClass clazz) {
             if (!isInitialized(clazz)) {
                 return getValue(clazz.getFlagsContainer());
             }
@@ -136,8 +136,8 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         public static long doSlowPath(PythonAbstractClass clazz) {
-            if (clazz instanceof ManagedPythonClass) {
-                ManagedPythonClass mclazz = (ManagedPythonClass) clazz;
+            if (clazz instanceof PythonManagedClass) {
+                PythonManagedClass mclazz = (PythonManagedClass) clazz;
                 if (isInitialized(mclazz)) {
                     return mclazz.getFlagsContainer().flags;
                 } else {
@@ -159,7 +159,7 @@ public abstract class TypeNodes {
             }
         }
 
-        protected static boolean isInitialized(ManagedPythonClass clazz) {
+        protected static boolean isInitialized(PythonManagedClass clazz) {
             return clazz.getFlagsContainer().initialDominantBase == null;
         }
 
@@ -178,7 +178,7 @@ public abstract class TypeNodes {
         public abstract PythonAbstractClass[] execute(Object obj);
 
         @Specialization
-        PythonAbstractClass[] doPythonClass(ManagedPythonClass obj) {
+        PythonAbstractClass[] doPythonClass(PythonManagedClass obj) {
             return obj.getMethodResolutionOrder();
         }
 
@@ -202,8 +202,8 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         public static PythonAbstractClass[] doSlowPath(Object obj) {
-            if (obj instanceof ManagedPythonClass) {
-                return ((ManagedPythonClass) obj).getMethodResolutionOrder();
+            if (obj instanceof PythonManagedClass) {
+                return ((PythonManagedClass) obj).getMethodResolutionOrder();
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
             } else if (PGuards.isNativeClass(obj)) {
@@ -230,7 +230,7 @@ public abstract class TypeNodes {
         public abstract String execute(Object obj);
 
         @Specialization
-        String doManagedClass(ManagedPythonClass obj) {
+        String doManagedClass(PythonManagedClass obj) {
             return obj.getName();
         }
 
@@ -247,8 +247,8 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         public static String doSlowPath(Object obj) {
-            if (obj instanceof ManagedPythonClass) {
-                return ((ManagedPythonClass) obj).getName();
+            if (obj instanceof PythonManagedClass) {
+                return ((PythonManagedClass) obj).getName();
             } else if (obj instanceof PythonBuiltinClassType) {
                 // TODO(fa): remove this special case
                 if (obj == PythonBuiltinClassType.TruffleObject) {
@@ -274,7 +274,7 @@ public abstract class TypeNodes {
         public abstract LazyPythonClass execute(Object obj);
 
         @Specialization
-        LazyPythonClass doManaged(ManagedPythonClass obj) {
+        LazyPythonClass doManaged(PythonManagedClass obj) {
             return obj.getSuperClass();
         }
 
@@ -297,8 +297,8 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         public static LazyPythonClass doSlowPath(Object obj) {
-            if (obj instanceof ManagedPythonClass) {
-                return ((ManagedPythonClass) obj).getSuperClass();
+            if (obj instanceof PythonManagedClass) {
+                return ((PythonManagedClass) obj).getSuperClass();
             } else if (obj instanceof PythonBuiltinClassType) {
                 return ((PythonBuiltinClassType) obj).getBase();
             } else if (PGuards.isNativeClass(obj)) {
@@ -324,7 +324,7 @@ public abstract class TypeNodes {
         public abstract Set<PythonAbstractClass> execute(Object obj);
 
         @Specialization
-        Set<PythonAbstractClass> doPythonClass(ManagedPythonClass obj) {
+        Set<PythonAbstractClass> doPythonClass(PythonManagedClass obj) {
             return obj.getSubClasses();
         }
 
@@ -350,8 +350,8 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         public static Set<PythonAbstractClass> doSlowPath(Object obj) {
-            if (obj instanceof ManagedPythonClass) {
-                return ((ManagedPythonClass) obj).getSubClasses();
+            if (obj instanceof PythonManagedClass) {
+                return ((PythonManagedClass) obj).getSubClasses();
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getSubClasses();
             } else if (PGuards.isNativeClass(obj)) {
@@ -448,7 +448,7 @@ public abstract class TypeNodes {
         public abstract PythonAbstractClass[] execute(Object obj);
 
         @Specialization
-        PythonAbstractClass[] doPythonClass(ManagedPythonClass obj) {
+        PythonAbstractClass[] doPythonClass(PythonManagedClass obj) {
             return obj.getBaseClasses();
         }
 
@@ -476,8 +476,8 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         public static PythonAbstractClass[] doSlowPath(Object obj) {
-            if (obj instanceof ManagedPythonClass) {
-                return ((ManagedPythonClass) obj).getBaseClasses();
+            if (obj instanceof PythonManagedClass) {
+                return ((PythonManagedClass) obj).getBaseClasses();
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getBaseClasses();
             } else if (PGuards.isNativeClass(obj)) {
@@ -520,7 +520,7 @@ public abstract class TypeNodes {
         public abstract boolean execute(Object left, Object right);
 
         @Specialization
-        boolean doManaged(ManagedPythonClass left, ManagedPythonClass right) {
+        boolean doManaged(PythonManagedClass left, PythonManagedClass right) {
             return left == right;
         }
 
@@ -537,7 +537,7 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         public static boolean doSlowPath(Object left, Object right) {
-            if (left instanceof ManagedPythonClass && right instanceof ManagedPythonClass) {
+            if (left instanceof PythonManagedClass && right instanceof PythonManagedClass) {
                 return left == right;
             } else if (left instanceof PythonAbstractNativeObject && right instanceof PythonAbstractNativeObject) {
                 return CExtNodes.PointerCompareNode.create(__EQ__).execute((PythonAbstractNativeObject) left, (PythonAbstractNativeObject) right);
@@ -557,7 +557,7 @@ public abstract class TypeNodes {
         public abstract Object execute(PythonAbstractClass clazz);
 
         @Specialization
-        Object doInitialized(ManagedPythonClass clazz) {
+        Object doInitialized(PythonManagedClass clazz) {
             return clazz.getSulongType();
         }
 
@@ -568,8 +568,8 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         public static Object getSlowPath(PythonAbstractClass clazz) {
-            if (clazz instanceof ManagedPythonClass) {
-                return ((ManagedPythonClass) clazz).getSulongType();
+            if (clazz instanceof PythonManagedClass) {
+                return ((PythonManagedClass) clazz).getSulongType();
             } else if (PGuards.isNativeClass(clazz)) {
                 return null;
             }
@@ -578,8 +578,8 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         public static void setSlowPath(PythonAbstractClass clazz, Object sulongType) {
-            if (clazz instanceof ManagedPythonClass) {
-                ((ManagedPythonClass) clazz).setSulongType(sulongType);
+            if (clazz instanceof PythonManagedClass) {
+                ((PythonManagedClass) clazz).setSulongType(sulongType);
             } else {
                 throw new IllegalStateException("cannot set Sulong type for " + clazz.getClass().getName());
             }
@@ -673,7 +673,7 @@ public abstract class TypeNodes {
         public abstract boolean execute(Object obj);
 
         @Specialization
-        boolean doManagedClass(@SuppressWarnings("unused") ManagedPythonClass obj) {
+        boolean doManagedClass(@SuppressWarnings("unused") PythonManagedClass obj) {
             return true;
         }
 

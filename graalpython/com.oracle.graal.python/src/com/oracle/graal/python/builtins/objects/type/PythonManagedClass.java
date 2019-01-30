@@ -27,7 +27,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
-public abstract class ManagedPythonClass extends PythonObject implements PythonAbstractClass {
+public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
 
     private final String className;
 
@@ -53,7 +53,7 @@ public abstract class ManagedPythonClass extends PythonObject implements PythonA
     @CompilationFinal private Object sulongType;
 
     @TruffleBoundary
-    public ManagedPythonClass(LazyPythonClass typeClass, String name, Shape instanceShape, PythonAbstractClass... baseClasses) {
+    public PythonManagedClass(LazyPythonClass typeClass, String name, Shape instanceShape, PythonAbstractClass... baseClasses) {
         super(typeClass, PythonLanguage.freshShape() /* do not inherit layout from the TypeClass */);
         this.className = name;
 

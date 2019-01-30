@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -149,14 +149,14 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
     }
 
-    protected PythonClassAssumptionPair findAttrClassAndAssumptionInMRO(ManagedPythonClass klass) {
+    protected PythonClassAssumptionPair findAttrClassAndAssumptionInMRO(PythonManagedClass klass) {
         PythonAbstractClass[] mro = getMro(klass);
         Assumption attrAssumption = klass.createAttributeInMROFinalAssumption(key);
         for (int i = 0; i < mro.length; i++) {
             PythonAbstractClass clsObj = mro[i];
             // TODO(fa): that's just a first approach and needs to be implemented properly
-            if (clsObj instanceof ManagedPythonClass) {
-                ManagedPythonClass cls = (ManagedPythonClass) clsObj;
+            if (clsObj instanceof PythonManagedClass) {
+                PythonManagedClass cls = (PythonManagedClass) clsObj;
                 if (i > 0) {
                     assert cls != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
                     cls.addAttributeInMROFinalAssumption(key, attrAssumption);
@@ -178,8 +178,8 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
     @Specialization(guards = {"klass == cachedKlass", "cachedClassInMROInfo != null"}, limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", assumptions = {
                     "cachedClassInMROInfo.assumption"})
-    protected Object lookupConstantMROCached(@SuppressWarnings("unused") ManagedPythonClass klass,
-                    @Cached("klass") @SuppressWarnings("unused") ManagedPythonClass cachedKlass,
+    protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonManagedClass klass,
+                    @Cached("klass") @SuppressWarnings("unused") PythonManagedClass cachedKlass,
                     @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") PythonClassAssumptionPair cachedClassInMROInfo) {
         return cachedClassInMROInfo.value;
     }
@@ -194,8 +194,8 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
     @Specialization(guards = {"klass == cachedKlass", "mroLength < 32"}, limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", assumptions = "lookupStable")
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
-    protected Object lookupConstantMRO(@SuppressWarnings("unused") ManagedPythonClass klass,
-                    @Cached("klass") @SuppressWarnings("unused") ManagedPythonClass cachedKlass,
+    protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonManagedClass klass,
+                    @Cached("klass") @SuppressWarnings("unused") PythonManagedClass cachedKlass,
                     @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
                     @Cached(value = "getMro(cachedKlass)", dimensions = 1) PythonAbstractClass[] mro,
                     @Cached("mro.length") @SuppressWarnings("unused") int mroLength,
@@ -211,7 +211,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     }
 
     @Specialization(replaces = {"lookupConstantMROCached", "lookupConstantMRO"})
-    protected Object lookup(ManagedPythonClass klass,
+    protected Object lookup(PythonManagedClass klass,
                     @Cached("create()") GetMroNode getMroNode,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
         return lookupSlow(klass, key, getMroNode, readAttrNode);

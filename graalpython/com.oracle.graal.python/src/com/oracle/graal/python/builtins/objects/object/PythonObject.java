@@ -35,7 +35,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.truffle.api.Assumption;
@@ -156,8 +156,8 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     public final PythonAbstractClass asPythonClass() {
-        if (this instanceof ManagedPythonClass) {
-            return (ManagedPythonClass) this;
+        if (this instanceof PythonManagedClass) {
+            return (PythonManagedClass) this;
         }
         return getPythonClass();
     }

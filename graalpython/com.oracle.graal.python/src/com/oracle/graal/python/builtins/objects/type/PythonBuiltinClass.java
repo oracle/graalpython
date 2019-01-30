@@ -35,7 +35,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 /**
  * A Python built-in class that is immutable.
  */
-public final class PythonBuiltinClass extends ManagedPythonClass {
+public final class PythonBuiltinClass extends PythonManagedClass {
     private final PythonBuiltinClassType type;
 
     public PythonBuiltinClass(PythonBuiltinClassType builtinClass, PythonAbstractClass base) {

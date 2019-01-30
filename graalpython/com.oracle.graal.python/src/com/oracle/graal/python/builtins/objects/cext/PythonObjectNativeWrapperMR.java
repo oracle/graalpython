@@ -95,7 +95,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
@@ -233,14 +233,14 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(assumptions = "singleContextAssumption()", guards = "clazz == cachedClass")
-        Object doManagedCached(@SuppressWarnings("unused") ManagedPythonClass clazz,
-                        @Cached("clazz") @SuppressWarnings("unused") ManagedPythonClass cachedClass,
+        Object doManagedCached(@SuppressWarnings("unused") PythonManagedClass clazz,
+                        @Cached("clazz") @SuppressWarnings("unused") PythonManagedClass cachedClass,
                         @Cached("getSulongTypeForClass(cachedClass)") Object sulongType) {
             return sulongType;
         }
 
         @Specialization(replaces = "doManagedCached")
-        Object doManagedGeneric(ManagedPythonClass clazz,
+        Object doManagedGeneric(PythonManagedClass clazz,
                         @Cached("create()") TypeNodes.GetSulongTypeNode getSulongTypeNode,
                         @Cached("createBinaryProfile()") ConditionProfile hasSulongTypeProfile) {
             Object sulongType = getSulongTypeNode.execute(clazz);
@@ -412,19 +412,19 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_FLAGS, key)")
-        long doTpFlags(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        long doTpFlags(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") GetTypeFlagsNode getTypeFlagsNode) {
             return getTypeFlagsNode.execute(object);
         }
 
         @Specialization(guards = "eq(TP_NAME, key)")
-        Object doTpName(ManagedPythonClass object, @SuppressWarnings("unused") String key) {
+        Object doTpName(PythonManagedClass object, @SuppressWarnings("unused") String key) {
             // return a C string wrapper that really allocates 'char*' on TO_NATIVE
             return object.getNativeWrapper().getNameWrapper();
         }
 
         @Specialization(guards = "eq(TP_BASE, key)")
-        Object doTpBase(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpBase(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") GetSuperClassNode getSuperClassNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             LazyPythonClass superClass = getSuperClassNode.execute(object);
@@ -435,20 +435,20 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_ALLOC, key)")
-        Object doTpAlloc(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpAlloc(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__ALLOC__)") LookupAttributeInMRONode getAllocNode) {
             Object result = getAllocNode.execute(object);
             return getToSulongNode().execute(result);
         }
 
         @Specialization(guards = "eq(TP_AS_NUMBER, key)")
-        Object doTpAsNumber(ManagedPythonClass object, @SuppressWarnings("unused") String key) {
+        Object doTpAsNumber(PythonManagedClass object, @SuppressWarnings("unused") String key) {
             // TODO check for type and return 'NULL'
             return new PyNumberMethodsWrapper(object);
         }
 
         @Specialization(guards = "eq(TP_AS_BUFFER, key)")
-        Object doTpAsBuffer(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpAsBuffer(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") IsSubtypeNode isSubtype,
                         @Cached("create()") BranchProfile notBytes,
                         @Cached("create()") BranchProfile notBytearray,
@@ -480,7 +480,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_AS_SEQUENCE, key)")
-        Object doTpAsSequence(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpAsSequence(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__LEN__)") LookupAttributeInMRONode getAttrNode) {
             if (getAttrNode.execute(object) != PNone.NO_VALUE) {
                 return new PySequenceMethodsWrapper(object);
@@ -490,19 +490,19 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_NEW, key)")
-        Object doTpNew(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpNew(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__NEW__)") LookupAttributeInMRONode getAttrNode) {
             return ManagedMethodWrappers.createKeywords(getAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_HASH, key)")
-        Object doTpHash(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpHash(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__HASH__)") LookupAttributeInMRONode getHashNode) {
             return getToSulongNode().execute(getHashNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
-        Object doTpBasicsize(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpBasicsize(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") CastToIndexNode castToIntNode,
                         @Cached("create(__BASICSIZE__)") GetFixedAttributeNode getAttrNode) {
             Object val = getAttrNode.executeObject(object);
@@ -510,7 +510,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_ITEMSIZE, key)")
-        long doTpItemsize(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        long doTpItemsize(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") CastToIndexNode castToIntNode,
                         @Cached("create(__ITEMSIZE__)") GetFixedAttributeNode getAttrNode) {
             Object val = getAttrNode.executeObject(object);
@@ -523,7 +523,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
-        long doTpDictoffset(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        long doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") CastToIndexNode castToIntNode,
                         @Cached("create(__DICTOFFSET__)") GetFixedAttributeNode getAttrNode) {
             // TODO properly implement 'tp_dictoffset' for builtin classes
@@ -535,7 +535,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_WEAKLISTOFFSET, key)")
-        Object doTpWeaklistoffset(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpWeaklistoffset(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__WEAKLISTOFFSET__)") LookupAttributeInMRONode getAttrNode) {
             Object val = getAttrNode.execute(object);
             // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
@@ -547,44 +547,44 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
-        Object doTpRichcompare(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpRichcompare(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(RICHCMP)") LookupAttributeInMRONode getCmpNode) {
             return getToSulongNode().execute(getCmpNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_SUBCLASSES, key)")
-        Object doTpSubclasses(@SuppressWarnings("unused") ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpSubclasses(@SuppressWarnings("unused") PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
             // TODO create dict view on subclasses set
             return PythonObjectNativeWrapper.wrap(factory().createDict(), noWrapperProfile);
         }
 
         @Specialization(guards = "eq(TP_GETATTR, key)")
-        Object doTpGetattr(@SuppressWarnings("unused") ManagedPythonClass object, @SuppressWarnings("unused") String key) {
+        Object doTpGetattr(@SuppressWarnings("unused") PythonManagedClass object, @SuppressWarnings("unused") String key) {
             // we do not provide 'tp_getattr'; code will usually then use 'tp_getattro'
             return getToSulongNode().execute(PNone.NO_VALUE);
         }
 
         @Specialization(guards = "eq(TP_SETATTR, key)")
-        Object doTpSetattr(@SuppressWarnings("unused") ManagedPythonClass object, @SuppressWarnings("unused") String key) {
+        Object doTpSetattr(@SuppressWarnings("unused") PythonManagedClass object, @SuppressWarnings("unused") String key) {
             // we do not provide 'tp_setattr'; code will usually then use 'tp_setattro'
             return getToSulongNode().execute(PNone.NO_VALUE);
         }
 
         @Specialization(guards = "eq(TP_GETATTRO, key)")
-        Object doTpGetattro(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpGetattro(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__GETATTRIBUTE__)") LookupAttributeInMRONode lookupAttrNode) {
             return PyProcsWrapper.createGetAttrWrapper(lookupAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_SETATTRO, key)")
-        Object doTpSetattro(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpSetattro(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__SETATTR__)") LookupAttributeInMRONode lookupAttrNode) {
             return PyProcsWrapper.createSetAttrWrapper(lookupAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_ITERNEXT, key)")
-        Object doTpIternext(ManagedPythonClass object, @SuppressWarnings("unused") String key,
+        Object doTpIternext(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__NEXT__)") LookupAttributeInMRONode lookupAttrNode) {
             return getToSulongNode().execute(lookupAttrNode.execute(object));
         }
@@ -888,14 +888,14 @@ public class PythonObjectNativeWrapperMR {
         abstract Object execute(Object receiver, String key, Object value);
 
         @Specialization(guards = "eq(OB_TYPE, key)")
-        Object doObType(PythonObject object, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") ManagedPythonClass value,
+        Object doObType(PythonObject object, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PythonManagedClass value,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
             // At this point, we do not support changing the type of an object.
             return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
         }
 
         @Specialization(guards = "eq(TP_FLAGS, key)")
-        long doTpFlags(ManagedPythonClass object, @SuppressWarnings("unused") String key, long flags) {
+        long doTpFlags(PythonManagedClass object, @SuppressWarnings("unused") String key, long flags) {
             object.setFlags(flags);
             return flags;
         }
@@ -914,7 +914,7 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_SUBCLASSES, key)")
         @TruffleBoundary
-        Object doTpSubclasses(ManagedPythonClass object, @SuppressWarnings("unused") String key, PythonObjectNativeWrapper value) {
+        Object doTpSubclasses(PythonManagedClass object, @SuppressWarnings("unused") String key, PythonObjectNativeWrapper value) {
             // TODO more type checking; do fast path
             PDict dict = (PDict) value.getPythonObject();
             for (Object item : dict.items()) {
@@ -932,7 +932,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_DICT, key)")
-        Object doTpDict(ManagedPythonClass object, @SuppressWarnings("unused") String key, Object nativeValue,
+        Object doTpDict(PythonManagedClass object, @SuppressWarnings("unused") String key, Object nativeValue,
                         @Cached("create()") CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached("create()") HashingStorageNodes.GetItemNode getItem,
                         @Cached("create()") WriteAttributeToObjectNode writeAttrNode,
@@ -958,7 +958,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
-        Object doTpDictoffset(ManagedPythonClass object, @SuppressWarnings("unused") String key, Object value,
+        Object doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") String key, Object value,
                         @Cached("create()") CastToIntegerFromIntNode castToIntNode,
                         @Cached("create(__SETATTR__)") LookupAndCallTernaryNode call) {
             // TODO properly implement 'tp_dictoffset' for builtin classes

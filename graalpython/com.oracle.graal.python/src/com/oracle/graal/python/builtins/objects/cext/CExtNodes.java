@@ -74,7 +74,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -322,14 +322,14 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "object == cachedObject", limit = "3")
-        Object doPythonClass(@SuppressWarnings("unused") ManagedPythonClass object,
-                        @SuppressWarnings("unused") @Cached("object") ManagedPythonClass cachedObject,
+        Object doPythonClass(@SuppressWarnings("unused") PythonManagedClass object,
+                        @SuppressWarnings("unused") @Cached("object") PythonManagedClass cachedObject,
                         @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
             return wrapper;
         }
 
         @Specialization(replaces = "doPythonClass")
-        Object doPythonClassUncached(ManagedPythonClass object,
+        Object doPythonClassUncached(PythonManagedClass object,
                         @Cached("create()") TypeNodes.GetNameNode getNameNode) {
             return PythonClassNativeWrapper.wrap(object, getNameNode.execute(object));
         }
@@ -360,7 +360,7 @@ public abstract class CExtNodes {
             return obj;
         }
 
-        protected static PythonClassNativeWrapper wrapNativeClass(ManagedPythonClass object) {
+        protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
@@ -384,8 +384,8 @@ public abstract class CExtNodes {
                 return PythonNativeObject.cast(o).getPtr();
             } else if (o instanceof PythonNativeNull) {
                 return ((PythonNativeNull) o).getPtr();
-            } else if (o instanceof ManagedPythonClass) {
-                return wrapNativeClass((ManagedPythonClass) o);
+            } else if (o instanceof PythonManagedClass) {
+                return wrapNativeClass((PythonManagedClass) o);
             } else if (o instanceof PythonAbstractObject) {
                 assert !PGuards.isClass(o);
                 return PythonObjectNativeWrapper.wrapSlowPath((PythonAbstractObject) o);
