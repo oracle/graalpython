@@ -41,6 +41,11 @@
 
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -49,7 +54,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -68,10 +73,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PBytes})
 public class AbstractBytesBuiltins extends PythonBuiltins {
@@ -784,7 +785,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
     public abstract static class MakeTransNode extends PythonBuiltinNode {
 
         @Specialization
-        public PBytes maketrans(@SuppressWarnings("unused") PythonClass cls, Object from, Object to,
+        public PBytes maketrans(@SuppressWarnings("unused") LazyPythonClass cls, Object from, Object to,
                         @Cached("create()") BytesNodes.ToBytesNode toByteNode) {
             byte[] fromB = toByteNode.execute(from);
             byte[] toB = toByteNode.execute(to);
