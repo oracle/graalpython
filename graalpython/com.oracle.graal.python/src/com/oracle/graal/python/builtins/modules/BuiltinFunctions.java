@@ -55,7 +55,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.REPR;
 import static com.oracle.graal.python.nodes.BuiltinNames.ROUND;
 import static com.oracle.graal.python.nodes.BuiltinNames.SETATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
-import static com.oracle.graal.python.nodes.BuiltinNames.__BREAKPOINT__;
+import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINT;
+import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTIN__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__DUMP_TRUFFLE_AST__;
@@ -93,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -168,6 +170,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -1501,12 +1504,33 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __BREAKPOINT__, fixedNumOfPositionalArgs = 0)
+    @Builtin(name = BREAKPOINT, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BreakPointNode extends PythonBuiltinNode {
+        @Child HashingStorageNodes.GetItemNode getSysModuleNode;
+        @Child ReadAttributeFromObjectNode getBreakpointhookNode;
+        @Child CallNode callNode;
+
         @Specialization
-        public Object doIt() {
-            return PNone.NONE;
+        public Object doIt(VirtualFrame frame, Object[] args, PKeyword[] kwargs) {
+            if (Debugger.find(getContext().getEnv()).getSessionCount() > 0) {
+                // we already have a Truffle debugger attached, it'll stop here
+                return PNone.NONE;
+            } else {
+                if (getSysModuleNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getSysModuleNode = insert(HashingStorageNodes.GetItemNode.create());
+                    getBreakpointhookNode = insert(ReadAttributeFromObjectNode.create());
+                    callNode = insert(CallNode.create());
+                }
+                PDict sysModules = getContext().getSysModules();
+                Object sysModule = getSysModuleNode.execute(sysModules.getDictStorage(), "sys");
+                Object breakpointhook = getBreakpointhookNode.execute(sysModule, BREAKPOINTHOOK);
+                if (breakpointhook == PNone.NO_VALUE) {
+                    throw raise(PythonBuiltinClassType.RuntimeError, "lost sys.breakpointhook");
+                }
+                return callNode.execute(frame, breakpointhook, args, kwargs);
+            }
         }
     }
 
