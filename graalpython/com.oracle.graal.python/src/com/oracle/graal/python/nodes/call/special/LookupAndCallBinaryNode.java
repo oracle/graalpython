@@ -45,7 +45,7 @@ import java.util.function.Supplier;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -291,9 +291,9 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @Cached("create()") IsSubtypeNode isSubtype,
                     @Cached("createBinaryProfile()") ConditionProfile notImplementedBranch) {
         Object result = PNotImplemented.NOT_IMPLEMENTED;
-        AbstractPythonClass leftClass = getClass.execute(left);
+        PythonAbstractClass leftClass = getClass.execute(left);
         Object leftCallable = getattr.execute(leftClass);
-        AbstractPythonClass rightClass = getClassR.execute(right);
+        PythonAbstractClass rightClass = getClassR.execute(right);
         Object rightCallable = getattrR.execute(rightClass);
         if (leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;

@@ -27,7 +27,7 @@ package com.oracle.graal.python.nodes.statement;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
@@ -156,8 +156,8 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
             }
         } else {
             // non-builtin class: look through MRO
-            AbstractPythonClass[] mro = getMro(lazyClass);
-            for (AbstractPythonClass current : mro) {
+            PythonAbstractClass[] mro = getMro(lazyClass);
+            for (PythonAbstractClass current : mro) {
                 if (isClassProfile.profileClass(current, cachedError)) {
                     matches = true;
                     break;
@@ -198,7 +198,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
                 matches = matches(expectedType, builtinType);
             }
         } else {
-            AbstractPythonClass clazz = (AbstractPythonClass) lazyClass;
+            PythonAbstractClass clazz = (PythonAbstractClass) lazyClass;
             if (isTupleProfile.profile(expectedType instanceof PTuple)) {
                 // check for every type in the tuple
                 for (Object etype : ((PTuple) expectedType).getArray()) {
@@ -215,13 +215,13 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         return writeResult(frame, e, matches);
     }
 
-    private boolean matches(Object expectedType, AbstractPythonClass clazz) {
+    private boolean matches(Object expectedType, PythonAbstractClass clazz) {
         // TODO: check whether expected type derives from BaseException
         if (equalsProfile.profile(isSameType(expectedType, clazz))) {
             return true;
         }
-        AbstractPythonClass[] mro = getMro(clazz);
-        for (AbstractPythonClass current : mro) {
+        PythonAbstractClass[] mro = getMro(clazz);
+        for (PythonAbstractClass current : mro) {
             if (expectedType == current) {
                 return true;
             }
@@ -235,7 +235,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
             throw raiseNoException();
         }
 
-        AbstractPythonClass expectedClass = (AbstractPythonClass) expectedType;
+        PythonAbstractClass expectedClass = (PythonAbstractClass) expectedType;
 
         // TODO: check whether expected type derives from BaseException
         PythonBuiltinClassType builtinClass = clazz;
@@ -283,7 +283,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         return getSourceSection() != null;
     }
 
-    private AbstractPythonClass[] getMro(LazyPythonClass clazz) {
+    private PythonAbstractClass[] getMro(LazyPythonClass clazz) {
         if (getMroNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             getMroNode = insert(GetMroNode.create());

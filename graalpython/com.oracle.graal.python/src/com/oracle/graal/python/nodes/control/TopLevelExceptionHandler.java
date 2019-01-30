@@ -54,7 +54,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -143,7 +143,7 @@ public class TopLevelExceptionHandler extends RootNode {
         }
 
         PBaseException value = e.getExceptionObject();
-        AbstractPythonClass type = value.getPythonClass();
+        PythonAbstractClass type = value.getPythonClass();
         PTraceback tb = value.getTraceback(core.factory());
 
         PythonModule sys = core.lookupBuiltinModule("sys");

@@ -102,7 +102,7 @@ public abstract class TypeNodes {
 
     public abstract static class GetTypeFlagsNode extends PNodeWithContext {
 
-        public abstract long execute(AbstractPythonClass clazz);
+        public abstract long execute(PythonAbstractClass clazz);
 
         @Specialization(guards = "isInitialized(clazz)")
         long doInitialized(ManagedPythonClass clazz) {
@@ -135,7 +135,7 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        public static long doSlowPath(AbstractPythonClass clazz) {
+        public static long doSlowPath(PythonAbstractClass clazz) {
             if (clazz instanceof ManagedPythonClass) {
                 ManagedPythonClass mclazz = (ManagedPythonClass) clazz;
                 if (isInitialized(mclazz)) {
@@ -175,20 +175,20 @@ public abstract class TypeNodes {
     @ImportStatic(NativeMemberNames.class)
     public abstract static class GetMroNode extends PNodeWithContext {
 
-        public abstract AbstractPythonClass[] execute(Object obj);
+        public abstract PythonAbstractClass[] execute(Object obj);
 
         @Specialization
-        AbstractPythonClass[] doPythonClass(ManagedPythonClass obj) {
+        PythonAbstractClass[] doPythonClass(ManagedPythonClass obj) {
             return obj.getMethodResolutionOrder();
         }
 
         @Specialization
-        AbstractPythonClass[] doPythonClass(PythonBuiltinClassType obj) {
+        PythonAbstractClass[] doPythonClass(PythonBuiltinClassType obj) {
             return getBuiltinPythonClass(obj).getMethodResolutionOrder();
         }
 
         @Specialization
-        AbstractPythonClass[] doNativeClass(PythonNativeClass obj,
+        PythonAbstractClass[] doNativeClass(PythonNativeClass obj,
                         @Cached("create(TP_MRO)") GetTypeMemberNode getTpMroNode) {
             Object tupleObj = getTpMroNode.execute(obj);
             if (tupleObj instanceof PTuple) {
@@ -201,7 +201,7 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        public static AbstractPythonClass[] doSlowPath(Object obj) {
+        public static PythonAbstractClass[] doSlowPath(Object obj) {
             if (obj instanceof ManagedPythonClass) {
                 return ((ManagedPythonClass) obj).getMethodResolutionOrder();
             } else if (obj instanceof PythonBuiltinClassType) {
@@ -289,7 +289,7 @@ public abstract class TypeNodes {
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             Object tpBaseObj = getTpBaseNode.execute(obj);
             if (profile.profile(PGuards.isClass(tpBaseObj))) {
-                return (AbstractPythonClass) tpBaseObj;
+                return (PythonAbstractClass) tpBaseObj;
             }
             CompilerDirectives.transferToInterpreter();
             throw raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), tpBaseObj);
@@ -304,7 +304,7 @@ public abstract class TypeNodes {
             } else if (PGuards.isNativeClass(obj)) {
                 Object tpBaseObj = GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_BASE);
                 if (PGuards.isClass(tpBaseObj)) {
-                    return (AbstractPythonClass) tpBaseObj;
+                    return (PythonAbstractClass) tpBaseObj;
                 }
                 PythonLanguage.getCore().raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), tpBaseObj);
             }
@@ -321,21 +321,21 @@ public abstract class TypeNodes {
     @ImportStatic(NativeMemberNames.class)
     public abstract static class GetSubclassesNode extends PNodeWithContext {
 
-        public abstract Set<AbstractPythonClass> execute(Object obj);
+        public abstract Set<PythonAbstractClass> execute(Object obj);
 
         @Specialization
-        Set<AbstractPythonClass> doPythonClass(ManagedPythonClass obj) {
+        Set<PythonAbstractClass> doPythonClass(ManagedPythonClass obj) {
             return obj.getSubClasses();
         }
 
         @Specialization
-        Set<AbstractPythonClass> doPythonClass(PythonBuiltinClassType obj) {
+        Set<PythonAbstractClass> doPythonClass(PythonBuiltinClassType obj) {
             return getBuiltinPythonClass(obj).getSubClasses();
         }
 
         @Specialization
         @TruffleBoundary
-        Set<AbstractPythonClass> doNativeClass(PythonNativeClass obj,
+        Set<PythonAbstractClass> doNativeClass(PythonNativeClass obj,
                         @Cached("create(TP_SUBCLASSES)") GetTypeMemberNode getTpSubclassesNode,
                         @Cached("createClassProfile()") ValueProfile profile) {
             Object tpSubclasses = getTpSubclassesNode.execute(obj);
@@ -349,7 +349,7 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        public static Set<AbstractPythonClass> doSlowPath(Object obj) {
+        public static Set<PythonAbstractClass> doSlowPath(Object obj) {
             if (obj instanceof ManagedPythonClass) {
                 return ((ManagedPythonClass) obj).getSubClasses();
             } else if (obj instanceof PythonBuiltinClassType) {
@@ -364,8 +364,8 @@ public abstract class TypeNodes {
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
 
-        private static Set<AbstractPythonClass> wrapDict(Object tpSubclasses) {
-            return new Set<AbstractPythonClass>() {
+        private static Set<PythonAbstractClass> wrapDict(Object tpSubclasses) {
+            return new Set<PythonAbstractClass>() {
                 private final PDict dict = (PDict) tpSubclasses;
 
                 public int size() {
@@ -388,8 +388,8 @@ public abstract class TypeNodes {
                 }
 
                 @SuppressWarnings("unchecked")
-                public Iterator<AbstractPythonClass> iterator() {
-                    return (Iterator<AbstractPythonClass>) dict.getDictStorage().values();
+                public Iterator<PythonAbstractClass> iterator() {
+                    return (Iterator<PythonAbstractClass>) dict.getDictStorage().values();
                 }
 
                 public Object[] toArray() {
@@ -400,7 +400,7 @@ public abstract class TypeNodes {
                     throw new UnsupportedOperationException();
                 }
 
-                public boolean add(AbstractPythonClass e) {
+                public boolean add(PythonAbstractClass e) {
                     if (PGuards.isNativeClass(e)) {
                         dict.setItem(PythonNativeClass.cast(e).getPtr(), e);
                     }
@@ -416,7 +416,7 @@ public abstract class TypeNodes {
                     throw new UnsupportedOperationException();
                 }
 
-                public boolean addAll(Collection<? extends AbstractPythonClass> c) {
+                public boolean addAll(Collection<? extends PythonAbstractClass> c) {
                     throw new UnsupportedOperationException();
                 }
 
@@ -445,20 +445,20 @@ public abstract class TypeNodes {
     public abstract static class GetBaseClassesNode extends PNodeWithContext {
 
         // TODO(fa): this should not return a Java array; maybe a SequenceStorage would fit
-        public abstract AbstractPythonClass[] execute(Object obj);
+        public abstract PythonAbstractClass[] execute(Object obj);
 
         @Specialization
-        AbstractPythonClass[] doPythonClass(ManagedPythonClass obj) {
+        PythonAbstractClass[] doPythonClass(ManagedPythonClass obj) {
             return obj.getBaseClasses();
         }
 
         @Specialization
-        AbstractPythonClass[] doPythonClass(PythonBuiltinClassType obj) {
+        PythonAbstractClass[] doPythonClass(PythonBuiltinClassType obj) {
             return getBuiltinPythonClass(obj).getBaseClasses();
         }
 
         @Specialization
-        AbstractPythonClass[] doNative(PythonNativeClass obj,
+        PythonAbstractClass[] doNative(PythonNativeClass obj,
                         @Cached("create(TP_BASES)") GetTypeMemberNode getTpBasesNode,
                         @Cached("createClassProfile()") ValueProfile resultTypeProfile,
                         @Cached("createToArray()") SequenceStorageNodes.ToArrayNode toArrayNode) {
@@ -475,7 +475,7 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        public static AbstractPythonClass[] doSlowPath(Object obj) {
+        public static PythonAbstractClass[] doSlowPath(Object obj) {
             if (obj instanceof ManagedPythonClass) {
                 return ((ManagedPythonClass) obj).getBaseClasses();
             } else if (obj instanceof PythonBuiltinClassType) {
@@ -504,10 +504,10 @@ public abstract class TypeNodes {
         }
 
         // TODO: get rid of this
-        private static AbstractPythonClass[] cast(Object[] arr) {
-            AbstractPythonClass[] bases = new AbstractPythonClass[arr.length];
+        private static PythonAbstractClass[] cast(Object[] arr) {
+            PythonAbstractClass[] bases = new PythonAbstractClass[arr.length];
             for (int i = 0; i < arr.length; i++) {
-                bases[i] = (AbstractPythonClass) arr[i];
+                bases[i] = (PythonAbstractClass) arr[i];
             }
             return bases;
         }
@@ -554,7 +554,7 @@ public abstract class TypeNodes {
     /** accesses the Sulong type of a class; does no recursive resolving */
     public abstract static class GetSulongTypeNode extends Node {
 
-        public abstract Object execute(AbstractPythonClass clazz);
+        public abstract Object execute(PythonAbstractClass clazz);
 
         @Specialization
         Object doInitialized(ManagedPythonClass clazz) {
@@ -567,7 +567,7 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        public static Object getSlowPath(AbstractPythonClass clazz) {
+        public static Object getSlowPath(PythonAbstractClass clazz) {
             if (clazz instanceof ManagedPythonClass) {
                 return ((ManagedPythonClass) clazz).getSulongType();
             } else if (PGuards.isNativeClass(clazz)) {
@@ -577,7 +577,7 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        public static void setSlowPath(AbstractPythonClass clazz, Object sulongType) {
+        public static void setSlowPath(PythonAbstractClass clazz, Object sulongType) {
             if (clazz instanceof ManagedPythonClass) {
                 ((ManagedPythonClass) clazz).setSulongType(sulongType);
             } else {
@@ -594,25 +594,25 @@ public abstract class TypeNodes {
     public abstract static class ComputeMroNode extends Node {
 
         @TruffleBoundary
-        public static AbstractPythonClass[] doSlowPath(AbstractPythonClass cls) {
+        public static PythonAbstractClass[] doSlowPath(PythonAbstractClass cls) {
             return computeMethodResolutionOrder(cls);
         }
 
-        private static AbstractPythonClass[] computeMethodResolutionOrder(AbstractPythonClass cls) {
+        private static PythonAbstractClass[] computeMethodResolutionOrder(PythonAbstractClass cls) {
             CompilerAsserts.neverPartOfCompilation();
 
-            AbstractPythonClass[] currentMRO = null;
+            PythonAbstractClass[] currentMRO = null;
 
-            AbstractPythonClass[] baseClasses = GetBaseClassesNode.doSlowPath(cls);
+            PythonAbstractClass[] baseClasses = GetBaseClassesNode.doSlowPath(cls);
             if (baseClasses.length == 0) {
-                currentMRO = new AbstractPythonClass[]{cls};
+                currentMRO = new PythonAbstractClass[]{cls};
             } else if (baseClasses.length == 1) {
-                AbstractPythonClass[] baseMRO = GetMroNode.doSlowPath(baseClasses[0]);
+                PythonAbstractClass[] baseMRO = GetMroNode.doSlowPath(baseClasses[0]);
 
                 if (baseMRO == null) {
-                    currentMRO = new AbstractPythonClass[]{cls};
+                    currentMRO = new PythonAbstractClass[]{cls};
                 } else {
-                    currentMRO = new AbstractPythonClass[baseMRO.length + 1];
+                    currentMRO = new PythonAbstractClass[baseMRO.length + 1];
                     System.arraycopy(baseMRO, 0, currentMRO, 1, baseMRO.length);
                     currentMRO[0] = cls;
                 }
@@ -626,21 +626,21 @@ public abstract class TypeNodes {
 
                 toMerge[baseClasses.length] = new MROMergeState();
                 toMerge[baseClasses.length].mro = baseClasses;
-                ArrayList<AbstractPythonClass> mro = new ArrayList<>();
+                ArrayList<PythonAbstractClass> mro = new ArrayList<>();
                 mro.add(cls);
                 currentMRO = mergeMROs(toMerge, mro);
             }
             return currentMRO;
         }
 
-        private static AbstractPythonClass[] mergeMROs(MROMergeState[] toMerge, List<AbstractPythonClass> mro) {
+        private static PythonAbstractClass[] mergeMROs(MROMergeState[] toMerge, List<PythonAbstractClass> mro) {
             int idx;
             scan: for (idx = 0; idx < toMerge.length; idx++) {
                 if (toMerge[idx].isMerged()) {
                     continue scan;
                 }
 
-                AbstractPythonClass candidate = toMerge[idx].getCandidate();
+                PythonAbstractClass candidate = toMerge[idx].getCandidate();
                 for (MROMergeState mergee : toMerge) {
                     if (mergee.pastnextContains(candidate)) {
                         continue scan;
@@ -663,7 +663,7 @@ public abstract class TypeNodes {
                 }
             }
 
-            return mro.toArray(new AbstractPythonClass[mro.size()]);
+            return mro.toArray(new PythonAbstractClass[mro.size()]);
         }
 
     }

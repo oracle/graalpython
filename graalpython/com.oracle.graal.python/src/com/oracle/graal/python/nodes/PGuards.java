@@ -65,7 +65,7 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -117,7 +117,7 @@ public abstract class PGuards {
     }
 
     public static boolean isClass(Object value) {
-        return value instanceof AbstractPythonClass;
+        return value instanceof PythonAbstractClass;
     }
 
     public static boolean isEmptyStorage(PSequence sequence) {

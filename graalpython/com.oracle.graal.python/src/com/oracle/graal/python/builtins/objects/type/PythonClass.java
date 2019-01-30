@@ -32,7 +32,7 @@ import com.oracle.truffle.api.object.Shape;
  */
 public final class PythonClass extends ManagedPythonClass {
 
-    public PythonClass(LazyPythonClass typeClass, String name, Shape instanceShape, AbstractPythonClass[] baseClasses) {
+    public PythonClass(LazyPythonClass typeClass, String name, Shape instanceShape, PythonAbstractClass[] baseClasses) {
         super(typeClass, name, instanceShape, baseClasses);
     }
 

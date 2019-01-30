@@ -27,27 +27,27 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class MroSequenceStorage extends TypedSequenceStorage {
 
-    private AbstractPythonClass[] values;
+    private PythonAbstractClass[] values;
 
-    public MroSequenceStorage(AbstractPythonClass[] elements) {
+    public MroSequenceStorage(PythonAbstractClass[] elements) {
         this.values = elements;
         this.capacity = elements.length;
         this.length = elements.length;
     }
 
-    public MroSequenceStorage(AbstractPythonClass[] elements, int length) {
+    public MroSequenceStorage(PythonAbstractClass[] elements, int length) {
         this.values = elements;
         this.capacity = elements.length;
         this.length = length;
     }
 
     public MroSequenceStorage(int capacity) {
-        this.values = new AbstractPythonClass[capacity];
+        this.values = new PythonAbstractClass[capacity];
         this.capacity = capacity;
         this.length = 0;
     }
@@ -59,14 +59,14 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public void setItemNormalized(int idx, Object value) {
-        if (value instanceof AbstractPythonClass) {
-            setClassItemNormalized(idx, (AbstractPythonClass) value);
+        if (value instanceof PythonAbstractClass) {
+            setClassItemNormalized(idx, (PythonAbstractClass) value);
         } else {
             throw new SequenceStoreException(value);
         }
     }
 
-    public void setClassItemNormalized(int idx, AbstractPythonClass value) {
+    public void setClassItemNormalized(int idx, PythonAbstractClass value) {
         values[idx] = value;
     }
 
@@ -90,7 +90,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public MroSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
-        AbstractPythonClass[] newArray = new AbstractPythonClass[sliceLength];
+        PythonAbstractClass[] newArray = new PythonAbstractClass[sliceLength];
 
         if (step == 1) {
             System.arraycopy(values, start, newArray, 0, sliceLength);
@@ -139,7 +139,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         return values;
     }
 
-    public AbstractPythonClass[] getInternalClassArray() {
+    public PythonAbstractClass[] getInternalClassArray() {
         return values;
     }
 
@@ -151,7 +151,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public void increaseCapacityExact(int newCapacity) {
-        values = new AbstractPythonClass[newCapacity];
+        values = new PythonAbstractClass[newCapacity];
         capacity = values.length;
     }
 
@@ -169,7 +169,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
             int middle = (length - 1) / 2;
 
             for (; head <= middle; head++, tail--) {
-                AbstractPythonClass temp = values[head];
+                PythonAbstractClass temp = values[head];
                 values[head] = values[tail];
                 values[tail] = temp;
             }
@@ -212,7 +212,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public void setInternalArrayObject(Object arrayObject) {
-        this.values = (AbstractPythonClass[]) arrayObject;
+        this.values = (PythonAbstractClass[]) arrayObject;
     }
 
     @Override

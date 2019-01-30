@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PyBufferProcsWrapperMRFactory.GetBufferProcsNodeGen;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -73,7 +73,7 @@ public class PyBufferProcsWrapperMR {
     abstract static class GetBufferProcsNode extends PNodeWithContext {
         @Child private ToSulongNode toSulongNode;
 
-        public abstract Object execute(AbstractPythonClass clazz, String key);
+        public abstract Object execute(PythonAbstractClass clazz, String key);
 
         @Specialization
         Object doManagedClass(ManagedPythonClass clazz, String key) {

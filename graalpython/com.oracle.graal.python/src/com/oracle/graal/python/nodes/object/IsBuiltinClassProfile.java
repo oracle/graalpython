@@ -42,7 +42,7 @@ package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -203,7 +203,7 @@ public final class IsBuiltinClassProfile {
         }
     }
 
-    public boolean profileClass(AbstractPythonClass clazz, PythonBuiltinClassType type) {
+    public boolean profileClass(PythonAbstractClass clazz, PythonBuiltinClassType type) {
         if (clazz instanceof PythonBuiltinClass) {
             if (!isBuiltinClass) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();

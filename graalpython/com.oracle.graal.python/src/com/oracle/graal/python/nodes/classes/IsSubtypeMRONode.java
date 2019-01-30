@@ -41,7 +41,7 @@
 package com.oracle.graal.python.nodes.classes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -95,7 +95,7 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
         return isSubtype(derived, clazz.getType());
     }
 
-    protected static boolean isBuiltinClass(AbstractPythonClass clazz) {
+    protected static boolean isBuiltinClass(PythonAbstractClass clazz) {
         return clazz instanceof PythonBuiltinClass;
     }
 
@@ -113,7 +113,7 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
     protected boolean isSubtype(PythonClass derived, PythonBuiltinClassType clazz,
                     @Cached("create()") IsBuiltinClassProfile profile) {
 
-        for (AbstractPythonClass mro : getMro(derived)) {
+        for (PythonAbstractClass mro : getMro(derived)) {
             if (profile.profileClass(mro, clazz)) {
                 return true;
             }
@@ -125,7 +125,7 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
     @Specialization
     protected boolean isSubtype(PythonClass derived, PythonClass clazz,
                     @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode) {
-        for (AbstractPythonClass mro : getMro(derived)) {
+        for (PythonAbstractClass mro : getMro(derived)) {
             if (isSameTypeNode.execute(mro, clazz)) {
                 return true;
             }
@@ -134,7 +134,7 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
         return false;
     }
 
-    private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
+    private PythonAbstractClass[] getMro(PythonAbstractClass clazz) {
         if (getMroNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             getMroNode = insert(GetMroNode.create());

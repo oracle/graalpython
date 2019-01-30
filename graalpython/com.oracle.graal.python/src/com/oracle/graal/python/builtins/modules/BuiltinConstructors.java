@@ -117,7 +117,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -1384,8 +1384,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return callNativeGenericNewNode(self, varargs, kwargs);
         }
 
-        private static PythonNativeClass findFirstNativeBaseClass(AbstractPythonClass[] methodResolutionOrder) {
-            for (AbstractPythonClass cls : methodResolutionOrder) {
+        private static PythonNativeClass findFirstNativeBaseClass(PythonAbstractClass[] methodResolutionOrder) {
+            for (PythonAbstractClass cls : methodResolutionOrder) {
                 if (PGuards.isNativeClass(cls)) {
                     return PythonNativeClass.cast(cls);
                 }
@@ -1769,13 +1769,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        public Object type(VirtualFrame frame, AbstractPythonClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
+        public Object type(VirtualFrame frame, PythonAbstractClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @Cached("create()") GetClassNode getMetaclassNode,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create()") CallDispatchNode callNewFuncNode,
                         @Cached("create()") CreateArgumentsNode createArgs) {
             // Determine the proper metatype to deal with this
-            AbstractPythonClass metaclass = calculate_metaclass(cls, bases, getMetaclassNode);
+            PythonAbstractClass metaclass = calculate_metaclass(cls, bases, getMetaclassNode);
             if (metaclass != cls) {
                 Object newFunc = getNewFuncNode.execute(metaclass);
                 if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
@@ -1823,22 +1823,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object typeMetaclass(String name, PTuple bases, PDict namespace, AbstractPythonClass metaclass) {
+        private Object typeMetaclass(String name, PTuple bases, PDict namespace, PythonAbstractClass metaclass) {
 
             Object[] array = bases.getArray();
 
-            AbstractPythonClass[] basesArray;
+            PythonAbstractClass[] basesArray;
             if (array.length == 0) {
                 // Adjust for empty tuple bases
-                basesArray = new AbstractPythonClass[]{getCore().lookupType(PythonBuiltinClassType.PythonObject)};
+                basesArray = new PythonAbstractClass[]{getCore().lookupType(PythonBuiltinClassType.PythonObject)};
             } else {
-                basesArray = new AbstractPythonClass[array.length];
+                basesArray = new PythonAbstractClass[array.length];
                 for (int i = 0; i < array.length; i++) {
                     // TODO: deal with non-class bases
-                    if (!(array[i] instanceof AbstractPythonClass)) {
+                    if (!(array[i] instanceof PythonAbstractClass)) {
                         throw raise(NotImplementedError, "creating a class with non-class bases");
                     } else {
-                        basesArray[i] = (AbstractPythonClass) array[i];
+                        basesArray[i] = (PythonAbstractClass) array[i];
                     }
                 }
             }
@@ -2075,7 +2075,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return addedNewDict;
         }
 
-        private AbstractPythonClass[] getMro(AbstractPythonClass pythonClass) {
+        private PythonAbstractClass[] getMro(PythonAbstractClass pythonClass) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());
@@ -2083,10 +2083,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return getMroNode.execute(pythonClass);
         }
 
-        private AbstractPythonClass calculate_metaclass(AbstractPythonClass cls, PTuple bases, GetClassNode getMetaclassNode) {
-            AbstractPythonClass winner = cls;
+        private PythonAbstractClass calculate_metaclass(PythonAbstractClass cls, PTuple bases, GetClassNode getMetaclassNode) {
+            PythonAbstractClass winner = cls;
             for (Object base : bases.getArray()) {
-                AbstractPythonClass typ = getMetaclassNode.execute(base);
+                PythonAbstractClass typ = getMetaclassNode.execute(base);
                 if (isSubType(winner, typ)) {
                     continue;
                 } else if (isSubType(typ, winner)) {
@@ -2099,7 +2099,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return winner;
         }
 
-        private boolean isSubType(AbstractPythonClass subclass, AbstractPythonClass superclass) {
+        private boolean isSubType(PythonAbstractClass subclass, PythonAbstractClass superclass) {
             if (isSubtypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isSubtypeNode = insert(IsSubtypeNode.create());
@@ -2519,14 +2519,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(get)", "!isNoValue(set)"})
         @TruffleBoundary
-        Object call(@SuppressWarnings("unused") LazyPythonClass getSetClass, Object get, Object set, String name, AbstractPythonClass owner) {
+        Object call(@SuppressWarnings("unused") LazyPythonClass getSetClass, Object get, Object set, String name, PythonAbstractClass owner) {
             denyInstantiationAfterInitialization();
             return factory().createGetSetDescriptor(get, set, name, owner);
         }
 
         @Specialization(guards = {"!isNoValue(get)", "isNoValue(set)"})
         @TruffleBoundary
-        Object call(@SuppressWarnings("unused") LazyPythonClass getSetClass, Object get, @SuppressWarnings("unused") PNone set, String name, AbstractPythonClass owner) {
+        Object call(@SuppressWarnings("unused") LazyPythonClass getSetClass, Object get, @SuppressWarnings("unused") PNone set, String name, PythonAbstractClass owner) {
             denyInstantiationAfterInitialization();
             return factory().createGetSetDescriptor(get, null, name, owner);
         }
@@ -2534,7 +2534,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(get)", "isNoValue(set)"})
         @TruffleBoundary
         @SuppressWarnings("unused")
-        Object call(LazyPythonClass getSetClass, PNone get, PNone set, String name, AbstractPythonClass owner) {
+        Object call(LazyPythonClass getSetClass, PNone get, PNone set, String name, PythonAbstractClass owner) {
             denyInstantiationAfterInitialization();
             return factory().createGetSetDescriptor(null, null, name, owner);
         }

@@ -73,7 +73,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -846,12 +846,12 @@ public abstract class CExtNodes {
 
         @CompilationFinal private TruffleObject func;
 
-        public abstract AbstractPythonClass execute(PythonAbstractNativeObject object);
+        public abstract PythonAbstractClass execute(PythonAbstractNativeObject object);
 
         @Specialization(guards = "object == cachedObject", limit = "1")
-        AbstractPythonClass getNativeClassCached(@SuppressWarnings("unused") PythonAbstractNativeObject object,
+        PythonAbstractClass getNativeClassCached(@SuppressWarnings("unused") PythonAbstractNativeObject object,
                         @SuppressWarnings("unused") @Cached("object") PythonAbstractNativeObject cachedObject,
-                        @Cached("getNativeClass(cachedObject)") AbstractPythonClass cachedClass) {
+                        @Cached("getNativeClass(cachedObject)") PythonAbstractClass cachedClass) {
             // TODO: (tfel) is this really something we can do? It's so rare for this class to
             // change that it shouldn't be worth the effort, but in native code, anything can
             // happen. OTOH, CPython also has caches that can become invalid when someone just goes
@@ -860,14 +860,14 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        AbstractPythonClass getNativeClass(PythonAbstractNativeObject object) {
+        PythonAbstractClass getNativeClass(PythonAbstractNativeObject object) {
             // do not convert wrap 'object.object' since that is really the native pointer object
-            return (AbstractPythonClass) getToJavaNode().execute(getCallGetObTypeNode().call(object.object));
+            return (PythonAbstractClass) getToJavaNode().execute(getCallGetObTypeNode().call(object.object));
         }
 
         @TruffleBoundary
-        public static AbstractPythonClass doSlowPath(PythonAbstractNativeObject object) {
-            return (AbstractPythonClass) AsPythonObjectNode.doSlowPath(PCallCapiFunction.doSlowPath(NativeCAPISymbols.FUN_GET_OB_TYPE, object.getPtr()), true);
+        public static PythonAbstractClass doSlowPath(PythonAbstractNativeObject object) {
+            return (PythonAbstractClass) AsPythonObjectNode.doSlowPath(PCallCapiFunction.doSlowPath(NativeCAPISymbols.FUN_GET_OB_TYPE, object.getPtr()), true);
         }
 
         private AsPythonObjectNode getToJavaNode() {

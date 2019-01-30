@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -114,13 +114,13 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             }
             if (isBuiltinProfile.profile(descrType instanceof PythonBuiltinClassType)) {
                 PythonBuiltinClassType builtinClassType = (PythonBuiltinClassType) descrType;
-                for (AbstractPythonClass o : getMro(type)) {
+                for (PythonAbstractClass o : getMro(type)) {
                     if (isBuiltinClassProfile.profileClass(o, builtinClassType)) {
                         return false;
                     }
                 }
             } else {
-                for (AbstractPythonClass o : getMro(type)) {
+                for (PythonAbstractClass o : getMro(type)) {
                     if (isSameType(o, descrType)) {
                         return false;
                     }
@@ -130,7 +130,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             throw raise(TypeError, "descriptor '%s' for '%s' objects doesn't apply to '%s' object", name, getTypeName(descrType), getTypeName(type));
         }
 
-        private AbstractPythonClass[] getMro(LazyPythonClass clazz) {
+        private PythonAbstractClass[] getMro(LazyPythonClass clazz) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());

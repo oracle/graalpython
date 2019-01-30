@@ -133,7 +133,7 @@ public class TypeBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        String repr(AbstractPythonClass self,
+        String repr(PythonAbstractClass self,
                         @Cached("create(__MODULE__)") GetFixedAttributeNode readModuleNode,
                         @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
             Object moduleName = readModuleNode.executeObject(self);
@@ -164,9 +164,9 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MroNode extends PythonBuiltinNode {
         @Specialization
-        Object doit(AbstractPythonClass klass,
+        Object doit(PythonAbstractClass klass,
                         @Cached("create()") GetMroNode getMroNode) {
-            AbstractPythonClass[] mro = getMroNode.execute(klass);
+            PythonAbstractClass[] mro = getMroNode.execute(klass);
             return factory().createList(Arrays.copyOf(mro, mro.length, Object[].class));
         }
 
@@ -210,24 +210,24 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"accept(arguments, cachedSelf)"})
         protected Object doItUnboxed(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords,
                         @Cached("first(arguments)") Object cachedSelf) {
-            return op(frame, (AbstractPythonClass) cachedSelf, arguments, keywords, false);
+            return op(frame, (PythonAbstractClass) cachedSelf, arguments, keywords, false);
 
         }
 
         @Specialization(replaces = "doItUnboxed")
         protected Object doItUnboxedIndirect(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords) {
             Object self = arguments[0];
-            return op(frame, (AbstractPythonClass) self, arguments, keywords, false);
+            return op(frame, (PythonAbstractClass) self, arguments, keywords, false);
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"})
-        protected Object doIt(VirtualFrame frame, @SuppressWarnings("unused") AbstractPythonClass self, Object[] arguments, PKeyword[] keywords,
-                        @Cached("self") AbstractPythonClass cachedSelf) {
+        protected Object doIt(VirtualFrame frame, @SuppressWarnings("unused") PythonAbstractClass self, Object[] arguments, PKeyword[] keywords,
+                        @Cached("self") PythonAbstractClass cachedSelf) {
             return op(frame, cachedSelf, arguments, keywords, true);
         }
 
         @Specialization(replaces = "doIt")
-        protected Object doItIndirect(VirtualFrame frame, AbstractPythonClass self, Object[] arguments, PKeyword[] keywords) {
+        protected Object doItIndirect(VirtualFrame frame, PythonAbstractClass self, Object[] arguments, PKeyword[] keywords) {
             return op(frame, self, arguments, keywords, true);
         }
 
@@ -242,13 +242,13 @@ public class TypeBuiltins extends PythonBuiltins {
             return op(frame, PythonNativeClass.cast(self), arguments, keywords, true);
         }
 
-        private Object op(VirtualFrame frame, AbstractPythonClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
+        private Object op(VirtualFrame frame, PythonAbstractClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
             Object newMethod = lookupNew.execute(self);
             if (newMethod != PNone.NO_VALUE) {
                 CompilerAsserts.partialEvaluationConstant(doCreateArgs);
                 Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments, arguments.length) : arguments;
                 Object newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
-                AbstractPythonClass newInstanceKlass = getClass.execute(newInstance);
+                PythonAbstractClass newInstanceKlass = getClass.execute(newInstance);
                 if (isSameType(newInstanceKlass, self)) {
                     if (arguments.length == 2 && isClassClassProfile.profileClass(self, PythonBuiltinClassType.PythonClass)) {
                         // do not call init if we are creating a new instance of type and we are
@@ -278,7 +278,7 @@ public class TypeBuiltins extends PythonBuiltins {
             }
         }
 
-        private boolean isSameType(AbstractPythonClass left, AbstractPythonClass right) {
+        private boolean isSameType(PythonAbstractClass left, PythonAbstractClass right) {
             if (isSameTypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isSameTypeNode = insert(TypeNodes.IsSameTypeNode.create());
@@ -286,7 +286,7 @@ public class TypeBuiltins extends PythonBuiltins {
             return isSameTypeNode.execute(left, right);
         }
 
-        private String getTypeName(AbstractPythonClass clazz) {
+        private String getTypeName(PythonAbstractClass clazz) {
             if (getNameNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getNameNode = insert(TypeNodes.GetNameNode.create());
@@ -502,7 +502,7 @@ public class TypeBuiltins extends PythonBuiltins {
         public abstract boolean executeWith(Object cls, Object instance);
 
         @Specialization
-        public boolean isInstance(AbstractPythonClass cls, Object instance,
+        public boolean isInstance(PythonAbstractClass cls, Object instance,
                         @Cached("create()") IsSubtypeNode isSubtypeNode,
                         @Cached("create()") GetClassNode getClass) {
             if (instance instanceof PythonObject && isSubtypeNode.execute(getClass.execute(instance), cls)) {

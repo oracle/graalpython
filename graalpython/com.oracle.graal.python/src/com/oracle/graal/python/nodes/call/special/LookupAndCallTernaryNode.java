@@ -44,7 +44,7 @@ import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -157,8 +157,8 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     @Cached("create()") IsSubtypeNode isSubtype,
                     @Cached("create()") IsSameTypeNode isSameTypeNode,
                     @Cached("create()") BranchProfile notImplementedBranch) {
-        AbstractPythonClass leftClass = getClass.execute(v);
-        AbstractPythonClass rightClass = getClassR.execute(w);
+        PythonAbstractClass leftClass = getClass.execute(v);
+        PythonAbstractClass rightClass = getClassR.execute(w);
 
         Object result = PNotImplemented.NOT_IMPLEMENTED;
         Object leftCallable = getattr.execute(leftClass);

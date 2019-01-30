@@ -28,7 +28,7 @@ package com.oracle.graal.python.builtins.objects.type;
 class MROMergeState {
 
     /** The mro of the base type we're representing. */
-    public AbstractPythonClass[] mro;
+    public PythonAbstractClass[] mro;
 
     /**
      * The index of the next item to be merged from mro, or mro.length if this base has been
@@ -40,14 +40,14 @@ class MROMergeState {
         return mro.length == next;
     }
 
-    public AbstractPythonClass getCandidate() {
+    public PythonAbstractClass getCandidate() {
         return mro[next];
     }
 
     /**
      * Marks candidate as merged for this base if it's the next item to be merged.
      */
-    public void noteMerged(AbstractPythonClass candidate) {
+    public void noteMerged(PythonAbstractClass candidate) {
         if (!isMerged() && getCandidate() == candidate) {
             next++;
         }
@@ -56,7 +56,7 @@ class MROMergeState {
     /**
      * Returns true if candidate is in the items past this state's next item to be merged.
      */
-    public boolean pastnextContains(AbstractPythonClass candidate) {
+    public boolean pastnextContains(PythonAbstractClass candidate) {
         for (int i = next + 1; i < mro.length; i++) {
             if (mro[i] == candidate) {
                 return true;

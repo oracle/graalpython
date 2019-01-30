@@ -38,7 +38,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 public final class PythonBuiltinClass extends ManagedPythonClass {
     private final PythonBuiltinClassType type;
 
-    public PythonBuiltinClass(PythonBuiltinClassType builtinClass, AbstractPythonClass base) {
+    public PythonBuiltinClass(PythonBuiltinClassType builtinClass, PythonAbstractClass base) {
         super(PythonBuiltinClassType.PythonClass, builtinClass.getName(), builtinClass.getInstanceShape(), base);
         this.type = builtinClass;
     }

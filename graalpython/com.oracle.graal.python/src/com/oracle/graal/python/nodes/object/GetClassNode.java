@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -87,11 +87,11 @@ public abstract class GetClassNode extends PNodeWithContext {
 
     public abstract PythonBuiltinClass execute(double object);
 
-    public final AbstractPythonClass execute(Object object) {
+    public final PythonAbstractClass execute(Object object) {
         return executeGetClass(classProfile.profile(object));
     }
 
-    protected abstract AbstractPythonClass executeGetClass(Object object);
+    protected abstract PythonAbstractClass executeGetClass(Object object);
 
     @Specialization(assumptions = "singleContextAssumption()")
     protected PythonBuiltinClass getIt(@SuppressWarnings("unused") GetSetDescriptor object,
@@ -200,7 +200,7 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @Specialization
-    protected AbstractPythonClass getIt(PythonAbstractNativeObject object,
+    protected PythonAbstractClass getIt(PythonAbstractNativeObject object,
                     @Cached("create()") GetNativeClassNode getNativeClassNode) {
         return getNativeClassNode.execute(object);
     }
@@ -217,7 +217,7 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @Specialization
-    protected AbstractPythonClass getPythonClassGeneric(PythonObject object,
+    protected PythonAbstractClass getPythonClassGeneric(PythonObject object,
                     @Cached("create()") GetLazyClassNode getLazyClass,
                     @Cached("createIdentityProfile()") ValueProfile profile,
                     @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
@@ -237,7 +237,7 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @TruffleBoundary
-    public static AbstractPythonClass getItSlowPath(Object o) {
+    public static PythonAbstractClass getItSlowPath(Object o) {
         PythonCore core = PythonLanguage.getContextRef().get().getCore();
         if (PGuards.isForeignObject(o)) {
             return core.lookupType(PythonBuiltinClassType.TruffleObject);

@@ -59,7 +59,7 @@ import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetObjectTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.SuperInitNodeFactory;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
@@ -120,17 +120,17 @@ public final class SuperBuiltins extends PythonBuiltins {
     }
 
     abstract static class GetObjectTypeNode extends Node {
-        abstract AbstractPythonClass execute(SuperObject self);
+        abstract PythonAbstractClass execute(SuperObject self);
 
         @Specialization(guards = "self == cachedSelf", assumptions = "cachedSelf.getNeverReinitializedAssumption()", limit = "1")
-        AbstractPythonClass cached(@SuppressWarnings("unused") SuperObject self,
+        PythonAbstractClass cached(@SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
-                        @Cached("self.getObjectType()") AbstractPythonClass type) {
+                        @Cached("self.getObjectType()") PythonAbstractClass type) {
             return type;
         }
 
         @Specialization(replaces = "cached")
-        AbstractPythonClass uncached(SuperObject self) {
+        PythonAbstractClass uncached(SuperObject self) {
             return self.getObjectType();
         }
     }
@@ -198,7 +198,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(cls)", "!isNoValue(obj)"})
         PNone init(SuperObject self, Object cls, Object obj) {
             if (obj != PNone.NONE) {
-                AbstractPythonClass type = supercheck(cls, obj);
+                PythonAbstractClass type = supercheck(cls, obj);
                 self.init(cls, type, obj);
             } else {
                 self.init(cls, null, null);
@@ -339,7 +339,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             return getAttrNode;
         }
 
-        private AbstractPythonClass supercheck(Object cls, Object object) {
+        private PythonAbstractClass supercheck(Object cls, Object object) {
             /*
              * Check that a super() call makes sense. Return a type object.
              *
@@ -357,7 +357,7 @@ public final class SuperBuiltins extends PythonBuiltins {
              */
             if (ensureIsTypeNode().execute(object)) {
                 if (getIsSubtype().execute(object, cls)) {
-                    return (AbstractPythonClass) object;
+                    return (PythonAbstractClass) object;
                 }
             }
 
@@ -368,7 +368,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                     Object classObject = getGetAttr().executeObject(object, SpecialAttributeNames.__CLASS__);
                     if (ensureIsTypeNode().execute(classObject)) {
                         if (getIsSubtype().execute(classObject, cls)) {
-                            return (AbstractPythonClass) classObject;
+                            return (PythonAbstractClass) classObject;
                         }
                     }
                 } catch (PException e) {
@@ -429,7 +429,7 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object get(SuperObject self, Object attr) {
-            AbstractPythonClass startType = getObjectType.execute(self);
+            PythonAbstractClass startType = getObjectType.execute(self);
             if (startType == null) {
                 return genericGetAttr(self, attr);
             }
@@ -456,7 +456,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                 getType = insert(GetTypeNodeGen.create());
             }
 
-            AbstractPythonClass[] mro = getMro(startType);
+            PythonAbstractClass[] mro = getMro(startType);
             /* No need to check the last one: it's gonna be skipped anyway. */
             int i = 0;
             int n = mro.length;
@@ -471,7 +471,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
 
             for (; i < n; i++) {
-                AbstractPythonClass tmp = mro[i];
+                PythonAbstractClass tmp = mro[i];
                 Object res = readFromDict.execute(tmp, attr);
                 if (res != PNone.NO_VALUE) {
                     Object get = readGet.execute(res);
@@ -494,7 +494,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             return genericGetAttr(self, attr);
         }
 
-        private boolean isSameType(Object execute, AbstractPythonClass abstractPythonClass) {
+        private boolean isSameType(Object execute, PythonAbstractClass abstractPythonClass) {
             if (isSameTypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isSameTypeNode = insert(IsSameTypeNode.create());
@@ -502,7 +502,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             return isSameTypeNode.execute(execute, abstractPythonClass);
         }
 
-        private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
+        private PythonAbstractClass[] getMro(PythonAbstractClass clazz) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());
@@ -548,7 +548,7 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getClass(SuperObject self) {
-            AbstractPythonClass objectType = getObjectType.execute(self);
+            PythonAbstractClass objectType = getObjectType.execute(self);
             if (objectType == null) {
                 return PNone.NONE;
             }

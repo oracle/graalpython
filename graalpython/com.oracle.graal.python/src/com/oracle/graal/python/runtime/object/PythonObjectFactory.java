@@ -109,7 +109,7 @@ import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
@@ -356,7 +356,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PythonModule(cls, name));
     }
 
-    public PythonClass createPythonClass(LazyPythonClass metaclass, String name, AbstractPythonClass[] bases) {
+    public PythonClass createPythonClass(LazyPythonClass metaclass, String name, PythonAbstractClass[] bases) {
         return trace(new PythonClass(metaclass, name, PythonLanguage.freshShape(), bases));
     }
 

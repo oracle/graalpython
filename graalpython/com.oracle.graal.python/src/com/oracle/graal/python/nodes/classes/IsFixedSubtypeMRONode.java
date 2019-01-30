@@ -41,7 +41,7 @@
 package com.oracle.graal.python.nodes.classes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -97,7 +97,7 @@ public abstract class IsFixedSubtypeMRONode extends PNodeWithContext {
                     @Cached("create()") IsBuiltinClassProfile profile,
                     @Cached("create()") GetMroNode getMroNode) {
 
-        for (AbstractPythonClass mro : getMroNode.execute(derived)) {
+        for (PythonAbstractClass mro : getMroNode.execute(derived)) {
             if (profile.profileClass(mro, clazz)) {
                 return true;
             }

@@ -33,7 +33,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -74,17 +74,17 @@ public class PythonObject extends PythonAbstractObject {
         storage = instanceShape.newInstance();
     }
 
-    public final AbstractPythonClass getPythonClass() {
+    public final PythonAbstractClass getPythonClass() {
         CompilerAsserts.neverPartOfCompilation();
         assert pythonClass != null;
-        if (pythonClass instanceof AbstractPythonClass) {
-            return (AbstractPythonClass) pythonClass;
+        if (pythonClass instanceof PythonAbstractClass) {
+            return (PythonAbstractClass) pythonClass;
         } else {
             return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) pythonClass);
         }
     }
 
-    public final void setLazyPythonClass(AbstractPythonClass cls) {
+    public final void setLazyPythonClass(PythonAbstractClass cls) {
         pythonClass = cls;
         classStable.invalidate();
     }
@@ -155,7 +155,7 @@ public class PythonObject extends PythonAbstractObject {
         return keyList;
     }
 
-    public final AbstractPythonClass asPythonClass() {
+    public final PythonAbstractClass asPythonClass() {
         if (this instanceof ManagedPythonClass) {
             return (ManagedPythonClass) this;
         }

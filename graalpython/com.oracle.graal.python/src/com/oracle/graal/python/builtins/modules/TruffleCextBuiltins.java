@@ -118,7 +118,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -205,7 +205,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public void initialize(PythonCore core) {
         super.initialize(core);
         PythonClass errorHandlerClass = core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, "CErrorHandler",
-                        new AbstractPythonClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
+                        new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
         builtinConstants.put("CErrorHandler", errorHandlerClass);
         builtinConstants.put(ERROR_HANDLER, core.factory().createPythonObject(errorHandlerClass));
         builtinConstants.put(NATIVE_NULL, new PythonNativeNull());
@@ -1342,13 +1342,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         long doPythonObject(PythonNativeWrapper nativeWrapper) {
-            AbstractPythonClass pclass = getClassNode().execute(nativeWrapper.getDelegate());
+            PythonAbstractClass pclass = getClassNode().execute(nativeWrapper.getDelegate());
             return getTypeFlagsNode().execute(pclass);
         }
 
         @Specialization
         long doPythonObject(PythonAbstractObject object) {
-            AbstractPythonClass pclass = getClassNode().execute(object);
+            PythonAbstractClass pclass = getClassNode().execute(object);
             return getTypeFlagsNode().execute(pclass);
         }
 
@@ -2318,7 +2318,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIt(PythonNativeObject self) {
-            AbstractPythonClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(PythonNativeClass.cast(self));
+            PythonAbstractClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(PythonNativeClass.cast(self));
             return factory().createTuple(new MroSequenceStorage(doSlowPath));
         }
     }

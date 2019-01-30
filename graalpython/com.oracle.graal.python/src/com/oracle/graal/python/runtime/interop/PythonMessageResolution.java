@@ -64,7 +64,7 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -321,8 +321,8 @@ public class PythonMessageResolution {
             PythonAbstractObject object = (PythonAbstractObject) obj;
 
             HashSet<String> keys = new HashSet<>();
-            AbstractPythonClass klass = getClass.execute(object);
-            for (AbstractPythonClass o : getMro(klass)) {
+            PythonAbstractClass klass = getClass.execute(object);
+            for (PythonAbstractClass o : getMro(klass)) {
                 // TODO PythonNativeClass
                 if (o instanceof PythonObject) {
                     addKeysFromObject(keys, (PythonObject) o, includeInternal);
@@ -356,7 +356,7 @@ public class PythonMessageResolution {
             return factory.createTuple(keys.toArray(new String[keys.size()]));
         }
 
-        private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
+        private PythonAbstractClass[] getMro(PythonAbstractClass clazz) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());
@@ -803,8 +803,8 @@ public class PythonMessageResolution {
             int info = KeyInfo.NONE;
             Object attr = PNone.NO_VALUE;
 
-            AbstractPythonClass klass = getClassNode.execute(object);
-            for (AbstractPythonClass c : getMro(klass)) {
+            PythonAbstractClass klass = getClassNode.execute(object);
+            for (PythonAbstractClass c : getMro(klass)) {
                 if (readTypeAttrNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     readTypeAttrNode = insert(ReadAttributeFromObjectNode.createForceType());
@@ -871,7 +871,7 @@ public class PythonMessageResolution {
             return info;
         }
 
-        private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
+        private PythonAbstractClass[] getMro(PythonAbstractClass clazz) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroNode.create());

@@ -93,7 +93,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.ManagedPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -253,11 +253,11 @@ public class PythonObjectNativeWrapperMR {
 
         protected Object getSulongTypeForBuiltinClass(PythonBuiltinClassType clazz) {
             CompilerAsserts.neverPartOfCompilation();
-            AbstractPythonClass pythonClass = getPythonClass(clazz, ConditionProfile.createBinaryProfile());
+            PythonAbstractClass pythonClass = getPythonClass(clazz, ConditionProfile.createBinaryProfile());
             return getSulongTypeForClass(pythonClass);
         }
 
-        protected static Object getSulongTypeForClass(AbstractPythonClass clazz) {
+        protected static Object getSulongTypeForClass(PythonAbstractClass clazz) {
             CompilerAsserts.neverPartOfCompilation();
             Object sulongType = TypeNodes.GetSulongTypeNode.getSlowPath(clazz);
             if (sulongType == null) {
@@ -268,7 +268,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         /** resolves the Sulong type */
-        private static Object resolveSulongTypeForClass(AbstractPythonClass klass) {
+        private static Object resolveSulongTypeForClass(PythonAbstractClass klass) {
             Object sulongType = findBuiltinClass(klass);
             if (sulongType == null) {
                 throw new IllegalStateException("sulong type for " + GetNameNode.doSlowPath(klass) + " was not registered");
@@ -277,10 +277,10 @@ public class PythonObjectNativeWrapperMR {
         }
 
         /** iterates over MRO and looks for the first builtin type with an existing Sulong type */
-        private static Object findBuiltinClass(AbstractPythonClass klass) {
-            AbstractPythonClass[] mro = GetMroNode.doSlowPath(klass);
+        private static Object findBuiltinClass(PythonAbstractClass klass) {
+            PythonAbstractClass[] mro = GetMroNode.doSlowPath(klass);
             Object sulongType = null;
-            for (AbstractPythonClass superClass : mro) {
+            for (PythonAbstractClass superClass : mro) {
                 sulongType = TypeNodes.GetSulongTypeNode.getSlowPath(superClass);
                 if (sulongType != null) {
                     TypeNodes.GetSulongTypeNode.setSlowPath(klass, sulongType);
@@ -840,7 +840,7 @@ public class PythonObjectNativeWrapperMR {
             return (int) sizeofWcharNode.execute();
         }
 
-        private AbstractPythonClass getClass(Object obj) {
+        private PythonAbstractClass getClass(Object obj) {
             if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getClassNode = insert(GetClassNode.create());
@@ -901,7 +901,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
-        long doTpBasicsize(AbstractPythonClass object, @SuppressWarnings("unused") String key, long basicsize,
+        long doTpBasicsize(PythonAbstractClass object, @SuppressWarnings("unused") String key, long basicsize,
                         @Cached("create()") WriteAttributeToObjectNode writeAttrNode,
                         @Cached("create()") IsBuiltinClassProfile profile) {
             if (profile.profileClass(object, PythonBuiltinClassType.PythonClass)) {

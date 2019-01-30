@@ -31,7 +31,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -80,11 +80,11 @@ public abstract class RaiseNode extends StatementNode {
         throw raise(exception);
     }
 
-    private void checkBaseClass(AbstractPythonClass pythonClass) {
+    private void checkBaseClass(PythonAbstractClass pythonClass) {
         if (simpleBaseCheckProfile.profileClass(pythonClass, BaseException)) {
             return;
         }
-        for (AbstractPythonClass klass : getMro(pythonClass)) {
+        for (PythonAbstractClass klass : getMro(pythonClass)) {
             if (iterativeBaseCheckProfile.profileClass(klass, BaseException)) {
                 return;
             }
@@ -94,13 +94,13 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     @Specialization
-    public void doRaise(AbstractPythonClass pythonClass, PNone cause) {
+    public void doRaise(PythonAbstractClass pythonClass, PNone cause) {
         checkBaseClass(pythonClass);
         throw raise(pythonClass);
     }
 
     @Specialization(guards = "!isPNone(cause)")
-    public void doRaise(AbstractPythonClass pythonClass, Object cause,
+    public void doRaise(PythonAbstractClass pythonClass, Object cause,
                     @Cached("create()") WriteAttributeToObjectNode writeCause) {
         checkBaseClass(pythonClass);
         PBaseException pythonException = factory().createBaseException(pythonClass);
@@ -117,7 +117,7 @@ public abstract class RaiseNode extends StatementNode {
         throw raise(TypeError, "exceptions must derive from BaseException");
     }
 
-    private AbstractPythonClass[] getMro(AbstractPythonClass clazz) {
+    private PythonAbstractClass[] getMro(PythonAbstractClass clazz) {
         if (getMroNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             getMroNode = insert(GetMroNode.create());

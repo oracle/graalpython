@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.type.AbstractPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
@@ -49,7 +49,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
  * types are assumed to be mutated afterwards, so accessing the struct in native mode would work,
  * but our copy should just never become stale.
  */
-public interface PythonNativeClass extends AbstractPythonClass {
+public interface PythonNativeClass extends PythonAbstractClass {
 
     TruffleObject getPtr();
 

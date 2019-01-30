@@ -27,12 +27,12 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
-public abstract class ManagedPythonClass extends PythonObject implements AbstractPythonClass {
+public abstract class ManagedPythonClass extends PythonObject implements PythonAbstractClass {
 
     private final String className;
 
-    @CompilationFinal(dimensions = 1) private AbstractPythonClass[] baseClasses;
-    @CompilationFinal(dimensions = 1) private AbstractPythonClass[] methodResolutionOrder;
+    @CompilationFinal(dimensions = 1) private PythonAbstractClass[] baseClasses;
+    @CompilationFinal(dimensions = 1) private PythonAbstractClass[] methodResolutionOrder;
 
     /**
      * This assumption will be invalidated whenever the mro changes.
@@ -44,7 +44,7 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
      */
     private final Map<String, List<Assumption>> attributesInMROFinalAssumptions = new HashMap<>();
 
-    private final Set<AbstractPythonClass> subClasses = Collections.newSetFromMap(new WeakHashMap<AbstractPythonClass, Boolean>());
+    private final Set<PythonAbstractClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonAbstractClass, Boolean>());
     private final Shape instanceShape;
     private final FlagsContainer flags;
 
@@ -53,12 +53,12 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
     @CompilationFinal private Object sulongType;
 
     @TruffleBoundary
-    public ManagedPythonClass(LazyPythonClass typeClass, String name, Shape instanceShape, AbstractPythonClass... baseClasses) {
+    public ManagedPythonClass(LazyPythonClass typeClass, String name, Shape instanceShape, PythonAbstractClass... baseClasses) {
         super(typeClass, PythonLanguage.freshShape() /* do not inherit layout from the TypeClass */);
         this.className = name;
 
         if (baseClasses.length == 1 && baseClasses[0] == null) {
-            this.baseClasses = new AbstractPythonClass[]{};
+            this.baseClasses = new PythonAbstractClass[]{};
         } else {
             unsafeSetSuperClass(baseClasses);
         }
@@ -135,7 +135,7 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
             }
         }
         lookupStableAssumption.invalidate();
-        for (AbstractPythonClass subclass : getSubClasses()) {
+        for (PythonAbstractClass subclass : getSubClasses()) {
             if (subclass != null) {
                 subclass.lookupChanged();
             }
@@ -146,11 +146,11 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
         return instanceShape;
     }
 
-    AbstractPythonClass getSuperClass() {
+    PythonAbstractClass getSuperClass() {
         return getBaseClasses().length > 0 ? getBaseClasses()[0] : null;
     }
 
-    AbstractPythonClass[] getMethodResolutionOrder() {
+    PythonAbstractClass[] getMethodResolutionOrder() {
         return methodResolutionOrder;
     }
 
@@ -159,7 +159,7 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
     }
 
     private void computeNeedsNativeAllocation() {
-        for (AbstractPythonClass cls : getMethodResolutionOrder()) {
+        for (PythonAbstractClass cls : getMethodResolutionOrder()) {
             if (PGuards.isNativeClass(cls)) {
                 needsNativeAllocation = true;
                 return;
@@ -181,7 +181,7 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
      * This method supports initialization and solves boot-order problems and should not normally be
      * used.
      */
-    private void unsafeSetSuperClass(AbstractPythonClass... newBaseClasses) {
+    private void unsafeSetSuperClass(PythonAbstractClass... newBaseClasses) {
         CompilerAsserts.neverPartOfCompilation();
         // TODO: if this is used outside bootstrapping, it needs to call
         // computeMethodResolutionOrder for subclasses.
@@ -189,7 +189,7 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
         assert getBaseClasses() == null || getBaseClasses().length == 0;
         this.baseClasses = newBaseClasses;
 
-        for (AbstractPythonClass base : getBaseClasses()) {
+        for (PythonAbstractClass base : getBaseClasses()) {
             if (base != null) {
                 GetSubclassesNode.doSlowPath(base).add(this);
             }
@@ -197,7 +197,7 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
         this.methodResolutionOrder = ComputeMroNode.doSlowPath(this);
     }
 
-    final Set<AbstractPythonClass> getSubClasses() {
+    final Set<PythonAbstractClass> getSubClasses() {
         return subClasses;
     }
 
@@ -207,7 +207,7 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
         return String.format("<class '%s'>", className);
     }
 
-    public AbstractPythonClass[] getBaseClasses() {
+    public PythonAbstractClass[] getBaseClasses() {
         return baseClasses;
     }
 
@@ -224,10 +224,10 @@ public abstract class ManagedPythonClass extends PythonObject implements Abstrac
      * created before the C API was initialized, i.e., flags were not set.
      */
     static final class FlagsContainer {
-        AbstractPythonClass initialDominantBase;
+        PythonAbstractClass initialDominantBase;
         long flags;
 
-        public FlagsContainer(AbstractPythonClass superClass) {
+        public FlagsContainer(PythonAbstractClass superClass) {
             this.initialDominantBase = superClass;
         }
 
