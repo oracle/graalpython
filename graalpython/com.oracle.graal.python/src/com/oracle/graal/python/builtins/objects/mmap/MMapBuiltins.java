@@ -115,7 +115,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
     protected interface ByteReadingNode {
 
-        static ReadByteFromChannelNode createValueError() {
+        default ReadByteFromChannelNode createValueError() {
             return ReadByteFromChannelNode.create(() -> new ChannelNodes.ReadByteErrorHandler() {
 
                 @Override
@@ -125,7 +125,7 @@ public class MMapBuiltins extends PythonBuiltins {
             });
         }
 
-        static ReadByteFromChannelNode createIndexError() {
+        default ReadByteFromChannelNode createIndexError() {
             return ReadByteFromChannelNode.create(() -> new ChannelNodes.ReadByteErrorHandler() {
 
                 @Override
@@ -139,7 +139,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
     protected interface ByteWritingNode {
 
-        static WriteByteToChannelNode createValueError() {
+        default WriteByteToChannelNode createValueError() {
             return WriteByteToChannelNode.create(() -> new ChannelNodes.WriteByteErrorHandler() {
 
                 @Override
@@ -149,7 +149,7 @@ public class MMapBuiltins extends PythonBuiltins {
             });
         }
 
-        static WriteByteToChannelNode createIndexError() {
+        default WriteByteToChannelNode createIndexError() {
             return WriteByteToChannelNode.create(() -> new ChannelNodes.WriteByteErrorHandler() {
 
                 @Override
