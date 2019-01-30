@@ -64,7 +64,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass.FlagsContainer;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
@@ -172,36 +172,60 @@ public abstract class TypeNodes {
         }
     }
 
-    @ImportStatic(NativeMemberNames.class)
-    public abstract static class GetMroNode extends PNodeWithContext {
+    public static class GetMroNode extends Node {
+        @Child private GetMroStorageNode getMroStorageNode;
 
-        public abstract PythonAbstractClass[] execute(Object obj);
+        public PythonAbstractClass[] execute(Object obj) {
+            if (getMroStorageNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getMroStorageNode = insert(GetMroStorageNode.create());
+            }
+            return getMroStorageNode.execute(obj).getInternalClassArray();
+        }
+
+        @TruffleBoundary
+        public static PythonAbstractClass[] doSlowPath(Object obj) {
+            MroSequenceStorage mroStorage = GetMroStorageNode.doSlowPath(obj);
+            return mroStorage.getInternalClassArray();
+        }
+
+        public static GetMroNode create() {
+            return new GetMroNode();
+        }
+    }
+
+    @ImportStatic(NativeMemberNames.class)
+    public abstract static class GetMroStorageNode extends PNodeWithContext {
+
+        public abstract MroSequenceStorage execute(Object obj);
 
         @Specialization
-        PythonAbstractClass[] doPythonClass(PythonManagedClass obj) {
+        MroSequenceStorage doPythonClass(PythonManagedClass obj) {
             return obj.getMethodResolutionOrder();
         }
 
         @Specialization
-        PythonAbstractClass[] doPythonClass(PythonBuiltinClassType obj) {
+        MroSequenceStorage doPythonClass(PythonBuiltinClassType obj) {
             return getBuiltinPythonClass(obj).getMethodResolutionOrder();
         }
 
         @Specialization
-        PythonAbstractClass[] doNativeClass(PythonNativeClass obj,
-                        @Cached("create(TP_MRO)") GetTypeMemberNode getTpMroNode) {
-            Object tupleObj = getTpMroNode.execute(obj);
+        MroSequenceStorage doNativeClass(PythonNativeClass obj,
+                        @Cached("create(TP_MRO)") GetTypeMemberNode getTpMroNode,
+                        @Cached("createClassProfile()") ValueProfile tpMroProfile,
+                        @Cached("createClassProfile()") ValueProfile storageProfile) {
+            Object tupleObj = tpMroProfile.profile(getTpMroNode.execute(obj));
             if (tupleObj instanceof PTuple) {
-                SequenceStorage sequenceStorage = ((PTuple) tupleObj).getSequenceStorage();
+                SequenceStorage sequenceStorage = storageProfile.profile(((PTuple) tupleObj).getSequenceStorage());
                 if (sequenceStorage instanceof MroSequenceStorage) {
-                    return ((MroSequenceStorage) sequenceStorage).getInternalClassArray();
+                    return (MroSequenceStorage) sequenceStorage;
                 }
             }
             throw raise(PythonBuiltinClassType.SystemError, "invalid mro object");
         }
 
         @TruffleBoundary
-        public static PythonAbstractClass[] doSlowPath(Object obj) {
+        public static MroSequenceStorage doSlowPath(Object obj) {
             if (obj instanceof PythonManagedClass) {
                 return ((PythonManagedClass) obj).getMethodResolutionOrder();
             } else if (obj instanceof PythonBuiltinClassType) {
@@ -211,7 +235,7 @@ public abstract class TypeNodes {
                 if (tupleObj instanceof PTuple) {
                     SequenceStorage sequenceStorage = ((PTuple) tupleObj).getSequenceStorage();
                     if (sequenceStorage instanceof MroSequenceStorage) {
-                        return ((MroSequenceStorage) sequenceStorage).getInternalClassArray();
+                        return (MroSequenceStorage) sequenceStorage;
                     }
                 }
                 throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, "invalid mro object");
@@ -219,8 +243,8 @@ public abstract class TypeNodes {
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
 
-        public static GetMroNode create() {
-            return GetMroNodeGen.create();
+        public static GetMroStorageNode create() {
+            return GetMroStorageNodeGen.create();
         }
     }
 
@@ -703,5 +727,4 @@ public abstract class TypeNodes {
             return IsTypeNodeGen.create();
         }
     }
-
 }

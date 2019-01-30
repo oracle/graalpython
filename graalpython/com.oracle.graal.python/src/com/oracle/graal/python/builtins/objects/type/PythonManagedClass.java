@@ -29,11 +29,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -44,30 +40,21 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ComputeMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
 
     private final String className;
 
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] baseClasses;
-    @CompilationFinal(dimensions = 1) private PythonAbstractClass[] methodResolutionOrder;
+// @CompilationFinal(dimensions = 1) private PythonAbstractClass[] methodResolutionOrder;
 
-    /**
-     * This assumption will be invalidated whenever the mro changes.
-     */
-    private final CyclicAssumption lookupStableAssumption;
-    /**
-     * These assumptions will be invalidated whenever the value of the given slot changes. All
-     * assumptions will be invalidated if the mro changes.
-     */
-    private final Map<String, List<Assumption>> attributesInMROFinalAssumptions = new HashMap<>();
+    private final MroSequenceStorage methodResolutionOrder;
 
     private final Set<PythonAbstractClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonAbstractClass, Boolean>());
     private final Shape instanceShape;
@@ -82,6 +69,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         super(typeClass, PythonLanguage.freshShape() /* do not inherit layout from the TypeClass */);
         this.className = name;
 
+        this.methodResolutionOrder = new MroSequenceStorage(name, 0);
+
         if (baseClasses.length == 1 && baseClasses[0] == null) {
             this.baseClasses = new PythonAbstractClass[]{};
         } else {
@@ -89,10 +78,9 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         }
 
         this.flags = new FlagsContainer(getSuperClass());
-        this.lookupStableAssumption = new CyclicAssumption(className);
 
         // Compute MRO
-        this.methodResolutionOrder = ComputeMroNode.doSlowPath(this);
+        this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
         computeNeedsNativeAllocation();
 
         setAttribute(__NAME__, getBaseName(name));
@@ -111,42 +99,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     }
 
     public Assumption getLookupStableAssumption() {
-        return lookupStableAssumption.getAssumption();
-    }
-
-    public Assumption createAttributeInMROFinalAssumption(String name) {
-        CompilerAsserts.neverPartOfCompilation();
-        List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
-        if (attrAssumptions == null) {
-            attrAssumptions = new ArrayList<>();
-            attributesInMROFinalAssumptions.put(name, attrAssumptions);
-        }
-
-        Assumption assumption = Truffle.getRuntime().createAssumption(name.toString());
-        attrAssumptions.add(assumption);
-        return assumption;
-    }
-
-    public void addAttributeInMROFinalAssumption(String name, Assumption assumption) {
-        CompilerAsserts.neverPartOfCompilation();
-        List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
-        if (attrAssumptions == null) {
-            attrAssumptions = new ArrayList<>();
-            attributesInMROFinalAssumptions.put(name, attrAssumptions);
-        }
-
-        attrAssumptions.add(assumption);
-    }
-
-    @TruffleBoundary
-    public void invalidateAttributeInMROFinalAssumptions(String name) {
-        List<Assumption> assumptions = attributesInMROFinalAssumptions.getOrDefault(name, new ArrayList<>());
-        if (!assumptions.isEmpty()) {
-            String message = className + "." + name;
-            for (Assumption assumption : assumptions) {
-                assumption.invalidate(message);
-            }
-        }
+        return methodResolutionOrder.getLookupStableAssumption();
     }
 
     /**
@@ -154,12 +107,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
      */
     public void lookupChanged() {
         CompilerAsserts.neverPartOfCompilation();
-        for (List<Assumption> list : attributesInMROFinalAssumptions.values()) {
-            for (Assumption assumption : list) {
-                assumption.invalidate();
-            }
-        }
-        lookupStableAssumption.invalidate();
+        methodResolutionOrder.lookupChanged();
         for (PythonAbstractClass subclass : getSubClasses()) {
             if (subclass != null) {
                 subclass.lookupChanged();
@@ -175,7 +123,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         return getBaseClasses().length > 0 ? getBaseClasses()[0] : null;
     }
 
-    PythonAbstractClass[] getMethodResolutionOrder() {
+    MroSequenceStorage getMethodResolutionOrder() {
         return methodResolutionOrder;
     }
 
@@ -184,7 +132,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     }
 
     private void computeNeedsNativeAllocation() {
-        for (PythonAbstractClass cls : getMethodResolutionOrder()) {
+        for (PythonAbstractClass cls : getMethodResolutionOrder().getInternalClassArray()) {
             if (PGuards.isNativeClass(cls)) {
                 needsNativeAllocation = true;
                 return;
@@ -196,10 +144,16 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @Override
     @TruffleBoundary
     public void setAttribute(Object key, Object value) {
-        if (key instanceof String) {
-            invalidateAttributeInMROFinalAssumptions((String) key);
-        }
+        invalidateFinalAttribute(key);
         super.setAttribute(key, value);
+    }
+
+    @TruffleBoundary
+    public void invalidateFinalAttribute(Object key) {
+        CompilerAsserts.neverPartOfCompilation();
+        if (key instanceof String) {
+            methodResolutionOrder.invalidateAttributeInMROFinalAssumptions((String) key);
+        }
     }
 
     /**
@@ -219,7 +173,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                 GetSubclassesNode.doSlowPath(base).add(this);
             }
         }
-        this.methodResolutionOrder = ComputeMroNode.doSlowPath(this);
+        this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
     }
 
     final Set<PythonAbstractClass> getSubClasses() {

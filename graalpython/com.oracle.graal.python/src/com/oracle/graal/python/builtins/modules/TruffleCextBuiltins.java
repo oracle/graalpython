@@ -118,11 +118,11 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -2312,14 +2312,15 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "PyTruffle_Compute_Mro", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "PyTruffle_Compute_Mro", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class PyTruffle_Compute_Mro extends PythonUnaryBuiltinNode {
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class PyTruffle_Compute_Mro extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object doIt(PythonNativeObject self) {
+        Object doIt(PythonNativeObject self, String className) {
             PythonAbstractClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(PythonNativeClass.cast(self));
-            return factory().createTuple(new MroSequenceStorage(doSlowPath));
+            return factory().createTuple(new MroSequenceStorage(className, doSlowPath));
         }
     }
 }

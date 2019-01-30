@@ -383,7 +383,7 @@ int PyType_Ready(PyTypeObject* cls) {
     }
 
     /* initialize mro */
-    cls->tp_mro = UPCALL_CEXT_O(_jls_PyTruffle_Compute_Mro, cls);
+    cls->tp_mro = UPCALL_CEXT_O(_jls_PyTruffle_Compute_Mro, cls, polyglot_from_string(cls->tp_name, SRC_CS));
 
     /* Inherit special flags from dominant base */
     if (cls->tp_base != NULL)

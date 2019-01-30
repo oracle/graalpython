@@ -42,16 +42,16 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
-import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -89,14 +89,14 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
         @Specialization(replaces = "lookupConstantMRO")
         protected Object lookup(PythonAbstractClass klass, Object key,
-                        @Cached("create()") GetMroNode getMroNode,
+                        @Cached("create()") GetMroStorageNode getMroNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
             return LookupAttributeInMRONode.lookupSlow(klass, key, getMroNode, readAttrNode);
         }
     }
 
     protected final String key;
-    @Child private GetMroNode getMroNode;
+    @Child private GetMroStorageNode getMroNode;
 
     public LookupAttributeInMRONode(String key) {
         this.key = key;
@@ -149,28 +149,20 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
     }
 
-    protected PythonClassAssumptionPair findAttrClassAndAssumptionInMRO(PythonManagedClass klass) {
-        PythonAbstractClass[] mro = getMro(klass);
-        Assumption attrAssumption = klass.createAttributeInMROFinalAssumption(key);
-        for (int i = 0; i < mro.length; i++) {
-            PythonAbstractClass clsObj = mro[i];
-            // TODO(fa): that's just a first approach and needs to be implemented properly
-            if (clsObj instanceof PythonManagedClass) {
-                PythonManagedClass cls = (PythonManagedClass) clsObj;
-                if (i > 0) {
-                    assert cls != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
-                    cls.addAttributeInMROFinalAssumption(key, attrAssumption);
-                }
+    protected PythonClassAssumptionPair findAttrClassAndAssumptionInMRO(PythonAbstractClass klass) {
+        CompilerAsserts.neverPartOfCompilation();
+        MroSequenceStorage mro = getMro(klass);
+        Assumption attrAssumption = mro.createAttributeInMROFinalAssumption(key);
+        for (int i = 0; i < mro.length(); i++) {
+            PythonAbstractClass clsObj = mro.getItemNormalized(i);
+            if (i > 0) {
+                assert clsObj != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
+                mro.addAttributeInMROFinalAssumption(key, attrAssumption);
+            }
 
-                if (cls.getStorage().containsKey(key)) {
-                    Object value = cls.getStorage().get(key);
-                    if (value != PNone.NO_VALUE) {
-                        return new PythonClassAssumptionPair(attrAssumption, value);
-                    }
-                }
-            } else {
-                assert PGuards.isNativeClass(clsObj);
-                return null;
+            Object value = ReadAttributeFromObjectNode.doSlowPath(clsObj, key, true);
+            if (value != PNone.NO_VALUE) {
+                return new PythonClassAssumptionPair(attrAssumption, value);
             }
         }
         return new PythonClassAssumptionPair(attrAssumption, PNone.NO_VALUE);
@@ -178,8 +170,8 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
     @Specialization(guards = {"klass == cachedKlass", "cachedClassInMROInfo != null"}, limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", assumptions = {
                     "cachedClassInMROInfo.assumption"})
-    protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonManagedClass klass,
-                    @Cached("klass") @SuppressWarnings("unused") PythonManagedClass cachedKlass,
+    protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonAbstractClass klass,
+                    @Cached("klass") @SuppressWarnings("unused") PythonAbstractClass cachedKlass,
                     @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") PythonClassAssumptionPair cachedClassInMROInfo) {
         return cachedClassInMROInfo.value;
     }
@@ -194,14 +186,14 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
     @Specialization(guards = {"klass == cachedKlass", "mroLength < 32"}, limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", assumptions = "lookupStable")
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
-    protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonManagedClass klass,
-                    @Cached("klass") @SuppressWarnings("unused") PythonManagedClass cachedKlass,
-                    @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
-                    @Cached(value = "getMro(cachedKlass)", dimensions = 1) PythonAbstractClass[] mro,
-                    @Cached("mro.length") @SuppressWarnings("unused") int mroLength,
+    protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonAbstractClass klass,
+                    @Cached("klass") @SuppressWarnings("unused") PythonAbstractClass cachedKlass,
+                    @Cached("getMro(cachedKlass)") MroSequenceStorage mro,
+                    @Cached("mro.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
+                    @Cached("mro.length()") int mroLength,
                     @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
-        for (int i = 0; i < mro.length; i++) {
-            PythonAbstractClass kls = mro[i];
+        for (int i = 0; i < mroLength; i++) {
+            PythonAbstractClass kls = mro.getItemNormalized(i);
             Object value = readAttrNodes[i].execute(kls, key);
             if (value != PNone.NO_VALUE) {
                 return value;
@@ -211,31 +203,27 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     }
 
     @Specialization(replaces = {"lookupConstantMROCached", "lookupConstantMRO"})
-    protected Object lookup(PythonManagedClass klass,
-                    @Cached("create()") GetMroNode getMroNode,
+    protected Object lookup(PythonAbstractClass klass,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
         return lookupSlow(klass, key, getMroNode, readAttrNode);
     }
 
-    @Specialization
-    protected Object lookup(PythonNativeClass klass,
-                    @Cached("create()") GetMroNode getMroNode,
-                    @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
-        return lookupSlow(klass, key, getMroNode, readAttrNode);
-    }
-
-    protected PythonAbstractClass[] getMro(PythonAbstractClass clazz) {
+    protected GetMroStorageNode ensureGetMroNode() {
         if (getMroNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getMroNode = insert(GetMroNode.create());
+            getMroNode = insert(GetMroStorageNode.create());
         }
-        return getMroNode.execute(clazz);
+        return getMroNode;
     }
 
-    protected static Object lookupSlow(PythonAbstractClass klass, Object key, GetMroNode getMroNode, ReadAttributeFromObjectNode readAttrNode) {
-        PythonAbstractClass[] mro = getMroNode.execute(klass);
-        for (int i = 0; i < mro.length; i++) {
-            PythonAbstractClass kls = mro[i];
+    protected MroSequenceStorage getMro(PythonAbstractClass clazz) {
+        return ensureGetMroNode().execute(clazz);
+    }
+
+    protected static Object lookupSlow(PythonAbstractClass klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode) {
+        MroSequenceStorage mro = getMroNode.execute(klass);
+        for (int i = 0; i < mro.length(); i++) {
+            PythonAbstractClass kls = mro.getItemNormalized(i);
             Object value = readAttrNode.execute(kls, key);
             if (value != PNone.NO_VALUE) {
                 return value;

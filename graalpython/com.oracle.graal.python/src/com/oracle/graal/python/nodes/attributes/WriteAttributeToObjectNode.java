@@ -98,9 +98,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     private void handlePythonClass(PythonObject object, Object key) {
         if (isClassProfile.profile(object instanceof PythonManagedClass)) {
-            if (key instanceof String) {
-                ((PythonManagedClass) object).invalidateAttributeInMROFinalAssumptions((String) key);
-            }
+            ((PythonManagedClass) object).invalidateFinalAttribute(key);
         }
     }
 
