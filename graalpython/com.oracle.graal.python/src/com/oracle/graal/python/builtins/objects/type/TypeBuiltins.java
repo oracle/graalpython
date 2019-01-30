@@ -528,10 +528,36 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     static abstract class SubclassCheckNode extends PythonBinaryBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
+        @Child private TypeNodes.IsSameTypeNode isSameTypeNode = TypeNodes.IsSameTypeNode.create();
+
+        @Specialization(guards = {"!isNativeClass(cls)", "!isNativeClass(derived)"})
+        boolean doManagedManaged(LazyPythonClass cls, LazyPythonClass derived) {
+            return isSameType(cls, derived) || isSubtypeNode.execute(derived, cls);
+        }
 
         @Specialization
-        boolean instanceCheck(LazyPythonClass cls, Object derived) {
-            return cls == derived || isSubtypeNode.execute(derived, cls);
+        boolean doObjectObject(Object cls, Object derived,
+                        @Cached("create()") TypeNodes.IsTypeNode isClsTypeNode,
+                        @Cached("create()") TypeNodes.IsTypeNode isDerivedTypeNode) {
+            if (isSameType(cls, derived)) {
+                return true;
+            }
+
+            // no profiles required because IsTypeNode profiles already
+            if (isClsTypeNode.execute(cls) && isDerivedTypeNode.execute(derived)) {
+                return isSubtypeNode.execute(derived, cls);
+            }
+            if (!isDerivedTypeNode.execute(derived)) {
+                throw raise(PythonBuiltinClassType.TypeError, "issubclass() arg 1 must be a class");
+            }
+            if (!isClsTypeNode.execute(cls)) {
+                throw raise(PythonBuiltinClassType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
+            }
+            return false;
+        }
+
+        protected boolean isSameType(Object a, Object b) {
+            return isSameTypeNode.execute(a, b);
         }
     }
 

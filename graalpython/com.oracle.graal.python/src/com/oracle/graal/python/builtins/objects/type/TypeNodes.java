@@ -686,6 +686,11 @@ public abstract class TypeNodes {
         boolean doManagedClass(PythonAbstractNativeObject obj,
                         @Cached("create()") IsBuiltinClassProfile profile,
                         @Cached("create()") GetLazyClassNode getClassNode) {
+            // TODO(fa): this check may not be enough since a type object may indirectly inherit
+            // from 'type'
+            // CPython has two different checks if some object is a type:
+            // 1. test if type flag 'Py_TPFLAGS_TYPE_SUBCLASS' is set
+            // 2. test if attribute '__bases__' is a tuple
             return profile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.PythonClass);
         }
 
