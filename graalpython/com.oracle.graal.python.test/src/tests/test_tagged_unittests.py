@@ -62,7 +62,13 @@ def working_selectors(tagfile):
 
 def working_tests():
     working_tests = []
-    for tagfile in glob.glob(os.path.join(TAGS_DIR, "*.txt")):
+    glob_pattern = os.path.join(TAGS_DIR, "*.txt")
+    for arg in sys.argv:
+        if arg.startswith("--tagfile="):
+            glob_pattern = os.path.join(TAGS_DIR, arg.partition("=")[2])
+            sys.argv.remove(arg)
+            break
+    for tagfile in glob.glob(glob_pattern):
         test = os.path.splitext(os.path.basename(tagfile))[0]
         working_tests.append((test, working_selectors(tagfile)))
     return working_tests
@@ -102,7 +108,7 @@ if __name__ == "__main__":
         if arg == "--retag":
             retag = True
         else:
-            glob_pattern = sys.argv[1]
+            glob_pattern = os.path.join(os.path.dirname(test.__file__), sys.argv[1])
 
     p = subprocess.run(["/usr/bin/which", "timeout"], **kwargs)
     if p.returncode != 0:
