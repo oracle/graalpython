@@ -161,6 +161,7 @@ if __name__ == "__main__":
                 # if we're re-tagging a test without tags, all passed
                 with open(tagfile, "w") as f:
                     pass
+                break
             elif p.returncode == 0:
                 # we ran the tagged tests and they were fine
                 break
@@ -199,5 +200,6 @@ if __name__ == "__main__":
                 if not passing_tests:
                     os.unlink(tagfile)
             else:
-                # we tried a second time and failed, so our tags don't work for some reason
+                # we tried the last time and failed, so our tags don't work for
+                # some reason
                 os.unlink(tagfile)
