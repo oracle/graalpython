@@ -1020,8 +1020,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") ReadFromChannelNode readNode) {
             if (OpaqueBytes.isInOpaqueFilesystem(getResources().getFilePath(fd), getContext())) {
                 Channel channel = getResources().getFileChannel(fd, channelClassProfile);
-	        ByteSequenceStorage bytes = readNode.execute(channel, ReadFromChannelNode.MAX_READ);
-        	return new OpaqueBytes(Arrays.copyOf(bytes.getInternalByteArray(), bytes.length()));
+                ByteSequenceStorage bytes = readNode.execute(channel, ReadFromChannelNode.MAX_READ);
+                return new OpaqueBytes(Arrays.copyOf(bytes.getInternalByteArray(), bytes.length()));
             }
             return read(frame, fd, requestedSize, channelClassProfile, readNode);
         }
