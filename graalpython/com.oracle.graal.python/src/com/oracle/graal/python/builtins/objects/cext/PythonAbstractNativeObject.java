@@ -40,7 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import java.util.Objects;
+
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.object.Shape;
@@ -72,4 +75,10 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
         return object;
     }
 
+    @Override
+    public int hashCode() {
+        CompilerAsserts.neverPartOfCompilation();
+        // this is important for the default '__hash__' implementation
+        return Objects.hashCode(object);
+    }
 }
