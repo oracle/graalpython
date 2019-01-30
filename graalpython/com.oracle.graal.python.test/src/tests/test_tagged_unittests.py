@@ -176,15 +176,18 @@ if __name__ == "__main__":
                     imported_test_module = None
 
                 def get_pass_name(funcname, classname):
+                    # try hard to get a most specific pattern
                     if imported_test_module:
                         classname = "".join(classname.rpartition(testmod)[1:])
                         clazz = imported_test_module
                         path_to_class = classname.split(".")[1:]
                         for part in path_to_class:
-                            clazz = getattr(clazz, part)
-                        return getattr(clazz, funcname).__qualname__
-                    else:
-                        return funcname
+                            clazz = getattr(clazz, part, None)
+                        if clazz:
+                            func = getattr(clazz, funcname, None)
+                            if func:
+                                return func.__qualname__
+                    return funcname
 
                 # n.b.: we add a '*' in the front, so that unittests doesn't add
                 # its own asterisks, because now this is already a pattern
