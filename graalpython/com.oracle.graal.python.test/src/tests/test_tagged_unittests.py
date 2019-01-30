@@ -99,16 +99,21 @@ if __name__ == "__main__":
     import re
 
     executable = sys.executable.split(" ") # HACK: our sys.executable on Java is a cmdline
-    re_success = re.compile("^(test\S+)[^\r\n]* \.\.\. ok$", re.MULTILINE)
+    re_success = re.compile("(test\S+) \(([^\s]+)\) \.\.\. ok$", re.MULTILINE)
     kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "text": True, "check": False}
 
     glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
     retag = False
+    maxrepeats = 2
     for arg in sys.argv[1:]:
         if arg == "--retag":
             retag = True
+        elif arg.startswith("--maxrepeats="):
+            maxrepeats = int(arg.partition("=")[2])
+        elif arg == "--help":
+            print(sys.argv[0] + " [--retag] [--maxrepeats=n] [glob]")
         else:
-            glob_pattern = os.path.join(os.path.dirname(test.__file__), sys.argv[1])
+            glob_pattern = os.path.join(os.path.dirname(test.__file__), arg)
 
     p = subprocess.run(["/usr/bin/which", "timeout"], **kwargs)
     if p.returncode != 0:
@@ -118,43 +123,81 @@ if __name__ == "__main__":
 
     testfiles = glob.glob(glob_pattern)
     for idx, testfile in enumerate(testfiles):
-        testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
-        testmod = "test." + testfile_stem
-        cmd = [timeout, "-s", "9", "60"] + executable + ["-S", "-m"]
-        tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
-        test_selectors = working_selectors(tagfile)
+        for repeat in range(maxrepeats):
+            # we always do this multiple times, because sometimes the tagging
+            # doesn't quite work e.g. we create a tags file that'll still fail
+            # when we use it. Thus, when we run this multiple times, we'll just
+            # use the tags and if it fails in the last run, we assume something
+            # sad is happening and delete the tags file to skip the tests
+            # entirely
+            testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
+            testmod = "test." + testfile_stem
+            cmd = [timeout, "-s", "9", "60"] + executable + ["-S", "-m"]
+            tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
+            test_selectors = working_selectors(tagfile)
 
-        if test_selectors is None and not retag:
-            # there's no tagfile for this, so it's not working at all (or has
-            # not been tried)
-            continue
+            if test_selectors is None:
+                if retag:
+                    test_selectors = []
+                else:
+                    # there's no tagfile for this, so it's not working at all
+                    # (or has not been tried).
+                    continue
 
-        print("[%d/%d] Testing %s" %(idx + 1, len(testfiles), testmod))
-        cmd += ["unittest", "-v"]
-        for selector in test_selectors:
-            cmd += ["-k", selector]
-        cmd.append(testfile)
+            print("[%d/%d, Try %d] Testing %s" %(idx + 1, len(testfiles), repeat + 1, testmod))
+            cmd += ["unittest", "-v"]
+            for selector in test_selectors:
+                cmd += ["-k", selector]
+            cmd.append(testfile)
 
-        print(" ".join(cmd))
-        p = subprocess.run(cmd, **kwargs)
-        print("*stdout*")
-        print(p.stdout)
-        print("*stderr*")
-        print(p.stderr)
+            print(" ".join(cmd))
+            p = subprocess.run(cmd, **kwargs)
+            print("*stdout*")
+            print(p.stdout)
+            print("*stderr*")
+            print(p.stderr)
 
-        if p.returncode == 0 and not os.path.exists(tagfile):
-            # if we're re-tagging a test without tags, all passed
-            with open(tagfile, "w") as f:
-                pass
-        else:
-            passing_tests = []
-            for m in re_success.findall(p.stdout):
-                passing_tests.append(m)
-            for m in re_success.findall(p.stderr):
-                passing_tests.append(m)
-            with open(tagfile, "w") as f:
-                for passing_test in passing_tests:
-                    f.write(passing_test)
-                    f.write("\n")
-            if not passing_tests:
+            if p.returncode == 0 and not os.path.exists(tagfile):
+                # if we're re-tagging a test without tags, all passed
+                with open(tagfile, "w") as f:
+                    pass
+            elif p.returncode == 0:
+                # we ran the tagged tests and they were fine
+                break
+            elif repeat < maxrepeats:
+                # we failed the first run, create a tag file with the passing
+                # tests (if any)
+                passing_tests = []
+
+                try:
+                    imported_test_module = __import__(testmod)
+                except:
+                    imported_test_module = None
+
+                def get_pass_name(funcname, classname):
+                    if imported_test_module:
+                        classname = "".join(classname.rpartition(testmod)[1:])
+                        clazz = imported_test_module
+                        path_to_class = classname.split(".")[1:]
+                        for part in path_to_class:
+                            clazz = getattr(clazz, part)
+                        return getattr(clazz, funcname).__qualname__
+                    else:
+                        return funcname
+
+                # n.b.: we add a '*' in the front, so that unittests doesn't add
+                # its own asterisks, because now this is already a pattern
+                for funcname,classname in re_success.findall(p.stdout):
+                    passing_tests.append("*" + get_pass_name(funcname, classname))
+                for funcname,classname in re_success.findall(p.stderr):
+                    passing_tests.append("*" + get_pass_name(funcname, classname))
+
+                with open(tagfile, "w") as f:
+                    for passing_test in passing_tests:
+                        f.write(passing_test)
+                        f.write("\n")
+                if not passing_tests:
+                    os.unlink(tagfile)
+            else:
+                # we tried a second time and failed, so our tags don't work for some reason
                 os.unlink(tagfile)
