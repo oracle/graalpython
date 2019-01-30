@@ -239,6 +239,7 @@ graalpython/com.oracle.graal.python.test/src/tests/test_math.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_memoryview.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_mm2d_naive.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_mm2d_random_naive_5.py,zippy.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_mmap.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_raise-try.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_random.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_re.py,python.copyright
