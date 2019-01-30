@@ -157,7 +157,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
             PythonAbstractClass clsObj = mro.getItemNormalized(i);
             if (i > 0) {
                 assert clsObj != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
-                mro.addAttributeInMROFinalAssumption(key, attrAssumption);
+                getMro(clsObj).addAttributeInMROFinalAssumption(key, attrAssumption);
             }
 
             Object value = ReadAttributeFromObjectNode.doSlowPath(clsObj, key, true);
