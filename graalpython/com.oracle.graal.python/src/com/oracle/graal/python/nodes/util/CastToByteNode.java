@@ -154,7 +154,7 @@ public abstract class CastToByteNode extends PNodeWithContext {
     }
 
     public static CastToByteNode create(Function<Object, Byte> rangeErrorHandler, Function<Object, Byte> typeErrorHandler) {
-        return CastToByteNodeGen.create(rangeErrorHandler, typeErrorHandler);
+        return CastToByteNodeGen.create(rangeErrorHandler, typeErrorHandler, false);
     }
 
     public static CastToByteNode create(Function<Object, Byte> rangeErrorHandler, Function<Object, Byte> typeErrorHandler, boolean coerce) {
