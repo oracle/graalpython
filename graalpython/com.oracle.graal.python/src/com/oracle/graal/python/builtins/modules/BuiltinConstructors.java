@@ -717,13 +717,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        @TruffleBoundary
         public Object floatFromBytes(LazyPythonClass cls, PIBytesLike arg) {
-            double value = convertStringToDouble(new String(getByteArray(arg)));
+            double value = convertBytesToDouble(arg);
             if (isPrimitiveFloat(cls)) {
                 return value;
             }
             return factory().createFloat(cls, value);
+        }
+
+        @TruffleBoundary
+        private double convertBytesToDouble(PIBytesLike arg) {
+            double value = convertStringToDouble(new String(getByteArray(arg)));
+            return value;
         }
 
         // Taken from Jython PyString's atof() method
@@ -785,6 +790,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return convertStringToDouble(((PString) obj).getValue());
             } else if (obj instanceof PNone) {
                 return 0.0;
+            } else if (obj instanceof PIBytesLike) {
+                return convertBytesToDouble((PIBytesLike) obj);
             }
             try {
                 return callFloatNode.executeDouble(obj);
