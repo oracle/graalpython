@@ -57,7 +57,7 @@ def working_selectors(tagfile):
         with open(tagfile) as f:
             return [line.strip() for line in f if line]
     else:
-        return []
+        return None
 
 
 def working_tests():
@@ -95,10 +95,13 @@ if __name__ == "__main__":
     re_success = re.compile("^(test\S+)[^\r\n]* \.\.\. ok$", re.MULTILINE)
     kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "text": True, "check": False}
 
-    if len(sys.argv) > 1:
-        glob_pattern = sys.argv[1]
-    else:
-        glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
+    glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
+    retag = False
+    for arg in sys.argv[1:]:
+        if arg == "--retag":
+            retag = True
+        else:
+            glob_pattern = sys.argv[1]
 
     p = subprocess.run(["/usr/bin/which", "timeout"], **kwargs)
     if p.returncode != 0:
@@ -113,6 +116,11 @@ if __name__ == "__main__":
         cmd = [timeout, "-s", "9", "60"] + executable + ["-m"]
         tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
         test_selectors = working_selectors(tagfile)
+
+        if test_selectors is None and not retag:
+            # there's no tagfile for this, so it's not working at all (or has
+            # not been tried)
+            continue
 
         print("[%d/%d] Testing %s" %(idx, len(testfiles), testmod))
         cmd += ["unittest", "-v"]
