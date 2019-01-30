@@ -4,5 +4,3 @@ test_true_is_a_keyword
 test_uppercase_true_is_not_a_keyword
 test_grammar
 test_keywords_py_without_markers_produces_error
-test_missing_grammar_file_produces_error
-test_missing_keywords_py_file_produces_error

@@ -3,7 +3,6 @@ test_fdopen
 test_read
 test_utime_current
 test_utime_current_old
-test.'
 test_bool
 test_constructor
 test_environb

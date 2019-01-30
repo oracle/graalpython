@@ -1,0 +1,6 @@
+testIsInstanceActual
+testIsInstanceBuiltin
+testIsSubclassActual
+testIsSubclassBuiltin
+testIsSubclassInternal
+testSubclassBehavior

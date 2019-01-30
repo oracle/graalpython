@@ -188,7 +188,7 @@ def retag_unittests(args):
     """run the cPython stdlib unittests"""
     os.environ["ENABLE_CPYTHON_TAGGED_UNITTESTS"] = "true"
     try:
-        python_svm(["graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py"] + args)
+        python(["graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py"] + args)
     finally:
         del os.environ["ENABLE_CPYTHON_TAGGED_UNITTESTS"]
 

@@ -143,3 +143,4 @@ test_with_name_common
 test_with_suffix_common
 test_concrete_class
 test_cwd
+test_parts_interning

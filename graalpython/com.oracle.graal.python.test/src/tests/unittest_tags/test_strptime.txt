@@ -25,7 +25,6 @@ test_month
 test_percent
 test_second
 test_time
-test_timezone
 test_unconverteddata
 test_year
 test_all_julian_days
@@ -34,6 +33,5 @@ test_gregorian_calculation
 test_julian_calculation
 test_week_0
 test_week_of_year_and_day_of_week_calculation
-test_new_localetime
 test_regex_cleanup
 test_time_re_recreation

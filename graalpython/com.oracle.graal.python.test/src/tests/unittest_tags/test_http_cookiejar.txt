@@ -12,6 +12,8 @@ test_parse_ns_headers_special_names
 test_parse_ns_headers_version
 test_roundtrip
 test_split_header_words
+test_bad_magic
+test_lwp_valueless_cookie
 test_Cookie_iterator
 test_bad_cookie_header
 test_default_path
@@ -42,8 +44,6 @@ test_strict_domain
 test_two_component_domain_ns
 test_two_component_domain_rfc2965
 test_wrong_domain
-test_bad_magic
-test_lwp_valueless_cookie
 test_empty_path
 test_ietf_example_1
 test_ietf_example_2

@@ -13,3 +13,9 @@ test_count
 test_delitem
 test_extend
 test_extendleft
+test_basics
+test_addmul
+test_contains
+test_contains_fake
+test_contains_order
+test_count
