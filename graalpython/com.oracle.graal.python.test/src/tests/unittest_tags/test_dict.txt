@@ -25,3 +25,13 @@ test_keys
 test_keys_contained
 test_len
 test_literal_constructor
+test_bool
+test_constructor
+test_getitem
+test_items
+test_len
+test_bool
+test_constructor
+test_getitem
+test_items
+test_len

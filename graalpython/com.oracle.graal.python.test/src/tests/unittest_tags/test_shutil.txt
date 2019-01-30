@@ -9,9 +9,3 @@ test_copytree_simple
 test_copytree_special_func
 test_copytree_with_exclude
 test_make_archive
-test_make_archive_cwd
-test_make_zipfile
-test_make_zipfile_in_curdir
-test_register_archive_format
-test_rmtree_does_not_choke_on_failing_lstat
-test_rmtree_uses_safe_fd_version_if_available

@@ -8,3 +8,4 @@ test_range
 test_set_literal
 test_string
 test_tuple
+test_instance

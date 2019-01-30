@@ -7,7 +7,6 @@ testGetData
 testGetSource
 testImport_WithStuff
 testPy
-testUnencodable
 test_issue31291
 testBadMTime
 testBadMagic
@@ -18,7 +17,6 @@ testGetData
 testGetSource
 testImport_WithStuff
 testPy
-testUnencodable
 test_issue31291
 testBadArgs
 testEmptyFilename

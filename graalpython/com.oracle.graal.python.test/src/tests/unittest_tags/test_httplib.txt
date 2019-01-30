@@ -1,7 +1,6 @@
 test_auto_headers
 test_content_length_0
 test_invalid_headers
-test_malformed_headers_coped_with
 test_parse_all_octets
 test_putheader
 test_chunked
@@ -55,12 +54,10 @@ test_readline
 test_all
 test_client_constants
 test_responses
-test_disconnected
 test_ascii_body
 test_bytes_body
 test_latin1_body
 test_list_body
-test_getting_header
 test_getting_header_defaultint
 test_getting_nonexistent_header_with_iterable_default
 test_getting_nonexistent_header_with_string_default

@@ -2,7 +2,6 @@ test_getdata_filesys
 test_getdata_zipfile
 test_unreadable_dir_on_syspath
 test_walkpackages_filesys
-test_walkpackages_filesys,
 test_alreadyloaded
 test_getdata_pep302
 test_iter_importers

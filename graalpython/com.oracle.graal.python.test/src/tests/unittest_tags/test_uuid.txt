@@ -1,6 +1,4 @@
-test_uuid1
 test_uuid1_eui64
 test_uuid4
 test_ifconfig_getnode
-test_ip_getnode
 test_random_getnode
