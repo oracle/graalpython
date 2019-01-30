@@ -68,10 +68,11 @@ def working_tests():
     return working_tests
 
 
-for working_test in working_tests():
+WORKING_TESTS = working_tests()
+for idx, working_test in enumerate(WORKING_TESTS):
     def make_test_func(working_test):
         def fun():
-            cmd = [sys.executable, "-m", "unittest"]
+            cmd = [sys.executable, "-S", "-m", "unittest"]
             for testpattern in working_test[1]:
                 cmd.extend(["-k", testpattern])
             testmod = working_test[0].rpartition(".")[2]
@@ -79,7 +80,7 @@ for working_test in working_tests():
             cmd.append(os.path.join(os.path.dirname(test.__file__), "%s.py" % testmod))
             subprocess.check_call(cmd)
 
-        fun.__name__ = working_test[0]
+        fun.__name__ = "%s[%d/%d]" % (working_test[0], idx + 1, len(WORKING_TESTS))
         return fun
 
     test_f = make_test_func(working_test)
@@ -113,7 +114,7 @@ if __name__ == "__main__":
     for idx, testfile in enumerate(testfiles):
         testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
         testmod = "test." + testfile_stem
-        cmd = [timeout, "-s", "9", "60"] + executable + ["-m"]
+        cmd = [timeout, "-s", "9", "60"] + executable + ["-S", "-m"]
         tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
         test_selectors = working_selectors(tagfile)
 
@@ -122,7 +123,7 @@ if __name__ == "__main__":
             # not been tried)
             continue
 
-        print("[%d/%d] Testing %s" %(idx, len(testfiles), testmod))
+        print("[%d/%d] Testing %s" %(idx + 1, len(testfiles), testmod))
         cmd += ["unittest", "-v"]
         for selector in test_selectors:
             cmd += ["-k", selector]
