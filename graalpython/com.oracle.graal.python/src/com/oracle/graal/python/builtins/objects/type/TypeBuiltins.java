@@ -99,9 +99,11 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -529,6 +531,11 @@ public class TypeBuiltins extends PythonBuiltins {
     static abstract class SubclassCheckNode extends PythonBinaryBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
         @Child private TypeNodes.IsSameTypeNode isSameTypeNode = TypeNodes.IsSameTypeNode.create();
+        @Child private GetFixedAttributeNode getBasesAttrNode;
+        @Child private GetLazyClassNode getClassNode;
+
+        @CompilationFinal private IsBuiltinClassProfile isAttrErrorProfile;
+        @CompilationFinal private IsBuiltinClassProfile isTupleProfile;
 
         @Specialization(guards = {"!isNativeClass(cls)", "!isNativeClass(derived)"})
         boolean doManagedManaged(LazyPythonClass cls, LazyPythonClass derived) {
@@ -547,13 +554,33 @@ public class TypeBuiltins extends PythonBuiltins {
             if (isClsTypeNode.execute(cls) && isDerivedTypeNode.execute(derived)) {
                 return isSubtypeNode.execute(derived, cls);
             }
-            if (!isDerivedTypeNode.execute(derived)) {
+            if (!checkClass(derived)) {
                 throw raise(PythonBuiltinClassType.TypeError, "issubclass() arg 1 must be a class");
             }
-            if (!isClsTypeNode.execute(cls)) {
+            if (!checkClass(cls)) {
                 throw raise(PythonBuiltinClassType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
             }
             return false;
+        }
+
+        // checks if object has '__bases__' (see CPython 'abstract.c' function
+        // 'recursive_issubclass')
+        private boolean checkClass(Object obj) {
+            if (getBasesAttrNode == null || isAttrErrorProfile == null || isTupleProfile == null || getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getBasesAttrNode = insert(GetFixedAttributeNode.create(SpecialAttributeNames.__BASES__));
+                isAttrErrorProfile = IsBuiltinClassProfile.create();
+                isTupleProfile = IsBuiltinClassProfile.create();
+                getClassNode = insert(GetLazyClassNode.create());
+            }
+            Object basesObj;
+            try {
+                basesObj = getBasesAttrNode.executeObject(obj);
+            } catch (PException e) {
+                e.expectAttributeError(isAttrErrorProfile);
+                return false;
+            }
+            return isTupleProfile.profileClass(getClassNode.execute(basesObj), PythonBuiltinClassType.PTuple);
         }
 
         protected boolean isSameType(Object a, Object b) {
