@@ -1,6 +1,6 @@
-test_blocked
-test_callable
-test_contains
-test_convert
-test_fileclosed
-test_float
+*BoolTest.test_blocked
+*BoolTest.test_callable
+*BoolTest.test_contains
+*BoolTest.test_convert
+*BoolTest.test_fileclosed
+*BoolTest.test_float

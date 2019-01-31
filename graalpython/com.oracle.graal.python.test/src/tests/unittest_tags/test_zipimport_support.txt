@@ -1,1 +1,1 @@
-test_inspect_getsource_issue4223
+*ZipSupportTests.test_inspect_getsource_issue4223

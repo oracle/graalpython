@@ -1,8 +1,8 @@
-test_issue9319
-test_multiple_calls_to_get_data
-test_builtin
-test_extension
-test_source
-test_with_deleted_parent
-test_cache_from_source
-test_source_from_cache
+*ImportTests.test_issue9319
+*ImportTests.test_multiple_calls_to_get_data
+*ReloadTests.test_builtin
+*ReloadTests.test_extension
+*ReloadTests.test_source
+*ReloadTests.test_with_deleted_parent
+*PEP3147Tests.test_cache_from_source
+*PEP3147Tests.test_source_from_cache

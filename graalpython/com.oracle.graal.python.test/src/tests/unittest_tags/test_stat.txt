@@ -1,4 +1,0 @@
-test_devices
-test_directory
-test_mode
-test_module_attributes

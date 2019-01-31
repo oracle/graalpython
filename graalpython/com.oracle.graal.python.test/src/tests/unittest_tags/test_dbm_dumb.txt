@@ -1,8 +1,8 @@
-test_check_closed
-test_close_twice
-test_create_new
-test_dumbdbm_creation
-test_invalid_flag
-test_missing_index
-test_warn_on_ignored_flags
-test_write_contains
+*DumbDBMTestCase.test_check_closed
+*DumbDBMTestCase.test_close_twice
+*DumbDBMTestCase.test_create_new
+*DumbDBMTestCase.test_dumbdbm_creation
+*DumbDBMTestCase.test_invalid_flag
+*DumbDBMTestCase.test_missing_index
+*DumbDBMTestCase.test_warn_on_ignored_flags
+*DumbDBMTestCase.test_write_contains

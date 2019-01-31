@@ -1,1 +1,1 @@
-test_decode
+*LegacyBase64TestCase.test_decode

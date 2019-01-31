@@ -1,11 +1,1 @@
-test_invariant
-test_invariant
-test_invariant
-test_immutable_during_iteration
-test_invariant
-test_immutable_during_iteration
-test_invariant
-test_invariant
-test_invariant
-test_invariant
-test_invalid_hint
+*TestLengthHintExceptions.test_invalid_hint

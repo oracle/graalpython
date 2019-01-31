@@ -1,3 +1,3 @@
-testMisc
-testComparisons
-testComparisonsDummyRational
+*GcdTest.testMisc
+*FractionTest.testComparisons
+*FractionTest.testComparisonsDummyRational
