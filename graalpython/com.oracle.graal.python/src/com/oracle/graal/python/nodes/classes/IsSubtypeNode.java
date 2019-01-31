@@ -41,11 +41,12 @@
 package com.oracle.graal.python.nodes.classes;
 
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -61,7 +62,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
     @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
-    @Child private GetMroNode getMroNode;
+    @Child private GetMroStorageNode getMroNode;
     @Child private IsSameTypeNode isSameTypeNode;
 
     private final ConditionProfile exceptionDerivedProfile = ConditionProfile.createBinaryProfile();
@@ -73,12 +74,19 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     public abstract boolean execute(Object derived, Object cls);
 
-    @Specialization(guards = {"derived == cachedDerived", "cls == cachedCls"}, limit = "getVariableArgumentInlineCacheLimit()")
+    @Specialization(guards = { //
+                    "derived == cachedDerived", //
+                    "cls == cachedCls", //
+                    "mro.length() < 32" //
+    }, //
+                    limit = "getVariableArgumentInlineCacheLimit()", //
+                    assumptions = "mro.getLookupStableAssumption()")
     @ExplodeLoop
     boolean isSubtypeOfConstantType(@SuppressWarnings("unused") PythonAbstractClass derived, @SuppressWarnings("unused") PythonAbstractClass cls,
-                    @Cached("derived") PythonAbstractClass cachedDerived,
-                    @Cached("cls") PythonAbstractClass cachedCls) {
-        for (PythonAbstractClass n : getMro(cachedDerived)) {
+                    @Cached("derived") @SuppressWarnings("unused") PythonAbstractClass cachedDerived,
+                    @Cached("cls") PythonAbstractClass cachedCls,
+                    @Cached("getMro(cachedDerived)") MroSequenceStorage mro) {
+        for (PythonAbstractClass n : mro.getInternalClassArray()) {
             if (isSameType(n, cachedCls)) {
                 return true;
             }
@@ -86,11 +94,19 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return false;
     }
 
-    @Specialization(guards = {"derived == cachedDerived"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "isSubtypeOfConstantType")
+    @Specialization(guards = { //
+                    "derived == cachedDerived", //
+                    "mro.length() < 32" //
+    }, //
+                    limit = "getVariableArgumentInlineCacheLimit()", //
+                    replaces = "isSubtypeOfConstantType", //
+                    assumptions = "mro.getLookupStableAssumption()" //
+    )
     @ExplodeLoop
     boolean isSubtypeOfVariableType(@SuppressWarnings("unused") PythonAbstractClass derived, PythonAbstractClass cls,
-                    @Cached("derived") PythonAbstractClass cachedDerived) {
-        for (PythonAbstractClass n : getMro(cachedDerived)) {
+                    @Cached("derived") @SuppressWarnings("unused") PythonAbstractClass cachedDerived,
+                    @Cached("getMro(cachedDerived)") MroSequenceStorage mro) {
+        for (PythonAbstractClass n : mro.getInternalClassArray()) {
             if (isSameType(n, cls)) {
                 return true;
             }
@@ -100,7 +116,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     @Specialization(replaces = {"isSubtypeOfConstantType", "isSubtypeOfVariableType"})
     boolean issubTypeGeneric(PythonAbstractClass derived, PythonAbstractClass cls) {
-        for (PythonAbstractClass n : getMro(derived)) {
+        for (PythonAbstractClass n : getMro(derived).getInternalClassArray()) {
             if (isSameType(n, cls)) {
                 return true;
             }
@@ -121,10 +137,10 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return abstractIsSubclassNode.execute(derived, cls);
     }
 
-    private PythonAbstractClass[] getMro(PythonAbstractClass clazz) {
+    protected MroSequenceStorage getMro(PythonAbstractClass clazz) {
         if (getMroNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getMroNode = insert(GetMroNode.create());
+            getMroNode = insert(GetMroStorageNode.create());
         }
         return getMroNode.execute(clazz);
     }
