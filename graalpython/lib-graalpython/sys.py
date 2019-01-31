@@ -176,5 +176,31 @@ del make_excepthook
 
 
 @__builtin__
+def breakpointhook(*args, **kws):
+    import importlib, os, warnings
+    hookname = os.getenv('PYTHONBREAKPOINT')
+    if hookname is None or len(hookname) == 0:
+        warnings.warn('Graal Python cannot run pdb, yet, consider using `--inspect` on the commandline', RuntimeWarning)
+        hookname = 'pdb.set_trace'
+    elif hookname == '0':
+        return None
+    modname, dot, funcname = hookname.rpartition('.')
+    if dot == '':
+        modname = 'builtins'
+    try:
+        module = importlib.import_module(modname)
+        hook = getattr(module, funcname)
+    except:
+        warnings.warn(
+            'Ignoring unimportable $PYTHONBREAKPOINT: {}'.format(
+                hookname),
+            RuntimeWarning)
+    return hook(*args, **kws)
+
+
+__breakpointhook__ = breakpointhook
+
+
+@__builtin__
 def getrecursionlimit():
     return 1000
