@@ -52,7 +52,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     private final String className;
 
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] baseClasses;
-// @CompilationFinal(dimensions = 1) private PythonAbstractClass[] methodResolutionOrder;
 
     private final MroSequenceStorage methodResolutionOrder;
 
