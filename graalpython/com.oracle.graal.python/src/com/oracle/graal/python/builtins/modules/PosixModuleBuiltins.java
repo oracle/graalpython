@@ -1838,7 +1838,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 return getContext().getEnv().getTruffleFile(str).getCanonicalFile().getPath();
             } catch (IOException e) {
-                throw raise(OSError, e.getMessage());
+                throw raise(OSError, getMessage(e));
             }
         }
     }
