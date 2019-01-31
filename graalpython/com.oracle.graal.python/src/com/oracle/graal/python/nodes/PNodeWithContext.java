@@ -117,7 +117,7 @@ public abstract class PNodeWithContext extends Node {
     }
 
     @TruffleBoundary
-    private static final String getMessage(Exception e) {
+    protected static final String getMessage(Exception e) {
         return e.getMessage();
     }
 
