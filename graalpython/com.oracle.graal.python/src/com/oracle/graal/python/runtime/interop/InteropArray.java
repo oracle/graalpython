@@ -50,7 +50,7 @@ import com.oracle.truffle.api.nodes.Node;
 public final class InteropArray implements TruffleObject {
     @CompilationFinal(dimensions = 1) private final Object[] array;
 
-    InteropArray(Object[] array) {
+    public InteropArray(Object[] array) {
         this.array = array;
     }
 
