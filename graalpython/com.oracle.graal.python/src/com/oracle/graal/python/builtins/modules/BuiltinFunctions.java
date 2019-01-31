@@ -98,7 +98,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.Arity;
@@ -176,6 +175,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
@@ -498,7 +498,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = DIVMOD, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class DivModNode extends PythonBuiltinNode {
+    @ImportStatic(BinaryArithmetic.class)
+    public abstract static class DivModNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "b != 0")
         public PTuple doLong(long a, long b) {
             return factory().createTuple(new Object[]{Math.floorDiv(a, b), Math.floorMod(a, b)});
@@ -519,21 +520,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("unused")
-        public PTuple doComplex(PComplex c, Object o) {
-            throw raise(PythonErrorType.TypeError, "can't take floor or mod of complex number.");
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        public PTuple doComplex(Object o, PComplex c) {
-            throw raise(PythonErrorType.TypeError, "can't take floor or mod of complex number.");
-        }
-
-        @Specialization
         public PTuple doObject(Object a, Object b,
-                        @Cached("create(__FLOORDIV__)") LookupAndCallBinaryNode floordivNode,
-                        @Cached("create(__MOD__)") LookupAndCallBinaryNode modNode) {
+                        @Cached("FloorDiv.create()") LookupAndCallBinaryNode floordivNode,
+                        @Cached("Mod.create()") LookupAndCallBinaryNode modNode) {
             Object div = floordivNode.executeObject(a, b);
             Object mod = modNode.executeObject(a, b);
             return factory().createTuple(new Object[]{div, mod});

@@ -133,6 +133,21 @@ def test_floor_div():
     assert_exception(lambda: 5.4 // 0.0, ZeroDivisionError)
 
 
+def test_divmod():
+    class Floatable:
+        def __init__(self, val):
+            self.val = val
+        def __float__(self):
+            return self.val
+
+    def doDivmod(a, b):
+        return divmod(a, b)
+
+    argList = [(Floatable(3), Floatable(4)), (complex(1,2), complex(3,4))]
+    for args in argList:
+        assert_exception(lambda: doDivmod(*args), TypeError)
+
+
 def test_subclass_ordered_binop():
     class A(int):
         def __add__(self, other):
