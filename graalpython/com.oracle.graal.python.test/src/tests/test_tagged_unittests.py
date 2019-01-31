@@ -172,14 +172,13 @@ if __name__ == "__main__":
                 passing_tests = []
                 failed_tests = []
 
-                try:
-                    imported_test_module = __import__(testmod)
-                except:
-                    imported_test_module = None
-
                 def get_pass_name(funcname, classname):
-                    # try hard to get a most specific pattern
-                    if imported_test_module:
+                    try:
+                        imported_test_module = __import__(testmod)
+                    except:
+                        imported_test_module = None
+                    else:
+                        # try hard to get a most specific pattern
                         classname = "".join(classname.rpartition(testmod)[1:])
                         clazz = imported_test_module
                         path_to_class = classname.split(".")[1:]
