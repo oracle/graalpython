@@ -1567,7 +1567,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"doUnpackLongOvf"})
-        Object doUnpackLongOvf(Object start, Object stop, Object step, Object lengthObj,
+        Object doUnpackObjectOvf(Object start, Object stop, Object step, Object lengthObj,
                         @Cached("createOverflow()") CastToIndexNode castToIndexNode,
                         @Cached("create()") IsBuiltinClassProfile profile,
                         @Cached("create()") SliceLiteralNode sliceLiteralNode) {
