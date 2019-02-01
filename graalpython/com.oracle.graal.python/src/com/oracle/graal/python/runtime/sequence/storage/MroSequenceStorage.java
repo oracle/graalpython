@@ -85,7 +85,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public PythonAbstractClass getItemNormalized(int idx) {
+    public final PythonAbstractClass getItemNormalized(int idx) {
         return values[idx];
     }
 
@@ -182,7 +182,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         return values;
     }
 
-    public PythonAbstractClass[] getInternalClassArray() {
+    public final PythonAbstractClass[] getInternalClassArray() {
         return values;
     }
 
