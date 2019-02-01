@@ -77,7 +77,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     @Specialization(guards = { //
                     "derived == cachedDerived", //
                     "cls == cachedCls", //
-                    "mro.length() < 32" //
+                    "mro.getInternalClassArray().length < 32" //
     }, //
                     limit = "getVariableArgumentInlineCacheLimit()", //
                     assumptions = "mro.getLookupStableAssumption()")
@@ -96,7 +96,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     @Specialization(guards = { //
                     "derived == cachedDerived", //
-                    "mro.length() < 32" //
+                    "mro.getInternalClassArray().length < 32" //
     }, //
                     limit = "getVariableArgumentInlineCacheLimit()", //
                     replaces = "isSubtypeOfConstantType", //
