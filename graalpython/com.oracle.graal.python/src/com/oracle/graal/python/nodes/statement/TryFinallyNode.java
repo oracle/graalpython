@@ -44,23 +44,27 @@ public class TryFinallyNode extends StatementNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        PException exceptionState = contextRef.get().getCaughtException();
-        try {
+        if (finalbody == null) {
             body.executeVoid(frame);
-        } catch (PException e) {
-            // any thrown Python exception is visible in the finally block
-            contextRef.get().setCaughtException(e);
-            throw e;
-        } finally {
+        } else {
+            PException exceptionState = contextRef.get().getCaughtException();
             try {
-                finalbody.executeVoid(frame);
-            } catch (ControlFlowException e) {
+                body.executeVoid(frame);
+            } catch (PException e) {
+                // any thrown Python exception is visible in the finally block
+                contextRef.get().setCaughtException(e);
+                throw e;
+            } finally {
+                try {
+                    finalbody.executeVoid(frame);
+                } catch (ControlFlowException e) {
+                    // restore
+                    contextRef.get().setCaughtException(exceptionState);
+                    throw e;
+                }
                 // restore
                 contextRef.get().setCaughtException(exceptionState);
-                throw e;
             }
-            // restore
-            contextRef.get().setCaughtException(exceptionState);
         }
     }
 

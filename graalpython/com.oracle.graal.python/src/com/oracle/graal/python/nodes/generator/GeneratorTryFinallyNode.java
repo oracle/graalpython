@@ -45,14 +45,13 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class GeneratorTryFinallyNode extends TryFinallyNode implements GeneratorControlNode {
-    @CompilationFinal ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
 
+    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
     private final int finallyFlag;
 
     public GeneratorTryFinallyNode(StatementNode body, StatementNode finalbody, int finallyFlag) {
@@ -65,7 +64,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
         PException exceptionState = contextRef.get().getCaughtException();
         PException exception = null;
         if (gen.isActive(frame, finallyFlag)) {
-            getFinalbody().executeVoid(frame);
+            executeFinalBody(frame);
         } else {
             try {
                 getBody().executeVoid(frame);
@@ -73,13 +72,20 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
                 exception = e;
             }
             gen.setActive(frame, finallyFlag, true);
-            getFinalbody().executeVoid(frame);
+            executeFinalBody(frame);
         }
         reset(frame);
         if (exception != null) {
             throw exception;
         }
         contextRef.get().setCaughtException(exceptionState);
+    }
+
+    private void executeFinalBody(VirtualFrame frame) {
+        StatementNode finalbody = getFinalbody();
+        if (finalbody != null) {
+            finalbody.executeVoid(frame);
+        }
     }
 
     public void reset(VirtualFrame frame) {
