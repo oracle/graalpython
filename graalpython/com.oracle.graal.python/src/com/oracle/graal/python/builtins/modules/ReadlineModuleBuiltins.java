@@ -68,34 +68,28 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = "readline")
 public class ReadlineModuleBuiltins extends PythonBuiltins {
-    private static final String DATA = "__data__";
+    private static final HiddenKey DATA = new HiddenKey("__data__");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ReadlineModuleBuiltinsFactory.getFactories();
     }
 
-    private static final class LocalData implements TruffleObject {
+    private static final class LocalData {
         private final HashMap<String, String> bindings = new HashMap<>();
         private final List<String> history = new ArrayList<>();
         protected Object completer = null;
         public boolean autoHistory = true;
-
-        public ForeignAccess getForeignAccess() {
-            return null;
-        }
     }
 
     @Override
-    public void initialize(PythonCore core) {
-        super.initialize(core);
-        LocalData readlineData = new LocalData();
-        builtinConstants.put(DATA, readlineData);
+    public void postInitialize(PythonCore core) {
+        super.postInitialize(core);
+        core.lookupBuiltinModule("readline").setAttribute(DATA, new LocalData());
     }
 
     @Builtin(name = "get_completer", fixedNumOfPositionalArgs = 1, declaresExplicitSelf = true)
