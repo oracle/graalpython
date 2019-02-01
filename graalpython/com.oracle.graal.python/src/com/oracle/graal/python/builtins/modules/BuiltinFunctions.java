@@ -1513,7 +1513,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public Object doIt(VirtualFrame frame, Object[] args, PKeyword[] kwargs) {
-            if (Debugger.find(getContext().getEnv()).getSessionCount() > 0) {
+            if (getDebuggerSessionCount() > 0) {
                 // we already have a Truffle debugger attached, it'll stop here
                 return PNone.NONE;
             } else {
@@ -1531,6 +1531,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 return callNode.execute(frame, breakpointhook, args, kwargs);
             }
+        }
+
+        @TruffleBoundary
+        private int getDebuggerSessionCount() {
+            return Debugger.find(getContext().getEnv()).getSessionCount();
         }
     }
 
