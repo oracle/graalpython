@@ -88,6 +88,7 @@
 
   local darwinMixin = {
     capabilities +: ["darwin_sierra", "amd64"],
+    timelimit: TIME_LIMIT["1h"],
     packages +: {
       "pip:astroid": "==1.1.0",
       "pip:pylint": "==1.1.0",
