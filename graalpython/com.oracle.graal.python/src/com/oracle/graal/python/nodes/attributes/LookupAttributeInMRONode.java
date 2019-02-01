@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -96,6 +97,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     }
 
     protected final String key;
+    @Child private TypeNodes.IsSameTypeNode isSameTypeNode = TypeNodes.IsSameTypeNode.createFast();
     @Child private GetMroStorageNode getMroNode;
 
     public LookupAttributeInMRONode(String key) {
@@ -168,7 +170,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return new PythonClassAssumptionPair(attrAssumption, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = {"klass == cachedKlass", "cachedClassInMROInfo != null"}, limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", assumptions = {
+    @Specialization(guards = {"isSameType(cachedKlass, klass)", "cachedClassInMROInfo != null"}, limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", assumptions = {
                     "cachedClassInMROInfo.assumption"})
     protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonAbstractClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonAbstractClass cachedKlass,
@@ -184,7 +186,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return nodes;
     }
 
-    @Specialization(guards = {"klass == cachedKlass", "mroLength < 32"}, limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", assumptions = "lookupStable")
+    @Specialization(guards = {"isSameType(cachedKlass, klass)", "mroLength < 32"}, limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", assumptions = "lookupStable")
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
     protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonAbstractClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonAbstractClass cachedKlass,
@@ -242,5 +244,9 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
             }
         }
         return PNone.NO_VALUE;
+    }
+
+    protected boolean isSameType(PythonAbstractClass cachedKlass, PythonAbstractClass klass) {
+        return isSameTypeNode.execute(cachedKlass, klass);
     }
 }

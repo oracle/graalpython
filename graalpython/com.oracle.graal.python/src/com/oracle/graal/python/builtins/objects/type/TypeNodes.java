@@ -541,6 +541,12 @@ public abstract class TypeNodes {
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class IsSameTypeNode extends PNodeWithContext {
 
+        protected final boolean fastCheck;
+
+        public IsSameTypeNode(boolean fastCheck) {
+            this.fastCheck = fastCheck;
+        }
+
         public abstract boolean execute(Object left, Object right);
 
         @Specialization
@@ -548,8 +554,16 @@ public abstract class TypeNodes {
             return left == right;
         }
 
-        @Specialization
-        boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
+        @Specialization(guards = "fastCheck")
+        boolean doNativeFast(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
+            // This check is a bit dangerous since we cannot be sure about the code that is running.
+            // Currently, we assume that the pointer object is a Sulong pointer and for this it's
+            // fine.
+            return left.object.equals(right.object);
+        }
+
+        @Specialization(guards = "!fastCheck")
+        boolean doNativeSlow(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
                         @Cached("create(__EQ__)") CExtNodes.PointerCompareNode pointerCompareNode) {
             return pointerCompareNode.execute(left, right);
         }
@@ -570,7 +584,11 @@ public abstract class TypeNodes {
         }
 
         public static IsSameTypeNode create() {
-            return IsSameTypeNodeGen.create();
+            return IsSameTypeNodeGen.create(false);
+        }
+
+        public static IsSameTypeNode createFast() {
+            return IsSameTypeNodeGen.create(true);
         }
 
     }
