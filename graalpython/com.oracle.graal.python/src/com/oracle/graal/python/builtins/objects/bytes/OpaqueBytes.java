@@ -50,13 +50,13 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.interop.CanResolve;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.MessageResolution;
-import com.oracle.truffle.api.interop.Resolve;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(InteropLibrary.class)
 public final class OpaqueBytes implements TruffleObject {
     private static final Assumption neverOpaqueAssumption = Truffle.getRuntime().createAssumption("all contexts use a readable filesystem");
     private static final Assumption alwaysOpaqueAssumption = Truffle.getRuntime().createAssumption("no context has a readable filesystem");
@@ -65,10 +65,6 @@ public final class OpaqueBytes implements TruffleObject {
     public OpaqueBytes(byte[] bytes) {
         assert !neverOpaqueAssumption.isValid();
         this.bytes = bytes;
-    }
-
-    public ForeignAccess getForeignAccess() {
-        return OpaqueBytesMessageResolutionForeign.ACCESS;
     }
 
     public byte[] getBytes() {
@@ -117,27 +113,28 @@ public final class OpaqueBytes implements TruffleObject {
         }
     }
 
-    @MessageResolution(receiverType = OpaqueBytes.class)
-    static class OpaqueBytesMessageResolution {
-        @Resolve(message = "HAS_SIZE")
-        abstract static class HasSizeNode extends Node {
-            Object access(@SuppressWarnings("unused") OpaqueBytes object) {
-                return true;
-            }
-        }
+    @ExportMessage
+    long getArraySize() {
+        return bytes.length;
+    }
 
-        @Resolve(message = "GET_SIZE")
-        abstract static class SizeNode extends Node {
-            Object access(OpaqueBytes object) {
-                return object.bytes.length;
-            }
-        }
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    boolean hasArrayElements() {
+        return true;
+    }
 
-        @CanResolve
-        abstract static class CheckFunction extends Node {
-            protected static boolean test(TruffleObject receiver) {
-                return receiver instanceof OpaqueBytes;
-            }
+    @ExportMessage
+    int readArrayElement(long index) throws InvalidArrayIndexException {
+        if (index < bytes.length) {
+            return bytes[(int) index];
+        } else {
+            throw InvalidArrayIndexException.create(index);
         }
+    }
+
+    @ExportMessage
+    boolean isArrayElementReadable(long index) {
+        return index < bytes.length;
     }
 }
