@@ -53,11 +53,11 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
@@ -128,7 +128,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     // foreign Object
     protected Node createReadMessageNode() {
-        return Message.READ.createNode();
+        return InteropLibrary.resolve().createCachedDispatch(1);
     }
 
     @Specialization(guards = {
@@ -152,10 +152,10 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     @Specialization(guards = "isForeignObject(object)")
     protected Object readForeign(TruffleObject object, Object key,
-                    @Cached("create()") PForeignToPTypeNode fromForeign,
-                    @Cached("createReadMessageNode()") Node readNode) {
+                    @Cached PForeignToPTypeNode fromForeign,
+                    @CachedLibrary(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)") InteropLibrary read) {
         try {
-            return fromForeign.executeConvert(ForeignAccess.sendRead(readNode, object, attrKey(key)));
+            return fromForeign.executeConvert(read.readMember(object, (String) attrKey(key)));
         } catch (UnknownIdentifierException | UnsupportedMessageException e) {
             return PNone.NO_VALUE;
         }

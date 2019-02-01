@@ -68,7 +68,7 @@ public class PForeignArrayIterator extends PythonBuiltinObject {
         return cursor;
     }
 
-    public Object advance() {
+    public int advance() {
         return cursor++;
     }
 

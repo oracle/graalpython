@@ -50,13 +50,12 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @NodeChild("calleeNode")
@@ -224,10 +223,6 @@ public abstract class PythonCallNode extends ExpressionNode {
         return keywordArguments == null ? PKeyword.EMPTY_KEYWORDS : keywordArguments.execute(frame);
     }
 
-    protected static Node createInvoke() {
-        return Message.INVOKE.createNode();
-    }
-
     @Specialization
     Object call(VirtualFrame frame, ForeignInvoke callable,
                     @Cached("create()") PForeignToPTypeNode fromForeign,
@@ -235,7 +230,7 @@ public abstract class PythonCallNode extends ExpressionNode {
                     @Cached("create()") BranchProfile typeError,
                     @Cached("create()") BranchProfile invokeError,
                     @Cached("create()") GetAnyAttributeNode getAttrNode,
-                    @Cached("createInvoke()") Node invokeNode) {
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
         Object[] arguments = evaluateArguments(frame);
         PKeyword[] keywords = evaluateKeywords(frame);
         if (keywords.length != 0) {
@@ -243,13 +238,13 @@ public abstract class PythonCallNode extends ExpressionNode {
             throw raise(PythonErrorType.TypeError, "foreign invocation does not support keyword arguments");
         }
         try {
-            return fromForeign.executeConvert(ForeignAccess.sendInvoke(invokeNode, callable.receiver, callable.identifier, arguments));
+            return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.identifier, arguments));
         } catch (ArityException | UnsupportedTypeException e) {
             typeError.enter();
             throw raise(PythonErrorType.TypeError, e);
         } catch (UnknownIdentifierException | UnsupportedMessageException e) {
             invokeError.enter();
-            // the interop contract is to revert to READ and then EXECUTE
+            // the interop contract is to revert to readMember and then execute
             Object member = getAttrNode.executeObject(callable.receiver, callable.identifier);
             return callNode.execute(frame, member, arguments, keywords);
         }

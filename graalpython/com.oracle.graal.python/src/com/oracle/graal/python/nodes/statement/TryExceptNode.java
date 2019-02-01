@@ -27,8 +27,21 @@ package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.runtime.PythonOptions.CatchAllExceptions;
 
+import java.util.ArrayList;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
+import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -37,18 +50,29 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
+@ExportLibrary(InteropLibrary.class)
+@ImportStatic(SpecialMethodNames.class)
 public class TryExceptNode extends StatementNode implements TruffleObject {
     @Child private StatementNode body;
     @Children private final ExceptNode[] exceptNodes;
     @Child private StatementNode orelse;
-    @CompilationFinal private TryExceptNodeMessageResolution.CatchesFunction catchesFunction;
+    @CompilationFinal private CatchesFunction catchesFunction;
     @CompilationFinal private ValueProfile exceptionStateProfile;
 
     @CompilationFinal boolean seenException;
@@ -153,16 +177,108 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         return orelse;
     }
 
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return TryExceptNodeMessageResolutionForeign.ACCESS;
+    @ExportMessage
+    boolean hasMembers() {
+        return true;
     }
 
-    public TryExceptNodeMessageResolution.CatchesFunction getCatchesFunction() {
-        return this.catchesFunction;
+    @ExportMessage
+    Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+        return getContext().getEnv().asGuestValue(new String[]{StandardTags.TryBlockTag.CATCHES});
     }
 
-    public void setCatchesFunction(TryExceptNodeMessageResolution.CatchesFunction catchesFunction) {
+    @ExportMessage
+    boolean isMemberReadable(String name) {
+        return name.equals(StandardTags.TryBlockTag.CATCHES);
+    }
+
+    @ExportMessage
+    boolean isMemberInvokable(String name) {
+        return name.equals(StandardTags.TryBlockTag.CATCHES);
+    }
+
+    @ExportMessage
+    CatchesFunction readMember(String name,
+                    @Shared("getAttr") @Cached(value = "create(__GETATTRIBUTE__)", allowUncached = true) LookupAndCallBinaryNode getAttr) throws UnknownIdentifierException {
+        if (name.equals(StandardTags.TryBlockTag.CATCHES)) {
+            if (catchesFunction == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                ArrayList<Object> literalCatches = new ArrayList<>();
+                PythonModule builtins = getContext().getBuiltins();
+                if (builtins == null) {
+                    return new CatchesFunction(null, null);
+                }
+
+                for (ExceptNode node : exceptNodes) {
+                    PNode exceptType = node.getExceptType();
+                    if (exceptType instanceof ReadGlobalOrBuiltinNode) {
+                        try {
+                            literalCatches.add(getAttr.executeObject(builtins, ((ReadGlobalOrBuiltinNode) exceptType).getAttributeId()));
+                        } catch (PException e) {
+                        }
+                    } else if (exceptType instanceof TupleLiteralNode) {
+                        for (PNode tupleValue : ((TupleLiteralNode) exceptType).getValues()) {
+                            if (tupleValue instanceof ReadGlobalOrBuiltinNode) {
+                                try {
+                                    literalCatches.add(getAttr.executeObject(builtins, ((ReadGlobalOrBuiltinNode) tupleValue).getAttributeId()));
+                                } catch (PException e) {
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Object isinstanceFunc = getAttr.executeObject(builtins, BuiltinNames.ISINSTANCE);
+                PTuple caughtClasses = factory().createTuple(literalCatches.toArray());
+
+                if (isinstanceFunc instanceof PBuiltinMethod && ((PBuiltinMethod) isinstanceFunc).getFunction() instanceof PBuiltinFunction) {
+                    RootCallTarget callTarget = ((PBuiltinFunction) ((PBuiltinMethod) isinstanceFunc).getFunction()).getCallTarget();
+                    catchesFunction = new CatchesFunction(callTarget, caughtClasses);
+                } else {
+                    throw new IllegalStateException("isinstance was redefined, cannot check exceptions");
+                }
+            }
+            return catchesFunction;
+        } else {
+            throw UnknownIdentifierException.create(name);
+        }
+    }
+
+    @ExportMessage
+    Object invokeMember(String name, Object[] arguments,
+                    @Shared("getAttr") @Cached(value = "create(__GETATTRIBUTE__)", allowUncached = true) LookupAndCallBinaryNode getAttr) throws ArityException, UnknownIdentifierException {
+        if (arguments.length != 1) {
+            throw ArityException.create(1, arguments.length);
+        }
+        return readMember(name, getAttr).catches(arguments[0]);
+    }
+
+    static class CatchesFunction implements TruffleObject {
+        private final RootCallTarget isInstance;
+        private final Object[] args = PArguments.create(2);
+
+        CatchesFunction(RootCallTarget callTarget, PTuple caughtClasses) {
+            this.isInstance = callTarget;
+            PArguments.setArgument(args, 1, caughtClasses);
+        }
+
+        @ExplodeLoop
+        boolean catches(Object exception) {
+            if (isInstance == null) {
+                return false;
+            }
+            if (exception instanceof PBaseException) {
+                PArguments.setArgument(args, 0, exception);
+                try {
+                    return isInstance.call(args) == Boolean.TRUE;
+                } catch (PException e) {
+                }
+            }
+            return false;
+        }
+    }
+
+    public void setCatchesFunction(CatchesFunction catchesFunction) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         this.catchesFunction = catchesFunction;
     }

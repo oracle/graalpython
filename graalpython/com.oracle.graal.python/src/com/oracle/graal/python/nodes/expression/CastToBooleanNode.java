@@ -41,12 +41,10 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
-import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 @GenerateWrapper
@@ -83,7 +81,6 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
         return executeBoolean(null, value);
     }
 
-    @ImportStatic(Message.class)
     public abstract static class YesNode extends CastToBooleanNode {
         @Child private HashingStorageNodes.LenNode lenNode;
 
