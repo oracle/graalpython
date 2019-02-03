@@ -231,4 +231,8 @@ public class AsyncHandler {
             }
         }
     }
+
+    public void shutdown() {
+        executorService.shutdownNow();
+    }
 }
