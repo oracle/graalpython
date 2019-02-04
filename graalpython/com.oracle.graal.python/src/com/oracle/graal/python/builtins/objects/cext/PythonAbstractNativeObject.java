@@ -81,4 +81,16 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
         // this is important for the default '__hash__' implementation
         return Objects.hashCode(object);
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        PythonAbstractNativeObject other = (PythonAbstractNativeObject) obj;
+        return Objects.equals(object, other.object);
+    }
 }

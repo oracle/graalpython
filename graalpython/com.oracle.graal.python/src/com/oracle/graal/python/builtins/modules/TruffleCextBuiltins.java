@@ -189,6 +189,8 @@ import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 @CoreFunctions(defineModule = "python_cext")
 public class TruffleCextBuiltins extends PythonBuiltins {
@@ -2314,13 +2316,35 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Compute_Mro", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffle_Compute_Mro extends PythonBinaryBuiltinNode {
 
         @Specialization
         Object doIt(PythonNativeObject self, String className) {
             PythonAbstractClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(PythonNativeClass.cast(self));
             return factory().createTuple(new MroSequenceStorage(className, doSlowPath));
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Type_Modified", fixedNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonTypes.class)
+    public abstract static class PyTruffle_Type_Modified extends PythonTernaryBuiltinNode {
+
+        @Specialization
+        Object doIt(PythonNativeClass clazz, String name, PTuple mroTuple,
+                        @Cached("createClassProfile()") ValueProfile profile) {
+            CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption(clazz, false);
+            if (nativeClassStableAssumption != null) {
+                nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name + "\") called");
+            }
+            SequenceStorage sequenceStorage = profile.profile(mroTuple.getSequenceStorage());
+            if (sequenceStorage instanceof MroSequenceStorage) {
+                ((MroSequenceStorage) sequenceStorage).lookupChanged();
+            } else {
+                throw new IllegalStateException("invalid MRO object for native type \"" + name + "\"");
+            }
+            return PNone.NONE;
         }
     }
 }

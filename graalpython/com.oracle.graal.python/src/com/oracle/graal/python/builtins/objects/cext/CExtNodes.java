@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonOb
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeClassNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MaterializeDelegateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
@@ -100,6 +101,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -113,6 +115,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ForeignAccess;
@@ -1608,7 +1611,8 @@ public abstract class CExtNodes {
         }
     }
 
-    public static class GetTypeMemberNode extends GetNativeDictNode {
+    @TypeSystemReference(PythonTypes.class)
+    public abstract static class GetTypeMemberNode extends GetNativeDictNode {
         @Child private ToSulongNode toSulong;
         @Child private AsPythonObjectNode toJava;
         @Child private PCallCapiFunction callGetTpDictNode;
@@ -1616,7 +1620,7 @@ public abstract class CExtNodes {
 
         @CompilationFinal private IsBuiltinClassProfile isTypeProfile;
 
-        private GetTypeMemberNode(String memberName) {
+        protected GetTypeMemberNode(String memberName) {
             String getterFuncName = "get_" + memberName;
             if (!NativeCAPISymbols.isValid(getterFuncName)) {
                 throw new IllegalArgumentException("invalid native member getter function " + getterFuncName);
@@ -1624,8 +1628,15 @@ public abstract class CExtNodes {
             callGetTpDictNode = PCallCapiFunction.create(getterFuncName);
         }
 
-        @Override
-        public Object execute(Object self) {
+        @Specialization(guards = "cachedObj.equals(obj)", limit = "1", assumptions = "getNativeClassStableAssumption(cachedObj)")
+        public Object doCached(@SuppressWarnings("unused") PythonNativeClass obj,
+                        @Cached("obj") @SuppressWarnings("unused") PythonNativeClass cachedObj,
+                        @Cached("doUncached(obj)") Object result) {
+            return result;
+        }
+
+        @Specialization
+        public Object doUncached(Object self) {
             if (toSulong == null || toJava == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toSulong = insert(ToSulongNode.create());
@@ -1633,6 +1644,10 @@ public abstract class CExtNodes {
             }
             assert isNativeTypeObject(self);
             return toJava.execute(callGetTpDictNode.call(toSulong.execute(self)));
+        }
+
+        protected Assumption getNativeClassStableAssumption(PythonNativeClass clazz) {
+            return getContext().getNativeClassStableAssumption(clazz, true).getAssumption();
         }
 
         private boolean isNativeTypeObject(Object self) {
@@ -1654,7 +1669,7 @@ public abstract class CExtNodes {
         }
 
         public static GetTypeMemberNode create(String typeMember) {
-            return new GetTypeMemberNode(typeMember);
+            return GetTypeMemberNodeGen.create(typeMember);
         }
     }
 }

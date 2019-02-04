@@ -540,6 +540,7 @@ public abstract class TypeNodes {
 
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class IsSameTypeNode extends PNodeWithContext {
+        @Child private CExtNodes.PointerCompareNode pointerCompareNode;
 
         protected final boolean fastCheck;
 
@@ -563,8 +564,14 @@ public abstract class TypeNodes {
         }
 
         @Specialization(guards = "!fastCheck")
-        boolean doNativeSlow(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
-                        @Cached("create(__EQ__)") CExtNodes.PointerCompareNode pointerCompareNode) {
+        boolean doNativeSlow(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
+            if (doNativeFast(left, right)) {
+                return true;
+            }
+            if (pointerCompareNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                pointerCompareNode = insert(CExtNodes.PointerCompareNode.create(SpecialMethodNames.__EQ__));
+            }
             return pointerCompareNode.execute(left, right);
         }
 

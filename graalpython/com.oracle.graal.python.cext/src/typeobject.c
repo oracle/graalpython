@@ -542,9 +542,9 @@ int PyType_Ready(PyTypeObject* cls) {
 #undef ADD_METHOD_OR_SLOT
 }
 
+UPCALL_ID(PyTruffle_Type_Modified);
 void PyType_Modified(PyTypeObject* type) {
-    // (tfel) I don't think we have to do anything here, since we track MRO
-    // changes separately, anyway
+	UPCALL_CEXT_VOID(_jls_PyTruffle_Type_Modified, native_to_java(type), polyglot_from_string(type->tp_name, SRC_CS), native_to_java(type->tp_mro));
 }
 
 MUST_INLINE static int valid_identifier(PyObject *s) {
