@@ -848,7 +848,7 @@ public abstract class CExtNodes {
 
         public abstract PythonAbstractClass execute(PythonAbstractNativeObject object);
 
-        @Specialization(guards = "object == cachedObject", limit = "1")
+        @Specialization(guards = "cachedObject.equals(object)", limit = "1")
         PythonAbstractClass getNativeClassCached(@SuppressWarnings("unused") PythonAbstractNativeObject object,
                         @SuppressWarnings("unused") @Cached("object") PythonAbstractNativeObject cachedObject,
                         @Cached("getNativeClass(cachedObject)") PythonAbstractClass cachedClass) {
