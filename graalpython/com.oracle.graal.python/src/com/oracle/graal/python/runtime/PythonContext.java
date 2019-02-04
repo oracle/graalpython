@@ -288,6 +288,7 @@ public final class PythonContext {
 
     @TruffleBoundary
     public void runShutdownHooks() {
+        handler.shutdown();
         for (CallTarget f : atExitHooks.values()) {
             f.call();
         }
