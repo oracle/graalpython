@@ -252,6 +252,16 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     }
 
     @Override
+    public boolean isCaptureFramesForTrace() {
+        return false;
+    }
+
+    @Override
+    public boolean isInternal() {
+        return true;
+    }
+
+    @Override
     public Object execute(VirtualFrame frame) {
         if (body == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
