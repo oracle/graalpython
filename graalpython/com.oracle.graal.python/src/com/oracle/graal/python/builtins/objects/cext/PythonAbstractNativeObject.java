@@ -93,4 +93,10 @@ public class PythonAbstractNativeObject extends PythonAbstractObject implements 
         PythonAbstractNativeObject other = (PythonAbstractNativeObject) obj;
         return Objects.equals(object, other.object);
     }
+
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        return String.format("PythonAbstractNativeObject(%s)", object);
+    }
 }

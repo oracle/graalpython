@@ -847,8 +847,6 @@ public abstract class CExtNodes {
         @Child private PCallCapiFunction callGetObTypeNode;
         @Child private AsPythonObjectNode toJavaNode;
 
-        @CompilationFinal private TruffleObject func;
-
         public abstract PythonAbstractClass execute(PythonAbstractNativeObject object);
 
         @Specialization(guards = "cachedObject.equals(object)", limit = "1")
@@ -1361,7 +1359,7 @@ public abstract class CExtNodes {
         private final String name;
         private final BranchProfile profile = BranchProfile.create();
 
-        @CompilationFinal TruffleObject receiver;
+        @CompilationFinal private TruffleObject receiver;
 
         public PCallCapiFunction(String name) {
             this.name = name;
