@@ -72,7 +72,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperCl
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -274,10 +273,6 @@ public abstract class TypeNodes {
             if (obj instanceof PythonManagedClass) {
                 return ((PythonManagedClass) obj).getName();
             } else if (obj instanceof PythonBuiltinClassType) {
-                // TODO(fa): remove this special case
-                if (obj == PythonBuiltinClassType.TruffleObject) {
-                    return BuiltinNames.FOREIGN;
-                }
                 return ((PythonBuiltinClassType) obj).getName();
             } else if (PGuards.isNativeClass(obj)) {
                 return (String) CExtNodes.GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_NAME);
