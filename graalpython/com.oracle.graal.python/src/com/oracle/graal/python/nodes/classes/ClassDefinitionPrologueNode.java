@@ -50,18 +50,18 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.SetItemIfNotPresentNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public class ClassDefinitionEpilogNode extends StatementNode {
+public class ClassDefinitionPrologueNode extends StatementNode {
     @Child private ReadGlobalOrBuiltinNode readGlobalNameNode = ReadGlobalOrBuiltinNode.create(__NAME__);
     @Child private ReadIndexedArgumentNode readPrimaryArgNode = ReadIndexedArgumentNode.create(0);
     @Child private SetItemIfNotPresentNode setItemIfNotPresentNode = SetItemIfNotPresentNode.create();
 
     private final String qualName;
 
-    public ClassDefinitionEpilogNode() {
+    public ClassDefinitionPrologueNode() {
         this(null);
     }
 
-    public ClassDefinitionEpilogNode(String qualName) {
+    public ClassDefinitionPrologueNode(String qualName) {
         this.qualName = qualName;
     }
 
