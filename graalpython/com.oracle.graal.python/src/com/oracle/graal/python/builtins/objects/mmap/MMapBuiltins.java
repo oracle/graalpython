@@ -613,7 +613,7 @@ public class MMapBuiltins extends PythonBuiltins {
         private int castToInt(Object val) {
             if (castToLongNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToLongNode = insert(CastToIndexNode.create());
+                castToLongNode = insert(CastToIndexNode.create(PythonBuiltinClassType.TypeError, (obj) -> 0));
             }
             return castToLongNode.execute(val);
         }
