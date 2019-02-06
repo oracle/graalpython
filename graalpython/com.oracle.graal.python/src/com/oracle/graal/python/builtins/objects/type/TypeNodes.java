@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass.FlagsContainer;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
@@ -94,6 +95,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -747,6 +749,39 @@ public abstract class TypeNodes {
 
         public static IsTypeNode create() {
             return IsTypeNodeGen.create();
+        }
+    }
+
+    public abstract static class GetInstanceShape extends PNodeWithContext {
+
+        public abstract Shape execute(LazyPythonClass clazz);
+
+        @Specialization
+        Shape doBuiltinClassType(PythonBuiltinClassType clazz) {
+            return clazz.getInstanceShape();
+        }
+
+        @Specialization
+        Shape doManagedClass(PythonManagedClass clazz) {
+            return clazz.getInstanceShape();
+        }
+
+        @Fallback
+        Shape doError(@SuppressWarnings("unused") LazyPythonClass clazz) {
+            throw raise(PythonBuiltinClassType.SystemError, "cannot get shape of native class");
+        }
+
+        public static Shape doSlowPath(LazyPythonClass clazz) {
+            if (clazz instanceof PythonBuiltinClassType) {
+                return ((PythonBuiltinClassType) clazz).getInstanceShape();
+            } else if (clazz instanceof PythonManagedClass) {
+                return ((PythonManagedClass) clazz).getInstanceShape();
+            }
+            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, "cannot get shape of native class");
+        }
+
+        public static GetInstanceShape create() {
+            return GetInstanceShapeNodeGen.create();
         }
     }
 }

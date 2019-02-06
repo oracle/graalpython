@@ -178,6 +178,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -1345,6 +1346,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private PCallCapiFunction callNativeGenericNewNode;
         @Children private CExtNodes.ToSulongNode[] toSulongNodes;
         @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode;
+        @Child private TypeNodes.GetInstanceShape getInstanceShapeNode;
 
         @Override
         public final Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
@@ -1353,10 +1355,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         Object doDirectConstruct(@SuppressWarnings("unused") PNone ignored, Object[] arguments, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            if (PGuards.isNativeClass(arguments[0])) {
-                throw raise(PythonBuiltinClassType.SystemError, "cannot instantiate native class here");
-            }
-            return factory().createPythonObject((LazyPythonClass) arguments[0]);
+            assert arguments[0] != null;
+            LazyPythonClass first = (LazyPythonClass) first(arguments);
+            return factory().createPythonObject(first, getInstanceShape(first));
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf", "!self.needsNativeAllocation()"})
@@ -1370,7 +1371,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
-            return factory().createPythonObject(self);
+            return factory().createPythonObject(self, getInstanceShape(self));
         }
 
         @Specialization(guards = "self.needsNativeAllocation()")
@@ -1421,6 +1422,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PDict dkwargs = factory().createDict(kwarr);
             return asPythonObjectNode.execute(
                             callNativeGenericNewNode.call(toSulongNodes[0].execute(self), toSulongNodes[1].execute(self), toSulongNodes[2].execute(targs), toSulongNodes[3].execute(dkwargs)));
+        }
+
+        private Shape getInstanceShape(LazyPythonClass clazz) {
+            if (getInstanceShapeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getInstanceShapeNode = insert(TypeNodes.GetInstanceShape.create());
+            }
+            return getInstanceShapeNode.execute(clazz);
+        }
+
+        protected static Object first(Object[] arguments) {
+            return arguments[0];
+        }
+
+        protected static Class<? extends LazyPythonClass> getJavaClass(Object arg) {
+            return ((LazyPythonClass) arg).getClass();
         }
     }
 

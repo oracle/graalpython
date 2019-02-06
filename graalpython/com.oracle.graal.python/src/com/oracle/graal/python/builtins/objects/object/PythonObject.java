@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.truffle.api.Assumption;
@@ -59,7 +60,7 @@ public class PythonObject extends PythonAbstractObject {
     public PythonObject(LazyPythonClass pythonClass) {
         assert pythonClass != null : getClass().getSimpleName();
         this.pythonClass = pythonClass;
-        storage = pythonClass.getInstanceShape().newInstance();
+        storage = TypeNodes.GetInstanceShape.doSlowPath(pythonClass).newInstance();
     }
 
     public PythonObject(LazyPythonClass pythonClass, Shape instanceShape) {

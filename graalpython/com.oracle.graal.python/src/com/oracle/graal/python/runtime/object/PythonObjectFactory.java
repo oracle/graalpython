@@ -188,12 +188,12 @@ public final class PythonObjectFactory extends Node {
 
     @CompilationFinal private Optional<Shape> cachedInstanceShape = Optional.empty();
 
-    public PythonObject createPythonObject(LazyPythonClass cls) {
+    public PythonObject createPythonObject(LazyPythonClass cls, Shape instanceShape) {
         assert cls != null;
         Optional<Shape> cached = cachedInstanceShape;
         if (cached != null) {
             if (cached.isPresent()) {
-                if (cached.get() == cls.getInstanceShape()) {
+                if (cached.get() == instanceShape) {
                     return trace(new PythonObject(cls, cached.get()));
                 } else {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -201,10 +201,10 @@ public final class PythonObjectFactory extends Node {
                 }
             } else {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                cachedInstanceShape = Optional.of(cls.getInstanceShape());
+                cachedInstanceShape = Optional.of(instanceShape);
             }
         }
-        return trace(new PythonObject(cls, cls.getInstanceShape()));
+        return trace(new PythonObject(cls, instanceShape));
     }
 
     public PythonNativeObject createNativeObjectWrapper(TruffleObject obj) {

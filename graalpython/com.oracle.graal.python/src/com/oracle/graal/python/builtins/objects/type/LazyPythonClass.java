@@ -40,9 +40,5 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
-import com.oracle.truffle.api.object.Shape;
-
 public interface LazyPythonClass {
-
-    Shape getInstanceShape();
 }
