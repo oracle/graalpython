@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,33 +38,65 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.type;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.truffle.api.dsl.Specialization;
+import java.util.Objects;
 
-public abstract class GetTypeFlagsNode extends PNodeWithContext {
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.object.Shape;
 
-    public abstract long execute(PythonClass clazz);
+public class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
-    @Specialization(guards = "isInitialized(clazz)")
-    long doInitialized(PythonClass clazz) {
-        return clazz.getFlagsContainer().flags;
+    public final TruffleObject object;
+
+    public PythonAbstractNativeObject(TruffleObject object) {
+        this.object = object;
     }
 
-    @Specialization
-    long doGeneric(PythonClass clazz) {
-        if (!isInitialized(clazz)) {
-            return clazz.getFlags();
+    public int compareTo(Object o) {
+        return 0;
+    }
+
+    public Shape getInstanceShape() {
+        CompilerDirectives.transferToInterpreter();
+        throw new UnsupportedOperationException("native class does not have a shape");
+    }
+
+    public void lookupChanged() {
+        // TODO invalidate cached native MRO
+        CompilerDirectives.transferToInterpreter();
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    public TruffleObject getPtr() {
+        return object;
+    }
+
+    @Override
+    public int hashCode() {
+        CompilerAsserts.neverPartOfCompilation();
+        // this is important for the default '__hash__' implementation
+        return Objects.hashCode(object);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
         }
-        return clazz.getFlagsContainer().flags;
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        PythonAbstractNativeObject other = (PythonAbstractNativeObject) obj;
+        return Objects.equals(object, other.object);
     }
 
-    protected static boolean isInitialized(PythonClass clazz) {
-        return clazz.getFlagsContainer().initialDominantBase == null;
-    }
-
-    public static GetTypeFlagsNode create() {
-        return GetTypeFlagsNodeGen.create();
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        return String.format("PythonAbstractNativeObject(%s)", object);
     }
 }

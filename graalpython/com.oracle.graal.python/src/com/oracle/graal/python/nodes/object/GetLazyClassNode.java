@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,13 +45,11 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -138,7 +136,12 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
     }
 
     @Specialization
-    protected static PythonClass getIt(PythonNativeObject object,
+    protected static LazyPythonClass getIt(@SuppressWarnings("unused") PythonBuiltinClassType object) {
+        return PythonBuiltinClassType.PythonClass;
+    }
+
+    @Specialization
+    protected static LazyPythonClass getIt(PythonAbstractNativeObject object,
                     @Cached("create()") GetNativeClassNode getNativeClassNode) {
         return getNativeClassNode.execute(object);
     }
@@ -177,32 +180,25 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
             return PythonBuiltinClassType.Boolean;
         } else if (o instanceof Double || o instanceof Float) {
             return PythonBuiltinClassType.PFloat;
-        } else if (o instanceof Integer || o instanceof Long || o instanceof Short || o instanceof Byte) {
+        } else if (o instanceof Integer || o instanceof Long || o instanceof Short || o instanceof Byte || o instanceof PythonNativeVoidPtr) {
             return PythonBuiltinClassType.PInt;
+        } else if (o instanceof PythonBuiltinClassType) {
+            return PythonBuiltinClassType.PythonClass;
         } else if (o instanceof PythonObject) {
             return ((PythonObject) o).getLazyPythonClass();
+        } else if (o instanceof PythonAbstractNativeObject) {
+            return GetNativeClassNode.doSlowPath((PythonAbstractNativeObject) o);
         } else if (o instanceof PEllipsis) {
             return PythonBuiltinClassType.PEllipsis;
         } else if (o instanceof PNotImplemented) {
             return PythonBuiltinClassType.PNotImplemented;
         } else if (o instanceof PNone) {
             return PythonBuiltinClassType.PNone;
-        } else {
-            return null;
-        }
-    }
-
-    @TruffleBoundary
-    public static String getNameSlowPath(Object o) {
-        if (PGuards.isForeignObject(o)) {
-            return BuiltinNames.FOREIGN;
-        }
-        LazyPythonClass lazyClass = getItSlowPath(o);
-        if (lazyClass != null) {
-            return lazyClass.getName();
+        } else if (o instanceof GetSetDescriptor) {
+            return PythonBuiltinClassType.GetSetDescriptor;
         } else {
             CompilerDirectives.transferToInterpreter();
-            return o.toString();
+            throw new IllegalStateException("unknown type " + o.getClass().getName());
         }
     }
 }

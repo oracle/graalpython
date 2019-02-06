@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,14 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeDictNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -50,6 +56,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -60,10 +67,21 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 
-@ImportStatic({PGuards.class, PythonOptions.class})
+@ImportStatic({PGuards.class, PythonOptions.class, NativeMemberNames.class})
 public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
+
+    protected final boolean forceType;
+
+    public ReadAttributeFromObjectNode(boolean forceType) {
+        this.forceType = forceType;
+    }
+
     public static ReadAttributeFromObjectNode create() {
-        return ReadAttributeFromObjectNodeGen.create();
+        return ReadAttributeFromObjectNodeGen.create(false);
+    }
+
+    public static ReadAttributeFromObjectNode createForceType() {
+        return ReadAttributeFromObjectNodeGen.create(true);
     }
 
     public abstract Object execute(Object object, Object key);
@@ -131,13 +149,21 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         return Message.READ.createNode();
     }
 
-    @Specialization(guards = {
-                    "!isHiddenKey(key)",
-                    "!isPythonObject(object)"
-    })
-    protected Object readNative(PythonNativeObject object, Object key,
+    @Specialization(guards = {"!forceType", "!isHiddenKey(key)"})
+    protected Object readNativeObject(PythonNativeObject object, Object key,
                     @Cached("create()") GetObjectDictNode getNativeDict,
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+        return readNative(object, key, getNativeDict, getItemNode);
+    }
+
+    @Specialization(guards = {"forceType", "!isHiddenKey(key)"})
+    protected Object readNativeClass(PythonNativeClass object, Object key,
+                    @Cached("create(TP_DICT)") GetTypeMemberNode getNativeDict,
+                    @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+        return readNative(object, key, getNativeDict, getItemNode);
+    }
+
+    private Object readNative(Object object, Object key, GetNativeDictNode getNativeDict, HashingStorageNodes.GetItemNode getItemNode) {
         Object d = getNativeDict.execute(object);
         Object value = null;
         if (d instanceof PHashingCollection) {
@@ -166,5 +192,42 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {"!isPythonObject(object)", "!isForeignObject(object)"})
     protected PNone readUnboxed(Object object, Object key) {
         return PNone.NO_VALUE;
+    }
+
+    public static Object doSlowPath(Object object, Object key) {
+        return doSlowPath(object, key, false);
+    }
+
+    @TruffleBoundary
+    public static Object doSlowPath(Object object, Object key, boolean forceType) {
+        if (object instanceof PythonObject) {
+            PythonObject po = (PythonObject) object;
+            if (ObjectAttributeNode.isDictUnsetOrSameAsStorage(po)) {
+                return ReadAttributeFromDynamicObjectNode.doSlowPath(po.getStorage(), key);
+            } else {
+                HashingStorage dictStorage = po.getDict().getDictStorage();
+                Object value = dictStorage.getItem(key, HashingStorage.getSlowPathEquivalence(key));
+                if (value == null) {
+                    return PNone.NO_VALUE;
+                } else {
+                    return value;
+                }
+            }
+        } else if (object instanceof PythonAbstractNativeObject) {
+            Object d = forceType ? GetTypeMemberNode.doSlowPath(object, NativeMemberNames.TP_DICT) : GetObjectDictNode.doSlowPath(object);
+            Object value = null;
+            if (d instanceof PHashingCollection) {
+                HashingStorage dictStorage = ((PHashingCollection) d).getDictStorage();
+                value = dictStorage.getItem(key, HashingStorage.getSlowPathEquivalence(key));
+            }
+            if (value == null) {
+                return PNone.NO_VALUE;
+            } else {
+                return value;
+            }
+
+        }
+        return null;
+
     }
 }

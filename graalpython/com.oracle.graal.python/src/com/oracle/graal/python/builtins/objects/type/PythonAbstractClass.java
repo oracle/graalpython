@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,32 +38,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext;
+package com.oracle.graal.python.builtins.objects.type;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
+public interface PythonAbstractClass extends LazyPythonClass {
 
-/**
- * Wraps a PythonObject to provide a native view with a shape like {@code PyNumberMethods}.
- */
-public class PyNumberMethodsWrapper extends PythonNativeWrapper {
-
-    public PyNumberMethodsWrapper(PythonManagedClass delegate) {
-        super(delegate);
-    }
-
-    static boolean isInstance(TruffleObject o) {
-        return o instanceof PyNumberMethodsWrapper;
-    }
-
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return PyNumberMethodsWrapperMRForeign.ACCESS;
-    }
-
-    public PythonManagedClass getPythonClass() {
-        return (PythonManagedClass) getDelegate();
-    }
+    void lookupChanged();
 }

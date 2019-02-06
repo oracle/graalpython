@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -204,7 +204,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // restore previous exception state
                 getContext().setCaughtException(exceptionState);
 
-                Object result = AsPythonObjectNode.doSlowPath(nativeResult);
+                Object result = AsPythonObjectNode.doSlowPath(nativeResult, false);
                 if (!(result instanceof PythonModule)) {
                     // PyModuleDef_Init(pyModuleDef)
                     // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
@@ -274,15 +274,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private PException reportImportError(RuntimeException e, String path) {
             StringBuilder sb = new StringBuilder();
+            Object pythonCause = PNone.NONE;
             if (e instanceof PException) {
                 PBaseException excObj = ((PException) e).getExceptionObject();
+                pythonCause = excObj;
                 sb.append(callReprNode.executeObject(excObj));
             } else {
                 // that call will cause problems if the format string contains '%p'
                 sb.append(e.getMessage());
             }
             Throwable cause = e;
-            Object pythonCause = PNone.NONE;
             while ((cause = cause.getCause()) != null) {
                 if (e instanceof PException) {
                     if (pythonCause != PNone.NONE) {

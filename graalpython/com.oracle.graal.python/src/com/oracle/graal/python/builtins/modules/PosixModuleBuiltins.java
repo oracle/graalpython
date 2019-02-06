@@ -99,7 +99,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -642,7 +642,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final BranchProfile gotException = BranchProfile.create();
 
         @Specialization
-        Object doit(PythonClass cls, String path) {
+        Object doit(LazyPythonClass cls, String path) {
             try {
                 TruffleFile file = getContext().getEnv().getTruffleFile(path);
                 return factory().createScandirIterator(cls, path, file.newDirectoryStream());
@@ -660,7 +660,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final BranchProfile gotException = BranchProfile.create();
 
         @Specialization
-        Object doit(PythonClass cls, String name, String path) {
+        Object doit(LazyPythonClass cls, String name, String path) {
             try {
                 TruffleFile dir = getContext().getEnv().getTruffleFile(path);
                 TruffleFile file = dir.resolve(name);

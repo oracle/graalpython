@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,13 +41,13 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 public class PyBufferProcsWrapper extends PythonNativeWrapper {
 
-    public PyBufferProcsWrapper(PythonClass delegate) {
+    public PyBufferProcsWrapper(PythonAbstractClass delegate) {
         super(delegate);
     }
 
@@ -60,7 +60,7 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
         return PyBufferProcsWrapperMRForeign.ACCESS;
     }
 
-    public PythonClass getPythonClass() {
-        return (PythonClass) getDelegate();
+    public PythonAbstractClass getPythonClass() {
+        return (PythonAbstractClass) getDelegate();
     }
 }

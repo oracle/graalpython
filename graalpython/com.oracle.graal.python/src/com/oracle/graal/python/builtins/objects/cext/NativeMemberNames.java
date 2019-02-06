@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,9 +56,12 @@ public final class NativeMemberNames {
     public static final String TP_FLAGS = "tp_flags";
     public static final String TP_NAME = "tp_name";
     public static final String TP_BASE = "tp_base";
+    public static final String TP_BASES = "tp_bases";
+    public static final String TP_MRO = "tp_mro";
     public static final String TP_BASICSIZE = "tp_basicsize";
     public static final String TP_ITEMSIZE = "tp_itemsize";
     public static final String TP_DICTOFFSET = "tp_dictoffset";
+    public static final String TP_WEAKLISTOFFSET = "tp_weaklistoffset";
     public static final String TP_DOC = "tp_doc";
     public static final String TP_ALLOC = "tp_alloc";
     public static final String TP_AS_NUMBER = "tp_as_number";

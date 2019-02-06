@@ -72,4 +72,5 @@ public abstract class SpecialAttributeNames {
     public static final String __DICTOFFSET__ = "__dictoffset__";
     public static final String __ITEMSIZE__ = "__itemsize__";
     public static final String __WEAKREF__ = "__weakref__";
+    public static final String __WEAKLISTOFFSET__ = "__weaklistoffset__";
 }

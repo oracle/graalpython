@@ -98,7 +98,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.Arity;
@@ -114,8 +113,9 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
@@ -175,6 +175,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
@@ -497,7 +498,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = DIVMOD, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class DivModNode extends PythonBuiltinNode {
+    @ImportStatic(BinaryArithmetic.class)
+    public abstract static class DivModNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "b != 0")
         public PTuple doLong(long a, long b) {
             return factory().createTuple(new Object[]{Math.floorDiv(a, b), Math.floorMod(a, b)});
@@ -518,21 +520,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("unused")
-        public PTuple doComplex(PComplex c, Object o) {
-            throw raise(PythonErrorType.TypeError, "can't take floor or mod of complex number.");
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        public PTuple doComplex(Object o, PComplex c) {
-            throw raise(PythonErrorType.TypeError, "can't take floor or mod of complex number.");
-        }
-
-        @Specialization
         public PTuple doObject(Object a, Object b,
-                        @Cached("create(__FLOORDIV__)") LookupAndCallBinaryNode floordivNode,
-                        @Cached("create(__MOD__)") LookupAndCallBinaryNode modNode) {
+                        @Cached("FloorDiv.create()") LookupAndCallBinaryNode floordivNode,
+                        @Cached("Mod.create()") LookupAndCallBinaryNode modNode) {
             Object div = floordivNode.executeObject(a, b);
             Object mod = modNode.executeObject(a, b);
             return factory().createTuple(new Object[]{div, mod});
@@ -1036,10 +1026,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public abstract boolean executeWith(Object instance, Object cls);
 
         @Specialization
-        public boolean isInstance(Object instance, PythonClass cls,
+        public boolean isInstance(Object instance, PythonAbstractClass cls,
+                        @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
                         @Cached("create()") IsSubtypeNode isSubtypeNode) {
-            PythonClass instanceClass = getClassNode.execute(instance);
-            return instanceClass == cls || isSubtypeNode.execute(instanceClass, cls) || isInstanceCheckInternal(instance, cls);
+            PythonAbstractClass instanceClass = getClassNode.execute(instance);
+            return isSameTypeNode.execute(instanceClass, cls) || isSubtypeNode.execute(instanceClass, cls) || isInstanceCheckInternal(instance, cls);
         }
 
         @Specialization(guards = "getLength(clsTuple) == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")

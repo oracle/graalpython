@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,8 +53,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -66,9 +64,13 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -137,7 +139,7 @@ public class PythonMessageResolution {
         @Child private GetLazyClassNode getClass;
 
         public boolean execute(Object object) {
-            if (object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject || object instanceof PythonNativeClass || object instanceof PythonNativeObject) {
+            if (object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject || PGuards.isNativeClass(object) || PGuards.isNativeObject(object)) {
                 return true;
             } else if (object instanceof PythonClass) {
                 return false;
@@ -147,7 +149,7 @@ public class PythonMessageResolution {
                     getClass = insert(GetLazyClassNode.create());
                 }
                 LazyPythonClass klass = getClass.execute(object);
-                return klass instanceof PythonBuiltinClassType || klass instanceof PythonBuiltinClass || klass instanceof PythonNativeClass;
+                return klass instanceof PythonBuiltinClassType || klass instanceof PythonBuiltinClass || PGuards.isNativeClass(klass);
             }
         }
     }
@@ -309,6 +311,7 @@ public class PythonMessageResolution {
         @Child private IsMappingNode isMapping = IsMappingNode.create();
         @Child private GetItemNode getItemNode;
         @Child private LenNode lenNode;
+        @Child private GetMroNode getMroNode;
 
         @TruffleBoundary
         public Object execute(Object obj, boolean includeInternal) {
@@ -318,13 +321,17 @@ public class PythonMessageResolution {
             PythonAbstractObject object = (PythonAbstractObject) obj;
 
             HashSet<String> keys = new HashSet<>();
-            PythonClass klass = getClass.execute(object);
-            for (PythonObject o : klass.getMethodResolutionOrder()) {
-                addKeysFromObject(keys, o, includeInternal);
+            PythonAbstractClass klass = getClass.execute(object);
+            for (PythonAbstractClass o : getMro(klass)) {
+                // TODO PythonNativeClass
+                if (o instanceof PythonObject) {
+                    addKeysFromObject(keys, (PythonObject) o, includeInternal);
+                }
             }
             if (object instanceof PythonObject) {
                 addKeysFromObject(keys, (PythonObject) object, includeInternal);
             }
+            // TODO PythonNativeObject
             if (includeInternal) {
                 // we use the internal flag to also return dictionary keys for mappings
                 if (isMapping.execute(object)) {
@@ -347,6 +354,14 @@ public class PythonMessageResolution {
             }
 
             return factory.createTuple(keys.toArray(new String[keys.size()]));
+        }
+
+        private PythonAbstractClass[] getMro(PythonAbstractClass clazz) {
+            if (getMroNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getMroNode = insert(GetMroNode.create());
+            }
+            return getMroNode.execute(clazz);
         }
 
         private static void addKeysFromObject(HashSet<String> keys, PythonObject o, boolean includeInternal) {
@@ -572,8 +587,14 @@ public class PythonMessageResolution {
 
     @Resolve(message = "IS_INSTANTIABLE")
     abstract static class IsInstantiableNode extends Node {
+        @Child private TypeNodes.IsTypeNode isTypeNode;
+
         public Object access(Object obj) {
-            return obj instanceof PythonClass;
+            if (isTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isTypeNode = insert(TypeNodes.IsTypeNode.create());
+            }
+            return isTypeNode.execute(obj);
         }
     }
 
@@ -758,6 +779,7 @@ public class PythonMessageResolution {
     @Resolve(message = "KEY_INFO")
     abstract static class PKeyInfoNode extends Node {
         @Child private ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.create();
+        @Child private ReadAttributeFromObjectNode readTypeAttrNode;
         @Child private IsCallableNode isCallableNode;
         @Child private LookupInheritedAttributeNode getGetNode;
         @Child private LookupInheritedAttributeNode getSetNode;
@@ -765,6 +787,7 @@ public class PythonMessageResolution {
         @Child private GetClassNode getClassNode = GetClassNode.create();
         @Child private IsImmutable isImmutable = new IsImmutable();
         @Child private KeyForItemAccess itemKey = new KeyForItemAccess();
+        @Child private GetMroNode getMroNode;
 
         public int access(Object object, Object fieldName) {
             if (fieldName instanceof Integer) {
@@ -780,9 +803,13 @@ public class PythonMessageResolution {
             int info = KeyInfo.NONE;
             Object attr = PNone.NO_VALUE;
 
-            PythonClass klass = getClassNode.execute(object);
-            for (PythonClass c : klass.getMethodResolutionOrder()) {
-                attr = readNode.execute(c, fieldName);
+            PythonAbstractClass klass = getClassNode.execute(object);
+            for (PythonAbstractClass c : getMro(klass)) {
+                if (readTypeAttrNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    readTypeAttrNode = insert(ReadAttributeFromObjectNode.createForceType());
+                }
+                attr = readTypeAttrNode.execute(c, fieldName);
                 if (attr != PNone.NO_VALUE) {
                     owner = c;
                     break;
@@ -842,6 +869,14 @@ public class PythonMessageResolution {
             }
 
             return info;
+        }
+
+        private PythonAbstractClass[] getMro(PythonAbstractClass clazz) {
+            if (getMroNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getMroNode = insert(GetMroNode.create());
+            }
+            return getMroNode.execute(clazz);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -34,7 +34,8 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -69,7 +70,7 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getEnclosingType() != null")
         @TruffleBoundary
         Object reprClassFunction(PBuiltinFunction self) {
-            return String.format("<method '%s' of '%s' objects>", self.getName(), self.getEnclosingType().getName());
+            return String.format("<method '%s' of '%s' objects>", self.getName(), GetNameNode.doSlowPath(self.getEnclosingType()));
         }
     }
 
@@ -84,7 +85,7 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getEnclosingType() != null")
         @TruffleBoundary
-        PythonClass objclass(PBuiltinFunction self,
+        PythonAbstractClass objclass(PBuiltinFunction self,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             return getPythonClass(self.getEnclosingType(), profile);
         }

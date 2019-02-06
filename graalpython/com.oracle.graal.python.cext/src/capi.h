@@ -175,25 +175,16 @@ inline void* native_to_java(PyObject* obj) {
         return obj;
     } else if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
-    } else {
-        void* refcnt = obj->ob_refcnt;
-        if (!truffle_cannot_be_handle(refcnt)) {
-            return resolve_handle(cache, refcnt);
-        } else if (IS_POINTER(refcnt)) {
-            return refcnt;
-        }
-        return obj;
     }
+    return obj;
 }
 
 __attribute__((always_inline))
 inline void* native_type_to_java(PyTypeObject* type) {
-	if (IS_POINTER(((PyObject*)type)->ob_refcnt)) {
-		return (void*)((PyObject*)type)->ob_refcnt;
-	} else if (!truffle_cannot_be_handle(((PyObject*)type)->ob_refcnt)) {
-		return resolve_handle(cache, ((PyObject*)type)->ob_refcnt);
-	}
-	return (void*)type;
+	if (!truffle_cannot_be_handle(type)) {
+        return (void *)resolve_handle(cache, (uint64_t)type);
+    }
+    return (void *)type;
 }
 
 extern void* to_java(PyObject* obj);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.Pyth
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.ForeignAccess;
@@ -149,6 +149,16 @@ public abstract class NativeWrappers {
             // important: native wrappers are cached
             DynamicObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
             if (noWrapperProfile.profile(nativeWrapper == null)) {
+                nativeWrapper = new PythonObjectNativeWrapper(obj);
+                obj.setNativeWrapper(nativeWrapper);
+            }
+            return nativeWrapper;
+        }
+
+        public static DynamicObjectNativeWrapper wrapSlowPath(PythonAbstractObject obj) {
+            // important: native wrappers are cached
+            DynamicObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
+            if (nativeWrapper == null) {
                 nativeWrapper = new PythonObjectNativeWrapper(obj);
                 obj.setNativeWrapper(nativeWrapper);
             }
@@ -267,17 +277,17 @@ public abstract class NativeWrappers {
     }
 
     /**
-     * Used to wrap {@link PythonClass} when used in native code. This wrapper mimics the correct
-     * shape of the corresponding native type {@code struct _typeobject}.
+     * Used to wrap {@link PythonManagedClass} when used in native code. This wrapper mimics the
+     * correct shape of the corresponding native type {@code struct _typeobject}.
      */
     public static class PythonClassNativeWrapper extends PythonObjectNativeWrapper {
         private final CStringWrapper nameWrapper;
         private Object getBufferProc;
         private Object releaseBufferProc;
 
-        public PythonClassNativeWrapper(PythonClass object) {
+        public PythonClassNativeWrapper(PythonManagedClass object, String typeName) {
             super(object);
-            this.nameWrapper = new CStringWrapper(object.getName());
+            this.nameWrapper = new CStringWrapper(typeName);
         }
 
         public CStringWrapper getNameWrapper() {
@@ -300,11 +310,11 @@ public abstract class NativeWrappers {
             this.releaseBufferProc = releaseBufferProc;
         }
 
-        public static PythonClassNativeWrapper wrap(PythonClass obj) {
+        public static PythonClassNativeWrapper wrap(PythonManagedClass obj, String typeName) {
             // important: native wrappers are cached
             PythonClassNativeWrapper nativeWrapper = obj.getNativeWrapper();
             if (nativeWrapper == null) {
-                nativeWrapper = new PythonClassNativeWrapper(obj);
+                nativeWrapper = new PythonClassNativeWrapper(obj, typeName);
                 obj.setNativeWrapper(nativeWrapper);
             }
             return nativeWrapper;
@@ -317,13 +327,13 @@ public abstract class NativeWrappers {
     }
 
     /**
-     * Used to wrap {@link PythonClass} just for the time when a natively defined type is processed
-     * in {@code PyType_Ready} and we need to pass the mirroring managed class to native to marry
-     * these two objects.
+     * Used to wrap {@link PythonManagedClass} just for the time when a natively defined type is
+     * processed in {@code PyType_Ready} and we need to pass the mirroring managed class to native
+     * to marry these two objects.
      */
     public static class PythonClassInitNativeWrapper extends PythonObjectNativeWrapper {
 
-        public PythonClassInitNativeWrapper(PythonClass object) {
+        public PythonClassInitNativeWrapper(PythonManagedClass object) {
             super(object);
         }
 

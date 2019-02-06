@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,14 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -58,6 +62,8 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
     @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
+    @Child private GetMroStorageNode getMroNode;
+    @Child private IsSameTypeNode isSameTypeNode;
 
     private final ConditionProfile exceptionDerivedProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile exceptionClsProfile = ConditionProfile.createBinaryProfile();
@@ -68,25 +74,40 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     public abstract boolean execute(Object derived, Object cls);
 
-    @Specialization(guards = {"derived == cachedDerived", "cls == cachedCls"}, limit = "getVariableArgumentInlineCacheLimit()")
+    @Specialization(guards = { //
+                    "derived == cachedDerived", //
+                    "cls == cachedCls", //
+                    "mro.getInternalClassArray().length < 32" //
+    }, //
+                    limit = "getVariableArgumentInlineCacheLimit()", //
+                    assumptions = "mro.getLookupStableAssumption()")
     @ExplodeLoop
-    boolean isSubtypeOfConstantType(@SuppressWarnings("unused") PythonClass derived, @SuppressWarnings("unused") PythonClass cls,
-                    @Cached("derived") PythonClass cachedDerived,
-                    @Cached("cls") PythonClass cachedCls) {
-        for (PythonClass n : cachedDerived.getMethodResolutionOrder()) {
-            if (n == cachedCls) {
+    boolean isSubtypeOfConstantType(@SuppressWarnings("unused") PythonAbstractClass derived, @SuppressWarnings("unused") PythonAbstractClass cls,
+                    @Cached("derived") @SuppressWarnings("unused") PythonAbstractClass cachedDerived,
+                    @Cached("cls") PythonAbstractClass cachedCls,
+                    @Cached("getMro(cachedDerived)") MroSequenceStorage mro) {
+        for (PythonAbstractClass n : mro.getInternalClassArray()) {
+            if (isSameType(n, cachedCls)) {
                 return true;
             }
         }
         return false;
     }
 
-    @Specialization(guards = {"derived == cachedDerived"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "isSubtypeOfConstantType")
+    @Specialization(guards = { //
+                    "derived == cachedDerived", //
+                    "mro.getInternalClassArray().length < 32" //
+    }, //
+                    limit = "getVariableArgumentInlineCacheLimit()", //
+                    replaces = "isSubtypeOfConstantType", //
+                    assumptions = "mro.getLookupStableAssumption()" //
+    )
     @ExplodeLoop
-    boolean isSubtypeOfVariableType(@SuppressWarnings("unused") PythonClass derived, PythonClass cls,
-                    @Cached("derived") PythonClass cachedDerived) {
-        for (PythonClass n : cachedDerived.getMethodResolutionOrder()) {
-            if (n == cls) {
+    boolean isSubtypeOfVariableType(@SuppressWarnings("unused") PythonAbstractClass derived, PythonAbstractClass cls,
+                    @Cached("derived") @SuppressWarnings("unused") PythonAbstractClass cachedDerived,
+                    @Cached("getMro(cachedDerived)") MroSequenceStorage mro) {
+        for (PythonAbstractClass n : mro.getInternalClassArray()) {
+            if (isSameType(n, cls)) {
                 return true;
             }
         }
@@ -94,9 +115,9 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = {"isSubtypeOfConstantType", "isSubtypeOfVariableType"})
-    boolean issubTypeGeneric(PythonClass derived, PythonClass cls) {
-        for (PythonClass n : derived.getMethodResolutionOrder()) {
-            if (n == cls) {
+    boolean issubTypeGeneric(PythonAbstractClass derived, PythonAbstractClass cls) {
+        for (PythonAbstractClass n : getMro(derived).getInternalClassArray()) {
+            if (isSameType(n, cls)) {
                 return true;
             }
         }
@@ -114,5 +135,21 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         }
 
         return abstractIsSubclassNode.execute(derived, cls);
+    }
+
+    protected MroSequenceStorage getMro(PythonAbstractClass clazz) {
+        if (getMroNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getMroNode = insert(GetMroStorageNode.create());
+        }
+        return getMroNode.execute(clazz);
+    }
+
+    private boolean isSameType(PythonAbstractClass left, PythonAbstractClass right) {
+        if (isSameTypeNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            isSameTypeNode = insert(IsSameTypeNode.create());
+        }
+        return isSameTypeNode.execute(left, right);
     }
 }

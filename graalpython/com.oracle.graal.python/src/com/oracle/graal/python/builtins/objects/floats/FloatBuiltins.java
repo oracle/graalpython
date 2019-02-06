@@ -73,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclas
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -596,13 +595,12 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPythonBuiltinClass(cl)")
-        @SuppressWarnings("unused")
-        public double fromhexFloat(PythonClass cl, String arg) {
+        public double fromhexFloat(@SuppressWarnings("unused") LazyPythonClass cl, String arg) {
             return fromHex(arg);
         }
 
         @Specialization(guards = "!isPythonBuiltinClass(cl)")
-        public Object fromhexO(PythonClass cl, String arg,
+        public Object fromhexO(LazyPythonClass cl, String arg,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode constr) {
             double value = fromHex(arg);
             return constr.execute(null, cl, new Object[]{cl, value});
@@ -1256,7 +1254,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isValidTypeStr(typeStr)")
-        String getFormat(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") String typeStr) {
+        String getFormat(@SuppressWarnings("unused") LazyPythonClass cls, @SuppressWarnings("unused") String typeStr) {
             return getDetectedEndianess();
         }
 

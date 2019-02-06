@@ -29,13 +29,14 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.object.Shape;
 
 public enum PythonBuiltinClassType implements LazyPythonClass {
 
-    TruffleObject("truffle_object"),
+    TruffleObject(BuiltinNames.FOREIGN),
     Boolean("bool", "builtins"),
     GetSetDescriptor("get_set_desc"),
     PArray("array", "array"),

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,8 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public interface GlobalNode {
@@ -53,11 +52,10 @@ public interface GlobalNode {
         return PArguments.getGlobals(frame) instanceof PythonModule;
     }
 
-    default boolean isInBuiltinDict(VirtualFrame frame) {
+    default boolean isInBuiltinDict(VirtualFrame frame, IsBuiltinClassProfile profile) {
         Object globals = PArguments.getGlobals(frame);
         if (globals instanceof PDict) {
-            LazyPythonClass clazz = ((PDict) globals).getLazyPythonClass();
-            return clazz == PythonBuiltinClassType.PDict || (clazz instanceof PythonBuiltinClass && ((PythonBuiltinClass) clazz).getType() == PythonBuiltinClassType.PDict);
+            return profile.profileObject((PDict) globals, PythonBuiltinClassType.PDict);
         }
         return false;
     }

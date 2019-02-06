@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import java.util.Formatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 
 /**
@@ -106,9 +107,9 @@ public class ErrorMessageFormatter {
 
     private static String getClassName(GetLazyClassNode getClassNode, Object obj) {
         if (getClassNode != null) {
-            return getClassNode.execute(obj).getName();
+            return GetNameNode.doSlowPath(getClassNode.execute(obj));
         }
-        return GetLazyClassNode.getNameSlowPath(obj);
+        return GetNameNode.doSlowPath(GetLazyClassNode.getItSlowPath(obj));
     }
 
     private static Object[] compact(Object[] args, int removedCnt) {

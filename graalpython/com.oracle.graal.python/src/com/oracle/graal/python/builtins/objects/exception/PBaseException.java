@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
@@ -155,19 +156,20 @@ public final class PBaseException extends PythonObject {
     }
 
     public String getFormattedMessage(GetLazyClassNode getClassNode) {
+        String typeName = GetNameNode.doSlowPath(getLazyPythonClass());
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return getLazyPythonClass().getName() + ": " + FORMATTER.format(getClassNode, messageFormat, getMessageArgs());
+                return typeName + ": " + FORMATTER.format(getClassNode, messageFormat, getMessageArgs());
             }
-            return getLazyPythonClass().getName() + ": " + messageFormat;
+            return typeName + ": " + messageFormat;
         } else if (args.getSequenceStorage().length() == 0) {
-            return getLazyPythonClass().getName();
+            return typeName;
         } else if (args.getSequenceStorage().length() == 1) {
             SequenceStorage store = args.getSequenceStorage();
             Object item = store instanceof BasicSequenceStorage ? store.getItemNormalized(0) : "<unknown>";
-            return getLazyPythonClass().getName() + ": " + item.toString();
+            return typeName + ": " + item.toString();
         } else {
-            return getLazyPythonClass().getName() + ": " + args.toString();
+            return typeName + ": " + args.toString();
         }
     }
 
