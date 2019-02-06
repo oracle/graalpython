@@ -137,6 +137,10 @@ def _oserror_use_init(subtype):
 
 def _oserror_init(self, *arg):
     narg = len(arg)
+    self.errno = None
+    self.strerror = None
+    self.filename = None
+    self.filename2 = None
     if (2 <= narg and narg <= 5):
         self.errno = arg[0]
         self.strerror = arg[1]
