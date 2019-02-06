@@ -906,3 +906,29 @@ def test_func_scope():
 
     assert set(my_obj.__code__.co_cellvars) == set()
     assert set(my_obj.__code__.co_freevars) == {'my_obj', 'y'}
+
+
+def test_classbody_scope():
+    class A():
+        ranges = [(1, 10)]
+
+        class B():
+            ranges = [(2, 12)]
+
+        class C():
+            ranges = [ ]
+
+            class CA():
+                ranges = [(3, 13)]
+
+        locs = locals()
+
+        class D(B, C):
+            pass
+
+
+    A.C.ranges = (A.C.CA.ranges)
+    assert A.C.ranges == A.C.CA.ranges == [(3, 13)]
+    locs = list(A.locs.keys())
+    for k in ["__module__", "__qualname__", "ranges", "B", "C", "locs", "D"]:
+        assert k in locs, locs
