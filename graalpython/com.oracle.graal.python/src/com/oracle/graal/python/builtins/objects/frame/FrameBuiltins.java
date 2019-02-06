@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -171,7 +172,13 @@ public final class FrameBuiltins extends PythonBuiltins {
                         @Cached("create()") BranchProfile noFrameOnPFrame) {
             PFrame pFrame = PArguments.getPFrame(owner);
             if (noPFrame.profile(pFrame == null)) {
-                pFrame = factory().createPFrame(owner);
+                Object specialArgument = PArguments.getSpecialArgument(owner);
+                if (specialArgument instanceof ClassBodyRootNode) {
+                    // the namespace argument stores the locals
+                    pFrame = factory().createPFrame(owner, PArguments.getArgument(owner, 0));
+                } else {
+                    pFrame = factory().createPFrame(owner);
+                }
                 PArguments.setPFrame(owner, pFrame);
             } else if (!pFrame.hasFrame()) {
                 noFrameOnPFrame.enter();

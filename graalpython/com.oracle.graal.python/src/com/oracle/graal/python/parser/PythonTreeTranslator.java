@@ -59,7 +59,7 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
-import com.oracle.graal.python.nodes.classes.ClassDefinitionEpilogNode;
+import com.oracle.graal.python.nodes.classes.ClassDefinitionPrologueNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.control.ForNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -1855,7 +1855,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             environment.createLocal(__DOC__);
             body.set(0, environment.findVariable(__DOC__).makeWriteNode((ExpressionNode) body.get(0)));
         }
-        body.add(new ClassDefinitionEpilogNode(qualName));
+        body.add(0, new ClassDefinitionPrologueNode(qualName));
         return new ReturnTargetNode(asBlock(body), factory.createNullLiteral());
     }
 
