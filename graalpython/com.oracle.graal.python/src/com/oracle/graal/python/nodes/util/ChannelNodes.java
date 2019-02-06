@@ -78,63 +78,63 @@ public abstract class ChannelNodes {
         public abstract void execute(Channel channel, byte b);
     }
 
-    abstract static class ReadFromChannelBaseNode extends PNodeWithContext {
-
-        private final BranchProfile gotException = BranchProfile.create();
-
+    protected interface ChannelBaseNode {
         @TruffleBoundary(allowInlining = true)
-        protected static ByteBuffer allocate(int n) {
+        default ByteBuffer allocate(int n) {
             return ByteBuffer.allocate(n);
         }
 
         @TruffleBoundary(transferToInterpreterOnException = false)
-        protected static long availableSize(SeekableByteChannel channel) throws IOException {
+        default long availableSize(SeekableByteChannel channel) throws IOException {
             return channel.size() - channel.position();
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        protected static byte[] getByteBufferArray(ByteBuffer dst) {
-            return dst.array();
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        protected int readIntoBuffer(ReadableByteChannel readableChannel, ByteBuffer dst) {
-            try {
-                return readableChannel.read(dst);
-            } catch (IOException e) {
-                gotException.enter();
-                throw raise(OSError, e);
-            }
         }
     }
 
-    abstract static class WriteToChannelBaseNode extends PNodeWithContext {
+    abstract static class ReadFromChannelBaseNode extends PNodeWithContext implements ChannelBaseNode {
 
         private final BranchProfile gotException = BranchProfile.create();
-
-        @TruffleBoundary(allowInlining = true)
-        protected static ByteBuffer allocate(int n) {
-            return ByteBuffer.allocate(n);
-        }
-
-        @TruffleBoundary(transferToInterpreterOnException = false)
-        protected static long availableSize(SeekableByteChannel channel) throws IOException {
-            return channel.size() - channel.position();
-        }
 
         @TruffleBoundary(allowInlining = true)
         protected static byte[] getByteBufferArray(ByteBuffer dst) {
             return dst.array();
         }
 
-        @TruffleBoundary(allowInlining = true)
-        protected int writeFromBuffer(WritableByteChannel writableChannel, ByteBuffer src) {
+        protected int readIntoBuffer(ReadableByteChannel readableChannel, ByteBuffer dst) {
             try {
-                return writableChannel.write(src);
+                return read(readableChannel, dst);
             } catch (IOException e) {
                 gotException.enter();
                 throw raise(OSError, e);
             }
+        }
+
+        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
+        private static int read(ReadableByteChannel readableChannel, ByteBuffer dst) throws IOException {
+            return readableChannel.read(dst);
+        }
+    }
+
+    abstract static class WriteToChannelBaseNode extends PNodeWithContext implements ChannelBaseNode {
+
+        private final BranchProfile gotException = BranchProfile.create();
+
+        @TruffleBoundary(allowInlining = true)
+        protected static byte[] getByteBufferArray(ByteBuffer dst) {
+            return dst.array();
+        }
+
+        protected int writeFromBuffer(WritableByteChannel writableChannel, ByteBuffer src) {
+            try {
+                return write(writableChannel, src);
+            } catch (IOException e) {
+                gotException.enter();
+                throw raise(OSError, e);
+            }
+        }
+
+        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
+        private static int write(WritableByteChannel writableChannel, ByteBuffer src) throws IOException {
+            return writableChannel.write(src);
         }
     }
 

@@ -105,7 +105,7 @@ public class PosixResources {
         return null;
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public String getFilePath(int fd) {
         if (filePaths.size() > fd) {
             return filePaths.get(fd);

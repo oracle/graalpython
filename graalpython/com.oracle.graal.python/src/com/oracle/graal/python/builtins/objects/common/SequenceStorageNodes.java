@@ -128,7 +128,6 @@ import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.TypedSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -1745,7 +1744,6 @@ public abstract class SequenceStorageNodes {
             throw raise(TypeError, "expected a bytes-like object");
         }
 
-        @TruffleBoundary(transferToInterpreterOnException = false)
         private static byte[] exactCopy(byte[] barr, int len) {
             return Arrays.copyOf(barr, len);
         }

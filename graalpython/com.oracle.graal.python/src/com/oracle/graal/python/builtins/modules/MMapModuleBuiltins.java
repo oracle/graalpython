@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -113,19 +114,26 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             TruffleFile truffleFile = getContext().getEnv().getTruffleFile(path);
 
             // TODO(fa) correctly honor access flags
-            Set<StandardOpenOption> options = new HashSet<>();
-            options.add(StandardOpenOption.READ);
-            options.add(StandardOpenOption.WRITE);
+            Set<StandardOpenOption> options = set(StandardOpenOption.READ, StandardOpenOption.WRITE);
 
             // we create a new channel otherwise we cannot guarantee that the cursor is exclusive
             SeekableByteChannel fileChannel;
             try {
                 fileChannel = truffleFile.newByteChannel(options);
-                fileChannel.position(offset);
+                position(fileChannel, offset);
                 return factory().createMMap(clazz, fileChannel, length, offset);
             } catch (IOException e) {
                 throw raise(ValueError, "cannot mmap file");
             }
+        }
+
+        @TruffleBoundary
+        private static Set<StandardOpenOption> set(StandardOpenOption... options) {
+            Set<StandardOpenOption> s = new HashSet<>();
+            for (StandardOpenOption o : options) {
+                s.add(o);
+            }
+            return s;
         }
 
         @Specialization(guards = "isIllegal(fd)")
@@ -164,6 +172,10 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        @TruffleBoundary
+        private static void position(SeekableByteChannel ch, long offset) throws IOException {
+            ch.position(offset);
+        }
     }
 
     private static class AnonymousMap implements SeekableByteChannel {

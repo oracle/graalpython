@@ -113,7 +113,19 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMMap)
 public class MMapBuiltins extends PythonBuiltins {
 
-    protected interface ByteReadingNode {
+    protected interface MMapBaseNode {
+        @TruffleBoundary
+        default long position(SeekableByteChannel ch) throws IOException {
+            return ch.position();
+        }
+
+        @TruffleBoundary
+        default void position(SeekableByteChannel ch, long offset) throws IOException {
+            ch.position(offset);
+        }
+    }
+
+    protected interface ByteReadingNode extends MMapBaseNode {
 
         default ReadByteFromChannelNode createValueError() {
             return ReadByteFromChannelNode.create(() -> new ChannelNodes.ReadByteErrorHandler() {
@@ -137,7 +149,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    protected interface ByteWritingNode {
+    protected interface ByteWritingNode extends MMapBaseNode {
 
         default WriteByteToChannelNode createValueError() {
             return WriteByteToChannelNode.create(() -> new ChannelNodes.WriteByteErrorHandler() {
@@ -243,13 +255,13 @@ public class MMapBuiltins extends PythonBuiltins {
                 long idx = i < 0 ? i + len : i;
 
                 // save current position
-                long oldPos = channel.position();
+                long oldPos = position(channel);
 
-                channel.position(idx);
+                position(channel, idx);
                 int res = readByteNode.execute(channel) & 0xFF;
 
                 // restore position
-                channel.position(oldPos);
+                position(channel, oldPos);
 
                 return res;
 
@@ -268,13 +280,13 @@ public class MMapBuiltins extends PythonBuiltins {
                 SeekableByteChannel channel = self.getChannel();
 
                 // save current position
-                long oldPos = channel.position();
+                long oldPos = position(channel);
 
-                channel.position(info.start);
+                position(channel, info.start);
                 ByteSequenceStorage s = readNode.execute(channel, info.length);
 
                 // restore position
-                channel.position(oldPos);
+                position(channel, oldPos);
 
                 return factory().createBytes(s);
             } catch (IOException e) {
@@ -307,13 +319,13 @@ public class MMapBuiltins extends PythonBuiltins {
                 }
 
                 // save current position
-                long oldPos = channel.position();
+                long oldPos = position(channel);
 
-                channel.position(idx);
+                position(channel, idx);
                 writeByteNode.execute(channel, castToByteNode.execute(val));
 
                 // restore position
-                channel.position(oldPos);
+                position(channel, oldPos);
 
                 return PNone.NONE;
 
@@ -339,13 +351,13 @@ public class MMapBuiltins extends PythonBuiltins {
                 }
 
                 // save current position
-                long oldPos = channel.position();
+                long oldPos = position(channel);
 
-                channel.position(info.start);
+                position(channel, info.start);
                 writeNode.execute(channel, getStorageNode.execute(val), info.length);
 
                 // restore position
-                channel.position(oldPos);
+                position(channel, oldPos);
 
                 return PNone.NONE;
 
@@ -428,13 +440,13 @@ public class MMapBuiltins extends PythonBuiltins {
 
     @Builtin(name = "tell", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class TellNode extends PythonBuiltinNode {
+    abstract static class TellNode extends PythonBuiltinNode implements ByteReadingNode {
         @Specialization
         long readline(VirtualFrame frame, PMMap self) {
 
             try {
                 SeekableByteChannel channel = self.getChannel();
-                return channel.position() - self.getOffset();
+                return position(channel) - self.getOffset();
             } catch (IOException e) {
                 throw raiseOSError(frame, OSErrorEnum.EIO, e.getMessage());
             }
@@ -484,7 +496,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
     @Builtin(name = "readline", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ReadlineNode extends PythonBuiltinNode {
+    abstract static class ReadlineNode extends PythonUnaryBuiltinNode implements ByteReadingNode {
 
         @Specialization
         Object readline(PMMap self,
@@ -504,7 +516,7 @@ public class MMapBuiltins extends PythonBuiltins {
                             appendNode.execute(res, b);
                         } else {
                             // recover correct position (i.e. number of remaining bytes in buffer)
-                            channel.position(channel.position() - buf.remaining() - 1);
+                            position(channel, position(channel) - buf.remaining() - 1);
                             break outer;
                         }
                     }
@@ -550,7 +562,7 @@ public class MMapBuiltins extends PythonBuiltins {
     @Builtin(name = "seek", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class SeekNode extends PythonBuiltinNode {
+    abstract static class SeekNode extends PythonBuiltinNode implements MMapBaseNode {
         @Child private CastToIndexNode castToLongNode;
 
         private final BranchProfile errorProfile = BranchProfile.create();
@@ -590,22 +602,12 @@ public class MMapBuiltins extends PythonBuiltins {
                     errorProfile.enter();
                     throw raise(PythonBuiltinClassType.ValueError, "seek out of range");
                 }
-                doSeek(channel, where);
+                position(channel, where);
                 return PNone.NONE;
             } catch (IOException e) {
                 errorProfile.enter();
                 throw raiseOSError(frame, OSErrorEnum.EIO, e.getMessage());
             }
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static long position(SeekableByteChannel channel) throws IOException {
-            return channel.position();
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static void doSeek(SeekableByteChannel channel, long where) throws IOException {
-            channel.position(where);
         }
 
         private int castToInt(Object val) {
@@ -653,7 +655,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 // TODO implement a more efficient algorithm
                 outer: for (long i = start; i < end; i++) {
                     // TODO(fa) don't seek but use circular buffer
-                    channel.position(i);
+                    position(channel, i);
                     for (int j = 0; j < len2; j++) {
                         int hb = readByteNode.execute(channel);
                         int nb = getGetRightItemNode().executeInt(needle, j);
@@ -682,7 +684,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 long start = s < 0 ? s + len1 : s;
                 long end = Math.max(e < 0 ? e + len1 : e, len1);
 
-                channel.position(start);
+                position(channel, start);
 
                 for (long i = start; i < end; i++) {
                     int hb = readByteNode.execute(channel);
