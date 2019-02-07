@@ -396,13 +396,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         public String doO(Object x,
                         @Cached("create()") CastToIntegerFromIndexNode toIntNode,
-                        @Cached("create()") OctNode recursiveNode) {
+                        @Cached("create()") HexNode recursiveNode) {
             Object value = toIntNode.execute(x);
             return recursiveNode.executeObject(value);
         }
 
-        protected static OctNode create() {
-            return BuiltinFunctionsFactory.OctNodeFactory.create();
+        protected static HexNode create() {
+            return BuiltinFunctionsFactory.HexNodeFactory.create();
         }
     }
 
