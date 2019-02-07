@@ -60,9 +60,14 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
+import com.oracle.graal.python.builtins.objects.mmap.PMMap;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
@@ -82,6 +87,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
@@ -111,8 +117,8 @@ public class PySequenceArrayWrapperMR {
     abstract static class ReadNode extends Node {
         @Child private ReadArrayItemNode readArrayItemNode;
 
-        public Object access(PySequenceArrayWrapper object, Object key) {
-            return getReadArrayItemNode().execute(object.getDelegate(), key);
+        public Object access(VirtualFrame frame, PySequenceArrayWrapper object, Object key) {
+            return getReadArrayItemNode().execute(frame, object.getDelegate(), key);
         }
 
         private ReadArrayItemNode getReadArrayItemNode() {
@@ -144,20 +150,20 @@ public class PySequenceArrayWrapperMR {
 
     @ImportStatic(SpecialMethodNames.class)
     @TypeSystemReference(PythonTypes.class)
-    abstract static class ReadArrayItemNode extends Node {
+    abstract static class ReadArrayItemNode extends PNodeWithContext {
 
         @Child private ToSulongNode toSulongNode;
 
-        public abstract Object execute(Object arrayObject, Object idx);
+        public abstract Object execute(VirtualFrame frame, Object arrayObject, Object idx);
 
         @Specialization
-        Object doTuple(PTuple tuple, long idx,
+        Object doTuple(@SuppressWarnings("unused") VirtualFrame frame, PTuple tuple, long idx,
                         @Cached("createTupleGetItem()") TupleBuiltins.GetItemNode getItemNode) {
             return getToSulongNode().execute(getItemNode.execute(tuple, idx));
         }
 
         @Specialization
-        Object doTuple(PList list, long idx,
+        Object doTuple(@SuppressWarnings("unused") VirtualFrame frame, PList list, long idx,
                         @Cached("createListGetItem()") ListBuiltins.GetItemNode getItemNode) {
             return getToSulongNode().execute(getItemNode.execute(list, idx));
         }
@@ -168,7 +174,7 @@ public class PySequenceArrayWrapperMR {
          * {@code uint64_t} since we do not know how many bytes are requested.
          */
         @Specialization
-        long doBytesI64(PIBytesLike bytesLike, long byteIdx,
+        long doBytesI64(@SuppressWarnings("unused") VirtualFrame frame, PIBytesLike bytesLike, long byteIdx,
                         @Cached("createClassProfile()") ValueProfile profile,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
@@ -179,9 +185,13 @@ public class PySequenceArrayWrapperMR {
                 return 0L;
             }
             int i = (int) byteIdx;
-            long result = 0;
             SequenceStorage store = profiled.getSequenceStorage();
-            result |= getItemNode.executeInt(store, i);
+            return packLong(store, getItemNode, len, i);
+        }
+
+        private static long packLong(SequenceStorage store, SequenceStorageNodes.GetItemNode getItemNode, int len, int i) {
+            long result = 0;
+            result |= getItemNode.executeInt(store, i) & 0xFFL;
             if (i + 1 < len)
                 result |= ((long) getItemNode.executeInt(store, i + 1) << 8L) & 0xFF00L;
             if (i + 2 < len)
@@ -199,8 +209,28 @@ public class PySequenceArrayWrapperMR {
             return result;
         }
 
+        @Specialization
+        long doMMap(VirtualFrame frame, PMMap list, long idx,
+                        @Cached("create()") MMapBuiltins.GetItemNode getItemNode,
+                        @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
+                        @Cached("create()") SequenceStorageNodes.GetItemNode getStoreItemNode) {
+            try {
+                int i = PInt.intValueExact(idx);
+                PSlice sl = factory().createSlice(i, i + 8, 1);
+                Object bytes = getItemNode.executeObject(frame, list, sl);
+                SequenceStorage storage = getStorageNode.execute(bytes);
+                int storageLen = lenNode.execute(storage);
+                return packLong(storage, getStoreItemNode, storageLen, 0);
+            } catch (ArithmeticException e) {
+                // TODO raise native exception
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalArgumentException();
+            }
+        }
+
         @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
-        Object doGeneric(Object object, long idx,
+        Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object object, long idx,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
             return getToSulongNode().execute(getItemNode.executeObject(object, idx));
         }
@@ -515,7 +545,7 @@ public class PySequenceArrayWrapperMR {
         }
 
         protected static boolean hasByteArrayContent(Object object) {
-            return object instanceof PBytes || object instanceof PByteArray;
+            return object instanceof PBytes || object instanceof PByteArray || object instanceof PMemoryView || object instanceof PMMap;
         }
 
         public static GetTypeIDNode create() {

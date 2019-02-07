@@ -145,6 +145,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class CreateDynamic extends PythonBuiltinNode {
         protected static final String INITIALIZE_CAPI = "initialize_capi";
         protected static final String IMPORT_NATIVE_MEMORYVIEW = "import_native_memoryview";
+        protected static final String RUN_CAPI_LOADED_HOOKS = "run_capi_loaded_hooks";
         private static final String LLVM_LANGUAGE = "llvm";
         @Child private SetItemNode setItemNode;
         @Child private CheckFunctionResultNode checkResultNode;
@@ -246,6 +247,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 CallUnaryMethodNode callNode = insert(CallUnaryMethodNode.create());
                 callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
                 ctxt.setCapiWasLoaded(capi);
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), RUN_CAPI_LOADED_HOOKS), capi);
 
                 // initialization needs to be finished already but load memoryview implemenation
                 // immediately

@@ -50,3 +50,11 @@ PROT_WRITE=0x2
 PROT_EXEC=0x4
 
 PAGESIZE = 4096
+
+from python_cext import register_capi_hook
+
+def __register_buffer():
+    import _mmap
+    _mmap.init_bufferprotocol(mmap)
+    
+register_capi_hook(__register_buffer)

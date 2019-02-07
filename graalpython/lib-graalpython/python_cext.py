@@ -39,9 +39,19 @@
 
 import _imp
 import sys
-import python_cext
 
 _thread = None
+capi = capi_to_java = None
+_capi_hooks = []
+
+
+def register_capi_hook(hook):
+    assert callable(hook)
+    if capi:
+        hook()
+    else:
+        _capi_hooks.append(hook)
+    
 
 def may_raise(error_result=native_null):
     if isinstance(error_result, type(may_raise)):
@@ -1190,7 +1200,6 @@ def import_c_func(name):
     return CreateFunction(name, capi[name])
 
 
-capi = capi_to_java = None
 def initialize_capi(capi_library):
     """This method is called from a C API constructor function"""
     global capi
@@ -1200,6 +1209,14 @@ def initialize_capi(capi_library):
 
     initialize_member_accessors()
     initialize_datetime_capi()
+    
+
+# run C API initialize hooks
+def run_capi_loaded_hooks(capi_library):
+    local_hooks = _capi_hooks.copy()
+    _capi_hooks.clear()
+    for hook in local_hooks:
+        hook()
 
 
 def import_native_memoryview(capi_library):

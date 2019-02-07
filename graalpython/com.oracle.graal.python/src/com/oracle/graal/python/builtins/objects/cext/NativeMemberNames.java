@@ -127,6 +127,7 @@ public final class NativeMemberNames {
     public static final String M_ML = "m_ml";
     public static final String DATETIME_DATA = "data";
     public static final String SET_USED = "used";
+    public static final String MMAP_DATA = "data";
 
     @CompilationFinal(dimensions = 1) public static final String[] values;
     static {

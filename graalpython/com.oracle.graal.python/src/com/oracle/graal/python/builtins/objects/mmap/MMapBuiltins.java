@@ -245,7 +245,13 @@ public class MMapBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GetItemNode extends PythonBuiltinNode implements ByteReadingNode {
+    public abstract static class GetItemNode extends PythonBuiltinNode implements ByteReadingNode {
+
+        public abstract Object executeObject(VirtualFrame frame, PMMap self, Object idxObj);
+
+        public abstract int executeInt(VirtualFrame frame, PMMap self, Object idxObj);
+
+        public abstract long executeLong(VirtualFrame frame, PMMap self, Object idxObj);
 
         @Specialization(guards = "!isPSlice(idxObj)")
         int doSingle(VirtualFrame frame, PMMap self, Object idxObj,
@@ -299,6 +305,9 @@ public class MMapBuiltins extends PythonBuiltins {
             }
         }
 
+        public static GetItemNode create() {
+            return MMapBuiltinsFactory.GetItemNodeFactory.create(null);
+        }
     }
 
     @Builtin(name = SpecialMethodNames.__SETITEM__, fixedNumOfPositionalArgs = 3)
