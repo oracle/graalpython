@@ -219,7 +219,14 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doItUnboxed")
         protected Object doItUnboxedIndirect(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords) {
             Object self = arguments[0];
-            return op(frame, (PythonAbstractClass) self, arguments, keywords, false);
+            if (PGuards.isClass(self)) {
+                return op(frame, (PythonAbstractClass) self, arguments, keywords, false);
+            } else if (self instanceof PythonBuiltinClassType) {
+                PythonBuiltinClass actual = getBuiltinPythonClass((PythonBuiltinClassType) self);
+                return op(frame, actual, arguments, keywords, false);
+            } else {
+                throw raise(TypeError, "descriptor '__call__' requires a 'type' object but received a '%p'", self);
+            }
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"})
@@ -867,6 +874,17 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)")
         Object setNative(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value) {
             throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
+        }
+    }
+
+    @Builtin(name = "__flags__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    static abstract class FlagsNode extends PythonUnaryBuiltinNode {
+        @Child TypeNodes.GetTypeFlagsNode getFlagsNode = TypeNodes.GetTypeFlagsNode.create();
+
+        @Specialization
+        Object flags(PythonAbstractClass self) {
+            return getFlagsNode.execute(self);
         }
     }
 }

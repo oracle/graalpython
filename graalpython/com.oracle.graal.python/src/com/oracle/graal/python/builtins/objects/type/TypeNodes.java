@@ -102,6 +102,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 public abstract class TypeNodes {
 
     public abstract static class GetTypeFlagsNode extends PNodeWithContext {
+        private static final int HEAPTYPE = 1 << 9;
 
         public abstract long execute(PythonAbstractClass clazz);
 
@@ -113,7 +114,7 @@ public abstract class TypeNodes {
         @Specialization
         long doGeneric(PythonManagedClass clazz) {
             if (!isInitialized(clazz)) {
-                return getValue(clazz.getFlagsContainer());
+                return getValue(clazz, clazz.getFlagsContainer());
             }
             return clazz.getFlagsContainer().flags;
         }
@@ -125,12 +126,16 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private static long getValue(FlagsContainer fc) {
+        private static long getValue(PythonManagedClass clazz, FlagsContainer fc) {
             // This method is only called from C code, i.e., the flags of the initial super class
             // must be available.
             if (fc.initialDominantBase != null) {
                 fc.flags = doSlowPath(fc.initialDominantBase);
                 fc.initialDominantBase = null;
+                if (clazz instanceof PythonClass) {
+                    // user classes are heap types
+                    fc.flags |= HEAPTYPE;
+                }
             }
             return fc.flags;
         }
@@ -142,7 +147,7 @@ public abstract class TypeNodes {
                 if (isInitialized(mclazz)) {
                     return mclazz.getFlagsContainer().flags;
                 } else {
-                    return getValue(mclazz.getFlagsContainer());
+                    return getValue(mclazz, mclazz.getFlagsContainer());
                 }
             } else if (PGuards.isNativeClass(clazz)) {
                 return doNativeGeneric((PythonNativeClass) clazz, createReadNode());

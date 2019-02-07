@@ -158,6 +158,12 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "-LLI":
                     runLLI = true;
                     break;
+                case "-debug-java":
+                    if (!isAOT()) {
+                        subprocessArgs.add("Xrunjdwp:transport=dt_socket,server=y,address=8000,suspend=y");
+                        inputArgs.remove("-debug-java");
+                    }
+                    break;
                 case "-debug-perf":
                     subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
                     subprocessArgs.add("Dgraal.TraceTrufflePerformanceWarnings=true");
@@ -739,7 +745,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             cmd.add("-cp");
             cmd.add(ManagementFactory.getRuntimeMXBean().getClassPath());
             for (String subProcArg : subProcessDefs) {
-                assert subProcArg.startsWith("D");
+                assert subProcArg.startsWith("D") || subProcArg.startsWith("X");
                 cmd.add("-" + subProcArg);
             }
             cmd.add(GraalPythonMain.class.getName());

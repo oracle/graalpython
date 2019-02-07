@@ -1863,4 +1863,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return result;
         }
     }
+
+    @Builtin(name = "ctermid", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class CtermId extends PythonBuiltinNode {
+        @Specialization
+        String ctermid() {
+            return "/dev/tty";
+        }
+    }
 }

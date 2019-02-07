@@ -1291,10 +1291,10 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.splitlines([keepends])
-    @Builtin(name = "splitlines", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = "splitlines", fixedNumOfPositionalArgs = 1, keywordArguments = {"keepends"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class SplitLinesNode extends PythonBuiltinNode {
+    public abstract static class SplitLinesNode extends PythonBinaryBuiltinNode {
         @Child private ListAppendNode appendNode = ListAppendNode.create();
         @Child private CastToBooleanNode keepEndsNode = CastToBooleanNode.createIfTrueNode();
 
