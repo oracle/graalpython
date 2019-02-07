@@ -343,7 +343,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean isVisible(PythonContext context, Object value) {
-        return value != PNone.NONE && value != PNone.NO_VALUE;
+        if (PythonOptions.getOption(context, PythonOptions.TerminalIsInteractive)) {
+            // if we run through our own launcher, the sys.__displayhook__ would provide the
+            // printing
+            return false;
+        } else {
+            return value != PNone.NONE && value != PNone.NO_VALUE;
+        }
     }
 
     @Override
