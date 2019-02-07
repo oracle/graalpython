@@ -876,4 +876,15 @@ public class TypeBuiltins extends PythonBuiltins {
             throw raise(PythonErrorType.RuntimeError, "can't set attributes of native type");
         }
     }
+
+    @Builtin(name = "__flags__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    static abstract class FlagsNode extends PythonUnaryBuiltinNode {
+        @Child TypeNodes.GetTypeFlagsNode getFlagsNode = TypeNodes.GetTypeFlagsNode.create();
+
+        @Specialization
+        Object flags(PythonAbstractClass self) {
+            return getFlagsNode.execute(self);
+        }
+    }
 }
