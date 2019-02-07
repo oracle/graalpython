@@ -29,6 +29,8 @@ import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.ABS;
 import static com.oracle.graal.python.nodes.BuiltinNames.BIN;
+import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINT;
+import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.CALLABLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.CHR;
 import static com.oracle.graal.python.nodes.BuiltinNames.COMPILE;
@@ -39,6 +41,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.EVAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.EXEC;
 import static com.oracle.graal.python.nodes.BuiltinNames.GETATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.HASH;
+import static com.oracle.graal.python.nodes.BuiltinNames.HEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.ID;
 import static com.oracle.graal.python.nodes.BuiltinNames.ISINSTANCE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ISSUBCLASS;
@@ -55,8 +58,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.REPR;
 import static com.oracle.graal.python.nodes.BuiltinNames.ROUND;
 import static com.oracle.graal.python.nodes.BuiltinNames.SETATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
-import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINT;
-import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTIN__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__DUMP_TRUFFLE_AST__;
@@ -170,8 +171,8 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -324,6 +325,60 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         private static String longToOctString(long x) {
             return Long.toOctalString(Math.abs(x));
+        }
+
+        @Specialization
+        public String doD(double x) {
+            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public String doPI(PInt x) {
+            BigInteger value = x.getValue();
+            return buildString(value.compareTo(BigInteger.ZERO) == -1, value.abs().toString(8));
+        }
+
+        @Specialization
+        public String doO(Object x,
+                        @Cached("create()") CastToIntegerFromIndexNode toIntNode,
+                        @Cached("create()") OctNode recursiveNode) {
+            Object value = toIntNode.execute(x);
+            return recursiveNode.executeObject(value);
+        }
+
+        protected static OctNode create() {
+            return BuiltinFunctionsFactory.OctNodeFactory.create();
+        }
+    }
+
+    // hex(object)
+    @Builtin(name = HEX, fixedNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class HexNode extends PythonUnaryBuiltinNode {
+
+        public abstract String executeObject(Object x);
+
+        @TruffleBoundary
+        private static String buildString(boolean isNegative, String number) {
+            StringBuilder sb = new StringBuilder();
+            if (isNegative) {
+                sb.append('-');
+            }
+            sb.append("0x");
+            sb.append(number);
+            return sb.toString();
+        }
+
+        @Specialization
+        public String doL(long x) {
+            return buildString(x < 0, longToHexString(x));
+        }
+
+        @TruffleBoundary
+        private static String longToHexString(long x) {
+            return Long.toHexString(Math.abs(x));
         }
 
         @Specialization
