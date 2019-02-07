@@ -101,8 +101,13 @@ public class MMapModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"fd >= 0", "isNoValue(access)", "isNoValue(offset)"})
-        PMMap doIt(LazyPythonClass clazz, int fd, int length, Object tagname, @SuppressWarnings("unused") PNone access, @SuppressWarnings("unused") PNone offset) {
+        PMMap doFile(LazyPythonClass clazz, int fd, int length, Object tagname, @SuppressWarnings("unused") PNone access, @SuppressWarnings("unused") PNone offset) {
             return doFile(clazz, fd, length, tagname, ACCESS_DEFAULT, 0);
+        }
+
+        @Specialization(guards = {"fd >= 0", "isNoValue(offset)"})
+        PMMap doFile(LazyPythonClass clazz, int fd, int length, Object tagname, int access, @SuppressWarnings("unused") PNone offset) {
+            return doFile(clazz, fd, length, tagname, access, 0);
         }
 
         // mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset])
