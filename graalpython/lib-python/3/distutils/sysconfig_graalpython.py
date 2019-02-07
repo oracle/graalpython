@@ -65,12 +65,12 @@ def _init_posix():
     so_ext = _imp.extension_suffixes()[0]
 
     g = {}
-    g['CC'] = "%s -CC %s" % (sys.executable, "-v" if sys.flags.verbose else "")
-    g['CXX'] = "%s -CC %s" % (sys.executable, "-v" if sys.flags.verbose else "")
+    g['CC'] = sys.__graal_get_toolchain_path('CC')
+    g['CXX'] = sys.__graal_get_toolchain_path('CXX')
     g['OPT'] = "-DNDEBUG -O1"
     g['CFLAGS'] = "-DNDEBUG -O1"
     g['CCSHARED'] = "-fPIC"
-    g['LDSHARED'] = "%s -LD %s" % (sys.executable, "-v" if sys.flags.verbose else "")
+    g['LDSHARED'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC')
     g['EXT_SUFFIX'] = so_ext
     g['SHLIB_SUFFIX'] = so_ext
     g['SO'] = so_ext  # deprecated in Python 3, for backward compatibility

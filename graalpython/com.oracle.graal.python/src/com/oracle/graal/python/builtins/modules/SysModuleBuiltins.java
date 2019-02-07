@@ -88,7 +88,9 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
+import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.toolchain.ToolchainProvider;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
@@ -472,6 +474,21 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         protected LookupAndCallUnaryNode createWithoutError() {
             return LookupAndCallUnaryNode.create(__SIZEOF__);
+        }
+    }
+
+    @Builtin(name = "__graal_get_toolchain_path", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public static abstract class GetToolPathNode extends PythonBuiltinNode {
+        private static final String LLVM_LANGUAGE = "llvm";
+
+        @Specialization
+        @TruffleBoundary
+        protected String getToolPath(String tool) {
+            Env env = getContext().getEnv();
+            LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
+            ToolchainProvider toolchainProvider = env.lookup(llvmInfo, ToolchainProvider.class);
+            return toolchainProvider.getToolPath(tool);
         }
     }
 
