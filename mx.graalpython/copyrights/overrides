@@ -110,6 +110,7 @@ graalpython/com.oracle.graal.python.cext/modules/_bz2.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_sre.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_memoryview.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_mmap.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_struct.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/sre_constants.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/sre.h,python.copyright
