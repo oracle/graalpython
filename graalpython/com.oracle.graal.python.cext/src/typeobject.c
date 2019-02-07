@@ -147,10 +147,8 @@ static PyObject* wrap_pow(ternaryfunc f, ...) {
     int nargs = polyglot_get_arg_count();
     switch(nargs) {
     case 3:
-        // TODO use 'native_to_java' on result
         return f(polyglot_get_arg(1), polyglot_get_arg(2), Py_None);
     case 4:
-        // TODO use 'native_to_java' on result
         return f(polyglot_get_arg(1), polyglot_get_arg(2), polyglot_get_arg(3));
     }
     return Py_NoValue;
@@ -231,21 +229,36 @@ inherit_special(PyTypeObject *type, PyTypeObject *base)
         type->tp_flags |= Py_TPFLAGS_DICT_SUBCLASS;
 }
 
-
-// TODO(fa): there should actually be 'native_to_java' just in case 'javacls' goes to native in between
 // TODO support member flags other than READONLY
 UPCALL_ID(AddMember);
+static void add_member(PyTypeObject* cls, PyObject* type_dict, PyObject* mname, int mtype, Py_ssize_t moffset, int mflags, char* mdoc) {
+	UPCALL_CEXT_VOID(_jls_AddMember,
+			cls,
+		    native_to_java(type_dict),
+		    native_to_java(mname),
+		    mtype,
+		    moffset,
+		    native_to_java(((mflags & READONLY) == 0) ? Py_True : Py_False),
+		    polyglot_from_string(mdoc ? mdoc : "", SRC_CS)
+	);
+}
+
+static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* name, void* meth, void* clanding, int flags, char* doc) {
+	polyglot_invoke(PY_TRUFFLE_CEXT,
+			"AddFunction",
+			cls,
+			native_to_java(type_dict),
+			polyglot_from_string((name), SRC_CS),
+			(meth),
+			(clanding),
+			get_method_flags_wrapper(flags),
+			polyglot_from_string(doc, SRC_CS),
+			(flags) > 0 && ((flags) & METH_CLASS) != 0,
+			(flags) > 0 && ((flags) & METH_STATIC) != 0);
+}
+
 #define ADD_MEMBER(__javacls__, __tpdict__, __mname__, __mtype__, __moffset__, __mflags__, __mdoc__)     \
-		do {                                                                                             \
-			UPCALL_CEXT_VOID(_jls_AddMember,                                                             \
-		    (__javacls__),                                                                               \
-		    native_to_java(__tpdict__),                                                                  \
-		    (__mname__),                                                                                 \
-		    (__mtype__),                                                                                 \
-		    (__moffset__),                                                                               \
-		    native_to_java((((__mflags__) & READONLY) == 0) ? Py_True : Py_False),                       \
-		    polyglot_from_string((__mdoc__) ? (__mdoc__) : "", SRC_CS));                                 \
-} while (0)
+	add_member((__javacls__), (__tpdict__), (__mname__), (__mtype__), (__moffset__), (__mflags__), (__mdoc__))
 
 
 UPCALL_ID(PyTruffle_Type_Slots);
@@ -261,20 +274,10 @@ int PyType_Ready(PyTypeObject* cls) {
 #define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, get_method_flags_cwrapper(m.ml_flags), m.ml_meth, m.ml_flags, m.ml_doc)
 #define ADD_SLOT(name, meth, flags) ADD_METHOD_OR_SLOT(name, get_method_flags_cwrapper(flags), meth, flags, name)
 #define ADD_SLOT_CONV(name, clanding, meth, flags) ADD_METHOD_OR_SLOT(name, clanding, meth, flags, name)
-#define ADD_METHOD_OR_SLOT(name, clanding, meth, flags, doc)                                \
-    if (meth) {                                                                             \
-        polyglot_invoke(PY_TRUFFLE_CEXT,                                                    \
-                       "AddFunction",                                                       \
-                       cls,                                                                 \
-                       native_to_java(dict),                                                \
-                       polyglot_from_string((name), SRC_CS),                                \
-                       (meth),                                                              \
-                       (clanding),                                                          \
-                       get_method_flags_wrapper(flags),                                     \
-                       polyglot_from_string(doc, SRC_CS),                                   \
-                       (flags) > 0 && ((flags) & METH_CLASS) != 0,                          \
-                       (flags) > 0 && ((flags) & METH_STATIC) != 0);                        \
-    }
+#define ADD_METHOD_OR_SLOT(__name__, __clanding__, __meth__, __flags__, __doc__) \
+	if (__meth__) { \
+		add_method_or_slot(cls, dict, (__name__), (__meth__), (__clanding__), (__flags__), (__doc__)); \
+	}
 
     // https://docs.python.org/3/c-api/typeobj.html#Py_TPFLAGS_READY
     if ((cls->tp_flags & Py_TPFLAGS_READY) || (cls->tp_flags & Py_TPFLAGS_READYING)) {
@@ -544,7 +547,7 @@ int PyType_Ready(PyTypeObject* cls) {
 
 UPCALL_ID(PyTruffle_Type_Modified);
 void PyType_Modified(PyTypeObject* type) {
-	UPCALL_CEXT_VOID(_jls_PyTruffle_Type_Modified, native_to_java(type), polyglot_from_string(type->tp_name, SRC_CS), native_to_java(type->tp_mro));
+	UPCALL_CEXT_VOID(_jls_PyTruffle_Type_Modified, native_type_to_java(type), polyglot_from_string(type->tp_name, SRC_CS), native_to_java(type->tp_mro));
 }
 
 MUST_INLINE static int valid_identifier(PyObject *s) {
@@ -557,16 +560,7 @@ MUST_INLINE static int valid_identifier(PyObject *s) {
     return 1;
 }
 
-/*
-typedef struct PyMemberDef {
-    char *name;
-    int type;
-    Py_ssize_t offset;
-    int flags;
-    char *doc;
-} PyMemberDef;
-
- */
+/* Add get-set descriptors for slots provided in 'slotsTuple'. */
 Py_ssize_t PyTruffle_Type_AddSlots(PyTypeObject* cls, PyObject* slotsTuple) {
     int i;
     Py_ssize_t cur_offset = cls->tp_basicsize;
