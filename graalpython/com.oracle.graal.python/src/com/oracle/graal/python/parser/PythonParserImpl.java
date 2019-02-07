@@ -71,15 +71,14 @@ public final class PythonParserImpl implements PythonParser {
                     throw new RuntimeException("unexpected mode: " + mode);
             }
         } catch (Exception e) {
-            if (mode == ParserMode.InteractiveStatement || mode == ParserMode.InlineEvaluation) {
+            if (mode == ParserMode.InteractiveStatement && e instanceof PIncompleteSourceException) {
+                ((PIncompleteSourceException) e).setSource(source);
+                throw e;
+            } else if (mode == ParserMode.InlineEvaluation) {
                 try {
                     parser.reset();
                     input = parser.eval_input();
                 } catch (Exception e2) {
-                    if (mode == ParserMode.InteractiveStatement && e instanceof PIncompleteSourceException) {
-                        ((PIncompleteSourceException) e).setSource(source);
-                        throw e;
-                    }
                     throw handleParserError(errors, source, e);
                 }
             } else {
@@ -98,7 +97,7 @@ public final class PythonParserImpl implements PythonParser {
         defineScopes.createFrameSlotsForCellAndFreeVars();
 
         // create Truffle ASTs
-        return PythonTreeTranslator.translate(errors, source.getName(), input, environment, source, mode == ParserMode.InlineEvaluation);
+        return PythonTreeTranslator.translate(errors, source.getName(), input, environment, source, mode);
     }
 
     @Override

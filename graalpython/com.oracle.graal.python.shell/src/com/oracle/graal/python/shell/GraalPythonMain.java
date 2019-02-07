@@ -608,11 +608,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     while (true) { // processing subsequent lines while input is incomplete
                         lastStatus = 0;
                         try {
-                            Value result = context.eval(Source.newBuilder(getLanguageId(), sb.toString(), "<stdin>").interactive(true).buildLiteral());
-                            Value displayhook = sys.getMember("displayhook");
-                            if (displayhook != null && displayhook.canExecute()) {
-                                displayhook.execute(result);
-                            }
+                            context.eval(Source.newBuilder(getLanguageId(), sb.toString(), "<stdin>").interactive(true).buildLiteral());
                         } catch (PolyglotException e) {
                             if (continuePrompt == null) {
                                 continuePrompt = doEcho ? sys.getMember("ps2").asString() : null;
