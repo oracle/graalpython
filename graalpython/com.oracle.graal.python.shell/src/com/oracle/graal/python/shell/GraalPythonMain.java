@@ -162,8 +162,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     if (!isAOT()) {
                         subprocessArgs.add("Xrunjdwp:transport=dt_socket,server=y,address=8000,suspend=y");
                         inputArgs.remove("-debug-java");
-                        break;
                     }
+                    break;
                 case "-debug-perf":
                     subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
                     subprocessArgs.add("Dgraal.TraceTrufflePerformanceWarnings=true");
