@@ -219,7 +219,14 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doItUnboxed")
         protected Object doItUnboxedIndirect(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords) {
             Object self = arguments[0];
-            return op(frame, (PythonAbstractClass) self, arguments, keywords, false);
+            if (self instanceof PythonAbstractClass) {
+                return op(frame, (PythonAbstractClass) self, arguments, keywords, false);
+            } else if (self instanceof PythonBuiltinClassType) {
+                PythonBuiltinClass actual = getContext().getCore().lookupType((PythonBuiltinClassType) self);
+                return op(frame, actual, arguments, keywords, false);
+            } else {
+                throw raise(TypeError, "descriptor '__call__' requires a 'type' object but received a '%p'", self);
+            }
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"})
