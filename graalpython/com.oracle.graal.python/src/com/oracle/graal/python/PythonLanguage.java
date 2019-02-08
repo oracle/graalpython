@@ -173,7 +173,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         if (home != null) {
             if (sysPrefix.isEmpty()) {
-                env.getOptions().set(PythonOptions.SysPrefix, home.getAbsoluteFile().getPath());
+                sysPrefix = home.getAbsoluteFile().getPath();
+                env.getOptions().set(PythonOptions.SysPrefix, sysPrefix);
             }
 
             if (coreHome.isEmpty()) {
