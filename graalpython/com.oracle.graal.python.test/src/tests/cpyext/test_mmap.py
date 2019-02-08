@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,24 +37,51 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import sys
+import mmap
+import tempfile
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+__dir__ = __file__.rpartition("/")[0]
 
-MAP_SHARED=0x01
-MAP_PRIVATE=0x02
-MAP_DENYWRITE=0x800
-MAP_EXECUTABLE=0x1000
-MAP_ANON=0x20
-MAP_ANONYMOUS=0x20
 
-PROT_READ=0x1
-PROT_WRITE=0x2
-PROT_EXEC=0x4
-
-PAGESIZE = 4096
-
-from python_cext import register_capi_hook
-
-def __register_buffer():
-    import _mmap
-    _mmap.init_bufferprotocol(mmap)
+def create_and_map_file():
+    tmp = tempfile.mktemp(prefix="pymmap_")
+    with open(tmp, "w") as f:
+        f.write("hello, world")
+    f = open(tmp, "r")
+    return mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
     
-register_capi_hook(__register_buffer)
+
+class TestPyMmap(CPyExtTestCase):
+    def compile_module(self, name):
+        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
+        super(TestPyMmap, self).compile_module(name)
+
+
+    test_buffer = CPyExtFunction(
+        lambda args: b"hello, world",
+        lambda: (
+            (create_and_map_file(),),
+        ),
+        code="""
+        static PyObject* get_mmap_buf(PyObject* mmapObj) {
+            Py_buffer buf;
+            Py_ssize_t len, i;
+            char* data = NULL;
+            if (PyObject_GetBuffer(mmapObj, &buf, PyBUF_SIMPLE)) {
+                return NULL;
+            }
+            len = buf.len;
+            data = (char*) malloc(sizeof(char)*len);
+            for (i=0; i < buf.len; i++) {
+                data[i] = ((char *) buf.buf)[i];
+            }
+            return PyBytes_FromStringAndSize(data, len); 
+        }
+        """,
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* mmapObj"],
+        callfunction="get_mmap_buf",
+        cmpfunc=unhandled_error_compare
+    )

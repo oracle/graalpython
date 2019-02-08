@@ -27,6 +27,7 @@ package com.oracle.graal.python.runtime.object;
 
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.util.Map;
 import java.util.Optional;
@@ -87,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
@@ -838,5 +840,13 @@ public final class PythonObjectFactory extends Node {
 
     public Object createDirEntry(LazyPythonClass cls, String name, TruffleFile file) {
         return trace(new PDirEntry(cls, name, file));
+    }
+
+    public PMMap createMMap(SeekableByteChannel channel, long length, long offset) {
+        return trace(new PMMap(PythonBuiltinClassType.PMMap, channel, length, offset));
+    }
+
+    public PMMap createMMap(LazyPythonClass clazz, SeekableByteChannel channel, long length, long offset) {
+        return trace(new PMMap(clazz, channel, length, offset));
     }
 }

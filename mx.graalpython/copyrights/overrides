@@ -110,6 +110,7 @@ graalpython/com.oracle.graal.python.cext/modules/_bz2.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_sre.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_memoryview.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_mmap.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_struct.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/sre_constants.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/sre.h,python.copyright
@@ -239,6 +240,7 @@ graalpython/com.oracle.graal.python.test/src/tests/test_math.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_memoryview.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_mm2d_naive.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_mm2d_random_naive_5.py,zippy.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_mmap.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_raise-try.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_random.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_re.py,python.copyright

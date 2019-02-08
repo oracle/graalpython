@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -358,7 +359,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         protected static SequenceStorageNodes.AppendNode createAppend() {
-            return SequenceStorageNodes.AppendNode.create(() -> NoGeneralizationNode.create("byte must be in range(0, 256)"));
+            return SequenceStorageNodes.AppendNode.create(() -> NoGeneralizationNode.create(CastToByteNode.INVALID_BYTE_VALUE));
         }
     }
 
@@ -376,7 +377,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         protected static SequenceStorageNodes.ExtendNode createExtend() {
-            return SequenceStorageNodes.ExtendNode.create(() -> NoGeneralizationNode.create("byte must be in range(0, 256)"));
+            return SequenceStorageNodes.ExtendNode.create(() -> NoGeneralizationNode.create(CastToByteNode.INVALID_BYTE_VALUE));
         }
 
         protected boolean isPSequenceWithStorage(Object source) {

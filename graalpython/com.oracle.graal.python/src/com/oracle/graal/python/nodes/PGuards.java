@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -257,6 +258,10 @@ public abstract class PGuards {
 
     public static boolean isNativeObject(Object object) {
         return PythonNativeObject.isInstance(object);
+    }
+
+    public static boolean isManagedClass(Object klass) {
+        return klass instanceof PythonManagedClass;
     }
 
     public static boolean isNativeClass(Object klass) {

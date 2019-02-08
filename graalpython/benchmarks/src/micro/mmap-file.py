@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,24 +37,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import mmap
+import tempfile
 
-MAP_SHARED=0x01
-MAP_PRIVATE=0x02
-MAP_DENYWRITE=0x800
-MAP_EXECUTABLE=0x1000
-MAP_ANON=0x20
-MAP_ANONYMOUS=0x20
+# create temporary file
+data = b"Hello World"
+ndata = len(data)
 
-PROT_READ=0x1
-PROT_WRITE=0x2
-PROT_EXEC=0x4
 
-PAGESIZE = 4096
+def fill(mm, size):
+    # sequential access
+    mm.seek(0)
+    for i in range(size // ndata):
+        mm.write(data)
 
-from python_cext import register_capi_hook
 
-def __register_buffer():
-    import _mmap
-    _mmap.init_bufferprotocol(mmap)
-    
-register_capi_hook(__register_buffer)
+def measure(num):
+    tmp_path = tempfile.mkstemp()
+    with open(tmp_path[1], "wb") as f:
+        f.write(b'\x00' * (64 * 1024))
+
+    with open(tmp_path[1], "r+b") as f:
+        mm = mmap.mmap(f.fileno(), 0)
+        size = mm.size()
+        for i in range(num):
+            fill(mm, size)
+        print(mm[0:ndata])
+
+
+def __benchmark__(num=100):
+    measure(num)
+
