@@ -233,7 +233,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (core.isInitialized()) {
             context.initializeMainModule(source.getPath());
         }
-        RootNode root = doParse(core, source);
+        RootNode root = doParse(context, source);
         if (core.isInitialized()) {
             return Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, root));
         } else {
@@ -241,9 +241,25 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private RootNode doParse(PythonCore pythonCore, Source source) {
+    private RootNode doParse(PythonContext context, Source source) {
+        ParserMode mode = null;
+        if (source.isInteractive()) {
+            if (PythonOptions.getOption(context, PythonOptions.TerminalIsInteractive)) {
+                // if we run through our own launcher, the sys.__displayhook__ would provide the
+                // printing
+                mode = ParserMode.Statement;
+            } else {
+                // if we're not run through our own launcher, the embedder will expect the normal
+                // Truffle printing
+                mode = ParserMode.InteractiveStatement;
+            }
+        } else {
+            // by default we assume a module
+            mode = ParserMode.File;
+        }
+        PythonCore pythonCore = context.getCore();
         try {
-            return (RootNode) pythonCore.getParser().parse(source.isInteractive() ? ParserMode.InteractiveStatement : ParserMode.File, pythonCore, source, null);
+            return (RootNode) pythonCore.getParser().parse(mode, pythonCore, source, null);
         } catch (PException e) {
             // handle PException during parsing (PIncompleteSourceException will propagate through)
             Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, e)).call();

@@ -76,17 +76,15 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
 
     @Override
     public T visitSingle_input(Single_inputContext ctx) {
-        if (interactive) {
-            ctx.scope = environment.pushScope(ctx, ScopeInfo.ScopeKind.Module);
-        } else if (curInlineLocals != null) {
+        if (!interactive && curInlineLocals != null) {
             ctx.scope = environment.pushScope(ctx, ScopeInfo.ScopeKind.Function, curInlineLocals);
+        } else {
+            ctx.scope = environment.pushScope(ctx, ScopeInfo.ScopeKind.Module);
         }
         try {
             return super.visitSingle_input(ctx);
         } finally {
-            if (interactive || curInlineLocals != null) {
-                environment.popScope();
-            }
+            environment.popScope();
         }
     }
 

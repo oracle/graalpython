@@ -101,6 +101,7 @@ import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.ImportFromNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.statement.ImportStarNode;
+import com.oracle.graal.python.nodes.statement.PrintExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
@@ -564,5 +565,9 @@ public class NodeFactory {
 
     public PDataModelEmulationNode createIsIterable() {
         return IsIterableNode.create();
+    }
+
+    public PrintExpressionNode createPrintExpression(ExpressionNode body) {
+        return PrintExpressionNode.create(body);
     }
 }
