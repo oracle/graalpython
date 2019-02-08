@@ -78,7 +78,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
         ArrayList<String> unrecognized = new ArrayList<>();
-        ArrayList<String> inputArgs = new ArrayList<>(getDefaultEnvironmentArgs());
+        List<String> defaultEnvironmentArgs = getDefaultEnvironmentArgs();
+        ArrayList<String> inputArgs = new ArrayList<>(defaultEnvironmentArgs);
         inputArgs.addAll(givenArgs);
         givenArguments = new ArrayList<>(inputArgs);
         List<String> arguments = new ArrayList<>(inputArgs);
@@ -142,15 +143,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     versionAction = VersionAction.PrintAndContinue;
                     break;
                 case "-CC":
-                    if (i != 0) {
-                        throw new IllegalArgumentException("-CC must be the first argument");
+                    if (i != defaultEnvironmentArgs.size()) {
+                        throw new IllegalArgumentException("-CC must be the first given argument");
                     }
                     GraalPythonCC.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
                     System.exit(0);
                     break;
                 case "-LD":
-                    if (i != 0) {
-                        throw new IllegalArgumentException("-LD must be the first argument");
+                    if (i != defaultEnvironmentArgs.size()) {
+                        throw new IllegalArgumentException("-LD must be the first given argument");
                     }
                     GraalPythonLD.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
                     System.exit(0);
