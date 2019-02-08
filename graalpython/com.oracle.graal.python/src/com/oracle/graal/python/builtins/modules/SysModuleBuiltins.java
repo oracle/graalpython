@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -86,6 +87,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.LanguageInfo;
@@ -478,8 +480,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "__graal_get_toolchain_path", fixedNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public static abstract class GetToolPathNode extends PythonBuiltinNode {
+    public static abstract class GetToolPathNode extends PythonUnaryBuiltinNode {
         private static final String LLVM_LANGUAGE = "llvm";
 
         @Specialization
