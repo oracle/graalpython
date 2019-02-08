@@ -104,7 +104,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         COMPILE_TIME = compile_time;
     }
 
-    public static final String[] SYS_PREFIX_ATTRIBUTES = new String[]{"prefix", "exec_prefix", "base_prefix", "base_exec_prefix"};
+    public static final String[] SYS_PREFIX_ATTRIBUTES = new String[]{"prefix", "exec_prefix"};
+    public static final String[] BASE_PREFIX_ATTRIBUTES = new String[]{"base_prefix", "base_exec_prefix"};
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -159,9 +160,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
         PythonContext context = core.getContext();
         String[] args = context.getEnv().getApplicationArguments();
         sys.setAttribute("argv", core.factory().createList(Arrays.copyOf(args, args.length, Object[].class)));
+
         String prefix = PythonCore.getSysPrefix(context.getEnv());
         for (String name : SysModuleBuiltins.SYS_PREFIX_ATTRIBUTES) {
             sys.setAttribute(name, prefix);
+        }
+
+        String base_prefix = PythonCore.getSysBasePrefix(context.getEnv());
+        for (String name : SysModuleBuiltins.BASE_PREFIX_ATTRIBUTES) {
+            sys.setAttribute(name, base_prefix);
         }
 
         sys.setAttribute("executable", PythonOptions.getOption(context, PythonOptions.Executable));

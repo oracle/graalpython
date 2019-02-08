@@ -326,10 +326,11 @@ class EnvBuilder:
         # Truffle change: we need to set some extra options for the launcher to work
         text = text.replace(
             '__VENV_GRAAL_PYTHON_OPTIONS__',
-            "--python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.Executable='%s'" % (
+            "--python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s'" % (
                 sys.graal_python_core_home,
                 sys.graal_python_stdlib_home,
-                sys.prefix,
+                context.env_dir,
+                sys.base_prefix,
                 context.env_exe,
             )
         )

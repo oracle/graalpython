@@ -120,7 +120,21 @@ public interface PythonCore extends ParserErrorCallback {
         if (sysPrefix.isEmpty()) {
             writeWarning(NO_PREFIX_WARNING);
             env.getOptions().set(PythonOptions.SysPrefix, PREFIX);
-            return LIB_GRAALPYTHON;
+            return PREFIX;
+        }
+        return sysPrefix;
+    }
+
+    @TruffleBoundary
+    public static String getSysBasePrefix(TruffleLanguage.Env env) {
+        String sysPrefix = env.getOptions().get(PythonOptions.SysBasePrefix);
+        if (sysPrefix.isEmpty()) {
+            String homePrefix = PythonLanguage.getCurrent().getHome();
+            if (homePrefix.isEmpty()) {
+                homePrefix = PREFIX;
+            }
+            env.getOptions().set(PythonOptions.SysBasePrefix, homePrefix);
+            return homePrefix;
         }
         return sysPrefix;
     }
