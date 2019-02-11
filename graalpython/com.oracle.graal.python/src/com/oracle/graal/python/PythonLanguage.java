@@ -146,14 +146,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private void ensureHomeInOptions(Env env) {
         String languageHome = getLanguageHome();
         String sysPrefix = env.getOptions().get(PythonOptions.SysPrefix);
+        String basePrefix = env.getOptions().get(PythonOptions.SysBasePrefix);
         String coreHome = env.getOptions().get(PythonOptions.CoreHome);
         String stdLibHome = env.getOptions().get(PythonOptions.StdLibHome);
 
         PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
-                        "\n\tCoreHome: {2}" +
-                        "\n\tStdLibHome: {3}", languageHome, sysPrefix, coreHome, stdLibHome)));
+                        "\n\tBaseSysPrefix: {2}" +
+                        "\n\tCoreHome: {3}" +
+                        "\n\tStdLibHome: {4}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome)));
 
         TruffleFile home = null;
         if (languageHome != null) {
@@ -173,7 +175,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         if (home != null) {
             if (sysPrefix.isEmpty()) {
-                env.getOptions().set(PythonOptions.SysPrefix, home.getAbsoluteFile().getPath());
+                sysPrefix = home.getAbsoluteFile().getPath();
+                env.getOptions().set(PythonOptions.SysPrefix, sysPrefix);
+            }
+
+            if (basePrefix.isEmpty()) {
+                basePrefix = home.getAbsoluteFile().getPath();
+                env.getOptions().set(PythonOptions.SysBasePrefix, basePrefix);
             }
 
             if (coreHome.isEmpty()) {
@@ -209,8 +217,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
                             "\n\tLanguage home: {0}" +
                             "\n\tSysPrefix: {1}" +
-                            "\n\tCoreHome: {2}" +
-                            "\n\tStdLibHome: {3}", home.getPath(), sysPrefix, coreHome, stdLibHome)));
+                            "\n\tSysBasePrefix: {2}" +
+                            "\n\tCoreHome: {3}" +
+                            "\n\tStdLibHome: {4}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome)));
         }
     }
 
