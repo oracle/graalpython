@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,23 +40,101 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(InteropLibrary.class)
 public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
     public PyProcsWrapper(Object delegate) {
         super(delegate);
     }
 
-    static boolean isInstance(TruffleObject o) {
-        return o instanceof PyProcsWrapper;
+    @ExportMessage
+    boolean isExecutable() {
+        return true;
     }
 
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return PyProcsWrapperMRForeign.ACCESS;
+    @ExportMessage(name = "execute")
+    @GenerateUncached
+    abstract static class ExecuteNode {
+
+        @Specialization
+        static Object doGetAttr(GetAttrWrapper object, Object[] arguments,
+                        @Shared("toSulongNode") @Cached(allowUncached = true) ToSulongNode toSulongNode,
+                        @Shared("executeNode") @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode,
+                        @Shared("toJavaNode") @Cached(allowUncached = true) ToJavaNode toJavaNode,
+                        @Exclusive @Cached IsBuiltinClassProfile errProfile) throws ArityException {
+            if (arguments.length != 2) {
+                throw ArityException.create(2, arguments.length);
+            }
+            Object[] converted = new Object[2];
+            converted[0] = toJavaNode.execute(arguments[0]);
+            converted[1] = toJavaNode.execute(arguments[1]);
+            Object result;
+            try {
+                result = executeNode.execute(object.getDelegate(), converted);
+            } catch (PException e) {
+                // TODO move to node
+                e.expectAttributeError(errProfile);
+                result = PNone.NO_VALUE;
+            }
+            return toSulongNode.execute(result);
+        }
+
+        @Specialization
+        static Object doSetAttr(SetAttrWrapper object, Object[] arguments,
+                        @Shared("executeNode") @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode,
+                        @Shared("toJavaNode") @Cached(allowUncached = true) ToJavaNode toJavaNode) throws ArityException {
+            if (arguments.length != 3) {
+                throw ArityException.create(3, arguments.length);
+            }
+            Object[] converted = new Object[3];
+            converted[0] = toJavaNode.execute(arguments[0]);
+            converted[1] = toJavaNode.execute(arguments[1]);
+            converted[2] = toJavaNode.execute(arguments[2]);
+            try {
+                executeNode.execute(object.getDelegate(), converted);
+                return 0;
+            } catch (PException e) {
+                return -1;
+            }
+        }
+
+        @Specialization
+        static Object doSsize(SsizeargfuncWrapper object, Object[] arguments,
+                        @Shared("toSulongNode") @Cached(allowUncached = true) ToSulongNode toSulongNode,
+                        @Shared("executeNode") @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode,
+                        @Shared("toJavaNode") @Cached(allowUncached = true) ToJavaNode toJavaNode) throws ArityException {
+            if (arguments.length != 2) {
+                throw ArityException.create(2, arguments.length);
+            }
+            Object[] converted = new Object[2];
+            converted[0] = toJavaNode.execute(arguments[0]);
+            assert arguments[1] instanceof Number;
+            converted[1] = arguments[1];
+            Object result;
+            try {
+                result = executeNode.execute(object.getDelegate(), converted);
+            } catch (PException e) {
+                result = PNone.NO_VALUE;
+            }
+            return toSulongNode.execute(result);
+        }
     }
 
     static class GetAttrWrapper extends PyProcsWrapper {
@@ -92,5 +170,4 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     public static SsizeargfuncWrapper createSsizeargfuncWrapper(Object ssizeArgMethod) {
         return new SsizeargfuncWrapper(ssizeArgMethod);
     }
-
 }

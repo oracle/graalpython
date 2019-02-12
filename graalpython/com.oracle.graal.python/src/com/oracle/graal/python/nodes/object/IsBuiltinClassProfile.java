@@ -244,4 +244,8 @@ public final class IsBuiltinClassProfile {
             return false;
         }
     }
+
+    public static IsBuiltinClassProfile getUncached() {
+        return create();
+    }
 }
