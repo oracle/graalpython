@@ -46,14 +46,16 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -72,11 +74,6 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
 
     static boolean isInstance(TruffleObject o) {
         return o instanceof PyGetSetDefWrapper;
-    }
-
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return PyGetSetDefWrapperMRForeign.ACCESS;
     }
 
     @ExportMessage
@@ -143,6 +140,51 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
             } else {
                 return asCharPointerNode.execute(doc);
             }
+        }
+    }
+
+    @ExportMessage
+    boolean isMemberModifiable(String member) {
+        return member.equals("doc");
+    }
+
+    @ExportMessage
+    boolean isMemberInsertable(String member) {
+        return member.equals("doc");
+    }
+
+    @ExportMessage
+    void writeMember(String member, Object value,
+                     @Cached.Exclusive @Cached(allowUncached = true) WriteFieldNode writeFieldNode) {
+        writeFieldNode.execute(this.getDelegate(), member, value);
+    }
+
+    @ExportMessage
+    boolean isMemberRemovable(String member) {
+        return false;
+    }
+
+    @ExportMessage
+    void removeMember(String member) throws UnsupportedMessageException, UnknownIdentifierException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ImportStatic({SpecialMethodNames.class})
+    abstract static class WriteFieldNode extends Node {
+        public static final String DOC = "doc";
+
+        public abstract void execute(Object delegate, String key, Object value);
+
+        protected boolean eq(String expected, String actual) {
+            return expected.equals(actual);
+        }
+
+        @Specialization(guards = {"eq(DOC, key)"})
+        void getDoc(PythonObject object, @SuppressWarnings("unused") String key, Object value,
+                    @Cached("key") @SuppressWarnings("unused") String cachedKey,
+                    @Cached("create(__SETATTR__)") LookupAndCallTernaryNode setAttrNode,
+                    @Cached.Exclusive @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) {
+            setAttrNode.execute(object, SpecialAttributeNames.__DOC__, fromCharPointerNode.execute(value));
         }
     }
 }
