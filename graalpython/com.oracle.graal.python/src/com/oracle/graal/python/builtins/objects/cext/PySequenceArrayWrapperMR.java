@@ -45,18 +45,11 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.GetTypeIDNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeStorageNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ForeignAccess;
@@ -182,50 +175,6 @@ public class PySequenceArrayWrapperMR {
 
         public static GetTypeIDNode create() {
             return GetTypeIDNodeGen.create();
-        }
-    }
-
-    static abstract class ToNativeStorageNode extends PNodeWithContext {
-        @Child private StorageToNativeNode storageToNativeNode;
-
-        public abstract NativeSequenceStorage execute(SequenceStorage object);
-
-        @Specialization(guards = "!isNative(s)")
-        NativeSequenceStorage doManaged(SequenceStorage s) {
-            return getStorageToNativeNode().execute(s.getInternalArrayObject());
-        }
-
-        @Specialization
-        NativeSequenceStorage doNative(NativeSequenceStorage s) {
-            return s;
-        }
-
-        @Specialization
-        NativeSequenceStorage doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s) {
-            // TODO(fa): not sure if that completely reflects semantics
-            return getStorageToNativeNode().execute(new byte[0]);
-        }
-
-        @Fallback
-        NativeSequenceStorage doGeneric(@SuppressWarnings("unused") SequenceStorage s) {
-            CompilerDirectives.transferToInterpreter();
-            throw new UnsupportedOperationException("Unknown storage type: " + s);
-        }
-
-        protected static boolean isNative(SequenceStorage s) {
-            return s instanceof NativeSequenceStorage;
-        }
-
-        private StorageToNativeNode getStorageToNativeNode() {
-            if (storageToNativeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                storageToNativeNode = insert(StorageToNativeNode.create());
-            }
-            return storageToNativeNode;
-        }
-
-        public static ToNativeStorageNode create() {
-            return ToNativeStorageNodeGen.create();
         }
     }
 

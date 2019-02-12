@@ -56,15 +56,18 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -634,7 +637,7 @@ public abstract class NativeWrappers {
 
             @Specialization(guards = "isPSequence(object.getDelegate())")
             Object doPSequence(PySequenceArrayWrapper object,
-                       @Cached.Exclusive @Cached PySequenceArrayWrapperMR.ToNativeStorageNode toNativeStorageNode) {
+                       @Cached.Exclusive @Cached ToNativeStorageNode toNativeStorageNode) {
                 PSequence sequence = (PSequence) object.getDelegate();
                 NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(sequence.getSequenceStorage());
                 if (nativeStorage == null) {
@@ -664,6 +667,50 @@ public abstract class NativeWrappers {
 
             public static ToNativeArrayNode create() {
                 return NativeWrappersFactory.PySequenceArrayWrapperFactory.ToNativeArrayNodeGen.create();
+            }
+        }
+
+        static abstract class ToNativeStorageNode extends PNodeWithContext {
+            @Child private SequenceStorageNodes.StorageToNativeNode storageToNativeNode;
+
+            public abstract NativeSequenceStorage execute(SequenceStorage object);
+
+            @Specialization(guards = "!isNative(s)")
+            NativeSequenceStorage doManaged(SequenceStorage s) {
+                return getStorageToNativeNode().execute(s.getInternalArrayObject());
+            }
+
+            @Specialization
+            NativeSequenceStorage doNative(NativeSequenceStorage s) {
+                return s;
+            }
+
+            @Specialization
+            NativeSequenceStorage doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s) {
+                // TODO(fa): not sure if that completely reflects semantics
+                return getStorageToNativeNode().execute(new byte[0]);
+            }
+
+            @Fallback
+            NativeSequenceStorage doGeneric(@SuppressWarnings("unused") SequenceStorage s) {
+                CompilerDirectives.transferToInterpreter();
+                throw new UnsupportedOperationException("Unknown storage type: " + s);
+            }
+
+            protected static boolean isNative(SequenceStorage s) {
+                return s instanceof NativeSequenceStorage;
+            }
+
+            private SequenceStorageNodes.StorageToNativeNode getStorageToNativeNode() {
+                if (storageToNativeNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    storageToNativeNode = insert(SequenceStorageNodes.StorageToNativeNode.create());
+                }
+                return storageToNativeNode;
+            }
+
+            public static ToNativeStorageNode create() {
+                return NativeWrappersFactory.PySequenceArrayWrapperFactory.ToNativeStorageNodeGen.create();
             }
         }
 
