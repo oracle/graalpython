@@ -99,11 +99,13 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -879,16 +881,18 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __GETATTR__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetattrNode extends PythonBinaryBuiltinNode {
-        @Child Node readNode = Message.READ.createNode();
         @Child PForeignToPTypeNode toPythonNode = PForeignToPTypeNode.create();
 
         @Specialization
-        protected Object doIt(TruffleObject object, Object key) {
+        protected Object doIt(TruffleObject object, Object key,
+                  @CachedLibrary(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)") InteropLibrary read) {
             try {
-                return toPythonNode.executeConvert(ForeignAccess.sendRead(readNode, object, key));
-            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.AttributeError, "foreign object %s has no attribute %s", object, key);
-            }
+                String member = (String) key;
+                if (read.isMemberReadable(object, member)) {
+                    return toPythonNode.executeConvert(read.readMember(object, member));
+                }
+            } catch (UnknownIdentifierException | UnsupportedMessageException ignore) {}
+            throw raise(PythonErrorType.AttributeError, "foreign object %s has no attribute %s", object, key);
         }
     }
 

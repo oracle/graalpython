@@ -155,10 +155,12 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @Cached PForeignToPTypeNode fromForeign,
                     @CachedLibrary(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)") InteropLibrary read) {
         try {
-            return fromForeign.executeConvert(read.readMember(object, (String) attrKey(key)));
-        } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-            return PNone.NO_VALUE;
-        }
+            String member = (String) attrKey(key);
+            if (read.isMemberReadable(object, member)) {
+                return fromForeign.executeConvert(read.readMember(object, member));
+            }
+        } catch (UnknownIdentifierException | UnsupportedMessageException ignored) {}
+        return PNone.NO_VALUE;
     }
 
     // not a Python or Foreign Object
