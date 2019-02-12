@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -113,6 +114,7 @@ public abstract class HashingCollectionNodes {
     }
 
     @ImportStatic({PGuards.class})
+    @GenerateUncached
     public abstract static class GetDictStorageNode extends PNodeWithContext {
 
         public abstract HashingStorage execute(PHashingCollection c);
@@ -124,12 +126,16 @@ public abstract class HashingCollectionNodes {
         }
 
         @Specialization(replaces = "getStorageCached")
-        HashingStorage getStorageGeneric(PHashingCollection c) {
+        static HashingStorage getStorageGeneric(PHashingCollection c) {
             return c.getDictStorage();
         }
 
         public static GetDictStorageNode create() {
             return GetDictStorageNodeGen.create();
+        }
+
+        public static GetDictStorageNode getUncached() {
+            return GetDictStorageNodeGen.getUncached();
         }
     }
 }
