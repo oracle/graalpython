@@ -46,6 +46,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -57,6 +58,7 @@ import com.oracle.truffle.api.object.Shape;
 
 @ImportStatic(PythonOptions.class)
 @ReportPolymorphism
+@GenerateUncached
 public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeNode {
 
     public abstract boolean execute(Object primary, Object key, Object value);
@@ -146,8 +148,8 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     @TruffleBoundary
     @Specialization(guards = {
                     "dynamicObject.getShape().isValid()"
-    }, replaces = {"doDirect", "defineDirect"})
-    protected boolean doIndirect(DynamicObject dynamicObject, Object key, Object value) {
+    }, replaces = {"doDirect", "defineDirect", "updateShapeAndWrite"})
+    static protected boolean doIndirect(DynamicObject dynamicObject, Object key, Object value) {
         Object attrKey = attrKey(key);
         CompilerAsserts.neverPartOfCompilation();
         dynamicObject.define(attrKey, value);
@@ -155,7 +157,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     }
 
     @Specialization(guards = "!dynamicObject.getShape().isValid()")
-    protected boolean defineDirect2(DynamicObject dynamicObject, Object key, Object value) {
+    static protected boolean defineDirect2(DynamicObject dynamicObject, Object key, Object value) {
         CompilerDirectives.transferToInterpreter();
         dynamicObject.updateShape();
         return doIndirect(dynamicObject, key, value);

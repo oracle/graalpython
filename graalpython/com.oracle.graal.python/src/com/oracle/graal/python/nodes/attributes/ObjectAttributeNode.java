@@ -60,7 +60,7 @@ import com.oracle.truffle.api.object.Property;
 public abstract class ObjectAttributeNode extends PNodeWithContext {
     @Child private GetDictStorageNode getStorageNode;
 
-    protected Object attrKey(Object key) {
+    protected static Object attrKey(Object key) {
         if (key instanceof PString) {
             return ((PString) key).getValue();
         } else {
@@ -71,7 +71,11 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
     protected HashingStorage getDictStorage(PHashingCollection c) {
         if (getStorageNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getStorageNode = insert(HashingCollectionNodes.GetDictStorageNode.create());
+            if (getRootNode() == null) {
+                getStorageNode = HashingCollectionNodes.GetDictStorageNode.getUncached();
+            } else {
+                getStorageNode = insert(HashingCollectionNodes.GetDictStorageNode.create());
+            }
         }
         return getStorageNode.execute(c);
     }
