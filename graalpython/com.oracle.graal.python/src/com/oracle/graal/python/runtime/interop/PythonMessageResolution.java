@@ -51,6 +51,7 @@ import java.util.HashSet;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
+import com.oracle.graal.python.builtins.modules.InteropModuleBuiltinsFactory.executeNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -425,6 +426,16 @@ public class PythonMessageResolution {
         private Object doCall(Object receiver, Object[] arguments) {
             Object[] convertedArgs = convertArgsNode.execute(arguments);
             return toForeign.executeConvert(callNode.execute(null, receiver, convertedArgs, new PKeyword[0]));
+        }
+
+        public static ExecuteNode create() {
+            return new ExecuteNode();
+
+        }
+
+        public static ExecuteNode createUncached() {
+            // TODO
+            return null;
         }
     }
 
