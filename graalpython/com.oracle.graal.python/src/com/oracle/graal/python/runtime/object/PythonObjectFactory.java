@@ -148,6 +148,10 @@ public final class PythonObjectFactory extends Node {
         return new PythonObjectFactory();
     }
 
+    public static PythonObjectFactory getUncached() {
+        return new PythonObjectFactory();
+    }
+    
     @SuppressWarnings("static-method")
     public final <T> T trace(T allocatedObject) {
         if (reportAllocations()) {
