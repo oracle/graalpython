@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -65,7 +64,6 @@ import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class PNodeWithContext extends Node {
@@ -158,7 +156,7 @@ public abstract class PNodeWithContext extends Node {
         if (callNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             if (isAdoptable()) {
-                callNode = null;
+                callNode = CallVarargsMethodNode.getUncached();
             } else {
                 callNode = insert(CallVarargsMethodNode.create());
             }

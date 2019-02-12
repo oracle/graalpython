@@ -71,6 +71,10 @@ public abstract class ArityCheckNode extends PNodeWithContext {
         return ArityCheckNodeGen.create();
     }
 
+    public static ArityCheckNode getUncached() {
+        return ArityCheckNodeGen.create();
+    }
+
     public abstract void execute(Object arityOrCallable, Object[] arguments, PKeyword[] keywords);
 
     private final ConditionProfile nonNameKwParam = ConditionProfile.createBinaryProfile();

@@ -43,15 +43,21 @@ package com.oracle.graal.python.nodes.argument;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
+@GenerateUncached
 public abstract class CreateArgumentsNode extends Node {
     public static CreateArgumentsNode create() {
         return CreateArgumentsNodeGen.create();
+    }
+
+    public static CreateArgumentsNode getUncached() {
+        return CreateArgumentsNodeGen.getUncached();
     }
 
     @Specialization(guards = {"userArguments.length == cachedLen", "(self == null) == selfIsNull"}, limit = "getVariableArgumentInlineCacheLimit()")
@@ -75,7 +81,7 @@ public abstract class CreateArgumentsNode extends Node {
     }
 
     @Specialization(replaces = "cached")
-    Object[] uncached(Object self, Object[] userArguments) {
+    static Object[] uncached(Object self, Object[] userArguments) {
         if (self == null) {
             return createWithUserArguments(userArguments.length, userArguments);
         } else {
