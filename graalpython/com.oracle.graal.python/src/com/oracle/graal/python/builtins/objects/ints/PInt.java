@@ -30,7 +30,13 @@ import java.math.BigInteger;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(InteropLibrary.class)
 public final class PInt extends PythonBuiltinObject {
 
     private final BigInteger value;
@@ -53,6 +59,116 @@ public final class PInt extends PythonBuiltinObject {
         return value.equals(BigInteger.ZERO);
     }
 
+    @ExportMessage
+    public boolean isNumber() {
+        return true;
+    }
+    
+    @ExportMessage
+    public boolean fitsInByte() {
+        if (this instanceof PInt) {
+            try {
+                byteValueExact();
+                return true;
+            } catch (ArithmeticException e) {
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    @ExportMessage
+    public byte asByte() {
+        return byteValueExact();
+    }
+    
+    @ExportMessage(limit="1")
+    boolean fitsInShort(@CachedLibrary("this.intValue()") InteropLibrary interop) {
+        try {
+            return interop.fitsInShort(intValueExact());
+        } catch (ArithmeticException e) {
+            return false;
+        }
+    }
+    
+    @ExportMessage(limit="1")
+    short asShort(@CachedLibrary("this.intValue()") InteropLibrary interop) throws UnsupportedMessageException {
+        try {
+            return interop.asShort(intValueExact());
+        } catch (ArithmeticException e) {
+            throw UnsupportedMessageException.create();
+        }
+    }
+    
+    @ExportMessage
+    public boolean fitsInInt() {
+        try {
+            intValueExact();
+            return true;
+        } catch (ArithmeticException e) {
+            return false;
+        }
+    }
+    
+    @ExportMessage
+    public int asInt() {
+        return this.intValueExact();
+    }
+    
+    @ExportMessage
+    public boolean fitsInLong() {
+        if (this instanceof PInt) {
+            try {
+                this.longValueExact();
+                return true;
+            } catch (ArithmeticException e) {
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    @ExportMessage
+    public long asLong() {
+        return this.longValueExact();
+    }
+    
+    @ExportMessage(limit="1")
+    boolean fitsInFloat(@CachedLibrary("this.longValue()") InteropLibrary interop) {
+        try {
+            return interop.fitsInFloat(longValueExact());
+        } catch (ArithmeticException e) {
+            return false;
+        }
+    }
+    
+    @ExportMessage(limit="1")
+    float asFloat(@CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
+        try {
+            return interop.asFloat(longValueExact());
+        } catch (ArithmeticException e) {
+            throw UnsupportedMessageException.create();
+        }
+    }
+    
+    @ExportMessage(limit="1")
+    boolean fitsInDouble(@CachedLibrary("this.longValue()") InteropLibrary interop) {
+        try {
+            return interop.fitsInDouble(longValueExact());
+        } catch (ArithmeticException e) {
+            return false;
+        }
+    }
+    
+    @ExportMessage(limit="1")
+    double asDouble(@CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
+        try {
+            return interop.asDouble(longValueExact());
+        } catch (ArithmeticException e) {
+            throw UnsupportedMessageException.create();
+        }
+    }
+    
     @Override
     public int hashCode() {
         return value.hashCode();
