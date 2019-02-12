@@ -268,7 +268,7 @@ public class JavaInteropTest {
             }
 
             @ExportMessage
-            boolean isMemberInvokable(String member) {
+            boolean isMemberInvocable(String member) {
                 return member.equals("getMyName");
             }
 

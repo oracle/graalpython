@@ -128,7 +128,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     // foreign Object
     protected Node createReadMessageNode() {
-        return InteropLibrary.getFactory().createCachedLimit(3);
+        return InteropLibrary.getFactory().createDispatched(3);
     }
 
     @Specialization(guards = {

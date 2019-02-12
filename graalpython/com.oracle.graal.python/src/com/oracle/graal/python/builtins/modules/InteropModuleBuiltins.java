@@ -451,7 +451,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             } else if (info.equals("modifiable")) {
                 return getInterop().isMemberModifiable(receiver, member);
             } else if (info.equals("invokable")) {
-                return getInterop().isMemberInvokable(receiver, member);
+                return getInterop().isMemberInvocable(receiver, member);
             } else if (info.equals("internal")) {
                 return getInterop().isMemberInternal(receiver, member);
             } else {

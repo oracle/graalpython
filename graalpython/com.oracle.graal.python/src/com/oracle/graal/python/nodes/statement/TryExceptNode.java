@@ -193,7 +193,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     }
 
     @ExportMessage
-    boolean isMemberInvokable(String name) {
+    boolean isMemberInvocable(String name) {
         return name.equals(StandardTags.TryBlockTag.CATCHES);
     }
 
