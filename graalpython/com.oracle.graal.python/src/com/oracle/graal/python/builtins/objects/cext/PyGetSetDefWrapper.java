@@ -40,14 +40,30 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Wraps a PythonObject to provide a native view with a shape like {@code PyGetSetDef}.
  */
+@ExportLibrary(InteropLibrary.class)
+@ImportStatic(SpecialMethodNames.class)
 public class PyGetSetDefWrapper extends PythonNativeWrapper {
 
     public PyGetSetDefWrapper(PythonObject delegate) {
@@ -61,5 +77,72 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
     @Override
     public ForeignAccess getForeignAccess() {
         return PyGetSetDefWrapperMRForeign.ACCESS;
+    }
+
+    @ExportMessage
+    boolean hasMembers() {
+        return true;
+    }
+
+    @ExportMessage
+    boolean isMemberReadable(String member) {
+        switch (member) {
+            case "name":
+            case "doc":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @ExportMessage
+    Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    Object readMember(String member,
+                      @Cached.Exclusive @Cached(allowUncached = true) ReadFieldNode readFieldNode) {
+        return readFieldNode.execute(this.getDelegate(), member);
+    }
+
+    @ImportStatic({SpecialMethodNames.class})
+    abstract static class ReadFieldNode extends Node {
+        public static final String NAME = "name";
+        public static final String DOC = "doc";
+
+        public abstract Object execute(Object delegate, String key);
+
+        protected boolean eq(String expected, String actual) {
+            return expected.equals(actual);
+        }
+
+        @Specialization(guards = {"eq(NAME, key)"})
+        Object getName(PythonObject object, @SuppressWarnings("unused") String key,
+                       @Cached("key") @SuppressWarnings("unused") String cachedKey,
+                       @Cached.Exclusive @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttrNode,
+                       @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                       @Cached.Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointer asCharPointerNode) {
+            Object doc = getAttrNode.executeObject(object, __NAME__);
+            if (doc == PNone.NONE) {
+                return toSulongNode.execute(PNone.NO_VALUE);
+            } else {
+                return asCharPointerNode.execute(doc);
+            }
+        }
+
+        @Specialization(guards = {"eq(DOC, key)"})
+        Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
+                      @Cached("key") @SuppressWarnings("unused") String cachedKey,
+                      @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttrNode,
+                      @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                      @Cached.Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointer asCharPointerNode) {
+            Object doc = getAttrNode.executeObject(object, __DOC__);
+            if (doc == PNone.NONE) {
+                return toSulongNode.execute(PNone.NO_VALUE);
+            } else {
+                return asCharPointerNode.execute(doc);
+            }
+        }
     }
 }
