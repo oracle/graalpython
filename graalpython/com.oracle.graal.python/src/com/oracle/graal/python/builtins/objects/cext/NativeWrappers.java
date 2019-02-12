@@ -723,10 +723,10 @@ public abstract class NativeWrappers {
         @ExportMessage
         public long asPointer(@CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
             Object nativePointer = this.getNativePointer();
-            if (nativePointer instanceof TruffleObject) {
-                return interopLibrary.asPointer(nativePointer);
+            if (nativePointer instanceof Long) {
+                return (long) nativePointer;
             }
-            return (long) nativePointer;
+            return interopLibrary.asPointer(nativePointer);
         }
 
     }
