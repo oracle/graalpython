@@ -41,13 +41,25 @@
 package com.oracle.graal.python.builtins.objects;
 
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.interop.PTypeUnboxNode;
+import com.oracle.graal.python.nodes.interop.PTypeUnboxNodeGen;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolutionForeign;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(InteropLibrary.class)
 public abstract class PythonAbstractObject implements TruffleObject, Comparable<Object> {
     private DynamicObjectNativeWrapper nativeWrapper;
 
+    @Override
     public final ForeignAccess getForeignAccess() {
         return PythonMessageResolutionForeign.ACCESS;
     }
@@ -60,4 +72,119 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         assert this.nativeWrapper == null;
         this.nativeWrapper = nativeWrapper;
     }
+    
+    public static PTypeUnboxNode create() {
+        return PTypeUnboxNodeGen.create();
+    }
+
+    
+    @ExportMessage
+    public boolean isNumber() {
+        return this instanceof PInt || this instanceof PFloat;
+    }
+    
+    @ExportMessage
+    public boolean isBoolean(@Cached.Exclusive @Cached() PythonObjectFactory pof) {
+        return pof.createInt(true) == this;
+    }
+
+    @ExportMessage
+    public boolean asBoolean(@Cached.Exclusive @Cached() PythonObjectFactory pof) {
+        return pof.createInt(true) == this;
+    }
+    
+    @ExportMessage
+    public boolean isString() {
+        return this instanceof PString;
+    }
+    
+    @ExportMessage
+    String asString() {
+        return ((PString)this).getValue();
+    }
+    
+    @ExportMessage
+    boolean fitsInFloat() {
+        return false;
+    }
+    
+    @ExportMessage
+    public float asFloat() {
+        return 0F;
+    }
+    
+    @ExportMessage
+    boolean fitsInDouble() {
+        return this instanceof PFloat;
+    }
+    
+    @ExportMessage
+    public double asDouble() {
+        return ((PFloat)this).getValue();
+    }
+
+    @ExportMessage
+    public boolean fitsInByte() {
+        if (this instanceof PInt) {
+            try {
+                ((PInt)this).byteValueExact();
+                return true;
+            } catch (ArithmeticException e) {
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    @ExportMessage
+    public byte asByte() {
+        return ((PInt)this).byteValueExact();
+    }
+    
+    @ExportMessage
+    public boolean fitsInShort() {
+        return false;
+    }
+    
+    @ExportMessage
+    public short asShort() {
+        return 0;
+    }
+    
+    @ExportMessage
+    public boolean fitsInInt() {
+        if (this instanceof PInt) {
+            try {
+                ((PInt)this).intValueExact();
+                return true;
+            } catch (ArithmeticException e) {
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    @ExportMessage
+    public int asInt() {
+        return ((PInt)this).intValueExact();
+    }
+    
+    @ExportMessage
+    public boolean fitsInLong() {
+        if (this instanceof PInt) {
+            try {
+                ((PInt)this).longValueExact();
+                return true;
+            } catch (ArithmeticException e) {
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    @ExportMessage
+    public long asLong() {
+        return ((PInt)this).longValueExact();
+    }
+    
 }
