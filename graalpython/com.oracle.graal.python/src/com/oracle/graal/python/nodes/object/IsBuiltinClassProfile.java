@@ -65,6 +65,10 @@ public final class IsBuiltinClassProfile {
         return new IsBuiltinClassProfile();
     }
 
+    public static IsBuiltinClassProfile getUncached() {
+        return new IsBuiltinClassProfile();
+    }
+
     public boolean profileIsAnyBuiltinException(PException object) {
         return profileIsAnyBuiltinClass(object.getExceptionObject().getLazyPythonClass());
     }

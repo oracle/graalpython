@@ -69,6 +69,10 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
         return WriteAttributeToDynamicObjectNodeGen.create();
     }
 
+    public static WriteAttributeToDynamicObjectNode getUncached() {
+        return WriteAttributeToDynamicObjectNodeGen.getUncached();
+    }
+
     protected static boolean compareKey(Object cachedKey, Object key) {
         return cachedKey == key;
     }

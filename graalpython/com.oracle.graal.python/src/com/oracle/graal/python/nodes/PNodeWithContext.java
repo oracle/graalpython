@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -63,19 +64,24 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class PNodeWithContext extends Node {
     @Child private PythonObjectFactory factory;
-    @Child private WriteAttributeToObjectNode writeCause;
+    @Child private WriteAttributeToDynamicObjectNode writeCause;
     @Child private CallVarargsMethodNode callNode;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected final PythonObjectFactory factory() {
         if (factory == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            factory = insert(PythonObjectFactory.create());
+            if (isAdoptable()) {
+                factory = getCore().factory();
+            } else {
+                factory = insert(PythonObjectFactory.create());
+            }
         }
         return factory;
     }
@@ -89,7 +95,7 @@ public abstract class PNodeWithContext extends Node {
     }
 
     public final PException raise(PBaseException exc) {
-        throw PException.fromObject(exc, this);
+        throw PException.fromObject(exc, NodeUtil.getEncapsulatingNode(this));
     }
 
     public PException raise(LazyPythonClass exceptionType) {
@@ -101,9 +107,14 @@ public abstract class PNodeWithContext extends Node {
         PBaseException baseException = factory().createBaseException(type, format, arguments);
         if (writeCause == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            writeCause = insert(WriteAttributeToObjectNode.create());
+            if (isAdoptable()) {
+                // we're an unadopted node
+                writeCause = WriteAttributeToDynamicObjectNode.getUncached();
+            } else {
+                writeCause = insert(WriteAttributeToDynamicObjectNode.create());
+            }
         }
-        writeCause.execute(baseException, SpecialAttributeNames.__CAUSE__, cause);
+        writeCause.execute(baseException.getStorage(), SpecialAttributeNames.__CAUSE__, cause);
         throw raise(baseException);
     }
 
@@ -146,7 +157,11 @@ public abstract class PNodeWithContext extends Node {
     public final PException raiseOSError(VirtualFrame frame, Object[] args) {
         if (callNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            callNode = insert(CallVarargsMethodNode.create());
+            if (isAdoptable()) {
+                callNode = null;
+            } else {
+                callNode = insert(CallVarargsMethodNode.create());
+            }
         }
         PBaseException error = (PBaseException) callNode.execute(frame, getBuiltinPythonClass(PythonBuiltinClassType.OSError), args, PKeyword.EMPTY_KEYWORDS);
         return raise(error);
@@ -174,16 +189,7 @@ public abstract class PNodeWithContext extends Node {
 
     protected Assumption singleContextAssumption() {
         CompilerAsserts.neverPartOfCompilation("the singleContextAssumption should only be retrieved in the interpreter");
-        PythonLanguage language = null;
-        RootNode rootNode = getRootNode();
-        if (rootNode != null) {
-            language = rootNode.getLanguage(PythonLanguage.class);
-        } else {
-            throw new IllegalStateException("a python node was executed without being adopted!");
-        }
-        if (language == null) {
-            language = PythonLanguage.getCurrent();
-        }
+        PythonLanguage language = PythonLanguage.getCurrent();
         return language.singleContextAssumption;
     }
 }
