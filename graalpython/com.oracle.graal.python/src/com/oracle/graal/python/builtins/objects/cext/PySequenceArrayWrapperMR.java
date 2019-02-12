@@ -46,10 +46,8 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.GetTypeIDNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ReadArrayItemNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.WriteArrayItemNodeGen;
@@ -60,15 +58,10 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -91,7 +84,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @MessageResolution(receiverType = PySequenceArrayWrapper.class)
 public class PySequenceArrayWrapperMR {
@@ -103,24 +95,6 @@ public class PySequenceArrayWrapperMR {
 
         public Object access(PySequenceArrayWrapper object) {
             return getTypeIDNode.execute(object.getDelegate());
-        }
-
-    }
-
-    @Resolve(message = "READ")
-    abstract static class ReadNode extends Node {
-        @Child private ReadArrayItemNode readArrayItemNode;
-
-        public Object access(PySequenceArrayWrapper object, Object key) {
-            return getReadArrayItemNode().execute(object.getDelegate(), key);
-        }
-
-        private ReadArrayItemNode getReadArrayItemNode() {
-            if (readArrayItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readArrayItemNode = insert(ReadArrayItemNode.create());
-            }
-            return readArrayItemNode;
         }
 
     }
@@ -140,98 +114,6 @@ public class PySequenceArrayWrapperMR {
             return value;
         }
 
-    }
-
-    @ImportStatic(SpecialMethodNames.class)
-    @TypeSystemReference(PythonTypes.class)
-    abstract static class ReadArrayItemNode extends Node {
-
-        @Child private ToSulongNode toSulongNode;
-
-        public abstract Object execute(Object arrayObject, Object idx);
-
-        @Specialization
-        Object doTuple(PTuple tuple, long idx,
-                        @Cached("createTupleGetItem()") TupleBuiltins.GetItemNode getItemNode) {
-            return getToSulongNode().execute(getItemNode.execute(tuple, idx));
-        }
-
-        @Specialization
-        Object doTuple(PList list, long idx,
-                        @Cached("createListGetItem()") ListBuiltins.GetItemNode getItemNode) {
-            return getToSulongNode().execute(getItemNode.execute(list, idx));
-        }
-
-        /**
-         * The sequence array wrapper of a {@code bytes} object represents {@code ob_sval}. We type
-         * it as {@code uint8_t*} and therefore we get a byte index. However, we return
-         * {@code uint64_t} since we do not know how many bytes are requested.
-         */
-        @Specialization
-        long doBytesI64(PIBytesLike bytesLike, long byteIdx,
-                        @Cached("createClassProfile()") ValueProfile profile,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
-                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
-            PIBytesLike profiled = profile.profile(bytesLike);
-            int len = lenNode.execute(profiled.getSequenceStorage());
-            // simulate sentinel value
-            if (byteIdx == len) {
-                return 0L;
-            }
-            int i = (int) byteIdx;
-            long result = 0;
-            SequenceStorage store = profiled.getSequenceStorage();
-            result |= getItemNode.executeInt(store, i);
-            if (i + 1 < len)
-                result |= ((long) getItemNode.executeInt(store, i + 1) << 8L) & 0xFF00L;
-            if (i + 2 < len)
-                result |= ((long) getItemNode.executeInt(store, i + 2) << 16L) & 0xFF0000L;
-            if (i + 3 < len)
-                result |= ((long) getItemNode.executeInt(store, i + 3) << 24L) & 0xFF000000L;
-            if (i + 4 < len)
-                result |= ((long) getItemNode.executeInt(store, i + 4) << 32L) & 0xFF00000000L;
-            if (i + 5 < len)
-                result |= ((long) getItemNode.executeInt(store, i + 5) << 40L) & 0xFF0000000000L;
-            if (i + 6 < len)
-                result |= ((long) getItemNode.executeInt(store, i + 6) << 48L) & 0xFF000000000000L;
-            if (i + 7 < len)
-                result |= ((long) getItemNode.executeInt(store, i + 7) << 56L) & 0xFF00000000000000L;
-            return result;
-        }
-
-        @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
-        Object doGeneric(Object object, long idx,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
-            return getToSulongNode().execute(getItemNode.executeObject(object, idx));
-        }
-
-        protected static ListBuiltins.GetItemNode createListGetItem() {
-            return ListBuiltinsFactory.GetItemNodeFactory.create();
-        }
-
-        protected static TupleBuiltins.GetItemNode createTupleGetItem() {
-            return TupleBuiltinsFactory.GetItemNodeFactory.create();
-        }
-
-        protected boolean isTuple(Object object) {
-            return object instanceof PTuple;
-        }
-
-        protected boolean isList(Object object) {
-            return object instanceof PList;
-        }
-
-        private ToSulongNode getToSulongNode() {
-            if (toSulongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(ToSulongNode.create());
-            }
-            return toSulongNode;
-        }
-
-        public static ReadArrayItemNode create() {
-            return ReadArrayItemNodeGen.create();
-        }
     }
 
     @ImportStatic(SpecialMethodNames.class)

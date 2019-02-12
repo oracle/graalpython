@@ -41,20 +41,42 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Layout;
 import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class NativeWrappers {
 
@@ -336,7 +358,8 @@ public abstract class NativeWrappers {
     /**
      * Wraps a sequence object (like a list) such that it behaves like a bare C array.
      */
-    public static class PySequenceArrayWrapper extends PythonNativeWrapper {
+    @ExportLibrary(InteropLibrary.class)
+    public static final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         /** Number of bytes that constitute a single element. */
         private final int elementAccessSize;
@@ -358,6 +381,118 @@ public abstract class NativeWrappers {
         public ForeignAccess getForeignAccess() {
             return PySequenceArrayWrapperMRForeign.ACCESS;
         }
+
+        @ExportMessage
+        final long getArraySize(
+                @Cached.Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                @Cached.Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
+            return lenNode.execute(getSequenceStorageNode.execute(this.getDelegate()));
+        }
+
+        @ExportMessage
+        final boolean hasArrayElements() {
+            return true;
+        }
+
+        @ExportMessage
+        final Object readArrayElement(long index,
+                           @Cached.Exclusive  @Cached(allowUncached = true) ReadArrayItemNode readArrayItemNode) {
+            return readArrayItemNode.execute(this.getDelegate(), index);
+        }
+
+        @ExportMessage
+        final boolean isArrayElementReadable(long identifier,
+                 @Cached.Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                 @Cached.Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
+            return 0 <= identifier && identifier < getArraySize(getSequenceStorageNode, lenNode);
+        }
+
+        @ImportStatic(SpecialMethodNames.class)
+        @TypeSystemReference(PythonTypes.class)
+        abstract static class ReadArrayItemNode extends Node {
+
+            public abstract Object execute(Object arrayObject, Object idx);
+
+            @Specialization
+            Object doTuple(PTuple tuple, long idx,
+                           @Cached(value = "createTupleGetItem()", allowUncached = true) TupleBuiltins.GetItemNode getItemNode,
+                           @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                return toSulongNode.execute(getItemNode.execute(tuple, idx));
+            }
+
+            @Specialization
+            Object doTuple(PList list, long idx,
+                           @Cached("createListGetItem()") ListBuiltins.GetItemNode getItemNode,
+                           @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                return toSulongNode.execute(getItemNode.execute(list, idx));
+            }
+
+            /**
+             * The sequence array wrapper of a {@code bytes} object represents {@code ob_sval}. We type
+             * it as {@code uint8_t*} and therefore we get a byte index. However, we return
+             * {@code uint64_t} since we do not know how many bytes are requested.
+             */
+            @Specialization
+            long doBytesI64(PIBytesLike bytesLike, long byteIdx,
+                            @Cached("createClassProfile()") ValueProfile profile,
+                            @Cached("create()") SequenceStorageNodes.LenNode lenNode,
+                            @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode,
+                            @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                PIBytesLike profiled = profile.profile(bytesLike);
+                int len = lenNode.execute(profiled.getSequenceStorage());
+                // simulate sentinel value
+                if (byteIdx == len) {
+                    return 0L;
+                }
+                int i = (int) byteIdx;
+                long result = 0;
+                SequenceStorage store = profiled.getSequenceStorage();
+                result |= getItemNode.executeInt(store, i);
+                if (i + 1 < len)
+                    result |= ((long) getItemNode.executeInt(store, i + 1) << 8L) & 0xFF00L;
+                if (i + 2 < len)
+                    result |= ((long) getItemNode.executeInt(store, i + 2) << 16L) & 0xFF0000L;
+                if (i + 3 < len)
+                    result |= ((long) getItemNode.executeInt(store, i + 3) << 24L) & 0xFF000000L;
+                if (i + 4 < len)
+                    result |= ((long) getItemNode.executeInt(store, i + 4) << 32L) & 0xFF00000000L;
+                if (i + 5 < len)
+                    result |= ((long) getItemNode.executeInt(store, i + 5) << 40L) & 0xFF0000000000L;
+                if (i + 6 < len)
+                    result |= ((long) getItemNode.executeInt(store, i + 6) << 48L) & 0xFF000000000000L;
+                if (i + 7 < len)
+                    result |= ((long) getItemNode.executeInt(store, i + 7) << 56L) & 0xFF00000000000000L;
+                return result;
+            }
+
+            @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
+            Object doGeneric(Object object, long idx,
+                             @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                             @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                return toSulongNode.execute(getItemNode.executeObject(object, idx));
+            }
+
+            protected static ListBuiltins.GetItemNode createListGetItem() {
+                return ListBuiltinsFactory.GetItemNodeFactory.create();
+            }
+
+            protected static TupleBuiltins.GetItemNode createTupleGetItem() {
+                return TupleBuiltinsFactory.GetItemNodeFactory.create();
+            }
+
+            protected boolean isTuple(Object object) {
+                return object instanceof PTuple;
+            }
+
+            protected boolean isList(Object object) {
+                return object instanceof PList;
+            }
+
+            public static ReadArrayItemNode create() {
+                return NativeWrappersFactory.PySequenceArrayWrapperFactory.ReadArrayItemNodeGen.create();
+            }
+        }
+
     }
 
     public static class TruffleObjectNativeWrapper extends PythonNativeWrapper {
