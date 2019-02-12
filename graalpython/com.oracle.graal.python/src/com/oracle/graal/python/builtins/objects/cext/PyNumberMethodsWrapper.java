@@ -40,14 +40,42 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_ADD;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_AND;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INDEX;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_MULTIPLY;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_MULTIPLY;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_POW;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_TRUE_DIVIDE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
+
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
 /**
  * Wraps a PythonObject to provide a native view with a shape like {@code PyNumberMethods}.
  */
+@ExportLibrary(InteropLibrary.class)
+@ImportStatic(SpecialMethodNames.class)
 public class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
     public PyNumberMethodsWrapper(PythonClass delegate) {
@@ -58,12 +86,85 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
         return o instanceof PyNumberMethodsWrapper;
     }
 
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return PyNumberMethodsWrapperMRForeign.ACCESS;
-    }
-
     public PythonClass getPythonClass() {
         return (PythonClass) getDelegate();
+    }
+
+    @ExportMessage
+    boolean hasMembers() {
+        return true;
+    }
+
+    @ExportMessage
+    boolean isMemberReadable(String member) {
+        switch (member) {
+            case NB_ADD:
+            case NB_AND:
+            case NB_INDEX:
+            case NB_POW:
+            case NB_TRUE_DIVIDE:
+            case NB_MULTIPLY:
+            case NB_INPLACE_MULTIPLY:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @ExportMessage
+    Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    Object readMember(String member,
+                      @Cached.Exclusive @Cached(allowUncached = true) ReadMethodNode readMethodNode,
+                      @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.ToSulongNode toSulongNode) {
+        // translate key to attribute name
+        PythonClass delegate = this.getPythonClass();
+        return toSulongNode.execute(readMethodNode.execute(delegate, member));
+    }
+
+    abstract static class ReadMethodNode extends PNodeWithContext {
+
+        public abstract Object execute(PythonClass clazz, String key);
+
+        @Specialization(limit = "99", guards = {"eq(cachedKey, key)"})
+        Object getMethod(PythonClass clazz, @SuppressWarnings("unused") String key,
+                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
+                         @Cached.Exclusive @Cached("createLookupNode(cachedKey)") LookupAttributeInMRONode lookupNode) {
+            if (lookupNode != null) {
+                return lookupNode.execute(clazz);
+            }
+            // TODO extend list
+            CompilerDirectives.transferToInterpreter();
+            throw UnknownIdentifierException.raise(key);
+        }
+
+        protected LookupAttributeInMRONode createLookupNode(String key) {
+            switch (key) {
+                case NB_ADD:
+                    return LookupAttributeInMRONode.create(__ADD__);
+                case NB_AND:
+                    return LookupAttributeInMRONode.create(__AND__);
+                case NB_INDEX:
+                    return LookupAttributeInMRONode.create(__INDEX__);
+                case NB_POW:
+                    return LookupAttributeInMRONode.create(__POW__);
+                case NB_TRUE_DIVIDE:
+                    return LookupAttributeInMRONode.create(__TRUEDIV__);
+                case NB_MULTIPLY:
+                    return LookupAttributeInMRONode.create(__MUL__);
+                case NB_INPLACE_MULTIPLY:
+                    return LookupAttributeInMRONode.create(__IMUL__);
+                default:
+                    // TODO extend list
+                    throw UnknownIdentifierException.raise(key);
+            }
+        }
+
+        protected static boolean eq(String expected, String actual) {
+            return expected.equals(actual);
+        }
     }
 }
