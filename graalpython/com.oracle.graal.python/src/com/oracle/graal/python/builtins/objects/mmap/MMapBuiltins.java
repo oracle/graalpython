@@ -277,7 +277,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 return res;
 
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, e.getMessage());
+                throw raise(PythonBuiltinClassType.OSError, getMessage(e));
             }
         }
 
@@ -301,7 +301,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
                 return factory().createBytes(s);
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, e.getMessage());
+                throw raise(PythonBuiltinClassType.OSError, getMessage(e));
             }
         }
 
@@ -344,7 +344,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 return PNone.NONE;
 
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, e.getMessage());
+                throw raise(PythonBuiltinClassType.OSError, getMessage(e));
             }
         }
 
@@ -376,7 +376,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 return PNone.NONE;
 
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, e.getMessage());
+                throw raise(PythonBuiltinClassType.OSError, getMessage(e));
             }
         }
 
@@ -468,7 +468,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 SeekableByteChannel channel = self.getChannel();
                 return position(channel) - self.getOffset();
             } catch (IOException e) {
-                throw raiseOSError(frame, OSErrorEnum.EIO, e.getMessage());
+                throw raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
             }
         }
     }
@@ -544,7 +544,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 }
                 return factory().createBytes(res);
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, e.getMessage());
+                throw raise(PythonBuiltinClassType.OSError, getMessage(e));
             }
         }
 
@@ -626,7 +626,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } catch (IOException e) {
                 errorProfile.enter();
-                throw raiseOSError(frame, OSErrorEnum.EIO, e.getMessage());
+                throw raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
             }
         }
 
@@ -687,7 +687,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 }
                 return -1;
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, e.getMessage());
+                throw raise(PythonBuiltinClassType.OSError, getMessage(e));
             }
         }
 
@@ -714,7 +714,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 }
                 return -1;
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, e.getMessage());
+                throw raise(PythonBuiltinClassType.OSError, getMessage(e));
             }
         }
 
@@ -752,7 +752,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 return size(self.getChannel()) - self.getOffset();
             } catch (IOException e) {
                 profile.enter();
-                throw raiseOSError(frame, OSErrorEnum.EIO, e.getMessage());
+                throw raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
             }
         }
 
@@ -767,7 +767,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 try {
                     return size(self.getChannel()) - self.getOffset();
                 } catch (IOException e) {
-                    throw raiseOSError(frame, OSErrorEnum.EIO, e.getMessage());
+                    throw raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
                 }
             }
             return self.getLength();
