@@ -40,11 +40,21 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(InteropLibrary.class)
+@ImportStatic(SpecialMethodNames.class)
 public class PyBufferProcsWrapper extends PythonNativeWrapper {
 
     public PyBufferProcsWrapper(PythonClass delegate) {
@@ -55,12 +65,52 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
         return o instanceof PyBufferProcsWrapper;
     }
 
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return PyBufferProcsWrapperMRForeign.ACCESS;
-    }
-
     public PythonClass getPythonClass() {
         return (PythonClass) getDelegate();
+    }
+
+    @ExportMessage
+    boolean hasMembers() {
+        return true;
+    }
+
+    @ExportMessage
+    boolean isMemberReadable(String member) {
+        switch (member) {
+            case "bf_getbuffer":
+            case "bf_releasebuffer":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @ExportMessage
+    Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    Object readMember(String member,
+                      @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.ToSulongNode toSulongNode) {
+        // translate key to attribute name
+        NativeWrappers.PythonClassNativeWrapper nativeWrapper = this.getPythonClass().getNativeWrapper();
+        // TODO handle case if nativeWrapper does not exist yet
+        Object result;
+        switch (member) {
+            case "bf_getbuffer":
+                result = nativeWrapper.getGetBufferProc();
+                break;
+            case "bf_releasebuffer":
+                // TODO
+                result = nativeWrapper.getReleaseBufferProc();
+                break;
+            default:
+                // TODO extend list
+                throw UnknownIdentifierException.raise(member);
+        }
+        // do not wrap result if exists since this is directly a native object
+        // use NO_VALUE for NULL
+        return result == null ? toSulongNode.execute(PNone.NO_VALUE) : result;
     }
 }
