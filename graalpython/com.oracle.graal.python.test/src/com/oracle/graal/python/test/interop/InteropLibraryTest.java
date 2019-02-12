@@ -28,6 +28,10 @@ public class InteropLibraryTest extends PythonTests {
         context.close();
     }
 
+    private Value v(String evalString) {
+        return context.eval("python", evalString);
+    }
+
     @Test
     public void testStringUnbox() {
         Value somePStr = context.eval("python", "" +
@@ -36,6 +40,10 @@ public class InteropLibraryTest extends PythonTests {
                         "X('123')");
         assertTrue(somePStr.isString());
         assertEquals(somePStr.asString(), "123");
+
+        assertFalse(v("123").isString());
+        assertFalse(v("12.3").isString());
+        assertFalse(v("{}").isString());
     }
 
     @Test
@@ -53,9 +61,9 @@ public class InteropLibraryTest extends PythonTests {
     public void testLongUnbox() {
         Value somePStr = context.eval("python", "2**64");
         assertFalse(somePStr.fitsInLong());
-        somePStr = context.eval("python", "2**63");
-        assertTrue(somePStr.fitsInLong());
-        assertFalse(somePStr.fitsInInt());
+        assertTrue(v("2**63 - 1").fitsInLong());
+        assertFalse(v("2**63").fitsInInt());
+        assertTrue(v("2**31").fitsInInt());
     }
 
     @Test
