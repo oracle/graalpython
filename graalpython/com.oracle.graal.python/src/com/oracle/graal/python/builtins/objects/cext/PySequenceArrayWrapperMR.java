@@ -45,9 +45,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.GetTypeIDNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeStorageNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -81,78 +79,6 @@ public class PySequenceArrayWrapperMR {
             return getTypeIDNode.execute(object.getDelegate());
         }
 
-    }
-
-    @Resolve(message = "TO_NATIVE")
-    abstract static class ToNativeNode extends Node {
-        @Child private ToNativeArrayNode toPyObjectNode = ToNativeArrayNode.create();
-        @Child private InvalidateNativeObjectsAllManagedNode invalidateNode = InvalidateNativeObjectsAllManagedNode.create();
-
-        Object access(PySequenceArrayWrapper obj) {
-            invalidateNode.execute();
-            if (!obj.isNative()) {
-                obj.setNativePointer(toPyObjectNode.execute(obj));
-            }
-            return obj;
-        }
-    }
-
-    abstract static class ToNativeArrayNode extends CExtBaseNode {
-        @CompilationFinal private TruffleObject PyObjectHandle_FromJavaObject;
-        @Child private PCallNativeNode callNativeBinary;
-        @Child private ToNativeStorageNode toNativeStorageNode;
-
-        public abstract Object execute(PySequenceArrayWrapper object);
-
-        @Specialization(guards = "isPSequence(object.getDelegate())")
-        Object doPSequence(PySequenceArrayWrapper object) {
-            PSequence sequence = (PSequence) object.getDelegate();
-            NativeSequenceStorage nativeStorage = getToNativeStorageNode().execute(sequence.getSequenceStorage());
-            if (nativeStorage == null) {
-                throw new AssertionError("could not allocate native storage");
-            }
-            // switch to native storage
-            sequence.setSequenceStorage(nativeStorage);
-            return nativeStorage.getPtr();
-        }
-
-        @Fallback
-        Object doGeneric(PySequenceArrayWrapper object) {
-            // TODO correct element size
-            return callBinaryIntoCapi(getNativeHandleForArray(), object, 8L);
-        }
-
-        private TruffleObject getNativeHandleForArray() {
-            if (PyObjectHandle_FromJavaObject == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyObjectHandle_FromJavaObject = importCAPISymbol(NativeCAPISymbols.FUN_NATIVE_HANDLE_FOR_ARRAY);
-            }
-            return PyObjectHandle_FromJavaObject;
-        }
-
-        protected boolean isPSequence(Object obj) {
-            return obj instanceof PSequence;
-        }
-
-        private ToNativeStorageNode getToNativeStorageNode() {
-            if (toNativeStorageNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toNativeStorageNode = insert(ToNativeStorageNode.create());
-            }
-            return toNativeStorageNode;
-        }
-
-        private Object callBinaryIntoCapi(TruffleObject fun, Object arg0, Object arg1) {
-            if (callNativeBinary == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNativeBinary = insert(PCallNativeNode.create());
-            }
-            return callNativeBinary.execute(fun, new Object[]{arg0, arg1});
-        }
-
-        public static ToNativeArrayNode create() {
-            return ToNativeArrayNodeGen.create();
-        }
     }
 
     @Resolve(message = "IS_POINTER")

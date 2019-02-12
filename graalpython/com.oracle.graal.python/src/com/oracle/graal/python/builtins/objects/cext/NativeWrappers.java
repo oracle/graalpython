@@ -60,6 +60,8 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -615,6 +617,53 @@ public abstract class NativeWrappers {
 
             public static WriteArrayItemNode create() {
                 return NativeWrappersFactory.PySequenceArrayWrapperFactory.WriteArrayItemNodeGen.create();
+            }
+        }
+
+        @ExportMessage
+        public void toNative(@Cached.Exclusive @Cached(allowUncached = true) ToNativeArrayNode toPyObjectNode,
+                             @Cached.Exclusive @Cached(allowUncached = true) PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            invalidateNode.execute();
+            if (!this.isNative()) {
+                this.setNativePointer(toPyObjectNode.execute(this));
+            }
+        }
+
+        abstract static class ToNativeArrayNode extends CExtNodes.CExtBaseNode {
+            public abstract Object execute(PySequenceArrayWrapper object);
+
+            @Specialization(guards = "isPSequence(object.getDelegate())")
+            Object doPSequence(PySequenceArrayWrapper object,
+                       @Cached.Exclusive @Cached PySequenceArrayWrapperMR.ToNativeStorageNode toNativeStorageNode) {
+                PSequence sequence = (PSequence) object.getDelegate();
+                NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(sequence.getSequenceStorage());
+                if (nativeStorage == null) {
+                    throw new AssertionError("could not allocate native storage");
+                }
+                // switch to native storage
+                sequence.setSequenceStorage(nativeStorage);
+                return nativeStorage.getPtr();
+            }
+
+            @Fallback
+            Object doGeneric(PySequenceArrayWrapper object) {
+                // TODO correct element size
+                PCallNativeNode callNativeBinary = PCallNativeNode.getUncached();
+                TruffleObject PyObjectHandle_FromJavaObject = importCAPISymbol(NativeCAPISymbols.FUN_NATIVE_HANDLE_FOR_ARRAY);
+                return callBinaryIntoCapi(PyObjectHandle_FromJavaObject, object, 8L, callNativeBinary);
+            }
+
+
+            protected boolean isPSequence(Object obj) {
+                return obj instanceof PSequence;
+            }
+
+            private Object callBinaryIntoCapi(TruffleObject fun, Object arg0, Object arg1, PCallNativeNode callNativeBinary) {
+                return callNativeBinary.execute(fun, new Object[]{arg0, arg1});
+            }
+
+            public static ToNativeArrayNode create() {
+                return NativeWrappersFactory.PySequenceArrayWrapperFactory.ToNativeArrayNodeGen.create();
             }
         }
 

@@ -73,4 +73,9 @@ public class PCallNativeNode extends PNodeWithContext {
     public static PCallNativeNode create() {
         return new PCallNativeNode();
     }
+
+    public static PCallNativeNode getUncached() {
+        // TODO: TRUFFLE LIBRARY GETUNCACHED MIGRATION IMPLEMENT ME
+        return null;
+    }
 }
