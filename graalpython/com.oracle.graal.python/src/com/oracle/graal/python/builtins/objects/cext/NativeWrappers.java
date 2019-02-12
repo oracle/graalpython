@@ -78,6 +78,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -712,6 +713,20 @@ public abstract class NativeWrappers {
             public static ToNativeStorageNode create() {
                 return NativeWrappersFactory.PySequenceArrayWrapperFactory.ToNativeStorageNodeGen.create();
             }
+        }
+
+        @ExportMessage
+        public boolean isPointer(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.IsPointerNode pIsPointerNode) {
+            return pIsPointerNode.execute(this);
+        }
+
+        @ExportMessage
+        public long asPointer(@CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+            Object nativePointer = this.getNativePointer();
+            if (nativePointer instanceof TruffleObject) {
+                return interopLibrary.asPointer(nativePointer);
+            }
+            return (long) nativePointer;
         }
 
     }
