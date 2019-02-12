@@ -76,9 +76,9 @@ public abstract class PNodeWithContext extends Node {
         if (factory == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             if (isAdoptable()) {
-                factory = getCore().factory();
-            } else {
                 factory = insert(PythonObjectFactory.create());
+            } else {
+                factory = getCore().factory();
             }
         }
         return factory;
@@ -106,10 +106,9 @@ public abstract class PNodeWithContext extends Node {
         if (writeCause == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             if (isAdoptable()) {
-                // we're an unadopted node
-                writeCause = WriteAttributeToDynamicObjectNode.getUncached();
-            } else {
                 writeCause = insert(WriteAttributeToDynamicObjectNode.create());
+            } else {
+                writeCause = WriteAttributeToDynamicObjectNode.getUncached();
             }
         }
         writeCause.execute(baseException.getStorage(), SpecialAttributeNames.__CAUSE__, cause);
@@ -156,9 +155,9 @@ public abstract class PNodeWithContext extends Node {
         if (callNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             if (isAdoptable()) {
-                callNode = CallVarargsMethodNode.getUncached();
-            } else {
                 callNode = insert(CallVarargsMethodNode.create());
+            } else {
+                callNode = CallVarargsMethodNode.getUncached();
             }
         }
         PBaseException error = (PBaseException) callNode.execute(frame, getBuiltinPythonClass(PythonBuiltinClassType.OSError), args, PKeyword.EMPTY_KEYWORDS);
