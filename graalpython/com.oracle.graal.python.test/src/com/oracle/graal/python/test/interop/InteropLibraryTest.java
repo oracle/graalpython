@@ -79,4 +79,9 @@ public class InteropLibraryTest extends PythonTests {
         somePStr = context.eval("python", "1");
         assertFalse(somePStr.isBoolean());
     }
+
+    @Test
+    public void testIsNull() {
+        assertTrue(v("None").isNull());
+    }
 }

@@ -63,7 +63,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         assert this.nativeWrapper == null;
         this.nativeWrapper = nativeWrapper;
     }
-    
+
     public static PTypeUnboxNode create() {
         return PTypeUnboxNodeGen.create();
     }
