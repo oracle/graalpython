@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,30 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
-
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.GetTypeIDNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeStorageNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.WriteArrayItemNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
-import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -74,16 +61,13 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @MessageResolution(receiverType = PySequenceArrayWrapper.class)
 public class PySequenceArrayWrapperMR {
@@ -97,136 +81,6 @@ public class PySequenceArrayWrapperMR {
             return getTypeIDNode.execute(object.getDelegate());
         }
 
-    }
-
-    @Resolve(message = "WRITE")
-    abstract static class WriteNode extends Node {
-        @Child private WriteArrayItemNode writeArrayItemNode;
-
-        public Object access(PySequenceArrayWrapper object, Object key, Object value) {
-            if (writeArrayItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeArrayItemNode = insert(WriteArrayItemNode.create());
-            }
-            writeArrayItemNode.execute(object.getDelegate(), key, value);
-
-            // A C expression assigning to an array returns the assigned value.
-            return value;
-        }
-
-    }
-
-    @ImportStatic(SpecialMethodNames.class)
-    @TypeSystemReference(PythonTypes.class)
-    abstract static class WriteArrayItemNode extends Node {
-        @Child private CExtNodes.ToJavaNode toJavaNode;
-        @Child private LookupAndCallTernaryNode setItemNode;
-        @Child private SequenceNodes.GetSequenceStorageNode getSequenceStorageNode;
-        @Child private SequenceStorageNodes.SetItemNode setByteItemNode;
-
-        public abstract Object execute(Object arrayObject, Object idx, Object value);
-
-        @Specialization
-        Object doBytes(PIBytesLike s, long idx, byte value) {
-            getSetByteItemNode().executeLong(getSequenceStorage(s), idx, value);
-            return value;
-        }
-
-        @Specialization
-        @ExplodeLoop
-        Object doBytes(PIBytesLike s, long idx, short value) {
-            for (int offset = 0; offset < Short.BYTES; offset++) {
-                getSetByteItemNode().executeLong(getSequenceStorage(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
-            }
-            return value;
-        }
-
-        @Specialization
-        @ExplodeLoop
-        Object doBytes(PIBytesLike s, long idx, int value) {
-            for (int offset = 0; offset < Integer.BYTES; offset++) {
-                getSetByteItemNode().executeLong(getSequenceStorage(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
-            }
-            return value;
-        }
-
-        @Specialization
-        @ExplodeLoop
-        Object doBytes(PIBytesLike s, long idx, long value) {
-            for (int offset = 0; offset < Long.BYTES; offset++) {
-                getSetByteItemNode().executeLong(getSequenceStorage(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
-            }
-            return value;
-        }
-
-        @Specialization
-        Object doList(PList s, long idx, Object value,
-                        @Cached("createSetListItem()") SequenceStorageNodes.SetItemNode setListItemNode,
-                        @Cached("createBinaryProfile()") ConditionProfile updateStorageProfile) {
-            SequenceStorage storage = s.getSequenceStorage();
-            SequenceStorage updatedStorage = setListItemNode.executeLong(storage, idx, getToJavaNode().execute(value));
-            if (updateStorageProfile.profile(storage != updatedStorage)) {
-                s.setSequenceStorage(updatedStorage);
-            }
-            return value;
-        }
-
-        @Specialization
-        Object doTuple(PTuple s, long idx, Object value,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setListItemNode) {
-            setListItemNode.executeLong(s.getSequenceStorage(), idx, getToJavaNode().execute(value));
-            return value;
-        }
-
-        @Fallback
-        Object doGeneric(Object sequence, Object idx, Object value) {
-            setItemNode().execute(sequence, idx, getToJavaNode().execute(value));
-            return value;
-        }
-
-        protected static SequenceStorageNodes.SetItemNode createSetListItem() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forArrayAssign(), () -> ListGeneralizationNode.create());
-        }
-
-        protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            return SequenceStorageNodes.SetItemNode.create("invalid item for assignment");
-        }
-
-        private CExtNodes.ToJavaNode getToJavaNode() {
-            if (toJavaNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toJavaNode = insert(CExtNodes.ToJavaNode.create(true));
-            }
-            return toJavaNode;
-        }
-
-        private SequenceStorage getSequenceStorage(PIBytesLike seq) {
-            if (getSequenceStorageNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getSequenceStorageNode = insert(GetSequenceStorageNode.create());
-            }
-            return getSequenceStorageNode.execute(seq);
-        }
-
-        private SequenceStorageNodes.SetItemNode getSetByteItemNode() {
-            if (setByteItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setByteItemNode = insert(createSetItem());
-            }
-            return setByteItemNode;
-        }
-
-        private LookupAndCallTernaryNode setItemNode() {
-            if (setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(LookupAndCallTernaryNode.create(__SETITEM__));
-            }
-            return setItemNode;
-        }
-
-        public static WriteArrayItemNode create() {
-            return WriteArrayItemNodeGen.create();
-        }
     }
 
     @Resolve(message = "TO_NATIVE")

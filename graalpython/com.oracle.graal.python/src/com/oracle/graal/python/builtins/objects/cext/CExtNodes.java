@@ -693,6 +693,11 @@ public abstract class CExtNodes {
         public static ToJavaNode create(boolean forcePointer) {
             return ToJavaNodeGen.create(forcePointer);
         }
+
+        public static ToJavaNode getUncached() {
+            // TODO: TRUFFLE LIBRARY GETUNCACHED MIGRATION IMPLEMENT ME
+            return null;
+        }
     }
 
     public abstract static class AsCharPointer extends CExtBaseNode {

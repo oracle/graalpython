@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,19 +58,24 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Layout;
 import com.oracle.truffle.api.object.ObjectType;
@@ -490,6 +495,126 @@ public abstract class NativeWrappers {
 
             public static ReadArrayItemNode create() {
                 return NativeWrappersFactory.PySequenceArrayWrapperFactory.ReadArrayItemNodeGen.create();
+            }
+        }
+
+        @ExportMessage
+        public void writeArrayElement(long index, Object value,
+              @Cached.Exclusive @Cached(allowUncached = true) WriteArrayItemNode writeArrayItemNode) {
+            writeArrayItemNode.execute(this.getDelegate(), index, value);
+        }
+
+        @ExportMessage
+        public void removeArrayElement(long index) throws UnsupportedMessageException, InvalidArrayIndexException {
+            throw UnsupportedMessageException.create();
+        }
+
+        @ExportMessage
+        public boolean isArrayElementModifiable(long index,
+                @Cached.Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                @Cached.Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
+            return 0 <= index && index < getArraySize(getSequenceStorageNode, lenNode);
+        }
+
+        @ExportMessage
+        public boolean isArrayElementInsertable(long index,
+                @Cached.Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                @Cached.Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
+            return 0 <= index && index <= getArraySize(getSequenceStorageNode, lenNode);
+        }
+
+        @ExportMessage
+        public boolean isArrayElementRemovable(long index,
+               @Cached.Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+               @Cached.Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
+            return 0 <= index && index < getArraySize(getSequenceStorageNode, lenNode);
+        }
+
+        @ImportStatic(SpecialMethodNames.class)
+        @TypeSystemReference(PythonTypes.class)
+        abstract static class WriteArrayItemNode extends Node {
+            public abstract Object execute(Object arrayObject, Object idx, Object value);
+
+            @Specialization
+            Object doBytes(PIBytesLike s, long idx, byte value,
+                           @Cached.Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                           @Cached.Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
+                setByteItemNode.executeLong(getSequenceStorageNode.execute(s), idx, value);
+                return value;
+            }
+
+            @Specialization
+            @ExplodeLoop
+            Object doBytes(PIBytesLike s, long idx, short value,
+                           @Cached.Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                           @Cached.Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
+                for (int offset = 0; offset < Short.BYTES; offset++) {
+                    setByteItemNode.executeLong(getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                }
+                return value;
+            }
+
+            @Specialization
+            @ExplodeLoop
+            Object doBytes(PIBytesLike s, long idx, int value,
+                           @Cached.Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                           @Cached.Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
+                for (int offset = 0; offset < Integer.BYTES; offset++) {
+                    setByteItemNode.executeLong(getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                }
+                return value;
+            }
+
+            @Specialization
+            @ExplodeLoop
+            Object doBytes(PIBytesLike s, long idx, long value,
+                           @Cached.Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                           @Cached.Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
+                for (int offset = 0; offset < Long.BYTES; offset++) {
+                    setByteItemNode.executeLong(getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                }
+                return value;
+            }
+
+            @Specialization
+            Object doList(PList s, long idx, Object value,
+                          @Cached.Shared("toJavaNode") @Cached CExtNodes.ToJavaNode toJavaNode,
+                          @Cached("createSetListItem()") SequenceStorageNodes.SetItemNode setListItemNode,
+                          @Cached("createBinaryProfile()") ConditionProfile updateStorageProfile) {
+                SequenceStorage storage = s.getSequenceStorage();
+                SequenceStorage updatedStorage = setListItemNode.executeLong(storage, idx, toJavaNode.execute(value));
+                if (updateStorageProfile.profile(storage != updatedStorage)) {
+                    s.setSequenceStorage(updatedStorage);
+                }
+                return value;
+            }
+
+            @Specialization
+            Object doTuple(PTuple s, long idx, Object value,
+                           @Cached.Shared("toJavaNode") @Cached CExtNodes.ToJavaNode toJavaNode,
+                           @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setListItemNode) {
+                setListItemNode.executeLong(s.getSequenceStorage(), idx, toJavaNode.execute(value));
+                return value;
+            }
+
+            @Fallback
+            Object doGeneric(Object sequence, Object idx, Object value) {
+                CExtNodes.ToJavaNode toJavaNode = CExtNodes.ToJavaNode.getUncached();
+                LookupAndCallTernaryNode setItemNode = LookupAndCallTernaryNode.getUncached();
+                setItemNode.execute(sequence, idx, toJavaNode.execute(value));
+                return value;
+            }
+
+            protected static SequenceStorageNodes.SetItemNode createSetListItem() {
+                return SequenceStorageNodes.SetItemNode.create(SequenceStorageNodes.NormalizeIndexNode.forArrayAssign(), () -> SequenceStorageNodes.ListGeneralizationNode.create());
+            }
+
+            protected static SequenceStorageNodes.SetItemNode createSetItem() {
+                return SequenceStorageNodes.SetItemNode.create("invalid item for assignment");
+            }
+
+            public static WriteArrayItemNode create() {
+                return NativeWrappersFactory.PySequenceArrayWrapperFactory.WriteArrayItemNodeGen.create();
             }
         }
 
