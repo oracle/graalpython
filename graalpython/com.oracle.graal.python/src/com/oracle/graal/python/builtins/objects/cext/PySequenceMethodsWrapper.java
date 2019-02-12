@@ -42,12 +42,22 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
 /**
  * Wraps a PythonObject to provide a native view with a shape like {@code PySequenceMethods}.
  */
+@ExportLibrary(InteropLibrary.class)
+@ImportStatic(SpecialMethodNames.class)
 public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     public PySequenceMethodsWrapper(PythonClass delegate) {
@@ -58,12 +68,47 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
         return o instanceof PySequenceMethodsWrapper;
     }
 
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return PySequenceMethodsWrapperMRForeign.ACCESS;
-    }
-
     public PythonClass getPythonClass() {
         return (PythonClass) getDelegate();
+    }
+
+    @ExportMessage
+    boolean hasMembers() {
+        return true;
+    }
+
+    @ExportMessage
+    boolean isMemberReadable(String member) {
+        switch (member) {
+            case NativeMemberNames.SQ_REPEAT:
+            case NativeMemberNames.SQ_ITEM:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @ExportMessage
+    Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    Object readMember(String member,
+             @Cached.Exclusive @Cached(value = "create(__MUL__)", allowUncached = true) LookupAttributeInMRONode getSqItemNode,
+             @Cached.Exclusive @Cached(value = "create(__GETITEM__)", allowUncached = true) LookupAttributeInMRONode getSqRepeatNode,
+             @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.ToSulongNode toSulongNode) {
+        Object result;
+        switch (member) {
+            case NativeMemberNames.SQ_REPEAT:
+                result = getSqRepeatNode.execute(this.getPythonClass());
+                break;
+            case NativeMemberNames.SQ_ITEM:
+                return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(this.getPythonClass()));
+            default:
+                // TODO extend list
+                throw UnknownIdentifierException.raise(member);
+        }
+        return toSulongNode.execute(result);
     }
 }
