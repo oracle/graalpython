@@ -45,11 +45,13 @@ package com.oracle.graal.python.nodes.interop;
 
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PGuards.class)
+@GenerateUncached
 public abstract class PForeignToPTypeNode extends Node {
 
     protected PForeignToPTypeNode() {

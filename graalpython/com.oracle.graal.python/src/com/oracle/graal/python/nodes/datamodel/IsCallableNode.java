@@ -40,46 +40,46 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
-
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 
+@GenerateUncached
 public abstract class IsCallableNode extends PDataModelEmulationNode {
-    @Child private LookupInheritedAttributeNode callAttrGetterNode = LookupInheritedAttributeNode.create(__CALL__);
-
     protected static boolean isNoCallable(Object callee) {
         return !PGuards.isCallable(callee);
     }
 
     @Specialization(guards = {"isNoCallable(callable) || isClass(callable)"})
-    protected boolean isSpecialCallable(Object callable) {
+    protected static boolean isSpecialCallable(Object callable,
+                    @Cached(value = "create(__CALL__)", allowUncached = true) LookupInheritedAttributeNode callAttrGetterNode) {
         Object call = callAttrGetterNode.execute(callable);
         return !isNoCallable(call);
     }
 
     @Specialization
-    protected boolean isMethod(@SuppressWarnings("unused") PMethod callable) {
+    protected static boolean isMethod(@SuppressWarnings("unused") PMethod callable) {
         return true;
     }
 
     @Specialization
-    protected boolean isBuiltinMethod(@SuppressWarnings("unused") PBuiltinMethod callable) {
+    protected static boolean isBuiltinMethod(@SuppressWarnings("unused") PBuiltinMethod callable) {
         return true;
     }
 
     @Specialization
-    protected boolean isFunctionCall(@SuppressWarnings("unused") PFunction callable) {
+    protected static boolean isFunctionCall(@SuppressWarnings("unused") PFunction callable) {
         return true;
     }
 
     @Specialization
-    protected boolean isBuiltinFunctionCall(@SuppressWarnings("unused") PBuiltinFunction callable) {
+    protected static boolean isBuiltinFunctionCall(@SuppressWarnings("unused") PBuiltinFunction callable) {
         return true;
     }
 
