@@ -41,16 +41,22 @@ ifndef PLATFORM
   $(error PLATFORM is undefined)
 endif
 
+ifeq ($(OS), darwin)
+SO_EXT=.dylib
+else
+SO_EXT=.so
+endif
+
 LIBDIR=${VPATH}/../lib-graalpython
-TARGET_LIB=${LIBDIR}/${PLATFORM}/capi.bc
+TARGET_LIB=${LIBDIR}/${PLATFORM}/capi${SO_EXT}
 
 SOURCE_FILES=$(wildcard ${VPATH}/src/*.c)
-OBJ_FILES=${SOURCE_FILES:${VPATH}/src/%.c=${PLATFORM}/%.bc}
+OBJ_FILES=${SOURCE_FILES:${VPATH}/src/%.c=${PLATFORM}/%.o}
 INCLUDE_FILES=$(wildcard ${VPATH}/include/*.h)
 
 MODULE_SOURCES=$(wildcard ${VPATH}/modules/*.c)
-MODULE_OBJ_FILES=$(MODULE_SOURCES:%.c=%.o)
-MODULE_TARGETS=$(MODULE_SOURCES:${VPATH}/modules/%.c=${LIBDIR}/modules/${PLATFORM}/%.bc)
+MODULE_OBJ_FILES=$(MODULE_SOURCES:${VPATH}/modules/%.c=modules/${PLATFORM}/%.o})
+MODULE_TARGETS=$(MODULE_SOURCES:${VPATH}/modules/%.c=${LIBDIR}/modules/${PLATFORM}/%${SO_EXT})
 
 HEADER_TARGETS=$(INCLUDE_FILES:${VPATH}/include/%.h=${VPATH}/../include/%.h)
 
@@ -58,28 +64,30 @@ HEADER_TARGETS=$(INCLUDE_FILES:${VPATH}/include/%.h=${VPATH}/../include/%.h)
 default: ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS}
 
 
-CFLAGS=${LLVM_TARGET_FLAGS} -O1 -ggdb -emit-llvm
-OPT_FLAGS=-mem2reg -globalopt -simplifycfg -constprop -always-inline -instcombine -dse -loop-simplify -reassociate -licm -gvn
+CFLAGS=${LLVM_TARGET_FLAGS} -fPIC
 WARNINGS=-Wno-int-to-pointer-cast -Wno-int-conversion -Wno-incompatible-pointer-types-discards-qualifiers -Wno-pointer-type-mismatch
-INCLUDES=-I${POLYGLOT_INC} -I${VPATH}/include
+INCLUDES=-I${VPATH}/include
 
+CLANG?=clang
 
 rebuild:
 	$(MAKE) -C ${VPATH} clean
 	$(MAKE) -C ${VPATH} ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS}
 
 ${TARGET_LIB}: ${OBJ_FILES}
-	$(QUIETLY) llvm-link -o $@ $+
+	$(QUIETLY) ${CLANG} -fPIC -shared -o $@ $+
 
-${PLATFORM}/%.bc: ${VPATH}/src/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h ${INCLUDE_FILES}
+${PLATFORM}/%.o: ${VPATH}/src/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h ${INCLUDE_FILES}
 	$(QUIETLY) mkdir -p $(dir $@)
-	$(QUIETLY) clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
-	$(QUIETLY) opt -o $@ $@ ${OPT_FLAGS}
+	$(QUIETLY) ${CLANG} ${CFLAGS} ${WARNINGS} ${INCLUDES} -c -o $@ -c $<
 
-${LIBDIR}/modules/${PLATFORM}/%.bc: ${VPATH}/modules/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h ${INCLUDE_FILES}
+modules/${PLATFORM}/%.o: modules/%.c Makefile src/capi.h ${INCLUDE_FILES}
 	$(QUIETLY) mkdir -p $(dir $@)
-	$(QUIETLY) clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
-	$(QUIETLY) opt -o $@ $@ ${OPT_FLAGS}
+	$(QUIETLY) ${CLANG} ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
+
+${LIBDIR}/modules/${PLATFORM}/%.so: modules/${PLATFORM}/%.o
+	$(QUIETLY) mkdir -p $(dir $@)
+	$(QUIETLY) ${CLANG} -fPIC -shared ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ $<
 
 ${VPATH}/../include/%.h: ${INCLUDE_FILES}
 	$(QUIETLY) mkdir -p ${VPATH}/../include/
