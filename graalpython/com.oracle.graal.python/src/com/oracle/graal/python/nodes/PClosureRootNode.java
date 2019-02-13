@@ -90,10 +90,13 @@ public abstract class PClosureRootNode extends PRootNode {
     }
 
     public String[] getFreeVars() {
-        String[] freeVars = new String[freeVarSlots.length];
-        for (int i = 0; i < freeVarSlots.length; i++) {
-            freeVars[i] = (String) freeVarSlots[i].getIdentifier();
+        if (freeVarSlots != null) {
+            String[] freeVars = new String[freeVarSlots.length];
+            for (int i = 0; i < freeVarSlots.length; i++) {
+                freeVars[i] = (String) freeVarSlots[i].getIdentifier();
+            }
+            return freeVars;
         }
-        return freeVars;
+        return null;
     }
 }
