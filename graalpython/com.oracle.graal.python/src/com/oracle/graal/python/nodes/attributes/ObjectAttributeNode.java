@@ -80,11 +80,11 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
         return getStorageNode.execute(c);
     }
 
-    protected boolean isDictUnsetOrSameAsStorage(PythonObject object) {
+    protected static boolean isDictUnsetOrSameAsStorage(PythonObject object) {
         return object.getDict() == null;
     }
 
-    protected Location getLocationOrNull(Property prop) {
+    protected static Location getLocationOrNull(Property prop) {
         return prop == null ? null : prop.getLocation();
     }
 

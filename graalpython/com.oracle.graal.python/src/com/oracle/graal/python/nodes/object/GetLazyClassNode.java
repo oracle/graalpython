@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.GetLazyClassNodeFactory.GetLazyClassCachedNodeGen;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -70,14 +71,6 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 public abstract class GetLazyClassNode extends PNodeWithContext {
     private final ValueProfile classProfile = ValueProfile.createClassProfile();
 
-    /*
-     * =============== Changes in this class must be mirrored in GetClassNode ===============
-     */
-
-    public static GetLazyClassNode create() {
-        return GetLazyClassNodeGen.create();
-    }
-
     public abstract LazyPythonClass execute(boolean object);
 
     public abstract LazyPythonClass execute(int object);
@@ -92,103 +85,144 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
 
     protected abstract LazyPythonClass executeGetClass(Object object);
 
-    @Specialization
-    protected static LazyPythonClass getIt(@SuppressWarnings("unused") GetSetDescriptor object) {
-        return PythonBuiltinClassType.GetSetDescriptor;
+    public static GetLazyClassNode create() {
+        return GetLazyClassCachedNodeGen.create();
     }
 
-    @Specialization
-    protected static LazyPythonClass getIt(@SuppressWarnings("unused") PNone object) {
-        return PythonBuiltinClassType.PNone;
+    public static GetLazyClassNode getUncached() {
+        return new GetLazyClassUncachedNode();
     }
 
-    @Specialization
-    protected static LazyPythonClass getIt(@SuppressWarnings("unused") PNotImplemented object) {
-        return PythonBuiltinClassType.PNotImplemented;
+    static class GetLazyClassUncachedNode extends GetLazyClassNode {
+        @Override
+        public LazyPythonClass execute(boolean object) {
+            return execute((Boolean) object);
+        }
+
+        @Override
+        public LazyPythonClass execute(int object) {
+            return execute((Integer) object);
+        }
+
+        @Override
+        public LazyPythonClass execute(long object) {
+            return execute((Long) object);
+        }
+
+        @Override
+        public LazyPythonClass execute(double object) {
+            return execute((Double) object);
+        }
+
+        @Override
+        protected LazyPythonClass executeGetClass(Object object) {
+            return GetLazyClassCachedNode.getItSlowPath(object);
+        }
     }
 
-    @Specialization
-    protected static LazyPythonClass getIt(@SuppressWarnings("unused") PEllipsis object) {
-        return PythonBuiltinClassType.PEllipsis;
-    }
+    abstract static class GetLazyClassCachedNode extends GetLazyClassNode {
+        /*
+         * =============== Changes in this class must be mirrored in GetClassNode ===============
+         */
 
-    @Specialization
-    protected static LazyPythonClass getIt(@SuppressWarnings("unused") boolean object) {
-        return PythonBuiltinClassType.Boolean;
-    }
+        @Specialization
+        protected static LazyPythonClass getIt(@SuppressWarnings("unused") GetSetDescriptor object) {
+            return PythonBuiltinClassType.GetSetDescriptor;
+        }
 
-    @Specialization
-    protected static LazyPythonClass getIt(@SuppressWarnings("unused") int object) {
-        return PythonBuiltinClassType.PInt;
-    }
-
-    @Specialization
-    protected static LazyPythonClass getIt(@SuppressWarnings("unused") long object) {
-        return PythonBuiltinClassType.PInt;
-    }
-
-    @Specialization
-    protected static LazyPythonClass getIt(@SuppressWarnings("unused") double object) {
-        return PythonBuiltinClassType.PFloat;
-    }
-
-    @Specialization
-    protected static LazyPythonClass getIt(@SuppressWarnings("unused") String object) {
-        return PythonBuiltinClassType.PString;
-    }
-
-    @Specialization
-    protected static PythonClass getIt(PythonNativeObject object,
-                    @Cached("create()") GetNativeClassNode getNativeClassNode) {
-        return getNativeClassNode.execute(object);
-    }
-
-    @Specialization
-    protected static LazyPythonClass getIt(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
-        return PythonBuiltinClassType.PInt;
-    }
-
-    @Specialization(guards = "object == cachedObject", assumptions = {"classStable", "singleContextAssumption"}, limit = "1")
-    protected static LazyPythonClass getPythonClassCached(@SuppressWarnings("unused") PythonObject object,
-                    @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
-                    @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @SuppressWarnings("unused") @Cached("cachedObject.getClassStableAssumption()") Assumption classStable,
-                    @Cached("object.getLazyPythonClass()") LazyPythonClass klass) {
-        return klass;
-    }
-
-    @Specialization(replaces = "getPythonClassCached")
-    protected static LazyPythonClass getPythonClassGeneric(PythonObject object) {
-        return object.getLazyPythonClass();
-    }
-
-    @Specialization(guards = "isForeignObject(object)")
-    protected static LazyPythonClass getIt(@SuppressWarnings("unused") TruffleObject object) {
-        return PythonBuiltinClassType.TruffleObject;
-    }
-
-    @TruffleBoundary
-    public static LazyPythonClass getItSlowPath(Object o) {
-        if (PGuards.isForeignObject(o)) {
-            return PythonBuiltinClassType.TruffleObject;
-        } else if (o instanceof String) {
-            return PythonBuiltinClassType.PString;
-        } else if (o instanceof Boolean) {
-            return PythonBuiltinClassType.Boolean;
-        } else if (o instanceof Double || o instanceof Float) {
-            return PythonBuiltinClassType.PFloat;
-        } else if (o instanceof Integer || o instanceof Long || o instanceof Short || o instanceof Byte) {
-            return PythonBuiltinClassType.PInt;
-        } else if (o instanceof PythonObject) {
-            return ((PythonObject) o).getLazyPythonClass();
-        } else if (o instanceof PEllipsis) {
-            return PythonBuiltinClassType.PEllipsis;
-        } else if (o instanceof PNotImplemented) {
-            return PythonBuiltinClassType.PNotImplemented;
-        } else if (o instanceof PNone) {
+        @Specialization
+        protected static LazyPythonClass getIt(@SuppressWarnings("unused") PNone object) {
             return PythonBuiltinClassType.PNone;
-        } else {
-            return null;
+        }
+
+        @Specialization
+        protected static LazyPythonClass getIt(@SuppressWarnings("unused") PNotImplemented object) {
+            return PythonBuiltinClassType.PNotImplemented;
+        }
+
+        @Specialization
+        protected static LazyPythonClass getIt(@SuppressWarnings("unused") PEllipsis object) {
+            return PythonBuiltinClassType.PEllipsis;
+        }
+
+        @Specialization
+        protected static LazyPythonClass getIt(@SuppressWarnings("unused") boolean object) {
+            return PythonBuiltinClassType.Boolean;
+        }
+
+        @Specialization
+        protected static LazyPythonClass getIt(@SuppressWarnings("unused") int object) {
+            return PythonBuiltinClassType.PInt;
+        }
+
+        @Specialization
+        protected static LazyPythonClass getIt(@SuppressWarnings("unused") long object) {
+            return PythonBuiltinClassType.PInt;
+        }
+
+        @Specialization
+        protected static LazyPythonClass getIt(@SuppressWarnings("unused") double object) {
+            return PythonBuiltinClassType.PFloat;
+        }
+
+        @Specialization
+        protected static LazyPythonClass getIt(@SuppressWarnings("unused") String object) {
+            return PythonBuiltinClassType.PString;
+        }
+
+        @Specialization
+        protected static PythonClass getIt(PythonNativeObject object,
+                        @Cached("create()") GetNativeClassNode getNativeClassNode) {
+            return getNativeClassNode.execute(object);
+        }
+
+        @Specialization
+        protected static LazyPythonClass getIt(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
+            return PythonBuiltinClassType.PInt;
+        }
+
+        @Specialization(guards = "object == cachedObject", assumptions = {"classStable", "singleContextAssumption"}, limit = "1")
+        protected static LazyPythonClass getPythonClassCached(@SuppressWarnings("unused") PythonObject object,
+                        @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
+                        @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
+                        @SuppressWarnings("unused") @Cached("cachedObject.getClassStableAssumption()") Assumption classStable,
+                        @Cached("object.getLazyPythonClass()") LazyPythonClass klass) {
+            return klass;
+        }
+
+        @Specialization(replaces = "getPythonClassCached")
+        protected static LazyPythonClass getPythonClassGeneric(PythonObject object) {
+            return object.getLazyPythonClass();
+        }
+
+        @Specialization(guards = "isForeignObject(object)")
+        protected static LazyPythonClass getIt(@SuppressWarnings("unused") TruffleObject object) {
+            return PythonBuiltinClassType.TruffleObject;
+        }
+
+        @TruffleBoundary
+        public static LazyPythonClass getItSlowPath(Object o) {
+            if (PGuards.isForeignObject(o)) {
+                return PythonBuiltinClassType.TruffleObject;
+            } else if (o instanceof String) {
+                return PythonBuiltinClassType.PString;
+            } else if (o instanceof Boolean) {
+                return PythonBuiltinClassType.Boolean;
+            } else if (o instanceof Double || o instanceof Float) {
+                return PythonBuiltinClassType.PFloat;
+            } else if (o instanceof Integer || o instanceof Long || o instanceof Short || o instanceof Byte) {
+                return PythonBuiltinClassType.PInt;
+            } else if (o instanceof PythonObject) {
+                return ((PythonObject) o).getLazyPythonClass();
+            } else if (o instanceof PEllipsis) {
+                return PythonBuiltinClassType.PEllipsis;
+            } else if (o instanceof PNotImplemented) {
+                return PythonBuiltinClassType.PNotImplemented;
+            } else if (o instanceof PNone) {
+                return PythonBuiltinClassType.PNone;
+            } else {
+                return null;
+            }
         }
     }
 
@@ -197,7 +231,7 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         if (PGuards.isForeignObject(o)) {
             return BuiltinNames.FOREIGN;
         }
-        LazyPythonClass lazyClass = getItSlowPath(o);
+        LazyPythonClass lazyClass = GetLazyClassCachedNode.getItSlowPath(o);
         if (lazyClass != null) {
             return lazyClass.getName();
         } else {

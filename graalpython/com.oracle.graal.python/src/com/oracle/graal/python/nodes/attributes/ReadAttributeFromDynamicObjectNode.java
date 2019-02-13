@@ -45,7 +45,9 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -55,6 +57,7 @@ import com.oracle.truffle.api.object.Shape;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
 @ReportPolymorphism
+@GenerateUncached
 public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttributeNode {
     public static ReadAttributeFromDynamicObjectNode create() {
         return ReadAttributeFromDynamicObjectNodeGen.create();
@@ -143,8 +146,9 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         return nextNode.execute(dynamicObject, key);
     }
 
-    @Specialization(replaces = "readDirect")
-    protected Object readIndirect(DynamicObject dynamicObject, Object key) {
+    @TruffleBoundary
+    @Specialization(replaces = {"readDirect", "readDirectFinal", "updateShapeAndRead"})
+    protected static Object readIndirect(DynamicObject dynamicObject, Object key) {
         Object value = dynamicObject.get(attrKey(key));
         if (value == null) {
             return PNone.NO_VALUE;

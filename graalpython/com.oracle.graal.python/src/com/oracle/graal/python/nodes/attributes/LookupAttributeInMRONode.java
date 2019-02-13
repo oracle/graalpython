@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -56,15 +57,19 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 @ImportStatic(PythonOptions.class)
 public abstract class LookupAttributeInMRONode extends PNodeWithContext {
-
     public abstract static class Dynamic extends PNodeWithContext {
-
-        public static LookupAttributeInMRONode.Dynamic create() {
-            return LookupAttributeInMRONodeGen.DynamicNodeGen.create();
-        }
-
         public abstract Object execute(LazyPythonClass klass, Object key);
 
+        public static LookupAttributeInMRONode.Dynamic create() {
+            return LookupAttributeInMRONodeGen.DynamicCachedNodeGen.create();
+        }
+
+        public static LookupAttributeInMRONode.Dynamic getUncached() {
+            return new DynamicUncached();
+        }
+    }
+
+    static abstract class DynamicCached extends Dynamic {
         protected static boolean compareStrings(String key, String cachedKey) {
             return cachedKey.equals(key);
         }
@@ -86,6 +91,22 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         protected Object lookup(PythonClass klass, Object key,
                         @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
             return LookupAttributeInMRONode.lookupSlow(klass, key, readAttrNode);
+        }
+    }
+
+    static class DynamicUncached extends Dynamic {
+        private final ReadAttributeFromObjectNode readAttrNode = ReadAttributeFromObjectNode.getUncached();
+
+        @Override
+        public Object execute(LazyPythonClass klass, Object key) {
+            if (klass instanceof PythonBuiltinClassType) {
+                return LookupAttributeInMRONode.findAttr(getCore(), (PythonBuiltinClassType) klass, key);
+            } else if (klass instanceof PythonClass) {
+                return LookupAttributeInMRONode.lookupSlow((PythonClass) klass, key, readAttrNode);
+            } else {
+                CompilerDirectives.transferToInterpreter();
+                throw new RuntimeException("not implemented: lookup inherited attribute from non-PythonClass");
+            }
         }
     }
 
