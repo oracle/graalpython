@@ -36,17 +36,21 @@
 # SOFTWARE.
 
 QUIETLY$(MX_VERBOSE) = @
-LIBDIR=${VPATH}/../lib-graalpython
-TARGET_LIB=${LIBDIR}/capi.bc
 
+ifndef PLATFORM
+  $(error PLATFORM is undefined)
+endif
+
+LIBDIR=${VPATH}/../lib-graalpython
+TARGET_LIB=${LIBDIR}/${PLATFORM}/capi.bc
 
 SOURCE_FILES=$(wildcard ${VPATH}/src/*.c)
-OBJ_FILES=${SOURCE_FILES:%.c=%.o}
+OBJ_FILES=${SOURCE_FILES:${VPATH}/src/%.c=${PLATFORM}/%.bc}
 INCLUDE_FILES=$(wildcard ${VPATH}/include/*.h)
 
 MODULE_SOURCES=$(wildcard ${VPATH}/modules/*.c)
 MODULE_OBJ_FILES=$(MODULE_SOURCES:%.c=%.o)
-MODULE_TARGETS=$(MODULE_SOURCES:${VPATH}/modules/%.c=${LIBDIR}/modules/%.bc)
+MODULE_TARGETS=$(MODULE_SOURCES:${VPATH}/modules/%.c=${LIBDIR}/modules/${PLATFORM}/%.bc)
 
 HEADER_TARGETS=$(INCLUDE_FILES:${VPATH}/include/%.h=${VPATH}/../include/%.h)
 
@@ -64,18 +68,16 @@ rebuild:
 	$(MAKE) -C ${VPATH} clean
 	$(MAKE) -C ${VPATH} ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS}
 
-${LIBDIR}/modules/%.bc: ${VPATH}/modules/%.o
-	$(QUIETLY) mkdir -p ${LIBDIR}/modules
-	$(QUIETLY) llvm-link -o $@ $+
-
 ${TARGET_LIB}: ${OBJ_FILES}
 	$(QUIETLY) llvm-link -o $@ $+
 
-${VPATH}/src/%.o: ${VPATH}/src/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h ${INCLUDE_FILES}
+${PLATFORM}/%.bc: ${VPATH}/src/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h ${INCLUDE_FILES}
+	$(QUIETLY) mkdir -p $(dir $@)
 	$(QUIETLY) clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
 	$(QUIETLY) opt -o $@ $@ ${OPT_FLAGS}
 
-${VPATH}/modules/%.o: ${VPATH}/modules/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h ${INCLUDE_FILES}
+${LIBDIR}/modules/${PLATFORM}/%.bc: ${VPATH}/modules/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h ${INCLUDE_FILES}
+	$(QUIETLY) mkdir -p $(dir $@)
 	$(QUIETLY) clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
 	$(QUIETLY) opt -o $@ $@ ${OPT_FLAGS}
 

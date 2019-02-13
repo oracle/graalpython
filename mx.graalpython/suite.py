@@ -228,6 +228,8 @@ suite = {
             ],
             "buildEnv": {
                 "POLYGLOT_INC": "<path:SULONG_LIBS>",
+                "CLANG": "<sulongToolchain:CC>",
+                "PLATFORM": "<sulongToolchainSubdir>",
             },
         },
 
