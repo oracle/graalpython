@@ -98,6 +98,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -214,7 +215,11 @@ public abstract class HashingStorageNodes {
         protected boolean isHashable(Object key) {
             if (isHashableNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                isHashableNode = insert(IsHashableNode.create());
+                if (isAdoptable()) {
+                    isHashableNode = insert(IsHashableNode.create());
+                } else {
+                    isHashableNode = IsHashableNode.getUncached();
+                }
             }
             return isHashableNode.execute(key);
         }
@@ -1062,6 +1067,10 @@ public abstract class HashingStorageNodes {
         }
 
         public static GetItemNode create() {
+            return GetItemNodeGen.create();
+        }
+
+        public static GetItemNode getUncached() {
             return GetItemNodeGen.create();
         }
     }
