@@ -157,6 +157,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         postInitialize(core);
     }
 
+    private static final String LLVM_LANGUAGE = "llvm";
+
     @Override
     public void postInitialize(PythonCore core) {
         super.postInitialize(core);
@@ -203,15 +205,18 @@ public class SysModuleBuiltins extends PythonBuiltins {
         int pathIdx = 0;
         if (option.length() > 0) {
             String[] split = option.split(PythonCore.PATH_SEPARATOR);
-            path = new Object[split.length + 3];
+            path = new Object[split.length + 4];
             System.arraycopy(split, 0, path, 0, split.length);
             pathIdx = split.length;
         } else {
-            path = new Object[3];
+            path = new Object[4];
         }
         path[pathIdx] = getScriptPath(env, args);
         path[pathIdx + 1] = PythonCore.getStdlibHome(env);
         path[pathIdx + 2] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
+        LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
+        ToolchainProvider toolchainProvider = env.uninitializedLookup(llvmInfo, ToolchainProvider.class);
+        path[pathIdx + 3] = String.join(PythonCore.FILE_SEPARATOR,PythonCore.getCoreHome(env), "modules", toolchainProvider.getToolchainSubdir());
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
     }
@@ -487,11 +492,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        protected String getToolPath(String tool) {
+        protected Object getToolPath(String tool) {
             Env env = getContext().getEnv();
             LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
             ToolchainProvider toolchainProvider = env.lookup(llvmInfo, ToolchainProvider.class);
-            return toolchainProvider.getToolPath(tool);
+            String toolPath = toolchainProvider.getToolPath(tool);
+            if (toolPath == null) {
+                return PNone.NONE;
+            }
+            return toolPath;
         }
     }
 
