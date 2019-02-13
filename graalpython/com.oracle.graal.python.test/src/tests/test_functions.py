@@ -108,3 +108,31 @@ def test_constructor():
     assert func_copy(1, 2) == (1, 2, 10, (), {})
     assert func_copy(1, 2, 3) == (1, 2, 3, (), {})
     assert func_copy(1, 2, 3, 4, 5, x=2) == (1, 2, 3, (4, 5), {'x': 2})
+
+
+def test_inner_function_with_defaults():
+    def make_func(sep):
+        def inner(sep=sep):
+            return sep
+        return inner
+
+    inner_a = make_func(",")
+    inner_b = make_func("\t")
+    assert inner_b() == "\t"
+    assert inner_a() == ","
+
+
+def test_inner_generator_with_defaults():
+    def make_func(sep):
+        closure_value = sep
+        def inner(sep=sep):
+            yield sep
+            yield closure_value
+        return inner
+
+    inner_a = make_func(",")()
+    inner_b = make_func("\t")()
+    assert next(inner_b) == "\t"
+    assert next(inner_b) == "\t"
+    assert next(inner_a) == ","
+    assert next(inner_a) == ","
