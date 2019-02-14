@@ -42,12 +42,12 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.Arity.KeywordName;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltinsFactory.GetFunctionDefaultsNodeFactory;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltinsFactory.GetFunctionKeywordDefaultsNodeFactory;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -63,7 +63,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFunction)
@@ -149,11 +148,11 @@ public class FunctionBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static Object[] extractDefaults(PFunction function) {
             List<Object> defaultValues = new ArrayList<>();
-            List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(function.getFunctionRootNode(), ReadKeywordNode.class);
-            for (ReadKeywordNode readKeywordNode : readKeywordNodes) {
-                Object defaultValue = readKeywordNode.getDefaultValue();
-                if (defaultValue != null) {
-                    defaultValues.add(defaultValue);
+            Arity arity = function.getArity();
+            Object[] defaults = function.getDefaults();
+            for (int i = 0; i < defaults.length && i < arity.getVarargsIdx(); i++) {
+                if (defaults[i] != null) {
+                    defaultValues.add(defaults[i]);
                 }
             }
             return defaultValues.toArray();
@@ -176,6 +175,7 @@ public class FunctionBuiltins extends PythonBuiltins {
 
         @Specialization
         Object defaults(PFunction self, PTuple defaults) {
+            assert defaults.getArray().length == self.getDefaults().length;
             self.setDefaults(defaults.getArray());
             return PNone.NONE;
         }
@@ -191,16 +191,15 @@ public class FunctionBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static PKeyword[] extractDefaults(PFunction function) {
             ArrayList<PKeyword> kwdefaults = new ArrayList<>();
-            List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(function.getFunctionRootNode(), ReadKeywordNode.class);
-            for (ReadKeywordNode readKeywordNode : readKeywordNodes) {
-                if (!readKeywordNode.canBePositional()) {
-                    Object defaultValue = readKeywordNode.getDefaultValue();
-                    if (defaultValue != null) {
-                        kwdefaults.add(new PKeyword(readKeywordNode.getName(), defaultValue));
-                    }
+            Arity arity = function.getArity();
+            if (arity.takesVarKeywordArgs()) {
+                int start = arity.getVarargsIdx() + 1;
+                Object[] defaults = function.getDefaults();
+                KeywordName[] keywordNames = arity.getKeywordNames();
+                for (int i = start, j = 0; i < defaults.length && j < keywordNames.length; i++, j++) {
+                    kwdefaults.add(new PKeyword(keywordNames[j].name, defaults[i]));
                 }
             }
-
             return kwdefaults.toArray(new PKeyword[0]);
         }
 

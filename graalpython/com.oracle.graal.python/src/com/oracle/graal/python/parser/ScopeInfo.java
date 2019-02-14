@@ -32,7 +32,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -79,7 +78,6 @@ public final class ScopeInfo {
      * function has default arguments.
      */
     private List<ExpressionNode> defaultArgumentNodes;
-    private ReadDefaultArgumentNode[] defaultArgumentReads;
 
     public ScopeInfo(String scopeId, ScopeKind kind, FrameDescriptor frameDescriptor, ScopeInfo parent) {
         this.scopeId = scopeId;
@@ -231,14 +229,6 @@ public final class ScopeInfo {
 
     public List<ExpressionNode> getDefaultArgumentNodes() {
         return defaultArgumentNodes;
-    }
-
-    public void setDefaultArgumentReads(ReadDefaultArgumentNode[] defaultArgumentReads) {
-        this.defaultArgumentReads = defaultArgumentReads;
-    }
-
-    public ReadDefaultArgumentNode[] getDefaultArgumentReads() {
-        return this.defaultArgumentReads;
     }
 
     public void createFrameSlotsForCellAndFreeVars() {

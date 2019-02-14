@@ -51,13 +51,13 @@ public class PFunction extends PythonObject {
     private final PCell[] closure;
     private final boolean isStatic;
     private PCode code;
-    private Object[] defaults;
+    private Object[] defaultValues;
 
     public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
         this(clazz, name, enclosingClassName, arity, callTarget, globals, null, closure);
     }
 
-    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, Object[] defaults,
+    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues,
                     PCell[] closure) {
         super(clazz);
         this.name = name;
@@ -66,7 +66,7 @@ public class PFunction extends PythonObject {
         this.arity = arity;
         this.callTarget = callTarget;
         this.globals = globals;
-        this.defaults = defaults;
+        this.defaultValues = defaultValues;
         this.closure = closure;
         addDefaultConstants(this.getStorage(), name, enclosingClassName);
     }
@@ -136,11 +136,11 @@ public class PFunction extends PythonObject {
     }
 
     public Object[] getDefaults() {
-        return defaults;
+        return defaultValues;
     }
 
     public void setDefaults(Object[] defaults) {
-        this.defaults = defaults;
+        this.defaultValues = defaults;
     }
 
     @TruffleBoundary

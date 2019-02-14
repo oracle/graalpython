@@ -542,8 +542,8 @@ public final class PythonObjectFactory extends Node {
                         numOfGeneratorForNode));
     }
 
-    public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
-        return trace(PGeneratorFunction.create(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, globals, closure));
+    public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure, Object[] defaultValues) {
+        return trace(PGeneratorFunction.create(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, globals, closure, defaultValues));
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {

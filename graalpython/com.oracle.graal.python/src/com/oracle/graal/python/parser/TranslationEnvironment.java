@@ -38,7 +38,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
@@ -218,16 +217,12 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         return getWriteNode(name, index -> ReadIndexedArgumentNode.create(index));
     }
 
-    public StatementNode getWriteKeywordArgumentToLocal(String name, ReadDefaultArgumentNode readDefaultArgumentNode) {
-        return getWriteNode(name, index -> ReadKeywordNode.create(name, index, readDefaultArgumentNode));
+    public StatementNode getWriteKeywordArgumentToLocal(String name) {
+        return getWriteNode(name, index -> ReadKeywordNode.create(name, index));
     }
 
     public StatementNode getWriteRequiredKeywordArgumentToLocal(String name) {
         return getWriteNode(name, index -> ReadKeywordNode.create(name));
-    }
-
-    public StatementNode getWriteRequiredKeywordArgumentToLocal(String name, ReadDefaultArgumentNode readDefaultArgumentNode) {
-        return getWriteNode(name, index -> ReadKeywordNode.create(name, readDefaultArgumentNode));
     }
 
     public StatementNode getWriteVarArgsToLocal(String name) {
@@ -376,14 +371,6 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
 
     protected boolean hasDefaultArguments() {
         return currentScope.getDefaultArgumentNodes() != null && currentScope.getDefaultArgumentNodes().size() > 0;
-    }
-
-    protected void setDefaultArgumentReads(ReadDefaultArgumentNode[] defaultReads) {
-        currentScope.setDefaultArgumentReads(defaultReads);
-    }
-
-    protected ReadDefaultArgumentNode[] getDefaultArgumentReads() {
-        return currentScope.getDefaultArgumentReads();
     }
 
     public FrameSlot getReturnSlot() {
