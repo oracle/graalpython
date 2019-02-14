@@ -45,7 +45,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -54,15 +53,11 @@ import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
-import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonParser;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -70,9 +65,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-import org.graalvm.polyglot.io.ByteSequence;
 
 public final class PCode extends PythonBuiltinObject {
     private final long FLAG_POS_GENERATOR = 5;
@@ -314,15 +307,16 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    public void extractCodeString(RootNode rootNode) {
+    private static byte[] extractCodeString(RootNode rootNode) {
         RootNode funcRootNode = rootNode;
         if (rootNode instanceof GeneratorFunctionRootNode) {
             funcRootNode = ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
         }
         SourceSection sourceSection = funcRootNode.getSourceSection();
         if (sourceSection != null) {
-            this.codestring = sourceSection.getCharacters().toString().getBytes();
+            return sourceSection.getCharacters().toString().getBytes();
         }
+        return null;
     }
 
     public RootNode getRootNode() {
@@ -416,7 +410,7 @@ public final class PCode extends PythonBuiltinObject {
 
     public byte[] getCodestring() {
         if (codestring == null && hasRootNode()) {
-            extractCodeString(getRootNode());
+            this.codestring = extractCodeString(getRootNode());
         }
         return codestring;
     }
