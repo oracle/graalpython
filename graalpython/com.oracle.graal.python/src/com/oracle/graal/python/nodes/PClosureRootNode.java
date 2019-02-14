@@ -97,6 +97,6 @@ public abstract class PClosureRootNode extends PRootNode {
             }
             return freeVars;
         }
-        return null;
+        return new String[0];
     }
 }
