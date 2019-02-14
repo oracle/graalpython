@@ -163,6 +163,7 @@ import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -685,16 +686,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setPFrame(args, factory().createPFrame(globals));
             RootCallTarget rootCallTarget = code.getRootCallTarget();
             if (rootCallTarget == null) {
-                Source src = Source.newBuilder("python", new String(code.getCodestring()), code.getName()).build();
-                Node root = getCore().getParser().parse(ParserMode.File, getCore(), src, null);
-                if (root instanceof RootNode) {
-                    rootCallTarget = Truffle.getRuntime().createCallTarget((RootNode) root);
-                }
+                rootCallTarget = extractRootCallTargetFromSource(code);
             }
             if (rootCallTarget == null) {
                 throw raise(ValueError, "cannot create the rootCallTarget from the code object: %p", code);
             }
             return indirectCallNode.call(rootCallTarget, args);
+        }
+
+        @TruffleBoundary
+        private RootCallTarget extractRootCallTargetFromSource(PCode code) {
+            Source src = Source.newBuilder("python", new String(code.getCodestring()), code.getName()).build();
+            Node root = getCore().getParser().parse(ParserMode.File, getCore(), src, null);
+            if (root instanceof RootNode) {
+                return Truffle.getRuntime().createCallTarget((RootNode) root);
+            }
+            return null;
         }
 
         @Specialization(guards = {"isMapping(locals)"})
