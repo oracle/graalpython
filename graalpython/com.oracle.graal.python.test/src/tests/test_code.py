@@ -77,6 +77,8 @@ def test_firstlineno():
 
 
 def test_code_attributes():
+    import sys
+
     code = wrapper().__code__
     assert code.co_argcount == 3
     assert code.co_kwonlyargcount == 0
@@ -85,7 +87,8 @@ def test_code_attributes():
     assert code.co_flags & (1 << 5)
     assert not code.co_flags & (1 << 2)
     assert not code.co_flags & (1 << 3)
-    # assert code.co_code
+    if sys.implementation.name == 'graalpython':
+        assert code.co_code.decode().strip() == wrapper().__truffle_source__.strip()
     # assert code.co_consts
     # assert set(code.co_names) == {'set', 'TypeError', 'print'}
     assert set(code.co_varnames) == {'arg_l', 'kwarg_case', 'kwarg_other', 'loc_1', 'loc_3', 'inner_func'}
@@ -133,3 +136,28 @@ def test_code_copy():
     assert code.co_lnotab == code2.co_lnotab
     assert set(code.co_freevars) == set(code2.co_freevars)
     assert set(code.co_cellvars) == set(code2.co_cellvars)
+
+
+def test_module_code():
+    import sys
+    m = __import__('package.moduleA')
+    with open(m.__file__, 'r') as MODULE:
+        source = MODULE.read()
+        code = compile(source, m.__file__, 'exec')
+        assert code.co_argcount == 0
+        assert code.co_kwonlyargcount == 0
+        assert code.co_nlocals == 0
+        # assert code.co_stacksize == 0
+        # assert code.co_flags == 0
+        if sys.implementation.name == 'graalpython':
+            assert code.co_code.decode().strip() == source.strip()
+        # assert code.co_consts == tuple()
+        # assert set(code.co_names) == set()
+        assert set(code.co_varnames) == set()
+        assert code.co_filename.endswith("__init__.py")
+        assert code.co_name.startswith("<module")
+        if sys.implementation.name == 'graalpython':
+            assert code.co_firstlineno == 1
+        # assert code.co_lnotab  == b''
+        assert code.co_freevars == tuple()
+        assert code.co_cellvars == tuple()
