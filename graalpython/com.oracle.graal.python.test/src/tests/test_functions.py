@@ -122,17 +122,71 @@ def test_inner_function_with_defaults():
     assert inner_a() == ","
 
 
+def test_inner_function_with_closure():
+    def make_func(sep):
+        def inner():
+            return sep
+        return inner
+
+    inner_a = make_func(",")
+    inner_b = make_func("\t")
+    assert inner_a() == ","
+    assert inner_b() == "\t"
+
+
 def test_inner_generator_with_defaults():
     def make_func(sep):
-        closure_value = sep
         def inner(sep=sep):
             yield sep
+        return inner
+
+    inner_a = make_func(",")()
+    inner_b = make_func("\t")()
+    assert next(inner_b) == "\t"
+    assert next(inner_a) == ","
+
+
+def test_inner_generator_with_closure():
+    def make_func(sep):
+        closure_value = sep
+        def inner():
             yield closure_value
         return inner
 
     inner_a = make_func(",")()
     inner_b = make_func("\t")()
     assert next(inner_b) == "\t"
-    assert next(inner_b) == "\t"
     assert next(inner_a) == ","
-    assert next(inner_a) == ","
+
+
+def test_function_changes_defaults():
+    def foo(a):
+        return a
+
+    assert foo.__defaults__ is None
+    assert foo.__kwdefaults__ is None
+    assert_raises(TypeError, foo)
+
+    foo.__defaults__ = (1,)
+    assert foo() == 1
+
+    foo.__kwdefaults__ = {"a": 12}
+    assert foo() == 1
+
+    foo.__defaults__ = None
+    assert_raises(TypeError, foo)
+
+
+def test_function_changes_kwdefaults():
+    def foo(*args, x=1):
+        return x
+
+    assert foo.__defaults__ is None
+    assert foo.__kwdefaults__ == {"x": 1}
+    assert foo() == 1
+
+    foo.__kwdefaults__ = {"x": 32}
+    assert foo() == 32
+
+    foo.__kwdefaults__ = None
+    assert_raises(TypeError, foo)
