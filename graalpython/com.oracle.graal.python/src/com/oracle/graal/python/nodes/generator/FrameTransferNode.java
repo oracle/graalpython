@@ -90,7 +90,7 @@ public abstract class FrameTransferNode extends FrameSlotNode {
         return right;
     }
 
-    @Specialization(guards = "isObjectKind(frame)")
+    @Specialization(guards = "isOrSetObjectKind(frame)")
     public Object write(VirtualFrame frame, Object right) {
         setObject(getCargoFrame(frame), right);
         return right;
