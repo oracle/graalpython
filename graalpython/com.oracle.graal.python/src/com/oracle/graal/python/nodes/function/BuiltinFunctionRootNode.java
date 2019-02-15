@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,11 +29,9 @@ import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
@@ -186,14 +184,12 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         // read named keyword arguments
         for (int i = 0; i < builtin.keywordArguments().length; i++) {
             String name = builtin.keywordArguments()[i];
-            ReadDefaultArgumentNode defaultNode = new ReadDefaultArgumentNode();
-            defaultNode.setValue(PNone.NO_VALUE);
             if (!builtin.takesVarArgs()) {
                 // if there's no splat, we also accept the keywords positionally
-                args.add(ReadKeywordNode.create(name, i + numOfPositionalArgs, defaultNode));
+                args.add(ReadKeywordNode.create(name, i + numOfPositionalArgs));
             } else {
                 // if there is a splat, keywords have to be passed by name
-                args.add(ReadKeywordNode.create(name, defaultNode));
+                args.add(ReadKeywordNode.create(name));
             }
         }
 

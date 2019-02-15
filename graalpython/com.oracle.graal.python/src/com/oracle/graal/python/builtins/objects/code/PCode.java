@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -436,7 +436,11 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public Arity getArity() {
-        return new Arity(this.getName(), this.getMinNumOfPositionalArgs(), this.getMaxNumOfPositionalArgs(), this.takesVarKeywordArgs(), this.takesVarArgs(), null, this.getKeywordNames());
+        int varargsIdx = -1;
+        if (takesVarArgs()) {
+            varargsIdx = getArgcount() - getKwonlyargcount();
+        }
+        return new Arity(this.getName(), this.getMinNumOfPositionalArgs(), this.getMaxNumOfPositionalArgs(), this.takesVarKeywordArgs(), varargsIdx, null, this.getKeywordNames());
     }
 
     public RootCallTarget getRootCallTarget() {

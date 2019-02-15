@@ -38,13 +38,13 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -218,16 +218,12 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         return getWriteNode(name, index -> ReadIndexedArgumentNode.create(index));
     }
 
-    public StatementNode getWriteKeywordArgumentToLocal(String name, ReadDefaultArgumentNode readDefaultArgumentNode) {
-        return getWriteNode(name, index -> ReadKeywordNode.create(name, index, readDefaultArgumentNode));
+    public StatementNode getWriteKeywordArgumentToLocal(String name) {
+        return getWriteNode(name, index -> ReadKeywordNode.create(name, index));
     }
 
     public StatementNode getWriteRequiredKeywordArgumentToLocal(String name) {
         return getWriteNode(name, index -> ReadKeywordNode.create(name));
-    }
-
-    public StatementNode getWriteRequiredKeywordArgumentToLocal(String name, ReadDefaultArgumentNode readDefaultArgumentNode) {
-        return getWriteNode(name, index -> ReadKeywordNode.create(name, readDefaultArgumentNode));
     }
 
     public StatementNode getWriteVarArgsToLocal(String name) {
@@ -369,21 +365,24 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         currentScope.setDefaultArgumentNodes(defaultArgs);
     }
 
+    protected void setDefaultKwArgumentNodes(List<KwDefaultExpressionNode> defaultArgs) {
+        currentScope.setDefaultKwArgumentNodes(defaultArgs);
+    }
+
     protected List<ExpressionNode> getDefaultArgumentNodes() {
-        List<ExpressionNode> defaultArgs = currentScope.getDefaultArgumentNodes();
-        return defaultArgs;
+        return currentScope.getDefaultArgumentNodes();
+    }
+
+    protected List<KwDefaultExpressionNode> getDefaultKwArgumentNodes() {
+        return currentScope.getDefaultKwArgumentNodes();
     }
 
     protected boolean hasDefaultArguments() {
         return currentScope.getDefaultArgumentNodes() != null && currentScope.getDefaultArgumentNodes().size() > 0;
     }
 
-    protected void setDefaultArgumentReads(ReadDefaultArgumentNode[] defaultReads) {
-        currentScope.setDefaultArgumentReads(defaultReads);
-    }
-
-    protected ReadDefaultArgumentNode[] getDefaultArgumentReads() {
-        return currentScope.getDefaultArgumentReads();
+    protected boolean hasDefaultKwArguments() {
+        return currentScope.getDefaultKwArgumentNodes() != null && currentScope.getDefaultKwArgumentNodes().size() > 0;
     }
 
     public FrameSlot getReturnSlot() {

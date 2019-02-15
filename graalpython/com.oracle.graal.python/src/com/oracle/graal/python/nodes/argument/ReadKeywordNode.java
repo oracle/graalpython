@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -42,36 +42,23 @@ public abstract class ReadKeywordNode extends ReadArgumentNode {
     private final ValueProfile profile = ValueProfile.createClassProfile();
 
     @Child private ReadIndexedArgumentNode indexedRead;
-    @Child private ReadDefaultArgumentNode defaultNode;
 
     public static ReadKeywordNode create(String name) {
         return ReadKeywordNodeGen.create(name);
     }
 
-    public static ReadKeywordNode create(String name, int idx, ReadDefaultArgumentNode defaultNode) {
-        return ReadKeywordNodeGen.create(name, idx, defaultNode);
-    }
-
-    public static ReadKeywordNode create(String name, ReadDefaultArgumentNode defaultNode) {
-        return ReadKeywordNodeGen.create(name, defaultNode);
+    public static ReadKeywordNode create(String name, int idx) {
+        return ReadKeywordNodeGen.create(name, idx);
     }
 
     ReadKeywordNode(String name) {
         this.name = name;
         this.indexedRead = null;
-        this.defaultNode = null;
     }
 
-    ReadKeywordNode(String name, int idx, ReadDefaultArgumentNode defaultNode) {
+    ReadKeywordNode(String name, int idx) {
         this.name = name;
         this.indexedRead = ReadIndexedArgumentNode.create(idx);
-        this.defaultNode = defaultNode;
-    }
-
-    ReadKeywordNode(String name, ReadDefaultArgumentNode defaultNode) {
-        this.name = name;
-        this.indexedRead = null;
-        this.defaultNode = defaultNode;
     }
 
     public boolean canBePositional() {
@@ -79,7 +66,7 @@ public abstract class ReadKeywordNode extends ReadArgumentNode {
     }
 
     public boolean isRequired() {
-        return defaultNode == null;
+        return true;
     }
 
     private static PKeyword getKeyword(VirtualFrame frame, String name) {
@@ -131,11 +118,9 @@ public abstract class ReadKeywordNode extends ReadArgumentNode {
             }
         }
         if (keyword == null) {
-            if (defaultNode == null) {
-                throw raise(TypeError, "missing required keyword-only argument: '%s'", name);
-            } else {
-                return profile.profile(defaultNode.execute());
-            }
+// CompilerDirectives.transferToInterpreter();
+// throw new IllegalStateException("missing required keyword-only argument: " + name);
+            return PNone.NO_VALUE;
         } else {
             return profile.profile(keyword.getValue());
         }
@@ -143,12 +128,5 @@ public abstract class ReadKeywordNode extends ReadArgumentNode {
 
     public String getName() {
         return name;
-    }
-
-    public Object getDefaultValue() {
-        if (defaultNode != null) {
-            return defaultNode.execute();
-        }
-        return null;
     }
 }
