@@ -82,9 +82,9 @@ public abstract class WriteLocalVariableNode extends StatementNode implements Wr
         public abstract Object executeWith(VirtualFrame frame, Object value);
 
         @Specialization(guards = "isBooleanKind(frame)")
-        public boolean write(VirtualFrame frame, boolean right) {
-            frame.setBoolean(frameSlot, right);
-            return right;
+        public boolean write(VirtualFrame frame, boolean value) {
+            frame.setBoolean(frameSlot, value);
+            return value;
         }
 
         @Specialization(guards = "isIntegerKind(frame)")
@@ -100,23 +100,25 @@ public abstract class WriteLocalVariableNode extends StatementNode implements Wr
             return longValue;
         }
 
-        @Specialization(guards = {"isPrimitiveInt(value)", "!value.isNative()", "isOrSetObjectKind(frame)"}, rewriteOn = ArithmeticException.class)
+        @Specialization(guards = {"isPrimitiveInt(value)", "!value.isNative()"}, rewriteOn = ArithmeticException.class)
         public long writeSmallPIntAsObject(VirtualFrame frame, PInt value) {
+            ensureObjectKind(frame);
             long longValue = value.longValueExact();
             frame.setObject(frameSlot, longValue);
             return longValue;
         }
 
         @Specialization(guards = "isDoubleKind(frame)")
-        public double write(VirtualFrame frame, double right) {
-            frame.setDouble(frameSlot, right);
-            return right;
+        public double write(VirtualFrame frame, double value) {
+            frame.setDouble(frameSlot, value);
+            return value;
         }
 
-        @Specialization(guards = "isOrSetObjectKind(frame)")
-        public Object write(VirtualFrame frame, Object right) {
-            frame.setObject(frameSlot, right);
-            return right;
+        @Specialization
+        public Object write(VirtualFrame frame, Object value) {
+            ensureObjectKind(frame);
+            frame.setObject(frameSlot, value);
+            return value;
         }
     }
 

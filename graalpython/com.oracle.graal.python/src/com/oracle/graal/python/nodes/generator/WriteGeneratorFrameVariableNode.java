@@ -99,9 +99,9 @@ public abstract class WriteGeneratorFrameVariableNode extends StatementNode impl
         }
 
         @Specialization(guards = "isBooleanKind(getGeneratorFrame(frame))")
-        public boolean write(VirtualFrame frame, boolean right) {
-            getGeneratorFrame(frame).setBoolean(frameSlot, right);
-            return right;
+        public boolean write(VirtualFrame frame, boolean value) {
+            getGeneratorFrame(frame).setBoolean(frameSlot, value);
+            return value;
         }
 
         @Specialization(guards = "isIntegerKind(getGeneratorFrame(frame))")
@@ -117,23 +117,25 @@ public abstract class WriteGeneratorFrameVariableNode extends StatementNode impl
             return longValue;
         }
 
-        @Specialization(guards = {"isPrimitiveInt(value)", "!value.isNative()", "isOrSetObjectKind(getGeneratorFrame(frame))"}, rewriteOn = ArithmeticException.class)
+        @Specialization(guards = {"isPrimitiveInt(value)", "!value.isNative()"}, rewriteOn = ArithmeticException.class)
         public long writeSmallPIntAsObject(VirtualFrame frame, PInt value) {
+            ensureObjectKind(frame);
             long longValue = value.longValueExact();
             getGeneratorFrame(frame).setObject(frameSlot, longValue);
             return longValue;
         }
 
         @Specialization(guards = "isDoubleKind(getGeneratorFrame(frame))")
-        public double write(VirtualFrame frame, double right) {
-            getGeneratorFrame(frame).setDouble(frameSlot, right);
-            return right;
+        public double write(VirtualFrame frame, double value) {
+            getGeneratorFrame(frame).setDouble(frameSlot, value);
+            return value;
         }
 
-        @Specialization(guards = "isOrSetObjectKind(getGeneratorFrame(frame))")
-        public Object write(VirtualFrame frame, Object right) {
-            getGeneratorFrame(frame).setObject(frameSlot, right);
-            return right;
+        @Specialization
+        public Object write(VirtualFrame frame, Object value) {
+            ensureObjectKind(frame);
+            getGeneratorFrame(frame).setObject(frameSlot, value);
+            return value;
         }
     }
 
