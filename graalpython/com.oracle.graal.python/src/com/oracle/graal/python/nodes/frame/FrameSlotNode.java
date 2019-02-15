@@ -106,7 +106,7 @@ public abstract class FrameSlotNode extends ExpressionNode {
 
     protected final boolean isOrSetObjectKind(Frame frame) {
         if (frame.getFrameDescriptor().getFrameSlotKind(frameSlot) != FrameSlotKind.Object) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             frame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Object);
         }
         return true;
@@ -118,7 +118,7 @@ public abstract class FrameSlotNode extends ExpressionNode {
 
     private boolean initialSetKind(Frame frame, FrameSlotKind kind) {
         if (frame.getFrameDescriptor().getFrameSlotKind(frameSlot) == FrameSlotKind.Illegal) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             frame.getFrameDescriptor().setFrameSlotKind(frameSlot, kind);
             return true;
         }
