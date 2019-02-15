@@ -42,7 +42,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.source.SourceSection;
 
 public class PFunction extends PythonObject {
-
+    private static final Object[] EMPTY_DEFAULTS = new Object[0];
     private final String name;
     private final String enclosingClassName;
     private final Arity arity;
@@ -55,7 +55,7 @@ public class PFunction extends PythonObject {
     private PKeyword[] kwDefaultValues;
 
     public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
-        this(clazz, name, enclosingClassName, arity, callTarget, globals, null, null, closure);
+        this(clazz, name, enclosingClassName, arity, callTarget, globals, EMPTY_DEFAULTS, PKeyword.EMPTY_KEYWORDS, closure);
     }
 
     public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
@@ -67,8 +67,8 @@ public class PFunction extends PythonObject {
         this.arity = arity;
         this.callTarget = callTarget;
         this.globals = globals;
-        this.defaultValues = defaultValues;
-        this.kwDefaultValues = kwDefaultValues;
+        this.defaultValues = defaultValues == null ? EMPTY_DEFAULTS : defaultValues;
+        this.kwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
         this.closure = closure;
         addDefaultConstants(this.getStorage(), name, enclosingClassName);
     }

@@ -114,16 +114,28 @@ public abstract class CallNode extends PNodeWithContext {
         return specialCall(frame, callable.getCallable(), arguments, keywords, callAttrGetterNode, callCallNode);
     }
 
-    @Specialization(guards = "isFunction(callable.getFunction())")
+    @Specialization(guards = "isPFunction(callable.getFunction())")
     protected Object methodCallDirect(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords) {
         // functions must be called directly otherwise the call stack is incorrect
-        return ensureDispatch().executeCall(frame, callable.getFunction(), ensureCreateArguments().executeWithSelf(callable.getSelf(), arguments), keywords);
+        return ensureDispatch().executeCall(frame, (PFunction) callable.getFunction(), ensureCreateArguments().execute(callable, arguments, keywords));
     }
 
-    @Specialization(guards = "isFunction(callable.getFunction())")
+    @Specialization(guards = "isPBuiltinFunction(callable.getFunction())")
+    protected Object methodCallBuiltinDirect(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords) {
+        // functions must be called directly otherwise the call stack is incorrect
+        return ensureDispatch().executeCall(frame, (PBuiltinFunction) callable.getFunction(), ensureCreateArguments().execute(callable, arguments, keywords));
+    }
+
+    @Specialization(guards = "isPFunction(callable.getFunction())")
     protected Object builtinMethodCallDirect(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords) {
         // functions must be called directly otherwise the call stack is incorrect
-        return ensureDispatch().executeCall(frame, callable.getFunction(), ensureCreateArguments().executeWithSelf(callable.getSelf(), arguments), keywords);
+        return ensureDispatch().executeCall(frame, (PFunction) callable.getFunction(), ensureCreateArguments().execute(callable, arguments, keywords));
+    }
+
+    @Specialization(guards = "isPBuiltinFunction(callable.getFunction())")
+    protected Object builtinMethodCallBuiltinDirect(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords) {
+        // functions must be called directly otherwise the call stack is incorrect
+        return ensureDispatch().executeCall(frame, (PBuiltinFunction) callable.getFunction(), ensureCreateArguments().execute(callable, arguments, keywords));
     }
 
     @Specialization(guards = "!isFunction(callable.getFunction())")
@@ -142,11 +154,11 @@ public abstract class CallNode extends PNodeWithContext {
 
     @Specialization
     protected Object functionCall(VirtualFrame frame, PFunction callable, Object[] arguments, PKeyword[] keywords) {
-        return ensureDispatch().executeCall(frame, callable, ensureCreateArguments().execute(arguments), keywords);
+        return ensureDispatch().executeCall(frame, callable, ensureCreateArguments().execute(callable, arguments, keywords));
     }
 
     @Specialization
     protected Object builtinFunctionCall(VirtualFrame frame, PBuiltinFunction callable, Object[] arguments, PKeyword[] keywords) {
-        return ensureDispatch().executeCall(frame, callable, ensureCreateArguments().execute(arguments), keywords);
+        return ensureDispatch().executeCall(frame, callable, ensureCreateArguments().execute(callable, arguments, keywords));
     }
 }

@@ -35,7 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
+import java.util.logging.Level;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -142,7 +144,19 @@ public abstract class PythonBuiltins {
             maxNumPosArgs++;
         }
 
-        return new Arity(builtin.name(), minNumPosArgs, maxNumPosArgs, builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? maxNumPosArgs : -1, builtin.parameterNames(),
+        String[] parameterNames = builtin.parameterNames();
+        if (parameterNames.length > 0) {
+            // we never declare the "self" as a parameter id
+            assert parameterNames.length == maxNumPosArgs - 1 - keywordNames.size() : "not enough parameter ids on constructor " + builtin.name();
+        } else {
+            PythonLanguage.getLogger().log(Level.FINEST, "missing parameter names for builtin " + builtin.name());
+            parameterNames = new String[maxNumPosArgs - keywordNames.size()];
+            for (int i = 0, p = 'a'; i < parameterNames.length; i++, p++) {
+                parameterNames[i] = Character.toString((char) p);
+            }
+        }
+
+        return new Arity(builtin.name(), minNumPosArgs, maxNumPosArgs, builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? maxNumPosArgs : -1, parameterNames,
                         keywordNames.toArray(new Arity.KeywordName[0]));
     }
 

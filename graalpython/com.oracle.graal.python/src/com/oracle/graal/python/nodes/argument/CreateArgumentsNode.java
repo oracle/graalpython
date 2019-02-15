@@ -44,6 +44,7 @@ import java.util.Arrays;
 import java.util.Set;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -52,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
@@ -87,7 +89,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     @formatter:on
 */
     @Specialization// (replaces = "cached")
-    Object[] uncached(Object callable, Object[] userArguments, PKeyword[] keywords,
+    Object[] uncached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
                     @Cached("create()") ApplyKeywordsNode applyKeywords) {
         Arity arity = null;
         Object self = null;
@@ -107,12 +109,16 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         } else if (callable instanceof PBuiltinFunction) {
             arity = ((PBuiltinFunction) callable).getArity();
             name = ((PBuiltinFunction) callable).getName();
+            defaults = new Object[(arity.takesVarArgs() ? arity.getVarargsIdx() : arity.getMaxNumOfPositionalArgs()) - arity.getMinNumOfArgs()];
+            Arrays.fill(defaults, PNone.NO_VALUE);
         } else if (callable instanceof PBuiltinMethod) {
             self = ((PBuiltinMethod) callable).getSelf();
             methodcall = !(self instanceof PythonModule);
             if (((PBuiltinMethod) callable).getFunction() instanceof PBuiltinFunction) {
                 arity = ((PBuiltinFunction) ((PBuiltinMethod) callable).getFunction()).getArity();
                 name = ((PBuiltinFunction) ((PBuiltinMethod) callable).getFunction()).getName();
+                defaults = new Object[(arity.takesVarArgs() ? arity.getVarargsIdx() : arity.getMaxNumOfPositionalArgs()) - arity.getMinNumOfArgs()];
+                Arrays.fill(defaults, PNone.NO_VALUE);
             } else if (((PBuiltinMethod) callable).getFunction() instanceof PFunction) {
                 arity = ((PFunction) ((PBuiltinMethod) callable).getFunction()).getArity();
                 defaults = ((PFunction) ((PBuiltinMethod) callable).getFunction()).getDefaults();
@@ -124,6 +130,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             if (((PMethod) callable).getFunction() instanceof PBuiltinFunction) {
                 arity = ((PBuiltinFunction) ((PMethod) callable).getFunction()).getArity();
                 name = ((PBuiltinFunction) ((PMethod) callable).getFunction()).getName();
+                defaults = new Object[(arity.takesVarArgs() ? arity.getVarargsIdx() : arity.getMaxNumOfPositionalArgs()) - arity.getMinNumOfArgs()];
+                Arrays.fill(defaults, PNone.NO_VALUE);
             } else if (((PMethod) callable).getFunction() instanceof PFunction) {
                 arity = ((PFunction) ((PMethod) callable).getFunction()).getArity();
                 defaults = ((PFunction) ((PMethod) callable).getFunction()).getDefaults();
@@ -193,8 +201,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         // handle keyword arguments
         // match the keywords given at the call site to the argument names
         // the called node takes and collect the rest in the keywords
-        // this also does the check for for missing arguments and fill them from the kwds.
-        scope_w = applyKeywords.execute(arity, scope_w, keywords);
+        // this also does the first check for for missing arguments and fill them from the kwds.
+        if (keywords.length > 0) {
+            scope_w = applyKeywords.execute(arity, scope_w, keywords);
+        }
 
         boolean more_filling = input_argcount < co_argcount + co_kwonlyargcount;
         int firstDefaultArgIdx = 0;
@@ -319,24 +329,27 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return scope_w;
     }
 
-    public abstract Object[] execute(Object callable, Object... userArguments);
-
-    private static Object[] createWithUserArguments(int length, Object[] userArguments) {
-        Object[] arguments = PArguments.create(length);
-
-        for (int i = 0; i < length; i++) {
-            arguments[PArguments.USER_ARGUMENTS_OFFSET + i] = userArguments[i];
-        }
-
-        return arguments;
+    public final Object[] execute(PFunction callable, Object[] userArguments) {
+        return execute(callable, userArguments, PKeyword.EMPTY_KEYWORDS);
     }
 
-    private static Object[] createWithSelfAndUserArguments(int length, Object self, Object[] userArguments) {
-        Object[] arguments = PArguments.create(length + 1);
-        arguments[PArguments.USER_ARGUMENTS_OFFSET] = self;
-        for (int i = 0; i < length; i++) {
-            arguments[PArguments.USER_ARGUMENTS_OFFSET + 1 + i] = userArguments[i];
-        }
-        return arguments;
+    public final Object[] execute(PBuiltinFunction callable, Object[] userArguments) {
+        return execute(callable, userArguments, PKeyword.EMPTY_KEYWORDS);
     }
+
+    public final Object[] execute(PMethod callable, Object[] userArguments) {
+        return execute(callable, userArguments, PKeyword.EMPTY_KEYWORDS);
+    }
+
+    public final Object[] execute(PBuiltinMethod callable, Object[] userArguments) {
+        return execute(callable, userArguments, PKeyword.EMPTY_KEYWORDS);
+    }
+
+    public abstract Object[] execute(PFunction callable, Object[] userArguments, PKeyword[] keywords);
+
+    public abstract Object[] execute(PBuiltinFunction callable, Object[] userArguments, PKeyword[] keywords);
+
+    public abstract Object[] execute(PMethod callable, Object[] userArguments, PKeyword[] keywords);
+
+    public abstract Object[] execute(PBuiltinMethod callable, Object[] userArguments, PKeyword[] keywords);
 }

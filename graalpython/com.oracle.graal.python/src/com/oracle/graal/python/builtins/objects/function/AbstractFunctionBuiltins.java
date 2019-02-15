@@ -123,12 +123,12 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(VirtualFrame frame, PFunction self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(frame, self, createArgs.execute(arguments), keywords);
+            return dispatch.executeCall(frame, self, createArgs.execute(self, arguments, keywords));
         }
 
         @Specialization
         protected Object doIt(VirtualFrame frame, PBuiltinFunction self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(frame, self, createArgs.execute(arguments), keywords);
+            return dispatch.executeCall(frame, self, createArgs.execute(self, arguments, keywords));
         }
     }
 

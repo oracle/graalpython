@@ -113,6 +113,14 @@ public abstract class PGuards {
         return value instanceof PBuiltinFunction || value instanceof PFunction;
     }
 
+    public static boolean isPBuiltinFunction(Object value) {
+        return value instanceof PBuiltinFunction;
+    }
+
+    public static boolean isPFunction(Object value) {
+        return value instanceof PFunction;
+    }
+
     public static boolean isCallable(Object value) {
         return value instanceof PBuiltinFunction || value instanceof PFunction || value instanceof PBuiltinMethod || value instanceof PMethod;
     }
