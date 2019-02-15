@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.argument;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -54,7 +55,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public abstract class ApplyKeywordsNode extends PNodeWithContext {
+abstract class ApplyKeywordsNode extends PNodeWithContext {
     private final ConditionProfile expandArgs = ConditionProfile.createBinaryProfile();
 
     public abstract Object[] execute(Arity calleeArity, Object[] arguments, PKeyword[] keywords);
@@ -119,6 +120,8 @@ public abstract class ApplyKeywordsNode extends PNodeWithContext {
 
         PKeyword[] unusedKeywords = new PKeyword[keywords.length];
         int k = 0;
+        int additionalKwds = 0;
+        String lastWrongKeyword = null;
         for (int i = 0; i < keywords.length; i++) {
             PKeyword kwArg = keywords[i];
             int kwIdx = -1;
@@ -131,12 +134,21 @@ public abstract class ApplyKeywordsNode extends PNodeWithContext {
 
             if (kwIdx != -1) {
                 if (PArguments.getArgument(combined, kwIdx) != null) {
-                    throw raise(PythonErrorType.TypeError, "%s() got multiple values for argument '%s'", calleeArity.getFunctionName(), kwArg.getName());
+                    throw raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", calleeArity.getFunctionName(), kwArg.getName());
                 }
                 PArguments.setArgument(combined, kwIdx, kwArg.getValue());
             } else {
                 unusedKeywords[k++] = kwArg;
+                if (!calleeArity.takesVarKeywordArgs()) {
+                    additionalKwds++;
+                    lastWrongKeyword = kwArg.getName();
+                }
             }
+        }
+        if (additionalKwds == 1) {
+            throw raise(PythonBuiltinClassType.TypeError, "got an unexpected keyword argument '%s'", lastWrongKeyword);
+        } else if (additionalKwds > 1) {
+            throw raise(PythonBuiltinClassType.TypeError, "got %d unexpected keyword arguments", additionalKwds);
         }
         PArguments.setKeywordArguments(combined, Arrays.copyOf(unusedKeywords, k));
         return combined;
