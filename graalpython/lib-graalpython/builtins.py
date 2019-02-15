@@ -41,6 +41,8 @@
 # Python3Core.INDIRECT_CORE_FILES, because during bootstrap we pre-parse (but do
 # not run!) all core files.
 
+def __gr__(self, name, mode='r', closefd=True, opener=None):
+    pass
 
 def __import__(filename, module_name):
     import sys, posix

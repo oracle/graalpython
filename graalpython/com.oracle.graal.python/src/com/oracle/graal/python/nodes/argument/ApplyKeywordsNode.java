@@ -55,6 +55,13 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+/**
+ * This class is *only* used to apply arguments given as keywords by the caller to positional
+ * arguments of the same names. The remaining arguments are left in the PKeywords of the combined
+ * arguments.
+ *
+ * @author tim
+ */
 abstract class ApplyKeywordsNode extends PNodeWithContext {
     private final ConditionProfile expandArgs = ConditionProfile.createBinaryProfile();
 
@@ -84,6 +91,7 @@ abstract class ApplyKeywordsNode extends PNodeWithContext {
                     @Cached("createSearchNamedParameterNode()") SearchNamedParameterNode searchParamNode) {
         Object[] combined = arguments;
         if (expandArgs.profile(paramLen > userArgLen)) {
+            assert false;
             combined = PArguments.create(paramLen);
             System.arraycopy(arguments, 0, combined, 0, argLen);
         }

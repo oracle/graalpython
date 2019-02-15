@@ -592,7 +592,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // eval(expression, globals=None, locals=None)
-    @Builtin(name = EVAL, fixedNumOfPositionalArgs = 1, keywordArguments = {"globals", "locals"})
+    @Builtin(name = EVAL, minNumOfPositionalArgs = 1, keywordArguments = {"globals", "locals"})
     @GenerateNodeFactory
     public abstract static class EvalNode extends PythonBuiltinNode {
         protected final String funcname = "eval";

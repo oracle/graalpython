@@ -112,7 +112,7 @@ public final class PCode extends PythonBuiltinObject {
     private Object[] cellvars;
 
     // internal cache for keyword names
-    private Arity.KeywordName[] keywordNames;
+    private String[] keywordNames;
 
     public PCode(LazyPythonClass cls, RootNode rootNode, PythonCore core) {
         super(cls);
@@ -257,7 +257,7 @@ public final class PCode extends PythonBuiltinObject {
         Set<String> cellVarsSet = asSet((String[]) cellvars);
 
         List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(funcRootNode, ReadKeywordNode.class);
-        keywordNames = new Arity.KeywordName[readKeywordNodes.size()];
+        keywordNames = new String[readKeywordNodes.size()];
         List<ReadIndexedArgumentNode> readIndexedArgumentNodes = NodeUtil.findAllNodeInstances(funcRootNode, ReadIndexedArgumentNode.class);
 
         Set<String> kwNames = getKeywordArgumentNames(readKeywordNodes);
@@ -272,10 +272,8 @@ public final class PCode extends PythonBuiltinObject {
 
         for (int i = 0; i < readKeywordNodes.size(); i++) {
             ReadKeywordNode kwNode = readKeywordNodes.get(i);
-            keywordNames[i] = new Arity.KeywordName(kwNode.getName(), kwNode.isRequired());
-            if (!kwNode.canBePositional()) {
-                kwonlyargcount++;
-            }
+            keywordNames[i] = new String(kwNode.getName());
+            kwonlyargcount++;
         }
 
         Set<String> varnamesSet = new HashSet<>();
@@ -404,7 +402,7 @@ public final class PCode extends PythonBuiltinObject {
         return lnotab;
     }
 
-    private Arity.KeywordName[] getKeywordNames() {
+    private String[] getKeywordNames() {
         if (keywordNames == null && hasRootNode()) {
             extractArgStats();
         }
@@ -424,11 +422,9 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     private int getMinNumOfPositionalArgs() {
-        int defaultKwNames = 0;
-        for (Arity.KeywordName kwName : getKeywordNames()) {
-            defaultKwNames += (kwName.required) ? 0 : 1;
-        }
-        return getArgcount() - defaultKwNames;
+        // TODO(tfel): (args) we cannot actually determine this from the PCode right now, it depends
+        // on the PFunction.__defaults__
+        return getArgcount();
     }
 
     private int getMaxNumOfPositionalArgs() {

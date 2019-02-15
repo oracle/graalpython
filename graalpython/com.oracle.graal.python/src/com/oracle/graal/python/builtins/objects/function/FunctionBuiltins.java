@@ -42,7 +42,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.Arity.KeywordName;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltinsFactory.GetFunctionDefaultsNodeFactory;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltinsFactory.GetFunctionKeywordDefaultsNodeFactory;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -63,7 +62,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFunction)
 public class FunctionBuiltins extends PythonBuiltins {
@@ -143,39 +141,15 @@ public class FunctionBuiltins extends PythonBuiltins {
     @Builtin(name = __DEFAULTS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class GetFunctionDefaultsNode extends PythonBinaryBuiltinNode {
-        private final ConditionProfile nullDefaultsProfile = ConditionProfile.createBinaryProfile();
-
-        @TruffleBoundary
-        private static Object[] extractDefaults(PFunction function) {
-            List<Object> defaultValues = new ArrayList<>();
-            Arity arity = function.getArity();
-            Object[] defaults = function.getDefaults();
-            for (int i = 0; i < defaults.length && i < arity.getVarargsIdx(); i++) {
-                if (defaults[i] != null) {
-                    defaultValues.add(defaults[i]);
-                }
-            }
-            return defaultValues.toArray();
-        }
-
-        private Object getDefaults(PFunction function) {
-            Object[] defaults = function.getDefaults();
-            if (nullDefaultsProfile.profile(defaults == null)) {
-                defaults = extractDefaults(function);
-            }
-
-            assert defaults != null;
-            return (defaults.length == 0) ? PNone.NONE : factory().createTuple(defaults);
-        }
-
         @Specialization
         Object defaults(PFunction self, @SuppressWarnings("unused") PNone defaults) {
-            return getDefaults(self);
+            Object[] d = self.getDefaults();
+            assert d != null;
+            return (d.length == 0) ? PNone.NONE : factory().createTuple(d);
         }
 
         @Specialization
         Object defaults(PFunction self, PTuple defaults) {
-            assert defaults.getArray().length == self.getDefaults().length;
             self.setDefaults(defaults.getArray());
             return PNone.NONE;
         }
@@ -195,9 +169,9 @@ public class FunctionBuiltins extends PythonBuiltins {
             if (arity.takesVarKeywordArgs()) {
                 int start = arity.getVarargsIdx() + 1;
                 Object[] defaults = function.getDefaults();
-                KeywordName[] keywordNames = arity.getKeywordNames();
+                String[] keywordNames = arity.getKeywordNames();
                 for (int i = start, j = 0; i < defaults.length && j < keywordNames.length; i++, j++) {
-                    kwdefaults.add(new PKeyword(keywordNames[j].name, defaults[i]));
+                    kwdefaults.add(new PKeyword(keywordNames[j], defaults[i]));
                 }
             }
             return kwdefaults.toArray(new PKeyword[0]);

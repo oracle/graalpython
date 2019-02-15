@@ -218,10 +218,6 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         return getWriteNode(name, index -> ReadIndexedArgumentNode.create(index));
     }
 
-    public StatementNode getWriteKeywordArgumentToLocal(String name) {
-        return getWriteNode(name, index -> ReadKeywordNode.create(name, index));
-    }
-
     public StatementNode getWriteRequiredKeywordArgumentToLocal(String name) {
         return getWriteNode(name, index -> ReadKeywordNode.create(name));
     }

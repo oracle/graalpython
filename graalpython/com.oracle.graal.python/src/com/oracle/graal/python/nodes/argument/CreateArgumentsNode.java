@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.argument;
 
 import java.util.Arrays;
-import java.util.Set;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -144,7 +143,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         // see PyPy's Argument#_match_signature method
         int co_argcount = arity.getMaxNumOfPositionalArgs(); // expected formal arguments, without
                                                              // */**
-        int co_kwonlyargcount = arity.getKeywordsOnlyArgs().size();
+        int co_kwonlyargcount = arity.getNumKeywordOnlyNames();
         boolean too_many_args = false;
 
         Object[] scope_w = PArguments.create(Math.max(userArguments.length, arity.getMaxNumOfPositionalArgs()));
@@ -206,7 +205,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             scope_w = applyKeywords.execute(arity, scope_w, keywords);
         }
 
-        boolean more_filling = input_argcount < co_argcount + co_kwonlyargcount;
+        boolean more_filling = input_argcount < co_argcount;
         int firstDefaultArgIdx = 0;
         if (more_filling) {
             firstDefaultArgIdx = co_argcount - (defaults == null ? 0 : defaults.length);
@@ -300,7 +299,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
             // finally, fill kwonly arguments with w_kw_defs (if needed)
             PKeyword[] givenKwds = PArguments.getKeywordArguments(scope_w);
-            Set<String> kwOnlyNames = arity.getKeywordsOnlyArgs();
+            String[] kwOnlyNames = arity.getKeywordNames();
             kwnames: for (String kwname : kwOnlyNames) {
                 for (int j = 0; j < givenKwds.length; j++) {
                     if (givenKwds[j].getName().equals(kwname)) {

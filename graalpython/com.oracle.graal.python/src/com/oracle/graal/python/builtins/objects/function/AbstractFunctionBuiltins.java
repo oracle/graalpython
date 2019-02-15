@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.function.Arity.KeywordName;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -300,8 +299,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static Object getSignature(boolean enclosingType, Arity arity) {
             int minArgs = arity.getMinNumOfPositionalArgs();
-            KeywordName[] keywordNames = arity.getKeywordNames();
-            int requiredKeywords = arity.getNumOfRequiredKeywords();
+            String[] keywordNames = arity.getKeywordNames();
             boolean takesVarArgs = arity.takesVarArgs();
             boolean takesVarKeywordArgs = arity.takesVarKeywordArgs();
 
@@ -328,22 +326,19 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
             if (minArgs > 0) {
                 sb.append(", /");
             }
+            if (takesVarArgs) {
+                sb.append(", *args");
+            }
             if (keywordNames.length > 0) {
-                int i = 0;
-                while (i < requiredKeywords) {
-                    sb.append(", ").append(keywordNames[i++].name).append('=');
-                }
-                if (takesVarArgs) {
-                    sb.append(", *args");
-                } else {
+                if (!takesVarArgs) {
                     sb.append(", *");
                 }
-                while (i < keywordNames.length) {
-                    sb.append(", ").append(keywordNames[i++].name).append("=?");
+                for (int i = 0; i < keywordNames.length; i++) {
+                    sb.append(", ").append(keywordNames[i]).append("=?");
                 }
-                if (takesVarKeywordArgs) {
-                    sb.append(", **kwargs");
-                }
+            }
+            if (takesVarKeywordArgs) {
+                sb.append(", **kwargs");
             }
             sb.append(')');
             return sb.toString();

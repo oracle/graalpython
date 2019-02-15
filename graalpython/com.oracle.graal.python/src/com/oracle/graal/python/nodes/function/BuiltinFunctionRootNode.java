@@ -186,7 +186,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             String name = builtin.keywordArguments()[i];
             if (!builtin.takesVarArgs()) {
                 // if there's no splat, we also accept the keywords positionally
-                args.add(ReadKeywordNode.create(name, i + numOfPositionalArgs));
+                args.add(ReadIndexedArgumentNode.create(i + numOfPositionalArgs));
             } else {
                 // if there is a splat, keywords have to be passed by name
                 args.add(ReadKeywordNode.create(name));

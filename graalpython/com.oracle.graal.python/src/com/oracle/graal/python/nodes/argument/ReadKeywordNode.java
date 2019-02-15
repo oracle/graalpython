@@ -25,9 +25,6 @@
  */
 package com.oracle.graal.python.nodes.argument;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.truffle.api.dsl.Cached;
@@ -37,36 +34,15 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class ReadKeywordNode extends ReadArgumentNode {
-
     private final String name;
     private final ValueProfile profile = ValueProfile.createClassProfile();
-
-    @Child private ReadIndexedArgumentNode indexedRead;
 
     public static ReadKeywordNode create(String name) {
         return ReadKeywordNodeGen.create(name);
     }
 
-    public static ReadKeywordNode create(String name, int idx) {
-        return ReadKeywordNodeGen.create(name, idx);
-    }
-
     ReadKeywordNode(String name) {
         this.name = name;
-        this.indexedRead = null;
-    }
-
-    ReadKeywordNode(String name, int idx) {
-        this.name = name;
-        this.indexedRead = ReadIndexedArgumentNode.create(idx);
-    }
-
-    public boolean canBePositional() {
-        return indexedRead != null;
-    }
-
-    public boolean isRequired() {
-        return true;
     }
 
     private static PKeyword getKeyword(VirtualFrame frame, String name) {
@@ -99,31 +75,17 @@ public abstract class ReadKeywordNode extends ReadArgumentNode {
     Object cached(VirtualFrame frame,
                     @Cached("getKeywordLength(frame)") int cachedLen) {
         PKeyword keyword = getKeywordUnrollSafe(frame, name, cachedLen);
-        return determineKeyword(frame, keyword);
+        return returnKeyword(keyword);
     }
 
     @Specialization
     Object uncached(VirtualFrame frame) {
-        return determineKeyword(frame, getKeyword(frame, name));
+        return returnKeyword(getKeyword(frame, name));
     }
 
-    private Object determineKeyword(VirtualFrame frame, PKeyword keyword) {
-        if (indexedRead != null) {
-            Object value = indexedRead.execute(frame);
-            if (value != PNone.NO_VALUE) {
-                if (keyword != null) {
-                    throw raise(TypeError, "got multiple values for argument: '%s'", name);
-                }
-                return profile.profile(value);
-            }
-        }
-        if (keyword == null) {
-// CompilerDirectives.transferToInterpreter();
-// throw new IllegalStateException("missing required keyword-only argument: " + name);
-            return PNone.NO_VALUE;
-        } else {
-            return profile.profile(keyword.getValue());
-        }
+    private Object returnKeyword(PKeyword keyword) {
+        assert keyword != null : "a keyword was null. This cannot happen, the arity check should have taken care of raising a TypeError";
+        return profile.profile(keyword.getValue());
     }
 
     public String getName() {

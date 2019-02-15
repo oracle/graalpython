@@ -1541,7 +1541,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
     public Args visitArgs(String functionName, ParserRuleContext ctx, List<ExpressionNode> defaultArgs, List<KwDefaultExpressionNode> defaultKwArgs) {
         if (ctx == null) {
-            return new Args(new Arity(functionName, 0, 0, false, -1, false, new String[0], new Arity.KeywordName[0]));
+            return new Args(new Arity(functionName, 0, 0, false, -1, false, new String[0], new String[0]));
         }
         int minNumPosArgs = 0;
         int maxNumPosArgs = 0;
@@ -1550,7 +1550,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         List<String> parameterIds = new ArrayList<>();
         List<StatementNode> argumentReads = new ArrayList<>();
         List<String> keywordNames = new ArrayList<>();
-        List<Arity.KeywordName> arityKeywordNames = new ArrayList<>();
+        List<String> arityKeywordNames = new ArrayList<>();
         int childCount = ctx.getChildCount();
         int varargsIdx = -1;
         boolean kwargsSeen = false;
@@ -1595,27 +1595,28 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 argumentReadNode = environment.getWriteKwArgsToLocal(argname, keywordNames.toArray(new String[0]));
             }
             if (argumentReadNode == null && argname != null) {
+                ExpressionNode defaultValueNode = null;
                 if (test != null) {
-                    ExpressionNode defaultValueNode = (ExpressionNode) test.accept(this);
-                    if (varargsIdx == -1 && !starArgsMarker) {
-                        defaultArgs.add(defaultValueNode);
-                        argumentReadNode = environment.getWriteKeywordArgumentToLocal(argname);
-                        maxNumPosArgs++;
+                    defaultValueNode = (ExpressionNode) test.accept(this);
+                }
+                if (varargsIdx == -1 && !starArgsMarker) {
+                    // positional argument, possibly with a default
+                    if (test == null) {
+                        minNumPosArgs++;
                     } else {
-                        defaultKwArgs.add(KwDefaultExpressionNode.create(argname, defaultValueNode));
-                        argumentReadNode = environment.getWriteRequiredKeywordArgumentToLocal(argname);
+                        defaultArgs.add(defaultValueNode);
                     }
-                    arityKeywordNames.add(new Arity.KeywordName(argname, false));
-                    keywordNames.add(argname);
-                } else if (varargsIdx != -1 || starArgsMarker) {
-                    argumentReadNode = environment.getWriteRequiredKeywordArgumentToLocal(argname);
-                    arityKeywordNames.add(new Arity.KeywordName(argname, true));
-                    keywordNames.add(argname);
-                } else {
-                    minNumPosArgs++;
                     maxNumPosArgs++;
                     parameterIds.add(argname);
                     argumentReadNode = environment.getWriteArgumentToLocal(argname);
+                } else {
+                    // keyword-only argument
+                    argumentReadNode = environment.getWriteRequiredKeywordArgumentToLocal(argname);
+                    arityKeywordNames.add(argname);
+                    keywordNames.add(argname);
+                    if (defaultValueNode != null) {
+                        defaultKwArgs.add(KwDefaultExpressionNode.create(argname, defaultValueNode));
+                    }
                 }
             }
             if (argumentReadNode != null) {

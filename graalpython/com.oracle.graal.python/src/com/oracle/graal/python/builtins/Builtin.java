@@ -39,11 +39,7 @@ public @interface Builtin {
 
     PythonBuiltinClassType[] base() default {};
 
-    int fixedNumOfPositionalArgs() default 0;
-
     int minNumOfPositionalArgs() default 0;
-
-    int maxNumOfPositionalArgs() default 0;
 
     boolean isGetter() default false;
 

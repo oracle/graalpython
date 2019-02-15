@@ -557,7 +557,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // enumerate(iterable, start=0)
-    @Builtin(name = ENUMERATE, fixedNumOfPositionalArgs = 2, keywordArguments = {"start"}, constructsClass = PythonBuiltinClassType.PEnumerate)
+    @Builtin(name = ENUMERATE, minNumOfPositionalArgs = 2, parameterNames = {"iterable", "start"}, constructsClass = PythonBuiltinClassType.PEnumerate)
     @GenerateNodeFactory
     public abstract static class EnumerateNode extends PythonBuiltinNode {
 

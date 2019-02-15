@@ -28,7 +28,7 @@ package com.oracle.graal.python.builtins;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -126,9 +126,12 @@ public abstract class PythonBuiltins {
 
     private static Arity createArity(Builtin builtin, boolean declaresExplicitSelf) {
         int minNumPosArgs = builtin.minNumOfPositionalArgs();
-        int maxNumPosArgs = Math.max(minNumPosArgs, builtin.maxNumOfPositionalArgs());
+        int maxNumPosArgs = builtin.maxNumOfPositionalArgs();
         if (builtin.fixedNumOfPositionalArgs() > 0) {
             minNumPosArgs = maxNumPosArgs = builtin.fixedNumOfPositionalArgs();
+        } else {
+            maxNumPosArgs = Math.max(builtin.parameterNames().length, maxNumPosArgs);
+            maxNumPosArgs = Math.max(minNumPosArgs, maxNumPosArgs);
         }
         if (!declaresExplicitSelf) {
             // if we don't take the explicit self, we still need to accept it by arity
@@ -136,28 +139,24 @@ public abstract class PythonBuiltins {
             maxNumPosArgs++;
         }
 
-        List<Arity.KeywordName> keywordNames = new ArrayList<>();
-        for (String keywordArgument : builtin.keywordArguments()) {
-            keywordNames.add(new Arity.KeywordName(keywordArgument));
-            // the assumption here is that out Builtins do not take required keyword args,
-            // all supplied keyword args are before *args, **kwargs
-            maxNumPosArgs++;
-        }
+        // TODO(tfel): (args) keywordArguments and parameterIds can just be merged.
+        maxNumPosArgs += builtin.keywordArguments().length;
+        String[] parameterNames = Arrays.copyOf(builtin.parameterNames(), builtin.parameterNames().length + builtin.keywordArguments().length);
+        System.arraycopy(builtin.keywordArguments(), 0, parameterNames, builtin.parameterNames().length, builtin.keywordArguments().length);
 
-        String[] parameterNames = builtin.parameterNames();
         if (parameterNames.length > 0) {
             // we never declare the "self" as a parameter id
-            assert parameterNames.length == maxNumPosArgs - 1 - keywordNames.size() : "not enough parameter ids on constructor " + builtin.name();
+            assert parameterNames.length == maxNumPosArgs - 1 : "not enough parameter ids on " + builtin.name();
         } else {
             PythonLanguage.getLogger().log(Level.FINEST, "missing parameter names for builtin " + builtin.name());
-            parameterNames = new String[maxNumPosArgs - keywordNames.size()];
+            parameterNames = new String[maxNumPosArgs];
             for (int i = 0, p = 'a'; i < parameterNames.length; i++, p++) {
                 parameterNames[i] = Character.toString((char) p);
             }
         }
 
         return new Arity(builtin.name(), minNumPosArgs, maxNumPosArgs, builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? maxNumPosArgs : -1, parameterNames,
-                        keywordNames.toArray(new Arity.KeywordName[0]));
+                        new String[0]);
     }
 
     private void setBuiltinFunction(String name, BoundBuiltinCallable<?> function) {

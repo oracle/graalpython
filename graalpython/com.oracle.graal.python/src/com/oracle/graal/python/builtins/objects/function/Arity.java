@@ -27,9 +27,7 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.SELF;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -48,11 +46,11 @@ public final class Arity {
     private final boolean takesVarKeywordArgs;
 
     @CompilationFinal(dimensions = 1) private final String[] parameterIds;
-    @CompilationFinal(dimensions = 1) private final KeywordName[] keywordNames;
+    @CompilationFinal(dimensions = 1) private final String[] keywordOnlyNames;
 
     public Arity(String functionName, int minNumOfPositionalArgs, int maxNumOfPositionalArgs,
                     boolean takesVarKeywordArgs, int takesVarArgs,
-                    String[] parameterIds, KeywordName[] keywordNames) {
+                    String[] parameterIds, String[] keywordNames) {
         this(functionName, minNumOfPositionalArgs, maxNumOfPositionalArgs,
                         takesVarKeywordArgs, takesVarArgs, false,
                         parameterIds, keywordNames);
@@ -60,21 +58,21 @@ public final class Arity {
 
     public Arity(String functionName, int minNumOfPositionalArgs, int maxNumOfPositionalArgs,
                     boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
-                    List<String> parameterIds, List<KeywordName> keywordNames) {
+                    List<String> parameterIds, List<String> keywordNames) {
         this(functionName, minNumOfPositionalArgs, maxNumOfPositionalArgs, takesVarKeywordArgs, takesVarArgs, varArgsMarker,
                         parameterIds != null ? parameterIds.toArray(new String[0]) : null,
-                        keywordNames != null ? keywordNames.toArray(new KeywordName[0]) : null);
+                        keywordNames != null ? keywordNames.toArray(new String[0]) : null);
     }
 
     public Arity(String functionName, int minNumOfPositionalArgs, int maxNumOfPositionalArgs,
                     boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
-                    String[] parameterIds, KeywordName[] keywordNames) {
+                    String[] parameterIds, String[] keywordNames) {
         this.functionName = functionName;
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.takesVarArgs = takesVarArgs;
         this.varArgsMarker = varArgsMarker;
         this.parameterIds = (parameterIds != null) ? parameterIds : new String[0];
-        this.keywordNames = (keywordNames != null) ? keywordNames : new KeywordName[0];
+        this.keywordOnlyNames = (keywordNames != null) ? keywordNames : new String[0];
 
         // computed
         this.numRequiredKeywordArgs = computeNumRequiredKeywordArgs();
@@ -102,19 +100,12 @@ public final class Arity {
                         minNumOfPositionalArgs + 1,
                         (maxNumOfPositionalArgs == -1) ? -1 : maxNumOfPositionalArgs + 1,
                         takesVarKeywordArgs, takesVarArgs, varArgsMarker,
-                        parameterIdsWithSelf, keywordNames);
+                        parameterIdsWithSelf, keywordOnlyNames);
     }
 
     private int computeNumRequiredKeywordArgs() {
-        int num = 0;
-        if (takesVarArgs() || varArgsMarker) {
-            for (KeywordName kwName : keywordNames) {
-                if (kwName.required) {
-                    num += 1;
-                }
-            }
-        }
-        return num;
+        assert keywordOnlyNames.length == 0 || takesVarArgs() || varArgsMarker : "we can only have kw-only names if there's a star";
+        return keywordOnlyNames.length;
     }
 
     private static int computeMinNumPositionalArgs(int value) {
@@ -187,12 +178,12 @@ public final class Arity {
         return parameterIds;
     }
 
-    public final KeywordName[] getKeywordNames() {
-        return keywordNames;
+    public final String[] getKeywordNames() {
+        return keywordOnlyNames;
     }
 
     public final boolean takesKeywordArgs() {
-        return keywordNames.length > 0 || takesVarKeywordArgs;
+        return keywordOnlyNames.length > 0 || takesVarKeywordArgs;
     }
 
     public final boolean takesRequiredKeywordArgs() {
@@ -200,7 +191,7 @@ public final class Arity {
     }
 
     public final boolean takesPositionalOnly() {
-        return !takesVarArgs() && !takesVarKeywordArgs && !varArgsMarker && keywordNames.length == 0;
+        return !takesVarArgs() && !takesVarKeywordArgs && !varArgsMarker && keywordOnlyNames.length == 0;
     }
 
     public final boolean takesFixedNumOfPositionalArgs() {
@@ -219,32 +210,7 @@ public final class Arity {
         return parameterIds.length;
     }
 
-    public final int getNumKeywordNames() {
-        return keywordNames.length;
-    }
-
-    public static class KeywordName {
-        public final String name;
-        public final boolean required;
-
-        public KeywordName(String name) {
-            this(name, false);
-        }
-
-        public KeywordName(String name, boolean required) {
-            this.name = name;
-            this.required = required;
-        }
-    }
-
-    @TruffleBoundary
-    public final Set<String> getKeywordsOnlyArgs() {
-        Set<String> kwOnly = new HashSet<>();
-        for (KeywordName kw : keywordNames) {
-            if (kw.required || takesVarArgs() || varArgsMarker) {
-                kwOnly.add(kw.name);
-            }
-        }
-        return kwOnly;
+    public final int getNumKeywordOnlyNames() {
+        return keywordOnlyNames.length;
     }
 }
