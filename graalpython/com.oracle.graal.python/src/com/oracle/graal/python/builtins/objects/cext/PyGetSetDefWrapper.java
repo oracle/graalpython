@@ -67,6 +67,8 @@ import com.oracle.truffle.api.nodes.Node;
 @ExportLibrary(InteropLibrary.class)
 @ImportStatic(SpecialMethodNames.class)
 public class PyGetSetDefWrapper extends PythonNativeWrapper {
+    public static final String NAME = "name";
+    public static final String DOC = "doc";
 
     public PyGetSetDefWrapper(PythonObject delegate) {
         super(delegate);
@@ -77,15 +79,15 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    boolean hasMembers() {
+    protected boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
-    boolean isMemberReadable(String member) {
+    protected boolean isMemberReadable(String member) {
         switch (member) {
-            case "name":
-            case "doc":
+            case NAME:
+            case DOC:
                 return true;
             default:
                 return false;
@@ -93,20 +95,20 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+    protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
-    Object readMember(String member,
+    protected Object readMember(String member,
                       @Cached.Exclusive @Cached(allowUncached = true) ReadFieldNode readFieldNode) {
         return readFieldNode.execute(this.getDelegate(), member);
     }
 
     @ImportStatic({SpecialMethodNames.class})
     abstract static class ReadFieldNode extends Node {
-        public static final String NAME = "name";
-        public static final String DOC = "doc";
+        public static final String NAME = PyGetSetDefWrapper.NAME;
+        public static final String DOC = PyGetSetDefWrapper.DOC;
 
         public abstract Object execute(Object delegate, String key);
 
@@ -144,34 +146,35 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    boolean isMemberModifiable(String member) {
-        return member.equals("doc");
+    protected boolean isMemberModifiable(String member) {
+        return member.equals(DOC);
     }
 
     @ExportMessage
-    boolean isMemberInsertable(String member) {
-        return member.equals("doc");
+    protected boolean isMemberInsertable(String member) {
+        return member.equals(DOC);
     }
 
     @ExportMessage
-    void writeMember(String member, Object value,
+    protected void writeMember(String member, Object value,
                      @Cached.Exclusive @Cached(allowUncached = true) WriteFieldNode writeFieldNode) {
         writeFieldNode.execute(this.getDelegate(), member, value);
     }
 
     @ExportMessage
-    boolean isMemberRemovable(String member) {
+    protected boolean isMemberRemovable(String member) {
         return false;
     }
 
     @ExportMessage
-    void removeMember(String member) throws UnsupportedMessageException, UnknownIdentifierException {
+    protected void removeMember(String member) throws UnsupportedMessageException, UnknownIdentifierException {
         throw UnsupportedMessageException.create();
     }
 
     @ImportStatic({SpecialMethodNames.class})
     abstract static class WriteFieldNode extends Node {
-        public static final String DOC = "doc";
+        public static final String NAME = PyGetSetDefWrapper.NAME;
+        public static final String DOC = PyGetSetDefWrapper.DOC;
 
         public abstract void execute(Object delegate, String key, Object value);
 
