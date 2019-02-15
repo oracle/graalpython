@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -196,8 +195,6 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "signal", fixedNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
-        @Child CreateArgumentsNode createArgs = CreateArgumentsNode.create();
-
         private int getSignum(long signum) {
             try {
                 return toIntExact(signum);
