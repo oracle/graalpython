@@ -30,7 +30,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -119,13 +118,9 @@ public abstract class ReadKeywordNode extends ReadArgumentNode {
             }
         }
         if (keyword == null) {
-            CompilerDirectives.transferToInterpreter();
-            throw new IllegalStateException("missing required keyword-only argument: " + name);
-// if (defaultNode == null) {
-// throw raise(TypeError, "missing required keyword-only argument: '%s'", name);
-// } else {
-// return profile.profile(defaultNode.execute());
-// }
+// CompilerDirectives.transferToInterpreter();
+// throw new IllegalStateException("missing required keyword-only argument: " + name);
+            return PNone.NO_VALUE;
         } else {
             return profile.profile(keyword.getValue());
         }

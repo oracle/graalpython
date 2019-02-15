@@ -393,9 +393,9 @@ public final class PythonObjectFactory extends Node {
         return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, globals, closure));
     }
 
-    public PFunction createFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, Object[] defaults,
+    public PFunction createFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
-        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, globals, defaults, closure));
+        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, globals, defaultValues, kwDefaultValues, closure));
     }
 
     public PBuiltinFunction createBuiltinFunction(String name, LazyPythonClass type, Arity arity, RootCallTarget callTarget) {
@@ -542,8 +542,9 @@ public final class PythonObjectFactory extends Node {
                         numOfGeneratorForNode));
     }
 
-    public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure, Object[] defaultValues) {
-        return trace(PGeneratorFunction.create(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, globals, closure, defaultValues));
+    public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure, Object[] defaultValues,
+                    PKeyword[] kwDefaultValues) {
+        return trace(PGeneratorFunction.create(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, globals, closure, defaultValues, kwDefaultValues));
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {

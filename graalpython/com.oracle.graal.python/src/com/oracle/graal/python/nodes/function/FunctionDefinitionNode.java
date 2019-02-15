@@ -29,6 +29,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -46,10 +47,12 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     protected final Arity arity;
 
     @Children protected ExpressionNode[] defaults;
+    @Children protected KwDefaultExpressionNode[] kwDefaults;
     @Child private ExpressionNode doc;
     @Child private WriteAttributeToObjectNode writeDocNode = WriteAttributeToObjectNode.create();
 
-    public FunctionDefinitionNode(String functionName, String enclosingClassName, ExpressionNode doc, Arity arity, ExpressionNode[] defaults, RootCallTarget callTarget,
+    public FunctionDefinitionNode(String functionName, String enclosingClassName, ExpressionNode doc, Arity arity, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
+                    RootCallTarget callTarget,
                     DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots) {
         super(definitionCellSlots, executionCellSlots);
         this.functionName = functionName;
@@ -58,16 +61,27 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         this.callTarget = callTarget;
         this.arity = arity;
         this.defaults = defaults;
+        this.kwDefaults = kwDefaults;
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
-        Object[] defaultValues = new Object[defaults.length];
-        for (int i = 0; i < defaults.length; i++) {
-            defaultValues[i] = defaults[i].execute(frame);
+        Object[] defaultValues = null;
+        if (defaults != null) {
+            defaultValues = new Object[defaults.length];
+            for (int i = 0; i < defaults.length; i++) {
+                defaultValues[i] = defaults[i].execute(frame);
+            }
+        }
+        PKeyword[] kwDefaultValues = null;
+        if (kwDefaults != null) {
+            kwDefaultValues = new PKeyword[kwDefaults.length];
+            for (int i = 0; i < kwDefaults.length; i++) {
+                kwDefaultValues[i] = new PKeyword(kwDefaults[i].name, kwDefaults[i].execute(frame));
+            }
         }
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, arity, callTarget, PArguments.getGlobals(frame), defaultValues, closure));
+        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, arity, callTarget, PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure));
     }
 
     protected final <T extends PFunction> T withDocString(VirtualFrame frame, T func) {
@@ -83,5 +97,25 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
 
     public RootNode getFunctionRoot() {
         return callTarget.getRootNode();
+    }
+
+    public static final class KwDefaultExpressionNode extends ExpressionNode {
+        @Child public ExpressionNode exprNode;
+
+        public final String name;
+
+        public KwDefaultExpressionNode(String name, ExpressionNode exprNode) {
+            this.name = name;
+            this.exprNode = exprNode;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return exprNode.execute(frame);
+        }
+
+        public static KwDefaultExpressionNode create(String name, ExpressionNode exprNode) {
+            return new KwDefaultExpressionNode(name, exprNode);
+        }
     }
 }

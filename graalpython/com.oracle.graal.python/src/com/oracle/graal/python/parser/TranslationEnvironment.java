@@ -44,6 +44,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -364,13 +365,24 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         currentScope.setDefaultArgumentNodes(defaultArgs);
     }
 
+    protected void setDefaultKwArgumentNodes(List<KwDefaultExpressionNode> defaultArgs) {
+        currentScope.setDefaultKwArgumentNodes(defaultArgs);
+    }
+
     protected List<ExpressionNode> getDefaultArgumentNodes() {
-        List<ExpressionNode> defaultArgs = currentScope.getDefaultArgumentNodes();
-        return defaultArgs;
+        return currentScope.getDefaultArgumentNodes();
+    }
+
+    protected List<KwDefaultExpressionNode> getDefaultKwArgumentNodes() {
+        return currentScope.getDefaultKwArgumentNodes();
     }
 
     protected boolean hasDefaultArguments() {
         return currentScope.getDefaultArgumentNodes() != null && currentScope.getDefaultArgumentNodes().size() > 0;
+    }
+
+    protected boolean hasDefaultKwArguments() {
+        return currentScope.getDefaultKwArgumentNodes() != null && currentScope.getDefaultKwArgumentNodes().size() > 0;
     }
 
     public FrameSlot getReturnSlot() {

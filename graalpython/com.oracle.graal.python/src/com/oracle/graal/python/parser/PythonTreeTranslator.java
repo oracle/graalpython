@@ -78,6 +78,7 @@ import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
 import com.oracle.graal.python.nodes.literal.LiteralNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
@@ -1462,22 +1463,16 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
          * translate default arguments in FunctionDef's declaring scope.
          */
         List<ExpressionNode> defaultArgs = new ArrayList<>();
-        Python3Parser.TypedargslistContext argslist = ctx.parameters().typedargslist();
-        if (argslist != null) {
-            for (Python3Parser.DefparameterContext defc : argslist.defparameter()) {
-                if (defc.test() != null) {
-                    defaultArgs.add((ExpressionNode) defc.test().accept(this));
-                }
-            }
-        }
+        List<KwDefaultExpressionNode> defaultKwArgs = new ArrayList<>();
 
         environment.pushScope(ctx.scope);
         environment.setDefaultArgumentNodes(defaultArgs);
+        environment.setDefaultKwArgumentNodes(defaultKwArgs);
 
         /**
          * Parameters
          */
-        Args args = visitArgs(funcName, ctx.parameters().typedargslist());
+        Args args = visitArgs(funcName, ctx.parameters().typedargslist(), defaultArgs, defaultKwArgs);
         StatementNode argumentLoads = args.node;
         Arity arity = args.arity;
 
@@ -1501,6 +1496,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
          * Defaults
          */
         ExpressionNode[] defaults = createDefaultArgumentsNode();
+        KwDefaultExpressionNode[] kwDefaults = createDefaultKwArgumentsNode();
 
         /**
          * Function root
@@ -1516,11 +1512,11 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         if (environment.isInGeneratorScope()) {
             GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, false);
             RootCallTarget callTarget = gtran.translate();
-            funcDef = GeneratorFunctionDefinitionNode.create(funcName, enclosingClassName, doc, arity, defaults, callTarget, fd,
+            funcDef = GeneratorFunctionDefinitionNode.create(funcName, enclosingClassName, doc, arity, defaults, kwDefaults, callTarget, fd,
                             environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                             gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
         } else {
-            funcDef = new FunctionDefinitionNode(funcName, enclosingClassName, doc, arity, defaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
+            funcDef = new FunctionDefinitionNode(funcName, enclosingClassName, doc, arity, defaults, kwDefaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         }
         environment.popScope();
 
@@ -1543,7 +1539,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         }
     }
 
-    public Args visitArgs(String functionName, ParserRuleContext ctx) {
+    public Args visitArgs(String functionName, ParserRuleContext ctx, List<ExpressionNode> defaultArgs, List<KwDefaultExpressionNode> defaultKwArgs) {
         if (ctx == null) {
             return new Args(new Arity(functionName, 0, 0, false, -1, false, new String[0], new Arity.KeywordName[0]));
         }
@@ -1600,10 +1596,13 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             }
             if (argumentReadNode == null && argname != null) {
                 if (test != null) {
+                    ExpressionNode defaultValueNode = (ExpressionNode) test.accept(this);
                     if (varargsIdx == -1 && !starArgsMarker) {
+                        defaultArgs.add(defaultValueNode);
                         argumentReadNode = environment.getWriteKeywordArgumentToLocal(argname);
                         maxNumPosArgs++;
                     } else {
+                        defaultKwArgs.add(KwDefaultExpressionNode.create(argname, defaultValueNode));
                         argumentReadNode = environment.getWriteRequiredKeywordArgumentToLocal(argname);
                     }
                     arityKeywordNames.add(new Arity.KeywordName(argname, false));
@@ -1631,7 +1630,16 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             List<ExpressionNode> defaultParameters = environment.getDefaultArgumentNodes();
             return defaultParameters.toArray(new ExpressionNode[defaultParameters.size()]);
         } else {
-            return new ExpressionNode[0];
+            return null;
+        }
+    }
+
+    private KwDefaultExpressionNode[] createDefaultKwArgumentsNode() {
+        if (environment.hasDefaultKwArguments()) {
+            List<KwDefaultExpressionNode> defaultParameters = environment.getDefaultKwArgumentNodes();
+            return defaultParameters.toArray(new KwDefaultExpressionNode[defaultParameters.size()]);
+        } else {
+            return null;
         }
     }
 
@@ -1640,22 +1648,17 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
          * translate default arguments in FunctionDef's declaring scope.
          */
         List<ExpressionNode> defaultArgs = new ArrayList<>();
-        if (varargslist != null) {
-            for (Python3Parser.VdefparameterContext defc : varargslist.vdefparameter()) {
-                if (defc.test() != null) {
-                    defaultArgs.add((ExpressionNode) defc.test().accept(this));
-                }
-            }
-        }
+        List<KwDefaultExpressionNode> defaultKwArgs = new ArrayList<>();
 
         String funcname = "anonymous";
         environment.pushScope(scope);
         environment.setDefaultArgumentNodes(defaultArgs);
+        environment.setDefaultKwArgumentNodes(defaultKwArgs);
 
         /**
          * Parameters
          */
-        Args args = visitArgs(funcname, varargslist);
+        Args args = visitArgs(funcname, varargslist, defaultArgs, defaultKwArgs);
         StatementNode argumentLoads = args.node;
         Arity arity = args.arity;
 
@@ -1671,6 +1674,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
          * Defaults
          */
         ExpressionNode[] defaults = createDefaultArgumentsNode();
+        KwDefaultExpressionNode[] kwDefaults = createDefaultKwArgumentsNode();
 
         /**
          * Lambda function root
@@ -1686,11 +1690,11 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         if (environment.isInGeneratorScope()) {
             GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, false);
             RootCallTarget callTarget = gtran.translate();
-            funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, arity, defaults, callTarget, fd,
+            funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, arity, defaults, kwDefaults, callTarget, fd,
                             environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                             gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
         } else {
-            funcDef = new FunctionDefinitionNode(funcname, null, null, arity, defaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
+            funcDef = new FunctionDefinitionNode(funcname, null, null, arity, defaults, kwDefaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         }
         environment.popScope();
 
@@ -1761,7 +1765,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ClassBodyRootNode classBodyRoot = factory.createClassBodyRoot(deriveSourceSection(ctx), className, environment.getCurrentFrame(), body, environment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
         FunctionDefinitionNode funcDef = new FunctionDefinitionNode(className, null, null, Arity.createOneArgumentWithVarKwArgs(className),
-                        new ExpressionNode[0], ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
+                        null, null, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         environment.popScope();
 
         argumentNodes.add(0, factory.createStringLiteral(className));

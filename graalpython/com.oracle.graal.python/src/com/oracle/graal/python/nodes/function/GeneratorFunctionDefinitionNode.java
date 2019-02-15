@@ -29,6 +29,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PGeneratorFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
@@ -48,21 +49,21 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
 
     @CompilationFinal private RootCallTarget generatorCallTarget;
 
-    public GeneratorFunctionDefinitionNode(String name, String enclosingClassName, ExpressionNode doc, Arity arity, ExpressionNode[] defaults, RootCallTarget callTarget,
-                    FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-        super(name, enclosingClassName, doc, arity, defaults, callTarget, definitionCellSlots, executionCellSlots);
+    public GeneratorFunctionDefinitionNode(String name, String enclosingClassName, ExpressionNode doc, Arity arity, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
+                    RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots, int numOfActiveFlags,
+                    int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+        super(name, enclosingClassName, doc, arity, defaults, kwDefaults, callTarget, definitionCellSlots, executionCellSlots);
         this.frameDescriptor = frameDescriptor;
         this.numOfActiveFlags = numOfActiveFlags;
         this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
         this.numOfGeneratorForNode = numOfGeneratorForNode;
     }
 
-    public static GeneratorFunctionDefinitionNode create(String name, String enclosingClassName, ExpressionNode doc, Arity arity, ExpressionNode[] defaults, RootCallTarget callTarget,
-                    FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+    public static GeneratorFunctionDefinitionNode create(String name, String enclosingClassName, ExpressionNode doc, Arity arity, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
+                    RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots, int numOfActiveFlags,
+                    int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         if (defaults.length > 0) {
-            return new GeneratorFunctionDefinitionNode(name, enclosingClassName, doc, arity, defaults, callTarget,
+            return new GeneratorFunctionDefinitionNode(name, enclosingClassName, doc, arity, defaults, kwDefaults, callTarget,
                             frameDescriptor, definitionCellSlots, executionCellSlots,
                             numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
         }
@@ -74,12 +75,23 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
 
     @Override
     public PGeneratorFunction execute(VirtualFrame frame) {
-        Object[] defaultValues = new Object[defaults.length];
-        for (int i = 0; i < defaults.length; i++) {
-            defaultValues[i] = defaults[i].execute(frame);
+        Object[] defaultValues = null;
+        if (defaults != null) {
+            defaultValues = new Object[defaults.length];
+            for (int i = 0; i < defaults.length; i++) {
+                defaultValues[i] = defaults[i].execute(frame);
+            }
+        }
+        PKeyword[] kwDefaultValues = null;
+        if (kwDefaults != null) {
+            kwDefaultValues = new PKeyword[kwDefaults.length];
+            for (int i = 0; i < kwDefaults.length; i++) {
+                kwDefaultValues[i] = new PKeyword(kwDefaults[i].name, kwDefaults[i].execute(frame));
+            }
         }
         PCell[] closure = getClosureFromLocals(frame);
-        return withDocString(frame, factory().createGeneratorFunction(functionName, enclosingClassName, arity, getGeneratorCallTarget(closure), PArguments.getGlobals(frame), closure, defaultValues));
+        return withDocString(frame, factory().createGeneratorFunction(functionName, enclosingClassName, arity, getGeneratorCallTarget(closure), PArguments.getGlobals(frame), closure, defaultValues,
+                        kwDefaultValues));
     }
 
     protected RootCallTarget getGeneratorCallTarget(PCell[] closure) {
@@ -102,7 +114,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
         public StatelessGeneratorFunctionDefinitionNode(String name, String enclosingClassName, ExpressionNode doc, Arity arity, RootCallTarget callTarget,
                         FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
                         int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-            super(name, enclosingClassName, doc, arity, new ExpressionNode[0], callTarget,
+            super(name, enclosingClassName, doc, arity, null, null, callTarget,
                             frameDescriptor, definitionCellSlots, executionCellSlots,
                             numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
         }
@@ -113,7 +125,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 PCell[] closure = getClosureFromLocals(frame);
                 cached = withDocString(frame,
-                                factory().createGeneratorFunction(functionName, enclosingClassName, arity, getGeneratorCallTarget(closure), PArguments.getGlobals(frame), closure, null));
+                                factory().createGeneratorFunction(functionName, enclosingClassName, arity, getGeneratorCallTarget(closure), PArguments.getGlobals(frame), closure, null, null));
             }
             return cached;
         }

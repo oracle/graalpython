@@ -1727,12 +1727,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure) {
-            return factory().createFunction(name, getTypeName(cls), code.getArity(), code.getRootCallTarget(), globals, defaultArgs.getArray(), null);
+            // TODO split defaults of positional args from kwDefaults
+            return factory().createFunction(name, getTypeName(cls), code.getArity(), code.getRootCallTarget(), globals, defaultArgs.getArray(), null, null);
         }
 
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure) {
-            return factory().createFunction(name, getTypeName(cls), code.getArity(), code.getRootCallTarget(), globals, defaultArgs.getArray(), (PCell[]) closure.getArray());
+            // TODO split defaults of positional args from kwDefaults
+            return factory().createFunction(name, getTypeName(cls), code.getArity(), code.getRootCallTarget(), globals, defaultArgs.getArray(), null, (PCell[]) closure.getArray());
         }
 
         @Fallback
