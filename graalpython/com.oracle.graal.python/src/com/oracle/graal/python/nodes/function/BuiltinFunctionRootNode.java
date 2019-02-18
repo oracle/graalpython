@@ -34,7 +34,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -180,8 +179,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             args.add(ReadVarArgsNode.create(args.size(), true));
         }
 
-        for (String string : builtin.keywordOnlyNames()) {
-            args.add(ReadKeywordNode.create(string));
+        int keywordCount = builtin.keywordOnlyNames().length;
+        for (int i = 0; i < keywordCount; i++) {
+            args.add(ReadIndexedArgumentNode.create(i + maxNumPosArgs));
         }
 
         if (builtin.takesVarKeywordArgs()) {

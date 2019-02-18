@@ -148,15 +148,13 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         int co_kwonlyargcount = arity.getNumOfRequiredKeywords();
         boolean too_many_args = false;
 
+        // positional args, kwd only args, varargs, var kwds
+        Object[] scope_w = PArguments.create(co_argcount + co_kwonlyargcount);
+
         int upfront = 0;
         // put the special w_firstarg into the scope, if it exists
         if (self != null) {
             upfront = 1;
-        }
-
-        Object[] scope_w = PArguments.create(Math.max(userArguments.length + upfront, co_argcount));
-
-        if (self != null) {
             if (co_argcount > 0) {
                 PArguments.setArgument(scope_w, 0, self);
             }
@@ -181,42 +179,25 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         // collect extra positional arguments into the *vararg
         if (arity.takesVarArgs()) {
-            // we collect the varargs on the caller site
-            // PyPy, however, collects them here and puts them in a tuple.
-            // TODO: (tfel) (args) consider if we also might want this.
             int args_left = co_argcount - upfront;
             if (args_left < 0) {
                 // everything goes to starargs, we already put self in position 0
                 // above
-                for (int j = 0; j < args_w.length; j++) {
-                    PArguments.setArgument(scope_w, upfront + j, args_w[j]);
-                }
+                PArguments.setVariableArguments(scope_w, args_w);
             } else if (num_args > args_left) {
-                for (int i = 0, j = args_left; j < args_w.length; i++, j++) {
-                    PArguments.setArgument(scope_w, co_argcount + i, args_w[j]);
-                }
+                PArguments.setVariableArguments(scope_w, Arrays.copyOfRange(args_w, args_left, args_w.length));
             } else {
-                // no starargs
+                // no varargs
             }
         } else if (avail > co_argcount) {
             too_many_args = true;
         }
 
         // handle keyword arguments
-        // match the keywords given at the call site to the argument names
-        // the called node takes and collect the rest in the keywords
-        // this also does the first check for for missing positional arguments and fill them from
-        // the kwds.
+        // match the keywords given at the call site to the argument names.
+        // the called node takes and collect the rest in the keywords.
         if (keywords.length > 0) {
-            scope_w = applyKeywords.execute(name, arity, scope_w, keywords);
-        }
-
-        boolean more_filling = input_argcount < co_argcount || keywords.length < co_kwonlyargcount;
-        int firstDefaultArgIdx = 0;
-        if (more_filling) {
-            firstDefaultArgIdx = co_argcount - (defaults == null ? 0 : defaults.length);
-            // pypy fills more arguments from keywords here, but we've already done that in the
-            // apply keywords node
+            applyKeywords.execute(name, arity, scope_w, keywords);
         }
 
         if (too_many_args) {
@@ -227,7 +208,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
 
-            if (defaults != null && defaults.length > 0) {
+            if (defaults.length > 0) {
                 if (kwonly_given == 0) {
                     throw raise(PythonBuiltinClassType.TypeError, "%s() takes from %d to %d positional arguments but %d %s given%s",
                                     name,
@@ -278,7 +259,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             }
         }
 
+        boolean more_filling = input_argcount < co_argcount + co_kwonlyargcount;
         if (more_filling) {
+            int firstDefaultArgIdx = co_argcount - defaults.length;
+
             int missingCnt = 0;
             String[] missingNames = new String[co_argcount + co_kwonlyargcount];
 
@@ -304,25 +288,19 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             }
 
             // finally, fill kwonly arguments with w_kw_defs (if needed)
-            PKeyword[] givenKwds = PArguments.getKeywordArguments(scope_w);
-            String[] kwOnlyNames = arity.getKeywordNames();
-            kwnames: for (String kwname : kwOnlyNames) {
-                for (int j = 0; j < givenKwds.length; j++) {
-                    if (givenKwds[j].getName().equals(kwname)) {
-                        continue kwnames; // we have it
-                    }
+            kwnames: for (int i = co_argcount; i < co_argcount + co_kwonlyargcount; i++) {
+                if (PArguments.getArgument(scope_w, i) != null) {
+                    continue;
                 }
+                String kwname = arity.getKeywordNames()[i - co_argcount];
                 for (int j = 0; j < kwdefaults.length; j++) {
                     if (kwdefaults[j].getName().equals(kwname)) {
-                        givenKwds = Arrays.copyOf(givenKwds, givenKwds.length + 1);
-                        givenKwds[givenKwds.length - 1] = kwdefaults[j];
+                        PArguments.setArgument(scope_w, i, kwdefaults[j].getValue());
                         continue kwnames;
                     }
                 }
                 missingNames[missingCnt++] = kwname;
             }
-
-            PArguments.setKeywordArguments(scope_w, givenKwds);
 
             if (missingCnt > 0) {
                 throw raise(PythonBuiltinClassType.TypeError, "%s() missing %d required keyword-only argument%s: %s",

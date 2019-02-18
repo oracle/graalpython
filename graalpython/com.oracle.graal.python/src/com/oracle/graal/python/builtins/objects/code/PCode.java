@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
@@ -58,8 +57,8 @@ import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.nodes.Node;
@@ -205,12 +204,8 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static Set<String> getKeywordArgumentNames(List<ReadKeywordNode> readKeywordNodes) {
-        Set<String> kwArgNames = new HashSet<>();
-        for (ReadKeywordNode node : readKeywordNodes) {
-            kwArgNames.add(node.getName());
-        }
-        return kwArgNames;
+    private static Set<String> getKeywordArgumentNames(List<ReadIndexedArgumentNode> readKeywordNodes) {
+        return extractArgumentNames(readKeywordNodes);
     }
 
     @TruffleBoundary
@@ -256,25 +251,28 @@ public final class PCode extends PythonBuiltinObject {
         Set<String> freeVarsSet = asSet((String[]) freevars);
         Set<String> cellVarsSet = asSet((String[]) cellvars);
 
-        List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(funcRootNode, ReadKeywordNode.class);
-        keywordNames = new String[readKeywordNodes.size()];
+        // List<ReadIndexedArgumentNode> readKeywordNodes =
+        // NodeUtil.findAllNodeInstances(funcRootNode, ReadKeywordNode.class);
+        // keywordNames = new String[readKeywordNodes.size()];
         List<ReadIndexedArgumentNode> readIndexedArgumentNodes = NodeUtil.findAllNodeInstances(funcRootNode, ReadIndexedArgumentNode.class);
 
-        Set<String> kwNames = getKeywordArgumentNames(readKeywordNodes);
+        // Set<String> kwNames = getKeywordArgumentNames(readKeywordNodes);
         Set<String> argNames = extractArgumentNames(readIndexedArgumentNodes);
 
         Set<String> allArgNames = new HashSet<>();
-        allArgNames.addAll(kwNames);
+        // allArgNames.addAll(kwNames);
         allArgNames.addAll(argNames);
 
         this.argcount = readIndexedArgumentNodes.size();
         this.kwonlyargcount = 0;
 
-        for (int i = 0; i < readKeywordNodes.size(); i++) {
+        /*@formatter:off
+         * for (int i = 0; i < readKeywordNodes.size(); i++) {
             ReadKeywordNode kwNode = readKeywordNodes.get(i);
             keywordNames[i] = new String(kwNode.getName());
             kwonlyargcount++;
-        }
+        } @formatter:on
+        */
 
         Set<String> varnamesSet = new HashSet<>();
         for (Object identifier : getRootNode().getFrameDescriptor().getIdentifiers()) {

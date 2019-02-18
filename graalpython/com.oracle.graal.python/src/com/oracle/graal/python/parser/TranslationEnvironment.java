@@ -30,7 +30,6 @@ import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
 import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.TEMP_LOCAL_PREFIX;
 
 import java.util.List;
-import java.util.function.Function;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 
@@ -39,7 +38,6 @@ import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -209,25 +207,21 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         return factory.createWriteLocal(right, slot);
     }
 
-    private StatementNode getWriteNode(String name, Function<Integer, ReadArgumentNode> getReadNode) {
-        ExpressionNode right = getReadNode.apply(currentScope.getVariableIndex(name)).asExpression();
+    private StatementNode getWriteNode(String name, ReadArgumentNode readNode) {
+        ExpressionNode right = readNode.asExpression();
         return getWriteNode(name, currentScope.findFrameSlot(name), right);
     }
 
-    public StatementNode getWriteArgumentToLocal(String name) {
-        return getWriteNode(name, index -> ReadIndexedArgumentNode.create(index));
+    public StatementNode getWriteArgumentToLocal(String name, int index) {
+        return getWriteNode(name, ReadIndexedArgumentNode.create(index));
     }
 
-    public StatementNode getWriteRequiredKeywordArgumentToLocal(String name) {
-        return getWriteNode(name, index -> ReadKeywordNode.create(name));
-    }
-
-    public StatementNode getWriteVarArgsToLocal(String name) {
-        return getWriteNode(name, index -> ReadVarArgsNode.create(index));
+    public StatementNode getWriteVarArgsToLocal(String name, int index) {
+        return getWriteNode(name, ReadVarArgsNode.create(index));
     }
 
     public StatementNode getWriteKwArgsToLocal(String name, String[] names) {
-        return getWriteNode(name, index -> ReadVarKeywordsNode.createForUserFunction(names));
+        return getWriteNode(name, ReadVarKeywordsNode.createForUserFunction(names));
     }
 
     static ScopeInfo findVariableScope(ScopeInfo enclosingScope, String identifier) {

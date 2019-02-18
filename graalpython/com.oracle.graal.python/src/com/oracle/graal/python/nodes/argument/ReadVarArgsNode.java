@@ -26,12 +26,8 @@
 package com.oracle.graal.python.nodes.argument;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class ReadVarArgsNode extends ReadArgumentNode {
     private final int index;
@@ -54,54 +50,9 @@ public abstract class ReadVarArgsNode extends ReadArgumentNode {
 
     public abstract Object[] executeObjectArray(VirtualFrame frame);
 
-    protected int getAndCheckUserArgsLen(VirtualFrame frame) {
-        int length = getUserArgsLen(frame);
-        if (length >= PythonOptions.getIntOption(
-                        getContext(), PythonOptions.VariableArgumentReadUnrollingLimit)) {
-            return -1;
-        }
-        return length;
-    }
-
-    protected static int getUserArgsLen(VirtualFrame frame) {
-        return PArguments.getUserArgumentLength(frame);
-    }
-
-    @Specialization(guards = {"getUserArgsLen(frame) == userArgumentLength"})
-    @ExplodeLoop
-    Object extractVarargs(VirtualFrame frame, @Cached("getAndCheckUserArgsLen(frame)") int userArgumentLength) {
-        if (index >= userArgumentLength) {
-            return output();
-        } else {
-            Object[] varArgs = new Object[userArgumentLength - index];
-            CompilerAsserts.compilationConstant(varArgs.length);
-            for (int i = 0; i < varArgs.length; i++) {
-                varArgs[i] = PArguments.getArgument(frame, i + index);
-            }
-            return output(varArgs);
-        }
-    }
-
-    @Specialization(replaces = "extractVarargs")
+    @Specialization
     Object extractVariableVarargs(VirtualFrame frame) {
-        int userArgumentLength = getUserArgsLen(frame);
-        if (index >= userArgumentLength) {
-            return output();
-        } else {
-            Object[] varArgs = new Object[userArgumentLength - index];
-            for (int i = 0; i < varArgs.length; i++) {
-                varArgs[i] = PArguments.getArgument(frame, i + index);
-            }
-            return output(varArgs);
-        }
-    }
-
-    private Object output() {
-        if (builtin) {
-            return new Object[0];
-        } else {
-            return factory().createEmptyTuple();
-        }
+        return output(PArguments.getVariableArguments(frame));
     }
 
     private Object output(Object[] varArgs) {

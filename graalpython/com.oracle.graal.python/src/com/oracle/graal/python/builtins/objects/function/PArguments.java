@@ -39,6 +39,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * The layout of an argument array for a normal frame.
  *
  *                            +-------------------+
+ * INDEX_VARIABLE_ARGUMENTS-> | Object[]          |
+ *                            +-------------------+
  * INDEX_KEYWORD_ARGUMENTS -> | PKeyword[]        |
  *                            +-------------------+
  * INDEX_GENERATOR_FRAME   -> | MaterializedFrame |
@@ -74,15 +76,17 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  */
 //@formatter:on
 public final class PArguments {
+    public static final Object[] EMPTY_VARARGS = new Object[0];
 
-    public static final int INDEX_KEYWORD_ARGUMENTS = 0;
-    public static final int INDEX_GENERATOR_FRAME = 1;
-    public static final int INDEX_CALLER_FRAME = 2;
-    public static final int INDEX_SPECIAL_ARGUMENT = 3;
-    public static final int INDEX_GLOBALS_ARGUMENT = 4;
-    public static final int INDEX_PFRAME_ARGUMENT = 5;
-    public static final int INDEX_CLOSURE = 6;
-    public static final int USER_ARGUMENTS_OFFSET = 7;
+    public static final int INDEX_VARIABLE_ARGUMENTS = 0;
+    public static final int INDEX_KEYWORD_ARGUMENTS = 1;
+    public static final int INDEX_GENERATOR_FRAME = 2;
+    public static final int INDEX_CALLER_FRAME = 3;
+    public static final int INDEX_SPECIAL_ARGUMENT = 4;
+    public static final int INDEX_GLOBALS_ARGUMENT = 5;
+    public static final int INDEX_PFRAME_ARGUMENT = 6;
+    public static final int INDEX_CLOSURE = 7;
+    public static final int USER_ARGUMENTS_OFFSET = 8;
 
     private static PFrame[] getPFrameWrapper() {
         // this is needed to bypass the fact that PFrame instances get a READONLY frame which will
@@ -92,7 +96,7 @@ public final class PArguments {
     }
 
     private static Object[] iInitArguments() {
-        return new Object[]{PKeyword.EMPTY_KEYWORDS, null, null, null, null, getPFrameWrapper(), null};
+        return new Object[]{EMPTY_VARARGS, PKeyword.EMPTY_KEYWORDS, null, null, null, null, getPFrameWrapper(), null};
     }
 
     public static Object[] withGlobals(PythonObject globals) {
@@ -107,9 +111,22 @@ public final class PArguments {
 
     public static Object[] create(int userArgumentLength) {
         Object[] initialArguments = new Object[USER_ARGUMENTS_OFFSET + userArgumentLength];
+        initialArguments[INDEX_VARIABLE_ARGUMENTS] = EMPTY_VARARGS;
         initialArguments[INDEX_KEYWORD_ARGUMENTS] = PKeyword.EMPTY_KEYWORDS;
         initialArguments[INDEX_PFRAME_ARGUMENT] = getPFrameWrapper();
         return initialArguments;
+    }
+
+    public static void setVariableArguments(Object[] arguments, Object[] variableArguments) {
+        arguments[INDEX_VARIABLE_ARGUMENTS] = variableArguments;
+    }
+
+    public static Object[] getVariableArguments(Frame frame) {
+        return getVariableArguments(frame.getArguments());
+    }
+
+    public static Object[] getVariableArguments(Object[] frame) {
+        return (Object[]) frame[INDEX_VARIABLE_ARGUMENTS];
     }
 
     public static void setKeywordArguments(Object[] arguments, PKeyword[] keywordArguments) {
