@@ -49,6 +49,8 @@ import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -74,6 +76,29 @@ public abstract class CArrayWrappers {
         @Override
         public ForeignAccess getForeignAccess() {
             return CArrayWrapperMRForeign.ACCESS;
+        }
+
+        @ExportMessage
+        public boolean isPointer(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.IsPointerNode pIsPointerNode) {
+            return pIsPointerNode.execute(this);
+        }
+
+        @ExportMessage
+        public long asPointer(@CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+            Object nativePointer = this.getNativePointer();
+            if (nativePointer instanceof Long) {
+                return (long) nativePointer;
+            }
+            return interopLibrary.asPointer(nativePointer);
+        }
+
+        @ExportMessage
+        public void toNative(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.AsCharPointer asCharPointerNode,
+                             @Cached.Exclusive @Cached(allowUncached = true) PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            invalidateNode.execute();
+            if (!this.isNative()) {
+                this.setNativePointer(asCharPointerNode.execute(this.getDelegate()));
+            }
         }
     }
 

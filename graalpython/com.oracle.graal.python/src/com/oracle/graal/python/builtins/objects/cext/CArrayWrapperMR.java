@@ -45,17 +45,12 @@ import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CArrayWrappe
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 
 @MessageResolution(receiverType = CArrayWrapper.class)
@@ -89,57 +84,6 @@ public class CArrayWrapperMR {
                 callUnaryNode = insert(PCallCapiFunction.create(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID));
             }
             return callUnaryNode.call(new Object[]{len});
-        }
-    }
-
-    @Resolve(message = "IS_POINTER")
-    abstract static class IsPointerNode extends Node {
-        @Child private CExtNodes.IsPointerNode pIsPointerNode = CExtNodes.IsPointerNode.create();
-
-        boolean access(CArrayWrapper obj) {
-            return pIsPointerNode.execute(obj);
-        }
-    }
-
-    @Resolve(message = "AS_POINTER")
-    abstract static class AsPointerNode extends Node {
-        @Child private Node asPointerNode;
-
-        long access(CArrayWrapper obj) {
-            // the native pointer object must either be a TruffleObject or a primitive
-            Object nativePointer = obj.getNativePointer();
-            if (nativePointer instanceof TruffleObject) {
-                if (asPointerNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    asPointerNode = insert(Message.AS_POINTER.createNode());
-                }
-                try {
-                    return ForeignAccess.sendAsPointer(asPointerNode, (TruffleObject) nativePointer);
-                } catch (UnsupportedMessageException e) {
-                    throw e.raise();
-                }
-            }
-            return (long) nativePointer;
-
-        }
-    }
-
-    @Resolve(message = "TO_NATIVE")
-    abstract static class ToNativeNode extends Node {
-        @Child private CExtNodes.AsCharPointer asCharPointerNode;
-        @Child private InvalidateNativeObjectsAllManagedNode invalidateNode = InvalidateNativeObjectsAllManagedNode.create();
-
-        Object access(CArrayWrapper obj) {
-            invalidateNode.execute();
-            if (!obj.isNative()) {
-                if (asCharPointerNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    asCharPointerNode = insert(CExtNodes.AsCharPointer.create());
-                }
-                Object ptr = asCharPointerNode.execute(obj.getDelegate());
-                obj.setNativePointer(ptr);
-            }
-            return obj;
         }
     }
 
