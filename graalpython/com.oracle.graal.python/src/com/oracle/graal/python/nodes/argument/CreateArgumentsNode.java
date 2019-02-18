@@ -148,12 +148,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         int co_kwonlyargcount = arity.getNumOfRequiredKeywords();
         boolean too_many_args = false;
 
-        Object[] scope_w = PArguments.create(Math.max(userArguments.length, arity.getMaxNumOfPositionalArgs()));
-
-        // put the special w_firstarg into the scope, if it exists
         int upfront = 0;
+        // put the special w_firstarg into the scope, if it exists
         if (self != null) {
             upfront = 1;
+        }
+
+        Object[] scope_w = PArguments.create(Math.max(userArguments.length + upfront, co_argcount));
+
+        if (self != null) {
             if (co_argcount > 0) {
                 PArguments.setArgument(scope_w, 0, self);
             }
@@ -189,8 +192,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     PArguments.setArgument(scope_w, upfront + j, args_w[j]);
                 }
             } else if (num_args > args_left) {
-                for (int j = args_left; j < args_w.length; j++) {
-                    PArguments.setArgument(scope_w, j, args_w[j]);
+                for (int i = 0, j = args_left; j < args_w.length; i++, j++) {
+                    PArguments.setArgument(scope_w, co_argcount + i, args_w[j]);
                 }
             } else {
                 // no starargs
