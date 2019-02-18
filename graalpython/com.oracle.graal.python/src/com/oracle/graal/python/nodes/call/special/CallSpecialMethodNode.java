@@ -41,11 +41,11 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -60,6 +60,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic(PythonOptions.class)
@@ -114,32 +115,14 @@ abstract class CallSpecialMethodNode extends Node {
         return null;
     }
 
-    protected static boolean takesFixedNumOfPositionalArgs(PMethod func) {
-        Arity arity = getArity(func.getFunction());
-        return arity != null && arity.takesPositionalOnly() && getNumDefaults(func.getFunction()) == 0;
-    }
-
-    protected static boolean takesFixedNumOfPositionalArgs(PBuiltinMethod func) {
-        Arity arity = getArity(func.getFunction());
-        return arity != null && arity.takesPositionalOnly() && getNumDefaults(func.getFunction()) == 0;
-    }
-
-    private static Arity getArity(Object func) {
-        if (func instanceof PFunction) {
-            return ((PFunction) func).getArity();
-        } else if (func instanceof PBuiltinFunction) {
-            return ((PBuiltinFunction) func).getArity();
+    protected static boolean takesSelfArg(Object func) {
+        if (func instanceof PBuiltinFunction) {
+            RootNode functionRootNode = ((PBuiltinFunction) func).getFunctionRootNode();
+            if (functionRootNode instanceof BuiltinFunctionRootNode) {
+                return ((BuiltinFunctionRootNode) functionRootNode).declaresExplicitSelf();
+            }
         }
-        return null;
-    }
-
-    private static int getNumDefaults(Object func) {
-        if (func instanceof PFunction) {
-            return ((PFunction) func).getDefaults().length;
-        } else if (func instanceof PBuiltinFunction) {
-            return ((PBuiltinFunction) func).getDefaults().length;
-        }
-        return 0;
+        return true;
     }
 
     protected static RootCallTarget getCallTarget(PMethod meth) {

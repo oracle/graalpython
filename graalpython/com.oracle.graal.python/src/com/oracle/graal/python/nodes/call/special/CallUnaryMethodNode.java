@@ -154,32 +154,34 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.execute(receiver);
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object callMethodSingleContext(@SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getUnary(func.getFunction())") PythonUnaryBuiltinNode builtinNode) {
         return builtinNode.execute(receiver);
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "isFixed"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object callSelfMethodSingleContext(@SuppressWarnings("unused") PBuiltinMethod func, Object arg,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
-                    @SuppressWarnings("unused") @Cached("takesFixedNumOfPositionalArgs(func)") boolean isFixed,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBinary(func.getFunction())") PythonBinaryBuiltinNode builtinNode) {
         return builtinNode.execute(func.getSelf(), arg);
     }
 
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callMethod(@SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getUnary(func.getFunction())") PythonUnaryBuiltinNode builtinNode) {
         return builtinNode.execute(receiver);
     }
 
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "isFixed"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSelfMethod(@SuppressWarnings("unused") PBuiltinMethod func, Object arg,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
-                    @SuppressWarnings("unused") @Cached("takesFixedNumOfPositionalArgs(func)") boolean isFixed,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBinary(func.getFunction())") PythonBinaryBuiltinNode builtinNode) {
         return builtinNode.execute(func.getSelf(), arg);
     }
