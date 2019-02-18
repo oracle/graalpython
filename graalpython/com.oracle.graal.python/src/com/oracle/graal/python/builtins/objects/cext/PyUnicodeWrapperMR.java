@@ -43,51 +43,14 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PyUnicodeWrapperMRFactory.PyUnicodeToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.PAsPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.ToPyObjectNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.MessageResolution;
-import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.nodes.Node;
 
 @MessageResolution(receiverType = PyUnicodeWrapper.class)
 public class PyUnicodeWrapperMR {
-
-    @Resolve(message = "TO_NATIVE")
-    abstract static class ToNativeNode extends Node {
-        @Child private ToPyObjectNode toPyObjectNode = ToPyObjectNode.create();
-        @Child private InvalidateNativeObjectsAllManagedNode invalidateNode = InvalidateNativeObjectsAllManagedNode.create();
-
-        Object access(PyUnicodeWrapper obj) {
-            invalidateNode.execute();
-            if (!obj.isNative()) {
-                obj.setNativePointer(toPyObjectNode.execute(obj));
-            }
-            return obj;
-        }
-    }
-
-    @Resolve(message = "IS_POINTER")
-    abstract static class IsPointerNode extends Node {
-        @Child private CExtNodes.IsPointerNode pIsPointerNode = CExtNodes.IsPointerNode.create();
-
-        boolean access(PyUnicodeWrapper obj) {
-            return pIsPointerNode.execute(obj);
-        }
-    }
-
-    @Resolve(message = "AS_POINTER")
-    abstract static class AsPointerNode extends Node {
-        @Child private PAsPointerNode pAsPointerNode = PAsPointerNode.create();
-
-        long access(PyUnicodeWrapper obj) {
-            return pAsPointerNode.execute(obj);
-        }
-    }
 
     abstract static class PyUnicodeToNativeNode extends CExtBaseNode {
         @CompilationFinal private TruffleObject derefHandleIntrinsic;

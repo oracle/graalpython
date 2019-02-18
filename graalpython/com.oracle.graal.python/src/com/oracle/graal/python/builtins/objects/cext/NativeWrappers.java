@@ -768,6 +768,25 @@ public abstract class NativeWrappers {
         static boolean isInstance(TruffleObject o) {
             return o instanceof PyUnicodeWrapper;
         }
+
+        @ExportMessage
+        public boolean isPointer(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.IsPointerNode pIsPointerNode) {
+            return pIsPointerNode.execute(this);
+        }
+
+        @ExportMessage
+        public long asPointer(@Cached.Exclusive @Cached(allowUncached = true) PythonObjectNativeWrapperMR.PAsPointerNode pAsPointerNode) {
+            return pAsPointerNode.execute(this);
+        }
+
+        @ExportMessage
+        public void toNative(@Cached.Exclusive @Cached(allowUncached = true) PythonObjectNativeWrapperMR.ToPyObjectNode toPyObjectNode,
+                             @Cached.Exclusive @Cached(allowUncached = true) PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            invalidateNode.execute();
+            if (!this.isNative()) {
+                this.setNativePointer(toPyObjectNode.execute(this));
+            }
+        }
     }
 
     /**
