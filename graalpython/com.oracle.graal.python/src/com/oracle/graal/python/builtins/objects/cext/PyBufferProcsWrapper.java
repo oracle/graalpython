@@ -56,6 +56,8 @@ import com.oracle.truffle.api.library.ExportMessage;
 @ExportLibrary(InteropLibrary.class)
 @ImportStatic(SpecialMethodNames.class)
 public class PyBufferProcsWrapper extends PythonNativeWrapper {
+    private static final String BF_GETBUFFER = "bf_getbuffer";
+    private static final String BF_RELEASEBUFFER = "bf_releasebuffer";
 
     public PyBufferProcsWrapper(PythonClass delegate) {
         super(delegate);
@@ -77,8 +79,8 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
     @ExportMessage
     boolean isMemberReadable(String member) {
         switch (member) {
-            case "bf_getbuffer":
-            case "bf_releasebuffer":
+            case BF_GETBUFFER:
+            case BF_RELEASEBUFFER:
                 return true;
             default:
                 return false;
@@ -98,10 +100,10 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
         // TODO handle case if nativeWrapper does not exist yet
         Object result;
         switch (member) {
-            case "bf_getbuffer":
+            case BF_GETBUFFER:
                 result = nativeWrapper.getGetBufferProc();
                 break;
-            case "bf_releasebuffer":
+            case BF_RELEASEBUFFER:
                 // TODO
                 result = nativeWrapper.getReleaseBufferProc();
                 break;
