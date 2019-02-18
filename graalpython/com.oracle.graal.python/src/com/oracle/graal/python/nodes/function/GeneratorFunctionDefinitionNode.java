@@ -62,7 +62,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     public static GeneratorFunctionDefinitionNode create(String name, String enclosingClassName, ExpressionNode doc, Arity arity, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
                     RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots, int numOfActiveFlags,
                     int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-        if (defaults.length > 0) {
+        if (defaults != null && defaults.length > 0) {
             return new GeneratorFunctionDefinitionNode(name, enclosingClassName, doc, arity, defaults, kwDefaults, callTarget,
                             frameDescriptor, definitionCellSlots, executionCellSlots,
                             numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);

@@ -263,7 +263,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         return os;
     }
 
-    @Builtin(name = "exc_info", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "exc_info", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public static abstract class ExcInfoNode extends PythonBuiltinNode {
         @Specialization
@@ -375,7 +375,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "getfilesystemencoding", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getfilesystemencoding", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public static abstract class GetFileSystemEncodingNode extends PythonBuiltinNode {
         @Specialization
@@ -384,7 +384,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getfilesystemencodeerrors", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getfilesystemencodeerrors", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public static abstract class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
         @Specialization
@@ -393,7 +393,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "intern", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "intern", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InternNode extends PythonBuiltinNode {
         @Specialization
@@ -410,7 +410,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getdefaultencoding", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getdefaultencoding", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public static abstract class GetDefaultEncodingNode extends PythonBuiltinNode {
         @Specialization

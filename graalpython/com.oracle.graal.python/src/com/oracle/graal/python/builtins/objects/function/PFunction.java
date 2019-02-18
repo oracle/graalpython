@@ -43,7 +43,7 @@ import com.oracle.truffle.api.source.SourceSection;
 
 public class PFunction extends PythonObject {
     private static final Object[] EMPTY_DEFAULTS = new Object[0];
-    private final String name;
+    private String name;
     private final String enclosingClassName;
     private final Arity arity;
     private final RootCallTarget callTarget;
@@ -99,6 +99,10 @@ public class PFunction extends PythonObject {
         return name;
     }
 
+    public void setName(String value) {
+        name = value;
+    }
+
     public Arity getArity() {
         return arity;
     }
@@ -145,7 +149,7 @@ public class PFunction extends PythonObject {
         this.defaultValues = defaults;
     }
 
-    public Object[] getKwDefaults() {
+    public PKeyword[] getKwDefaults() {
         return kwDefaultValues;
     }
 

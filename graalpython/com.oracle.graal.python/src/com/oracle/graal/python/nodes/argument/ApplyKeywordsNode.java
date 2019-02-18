@@ -65,7 +65,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 abstract class ApplyKeywordsNode extends PNodeWithContext {
     private final ConditionProfile expandArgs = ConditionProfile.createBinaryProfile();
 
-    public abstract Object[] execute(Arity calleeArity, Object[] arguments, PKeyword[] keywords);
+    public abstract Object[] execute(String calleeName, Arity calleeArity, Object[] arguments, PKeyword[] keywords);
 
     public static ApplyKeywordsNode create() {
         return ApplyKeywordsNodeGen.create();
@@ -81,7 +81,7 @@ abstract class ApplyKeywordsNode extends PNodeWithContext {
 
     @Specialization(guards = {"kwLen == keywords.length", "argLen == arguments.length", "calleeArity == cachedArity"})
     @ExplodeLoop
-    Object[] applyCached(Arity calleeArity, Object[] arguments, PKeyword[] keywords,
+    Object[] applyCached(String calleeName, @SuppressWarnings("unused") Arity calleeArity, Object[] arguments, PKeyword[] keywords,
                     @Cached("keywords.length") int kwLen,
                     @Cached("arguments.length") int argLen,
                     @Cached("getUserArgumentLength(arguments)") int userArgLen,
@@ -105,7 +105,7 @@ abstract class ApplyKeywordsNode extends PNodeWithContext {
             if (kwIdx != -1) {
                 if (PArguments.getArgument(combined, kwIdx) != null) {
                     throw raise(PythonErrorType.TypeError, "%s() got multiple values for argument '%s'",
-                                    calleeArity.getFunctionName(),
+                                    calleeName,
                                     kwArg.getName());
                 }
                 PArguments.setArgument(combined, kwIdx, kwArg.getValue());
@@ -118,7 +118,7 @@ abstract class ApplyKeywordsNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = "applyCached")
-    Object[] applyUncached(Arity calleeArity, Object[] arguments, PKeyword[] keywords) {
+    Object[] applyUncached(String calleeName, Arity calleeArity, Object[] arguments, PKeyword[] keywords) {
         String[] parameters = calleeArity.getParameterIds();
         Object[] combined = arguments;
         if (parameters.length > PArguments.getUserArgumentLength(arguments)) {
@@ -142,7 +142,7 @@ abstract class ApplyKeywordsNode extends PNodeWithContext {
 
             if (kwIdx != -1) {
                 if (PArguments.getArgument(combined, kwIdx) != null) {
-                    throw raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", calleeArity.getFunctionName(), kwArg.getName());
+                    throw raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", calleeName, kwArg.getName());
                 }
                 PArguments.setArgument(combined, kwIdx, kwArg.getValue());
             } else {

@@ -116,12 +116,12 @@ abstract class CallSpecialMethodNode extends Node {
 
     protected static boolean takesFixedNumOfPositionalArgs(PMethod func) {
         Arity arity = getArity(func.getFunction());
-        return arity != null && arity.takesFixedNumOfPositionalArgs();
+        return arity != null && arity.takesPositionalOnly() && getNumDefaults(func.getFunction()) == 0;
     }
 
     protected static boolean takesFixedNumOfPositionalArgs(PBuiltinMethod func) {
         Arity arity = getArity(func.getFunction());
-        return arity != null && arity.takesFixedNumOfPositionalArgs();
+        return arity != null && arity.takesPositionalOnly() && getNumDefaults(func.getFunction()) == 0;
     }
 
     private static Arity getArity(Object func) {
@@ -131,6 +131,15 @@ abstract class CallSpecialMethodNode extends Node {
             return ((PBuiltinFunction) func).getArity();
         }
         return null;
+    }
+
+    private static int getNumDefaults(Object func) {
+        if (func instanceof PFunction) {
+            return ((PFunction) func).getDefaults().length;
+        } else if (func instanceof PBuiltinFunction) {
+            return ((PBuiltinFunction) func).getDefaults().length;
+        }
+        return 0;
     }
 
     protected static RootCallTarget getCallTarget(PMethod meth) {

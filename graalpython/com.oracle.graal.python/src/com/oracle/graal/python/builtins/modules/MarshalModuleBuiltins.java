@@ -46,7 +46,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         return MarshalModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "dump", minNumOfPositionalArgs = 2, keywordArguments = {"version"})
+    @Builtin(name = "dump", minNumOfPositionalArgs = 2, parameterNames = {"self", "file", "version"})
     @GenerateNodeFactory
     abstract static class DumpNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -56,7 +56,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dumps", minNumOfPositionalArgs = 1, keywordArguments = {"version"})
+    @Builtin(name = "dumps", minNumOfPositionalArgs = 1, parameterNames = {"self", "version"})
     @GenerateNodeFactory
     abstract static class DumpsNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -68,7 +68,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "load", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "load", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LoadNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -78,7 +78,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "loads", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "loads", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LoadsNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")

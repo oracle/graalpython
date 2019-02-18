@@ -65,7 +65,7 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
         return DecoratedMethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InitNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -75,7 +75,7 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __FUNC__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __FUNC__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class FuncNode extends PythonUnaryBuiltinNode {
         @Specialization

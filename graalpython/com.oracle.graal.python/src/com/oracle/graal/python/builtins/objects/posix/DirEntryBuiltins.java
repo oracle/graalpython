@@ -67,7 +67,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         return DirEntryBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = SpecialMethodNames.__REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -77,7 +77,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__FSPATH__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__FSPATH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FspathNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -86,7 +86,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "inode", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "inode", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InodeNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -95,7 +95,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_symlink", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "is_symlink", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsSymNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -104,7 +104,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_dir", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "is_dir", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsDirNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -113,7 +113,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_file", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "is_file", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsFileNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -122,7 +122,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "stat", fixedNumOfPositionalArgs = 1, doc = "return stat_result object for the entry; cached per entry")
+    @Builtin(name = "stat", minNumOfPositionalArgs = 1, doc = "return stat_result object for the entry; cached per entry")
     @GenerateNodeFactory
     abstract static class StatNode extends PythonUnaryBuiltinNode {
         private static final String STAT_RESULT = "__stat_result__";
@@ -141,7 +141,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "path", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "path", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class PathNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -150,7 +150,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "name", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "name", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class NameNode extends PythonUnaryBuiltinNode {
         @Specialization

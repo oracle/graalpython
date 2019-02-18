@@ -61,7 +61,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         return CtypesModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "c_char_p_", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "c_char_p_", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CCharP extends PythonUnaryBuiltinNode {
         @Child CExtNodes.AsCharPointer asCharPointer = CExtNodes.AsCharPointer.create();

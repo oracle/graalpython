@@ -115,7 +115,7 @@ public class ListBuiltins extends PythonBuiltins {
         return ListBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
@@ -200,7 +200,7 @@ public class ListBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __DELITEM__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __DELITEM__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
@@ -218,7 +218,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
@@ -244,7 +244,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETITEM__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
@@ -279,7 +279,7 @@ public class ListBuiltins extends PythonBuiltins {
     }
 
     // list.append(x)
-    @Builtin(name = "append", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "append", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ListAppendNode extends PythonBinaryBuiltinNode {
 
@@ -305,7 +305,7 @@ public class ListBuiltins extends PythonBuiltins {
     }
 
     // list.extend(L)
-    @Builtin(name = "extend", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "extend", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ListExtendNode extends PythonBinaryBuiltinNode {
 
@@ -334,7 +334,7 @@ public class ListBuiltins extends PythonBuiltins {
     }
 
     // list.insert(i, x)
-    @Builtin(name = "insert", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "insert", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class ListInsertNode extends PythonBuiltinNode {
         protected static final String ERROR_MSG = "'%p' object cannot be interpreted as an integer";
@@ -453,7 +453,7 @@ public class ListBuiltins extends PythonBuiltins {
     }
 
     // list.remove(x)
-    @Builtin(name = "remove", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "remove", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ListRemoveNode extends PythonBinaryBuiltinNode {
 
@@ -678,7 +678,7 @@ public class ListBuiltins extends PythonBuiltins {
     }
 
     // list.count(x)
-    @Builtin(name = "count", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "count", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ListCountNode extends PythonBuiltinNode {
 
@@ -701,7 +701,7 @@ public class ListBuiltins extends PythonBuiltins {
     }
 
     // list.clear()
-    @Builtin(name = "clear", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "clear", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ListClearNode extends PythonBuiltinNode {
 
@@ -714,7 +714,7 @@ public class ListBuiltins extends PythonBuiltins {
     }
 
     // list.reverse()
-    @Builtin(name = "reverse", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "reverse", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ListReverseNode extends PythonUnaryBuiltinNode {
 
@@ -729,7 +729,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
 
@@ -740,7 +740,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ADD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -761,7 +761,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __IADD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __IADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -782,7 +782,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBinaryBuiltinNode {
 
@@ -804,7 +804,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __IMUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __IMUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class IMulNode extends PythonBuiltinNode {
 
@@ -828,12 +828,12 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
 
@@ -850,7 +850,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class NeNode extends PythonBinaryBuiltinNode {
 
@@ -867,7 +867,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GeNode extends PythonBinaryBuiltinNode {
 
@@ -885,7 +885,7 @@ public class ListBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends PythonBinaryBuiltinNode {
 
@@ -903,7 +903,7 @@ public class ListBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __GT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GtNode extends PythonBinaryBuiltinNode {
 
@@ -919,7 +919,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -934,7 +934,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -944,7 +944,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __BOOL__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonBuiltinNode {
         @Specialization(guards = "isEmptyStorage(list)")
@@ -982,7 +982,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = {"isIntStorage(primary)"})
@@ -1011,7 +1011,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonBuiltinNode {
         @Specialization

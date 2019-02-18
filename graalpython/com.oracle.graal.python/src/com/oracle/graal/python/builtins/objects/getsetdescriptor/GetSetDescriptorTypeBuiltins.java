@@ -84,7 +84,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         return GetSetDescriptorTypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetSetReprNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -155,7 +155,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GET__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = __GET__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSetGetNode extends GetSetNode {
         private final BranchProfile branchProfile = BranchProfile.create();
@@ -190,7 +190,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SET__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = __SET__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSetSetNode extends GetSetNode {
         @Child GetClassNode getClassNode = GetClassNode.create();

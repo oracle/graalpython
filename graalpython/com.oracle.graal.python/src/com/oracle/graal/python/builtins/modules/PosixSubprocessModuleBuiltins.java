@@ -84,7 +84,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         return PosixSubprocessModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "fork_exec", fixedNumOfPositionalArgs = 17, parameterNames = {"args", "executable_list", "close_fds",
+    @Builtin(name = "fork_exec", minNumOfPositionalArgs = 17, parameterNames = {"args", "executable_list", "close_fds",
                     "fds_to_keep", "cwd", "env", "p2cread", "p2cwrite", "c2pread", "c2pwrite", "errread", "errwrite",
                     "errpipe_read", "errpipe_write", "restore_signals", "call_setsid", "preexec_fn"})
     @GenerateNodeFactory

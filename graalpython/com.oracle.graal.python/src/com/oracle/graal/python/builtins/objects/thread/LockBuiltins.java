@@ -80,7 +80,7 @@ public class LockBuiltins extends PythonBuiltins {
         return LockBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "acquire", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"blocking", "timeout"})
+    @Builtin(name = "acquire", minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
     abstract static class AcquireLockNode extends PythonTernaryBuiltinNode {
         private @Child CastToDoubleNode castToDoubleNode;
@@ -140,7 +140,7 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "acquire_lock", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"blocking", "timeout"})
+    @Builtin(name = "acquire_lock", minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
     abstract static class AcquireLockLockNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -150,7 +150,7 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"blocking", "timeout"})
+    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
     abstract static class EnterLockNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -160,7 +160,7 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "release", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "release", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReleaseLockNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -171,7 +171,7 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EXIT__, fixedNumOfPositionalArgs = 4)
+    @Builtin(name = __EXIT__, minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class ExitLockNode extends PythonBuiltinNode {
         @Specialization
@@ -182,7 +182,7 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "locked", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "locked", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsLockedLockNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -191,7 +191,7 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprLockNode extends PythonUnaryBuiltinNode {
         @Specialization

@@ -150,7 +150,7 @@ public class PyExpatModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("errors", errors);
     }
 
-    @Builtin(name = "ParserCreate", keywordArguments = {"encoding", "namespace_separator", "intern"}, doc = "Return a new XML parser object.")
+    @Builtin(name = "ParserCreate", parameterNames = {"encoding", "namespace_separator", "intern"}, doc = "Return a new XML parser object.")
     @GenerateNodeFactory
     static abstract class ParserCreateNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")

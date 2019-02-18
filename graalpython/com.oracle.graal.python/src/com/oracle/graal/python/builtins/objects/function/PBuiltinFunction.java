@@ -28,8 +28,11 @@ package com.oracle.graal.python.builtins.objects.function;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
+import java.util.Arrays;
+
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -38,6 +41,7 @@ import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -49,14 +53,23 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final RootCallTarget callTarget;
     private final Arity arity;
     private final boolean isStatic;
+    @CompilationFinal(dimensions = 1) private final PNone[] defaults;
+    @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    public PBuiltinFunction(LazyPythonClass clazz, String name, LazyPythonClass enclosingType, Arity arity, RootCallTarget callTarget) {
+    public PBuiltinFunction(LazyPythonClass clazz, String name, LazyPythonClass enclosingType, Arity arity, int numDefaults, RootCallTarget callTarget) {
         super(clazz);
         this.name = name;
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingType = enclosingType;
         this.callTarget = callTarget;
         this.arity = arity;
+        this.defaults = new PNone[numDefaults];
+        Arrays.fill(getDefaults(), PNone.NO_VALUE);
+        String[] keywordNames = arity.getKeywordNames();
+        this.kwDefaults = new PKeyword[keywordNames.length];
+        for (int i = 0; i < keywordNames.length; i++) {
+            kwDefaults[i] = new PKeyword(keywordNames[i], PNone.NO_VALUE);
+        }
         this.getStorage().define(__NAME__, name);
         if (enclosingType != null) {
             this.getStorage().define(__QUALNAME__, GetNameNode.doSlowPath(enclosingType) + "." + name);
@@ -112,7 +125,15 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         if (klass == enclosingType) {
             return this;
         } else {
-            return factory.createBuiltinFunction(name, klass, arity, callTarget);
+            return factory.createBuiltinFunction(name, klass, arity, defaults.length, callTarget);
         }
+    }
+
+    public PNone[] getDefaults() {
+        return defaults;
+    }
+
+    public PKeyword[] getKwDefaults() {
+        return kwDefaults;
     }
 }

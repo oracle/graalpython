@@ -41,17 +41,21 @@ public @interface Builtin {
 
     int minNumOfPositionalArgs() default 0;
 
+    int maxNumOfPositionalArgs() default -1;
+
     boolean isGetter() default false;
 
     boolean isSetter() default false;
 
     boolean takesVarArgs() default false;
 
+    boolean varArgsMarker() default false;
+
     boolean takesVarKeywordArgs() default false;
 
     String[] parameterNames() default {};
 
-    String[] keywordArguments() default {};
+    String[] keywordOnlyNames() default {};
 
     boolean isPublic() default true;
 

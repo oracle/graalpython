@@ -80,7 +80,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     }
 
     @SuppressWarnings("unused")
-    @Builtin(name = __GET__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = __GET__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = {"self.isStatic()"})
@@ -131,7 +131,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CLOSURE__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __CLOSURE__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetClosureNode extends PythonBuiltinNode {
         @Specialization(guards = "!isBuiltinFunction(self)")
@@ -150,7 +150,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GLOBALS__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __GLOBALS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetGlobalsNode extends PythonBuiltinNode {
         @Specialization(guards = "!isBuiltinFunction(self)")
@@ -259,7 +259,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DICT__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     static abstract class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -279,51 +279,41 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__text_signature__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "__text_signature__", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object doStatic(@SuppressWarnings("unused") PBuiltinFunction self) {
-            boolean enclosingType = self.getEnclosingType() != null;
             Arity arity = self.getArity();
-            return getSignature(enclosingType, arity);
+            return getSignature(arity);
         }
 
         @Specialization
         protected Object doStatic(@SuppressWarnings("unused") PFunction self) {
-            boolean enclosingType = self.getEnclosingClassName() != null;
             Arity arity = self.getArity();
-            return getSignature(enclosingType, arity);
+            return getSignature(arity);
         }
 
         @TruffleBoundary
-        private static Object getSignature(boolean enclosingType, Arity arity) {
-            int minArgs = arity.getMinNumOfPositionalArgs();
+        private static Object getSignature(Arity arity) {
             String[] keywordNames = arity.getKeywordNames();
             boolean takesVarArgs = arity.takesVarArgs();
             boolean takesVarKeywordArgs = arity.takesVarKeywordArgs();
 
-            String[] parameterIds = arity.getParameterIds();
+            String[] parameterNames = arity.getParameterIds();
             int paramIdx = 0;
 
             StringBuilder sb = new StringBuilder();
             char argName = 'a';
             sb.append('(');
-            if (minArgs > 0) {
-                if (!enclosingType) {
-                    sb.append("$module");
+            for (int i = 0; i < parameterNames.length; i++) {
+                if (paramIdx >= parameterNames.length) {
+                    sb.append(", ").append(argName++);
                 } else {
-                    sb.append("self");
-                }
-                for (int i = 1; i < minArgs; i++) {
-                    if (paramIdx >= parameterIds.length) {
-                        sb.append(", ").append(argName++);
-                    } else {
-                        sb.append(", ").append(parameterIds[paramIdx++]);
-                    }
+                    sb.append(", ").append(parameterNames[paramIdx++]);
                 }
             }
-            if (minArgs > 0) {
+            if (parameterNames.length > 0) {
                 sb.append(", /");
             }
             if (takesVarArgs) {

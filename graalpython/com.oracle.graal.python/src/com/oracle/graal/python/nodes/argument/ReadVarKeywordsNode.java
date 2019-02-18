@@ -40,10 +40,15 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "**kwargs")
 public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
+    private static final String[] EMPTY = new String[0];
     @CompilationFinal(dimensions = 1) private final String[] keywordNames;
     private final boolean doWrap;
 
     public abstract PKeyword[] executePKeyword(VirtualFrame frame);
+
+    public static ReadVarKeywordsNode create() {
+        return ReadVarKeywordsNodeGen.create(EMPTY, false);
+    }
 
     public static ReadVarKeywordsNode create(String[] keywordNames) {
         return ReadVarKeywordsNodeGen.create(keywordNames, false);

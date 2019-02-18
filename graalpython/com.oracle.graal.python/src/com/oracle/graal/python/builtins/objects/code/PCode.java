@@ -421,22 +421,13 @@ public final class PCode extends PythonBuiltinObject {
         return (getFlags() & (1 << FLAG_POS_VAR_KW_ARGS)) > 0;
     }
 
-    private int getMinNumOfPositionalArgs() {
-        // TODO(tfel): (args) we cannot actually determine this from the PCode right now, it depends
-        // on the PFunction.__defaults__
-        return getArgcount();
-    }
-
-    private int getMaxNumOfPositionalArgs() {
-        return this.getArgcount();
-    }
-
     public Arity getArity() {
         int varargsIdx = -1;
         if (takesVarArgs()) {
             varargsIdx = getArgcount() - getKwonlyargcount();
         }
-        return new Arity(this.getName(), this.getMinNumOfPositionalArgs(), this.getMaxNumOfPositionalArgs(), this.takesVarKeywordArgs(), varargsIdx, null, this.getKeywordNames());
+        // TODO: (tfel) (args) param names
+        return new Arity(this.takesVarKeywordArgs(), varargsIdx, false, null, this.getKeywordNames());
     }
 
     public RootCallTarget getRootCallTarget() {

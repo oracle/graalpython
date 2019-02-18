@@ -183,67 +183,67 @@ public class MMapBuiltins extends PythonBuiltins {
         return MMapBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __ADD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
     }
 
-    @Builtin(name = __MUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBuiltinNode {
     }
 
-    @Builtin(name = __RMUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
     }
 
-    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
     }
 
-    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends PythonBinaryBuiltinNode {
     }
 
-    @Builtin(name = __GT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GtNode extends PythonBinaryBuiltinNode {
     }
 
-    @Builtin(name = __GE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GeNode extends PythonBinaryBuiltinNode {
     }
 
-    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class NeNode extends PythonBinaryBuiltinNode {
     }
 
-    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
     }
 
-    @Builtin(name = __STR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
     }
 
-    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBuiltinNode implements ByteReadingNode {
 
@@ -310,7 +310,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__SETITEM__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = SpecialMethodNames.__SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class SetItemNode extends PythonBuiltinNode implements ByteWritingNode {
 
@@ -385,7 +385,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonBuiltinNode {
         @Specialization
@@ -395,7 +395,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ENTER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class EnterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -404,7 +404,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EXIT__, fixedNumOfPositionalArgs = 4)
+    @Builtin(name = __EXIT__, minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class ExitNode extends PythonBuiltinNode {
         protected static final String CLOSE = "close";
@@ -416,7 +416,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "close", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "close", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
 
@@ -436,7 +436,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "closed", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "closed", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ClosedNode extends PythonUnaryBuiltinNode {
 
@@ -447,7 +447,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "size", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "size", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SizeNode extends PythonBuiltinNode {
 
@@ -458,7 +458,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tell", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "tell", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TellNode extends PythonBuiltinNode implements ByteReadingNode {
         @Specialization
@@ -473,7 +473,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "read_byte", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "read_byte", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ReadByteNode extends PythonUnaryBuiltinNode implements ByteReadingNode {
@@ -514,7 +514,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "readline", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "readline", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReadlineNode extends PythonUnaryBuiltinNode implements ByteReadingNode {
 
@@ -558,7 +558,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "write", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "write", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBinaryBuiltinNode {
 
@@ -778,7 +778,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "flush", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "flush", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FlushNode extends PythonUnaryBuiltinNode {
 

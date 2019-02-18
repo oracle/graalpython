@@ -81,14 +81,14 @@ public abstract class PythonBuiltins {
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : builtin.doc();
             if (builtin.constructsClass().length > 0) {
                 assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();
-                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, null, createArity(builtin, declaresExplicitSelf), callTarget);
+                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, null, createArity(factory, builtin, declaresExplicitSelf), numDefaults(builtin), callTarget);
                 for (PythonBuiltinClassType type : builtin.constructsClass()) {
                     PythonBuiltinClass builtinClass = core.lookupType(type);
-                    builtinClass.setAttributeUnsafe(__NEW__, newFunc);
+                    builtinClass.setAttributeUnsafe(__NEW__, core.factory().createClassmethod(newFunc));
                     builtinClass.setAttribute(__DOC__, builtinDoc);
                 }
             } else {
-                PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), null, createArity(builtin, declaresExplicitSelf), callTarget);
+                PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), null, createArity(factory, builtin, declaresExplicitSelf), numDefaults(builtin), callTarget);
                 function.setAttribute(__DOC__, builtinDoc);
                 BoundBuiltinCallable<?> callable = function;
                 if (builtin.isGetter() || builtin.isSetter()) {
@@ -124,39 +124,61 @@ public abstract class PythonBuiltins {
         }
     }
 
-    private static Arity createArity(Builtin builtin, boolean declaresExplicitSelf) {
-        int minNumPosArgs = builtin.minNumOfPositionalArgs();
-        int maxNumPosArgs = builtin.maxNumOfPositionalArgs();
-        if (builtin.fixedNumOfPositionalArgs() > 0) {
-            minNumPosArgs = maxNumPosArgs = builtin.fixedNumOfPositionalArgs();
-        } else {
-            maxNumPosArgs = Math.max(builtin.parameterNames().length, maxNumPosArgs);
-            maxNumPosArgs = Math.max(minNumPosArgs, maxNumPosArgs);
+    private static int numDefaults(Builtin builtin) {
+        String[] parameterNames = builtin.parameterNames();
+        int maxNumPosArgs = Math.max(builtin.minNumOfPositionalArgs(), parameterNames.length);
+        if (builtin.maxNumOfPositionalArgs() >= 0) {
+            maxNumPosArgs = builtin.maxNumOfPositionalArgs();
+            assert parameterNames.length == 0 : "either give all parameter names explicitly, or define the max number: " + builtin.name();
         }
+        return maxNumPosArgs - builtin.minNumOfPositionalArgs();
+    }
+
+    /**
+     * Should return an Arity compatible with {@link BuiltinFunctionRootNode}.createArgumentsList
+     */
+    private static Arity createArity(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin, boolean declaresExplicitSelf) {
+        String[] parameterNames = builtin.parameterNames();
+        int maxNumPosArgs = Math.max(builtin.minNumOfPositionalArgs(), parameterNames.length);
+
+        if (builtin.maxNumOfPositionalArgs() >= 0) {
+            maxNumPosArgs = builtin.maxNumOfPositionalArgs();
+            assert parameterNames.length == 0 : "either give all parameter names explicitly, or define the max number: " + builtin.name() + " - " + String.join(",", builtin.parameterNames()) +
+                            " vs " + builtin.maxNumOfPositionalArgs() + " - " + factory.toString();
+        }
+
         if (!declaresExplicitSelf) {
             // if we don't take the explicit self, we still need to accept it by arity
-            minNumPosArgs++;
             maxNumPosArgs++;
+        } else if (builtin.constructsClass().length > 0 && maxNumPosArgs == 0) {
+            // we have this convention to always declare the cls argument without setting the num
+            // args
+            maxNumPosArgs = 1;
         }
 
-        // TODO(tfel): (args) keywordArguments and parameterIds can just be merged.
-        maxNumPosArgs += builtin.keywordArguments().length;
-        String[] parameterNames = Arrays.copyOf(builtin.parameterNames(), builtin.parameterNames().length + builtin.keywordArguments().length);
-        System.arraycopy(builtin.keywordArguments(), 0, parameterNames, builtin.parameterNames().length, builtin.keywordArguments().length);
-
-        if (parameterNames.length > 0) {
-            // we never declare the "self" as a parameter id
-            assert parameterNames.length == maxNumPosArgs - 1 : "not enough parameter ids on " + builtin.name();
-        } else {
-            PythonLanguage.getLogger().log(Level.FINEST, "missing parameter names for builtin " + builtin.name());
-            parameterNames = new String[maxNumPosArgs];
-            for (int i = 0, p = 'a'; i < parameterNames.length; i++, p++) {
-                parameterNames[i] = Character.toString((char) p);
+        if (maxNumPosArgs > 0) {
+            if (parameterNames.length == 0) {
+                PythonLanguage.getLogger().log(Level.FINEST, "missing parameter names for builtin " + factory);
+                parameterNames = new String[maxNumPosArgs];
+                parameterNames[0] = builtin.constructsClass().length > 0 ? "$cls" : "$self";
+                for (int i = 1, p = 'a'; i < parameterNames.length; i++, p++) {
+                    parameterNames[i] = Character.toString((char) p);
+                }
+            } else {
+                if (declaresExplicitSelf) {
+                    assert parameterNames.length == maxNumPosArgs : "not enough parameter ids on " + factory;
+                } else {
+                    // we don't declare the "self" as a parameter id unless it's explicit
+                    assert parameterNames.length + 1 == maxNumPosArgs : "not enough parameter ids on " + factory;
+                    parameterNames = Arrays.copyOf(parameterNames, parameterNames.length + 1);
+                    System.arraycopy(parameterNames, 0, parameterNames, 1, parameterNames.length - 1);
+                    parameterNames[0] = builtin.constructsClass().length > 0 ? "$cls" : "$self";
+                }
             }
         }
 
-        return new Arity(builtin.name(), minNumPosArgs, maxNumPosArgs, builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? maxNumPosArgs : -1, parameterNames,
-                        new String[0]);
+        return new Arity(builtin.takesVarKeywordArgs(), (builtin.takesVarArgs() || builtin.varArgsMarker()) ? parameterNames.length : -1, builtin.varArgsMarker(), parameterNames,
+                        builtin.keywordOnlyNames());
     }
 
     private void setBuiltinFunction(String name, BoundBuiltinCallable<?> function) {

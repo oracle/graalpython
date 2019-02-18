@@ -218,7 +218,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
      * Called mostly from Python code to convert arguments into a wrapped representation for
      * consumption in Python or Java.
      */
-    @Builtin(name = "to_java", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "to_java", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class AsPythonObjectNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -228,7 +228,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "to_java_type", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "to_java_type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class AsPythonClassNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -241,7 +241,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     /**
      * Called from C when they actually want a {@code const char*} for a Python string
      */
-    @Builtin(name = "to_char_pointer", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "to_char_pointer", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TruffleString_AsString extends NativeBuiltin {
 
@@ -263,7 +263,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
      * all over the place in C code to make sure return values have the right representation in
      * Sulong land.
      */
-    @Builtin(name = "to_sulong", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "to_sulong", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ToSulongNode extends PythonUnaryBuiltinNode {
 
@@ -274,7 +274,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Type", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "PyTruffle_Type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Type extends NativeBuiltin {
@@ -299,7 +299,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTuple_SetItem", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "PyTuple_SetItem", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyTuple_SetItem extends NativeBuiltin {
         @Specialization
@@ -314,7 +314,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "CreateBuiltinMethod", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "CreateBuiltinMethod", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CreateBuiltinMethodNode extends PythonBuiltinNode {
@@ -334,7 +334,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, LazyPythonClass type) {
             CompilerDirectives.transferToInterpreter();
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable));
-            return factory().createBuiltinFunction(name, type, createArity(name), callTarget);
+            return factory().createBuiltinFunction(name, type, createArity(), 0, callTarget);
         }
 
         @Specialization(guards = {"isNoValue(cwrapper)", "isNoValue(type)"})
@@ -342,7 +342,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, @SuppressWarnings("unused") PNone type) {
             CompilerDirectives.transferToInterpreter();
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable));
-            return factory().createBuiltinFunction(name, null, createArity(name), callTarget);
+            return factory().createBuiltinFunction(name, null, createArity(), 0, callTarget);
         }
 
         @Specialization(guards = {"!isNoValue(cwrapper)", "isNoValue(type)"})
@@ -350,7 +350,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, TruffleObject cwrapper, @SuppressWarnings("unused") PNone type) {
             CompilerDirectives.transferToInterpreter();
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable));
-            return factory().createBuiltinFunction(name, null, createArity(name), callTarget);
+            return factory().createBuiltinFunction(name, null, createArity(), 0, callTarget);
         }
 
         @Specialization(guards = "!isNoValue(cwrapper)")
@@ -358,15 +358,15 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         PBuiltinFunction run(String name, TruffleObject callable, TruffleObject cwrapper, LazyPythonClass type) {
             CompilerDirectives.transferToInterpreter();
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable));
-            return factory().createBuiltinFunction(name, type, createArity(name), callTarget);
+            return factory().createBuiltinFunction(name, type, createArity(), 0, callTarget);
         }
 
-        private static Arity createArity(String name) {
-            return Arity.createVarArgsAndKwArgsOnly(name);
+        private static Arity createArity() {
+            return Arity.createVarArgsAndKwArgsOnly();
         }
     }
 
-    @Builtin(name = "PyErr_Restore", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "PyErr_Restore", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyErrRestoreNode extends PythonBuiltinNode {
         @Specialization
@@ -389,7 +389,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyErr_Fetch", fixedNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Builtin(name = "PyErr_Fetch", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class PyErrFetchNode extends NativeBuiltin {
         @Specialization
@@ -426,7 +426,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyErr_SetExcInfo", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "PyErr_SetExcInfo", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyErrSetExcInfo extends PythonBuiltinNode {
         @Specialization
@@ -453,7 +453,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
      * Exceptions are usually printed using the traceback module or the hook function
      * {@code sys.excepthook}. This is the last resort if the hook function itself failed.
      */
-    @Builtin(name = "PyErr_Display", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "PyErr_Display", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyErrDisplay extends PythonBuiltinNode {
 
@@ -467,7 +467,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyUnicode_FromString", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "PyUnicode_FromString", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyUnicodeFromStringNode extends PythonBuiltinNode {
         @Specialization
@@ -481,7 +481,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "do_richcompare", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "do_richcompare", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class RichCompareNode extends PythonBuiltinNode {
         protected static BinaryComparisonNode create(int op) {
@@ -525,7 +525,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_SetAttr", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "PyTruffle_SetAttr", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyObject_Setattr extends PythonBuiltinNode {
         @Specialization
@@ -550,7 +550,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Type_Slots", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "PyTruffle_Type_Slots", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     @ImportStatic(SpecialAttributeNames.class)
     abstract static class PyTruffle_Type_SlotsNode extends NativeBuiltin {
@@ -757,7 +757,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "Py_NoValue", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "Py_NoValue", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class Py_NoValue extends PythonBuiltinNode {
         @Specialization
@@ -766,7 +766,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "Py_None", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "Py_None", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class PyNoneNode extends PythonBuiltinNode {
         @Specialization
@@ -918,7 +918,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "TrufflePInt_AsPrimitive", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "TrufflePInt_AsPrimitive", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class TrufflePInt_AsPrimitive extends PythonTernaryBuiltinNode {
 
@@ -1026,7 +1026,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Unicode_FromWchar", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "PyTruffle_Unicode_FromWchar", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
@@ -1062,7 +1062,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Unicode_FromUTF8", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "PyTruffle_Unicode_FromUTF8", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(Message.class)
     abstract static class PyTruffle_Unicode_FromUTF8 extends NativeBuiltin {
@@ -1120,7 +1120,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_PyUnicode_AsUTF8String", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "_PyUnicode_AsUTF8String", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class _PyUnicode_AsUTF8String extends NativeEncoderNode {
 
@@ -1129,7 +1129,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_PyTruffle_Unicode_AsLatin1String", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "_PyTruffle_Unicode_AsLatin1String", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class _PyTruffle_Unicode_AsLatin1String extends NativeEncoderNode {
         protected _PyTruffle_Unicode_AsLatin1String() {
@@ -1137,7 +1137,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_PyTruffle_Unicode_AsASCIIString", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "_PyTruffle_Unicode_AsASCIIString", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class _PyTruffle_Unicode_AsASCIIString extends NativeEncoderNode {
         protected _PyTruffle_Unicode_AsASCIIString() {
@@ -1145,7 +1145,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Unicode_AsUnicodeAndSize", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "PyTruffle_Unicode_AsUnicodeAndSize", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_AsUnicodeAndSize extends NativeBuiltin {
         @Specialization
@@ -1161,7 +1161,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Unicode_DecodeUTF32", fixedNumOfPositionalArgs = 5)
+    @Builtin(name = "PyTruffle_Unicode_DecodeUTF32", minNumOfPositionalArgs = 5)
     @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_DecodeUTF32 extends NativeUnicodeBuiltin {
 
@@ -1237,7 +1237,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "PyTruffle_Unicode_AsWideChar", fixedNumOfPositionalArgs = 4)
+    @Builtin(name = "PyTruffle_Unicode_AsWideChar", minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Unicode_AsWideChar extends NativeUnicodeBuiltin {
@@ -1288,7 +1288,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Bytes_AsString", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "PyTruffle_Bytes_AsString", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyTruffle_Bytes_AsString extends NativeBuiltin {
         @Specialization
@@ -1307,7 +1307,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyHash_Imag", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "PyHash_Imag", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class PyHashImagNode extends PythonBuiltinNode {
         @Specialization
@@ -1316,7 +1316,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffleFrame_New", fixedNumOfPositionalArgs = 4)
+    @Builtin(name = "PyTruffleFrame_New", minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class PyTruffleFrameNewNode extends PythonBuiltinNode {
         @Specialization
@@ -1325,7 +1325,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffleTraceBack_Here", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "PyTruffleTraceBack_Here", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyTruffleTraceBack_HereNode extends PythonBuiltinNode {
         @Specialization
@@ -1336,7 +1336,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_GetTpFlags", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "PyTruffle_GetTpFlags", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTruffle_GetTpFlags extends NativeBuiltin {
 
@@ -1372,7 +1372,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Set_SulongType", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "PyTruffle_Set_SulongType", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyTruffle_Set_SulongType extends NativeBuiltin {
 
@@ -1383,7 +1383,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_SetBufferProcs", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "PyTruffle_SetBufferProcs", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyTruffle_SetBufferProcs extends NativeBuiltin {
 
@@ -1400,7 +1400,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyThreadState_Get", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "PyThreadState_Get", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class PyThreadState_Get extends NativeBuiltin {
 
@@ -1411,7 +1411,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffleSlice_GetIndicesEx", fixedNumOfPositionalArgs = 4)
+    @Builtin(name = "PyTruffleSlice_GetIndicesEx", minNumOfPositionalArgs = 4)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class PyTruffleSlice_GetIndicesEx extends NativeBuiltin {
@@ -1463,7 +1463,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_GetSetDescriptor", keywordArguments = {"fget", "fset", "name", "owner"})
+    @Builtin(name = "PyTruffle_GetSetDescriptor", parameterNames = {"fget", "fset", "name", "owner"})
     @GenerateNodeFactory
     public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isNoValue(get)", "!isNoValue(set)"})
@@ -1482,7 +1482,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_SeqIter_New", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "PyTruffle_SeqIter_New", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class SeqIterNewNode extends PythonBuiltinNode {
         @Specialization
@@ -1491,7 +1491,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_BuiltinMethod", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "PyTruffle_BuiltinMethod", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class BuiltinMethodNode extends PythonBuiltinNode {
         @Specialization
@@ -1629,62 +1629,62 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_KEYWORDS", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_KEYWORDS", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethKeywordsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(), 0,
                             Truffle.getRuntime().createCallTarget(new MethKeywordsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
     }
 
-    @Builtin(name = "METH_VARARGS", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_VARARGS", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethVarargsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(), 0,
                             Truffle.getRuntime().createCallTarget(new MethVarargsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
     }
 
-    @Builtin(name = "METH_NOARGS", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_NOARGS", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethNoargsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(), 0,
                             Truffle.getRuntime().createCallTarget(new MethNoargsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
     }
 
-    @Builtin(name = "METH_O", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_O", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethONode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(), 0,
                             Truffle.getRuntime().createCallTarget(new MethORoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
     }
 
-    @Builtin(name = "METH_FASTCALL", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_FASTCALL", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethFastcallNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(), 0,
                             Truffle.getRuntime().createCallTarget(new MethFastcallRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
     }
 
-    @Builtin(name = "PyTruffle_Bytes_EmptyWithCapacity", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "PyTruffle_Bytes_EmptyWithCapacity", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTruffle_Bytes_EmptyWithCapacity extends PythonUnaryBuiltinNode {
 
@@ -1910,8 +1910,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
             RootNode rootNode = null;
             Arity arity = func.getArity();
-            if (arity.takesFixedNumOfPositionalArgs()) {
-                switch (arity.getMinNumOfArgs()) {
+            if (arity.takesPositionalOnly()) {
+                switch (arity.getMaxNumOfPositionalArgs()) {
                     case 1:
                         rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), unaryBuiltin,
                                         new MayRaiseNodeFactory<PythonUnaryBuiltinNode>(MayRaiseUnaryNodeGen.create(func, errorResult)),
@@ -1937,11 +1937,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                                 true);
             }
 
-            return factory().createBuiltinFunction(func.getName(), null, arity, Truffle.getRuntime().createCallTarget(rootNode));
+            return factory().createBuiltinFunction(func.getName(), null, arity, 0, Truffle.getRuntime().createCallTarget(rootNode));
         }
     }
 
-    @Builtin(name = "to_long", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "to_long", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class AsLong extends PythonBuiltinNode {
         @Child CExtNodes.AsLong asLongNode = CExtNodes.AsLong.create();
@@ -1952,7 +1952,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "to_double", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "to_double", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class AsDouble extends PythonBuiltinNode {
         @Child CExtNodes.AsDouble asDoubleNode = CExtNodes.AsDouble.create();
@@ -1963,7 +1963,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Register_NULL", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "PyTruffle_Register_NULL", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTruffle_Register_NULL extends PythonUnaryBuiltinNode {
         @Specialization
@@ -1978,7 +1978,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_HandleCache_Create", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "PyTruffle_HandleCache_Create", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTruffleHandleCacheCreate extends PythonUnaryBuiltinNode {
         @Specialization
@@ -1987,7 +1987,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyLong_FromLongLong", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "PyLong_FromLongLong", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyLong_FromLongLong extends PythonBinaryBuiltinNode {
         @Specialization(guards = "signed != 0")
@@ -2035,7 +2035,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyLong_AsVoidPtr", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "PyLong_AsVoidPtr", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyLong_AsVoidPtr extends PythonUnaryBuiltinNode {
         @Child private TrufflePInt_AsPrimitive asPrimitiveNode;
@@ -2076,7 +2076,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyType_IsSubtype", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "PyType_IsSubtype", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyType_IsSubtype extends PythonBinaryBuiltinNode {
 
@@ -2113,7 +2113,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTuple_GetItem", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "PyTuple_GetItem", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyTuple_GetItem extends PythonBinaryBuiltinNode {
 
@@ -2136,7 +2136,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PySequence_Check", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "PySequence_Check", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PySequence_Check extends PythonUnaryBuiltinNode {
         @Child private HasInheritedAttributeNode hasInheritedAttrNode;
@@ -2165,7 +2165,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyBytes_FromStringAndSize", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "PyBytes_FromStringAndSize", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyBytes_FromStringAndSize extends NativeBuiltin {
 
@@ -2175,7 +2175,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyFloat_AsDouble", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "PyFloat_AsDouble", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyFloat_AsDouble extends NativeBuiltin {
 
@@ -2216,7 +2216,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyNumber_Float", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "PyNumber_Float", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class PyNumber_Float extends NativeBuiltin {
 
@@ -2263,7 +2263,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PySet_Add", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "PySet_Add", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class PySet_Add extends PythonBinaryBuiltinNode {
 
@@ -2286,7 +2286,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "_PyBytes_Resize", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "_PyBytes_Resize", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class PyBytes_Resize extends PythonBinaryBuiltinNode {
 
@@ -2315,7 +2315,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "PyTruffle_Compute_Mro", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "PyTruffle_Compute_Mro", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffle_Compute_Mro extends PythonBinaryBuiltinNode {
@@ -2327,7 +2327,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Type_Modified", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "PyTruffle_Type_Modified", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffle_Type_Modified extends PythonTernaryBuiltinNode {

@@ -62,7 +62,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
         return SelectModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "select", fixedNumOfPositionalArgs = 3, parameterNames = {"rlist", "wlist", "xlist"}, keywordArguments = {"timeout"})
+    @Builtin(name = "select", minNumOfPositionalArgs = 3, parameterNames = {"rlist", "wlist", "xlist", "timeout"})
     @GenerateNodeFactory
     static abstract class SelectNode extends PythonBuiltinNode {
         @Specialization

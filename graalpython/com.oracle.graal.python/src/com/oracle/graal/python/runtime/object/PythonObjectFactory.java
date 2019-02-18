@@ -398,8 +398,8 @@ public final class PythonObjectFactory extends Node {
         return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, globals, defaultValues, kwDefaultValues, closure));
     }
 
-    public PBuiltinFunction createBuiltinFunction(String name, LazyPythonClass type, Arity arity, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, name, type, arity, callTarget));
+    public PBuiltinFunction createBuiltinFunction(String name, LazyPythonClass type, Arity arity, int numDefaults, RootCallTarget callTarget) {
+        return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, name, type, arity, numDefaults, callTarget));
     }
 
     public GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, LazyPythonClass type) {

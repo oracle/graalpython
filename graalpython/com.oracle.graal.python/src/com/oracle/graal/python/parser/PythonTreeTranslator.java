@@ -1472,7 +1472,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         /**
          * Parameters
          */
-        Args args = visitArgs(funcName, ctx.parameters().typedargslist(), defaultArgs, defaultKwArgs);
+        Args args = visitArgs(ctx.parameters().typedargslist(), defaultArgs, defaultKwArgs);
         StatementNode argumentLoads = args.node;
         Arity arity = args.arity;
 
@@ -1539,12 +1539,10 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         }
     }
 
-    public Args visitArgs(String functionName, ParserRuleContext ctx, List<ExpressionNode> defaultArgs, List<KwDefaultExpressionNode> defaultKwArgs) {
+    public Args visitArgs(ParserRuleContext ctx, List<ExpressionNode> defaultArgs, List<KwDefaultExpressionNode> defaultKwArgs) {
         if (ctx == null) {
-            return new Args(new Arity(functionName, 0, 0, false, -1, false, new String[0], new String[0]));
+            return new Args(new Arity(false, -1, false, new String[0], new String[0]));
         }
-        int minNumPosArgs = 0;
-        int maxNumPosArgs = 0;
         assert ctx instanceof Python3Parser.TypedargslistContext || ctx instanceof Python3Parser.VarargslistContext;
         boolean starArgsMarker = false;
         List<String> parameterIds = new ArrayList<>();
@@ -1601,12 +1599,9 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 }
                 if (varargsIdx == -1 && !starArgsMarker) {
                     // positional argument, possibly with a default
-                    if (test == null) {
-                        minNumPosArgs++;
-                    } else {
+                    if (defaultValueNode != null) {
                         defaultArgs.add(defaultValueNode);
                     }
-                    maxNumPosArgs++;
                     parameterIds.add(argname);
                     argumentReadNode = environment.getWriteArgumentToLocal(argname);
                 } else {
@@ -1623,7 +1618,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 argumentReads.add(argumentReadNode);
             }
         }
-        return new Args(factory.createBlock(argumentReads), new Arity(functionName, minNumPosArgs, maxNumPosArgs, kwargsSeen, varargsIdx, starArgsMarker, parameterIds, arityKeywordNames));
+        return new Args(factory.createBlock(argumentReads), new Arity(kwargsSeen, varargsIdx, starArgsMarker, parameterIds, arityKeywordNames));
     }
 
     private ExpressionNode[] createDefaultArgumentsNode() {
@@ -1659,7 +1654,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         /**
          * Parameters
          */
-        Args args = visitArgs(funcname, varargslist, defaultArgs, defaultKwArgs);
+        Args args = visitArgs(varargslist, defaultArgs, defaultKwArgs);
         StatementNode argumentLoads = args.node;
         Arity arity = args.arity;
 
@@ -1765,7 +1760,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ExpressionNode body = asClassBody(ctx.suite().accept(this), qualName);
         ClassBodyRootNode classBodyRoot = factory.createClassBodyRoot(deriveSourceSection(ctx), className, environment.getCurrentFrame(), body, environment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
-        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(className, null, null, Arity.createOneArgumentWithVarKwArgs(className),
+        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(className, null, null, Arity.createOneArgumentWithVarKwArgs(),
                         null, null, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         environment.popScope();
 

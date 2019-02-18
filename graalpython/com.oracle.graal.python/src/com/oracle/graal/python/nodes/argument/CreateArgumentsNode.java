@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.argument;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -105,23 +104,25 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             arity = ((PFunction) callable).getArity();
             defaults = ((PFunction) callable).getDefaults();
             name = ((PFunction) callable).getName();
+            kwdefaults = ((PFunction) callable).getKwDefaults();
         } else if (callable instanceof PBuiltinFunction) {
             arity = ((PBuiltinFunction) callable).getArity();
             name = ((PBuiltinFunction) callable).getName();
-            defaults = new Object[(arity.takesVarArgs() ? arity.getVarargsIdx() : arity.getMaxNumOfPositionalArgs()) - arity.getMinNumOfArgs()];
-            Arrays.fill(defaults, PNone.NO_VALUE);
+            defaults = ((PBuiltinFunction) callable).getDefaults();
+            kwdefaults = ((PBuiltinFunction) callable).getKwDefaults();
         } else if (callable instanceof PBuiltinMethod) {
             self = ((PBuiltinMethod) callable).getSelf();
             methodcall = !(self instanceof PythonModule);
             if (((PBuiltinMethod) callable).getFunction() instanceof PBuiltinFunction) {
                 arity = ((PBuiltinFunction) ((PBuiltinMethod) callable).getFunction()).getArity();
                 name = ((PBuiltinFunction) ((PBuiltinMethod) callable).getFunction()).getName();
-                defaults = new Object[(arity.takesVarArgs() ? arity.getVarargsIdx() : arity.getMaxNumOfPositionalArgs()) - arity.getMinNumOfArgs()];
-                Arrays.fill(defaults, PNone.NO_VALUE);
+                defaults = ((PBuiltinFunction) ((PBuiltinMethod) callable).getFunction()).getDefaults();
+                kwdefaults = ((PBuiltinFunction) ((PBuiltinMethod) callable).getFunction()).getKwDefaults();
             } else if (((PBuiltinMethod) callable).getFunction() instanceof PFunction) {
                 arity = ((PFunction) ((PBuiltinMethod) callable).getFunction()).getArity();
                 defaults = ((PFunction) ((PBuiltinMethod) callable).getFunction()).getDefaults();
                 name = ((PFunction) ((PBuiltinMethod) callable).getFunction()).getName();
+                kwdefaults = ((PFunction) ((PBuiltinMethod) callable).getFunction()).getKwDefaults();
             }
         } else if (callable instanceof PMethod) {
             self = ((PMethod) callable).getSelf();
@@ -129,12 +130,13 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             if (((PMethod) callable).getFunction() instanceof PBuiltinFunction) {
                 arity = ((PBuiltinFunction) ((PMethod) callable).getFunction()).getArity();
                 name = ((PBuiltinFunction) ((PMethod) callable).getFunction()).getName();
-                defaults = new Object[(arity.takesVarArgs() ? arity.getVarargsIdx() : arity.getMaxNumOfPositionalArgs()) - arity.getMinNumOfArgs()];
-                Arrays.fill(defaults, PNone.NO_VALUE);
+                defaults = ((PBuiltinFunction) ((PMethod) callable).getFunction()).getDefaults();
+                kwdefaults = ((PBuiltinFunction) ((PMethod) callable).getFunction()).getKwDefaults();
             } else if (((PMethod) callable).getFunction() instanceof PFunction) {
                 arity = ((PFunction) ((PMethod) callable).getFunction()).getArity();
                 defaults = ((PFunction) ((PMethod) callable).getFunction()).getDefaults();
                 name = ((PFunction) ((PMethod) callable).getFunction()).getName();
+                kwdefaults = ((PFunction) ((PMethod) callable).getFunction()).getKwDefaults();
             }
         } else {
             throw new IllegalStateException("cannot create arguments for non-function-or-method");
@@ -143,7 +145,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         // see PyPy's Argument#_match_signature method
         int co_argcount = arity.getMaxNumOfPositionalArgs(); // expected formal arguments, without
                                                              // */**
-        int co_kwonlyargcount = arity.getNumKeywordOnlyNames();
+        int co_kwonlyargcount = arity.getNumOfRequiredKeywords();
         boolean too_many_args = false;
 
         Object[] scope_w = PArguments.create(Math.max(userArguments.length, arity.getMaxNumOfPositionalArgs()));
@@ -200,12 +202,13 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         // handle keyword arguments
         // match the keywords given at the call site to the argument names
         // the called node takes and collect the rest in the keywords
-        // this also does the first check for for missing arguments and fill them from the kwds.
+        // this also does the first check for for missing positional arguments and fill them from
+        // the kwds.
         if (keywords.length > 0) {
-            scope_w = applyKeywords.execute(arity, scope_w, keywords);
+            scope_w = applyKeywords.execute(name, arity, scope_w, keywords);
         }
 
-        boolean more_filling = input_argcount < co_argcount;
+        boolean more_filling = input_argcount < co_argcount || keywords.length < co_kwonlyargcount;
         int firstDefaultArgIdx = 0;
         if (more_filling) {
             firstDefaultArgIdx = co_argcount - (defaults == null ? 0 : defaults.length);
@@ -315,6 +318,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
                 missingNames[missingCnt++] = kwname;
             }
+
+            PArguments.setKeywordArguments(scope_w, givenKwds);
 
             if (missingCnt > 0) {
                 throw raise(PythonBuiltinClassType.TypeError, "%s() missing %d required keyword-only argument%s: %s",

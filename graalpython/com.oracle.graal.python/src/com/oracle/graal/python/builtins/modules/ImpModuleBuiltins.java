@@ -139,7 +139,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__create_dynamic__", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "__create_dynamic__", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(Message.class)
     public abstract static class CreateDynamic extends PythonBuiltinNode {
@@ -306,7 +306,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "exec_dynamic", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "exec_dynamic", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ExecDynamicNode extends PythonBuiltinNode {
         @Specialization
@@ -316,7 +316,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_builtin", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "is_builtin", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IsBuiltin extends PythonBuiltinNode {
         @Specialization
@@ -338,7 +338,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "create_builtin", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "create_builtin", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CreateBuiltin extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -358,7 +358,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_fix_co_filename", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "_fix_co_filename", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class FixCoFilename extends PythonBinaryBuiltinNode {
         @Specialization

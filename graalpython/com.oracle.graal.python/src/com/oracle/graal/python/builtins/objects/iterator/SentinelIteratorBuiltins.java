@@ -55,7 +55,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
         return SentinelIteratorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NEXT__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         // TODO: see also the TODO in BinaryComparisonNode about factoring out comparison nodes that
@@ -90,7 +90,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 

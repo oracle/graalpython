@@ -47,16 +47,13 @@ import com.oracle.graal.python.builtins.objects.function.FunctionBuiltinsFactory
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -71,7 +68,7 @@ public class FunctionBuiltins extends PythonBuiltins {
         return FunctionBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
@@ -94,14 +91,8 @@ public class FunctionBuiltins extends PythonBuiltins {
         @Child WriteAttributeToObjectNode writeNode;
 
         @Specialization(guards = "isNoValue(noValue)")
-        Object getName(PFunction self, @SuppressWarnings("unused") PNone noValue,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
-            Object storedName = readNode.execute(self, __NAME__);
-            if (storedName == PNone.NO_VALUE) {
-                return self.getName();
-            } else {
-                return storedName;
-            }
+        Object getName(PFunction self, @SuppressWarnings("unused") PNone noValue) {
+            return self.getName();
         }
 
         @Specialization(guards = "isNoValue(noValue)")
@@ -111,12 +102,7 @@ public class FunctionBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setName(PFunction self, String value) {
-            if (writeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeNode = insert(WriteAttributeToObjectNode.create());
-            }
-            writeNode.execute(self, __NAME__, value);
-            self.getArity().setFunctionName(value);
+            self.setName(value);
             return PNone.NONE;
         }
 
@@ -125,15 +111,13 @@ public class FunctionBuiltins extends PythonBuiltins {
             return setName(self, value.getValue());
         }
 
-        @SuppressWarnings("unused")
         @Specialization
-        Object setName(PBuiltinFunction self, Object value) {
+        Object setName(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value) {
             throw raise(PythonErrorType.AttributeError, "attribute '__name__' of builtin function is not writable");
         }
 
-        @SuppressWarnings("unused")
         @Fallback
-        Object setName(Object self, Object value) {
+        Object setName(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value) {
             throw raise(PythonErrorType.TypeError, "__name__ must be set to a string object");
         }
     }
@@ -159,7 +143,7 @@ public class FunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __KWDEFAULTS__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __KWDEFAULTS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetFunctionKeywordDefaultsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
@@ -200,7 +184,7 @@ public class FunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Fallback
@@ -209,7 +193,7 @@ public class FunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TRUFFLE_SOURCE, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = TRUFFLE_SOURCE, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetFunctionSourceNode extends PythonUnaryBuiltinNode {
         @Specialization

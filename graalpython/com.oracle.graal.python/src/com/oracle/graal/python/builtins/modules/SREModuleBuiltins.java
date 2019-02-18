@@ -90,7 +90,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         return SREModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "_build_regex_engine", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "_build_regex_engine", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class BuildRegexEngine extends PythonUnaryBuiltinNode {
         @Specialization
@@ -104,7 +104,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
      * Replaces any <it>quoted</it> escape sequence like {@code "\\n"} (two characters; backslash +
      * 'n') by its single character like {@code "\n"} (one character; newline).
      */
-    @Builtin(name = "_process_escape_sequences", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "_process_escape_sequences", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ProcessEscapeSequences extends PythonUnaryBuiltinNode {
 
@@ -188,7 +188,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tregex_call_compile", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "tregex_call_compile", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class TRegexCallCompile extends PythonBuiltinNode {
@@ -224,7 +224,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tregex_call_exec", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "tregex_call_exec", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class TRegexCallExec extends PythonBuiltinNode {

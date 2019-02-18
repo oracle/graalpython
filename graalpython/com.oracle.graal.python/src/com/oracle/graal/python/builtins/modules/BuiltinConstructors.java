@@ -557,7 +557,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // enumerate(iterable, start=0)
-    @Builtin(name = ENUMERATE, minNumOfPositionalArgs = 2, parameterNames = {"iterable", "start"}, constructsClass = PythonBuiltinClassType.PEnumerate)
+    @Builtin(name = ENUMERATE, minNumOfPositionalArgs = 2, parameterNames = {"cls", "iterable", "start"}, constructsClass = PythonBuiltinClassType.PEnumerate)
     @GenerateNodeFactory
     public abstract static class EnumerateNode extends PythonBuiltinNode {
 
@@ -586,7 +586,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // reversed(seq)
-    @Builtin(name = REVERSED, fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PReverseIterator)
+    @Builtin(name = REVERSED, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PReverseIterator)
     @GenerateNodeFactory
     public abstract static class ReversedNode extends PythonBuiltinNode {
 
@@ -904,7 +904,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // int(x=0)
     // int(x, base=10)
-    @Builtin(name = INT, fixedNumOfPositionalArgs = 1, keywordArguments = {"x", "base"}, constructsClass = PythonBuiltinClassType.PInt)
+    @Builtin(name = INT, minNumOfPositionalArgs = 1, parameterNames = {"cls", "x", "base"}, constructsClass = PythonBuiltinClassType.PInt)
     @GenerateNodeFactory
     public abstract static class IntNode extends PythonBuiltinNode {
 
@@ -1582,7 +1582,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // str(object='')
     // str(object=b'', encoding='utf-8', errors='strict')
-    @Builtin(name = STR, minNumOfPositionalArgs = 1, keywordArguments = {"object", "encoding", "errors"}, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PString)
+    @Builtin(name = STR, minNumOfPositionalArgs = 1, parameterNames = {"cls", "object", "encoding", "errors"}, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PString)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonBuiltinNode {
         @Child private LookupAndCallTernaryNode callDecodeNode;
@@ -2223,7 +2223,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "NotImplementedType", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNotImplemented, isPublic = false)
+    @Builtin(name = "NotImplementedType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNotImplemented, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
         protected PythonBuiltinClass getNotImplementedClass() {
@@ -2250,7 +2250,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "NoneType", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNone, isPublic = false)
+    @Builtin(name = "NoneType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNone, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NoneTypeNode extends PythonBuiltinNode {
         protected PythonBuiltinClass getNoneClass() {
@@ -2367,7 +2367,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "method", fixedNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PMethod, isPublic = false)
+    @Builtin(name = "method", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PMethod, isPublic = false)
     @GenerateNodeFactory
     public abstract static class MethodTypeNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -2381,7 +2381,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "builtin_function_or_method", fixedNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PBuiltinMethod, isPublic = false)
+    @Builtin(name = "builtin_function_or_method", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PBuiltinMethod, isPublic = false)
     @GenerateNodeFactory
     public abstract static class BuiltinMethodTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -2531,7 +2531,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getset_descriptor", constructsClass = PythonBuiltinClassType.GetSetDescriptor, isPublic = false, fixedNumOfPositionalArgs = 1, keywordArguments = {"fget", "fset", "name",
+    @Builtin(name = "getset_descriptor", constructsClass = PythonBuiltinClassType.GetSetDescriptor, isPublic = false, minNumOfPositionalArgs = 1, parameterNames = {"cls", "fget", "fset", "name",
                     "owner"})
     @GenerateNodeFactory
     public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
@@ -2636,7 +2636,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // memoryview(obj)
-    @Builtin(name = MEMORYVIEW, fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PMemoryView)
+    @Builtin(name = MEMORYVIEW, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PMemoryView)
     @GenerateNodeFactory
     public abstract static class MemoryViewNode extends PythonBuiltinNode {
         @Specialization
@@ -2655,7 +2655,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = CLASSMETHOD, fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PClassmethod, doc = "classmethod(function) -> method\n" +
+    @Builtin(name = CLASSMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PClassmethod, doc = "classmethod(function) -> method\n" +
                     "\n" +
                     "Convert a function to be a class method.\n" +
                     "\n" +
@@ -2683,7 +2683,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = STATICMETHOD, fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PStaticmethod)
+    @Builtin(name = STATICMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PStaticmethod)
     @GenerateNodeFactory
     public abstract static class StaticmethodNode extends PythonBinaryBuiltinNode {
         @Specialization

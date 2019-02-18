@@ -79,7 +79,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         return GeneratorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
@@ -89,7 +89,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEXT__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
@@ -138,7 +138,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "send", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "send", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SendNode extends PythonBuiltinNode {
 
@@ -208,7 +208,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "gi_code", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "gi_code", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization
@@ -223,7 +223,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization

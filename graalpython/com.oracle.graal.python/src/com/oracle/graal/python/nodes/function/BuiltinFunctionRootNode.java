@@ -29,6 +29,7 @@ import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
@@ -151,28 +152,26 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         }
     }
 
+    /**
+     * Should return a read compatible with {@link PythonBuiltins}.createArity
+     */
     private static ReadArgumentNode[] createArgumentsList(Builtin builtin, boolean needsExplicitSelf) {
         ArrayList<ReadArgumentNode> args = new ArrayList<>();
-        int numOfPositionalArgs = Math.max(builtin.minNumOfPositionalArgs(), builtin.maxNumOfPositionalArgs());
+        String[] parameterNames = builtin.parameterNames();
+        int maxNumPosArgs = Math.max(builtin.minNumOfPositionalArgs(), parameterNames.length);
 
-        if (builtin.keywordArguments().length > 0 && builtin.maxNumOfPositionalArgs() > builtin.minNumOfPositionalArgs()) {
-            // (tfel): This is actually a specification error, if there are keyword
-            // names, we cannot also have optional positional arguments, but we're
-            // being defensive here.
-            numOfPositionalArgs = builtin.minNumOfPositionalArgs();
-        }
-
-        if (builtin.fixedNumOfPositionalArgs() > 0) {
-            numOfPositionalArgs = builtin.fixedNumOfPositionalArgs();
+        if (builtin.maxNumOfPositionalArgs() >= 0) {
+            maxNumPosArgs = builtin.maxNumOfPositionalArgs();
+            assert parameterNames.length == 0 : "either give all parameter names explicitly, or define the max number: " + builtin.name();
         }
 
         if (!needsExplicitSelf) {
             // if we don't declare the explicit self, we just read (and ignore) it
-            numOfPositionalArgs++;
+            maxNumPosArgs++;
         }
 
         // read those arguments that only come positionally
-        for (int i = 0; i < numOfPositionalArgs; i++) {
+        for (int i = 0; i < maxNumPosArgs; i++) {
             args.add(ReadIndexedArgumentNode.create(i));
         }
 
@@ -181,20 +180,12 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             args.add(ReadVarArgsNode.create(args.size(), true));
         }
 
-        // read named keyword arguments
-        for (int i = 0; i < builtin.keywordArguments().length; i++) {
-            String name = builtin.keywordArguments()[i];
-            if (!builtin.takesVarArgs()) {
-                // if there's no splat, we also accept the keywords positionally
-                args.add(ReadIndexedArgumentNode.create(i + numOfPositionalArgs));
-            } else {
-                // if there is a splat, keywords have to be passed by name
-                args.add(ReadKeywordNode.create(name));
-            }
+        for (String string : builtin.keywordOnlyNames()) {
+            args.add(ReadKeywordNode.create(string));
         }
 
         if (builtin.takesVarKeywordArgs()) {
-            args.add(ReadVarKeywordsNode.create(builtin.keywordArguments()));
+            args.add(ReadVarKeywordsNode.create());
         }
 
         return args.toArray(new ReadArgumentNode[args.size()]);

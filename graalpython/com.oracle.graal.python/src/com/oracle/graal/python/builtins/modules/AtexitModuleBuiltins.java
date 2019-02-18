@@ -96,7 +96,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "unregister", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "unregister", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class UnregisterNode extends PythonUnaryBuiltinNode {
         @Specialization

@@ -112,6 +112,9 @@ public class TopLevelExceptionHandler extends RootNode {
                 return run(frame);
             } catch (PException e) {
                 printExc(e);
+                if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
+                    printStackTrace(e);
+                }
                 return null;
             } catch (Exception | StackOverflowError e) {
                 if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
