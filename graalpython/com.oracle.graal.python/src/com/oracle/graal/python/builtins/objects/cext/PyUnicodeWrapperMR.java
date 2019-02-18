@@ -40,106 +40,22 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
-
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeData;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeState;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PyUnicodeWrapperMRFactory.PyUnicodeToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.ToPyObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.nodes.Node;
 
 @MessageResolution(receiverType = PyUnicodeWrapper.class)
 public class PyUnicodeWrapperMR {
-
-    @Resolve(message = "READ")
-    abstract static class ReadNode extends Node {
-        @Child private UnicodeAsWideCharNode asWideCharNode;
-        @Child private CExtNodes.SizeofWCharNode sizeofWcharNode;
-
-        public Object access(PyUnicodeData object, String key) {
-            int elementSize;
-            switch (key) {
-                case NativeMemberNames.UNICODE_DATA_ANY:
-                case NativeMemberNames.UNICODE_DATA_LATIN1:
-                case NativeMemberNames.UNICODE_DATA_UCS2:
-                case NativeMemberNames.UNICODE_DATA_UCS4:
-                    elementSize = (int) getSizeofWcharNode().execute();
-                    PString s = object.getPString();
-                    return new PySequenceArrayWrapper(getAsWideCharNode().execute(s, elementSize, s.len()), elementSize);
-            }
-            throw UnknownIdentifierException.raise(key);
-        }
-
-        public Object access(PyUnicodeState object, String key) {
-            // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
-            int value = 0b000000000000000000000000_1_0_0_000_00;
-            if (onlyAscii(object.getPString().getValue())) {
-                value |= 0b1_0_000_00;
-            }
-            value |= ((int) getSizeofWcharNode().execute() << 2) & 0b11100;
-            switch (key) {
-                case NativeMemberNames.UNICODE_STATE_INTERNED:
-                case NativeMemberNames.UNICODE_STATE_KIND:
-                case NativeMemberNames.UNICODE_STATE_COMPACT:
-                case NativeMemberNames.UNICODE_STATE_ASCII:
-                case NativeMemberNames.UNICODE_STATE_READY:
-                    // it's a bit field; so we need to return the whole 32-bit word
-                    return value;
-            }
-            throw UnknownIdentifierException.raise(key);
-        }
-
-        private UnicodeAsWideCharNode getAsWideCharNode() {
-            if (asWideCharNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asWideCharNode = insert(UnicodeAsWideCharNode.create(0));
-            }
-            return asWideCharNode;
-        }
-
-        private CExtNodes.SizeofWCharNode getSizeofWcharNode() {
-            if (sizeofWcharNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                sizeofWcharNode = insert(CExtNodes.SizeofWCharNode.create());
-            }
-            return sizeofWcharNode;
-        }
-
-        @CompilationFinal private CharsetEncoder asciiEncoder;
-
-        public boolean isPureAscii(String v) {
-            return asciiEncoder.canEncode(v);
-        }
-
-        private boolean onlyAscii(String value) {
-            if (asciiEncoder == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asciiEncoder = Charset.forName("US-ASCII").newEncoder();
-            }
-            return doCheck(value, asciiEncoder);
-        }
-
-        @TruffleBoundary
-        private static boolean doCheck(String value, CharsetEncoder asciiEncoder) {
-            return asciiEncoder.canEncode(value);
-        }
-    }
 
     @Resolve(message = "TO_NATIVE")
     abstract static class ToNativeNode extends Node {

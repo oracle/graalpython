@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
@@ -68,6 +71,8 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -77,6 +82,7 @@ import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -743,6 +749,7 @@ public abstract class NativeWrappers {
         }
     }
 
+    @ExportLibrary(InteropLibrary.class)
     abstract static class PyUnicodeWrapper extends PythonNativeWrapper {
 
         public PyUnicodeWrapper(PString delegate) {
@@ -766,20 +773,121 @@ public abstract class NativeWrappers {
     /**
      * A native wrapper for the {@code data} member of {@code PyUnicodeObject}.
      */
+    @ExportLibrary(InteropLibrary.class)
     public static class PyUnicodeData extends PyUnicodeWrapper {
         public PyUnicodeData(PString delegate) {
             super(delegate);
+        }
+
+        @ExportMessage
+        boolean hasMembers() {
+            return true;
+        }
+
+        @ExportMessage
+        protected boolean isMemberReadable(String member) {
+            switch (member) {
+                case NativeMemberNames.UNICODE_DATA_ANY:
+                case NativeMemberNames.UNICODE_DATA_LATIN1:
+                case NativeMemberNames.UNICODE_DATA_UCS2:
+                case NativeMemberNames.UNICODE_DATA_UCS4:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        @ExportMessage
+        protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+            throw UnsupportedMessageException.create();
+        }
+
+        @ExportMessage
+        protected Object readMember(String member,
+                    @Cached.Exclusive @Cached(value = "create(0)", allowUncached = true) UnicodeObjectNodes.UnicodeAsWideCharNode asWideCharNode,
+                    @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.SizeofWCharNode sizeofWcharNode) {
+            switch (member) {
+                case NativeMemberNames.UNICODE_DATA_ANY:
+                case NativeMemberNames.UNICODE_DATA_LATIN1:
+                case NativeMemberNames.UNICODE_DATA_UCS2:
+                case NativeMemberNames.UNICODE_DATA_UCS4:
+                    int elementSize = (int) sizeofWcharNode.execute();
+                    PString s = this.getPString();
+                    return new PySequenceArrayWrapper(asWideCharNode.execute(s, elementSize, s.len()), elementSize);
+            }
+            throw UnknownIdentifierException.raise(member);
         }
     }
 
     /**
      * A native wrapper for the {@code state} member of {@code PyASCIIObject}.
      */
+    @ExportLibrary(InteropLibrary.class)
     public static class PyUnicodeState extends PyUnicodeWrapper {
+        @CompilationFinal private CharsetEncoder asciiEncoder;
 
         public PyUnicodeState(PString delegate) {
             super(delegate);
         }
+
+        @ExportMessage
+        boolean hasMembers() {
+            return true;
+        }
+
+        @ExportMessage
+        protected boolean isMemberReadable(String member) {
+            switch (member) {
+                case NativeMemberNames.UNICODE_STATE_INTERNED:
+                case NativeMemberNames.UNICODE_STATE_KIND:
+                case NativeMemberNames.UNICODE_STATE_COMPACT:
+                case NativeMemberNames.UNICODE_STATE_ASCII:
+                case NativeMemberNames.UNICODE_STATE_READY:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        @ExportMessage
+        protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+            throw UnsupportedMessageException.create();
+        }
+
+        @ExportMessage
+        protected Object readMember(String member,
+                                    @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.SizeofWCharNode sizeofWcharNode) {
+            // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
+            int value = 0b000000000000000000000000_1_0_0_000_00;
+            if (onlyAscii(this.getPString().getValue())) {
+                value |= 0b1_0_000_00;
+            }
+            value |= ((int) sizeofWcharNode.execute() << 2) & 0b11100;
+            switch (member) {
+                case NativeMemberNames.UNICODE_STATE_INTERNED:
+                case NativeMemberNames.UNICODE_STATE_KIND:
+                case NativeMemberNames.UNICODE_STATE_COMPACT:
+                case NativeMemberNames.UNICODE_STATE_ASCII:
+                case NativeMemberNames.UNICODE_STATE_READY:
+                    // it's a bit field; so we need to return the whole 32-bit word
+                    return value;
+            }
+            throw UnknownIdentifierException.raise(member);
+        }
+
+        private boolean onlyAscii(String value) {
+            if (asciiEncoder == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asciiEncoder = Charset.forName("US-ASCII").newEncoder();
+            }
+            return doCheck(value, asciiEncoder);
+        }
+
+        @TruffleBoundary
+        private static boolean doCheck(String value, CharsetEncoder asciiEncoder) {
+            return asciiEncoder.canEncode(value);
+        }
+
 
     }
 
