@@ -760,11 +760,6 @@ public abstract class NativeWrappers {
             return (PString) getDelegate();
         }
 
-        @Override
-        public ForeignAccess getForeignAccess() {
-            return PyUnicodeWrapperMRForeign.ACCESS;
-        }
-
         static boolean isInstance(TruffleObject o) {
             return o instanceof PyUnicodeWrapper;
         }
