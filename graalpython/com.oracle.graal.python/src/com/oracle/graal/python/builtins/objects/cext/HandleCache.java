@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ControlFlowException;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
+@ExportLibrary(InteropLibrary.class)
 public final class HandleCache implements TruffleObject {
     public static final int CACHE_SIZE = 10;
 
@@ -66,11 +80,107 @@ public final class HandleCache implements TruffleObject {
         return ptrToResolveHandle;
     }
 
-    public ForeignAccess getForeignAccess() {
-        return HandleCacheMRForeign.ACCESS;
-    }
-
     public static boolean isInstance(TruffleObject obj) {
         return obj instanceof HandleCache;
+    }
+
+    @ExportMessage
+    public boolean isExecutable() {
+        return true;
+    }
+
+    @ExportMessage
+    public Object execute(Object[] arguments,
+          @Cached.Exclusive @Cached(allowUncached = true) GetOrInsertNode getOrInsertNode,
+          @Cached.Exclusive @Cached BranchProfile invalidArgCountProfile) {
+        if (arguments.length != 1) {
+            invalidArgCountProfile.enter();
+            throw ArityException.raise(1, arguments.length);
+        }
+        return getOrInsertNode.execute(this, (long) arguments[0]);
+    }
+
+    static class InvalidCacheEntryException extends ControlFlowException {
+        private static final long serialVersionUID = 1L;
+        public static final InvalidCacheEntryException INSTANCE = new InvalidCacheEntryException();
+    }
+
+
+    @ImportStatic(HandleCache.class)
+    abstract static class GetOrInsertNode extends PNodeWithContext {
+        public abstract Object execute(HandleCache cache, long handle);
+
+        @Specialization(limit = "CACHE_SIZE", guards = {"cache.len() == cachedLen",
+                "handle == cachedHandle"}, rewriteOn = InvalidCacheEntryException.class, assumptions = "singleContextAssumption()")
+        Object doCachedSingleContext(HandleCache cache, @SuppressWarnings("unused") long handle,
+                                     @Cached("handle") long cachedHandle,
+                                     @Cached("cache.len()") @SuppressWarnings("unused") int cachedLen,
+                                     @Cached("cache.getPtrToResolveHandle()") @SuppressWarnings("unused") TruffleObject cachedResolveHandleFunction,
+                                     @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                                     @Cached BranchProfile errorProfile,
+                                     @Cached("lookupPosition(cache, handle, cachedLen, cachedResolveHandleFunction, interopLibrary, errorProfile)") int cachedPosition) throws InvalidCacheEntryException {
+            if (cache.keys[cachedPosition] == cachedHandle) {
+                return cache.values[cachedPosition];
+            }
+            throw InvalidCacheEntryException.INSTANCE;
+        }
+
+        @Specialization(guards = {"cache.len() == cachedLen"}, replaces = "doCachedSingleContext", assumptions = "singleContextAssumption()")
+        Object doFullLookupSingleContext(HandleCache cache, long handle,
+                                         @Cached("cache.len()") int cachedLen,
+                                         @Cached("cache.getPtrToResolveHandle()") TruffleObject resolveHandleFunction,
+                                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                                         @Cached BranchProfile errorProfile) {
+            int pos = lookupPosition(cache, handle, cachedLen, resolveHandleFunction, interopLibrary, errorProfile);
+            return cache.values[pos];
+        }
+
+        @Specialization(limit = "CACHE_SIZE", guards = {"cache.len() == cachedLen",
+                "handle == cachedHandle", "cache.getPtrToResolveHandle() == cachedResolveHandleFunction"}, rewriteOn = InvalidCacheEntryException.class)
+        Object doCached(HandleCache cache, @SuppressWarnings("unused") long handle,
+                        @Cached("handle") long cachedHandle,
+                        @Cached("cache.len()") @SuppressWarnings("unused") int cachedLen,
+                        @Cached("cache.getPtrToResolveHandle()") @SuppressWarnings("unused") TruffleObject cachedResolveHandleFunction,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Cached BranchProfile errorProfile,
+                        @Cached("lookupPosition(cache, handle, cachedLen, cachedResolveHandleFunction, interopLibrary, errorProfile)") int cachedPosition) throws InvalidCacheEntryException {
+            if (cache.keys[cachedPosition] == cachedHandle) {
+                return cache.values[cachedPosition];
+            }
+            throw InvalidCacheEntryException.INSTANCE;
+        }
+
+        @Specialization(guards = {"cache.len() == cachedLen", "cache.getPtrToResolveHandle() == cachedResolveHandleFunction"}, replaces = "doCached")
+        Object doFullLookup(HandleCache cache, long handle,
+                            @Cached("cache.len()") int cachedLen,
+                            @Cached("cache.getPtrToResolveHandle()") TruffleObject cachedResolveHandleFunction,
+                            @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                            @Cached BranchProfile errorProfile) {
+            int pos = lookupPosition(cache, handle, cachedLen, cachedResolveHandleFunction, interopLibrary, errorProfile);
+            return cache.values[pos];
+        }
+
+        @ExplodeLoop
+        protected int lookupPosition(HandleCache cache, long handle, int cachedLen, TruffleObject ptrToResolveHandle, InteropLibrary interopLibrary, BranchProfile errorProfile) {
+            for (int i = 0; i < cachedLen; i++) {
+                if (cache.keys[i] == handle) {
+                    return i;
+                }
+            }
+
+            try {
+                Object resolved = interopLibrary.execute(ptrToResolveHandle, handle);
+
+                int insertPos = cache.pos;
+                cache.keys[insertPos] = handle;
+                cache.values[insertPos] = resolved;
+                cache.pos = (insertPos + 1) % cache.len();
+
+                return insertPos;
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                errorProfile.enter();
+                throw e.raise();
+            }
+        }
     }
 }
