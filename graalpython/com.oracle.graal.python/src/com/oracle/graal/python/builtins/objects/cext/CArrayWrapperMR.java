@@ -42,12 +42,10 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrapperMRFactory.GetTypeIDNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -57,55 +55,11 @@ import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 
 @MessageResolution(receiverType = CArrayWrapper.class)
 public class CArrayWrapperMR {
-
-    @Resolve(message = "READ")
-    abstract static class ReadNode extends Node {
-        public char access(CStringWrapper object, int idx) {
-            String s = object.getString();
-            if (idx >= 0 && idx < s.length()) {
-                return s.charAt(idx);
-            } else if (idx == s.length()) {
-                return '\0';
-            }
-            CompilerDirectives.transferToInterpreter();
-            throw UnknownIdentifierException.raise(Integer.toString(idx));
-        }
-
-        public char access(CStringWrapper object, long idx) {
-            try {
-                return access(object, PInt.intValueExact(idx));
-            } catch (ArithmeticException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw UnknownIdentifierException.raise(Long.toString(idx));
-            }
-        }
-
-        public byte access(CByteArrayWrapper object, int idx) {
-            byte[] arr = object.getByteArray();
-            if (idx >= 0 && idx < arr.length) {
-                return arr[idx];
-            } else if (idx == arr.length) {
-                return (byte) 0;
-            }
-            CompilerDirectives.transferToInterpreter();
-            throw UnknownIdentifierException.raise(Integer.toString(idx));
-        }
-
-        public byte access(CByteArrayWrapper object, long idx) {
-            try {
-                return access(object, PInt.intValueExact(idx));
-            } catch (ArithmeticException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw UnknownIdentifierException.raise(Long.toString(idx));
-            }
-        }
-    }
 
     @SuppressWarnings("unknown-message")
     @Resolve(message = "com.oracle.truffle.llvm.spi.GetDynamicType")
@@ -135,24 +89,6 @@ public class CArrayWrapperMR {
                 callUnaryNode = insert(PCallCapiFunction.create(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID));
             }
             return callUnaryNode.call(new Object[]{len});
-        }
-    }
-
-    @Resolve(message = "HAS_SIZE")
-    abstract static class HasSizeNode extends Node {
-        boolean access(@SuppressWarnings("unused") CArrayWrapper obj) {
-            return true;
-        }
-    }
-
-    @Resolve(message = "GET_SIZE")
-    abstract static class GetSizeNode extends Node {
-        long access(CStringWrapper obj) {
-            return obj.getString().length();
-        }
-
-        int access(CByteArrayWrapper obj) {
-            return obj.getByteArray().length;
         }
     }
 

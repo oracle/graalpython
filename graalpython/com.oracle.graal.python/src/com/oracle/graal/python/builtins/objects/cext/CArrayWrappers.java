@@ -41,8 +41,17 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Native wrappers for managed objects such that they can be used as a C array by native code. The
@@ -51,6 +60,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
  */
 public abstract class CArrayWrappers {
 
+    @ExportLibrary(InteropLibrary.class)
     public abstract static class CArrayWrapper extends PythonNativeWrapper {
 
         public CArrayWrapper(Object delegate) {
@@ -73,6 +83,7 @@ public abstract class CArrayWrappers {
      * object that wraps a Python unicode object, this wrapper let's a Java String look like a
      * {@code char*}.
      */
+    @ExportLibrary(InteropLibrary.class)
     public static class CStringWrapper extends CArrayWrapper {
 
         public CStringWrapper(String delegate) {
@@ -83,12 +94,59 @@ public abstract class CArrayWrappers {
             return (String) getDelegate();
         }
 
+        @ExportMessage
+        final long getArraySize() {
+            return this.getString().length();
+        }
+
+        @ExportMessage
+        final boolean hasArrayElements() {
+            return true;
+        }
+
+        @ExportMessage
+        final Object readArrayElement(long index,
+                                      @Cached.Exclusive  @Cached(allowUncached = true) ReadNode readNode) {
+            return readNode.execute(this, index);
+        }
+
+        @ExportMessage
+        final boolean isArrayElementReadable(long identifier) {
+            return 0 <= identifier && identifier < getArraySize();
+        }
+
+        abstract static class ReadNode extends Node {
+            public abstract char execute(CStringWrapper object, Object idx);
+
+            @Specialization
+            public char executeInt(CStringWrapper object, int idx) {
+                String s = object.getString();
+                if (idx >= 0 && idx < s.length()) {
+                    return s.charAt(idx);
+                } else if (idx == s.length()) {
+                    return '\0';
+                }
+                CompilerDirectives.transferToInterpreter();
+                throw UnknownIdentifierException.raise(Integer.toString(idx));
+            }
+
+            @Specialization
+            public char executeLong(CStringWrapper object, long idx) {
+                try {
+                    return executeInt(object, PInt.intValueExact(idx));
+                } catch (ArithmeticException e) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw UnknownIdentifierException.raise(Long.toString(idx));
+                }
+            }
+        }
     }
 
     /**
      * A native wrapper for arbitrary byte arrays (i.e. the store of a Python Bytes object) to be
      * used like a {@code char*} pointer.
      */
+    @ExportLibrary(InteropLibrary.class)
     public static class CByteArrayWrapper extends CArrayWrapper {
 
         public CByteArrayWrapper(byte[] delegate) {
@@ -99,5 +157,51 @@ public abstract class CArrayWrappers {
             return (byte[]) getDelegate();
         }
 
+        @ExportMessage
+        final long getArraySize() {
+            return this.getByteArray().length;
+        }
+
+        @ExportMessage
+        final boolean hasArrayElements() {
+            return true;
+        }
+
+        @ExportMessage
+        final Object readArrayElement(long index,
+                                      @Cached.Exclusive  @Cached(allowUncached = true) ReadNode readNode) {
+            return readNode.execute(this, index);
+        }
+
+        @ExportMessage
+        final boolean isArrayElementReadable(long identifier) {
+            return 0 <= identifier && identifier < getArraySize();
+        }
+
+        abstract static class ReadNode extends Node {
+            public abstract byte execute(CByteArrayWrapper object, Object idx);
+
+            @Specialization
+            public byte executeInt(CByteArrayWrapper object, int idx) {
+                byte[] arr = object.getByteArray();
+                if (idx >= 0 && idx < arr.length) {
+                    return arr[idx];
+                } else if (idx == arr.length) {
+                    return (byte) 0;
+                }
+                CompilerDirectives.transferToInterpreter();
+                throw UnknownIdentifierException.raise(Integer.toString(idx));
+            }
+
+            @Specialization
+            public byte executeLong(CByteArrayWrapper object, long idx) {
+                try {
+                    return executeInt(object, PInt.intValueExact(idx));
+                } catch (ArithmeticException e) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw UnknownIdentifierException.raise(Long.toString(idx));
+                }
+            }
+        }
     }
 }
