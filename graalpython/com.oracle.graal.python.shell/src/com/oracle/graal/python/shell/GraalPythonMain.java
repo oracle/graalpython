@@ -93,6 +93,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     break;
                 case "-c":
                     i += 1;
+                    programArgs.add(arg);
                     if (i < arguments.size()) {
                         commandString = arguments.get(i);
                     } else {
@@ -181,6 +182,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     subprocessArgs.add("Dgraal.TruffleCompileImmediately=true");
                     subprocessArgs.add("Dgraal.TruffleCompilationExceptionsAreThrown=true");
                     inputArgs.remove("-compile-truffle-immediately");
+                    break;
+                case "-u":
+                    // TODO we currently don't support this option, but needs to be consumed
+                    // due pip/wheel installer.
                     break;
                 default:
                     if (!arg.startsWith("-")) {
