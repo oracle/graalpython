@@ -84,7 +84,7 @@ public abstract class PythonBuiltins {
                 PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, null, createArity(factory, builtin, declaresExplicitSelf), numDefaults(builtin), callTarget);
                 for (PythonBuiltinClassType type : builtin.constructsClass()) {
                     PythonBuiltinClass builtinClass = core.lookupType(type);
-                    builtinClass.setAttributeUnsafe(__NEW__, core.factory().createClassmethod(newFunc));
+                    builtinClass.setAttributeUnsafe(__NEW__, newFunc);
                     builtinClass.setAttribute(__DOC__, builtinDoc);
                 }
             } else {

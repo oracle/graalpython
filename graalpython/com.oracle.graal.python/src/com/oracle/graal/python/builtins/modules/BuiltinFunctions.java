@@ -1562,7 +1562,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (getDebuggerSessionCount() > 0) {
                 // we already have a Truffle debugger attached, it'll stop here
                 return PNone.NONE;
-            } else {
+            } else if (getContext().isInitialized()) {
                 if (getSysModuleNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     getSysModuleNode = insert(HashingStorageNodes.GetItemNode.create());
@@ -1576,6 +1576,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     throw raise(PythonBuiltinClassType.RuntimeError, "lost sys.breakpointhook");
                 }
                 return callNode.execute(frame, breakpointhook, args, kwargs);
+            } else {
+                return PNone.NONE;
             }
         }
 

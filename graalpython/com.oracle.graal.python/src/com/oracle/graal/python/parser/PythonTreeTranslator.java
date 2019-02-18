@@ -1459,9 +1459,6 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         String funcName = ctx.NAME().getText();
         String enclosingClassName = environment.isInClassScope() ? environment.getCurrentScopeId() : null;
 
-        /**
-         * translate default arguments in FunctionDef's declaring scope.
-         */
         List<ExpressionNode> defaultArgs = new ArrayList<>();
         List<KwDefaultExpressionNode> defaultKwArgs = new ArrayList<>();
 
@@ -1595,7 +1592,12 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             if (argumentReadNode == null && argname != null) {
                 ExpressionNode defaultValueNode = null;
                 if (test != null) {
+                    /**
+                     * translate default arguments in FunctionDef's declaring scope.
+                     */
+                    ScopeInfo definitionScope = environment.popScope();
                     defaultValueNode = (ExpressionNode) test.accept(this);
+                    environment.pushScope(definitionScope);
                 }
                 if (varargsIdx == -1 && !starArgsMarker) {
                     // positional argument, possibly with a default
