@@ -41,8 +41,10 @@
 package com.oracle.graal.python.test.interop;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -52,6 +54,7 @@ import java.util.List;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -76,6 +79,7 @@ import com.oracle.truffle.api.nodes.Node;
 @RunWith(Enclosed.class)
 public class JavaInteropTest {
     public static class GeneralInterop extends PythonTests {
+        private static final String INCOMPLETE_SOURCE = "class A:";
         private ByteArrayOutputStream out;
         private Context context;
         private ByteArrayOutputStream err;
@@ -105,6 +109,55 @@ public class JavaInteropTest {
                 didFail = true;
             }
             assertTrue(didFail);
+        }
+
+        @Test
+        public void evalNonInteractiveThrowsSyntaxError() throws IOException {
+            try (Context c = Context.newBuilder().option("python.TerminalIsInteractive", "false").build()) {
+                c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(false).build());
+            } catch (PolyglotException t) {
+                assertTrue(t.isSyntaxError());
+                assertFalse(t.isIncompleteSource());
+                return;
+            }
+            fail();
+        }
+
+        @Test
+        public void evalNonInteractiveInInteractiveTerminalThrowsSyntaxError() throws IOException {
+            try (Context c = Context.newBuilder().option("python.TerminalIsInteractive", "true").build()) {
+                c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(false).build());
+            } catch (PolyglotException t) {
+                assertTrue(t.isSyntaxError());
+                assertFalse(t.isIncompleteSource());
+                return;
+            }
+            fail();
+        }
+
+        @Test
+        public void evalInteractiveInNonInteractiveTerminalThrowsSyntaxError() throws IOException {
+            try (Context c = Context.newBuilder().option("python.TerminalIsInteractive", "false").build()) {
+                c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(true).build());
+            } catch (PolyglotException t) {
+                assertTrue(t.isSyntaxError());
+                assertTrue(t.isIncompleteSource());
+                return;
+            }
+            fail();
+        }
+
+        @Test
+        public void evalInteractiveInInteractiveTerminalThrowsSyntaxError() throws IOException {
+            try (Context c = Context.newBuilder().option("python.TerminalIsInteractive", "true").build()) {
+                c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(true).build());
+            } catch (PolyglotException t) {
+                assertTrue(t.isSyntaxError());
+                assertTrue(t.isIncompleteSource());
+                return;
+            }
+
+            fail();
         }
 
         @Test
