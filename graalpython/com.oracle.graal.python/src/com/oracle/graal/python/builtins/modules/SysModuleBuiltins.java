@@ -92,7 +92,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.toolchain.ToolchainProvider;
+import com.oracle.truffle.api.toolchain.ToolchainInfo;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
@@ -215,8 +215,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         path[pathIdx + 1] = PythonCore.getStdlibHome(env);
         path[pathIdx + 2] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
         LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
-        ToolchainProvider toolchainProvider = env.lookup(llvmInfo, ToolchainProvider.class);
-        path[pathIdx + 3] = String.join(PythonCore.FILE_SEPARATOR,PythonCore.getCoreHome(env), "modules", toolchainProvider.getToolchainSubdir());
+        ToolchainInfo toolchainInfo = env.lookup(llvmInfo, ToolchainInfo.class);
+        path[pathIdx + 3] = String.join(PythonCore.FILE_SEPARATOR, PythonCore.getCoreHome(env), "modules", toolchainInfo.getIdentifier());
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
     }
@@ -495,8 +495,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         protected Object getToolPath(String tool) {
             Env env = getContext().getEnv();
             LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
-            ToolchainProvider toolchainProvider = env.lookup(llvmInfo, ToolchainProvider.class);
-            String toolPath = toolchainProvider.getToolPath(tool);
+            ToolchainInfo toolchainInfo = env.lookup(llvmInfo, ToolchainInfo.class);
+            String toolPath = toolchainInfo.getToolPath(tool);
             if (toolPath == null) {
                 return PNone.NONE;
             }
