@@ -124,7 +124,7 @@ public class MethodBuiltins extends PythonBuiltins {
         @Specialization
         Object defaults(PMethod self,
                         @Cached("create()") FunctionBuiltins.GetFunctionKeywordDefaultsNode getFunctionKwdefaultsNode) {
-            return getFunctionKwdefaultsNode.execute(self.getFunction());
+            return getFunctionKwdefaultsNode.execute(self.getFunction(), PNone.NO_VALUE);
         }
     }
 
