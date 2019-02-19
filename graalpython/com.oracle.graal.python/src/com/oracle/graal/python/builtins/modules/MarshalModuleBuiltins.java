@@ -167,7 +167,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     private final static char TYPE_FLOAT = 'f';
     // private final static char TYPE_BINARY_FLOAT = 'g';
     private final static char TYPE_COMPLEX = 'x';
-    private final static char TYPE_BINARY_COMPLEX = 'y';
+    // private final static char TYPE_BINARY_COMPLEX = 'y';
     private final static char TYPE_LONG = 'l';
     private final static char TYPE_PINT = 'L';
     private final static char TYPE_STRING = 's';
@@ -186,7 +186,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     private final static int CURRENT_VERSION = 1;
 
     public static abstract class MarshallerNode extends PNodeWithContext {
-        
+
         public abstract void execute(Object x, int version, DataOutputStream buffer);
 
         @Child private MarshallerNode recursiveNode;
@@ -229,10 +229,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private void writeShort(short x, int version, DataOutputStream buffer) {
-            writeByte((char) (x & 0xff), version, buffer);
-            writeByte((char) ((x >> 8) & 0xff), version, buffer);
-        }
+//        private void writeShort(short x, int version, DataOutputStream buffer) {
+//            writeByte((char) (x & 0xff), version, buffer);
+//            writeByte((char) ((x >> 8) & 0xff), version, buffer);
+//        }
 
         private void writeInt(int v, @SuppressWarnings("unused") int version, DataOutputStream buffer) {
             try {
@@ -339,7 +339,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public void handlePArray(PArray v, @SuppressWarnings("unused")int version, @SuppressWarnings("unused")DataOutputStream buffer) {
+        public void handlePArray(@SuppressWarnings("unused") PArray v, @SuppressWarnings("unused") int version, @SuppressWarnings("unused") DataOutputStream buffer) {
             throw raise(NotImplementedError, "marshal.dumps(array)");
         }
 
@@ -456,7 +456,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     }
 
     public static abstract class UnmarshallerNode extends PNodeWithContext {
-        public abstract Object execute(byte[] data, int version);
+        public abstract Object execute(byte[] dataBytes, int version);
 
         @Child private HashingStorageNodes.SetItemNode setItemNode;
 
@@ -666,9 +666,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object readObject(byte[] data, int version) {
+        public Object readObject(byte[] dataBytes, @SuppressWarnings("unused") int version) {
             reset();
-            this.data = data;
+            this.data = dataBytes;
             return readObject(0);
         }
 
