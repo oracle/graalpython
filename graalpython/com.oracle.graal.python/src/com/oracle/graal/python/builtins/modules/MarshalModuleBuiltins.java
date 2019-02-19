@@ -97,6 +97,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private @Child MarshallerNode marshaller = MarshallerNode.create();
 
+        @TruffleBoundary
         private byte[] dump(Object o, int version) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             DataOutputStream buffer = new DataOutputStream(baos);
