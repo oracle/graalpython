@@ -181,9 +181,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         if (arity.takesVarArgs()) {
             int args_left = co_argcount - upfront;
             if (args_left < 0) {
-                // everything goes to starargs, we already put self in position 0
-                // above
-                PArguments.setVariableArguments(scope_w, args_w);
+                // everything goes to starargs, including any magic self
+                assert upfront == 1;
+                Object[] varargs = new Object[num_args + 1];
+                varargs[0] = self;
+                System.arraycopy(args_w, 0, varargs, 1, num_args);
+                PArguments.setVariableArguments(scope_w, varargs);
             } else if (num_args > args_left) {
                 PArguments.setVariableArguments(scope_w, Arrays.copyOfRange(args_w, args_left, args_w.length));
             } else {
