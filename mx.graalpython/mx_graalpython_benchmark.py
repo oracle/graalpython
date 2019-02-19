@@ -55,7 +55,7 @@ GROUP_GRAAL = "Graal"
 SUBGROUP_GRAAL_PYTHON = "graalpython"
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
-CONFIGURATION_EXPERIMENTAL_SPLITTING = "experimental_splitting"
+CONFIG_EXPERIMENTAL_SPLITTING = "experimental_splitting"
 CONFIGURATION_SANDBOXED = "sandboxed"
 
 DEFAULT_ITERATIONS = 10
@@ -132,7 +132,7 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
         super(AbstractPythonIterationsControlVm, self).__init__(config_name, options)
         try:
             self._iterations = int(iterations)
-        except Exception:
+        except:
             self._iterations = None
 
     def _override_iterations_args(self, args):
