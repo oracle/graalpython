@@ -64,6 +64,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         this.arity = arity;
         assert defaults == null || Arrays.stream(defaults).noneMatch(x -> x == null);
         this.defaults = defaults;
+        assert kwDefaults == null || Arrays.stream(kwDefaults).noneMatch(x -> x == null);
         this.kwDefaults = kwDefaults;
     }
 

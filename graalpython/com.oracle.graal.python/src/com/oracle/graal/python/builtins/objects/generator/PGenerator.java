@@ -68,6 +68,8 @@ public final class PGenerator extends PythonBuiltinObject {
             for (int i = 0; i < closure.length; i++) {
                 generatorFrame.setObject(freeVarSlots[i], closure[i]);
             }
+        } else {
+            assert freeVarSlots.length == 0;
         }
         // initialize own cell vars to new cells (these cells will be used by nested functions to
         // create their own closures)
