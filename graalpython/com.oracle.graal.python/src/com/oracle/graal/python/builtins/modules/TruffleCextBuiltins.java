@@ -1893,6 +1893,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "make_may_raise_wrapper", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MakeMayRaiseWrapperNode extends PythonBuiltinNode {
+        private static final Arity TERNARY_ARITY = new Arity(false, -1, false, new String[]{"arg", "arg2", "arg3"}, new String[0]);
+        private static final Arity BINARY_ARITY = new Arity(false, -1, false, new String[]{"arg", "arg2"}, new String[0]);
+        private static final Arity UNARY_ARITY = new Arity(false, -1, false, new String[]{"arg"}, new String[0]);
+        private static final Arity VARARGS_ARITY = new Arity(false, 0, false, new String[0], new String[0]);
         private static final Builtin unaryBuiltin = MayRaiseUnaryNode.class.getAnnotation(Builtin.class);
         private static final Builtin binaryBuiltin = MayRaiseBinaryNode.class.getAnnotation(Builtin.class);
         private static final Builtin ternaryBuiltin = MayRaiseTernaryNode.class.getAnnotation(Builtin.class);
@@ -1912,23 +1916,27 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             });
 
             RootNode rootNode = null;
-            Arity arity = func.getArity();
-            if (arity.takesPositionalOnly()) {
-                switch (arity.getMaxNumOfPositionalArgs()) {
+            Arity funcArity = func.getArity();
+            Arity wrapperArity = null;
+            if (funcArity.takesPositionalOnly()) {
+                switch (funcArity.getMaxNumOfPositionalArgs()) {
                     case 1:
                         rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), unaryBuiltin,
                                         new MayRaiseNodeFactory<PythonUnaryBuiltinNode>(MayRaiseUnaryNodeGen.create(func, errorResult)),
                                         true);
+                        wrapperArity = UNARY_ARITY;
                         break;
                     case 2:
                         rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), binaryBuiltin,
                                         new MayRaiseNodeFactory<PythonBinaryBuiltinNode>(MayRaiseBinaryNodeGen.create(func, errorResult)),
                                         true);
+                        wrapperArity = BINARY_ARITY;
                         break;
                     case 3:
                         rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), ternaryBuiltin,
                                         new MayRaiseNodeFactory<PythonTernaryBuiltinNode>(MayRaiseTernaryNodeGen.create(func, errorResult)),
                                         true);
+                        wrapperArity = TERNARY_ARITY;
                         break;
                     default:
                         break;
@@ -1938,9 +1946,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), varargsBuiltin,
                                 new MayRaiseNodeFactory<PythonBuiltinNode>(new MayRaiseNode(func, errorResult)),
                                 true);
+                wrapperArity = VARARGS_ARITY;
             }
 
-            return factory().createBuiltinFunction(func.getName(), null, arity, 0, Truffle.getRuntime().createCallTarget(rootNode));
+            return factory().createBuiltinFunction(func.getName(), null, wrapperArity, 0, Truffle.getRuntime().createCallTarget(rootNode));
         }
     }
 

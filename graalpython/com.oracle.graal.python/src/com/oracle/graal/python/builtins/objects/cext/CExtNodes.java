@@ -1535,7 +1535,7 @@ public abstract class CExtNodes {
         public final Object execute(VirtualFrame frame) {
             Object[] args = readVarargsNode.executeObjectArray(frame);
             try {
-                Object[] arguments = createArgsNode.execute(func, new Object[]{args});
+                Object[] arguments = createArgsNode.execute(func, args);
                 return invokeNode.execute(null, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
