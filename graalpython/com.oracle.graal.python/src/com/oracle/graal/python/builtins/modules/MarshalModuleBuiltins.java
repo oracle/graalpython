@@ -229,10 +229,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-//        private void writeShort(short x, int version, DataOutputStream buffer) {
-//            writeByte((char) (x & 0xff), version, buffer);
-//            writeByte((char) ((x >> 8) & 0xff), version, buffer);
-//        }
+        // private void writeShort(short x, int version, DataOutputStream buffer) {
+        // writeByte((char) (x & 0xff), version, buffer);
+        // writeByte((char) ((x >> 8) & 0xff), version, buffer);
+        // }
 
         private void writeInt(int v, @SuppressWarnings("unused") int version, DataOutputStream buffer) {
             try {
@@ -605,6 +605,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return factory().createFrozenSet(newStorage);
         }
 
+        @TruffleBoundary
         private Object readObject(int depth) {
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
                 throw raise(ValueError, "Maximum marshal stack depth");
