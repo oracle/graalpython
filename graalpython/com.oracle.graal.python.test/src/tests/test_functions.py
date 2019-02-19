@@ -190,3 +190,15 @@ def test_function_changes_kwdefaults():
 
     foo.__kwdefaults__ = None
     assert_raises(TypeError, foo)
+
+
+def test_code_change():
+    def foo():
+        return "foo"
+
+    def bar():
+        return "bar"
+
+    assert foo() == "foo"
+    foo.__code__ = bar.__code__
+    assert foo() == "bar"
