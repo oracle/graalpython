@@ -215,7 +215,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         path[pathIdx + 1] = PythonCore.getStdlibHome(env);
         path[pathIdx + 2] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
         LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
-        ToolchainProvider toolchainProvider = env.uninitializedLookup(llvmInfo, ToolchainProvider.class);
+        ToolchainProvider toolchainProvider = env.lookup(llvmInfo, ToolchainProvider.class);
         path[pathIdx + 3] = String.join(PythonCore.FILE_SEPARATOR,PythonCore.getCoreHome(env), "modules", toolchainProvider.getToolchainSubdir());
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
