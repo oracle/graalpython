@@ -680,7 +680,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private CheckFunctionResultNode checkResultNode = CheckFunctionResultNode.create();
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
 
-        public ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable) {
+        ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable) {
             super(lang);
             this.name = name;
             this.cwrapper = cwrapper;
@@ -694,20 +694,20 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            Object[] frameArgs = frame.getArguments();
+            Object[] frameArgs = PArguments.getVariableArguments(frame);
             try {
                 TruffleObject fun;
                 Object[] arguments;
 
                 if (cwrapper != null) {
                     fun = cwrapper;
-                    arguments = new Object[1 + frameArgs.length - PArguments.USER_ARGUMENTS_OFFSET];
+                    arguments = new Object[1 + frameArgs.length];
                     arguments[0] = callable;
-                    toSulongNode.executeInto(frameArgs, PArguments.USER_ARGUMENTS_OFFSET, arguments, 1);
+                    toSulongNode.executeInto(frameArgs, 0, arguments, 1);
                 } else {
                     fun = callable;
-                    arguments = new Object[frameArgs.length - PArguments.USER_ARGUMENTS_OFFSET];
-                    toSulongNode.executeInto(frameArgs, PArguments.USER_ARGUMENTS_OFFSET, arguments, 0);
+                    arguments = new Object[frameArgs.length];
+                    toSulongNode.executeInto(frameArgs, 0, arguments, 0);
                 }
                 // save current exception state
                 PException exceptionState = getContext().getCurrentException();
@@ -1510,6 +1510,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             super(language);
             this.factory = factory;
             this.readSelfNode = ReadIndexedArgumentNode.create(0);
+            assert callTarget instanceof RootCallTarget && ((RootCallTarget) callTarget).getRootNode() instanceof ExternalFunctionNode;
             this.directCallNode = Truffle.getRuntime().createDirectCallNode(callTarget);
         }
 
@@ -1544,10 +1545,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             Object self = readSelfNode.execute(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
-            Object[] arguments = PArguments.create(3);
-            PArguments.setArgument(arguments, 0, self);
-            PArguments.setArgument(arguments, 1, factory.createTuple(args));
-            PArguments.setArgument(arguments, 2, factory.createDict(kwargs));
+            Object[] arguments = PArguments.create();
+            PArguments.setVariableArguments(arguments, self, factory.createTuple(args), factory.createDict(kwargs));
             return directCallNode.call(arguments);
         }
     }
@@ -1564,9 +1563,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         public Object execute(VirtualFrame frame) {
             Object self = readSelfNode.execute(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
-            Object[] arguments = PArguments.create(2);
-            PArguments.setArgument(arguments, 0, self);
-            PArguments.setArgument(arguments, 1, factory.createTuple(args));
+            Object[] arguments = PArguments.create();
+            PArguments.setVariableArguments(arguments, self, factory.createTuple(args));
             return directCallNode.call(arguments);
         }
     }
@@ -1579,9 +1577,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Override
         public Object execute(VirtualFrame frame) {
             Object self = readSelfNode.execute(frame);
-            Object[] arguments = PArguments.create(2);
-            PArguments.setArgument(arguments, 0, self);
-            PArguments.setArgument(arguments, 1, PNone.NONE);
+            Object[] arguments = PArguments.create();
+            PArguments.setVariableArguments(arguments, self, PNone.NONE);
             return directCallNode.call(arguments);
         }
     }
@@ -1598,9 +1595,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         public Object execute(VirtualFrame frame) {
             Object self = readSelfNode.execute(frame);
             Object arg = readArgNode.execute(frame);
-            Object[] arguments = PArguments.create(2);
-            PArguments.setArgument(arguments, 0, self);
-            PArguments.setArgument(arguments, 1, arg);
+            Object[] arguments = PArguments.create();
+            PArguments.setVariableArguments(arguments, self, arg);
             return directCallNode.call(arguments);
         }
     }
@@ -1620,11 +1616,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             Object self = readSelfNode.execute(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
-            Object[] arguments = PArguments.create(4);
-            PArguments.setArgument(arguments, 0, self);
-            PArguments.setArgument(arguments, 1, factory.createTuple(args));
-            PArguments.setArgument(arguments, 2, args.length);
-            PArguments.setArgument(arguments, 3, factory.createDict(kwargs));
+            Object[] arguments = PArguments.create();
+            PArguments.setVariableArguments(arguments, self, factory.createTuple(args), args.length, factory.createDict(kwargs));
             return directCallNode.call(arguments);
         }
     }
@@ -1632,10 +1625,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "METH_KEYWORDS", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethKeywordsNode extends PythonUnaryBuiltinNode {
+        private static final Arity ARITY = new Arity(true, 1, false, new String[]{"self"}, new String[0]);
+
         @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(), 0,
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), ARITY, 0,
                             Truffle.getRuntime().createCallTarget(new MethKeywordsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
     }
@@ -1643,10 +1638,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "METH_VARARGS", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethVarargsNode extends PythonUnaryBuiltinNode {
+        private static final Arity ARITY = new Arity(false, 1, false, new String[]{"self"}, new String[0]);
+
         @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(), 0,
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), ARITY, 0,
                             Truffle.getRuntime().createCallTarget(new MethVarargsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
     }
@@ -1654,10 +1651,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "METH_NOARGS", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethNoargsNode extends PythonUnaryBuiltinNode {
+        private static final Arity ARITY = new Arity(false, -1, false, new String[]{"self"}, new String[0]);
+
         @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(), 0,
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), ARITY, 0,
                             Truffle.getRuntime().createCallTarget(new MethNoargsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
     }
@@ -1665,10 +1664,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "METH_O", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethONode extends PythonUnaryBuiltinNode {
+        private static final Arity ARITY = new Arity(false, -1, false, new String[]{"self", "arg"}, new String[0]);
+
         @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(), 0,
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), ARITY, 0,
                             Truffle.getRuntime().createCallTarget(new MethORoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
     }
@@ -1676,10 +1677,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "METH_FASTCALL", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethFastcallNode extends PythonUnaryBuiltinNode {
+        private static final Arity ARITY = new Arity(true, 1, false, new String[]{"self"}, new String[0]);
+
         @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(), 0,
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), ARITY, 0,
                             Truffle.getRuntime().createCallTarget(new MethFastcallRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
     }

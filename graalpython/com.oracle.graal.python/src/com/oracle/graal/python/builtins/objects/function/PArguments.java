@@ -117,7 +117,7 @@ public final class PArguments {
         return initialArguments;
     }
 
-    public static void setVariableArguments(Object[] arguments, Object[] variableArguments) {
+    public static void setVariableArguments(Object[] arguments, Object... variableArguments) {
         arguments[INDEX_VARIABLE_ARGUMENTS] = variableArguments;
     }
 
