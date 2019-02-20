@@ -48,8 +48,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MaterializeDelegateNode;
@@ -57,9 +55,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeData;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeState;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
@@ -68,32 +63,16 @@ import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.InvalidateNativeObjectsAllManagedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PAsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PGetDynamicTypeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
-import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.set.PSet;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -101,23 +80,14 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -126,7 +96,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.KeyInfo;
 import com.oracle.truffle.api.interop.Message;
@@ -137,10 +106,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @MessageResolution(receiverType = PythonNativeWrapper.class)
 public class PythonObjectNativeWrapperMR {
@@ -267,546 +233,6 @@ public class PythonObjectNativeWrapperMR {
             return GetSulongTypeNodeGen.create();
         }
 
-    }
-
-    @Resolve(message = "READ")
-    abstract static class ReadNode extends Node {
-        @Child private ReadNativeMemberNode readNativeMemberNode;
-        @Child private AsPythonObjectNode getDelegate;
-
-        @CompilationFinal private String cachedObBase;
-
-        public Object access(PythonNativeWrapper object, String key) {
-            // The very common case: directly return native wrapper.
-            // This is in particular important for PrimitiveNativeWrappers, since they are not
-            // cached.
-            if (key == cachedObBase) {
-                return object;
-            } else if (cachedObBase == null && key.equals(NativeMemberNames.OB_BASE)) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                cachedObBase = key;
-                return object;
-            }
-
-            if (getDelegate == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDelegate = insert(AsPythonObjectNode.create());
-            }
-            Object delegate = getDelegate.execute(object);
-
-            // special key for the debugger
-            if (key.equals(GP_OBJECT)) {
-                return delegate;
-            }
-            if (readNativeMemberNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readNativeMemberNode = insert(ReadNativeMemberNode.create());
-            }
-            return readNativeMemberNode.execute(delegate, key);
-        }
-    }
-
-    @ImportStatic({NativeMemberNames.class, SpecialMethodNames.class, SpecialAttributeNames.class})
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class ReadNativeMemberNode extends PNodeWithContext {
-        @Child GetClassNode getClassNode;
-        @Child private ToSulongNode toSulongNode;
-        @Child private HashingStorageNodes.GetItemNode getItemNode;
-        @Child private CExtNodes.SizeofWCharNode sizeofWcharNode;
-
-        abstract Object execute(Object receiver, String key);
-
-        @Specialization(guards = "eq(OB_BASE, key)")
-        Object doObBase(Object o, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(o);
-        }
-
-        @Specialization(guards = "eq(D_COMMON, key)")
-        Object doDCommon(Object o, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(o);
-        }
-
-        @Specialization(guards = "eq(_BASE, key)")
-        Object doObBase(PString o, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(o);
-        }
-
-        @Specialization(guards = "eq(OB_REFCNT, key)")
-        int doObRefcnt(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") String key) {
-            return 0;
-        }
-
-        @Specialization(guards = "eq(OB_TYPE, key)")
-        Object doObType(Object object, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(getClass(object));
-        }
-
-        @Specialization(guards = "eq(OB_SIZE, key)")
-        long doObSize(Object object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
-            try {
-                return callLenNode.executeInt(object);
-            } catch (UnexpectedResultException e) {
-                return -1;
-            }
-        }
-
-        @Specialization(guards = "eq(MA_USED, key)")
-        int doMaUsed(PDict object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
-            try {
-                return callLenNode.executeInt(object);
-            } catch (UnexpectedResultException e) {
-                return -1;
-            }
-        }
-
-        @Specialization(guards = "eq(OB_SVAL, key)")
-        Object doObSval(PBytes object, @SuppressWarnings("unused") String key) {
-            return new PySequenceArrayWrapper(object, 1);
-        }
-
-        @Specialization(guards = "eq(OB_START, key)")
-        Object doObStart(PByteArray object, @SuppressWarnings("unused") String key) {
-            return new PySequenceArrayWrapper(object, 1);
-        }
-
-        @Specialization(guards = "eq(OB_FVAL, key)")
-        Object doObFval(Object object, @SuppressWarnings("unused") String key,
-                        @Cached("createClassProfile()") ValueProfile profile) {
-            Object profiled = profile.profile(object);
-            if (profiled instanceof PFloat) {
-                return ((PFloat) profiled).getValue();
-            } else if (profiled instanceof Double) {
-                return object;
-            }
-            throw UnsupportedMessageException.raise(Message.READ);
-        }
-
-        @Specialization(guards = "eq(TP_FLAGS, key)")
-        long doTpFlags(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") GetTypeFlagsNode getTypeFlagsNode) {
-            return getTypeFlagsNode.execute(object);
-        }
-
-        @Specialization(guards = "eq(TP_NAME, key)")
-        Object doTpName(PythonClass object, @SuppressWarnings("unused") String key) {
-            // return a C string wrapper that really allocates 'char*' on TO_NATIVE
-            return object.getNativeWrapper().getNameWrapper();
-        }
-
-        @Specialization(guards = "eq(TP_BASE, key)")
-        Object doTpBase(PythonClass object, @SuppressWarnings("unused") String key) {
-            PythonClass superClass = object.getSuperClass();
-            if (superClass != null) {
-                return getToSulongNode().execute(superClass);
-            }
-            return getToSulongNode().execute(object);
-        }
-
-        @Specialization(guards = "eq(TP_ALLOC, key)")
-        Object doTpAlloc(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__ALLOC__)") LookupAttributeInMRONode getAllocNode) {
-            Object result = getAllocNode.execute(object);
-            return getToSulongNode().execute(result);
-        }
-
-        @Specialization(guards = "eq(TP_AS_NUMBER, key)")
-        Object doTpAsNumber(PythonClass object, @SuppressWarnings("unused") String key) {
-            // TODO check for type and return 'NULL'
-            return new PyNumberMethodsWrapper(object);
-        }
-
-        @Specialization(guards = "eq(TP_AS_BUFFER, key)")
-        Object doTpAsBuffer(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") IsSubtypeNode isSubtype,
-                        @Cached("create()") BranchProfile notBytes,
-                        @Cached("create()") BranchProfile notBytearray,
-                        @Cached("create()") BranchProfile notMemoryview,
-                        @Cached("create()") BranchProfile notBuffer) {
-            PythonCore core = getCore();
-            PythonBuiltinClass pBytes = core.lookupType(PythonBuiltinClassType.PBytes);
-            if (isSubtype.execute(object, pBytes)) {
-                return new PyBufferProcsWrapper(pBytes);
-            }
-            notBytes.enter();
-            PythonBuiltinClass pBytearray = core.lookupType(PythonBuiltinClassType.PByteArray);
-            if (isSubtype.execute(object, pBytearray)) {
-                return new PyBufferProcsWrapper(pBytearray);
-            }
-            notBytearray.enter();
-            PythonBuiltinClass pMemoryview = core.lookupType(PythonBuiltinClassType.PMemoryView);
-            if (isSubtype.execute(object, pMemoryview)) {
-                return new PyBufferProcsWrapper(pMemoryview);
-            }
-            notMemoryview.enter();
-            PythonBuiltinClass pBuffer = core.lookupType(PythonBuiltinClassType.PBuffer);
-            if (isSubtype.execute(object, pBuffer)) {
-                return new PyBufferProcsWrapper(pBuffer);
-            }
-            notBuffer.enter();
-            // NULL pointer
-            return getToSulongNode().execute(PNone.NO_VALUE);
-        }
-
-        @Specialization(guards = "eq(TP_AS_SEQUENCE, key)")
-        Object doTpAsSequence(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__LEN__)") LookupAttributeInMRONode getAttrNode) {
-            if (getAttrNode.execute(object) != PNone.NO_VALUE) {
-                return new PySequenceMethodsWrapper(object);
-            } else {
-                return getToSulongNode().execute(PNone.NO_VALUE);
-            }
-        }
-
-        @Specialization(guards = "eq(TP_NEW, key)")
-        Object doTpNew(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__NEW__)") LookupAttributeInMRONode getAttrNode) {
-            return ManagedMethodWrappers.createKeywords(getAttrNode.execute(object));
-        }
-
-        @Specialization(guards = "eq(TP_HASH, key)")
-        Object doTpHash(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__HASH__)") LookupAttributeInMRONode getHashNode) {
-            return getToSulongNode().execute(getHashNode.execute(object));
-        }
-
-        @Specialization(guards = "eq(TP_BASICSIZE, key)")
-        Object doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__BASICSIZE__)") LookupAttributeInMRONode getAttrNode) {
-            return getAttrNode.execute(object);
-        }
-
-        @Specialization(guards = "eq(TP_ITEMSIZE, key)")
-        Object doTpItemsize(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__ITEMSIZE__)") LookupAttributeInMRONode getAttrNode) {
-            return getAttrNode.execute(object);
-        }
-
-        @Specialization(guards = "eq(TP_DICTOFFSET, key)")
-        Object doTpDictoffset(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") CastToIndexNode castToIntNode,
-                        @Cached("create(__DICTOFFSET__)") LookupAttributeInMRONode getAttrNode) {
-            // TODO properly implement 'tp_dictoffset' for builtin classes
-            if (object instanceof PythonBuiltinClass) {
-                return 0L;
-            }
-            Object dictoffset = getAttrNode.execute(object);
-            return castToIntNode.execute(dictoffset);
-        }
-
-        @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
-        Object doTpRichcompare(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(RICHCMP)") LookupAttributeInMRONode getCmpNode) {
-            return getToSulongNode().execute(getCmpNode.execute(object));
-        }
-
-        @Specialization(guards = "eq(TP_SUBCLASSES, key)")
-        Object doTpSubclasses(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
-            // TODO create dict view on subclasses set
-            return PythonObjectNativeWrapper.wrap(factory().createDict(), noWrapperProfile);
-        }
-
-        @Specialization(guards = "eq(TP_GETATTR, key)")
-        Object doTpGetattr(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key) {
-            // we do not provide 'tp_getattr'; code will usually then use 'tp_getattro'
-            return getToSulongNode().execute(PNone.NO_VALUE);
-        }
-
-        @Specialization(guards = "eq(TP_SETATTR, key)")
-        Object doTpSetattr(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key) {
-            // we do not provide 'tp_setattr'; code will usually then use 'tp_setattro'
-            return getToSulongNode().execute(PNone.NO_VALUE);
-        }
-
-        @Specialization(guards = "eq(TP_GETATTRO, key)")
-        Object doTpGetattro(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAttributeInMRONode lookupAttrNode) {
-            return PyProcsWrapper.createGetAttrWrapper(lookupAttrNode.execute(object));
-        }
-
-        @Specialization(guards = "eq(TP_SETATTRO, key)")
-        Object doTpSetattro(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__SETATTR__)") LookupAttributeInMRONode lookupAttrNode) {
-            return PyProcsWrapper.createSetAttrWrapper(lookupAttrNode.execute(object));
-        }
-
-        @Specialization(guards = "eq(TP_ITERNEXT, key)")
-        Object doTpIternext(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__NEXT__)") LookupAttributeInMRONode lookupAttrNode) {
-            return getToSulongNode().execute(lookupAttrNode.execute(object));
-        }
-
-        @Specialization(guards = "eq(OB_ITEM, key)")
-        Object doObItem(PSequence object, @SuppressWarnings("unused") String key) {
-            return new PySequenceArrayWrapper(object, 4);
-        }
-
-        @Specialization(guards = "eq(UNICODE_WSTR, key)")
-        Object doWstr(PString object, @SuppressWarnings("unused") String key,
-                        @Cached("create(0)") UnicodeAsWideCharNode asWideCharNode) {
-            int elementSize = sizeofWchar();
-            return new PySequenceArrayWrapper(asWideCharNode.execute(object, elementSize, object.len()), elementSize);
-        }
-
-        @Specialization(guards = "eq(UNICODE_WSTR_LENGTH, key)")
-        long doWstrLength(PString object, @SuppressWarnings("unused") String key,
-                        @Cached("create(0)") UnicodeAsWideCharNode asWideCharNode,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
-            long sizeofWchar = sizeofWchar();
-            PBytes result = asWideCharNode.execute(object, sizeofWchar, object.len());
-            return lenNode.execute(result.getSequenceStorage()) / sizeofWchar;
-        }
-
-        @Specialization(guards = "eq(UNICODE_LENGTH, key)")
-        long doUnicodeLength(PString object, @SuppressWarnings("unused") String key) {
-            return object.len();
-        }
-
-        @Specialization(guards = "eq(UNICODE_DATA, key)")
-        Object doUnicodeData(PString object, @SuppressWarnings("unused") String key) {
-            return new PyUnicodeData(object);
-        }
-
-        @Specialization(guards = "eq(UNICODE_STATE, key)")
-        Object doState(PString object, @SuppressWarnings("unused") String key) {
-            // TODO also support bare 'String' ?
-            return new PyUnicodeState(object);
-        }
-
-        @Specialization(guards = "eq(UNICODE_HASH, key)")
-        @TruffleBoundary
-        long doUnicodeHash(PString object, @SuppressWarnings("unused") String key) {
-            // TODO also support bare 'String' ?
-            return object.hashCode();
-        }
-
-        @Specialization(guards = "eq(MD_DICT, key)")
-        Object doMdDict(Object object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getDictNode) {
-            return getToSulongNode().execute(getDictNode.executeObject(object, SpecialAttributeNames.__DICT__));
-        }
-
-        @Specialization(guards = "eq(TP_DICT, key)")
-        Object doTpDict(PythonClass object, @SuppressWarnings("unused") String key) {
-            PHashingCollection dict = object.getDict();
-            if (!(dict instanceof PDict)) {
-                assert dict instanceof PMappingproxy || dict == null;
-                // If 'dict instanceof PMappingproxy', it seems that someone already used '__dict__'
-                // on this type and created a mappingproxy object. We need to replace it by a dict.
-                dict = factory().createDictFixedStorage(object);
-                object.setDict(dict);
-            }
-            assert dict instanceof PDict;
-            return getToSulongNode().execute(dict);
-        }
-
-        @Specialization(guards = "eq(MD_DEF, key)")
-        Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key) {
-            DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
-            assert nativeWrapper != null;
-            return getGetItemNode().execute(nativeWrapper.getNativeMemberStore(), NativeMemberNames.MD_DEF);
-        }
-
-        @Specialization(guards = "eq(BUF_DELEGATE, key)")
-        Object doBufDelegate(PBuffer object, @SuppressWarnings("unused") String key) {
-            return new PySequenceArrayWrapper(object.getDelegate(), 1);
-        }
-
-        @Specialization(guards = "eq(BUF_READONLY, key)")
-        int doBufReadonly(PBuffer object, @SuppressWarnings("unused") String key) {
-            return object.isReadOnly() ? 1 : 0;
-        }
-
-        @Specialization(guards = "eq(START, key)")
-        Object doStart(PSlice object, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(getSliceComponent(object.getStart()));
-        }
-
-        @Specialization(guards = "eq(STOP, key)")
-        Object doStop(PSlice object, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(getSliceComponent(object.getStop()));
-        }
-
-        @Specialization(guards = "eq(STEP, key)")
-        Object doStep(PSlice object, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(getSliceComponent(object.getStep()));
-        }
-
-        @Specialization(guards = "eq(IM_SELF, key)")
-        Object doImSelf(PMethod object, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(object.getSelf());
-        }
-
-        @Specialization(guards = "eq(IM_SELF, key)")
-        Object doImSelf(PBuiltinMethod object, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(object.getSelf());
-        }
-
-        @Specialization(guards = "eq(IM_FUNC, key)")
-        Object doImFunc(PMethod object, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(object.getFunction());
-        }
-
-        @Specialization(guards = "eq(IM_FUNC, key)")
-        Object doImFunc(PBuiltinMethod object, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(object.getFunction());
-        }
-
-        @Specialization(guards = "eq(D_MEMBER, key)")
-        Object doDMember(PythonObject object, @SuppressWarnings("unused") String key) {
-            return new PyMemberDefWrapper(object);
-        }
-
-        @Specialization(guards = "eq(D_GETSET, key)")
-        Object doDGetSet(PythonObject object, @SuppressWarnings("unused") String key) {
-            return new PyGetSetDefWrapper(object);
-        }
-
-        @Specialization(guards = "eq(D_METHOD, key)")
-        Object doDBase(PythonObject object, @SuppressWarnings("unused") String key) {
-            return new PyMethodDescrWrapper(object);
-        }
-
-        @Specialization(guards = "eq(M_ML, key)")
-        Object doDBase(PBuiltinFunction object, @SuppressWarnings("unused") String key) {
-            return new PyMethodDescrWrapper(object);
-        }
-
-        @Specialization(guards = "eq(M_ML, key)")
-        Object doDBase(PFunction object, @SuppressWarnings("unused") String key) {
-            return new PyMethodDescrWrapper(object);
-        }
-
-        @Specialization(guards = "eq(M_ML, key)")
-        Object doDBase(PBuiltinMethod object, @SuppressWarnings("unused") String key) {
-            return new PyMethodDescrWrapper(object);
-        }
-
-        @Specialization(guards = "eq(M_ML, key)")
-        Object doDBase(PMethod object, @SuppressWarnings("unused") String key) {
-            return new PyMethodDescrWrapper(object);
-        }
-
-        @Specialization(guards = "eq(D_QUALNAME, key)")
-        Object doDQualname(PythonObject object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getQualnameNode) {
-            return getToSulongNode().execute(getQualnameNode.executeObject(object, SpecialAttributeNames.__QUALNAME__));
-        }
-
-        @Specialization(guards = "eq(SET_USED, key)")
-        long doSetUsed(PSet object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") HashingCollectionNodes.GetDictStorageNode getStorageNode,
-                        @Cached("create()") HashingStorageNodes.LenNode lenNode) {
-            return lenNode.execute(getStorageNode.execute(object));
-        }
-
-        @Specialization
-        Object doMemoryview(PMemoryView object, String key,
-                        @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
-                        @Cached("createReadNode()") Node readNode,
-                        @Cached("createBinaryProfile()") ConditionProfile isNativeObject) {
-            Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
-            if (isNativeObject.profile(delegateObj instanceof PythonNativeObject)) {
-                try {
-                    return ForeignAccess.sendRead(readNode, ((PythonNativeObject) delegateObj).object, key);
-                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                    throw e.raise();
-                }
-            }
-            throw new IllegalStateException("delegate of memoryview object is not native");
-        }
-
-        protected boolean isPyDateTimeCAPI(PythonObject object) {
-            return getClass(object).getName().equals("PyDateTime_CAPI");
-        }
-
-        protected boolean isPyDateTime(PythonObject object) {
-            return getClass(object).getName().equals("datetime");
-        }
-
-        @Specialization(guards = "isPyDateTimeCAPI(object)")
-        Object doDatetimeCAPI(PythonObject object, String key,
-                        @Cached("create()") LookupAttributeInMRONode.Dynamic getAttrNode) {
-            return getToSulongNode().execute(getAttrNode.execute(getClassNode.execute(object), key));
-        }
-
-        @Specialization(guards = "isPyDateTime(object)")
-        Object doDatetimeData(PythonObject object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") PyDateTimeMRNode pyDateTimeMRNode) {
-            return pyDateTimeMRNode.execute(object, key);
-        }
-
-        @Fallback
-        Object doGeneric(Object object, String key) {
-            // This is the preliminary generic case: There are native members we know that they
-            // exist but we do currently not represent them. So, store them into a dynamic object
-            // such that native code at least reads the value that was written before.
-            if (object instanceof PythonAbstractObject) {
-                DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
-                assert nativeWrapper != null;
-                logGeneric(key);
-                return getGetItemNode().execute(nativeWrapper.getNativeMemberStore(), key);
-            }
-            throw UnknownIdentifierException.raise(key);
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static void logGeneric(String key) {
-            PythonLanguage.getLogger().log(Level.FINE, "read of Python struct native member " + key);
-        }
-
-        protected boolean eq(String expected, String actual) {
-            return expected.equals(actual);
-        }
-
-        public static ReadNativeMemberNode create() {
-            return ReadNativeMemberNodeGen.create();
-        }
-
-        private HashingStorageNodes.GetItemNode getGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(GetItemNode.create());
-            }
-            return getItemNode;
-        }
-
-        private ToSulongNode getToSulongNode() {
-            if (toSulongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(ToSulongNode.create());
-            }
-            return toSulongNode;
-        }
-
-        private int sizeofWchar() {
-            if (sizeofWcharNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                sizeofWcharNode = insert(CExtNodes.SizeofWCharNode.create());
-            }
-            return (int) sizeofWcharNode.execute();
-        }
-
-        private PythonClass getClass(Object obj) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            return getClassNode.execute(obj);
-        }
-
-        private static Object getSliceComponent(int sliceComponent) {
-            if (sliceComponent == PSlice.MISSING_INDEX) {
-                return PNone.NONE;
-            }
-            return sliceComponent;
-        }
-
-        protected Node createReadNode() {
-            return Message.READ.createNode();
-        }
     }
 
     @Resolve(message = "WRITE")

@@ -79,11 +79,13 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    boolean hasMembers() {
+    @Override
+    protected boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
+    @Override
     protected boolean isMemberReadable(String member) {
         switch (member) {
             case NAME:
@@ -95,6 +97,7 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
+    @Override
     protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }

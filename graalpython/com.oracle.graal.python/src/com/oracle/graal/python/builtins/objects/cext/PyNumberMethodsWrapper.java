@@ -91,12 +91,14 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    boolean hasMembers() {
+    @Override
+    protected boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
-    boolean isMemberReadable(String member) {
+    @Override
+    protected boolean isMemberReadable(String member) {
         switch (member) {
             case NB_ADD:
             case NB_AND:
@@ -112,12 +114,13 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+    @Override
+    protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
-    Object readMember(String member,
+    protected Object readMember(String member,
                       @Cached.Exclusive @Cached(allowUncached = true) ReadMethodNode readMethodNode,
                       @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.ToSulongNode toSulongNode) {
         // translate key to attribute name

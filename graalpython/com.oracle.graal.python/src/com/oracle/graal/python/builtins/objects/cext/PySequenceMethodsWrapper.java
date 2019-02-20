@@ -73,12 +73,14 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    boolean hasMembers() {
+    @Override
+    protected boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
-    boolean isMemberReadable(String member) {
+    @Override
+    protected boolean isMemberReadable(String member) {
         switch (member) {
             case NativeMemberNames.SQ_REPEAT:
             case NativeMemberNames.SQ_ITEM:
@@ -89,12 +91,13 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+    @Override
+    protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
-    Object readMember(String member,
+    protected Object readMember(String member,
              @Cached.Exclusive @Cached(value = "create(__MUL__)", allowUncached = true) LookupAttributeInMRONode getSqItemNode,
              @Cached.Exclusive @Cached(value = "create(__GETITEM__)", allowUncached = true) LookupAttributeInMRONode getSqRepeatNode,
              @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.ToSulongNode toSulongNode) {
