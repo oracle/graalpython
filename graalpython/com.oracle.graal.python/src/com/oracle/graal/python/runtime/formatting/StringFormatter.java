@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -104,6 +104,7 @@ public class StringFormatter {
             if (Character.isDigit(c)) {
                 int numStart = index - 1;
                 while (Character.isDigit(c = pop())) {
+                    // empty
                 }
                 index -= 1;
                 Integer i = Integer.valueOf(format.substring(numStart, index));

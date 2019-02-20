@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,13 +68,13 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the keys
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public final static class PDictKeysIterator extends PJavaIteratorIterator<Object> {
+    public static final class PDictKeysIterator extends PJavaIteratorIterator<Object> {
         public PDictKeysIterator(LazyPythonClass clazz, PHashingCollection dict) {
             super(clazz, dict.keys().iterator());
         }
     }
 
-    public final static class PDictKeysView extends PDictView {
+    public static final class PDictKeysView extends PDictView {
 
         public PDictKeysView(LazyPythonClass clazz, PHashingCollection dict) {
             super(clazz, "dict_keys", dict);
@@ -86,13 +86,13 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the values
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public final static class PDictValuesIterator extends PJavaIteratorIterator<Object> {
+    public static final class PDictValuesIterator extends PJavaIteratorIterator<Object> {
         public PDictValuesIterator(LazyPythonClass clazz, PHashingCollection dict) {
             super(clazz, dict.items().iterator());
         }
     }
 
-    public final static class PDictValuesView extends PDictView {
+    public static final class PDictValuesView extends PDictView {
 
         public PDictValuesView(LazyPythonClass clazz, PHashingCollection dict) {
             super(clazz, "dict_values", dict);
@@ -104,7 +104,7 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the items
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public final static class PDictItemsIterator extends PJavaIteratorIterator<DictEntry> {
+    public static final class PDictItemsIterator extends PJavaIteratorIterator<DictEntry> {
         public PDictItemsIterator(LazyPythonClass clazz, PHashingCollection dict) {
             super(clazz, dict.entries().iterator());
         }

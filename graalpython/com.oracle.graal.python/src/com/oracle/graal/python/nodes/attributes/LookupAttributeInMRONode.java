@@ -141,7 +141,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return findAttr(getCore(), klass, key);
     }
 
-    final static class PythonClassAssumptionPair {
+    static final class PythonClassAssumptionPair {
         public final Assumption assumption;
         public final Object value;
 

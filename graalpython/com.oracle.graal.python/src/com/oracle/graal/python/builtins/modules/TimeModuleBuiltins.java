@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -469,8 +469,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     case 'I':
                         // hour (01-12)
                         j = items[3] % 12;
-                        if (j == 0)
+                        if (j == 0) {
                             j = 12;                  // midnight or noon
+                        }
                         s = s + twoDigit(j);
                         break;
                     case 'j':
@@ -489,10 +490,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         // AM/PM
                         j = items[3];
                         syms = datesyms.getAmPmStrings();
-                        if (0 <= j && j < 12)
+                        if (0 <= j && j < 12) {
                             s = s + syms[0];
-                        else if (12 <= j && j < 24)
+                        } else if (12 <= j && j < 24) {
                             s = s + syms[1];
+                        }
                         break;
                     case 'S':
                         // seconds (00-61)
@@ -505,14 +507,16 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
                         // TODO this is not correct, CPython counts the week of year
                         // from day of year item [8]
-                        if (cal == null)
+                        if (cal == null) {
                             cal = getCalendar(items);
+                        }
 
                         cal.setFirstDayOfWeek(Calendar.SUNDAY);
                         cal.setMinimalDaysInFirstWeek(7);
                         j = cal.get(Calendar.WEEK_OF_YEAR);
-                        if (cal.get(Calendar.MONTH) == Calendar.JANUARY && j >= 52)
+                        if (cal.get(Calendar.MONTH) == Calendar.JANUARY && j >= 52) {
                             j = 0;
+                        }
                         s = s + twoDigit(j);
                         break;
                     case 'w':
@@ -528,14 +532,16 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         // TODO this is not correct, CPython counts the week of year
                         // from day of year item [8]
 
-                        if (cal == null)
+                        if (cal == null) {
                             cal = getCalendar(items);
+                        }
                         cal.setFirstDayOfWeek(Calendar.MONDAY);
                         cal.setMinimalDaysInFirstWeek(7);
                         j = cal.get(Calendar.WEEK_OF_YEAR);
 
-                        if (cal.get(Calendar.MONTH) == Calendar.JANUARY && j >= 52)
+                        if (cal.get(Calendar.MONTH) == Calendar.JANUARY && j >= 52) {
                             j = 0;
+                        }
                         s = s + twoDigit(j);
                         break;
                     case 'x':
@@ -575,8 +581,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         break;
                     case 'Z':
                         // timezone name
-                        if (cal == null)
+                        if (cal == null) {
                             cal = getCalendar(items);
+                        }
                         // If items[8] == 1, we're in daylight savings time.
                         // -1 means the information was not available; treat this as if not in dst.
                         s = s + cal.getTimeZone().getDisplayName(items[8] > 0, 0);
@@ -624,7 +631,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     "time zones; instead the returned value will either be equal to that\n" +
                     "of the timezone or altzone attributes on the time module.")
     @GenerateNodeFactory
-    static abstract class MkTimeNode extends PythonUnaryBuiltinNode {
+    abstract static class MkTimeNode extends PythonUnaryBuiltinNode {
         private static final int ELEMENT_COUNT = 9;
         @Child CastToIndexNode castInt = CastToIndexNode.create();
 

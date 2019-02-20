@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,9 +45,9 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public abstract class AbstractPythonLock extends PythonBuiltinObject {
 
-    public static double TIMEOUT_MAX = 2 ^ 31;
-    public static boolean DEFAULT_BLOCKING = true;
-    public static double DEFAULT_TIMEOUT = -1.0;
+    public static final double TIMEOUT_MAX = 2 ^ 31;
+    public static final boolean DEFAULT_BLOCKING = true;
+    public static final double DEFAULT_TIMEOUT = -1.0;
 
     AbstractPythonLock(LazyPythonClass cls) {
         super(cls);

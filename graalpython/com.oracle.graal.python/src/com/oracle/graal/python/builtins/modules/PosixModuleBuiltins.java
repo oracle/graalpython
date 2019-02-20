@@ -1653,7 +1653,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "get_terminal_size", maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetTerminalSizeNode extends PythonUnaryBuiltinNode {
-        private final static String ERROR_MESSAGE = "[Errno 9] Bad file descriptor";
+        private static final String ERROR_MESSAGE = "[Errno 9] Bad file descriptor";
 
         @Child private CastToIntegerFromIntNode castIntNode;
         @Child private GetTerminalSizeNode recursiveNode;
@@ -1767,7 +1767,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class StrErrorNode extends PythonBuiltinNode {
 
-        private final static HashMap<Integer, String> STR_ERROR_MAP = new HashMap<>();
+        private static final HashMap<Integer, String> STR_ERROR_MAP = new HashMap<>();
 
         @Specialization
         String getStrError(int errno) {
