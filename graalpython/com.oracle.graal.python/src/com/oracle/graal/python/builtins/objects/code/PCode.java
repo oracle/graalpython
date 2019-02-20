@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.code;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -287,29 +288,28 @@ public final class PCode extends PythonBuiltinObject {
         Set<String> freeVarsSet = asSet((String[]) freevars);
         Set<String> cellVarsSet = asSet((String[]) cellvars);
 
-        Set<String> argNames = new HashSet<>();
-        argNames.addAll(Arrays.asList(arity.getParameterIds()));
-        argNames.addAll(Arrays.asList(arity.getKeywordNames()));
+        ArrayList<String> varNameList = new ArrayList<>(); // must be ordered!
+        varNameList.addAll(Arrays.asList(arity.getParameterIds()));
+        varNameList.addAll(Arrays.asList(arity.getKeywordNames()));
 
-        Set<String> varnamesSet = new HashSet<>();
         for (Object identifier : getRootNode().getFrameDescriptor().getIdentifiers()) {
             if (identifier instanceof String) {
                 String varName = (String) identifier;
 
                 if (FrameSlotIDs.RETURN_SLOT_ID.equals(varName) || varName.startsWith(FrameSlotIDs.TEMP_LOCAL_PREFIX)) {
                     // pass
-                } else if (PythonLanguage.getCore().getParser().isIdentifier(PythonLanguage.getCore(), varName)) {
-                    if (argNames.contains(varName)) {
-                        varnamesSet.add(varName);
-                    } else if (!freeVarsSet.contains(varName) && !cellVarsSet.contains(varName)) {
-                        varnamesSet.add(varName);
+                } else if (!varNameList.contains(varName)) {
+                    if (PythonLanguage.getCore().getParser().isIdentifier(PythonLanguage.getCore(), varName)) {
+                        if (!freeVarsSet.contains(varName) && !cellVarsSet.contains(varName)) {
+                            varNameList.add(varName);
+                        }
                     }
                 }
             }
         }
 
-        this.varnames = varnamesSet.toArray();
-        this.nlocals = varnamesSet.size();
+        this.varnames = varNameList.toArray();
+        this.nlocals = varNameList.size();
     }
 
     public RootNode getRootNode() {
