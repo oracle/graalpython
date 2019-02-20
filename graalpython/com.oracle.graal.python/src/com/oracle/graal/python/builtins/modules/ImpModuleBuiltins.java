@@ -96,7 +96,7 @@ import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
-import com.oracle.truffle.api.toolchain.ToolchainInfo;
+import com.oracle.truffle.api.toolchain.Toolchain;
 
 @CoreFunctions(defineModule = "_imp")
 public class ImpModuleBuiltins extends PythonBuiltins {
@@ -234,8 +234,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 Env env = ctxt.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
-                ToolchainInfo toolchainInfo = env.lookup(llvmInfo, ToolchainInfo.class);
-                TruffleFile capiFile = env.getTruffleFile(String.join(PythonCore.FILE_SEPARATOR, PythonCore.getCoreHome(env), toolchainInfo.getIdentifier(), "capi.so"));
+                Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+                TruffleFile capiFile = env.getTruffleFile(String.join(PythonCore.FILE_SEPARATOR, PythonCore.getCoreHome(env), toolchain.getIdentifier(), "capi.so"));
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
