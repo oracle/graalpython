@@ -121,6 +121,8 @@ abstract class CallSpecialMethodNode extends Node {
             if (functionRootNode instanceof BuiltinFunctionRootNode) {
                 return ((BuiltinFunctionRootNode) functionRootNode).declaresExplicitSelf();
             }
+        } else if (func instanceof PBuiltinMethod) {
+            return takesSelfArg(((PBuiltinMethod) func).getFunction());
         }
         return true;
     }
