@@ -183,6 +183,7 @@ suite = {
             "checkstyleVersion" : "8.8",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
             "workingSets": "Truffle,Python",
+            "spotbugsIgnoresGenerated" : True,
         },
 
         # GRAALPYTHON TEST
