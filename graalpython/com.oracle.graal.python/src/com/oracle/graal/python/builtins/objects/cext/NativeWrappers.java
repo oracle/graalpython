@@ -40,6 +40,15 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.MD_DEF;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.OB_TYPE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_BASICSIZE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_DICT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_DICTOFFSET;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_FLAGS;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_SUBCLASSES;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
+
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.util.logging.Level;
@@ -52,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -81,19 +91,23 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.type.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -116,6 +130,7 @@ import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -179,13 +194,8 @@ public abstract class NativeWrappers {
 
         @ExportMessage
         protected boolean isMemberReadable(String member) {
-            switch (member) {
-                case GP_OBJECT:
-                case NativeMemberNames.OB_BASE:
-                    return true;
-                default:
-                    return false;
-            }
+            // TODO: op on the keys from ReadNativeMemberNode - although there are too many in there
+            return true;
         }
 
         @ExportMessage
@@ -541,7 +551,7 @@ public abstract class NativeWrappers {
             Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key) {
                 DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
-                return getGetItemNode().execute(nativeWrapper.getNativeMemberStore(), NativeMemberNames.MD_DEF);
+                return getGetItemNode().execute(nativeWrapper.getNativeMemberStore(), MD_DEF);
             }
 
             @Specialization(guards = "eq(BUF_DELEGATE, key)")
@@ -742,6 +752,217 @@ public abstract class NativeWrappers {
             protected Node createReadNode() {
                 return Message.READ.createNode();
             }
+        }
+
+        // WRITE
+        abstract static class WriteNode extends Node {
+            public abstract Object execute(PythonNativeWrapper object, String key, Object value);
+
+            @Specialization
+            public Object execute(PythonNativeWrapper object, String key, Object value,
+                                  @Cached.Exclusive @Cached WriteNativeMemberNode writeNativeMemberNode) {
+                return writeNativeMemberNode.execute(object.getDelegate(), key, value);
+            }
+        }
+
+        @ImportStatic({NativeMemberNames.class, PGuards.class, SpecialMethodNames.class})
+        abstract static class WriteNativeMemberNode extends PNodeWithContext {
+            @Child private HashingStorageNodes.SetItemNode setItemNode;
+
+            abstract Object execute(Object receiver, String key, Object value);
+
+            @Specialization(guards = "eq(OB_TYPE, key)")
+            Object doObType(PythonObject object, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PythonClass value,
+                            @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+                // At this point, we do not support changing the type of an object.
+                return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
+            }
+
+            @Specialization(guards = "eq(TP_FLAGS, key)")
+            long doTpFlags(PythonClass object, @SuppressWarnings("unused") String key, long flags) {
+                object.setFlags(flags);
+                return flags;
+            }
+
+            @Specialization(guards = {"eq(TP_BASICSIZE, key)", "isPythonBuiltinClass(object)"})
+            @TruffleBoundary
+            long doTpBasicsize(PythonBuiltinClass object, @SuppressWarnings("unused") String key, long basicsize) {
+                // We have to use the 'setAttributeUnsafe' because this properly cannot be modified by
+                // the user and we need to initialize it.
+                object.setAttributeUnsafe(SpecialAttributeNames.__BASICSIZE__, basicsize);
+                return basicsize;
+            }
+
+            @Specialization(guards = {"eq(TP_BASICSIZE, key)", "isPythonUserClass(object)"})
+            @TruffleBoundary
+            long doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key, long basicsize) {
+                // Do deliberately not use "SetAttributeNode" because we want to directly set the
+                // attribute an bypass any user code.
+                object.setAttribute(SpecialAttributeNames.__BASICSIZE__, basicsize);
+                return basicsize;
+            }
+
+            @Specialization(guards = "eq(TP_SUBCLASSES, key)")
+            @TruffleBoundary
+            Object doTpSubclasses(PythonClass object, @SuppressWarnings("unused") String key, PythonObjectNativeWrapper value) {
+                // TODO more type checking; do fast path
+                PDict dict = (PDict) value.getPythonObject();
+                for (Object item : dict.items()) {
+                    object.getSubClasses().add((PythonClass) item);
+                }
+                return value;
+            }
+
+            @Specialization(guards = "eq(MD_DEF, key)")
+            Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key, Object value) {
+                DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
+                assert nativeWrapper != null;
+                getSetItemNode().execute(nativeWrapper.createNativeMemberStore(object.getDictUnsetOrSameAsStorageAssumption()), MD_DEF, value);
+                return value;
+            }
+
+            @Specialization(guards = "eq(TP_DICT, key)")
+            Object doTpDict(PythonClass object, @SuppressWarnings("unused") String key, Object nativeValue,
+                            @Cached("create()") CExtNodes.AsPythonObjectNode asPythonObjectNode,
+                            @Cached("create()") HashingStorageNodes.GetItemNode getItem,
+                            @Cached("create()") WriteAttributeToObjectNode writeAttrNode,
+                            @Cached("create()") IsBuiltinClassProfile isPrimitiveDictProfile) {
+                Object value = asPythonObjectNode.execute(nativeValue);
+                if (value instanceof PDict && isPrimitiveDictProfile.profileObject((PDict) value, PythonBuiltinClassType.PDict)) {
+                    // special and fast case: commit items and change store
+                    PDict d = (PDict) value;
+                    for (Object k : d.keys()) {
+                        writeAttrNode.execute(object, k, getItem.execute(d.getDictStorage(), k));
+                    }
+                    PHashingCollection existing = object.getDict();
+                    if (existing != null) {
+                        d.setDictStorage(existing.getDictStorage());
+                    } else {
+                        d.setDictStorage(new DynamicObjectStorage.PythonObjectDictStorage(object.getStorage(), object.getDictUnsetOrSameAsStorageAssumption()));
+                    }
+                    object.setDict(d);
+                } else {
+                    // TODO custom mapping object
+                }
+                return value;
+            }
+
+            @Specialization(guards = "eq(TP_DICTOFFSET, key)")
+            Object doTpDictoffset(PythonClass object, @SuppressWarnings("unused") String key, Object value,
+                                  @Cached("create()") CastToIntegerFromIntNode castToIntNode,
+                                  @Cached("create(__SETATTR__)") LookupAndCallTernaryNode call) {
+                // TODO properly implement 'tp_dictoffset' for builtin classes
+                if (object instanceof PythonBuiltinClass) {
+                    return 0L;
+                }
+                call.execute(object, __DICTOFFSET__, castToIntNode.execute(value));
+                return value;
+            }
+
+            @Specialization
+            Object doMemoryview(PMemoryView object, String key, Object value,
+                                @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
+                                @Cached("createWriteNode()") Node writeNode,
+                                @Cached("createBinaryProfile()") ConditionProfile isNativeObject) {
+                Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
+                if (isNativeObject.profile(delegateObj instanceof PythonNativeObject)) {
+                    try {
+                        return ForeignAccess.sendWrite(writeNode, ((PythonNativeObject) delegateObj).object, key, value);
+                    } catch (UnsupportedMessageException | UnknownIdentifierException | UnsupportedTypeException e) {
+                        throw e.raise();
+                    }
+                }
+                throw new IllegalStateException("delegate of memoryview object is not native");
+            }
+
+            @Fallback
+            Object doGeneric(Object object, String key, Object value) {
+                // This is the preliminary generic case: There are native members we know that they
+                // exist but we do currently not represent them. So, store them into a dynamic object
+                // such that native code at least reads the value that was written before.
+                if (object instanceof PythonAbstractObject) {
+                    DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
+                    assert nativeWrapper != null;
+                    logGeneric(key);
+                    getSetItemNode().execute(nativeWrapper.createNativeMemberStore(), key, value);
+                    return value;
+                }
+                throw UnknownIdentifierException.raise(key);
+            }
+
+            @TruffleBoundary(allowInlining = true)
+            private static void logGeneric(String key) {
+                PythonLanguage.getLogger().log(Level.FINE, "write of Python struct native member " + key);
+            }
+
+            protected boolean eq(String expected, String actual) {
+                return expected.equals(actual);
+            }
+
+            private HashingStorageNodes.SetItemNode getSetItemNode() {
+                if (setItemNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    setItemNode = insert(HashingStorageNodes.SetItemNode.create());
+                }
+                return setItemNode;
+            }
+
+            protected Node createWriteNode() {
+                return Message.WRITE.createNode();
+            }
+
+            public static WriteNativeMemberNode create() {
+                return NativeWrappersFactory.PythonNativeWrapperFactory.WriteNativeMemberNodeGen.create();
+            }
+        }
+
+        @ExportMessage
+        protected boolean isMemberModifiable(String member) {
+            switch (member) {
+                case OB_TYPE:
+                case TP_FLAGS:
+                case TP_BASICSIZE:
+                case TP_SUBCLASSES:
+                case MD_DEF:
+                case TP_DICT:
+                case TP_DICTOFFSET:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        @ExportMessage
+        protected boolean isMemberInsertable(String member) {
+            // TODO: cbasca, fangerer is this true ?
+            switch (member) {
+                case OB_TYPE:
+                case TP_FLAGS:
+                case TP_BASICSIZE:
+                case TP_SUBCLASSES:
+                case MD_DEF:
+                case TP_DICT:
+                case TP_DICTOFFSET:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        @ExportMessage
+        protected void writeMember(String member, Object value,
+                                   @Cached.Exclusive @Cached(allowUncached = true) WriteNode writeNode) {
+            writeNode.execute(this, member, value);
+        }
+
+        @ExportMessage
+        protected boolean isMemberRemovable(String member) {
+            return false;
+        }
+
+        @ExportMessage
+        protected void removeMember(String member) throws UnsupportedMessageException, UnknownIdentifierException {
+            throw UnsupportedMessageException.create();
         }
     }
 

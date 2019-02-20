@@ -40,20 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
-
-import java.util.logging.Level;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MaterializeDelegateNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
@@ -64,37 +58,18 @@ import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PAsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PGetDynamicTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.KeyInfo;
@@ -102,9 +77,7 @@ import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -233,170 +206,6 @@ public class PythonObjectNativeWrapperMR {
             return GetSulongTypeNodeGen.create();
         }
 
-    }
-
-    @Resolve(message = "WRITE")
-    abstract static class WriteNode extends Node {
-        @Child private WriteNativeMemberNode writeNativeMemberNode;
-
-        public Object access(PythonNativeWrapper object, String key, Object value) {
-            if (writeNativeMemberNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeNativeMemberNode = insert(WriteNativeMemberNode.create());
-            }
-            return writeNativeMemberNode.execute(object.getDelegate(), key, value);
-        }
-    }
-
-    @ImportStatic({NativeMemberNames.class, PGuards.class, SpecialMethodNames.class})
-    abstract static class WriteNativeMemberNode extends PNodeWithContext {
-        @Child private HashingStorageNodes.SetItemNode setItemNode;
-
-        abstract Object execute(Object receiver, String key, Object value);
-
-        @Specialization(guards = "eq(OB_TYPE, key)")
-        Object doObType(PythonObject object, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PythonClass value,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
-            // At this point, we do not support changing the type of an object.
-            return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
-        }
-
-        @Specialization(guards = "eq(TP_FLAGS, key)")
-        long doTpFlags(PythonClass object, @SuppressWarnings("unused") String key, long flags) {
-            object.setFlags(flags);
-            return flags;
-        }
-
-        @Specialization(guards = {"eq(TP_BASICSIZE, key)", "isPythonBuiltinClass(object)"})
-        @TruffleBoundary
-        long doTpBasicsize(PythonBuiltinClass object, @SuppressWarnings("unused") String key, long basicsize) {
-            // We have to use the 'setAttributeUnsafe' because this properly cannot be modified by
-            // the user and we need to initialize it.
-            object.setAttributeUnsafe(SpecialAttributeNames.__BASICSIZE__, basicsize);
-            return basicsize;
-        }
-
-        @Specialization(guards = {"eq(TP_BASICSIZE, key)", "isPythonUserClass(object)"})
-        @TruffleBoundary
-        long doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key, long basicsize) {
-            // Do deliberately not use "SetAttributeNode" because we want to directly set the
-            // attribute an bypass any user code.
-            object.setAttribute(SpecialAttributeNames.__BASICSIZE__, basicsize);
-            return basicsize;
-        }
-
-        @Specialization(guards = "eq(TP_SUBCLASSES, key)")
-        @TruffleBoundary
-        Object doTpSubclasses(PythonClass object, @SuppressWarnings("unused") String key, PythonObjectNativeWrapper value) {
-            // TODO more type checking; do fast path
-            PDict dict = (PDict) value.getPythonObject();
-            for (Object item : dict.items()) {
-                object.getSubClasses().add((PythonClass) item);
-            }
-            return value;
-        }
-
-        @Specialization(guards = "eq(MD_DEF, key)")
-        Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key, Object value) {
-            DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
-            assert nativeWrapper != null;
-            getSetItemNode().execute(nativeWrapper.createNativeMemberStore(object.getDictUnsetOrSameAsStorageAssumption()), NativeMemberNames.MD_DEF, value);
-            return value;
-        }
-
-        @Specialization(guards = "eq(TP_DICT, key)")
-        Object doTpDict(PythonClass object, @SuppressWarnings("unused") String key, Object nativeValue,
-                        @Cached("create()") CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @Cached("create()") HashingStorageNodes.GetItemNode getItem,
-                        @Cached("create()") WriteAttributeToObjectNode writeAttrNode,
-                        @Cached("create()") IsBuiltinClassProfile isPrimitiveDictProfile) {
-            Object value = asPythonObjectNode.execute(nativeValue);
-            if (value instanceof PDict && isPrimitiveDictProfile.profileObject((PDict) value, PythonBuiltinClassType.PDict)) {
-                // special and fast case: commit items and change store
-                PDict d = (PDict) value;
-                for (Object k : d.keys()) {
-                    writeAttrNode.execute(object, k, getItem.execute(d.getDictStorage(), k));
-                }
-                PHashingCollection existing = object.getDict();
-                if (existing != null) {
-                    d.setDictStorage(existing.getDictStorage());
-                } else {
-                    d.setDictStorage(new DynamicObjectStorage.PythonObjectDictStorage(object.getStorage(), object.getDictUnsetOrSameAsStorageAssumption()));
-                }
-                object.setDict(d);
-            } else {
-                // TODO custom mapping object
-            }
-            return value;
-        }
-
-        @Specialization(guards = "eq(TP_DICTOFFSET, key)")
-        Object doTpDictoffset(PythonClass object, @SuppressWarnings("unused") String key, Object value,
-                        @Cached("create()") CastToIntegerFromIntNode castToIntNode,
-                        @Cached("create(__SETATTR__)") LookupAndCallTernaryNode call) {
-            // TODO properly implement 'tp_dictoffset' for builtin classes
-            if (object instanceof PythonBuiltinClass) {
-                return 0L;
-            }
-            call.execute(object, __DICTOFFSET__, castToIntNode.execute(value));
-            return value;
-        }
-
-        @Specialization
-        Object doMemoryview(PMemoryView object, String key, Object value,
-                        @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
-                        @Cached("createWriteNode()") Node writeNode,
-                        @Cached("createBinaryProfile()") ConditionProfile isNativeObject) {
-            Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
-            if (isNativeObject.profile(delegateObj instanceof PythonNativeObject)) {
-                try {
-                    return ForeignAccess.sendWrite(writeNode, ((PythonNativeObject) delegateObj).object, key, value);
-                } catch (UnsupportedMessageException | UnknownIdentifierException | UnsupportedTypeException e) {
-                    throw e.raise();
-                }
-            }
-            throw new IllegalStateException("delegate of memoryview object is not native");
-        }
-
-        @Fallback
-        Object doGeneric(Object object, String key, Object value) {
-            // This is the preliminary generic case: There are native members we know that they
-            // exist but we do currently not represent them. So, store them into a dynamic object
-            // such that native code at least reads the value that was written before.
-            if (object instanceof PythonAbstractObject) {
-                DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
-                assert nativeWrapper != null;
-                logGeneric(key);
-                getSetItemNode().execute(nativeWrapper.createNativeMemberStore(), key, value);
-                return value;
-            }
-            throw UnknownIdentifierException.raise(key);
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static void logGeneric(String key) {
-            PythonLanguage.getLogger().log(Level.FINE, "write of Python struct native member " + key);
-        }
-
-        protected boolean eq(String expected, String actual) {
-            return expected.equals(actual);
-        }
-
-        private HashingStorageNodes.SetItemNode getSetItemNode() {
-            if (setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(SetItemNode.create());
-            }
-            return setItemNode;
-        }
-
-        protected Node createWriteNode() {
-            return Message.WRITE.createNode();
-        }
-
-        public static WriteNativeMemberNode create() {
-            return WriteNativeMemberNodeGen.create();
-        }
     }
 
     @Resolve(message = "EXECUTE")

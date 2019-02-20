@@ -149,11 +149,13 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
+    @Override
     protected boolean isMemberModifiable(String member) {
         return member.equals(DOC);
     }
 
     @ExportMessage
+    @Override
     protected boolean isMemberInsertable(String member) {
         return member.equals(DOC);
     }
@@ -165,11 +167,13 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
+    @Override
     protected boolean isMemberRemovable(String member) {
         return false;
     }
 
     @ExportMessage
+    @Override
     protected void removeMember(String member) throws UnsupportedMessageException, UnknownIdentifierException {
         throw UnsupportedMessageException.create();
     }
