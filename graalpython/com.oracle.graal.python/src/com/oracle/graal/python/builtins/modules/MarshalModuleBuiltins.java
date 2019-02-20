@@ -156,37 +156,37 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private final static char TYPE_NULL = '0';
-    private final static char TYPE_NONE = 'N';
-    private final static char TYPE_NOVALUE = 'n';
-    private final static char TYPE_FALSE = 'F';
-    private final static char TYPE_TRUE = 'T';
-    private final static char TYPE_STOPITER = 'S';
-    private final static char TYPE_ELLIPSIS = '.';
-    private final static char TYPE_INT = 'i';
-    private final static char TYPE_INT64 = 'I'; // just for backward compatibility with CPython
-    private final static char TYPE_FLOAT = 'f';
+    private static final char TYPE_NULL = '0';
+    private static final char TYPE_NONE = 'N';
+    private static final char TYPE_NOVALUE = 'n';
+    private static final char TYPE_FALSE = 'F';
+    private static final char TYPE_TRUE = 'T';
+    private static final char TYPE_STOPITER = 'S';
+    private static final char TYPE_ELLIPSIS = '.';
+    private static final char TYPE_INT = 'i';
+    private static final char TYPE_INT64 = 'I'; // just for backward compatibility with CPython
+    private static final char TYPE_FLOAT = 'f';
     // private final static char TYPE_BINARY_FLOAT = 'g';
-    private final static char TYPE_COMPLEX = 'x';
+    private static final char TYPE_COMPLEX = 'x';
     // private final static char TYPE_BINARY_COMPLEX = 'y';
-    private final static char TYPE_LONG = 'l';
-    private final static char TYPE_PINT = 'L';
-    private final static char TYPE_STRING = 's';
+    private static final char TYPE_LONG = 'l';
+    private static final char TYPE_PINT = 'L';
+    private static final char TYPE_STRING = 's';
     // private final static char TYPE_INTERNED = 't';
     // private final static char TYPE_STRINGREF = 'R';
-    private final static char TYPE_BYTESLIKE = 'b';
-    private final static char TYPE_TUPLE = '(';
-    private final static char TYPE_LIST = '[';
-    private final static char TYPE_DICT = '{';
-    private final static char TYPE_CODE = 'c';
+    private static final char TYPE_BYTESLIKE = 'b';
+    private static final char TYPE_TUPLE = '(';
+    private static final char TYPE_LIST = '[';
+    private static final char TYPE_DICT = '{';
+    private static final char TYPE_CODE = 'c';
     // private final static char TYPE_UNICODE = 'u';
-    private final static char TYPE_UNKNOWN = '?';
-    private final static char TYPE_SET = '<';
-    private final static char TYPE_FROZENSET = '>';
-    private final static int MAX_MARSHAL_STACK_DEPTH = 2000;
-    private final static int CURRENT_VERSION = 1;
+    private static final char TYPE_UNKNOWN = '?';
+    private static final char TYPE_SET = '<';
+    private static final char TYPE_FROZENSET = '>';
+    private static final int MAX_MARSHAL_STACK_DEPTH = 2000;
+    private static final int CURRENT_VERSION = 1;
 
-    public static abstract class MarshallerNode extends PNodeWithContext {
+    public abstract static class MarshallerNode extends PNodeWithContext {
 
         public abstract void execute(Object x, int version, DataOutputStream buffer);
 
@@ -456,7 +456,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    public static abstract class UnmarshallerNode extends PNodeWithContext {
+    public abstract static class UnmarshallerNode extends PNodeWithContext {
         public abstract Object execute(byte[] dataBytes, int version);
 
         @Child private HashingStorageNodes.SetItemNode setItemNode;
@@ -559,7 +559,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             if (n < 0) {
                 throw raise(ValueError, "bad marshal data");
             }
-            Object items[] = new Object[n];
+            Object[] items = new Object[n];
             for (int i = 0; i < n; i++) {
                 Object item = readObject(depth + 1);
                 if (item == null) {
@@ -646,7 +646,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     if (n < 0) {
                         throw raise(ValueError, "bad marshal data");
                     }
-                    Object items[] = new Object[n];
+                    Object[] items = new Object[n];
                     for (int i = 0; i < n; i++) {
                         items[i] = readObject(depth + 1);
                     }
