@@ -329,7 +329,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
             int actual = num + 1; // skip dummy frame
             try {
-                call.call(new Object[0]);
+                @SuppressWarnings("unused")
+                Object r = call.call(new Object[0]);
+                // r is just assigned to make spotbugs happy
                 throw raise(PythonErrorType.SystemError, "should not reach here");
             } catch (PException e) {
                 PBaseException exception = e.getExceptionObject();
