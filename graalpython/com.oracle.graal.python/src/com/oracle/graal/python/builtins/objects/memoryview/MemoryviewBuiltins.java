@@ -66,7 +66,7 @@ public class MemoryviewBuiltins extends PythonBuiltins {
 
     @Builtin(name = C_MEMORYVIEW, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    static abstract class SetCMemoryviewNode extends PythonBinaryBuiltinNode {
+    abstract static class SetCMemoryviewNode extends PythonBinaryBuiltinNode {
 
         /*
          * NOTE: DO NOT CHANGE THE NAME OF PROPERTY '__c_memoryview' it is also referenced in native

@@ -1149,7 +1149,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = "real", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
-    static abstract class RealNode extends PythonBuiltinNode {
+    abstract static class RealNode extends PythonBuiltinNode {
 
         @Child private GetLazyClassNode getClassNode;
 
@@ -1179,7 +1179,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = "imag", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the imaginary part of a complex number")
-    static abstract class ImagNode extends PythonBuiltinNode {
+    abstract static class ImagNode extends PythonBuiltinNode {
 
         @Specialization
         double get(@SuppressWarnings("unused") Object self) {
@@ -1190,7 +1190,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = "conjugate", fixedNumOfPositionalArgs = 1, doc = "Returns self, the complex conjugate of any float.")
-    static abstract class ConjugateNode extends RealNode {
+    abstract static class ConjugateNode extends RealNode {
 
     }
 

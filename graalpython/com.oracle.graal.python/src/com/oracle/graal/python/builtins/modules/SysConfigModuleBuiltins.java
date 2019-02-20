@@ -62,7 +62,7 @@ import com.oracle.truffle.api.dsl.Specialization;
  */
 @CoreFunctions(defineModule = "_sysconfig")
 public class SysConfigModuleBuiltins extends PythonBuiltins {
-    private final static Map<Object, Object> STATIC_CONFIG_OPTIONS = new HashMap<>();
+    private static final Map<Object, Object> STATIC_CONFIG_OPTIONS = new HashMap<>();
 
     @Override
     public void initialize(PythonCore core) {
@@ -77,7 +77,7 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "get_config_vars", takesVarArgs = true)
     @GenerateNodeFactory
-    static abstract class GetConfigVarsNode extends PythonBuiltinNode {
+    abstract static class GetConfigVarsNode extends PythonBuiltinNode {
         @Specialization
         PDict select(@SuppressWarnings("unused") Object[] arguments) {
             return factory().createDict(STATIC_CONFIG_OPTIONS);

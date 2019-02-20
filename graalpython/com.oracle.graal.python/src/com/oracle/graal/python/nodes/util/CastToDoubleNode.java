@@ -61,7 +61,7 @@ public abstract class CastToDoubleNode extends PNodeWithContext {
 
     @Node.Child private LookupAndCallUnaryNode callFloatNode;
 
-    abstract public double execute(Object x);
+    public abstract double execute(Object x);
 
     public static CastToDoubleNode create() {
         return CastToDoubleNodeGen.create();

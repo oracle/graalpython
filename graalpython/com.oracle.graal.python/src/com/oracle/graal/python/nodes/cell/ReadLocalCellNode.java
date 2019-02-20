@@ -68,7 +68,7 @@ public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLo
         return WriteLocalCellNode.create(frameSlot, rhs);
     }
 
-    static abstract class ReadFromCellNode extends PNodeWithContext {
+    abstract static class ReadFromCellNode extends PNodeWithContext {
         private final boolean isFreeVar;
         private final Object identifier;
 

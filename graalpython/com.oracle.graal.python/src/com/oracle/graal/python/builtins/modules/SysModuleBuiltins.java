@@ -265,7 +265,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "exc_info", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public static abstract class ExcInfoNode extends PythonBuiltinNode {
+    public abstract static class ExcInfoNode extends PythonBuiltinNode {
         @Specialization
         public Object run(
                         @Cached("create()") GetClassNode getClassNode) {
@@ -283,7 +283,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_getframe", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public static abstract class GetFrameNode extends PythonUnaryBuiltinNode {
+    public abstract static class GetFrameNode extends PythonUnaryBuiltinNode {
         public static GetFrameNode create() {
             return GetFrameNodeFactory.create();
         }
@@ -377,7 +377,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "getfilesystemencoding", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public static abstract class GetFileSystemEncodingNode extends PythonBuiltinNode {
+    public abstract static class GetFileSystemEncodingNode extends PythonBuiltinNode {
         @Specialization
         protected String getFileSystemEncoding() {
             return System.getProperty("file.encoding");
@@ -386,7 +386,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "getfilesystemencodeerrors", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public static abstract class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
+    public abstract static class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
         @Specialization
         protected String getFileSystemEncoding() {
             return "surrogateescape";
@@ -412,7 +412,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "getdefaultencoding", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public static abstract class GetDefaultEncodingNode extends PythonBuiltinNode {
+    public abstract static class GetDefaultEncodingNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
         protected String getFileSystemEncoding() {
@@ -422,7 +422,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "getsizeof", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public static abstract class GetsizeofNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetsizeofNode extends PythonBinaryBuiltinNode {
         @Child private CastToIntegerFromIntNode castToIntNode = CastToIntegerFromIntNode.create();
 
         @Specialization(guards = "isNoValue(dflt)")

@@ -79,17 +79,19 @@ public class PFloat extends PythonBuiltinObject {
             int l = d.length() - 1;
             if (exp == (l - 2)) {
                 if (d.charAt(exp + 1) == '-') {
-                    if (Integer.valueOf(d.charAt(l) + "") == 4)
+                    if (Integer.valueOf(d.charAt(l) + "") == 4) {
                         /*- Java convert double when 0.000###... while Python does it when 0.0000####... */
                         d = Double.toString((item * 10)).replace(".", ".0");
-                    else
+                    } else {
                         d = d.substring(0, l) + "0" + d.substring(l);
+                    }
 
                     exp = d.indexOf("E");
                 }
             }
-            if (exp != -1 && d.charAt(exp + 1) != '-')
+            if (exp != -1 && d.charAt(exp + 1) != '-') {
                 d = d.substring(0, exp + 1) + "+" + d.substring(exp + 1, l + 1);
+            }
             d = d.toLowerCase();
         }
         return d;

@@ -25,19 +25,19 @@
  */
 package com.oracle.graal.python.parser;
 
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Stack;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 
 public class LoopsBookKeeper {
 
-    private final Stack<ParserRuleContext> loops;
+    private final ArrayDeque<ParserRuleContext> loops;
     private final Map<ParserRuleContext, LoopInfo> infos;
 
     public LoopsBookKeeper() {
-        loops = new Stack<>();
+        loops = new ArrayDeque<>();
         infos = new HashMap<>();
     }
 

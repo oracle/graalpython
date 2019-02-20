@@ -74,10 +74,10 @@ public class PythonTests {
         }
     }
 
-    final static ByteArrayOutputStream errArray = new ByteArrayOutputStream();
-    final static ByteArrayOutputStream outArray = new ByteArrayOutputStream();
-    final static PrintStream errStream = new PrintStream(errArray);
-    final static PrintStream outStream = new PrintStream(outArray);
+    static final ByteArrayOutputStream errArray = new ByteArrayOutputStream();
+    static final ByteArrayOutputStream outArray = new ByteArrayOutputStream();
+    static final PrintStream errStream = new PrintStream(errArray);
+    static final PrintStream outStream = new PrintStream(outArray);
 
     private static Engine engine = Engine.newBuilder().out(PythonTests.outStream).err(PythonTests.errStream).build();
     private static Context context = null;
@@ -128,9 +128,9 @@ public class PythonTests {
         final PrintStream printErrStream = new PrintStream(byteArrayErr);
         final PrintStream printOutStream = new PrintStream(byteArrayOut);
         File source = getBenchFile(scriptName);
-        if (args == null)
+        if (args == null) {
             PythonTests.runScript(new String[]{source.toString()}, source, printOutStream, printErrStream);
-        else {
+        } else {
             args[0] = source.toString();
             PythonTests.runScript(args, source, printOutStream, printErrStream);
         }
@@ -236,8 +236,9 @@ public class PythonTests {
 
     public static File getBenchFile(Path filename) {
         Path path = Paths.get(GraalPythonEnvVars.graalpythonHome(), "benchmarks", "src");
-        if (!Files.isDirectory(path))
+        if (!Files.isDirectory(path)) {
             throw new RuntimeException("Unable to locate benchmarks/src/");
+        }
 
         Path fullPath = Paths.get(path.toString(), filename.toString());
         if (!Files.isReadable(fullPath)) {
@@ -261,8 +262,9 @@ public class PythonTests {
                 int n = 0;
                 while (n != -1) {
                     n = bufferedReader.read(buffer);
-                    if (n != -1)
+                    if (n != -1) {
                         content.append(buffer, 0, n);
+                    }
                 }
             } finally {
                 bufferedReader.close();
@@ -307,8 +309,9 @@ public class PythonTests {
         Path path = Paths.get(GraalPythonEnvVars.graalpythonHome(), "com.oracle.graal.python.test", "src", "tests", filename.toString());
         if (Files.isReadable(path)) {
             return new File(path.toString());
-        } else
+        } else {
             throw new RuntimeException("Unable to locate " + path);
+        }
     }
 
     public static void runScript(String[] args, File path, OutputStream out, OutputStream err) {

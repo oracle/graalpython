@@ -42,8 +42,8 @@ package com.oracle.graal.python.builtins.modules;
 
 import static java.lang.StrictMath.toIntExact;
 
-import java.util.Hashtable;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -73,9 +73,9 @@ import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = "_signal")
 public class SignalModuleBuiltins extends PythonBuiltins {
-    private static Hashtable<Integer, Object> signalHandlers = new Hashtable<>();
+    private static ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
 
-    private final static HiddenKey signalQueueKey = new HiddenKey("signalQueue");
+    private static final HiddenKey signalQueueKey = new HiddenKey("signalQueue");
     private final ConcurrentLinkedDeque<SignalTriggerAction> signalQueue = new ConcurrentLinkedDeque<>();
 
     @Override

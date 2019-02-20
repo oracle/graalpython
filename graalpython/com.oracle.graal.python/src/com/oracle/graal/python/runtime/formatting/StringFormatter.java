@@ -104,6 +104,7 @@ public class StringFormatter {
             if (Character.isDigit(c)) {
                 int numStart = index - 1;
                 while (Character.isDigit(c = pop())) {
+                    // empty
                 }
                 index -= 1;
                 Integer i = Integer.valueOf(format.substring(numStart, index));

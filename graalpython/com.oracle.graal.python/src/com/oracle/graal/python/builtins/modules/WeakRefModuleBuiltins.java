@@ -78,7 +78,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = "_weakref")
 public class WeakRefModuleBuiltins extends PythonBuiltins {
-    private final static HiddenKey weakRefQueueKey = new HiddenKey("weakRefQueue");
+    private static final HiddenKey weakRefQueueKey = new HiddenKey("weakRefQueue");
     private final ReferenceQueue<Object> weakRefQueue = new ReferenceQueue<>();
 
     @Override

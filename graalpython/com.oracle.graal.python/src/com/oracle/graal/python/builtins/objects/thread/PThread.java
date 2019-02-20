@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class PThread extends PythonBuiltinObject {
-    public final static String GRAALPYTHON_THREADS = "GRAALPYTHON_THREADS";
+    public static final String GRAALPYTHON_THREADS = "GRAALPYTHON_THREADS";
     private final Thread thread;
 
     public PThread(LazyPythonClass cls, Thread thread) {

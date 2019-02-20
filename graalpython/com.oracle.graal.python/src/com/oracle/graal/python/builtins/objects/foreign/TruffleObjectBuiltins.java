@@ -547,7 +547,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    private static abstract class ForeignBinaryDelegate extends UnboxNode {
+    private abstract static class ForeignBinaryDelegate extends UnboxNode {
         @Child private LookupAndCallBinaryNode divNode;
 
         protected LookupAndCallBinaryNode getDelegate() {

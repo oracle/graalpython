@@ -536,7 +536,7 @@ public class ListBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class ListIndexNode extends PythonBuiltinNode {
-        protected final static String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
+        protected static final String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
 
         @Child private SequenceStorageNodes.ItemIndexNode itemIndexNode;
         @Child private SequenceStorageNodes.LenNode lenNode;
@@ -637,7 +637,7 @@ public class ListBuiltins extends PythonBuiltins {
             return indexNode.execute(self, value, startValue, end);
         }
 
-        @Specialization(guards = {"!isNumber(end)",})
+        @Specialization(guards = {"!isNumber(end)"})
         int indexLO(PTuple self, Object value, long start, Object end,
                         @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode endNode,
                         @Cached("createIndexNode()") ListIndexNode indexNode) {
@@ -645,7 +645,7 @@ public class ListBuiltins extends PythonBuiltins {
             return indexNode.execute(self, value, start, endValue);
         }
 
-        @Specialization(guards = {"!isNumber(start) || !isNumber(end)",})
+        @Specialization(guards = {"!isNumber(start) || !isNumber(end)"})
         int indexOO(PTuple self, Object value, Object start, Object end,
                         @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode startNode,
                         @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode endNode,

@@ -90,8 +90,8 @@ public final class PythonContext {
     private OutputStream err;
     private InputStream in;
     @CompilationFinal private Object capiLibrary = null;
-    private final static Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
-    private final static Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
+    private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
+    private static final Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
 

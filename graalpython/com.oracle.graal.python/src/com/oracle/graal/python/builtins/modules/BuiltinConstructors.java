@@ -1499,36 +1499,41 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PSequence rangeStartStopStep(Object cls, Object start, Object stop, Object step) {
             if (isNumber(stop)) {
                 int intStop = 0;
-                if (stop instanceof Integer)
+                if (stop instanceof Integer) {
                     intStop = (int) stop;
-                else if (stop instanceof Long)
+                } else if (stop instanceof Long) {
                     intStop = ((Long) (stop)).intValue();
-                else
+                } else {
                     intStop = ((PInt) stop).intValue();
+                }
 
-                if (start instanceof PNone)
+                if (start instanceof PNone) {
                     return factory().createRange(intStop);
+                }
 
                 if (isNumber(start)) {
                     int intStart = 0;
-                    if (start instanceof Integer)
+                    if (start instanceof Integer) {
                         intStart = (int) start;
-                    else if (start instanceof Long)
+                    } else if (start instanceof Long) {
                         intStart = ((Long) (start)).intValue();
-                    else
+                    } else {
                         intStart = ((PInt) start).intValue();
+                    }
 
-                    if (step instanceof PNone)
+                    if (step instanceof PNone) {
                         return factory().createRange(intStart, intStop);
+                    }
 
                     if (isNumber(step)) {
                         int intStep = 0;
-                        if (step instanceof Integer)
+                        if (step instanceof Integer) {
                             intStep = (int) step;
-                        else if (step instanceof Long)
+                        } else if (step instanceof Long) {
                             intStep = ((Long) (step)).intValue();
-                        else
+                        } else {
                             intStep = ((PInt) step).intValue();
+                        }
 
                         return factory().createRange(intStart, intStop, intStep);
                     }

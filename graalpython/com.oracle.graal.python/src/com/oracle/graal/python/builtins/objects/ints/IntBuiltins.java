@@ -2194,13 +2194,13 @@ public class IntBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = "real", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
-    static abstract class RealNode extends IntNode {
+    abstract static class RealNode extends IntNode {
 
     }
 
     @GenerateNodeFactory
     @Builtin(name = "imag", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the imaginary part of a complex number")
-    static abstract class ImagNode extends PythonBuiltinNode {
+    abstract static class ImagNode extends PythonBuiltinNode {
         @Specialization
         int get(@SuppressWarnings("unused") Object self) {
             return 0;
@@ -2209,19 +2209,19 @@ public class IntBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = "numerator", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the numerator of a rational number in lowest terms")
-    static abstract class NumeratorNode extends IntNode {
+    abstract static class NumeratorNode extends IntNode {
 
     }
 
     @GenerateNodeFactory
     @Builtin(name = "conjugate", fixedNumOfPositionalArgs = 1, doc = "Returns self, the complex conjugate of any int.")
-    static abstract class ConjugateNode extends IntNode {
+    abstract static class ConjugateNode extends IntNode {
 
     }
 
     @GenerateNodeFactory
     @Builtin(name = "denominator", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the denominator of a rational number in lowest terms")
-    static abstract class DenominatorNode extends PythonBuiltinNode {
+    abstract static class DenominatorNode extends PythonBuiltinNode {
         @Specialization
         int get(@SuppressWarnings("unused") Object self) {
             return 1;
@@ -2230,7 +2230,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = SpecialMethodNames.__TRUNC__, fixedNumOfPositionalArgs = 1, doc = "Truncating an Integral returns itself.")
-    static abstract class TruncNode extends IntNode {
+    abstract static class TruncNode extends IntNode {
 
     }
 

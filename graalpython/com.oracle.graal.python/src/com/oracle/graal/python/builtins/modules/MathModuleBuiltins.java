@@ -341,7 +341,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FactorialNode extends PythonUnaryBuiltinNode {
 
-        @CompilationFinal(dimensions = 1) protected final static long[] SMALL_FACTORIALS = new long[]{
+        @CompilationFinal(dimensions = 1) protected static final long[] SMALL_FACTORIALS = new long[]{
                         1, 1, 2, 6, 24, 120, 720, 5040, 40320,
                         362880, 3628800, 39916800, 479001600,
                         6227020800L, 87178291200L, 1307674368000L,
@@ -795,8 +795,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class IsCloseNode extends PythonBuiltinNode {
-        private static double DEFAULT_REL = 1e-09;
-        private static double DEFAULT_ABS = 0.0;
+        private static final double DEFAULT_REL = 1e-09;
+        private static final double DEFAULT_ABS = 0.0;
 
         @Child private CastToDoubleNode castANode;
         @Child private CastToDoubleNode castBNode;
@@ -1134,8 +1134,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
                     hi = x + y;
                     yr = hi - x;
                     lo = y - yr;
-                    if (lo != 0.0)
+                    if (lo != 0.0) {
                         break;
+                    }
                 }
                 /*
                  * Make half-even rounding work across multiple partials. Needed so that sum([1e-16,
@@ -2105,9 +2106,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 return x;
             }
             absx = Math.abs(x);
-            if (absx < ERF_SERIES_CUTOFF)
+            if (absx < ERF_SERIES_CUTOFF) {
                 return m_erf_series(x);
-            else {
+            } else {
                 cf = m_erfc_contfrac(absx);
                 return x > 0.0 ? 1.0 - cf : cf - 1.0;
             }
@@ -2127,9 +2128,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 return x;
             }
             absx = Math.abs(x);
-            if (absx < ErfNode.ERF_SERIES_CUTOFF)
+            if (absx < ErfNode.ERF_SERIES_CUTOFF) {
                 return 1.0 - m_erf_series(x);
-            else {
+            } else {
                 cf = m_erfc_contfrac(absx);
                 return x > 0.0 ? cf : 2.0 - cf;
             }
@@ -2144,7 +2145,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         private static final int LANCZOS_N = 13;
         protected static final double LANCZOS_G = 6.024680040776729583740234375;
         private static final double LANZOS_G_MINUS_HALF = 5.524680040776729583740234375;
-        @CompilationFinal(dimensions = 1) protected final static double[] LANCZOS_NUM_COEFFS = new double[]{
+        @CompilationFinal(dimensions = 1) protected static final double[] LANCZOS_NUM_COEFFS = new double[]{
                         23531376880.410759688572007674451636754734846804940,
                         42919803642.649098768957899047001988850926355848959,
                         35711959237.355668049440185451547166705960488635843,
@@ -2160,11 +2161,11 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         2.5066282746310002701649081771338373386264310793408
         };
 
-        @CompilationFinal(dimensions = 1) protected final static double[] LANCZOS_DEN_COEFFS = new double[]{
+        @CompilationFinal(dimensions = 1) protected static final double[] LANCZOS_DEN_COEFFS = new double[]{
                         0.0, 39916800.0, 120543840.0, 150917976.0, 105258076.0, 45995730.0,
                         13339535.0, 2637558.0, 357423.0, 32670.0, 1925.0, 66.0, 1.0};
 
-        @CompilationFinal(dimensions = 1) protected final static double[] GAMMA_INTEGRAL = new double[]{
+        @CompilationFinal(dimensions = 1) protected static final double[] GAMMA_INTEGRAL = new double[]{
                         1.0, 1.0, 2.0, 6.0, 24.0, 120.0, 720.0, 5040.0, 40320.0, 362880.0,
                         3628800.0, 39916800.0, 479001600.0, 6227020800.0, 87178291200.0,
                         1307674368000.0, 20922789888000.0, 355687428096000.0,
@@ -2239,9 +2240,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
             /* special cases */
             if (!Double.isFinite(x)) {
-                if (Double.isNaN(x) || x > 0.0)
+                if (Double.isNaN(x) || x > 0.0) {
                     return x; /* tgamma(nan) = nan, tgamma(inf) = inf */
-                else {
+                } else {
                     checkMathDomainError(false);
                 }
             }
@@ -2250,8 +2251,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
             /* integer arguments */
             if (x == Math.floor(x)) {
                 checkMathDomainError(x < 0.0);
-                if (x <= NGAMMA_INTEGRAL)
+                if (x <= NGAMMA_INTEGRAL) {
                     return GAMMA_INTEGRAL[(int) x - 1];
+                }
             }
             absx = Math.abs(x);
 

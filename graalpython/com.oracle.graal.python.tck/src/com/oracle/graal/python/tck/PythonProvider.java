@@ -317,7 +317,7 @@ public class PythonProvider implements LanguageProvider {
         return Source.newBuilder(ID, in, scriptName).build();
     }
 
-    private static abstract class PResultVerifier implements ResultVerifier {
+    private abstract static class PResultVerifier implements ResultVerifier {
     }
 
     private static class PSequenceMultiplicationVerifier extends PResultVerifier {

@@ -192,20 +192,27 @@ public class PySequenceArrayWrapperMR {
         private static long packLong(SequenceStorage store, SequenceStorageNodes.GetItemNode getItemNode, int len, int i) {
             long result = 0;
             result |= getItemNode.executeInt(store, i) & 0xFFL;
-            if (i + 1 < len)
+            if (i + 1 < len) {
                 result |= ((long) getItemNode.executeInt(store, i + 1) << 8L) & 0xFF00L;
-            if (i + 2 < len)
+            }
+            if (i + 2 < len) {
                 result |= ((long) getItemNode.executeInt(store, i + 2) << 16L) & 0xFF0000L;
-            if (i + 3 < len)
+            }
+            if (i + 3 < len) {
                 result |= ((long) getItemNode.executeInt(store, i + 3) << 24L) & 0xFF000000L;
-            if (i + 4 < len)
+            }
+            if (i + 4 < len) {
                 result |= ((long) getItemNode.executeInt(store, i + 4) << 32L) & 0xFF00000000L;
-            if (i + 5 < len)
+            }
+            if (i + 5 < len) {
                 result |= ((long) getItemNode.executeInt(store, i + 5) << 40L) & 0xFF0000000000L;
-            if (i + 6 < len)
+            }
+            if (i + 6 < len) {
                 result |= ((long) getItemNode.executeInt(store, i + 6) << 48L) & 0xFF000000000000L;
-            if (i + 7 < len)
+            }
+            if (i + 7 < len) {
                 result |= ((long) getItemNode.executeInt(store, i + 7) << 56L) & 0xFF00000000000000L;
+            }
             return result;
         }
 
@@ -553,7 +560,7 @@ public class PySequenceArrayWrapperMR {
         }
     }
 
-    static abstract class ToNativeStorageNode extends PNodeWithContext {
+    abstract static class ToNativeStorageNode extends PNodeWithContext {
         @Child private StorageToNativeNode storageToNativeNode;
 
         public abstract NativeSequenceStorage execute(SequenceStorage object);

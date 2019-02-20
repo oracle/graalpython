@@ -89,7 +89,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public abstract class ListNodes {
 
-    public final static class CreateStorageFromIteratorNode extends PNodeWithContext {
+    public static final class CreateStorageFromIteratorNode extends PNodeWithContext {
 
         private static final int START_SIZE = 2;
 

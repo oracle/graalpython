@@ -444,7 +444,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __PREPARE__, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public static abstract class PrepareNode extends PythonBuiltinNode {
+    public abstract static class PrepareNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         Object doIt(Object args, Object kwargs) {
@@ -454,7 +454,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __BASES__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    static abstract class BasesNode extends PythonBuiltinNode {
+    abstract static class BasesNode extends PythonBuiltinNode {
         @Specialization
         Object bases(LazyPythonClass self,
                         @Cached("create()") TypeNodes.GetBaseClassesNode getBaseClassesNode) {
@@ -465,7 +465,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = __DICT__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     @ImportStatic(NativeMemberNames.class)
-    static abstract class DictNode extends PythonUnaryBuiltinNode {
+    abstract static class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doManaged(PythonManagedClass self) {
             PHashingCollection dict = self.getDict();
@@ -489,7 +489,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __INSTANCECHECK__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public static abstract class InstanceCheckNode extends PythonBinaryBuiltinNode {
+    public abstract static class InstanceCheckNode extends PythonBinaryBuiltinNode {
         @Child private LookupAndCallBinaryNode getAttributeNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
         @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
         @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
@@ -535,7 +535,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __SUBCLASSCHECK__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    static abstract class SubclassCheckNode extends PythonBinaryBuiltinNode {
+    abstract static class SubclassCheckNode extends PythonBinaryBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
         @Child private TypeNodes.IsSameTypeNode isSameTypeNode = TypeNodes.IsSameTypeNode.create();
         @Child private GetFixedAttributeNode getBasesAttrNode;
@@ -597,7 +597,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __SUBCLASSES__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    static abstract class SubclassesNode extends PythonUnaryBuiltinNode {
+    abstract static class SubclassesNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         PList getSubclasses(LazyPythonClass cls,
@@ -615,11 +615,11 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(NativeMemberNames.class)
     @TypeSystemReference(PythonTypes.class)
-    static abstract class AbstractSlotNode extends PythonBinaryBuiltinNode {
+    abstract static class AbstractSlotNode extends PythonBinaryBuiltinNode {
     }
 
     @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
-    static abstract class NameNode extends AbstractSlotNode {
+    abstract static class NameNode extends AbstractSlotNode {
         @Specialization(guards = "isNoValue(value)")
         String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
             return cls.getName();
@@ -667,7 +667,7 @@ public class TypeBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __MODULE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
-    static abstract class ModuleNode extends AbstractSlotNode {
+    abstract static class ModuleNode extends AbstractSlotNode {
 
         @Specialization(guards = "isNoValue(value)")
         Object getModule(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
@@ -720,7 +720,7 @@ public class TypeBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
-    static abstract class QualNameNode extends AbstractSlotNode {
+    abstract static class QualNameNode extends AbstractSlotNode {
         @Specialization(guards = "isNoValue(value)")
         String getName(PythonBuiltinClass cls, @SuppressWarnings("unused") PNone value) {
             return cls.getName();
@@ -767,7 +767,7 @@ public class TypeBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __DICTOFFSET__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
-    static abstract class DictoffsetNode extends AbstractSlotNode {
+    abstract static class DictoffsetNode extends AbstractSlotNode {
 
         @Specialization(guards = "isNoValue(value)")
         Object getName(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
@@ -804,7 +804,7 @@ public class TypeBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __ITEMSIZE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
-    static abstract class ItemsizeNode extends AbstractSlotNode {
+    abstract static class ItemsizeNode extends AbstractSlotNode {
 
         @Specialization(guards = "isNoValue(value)")
         Object getName(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
@@ -841,7 +841,7 @@ public class TypeBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __BASICSIZE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
-    static abstract class BasicsizeNode extends AbstractSlotNode {
+    abstract static class BasicsizeNode extends AbstractSlotNode {
 
         @Specialization(guards = "isNoValue(value)")
         Object getName(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
@@ -879,7 +879,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__flags__", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    static abstract class FlagsNode extends PythonUnaryBuiltinNode {
+    abstract static class FlagsNode extends PythonUnaryBuiltinNode {
         @Child TypeNodes.GetTypeFlagsNode getFlagsNode = TypeNodes.GetTypeFlagsNode.create();
 
         @Specialization
