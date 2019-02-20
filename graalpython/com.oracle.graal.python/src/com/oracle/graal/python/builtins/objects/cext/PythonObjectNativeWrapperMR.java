@@ -42,12 +42,9 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MaterializeDelegateNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
@@ -63,8 +60,6 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -206,48 +201,6 @@ public class PythonObjectNativeWrapperMR {
             return GetSulongTypeNodeGen.create();
         }
 
-    }
-
-    @Resolve(message = "EXECUTE")
-    abstract static class ExecuteNode extends Node {
-        @Child PythonMessageResolution.ExecuteNode executeNode;
-        @Child private ToJavaNode toJavaNode;
-        @Child private ToSulongNode toSulongNode;
-
-        public Object access(PythonNativeWrapper object, Object[] arguments) {
-            if (executeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                executeNode = insert(new PythonMessageResolution.ExecuteNode());
-            }
-            // convert args
-            Object[] converted = new Object[arguments.length];
-            for (int i = 0; i < arguments.length; i++) {
-                converted[i] = getToJavaNode().execute(arguments[i]);
-            }
-            Object result;
-            try {
-                result = executeNode.execute(object.getDelegate(), converted);
-            } catch (PException e) {
-                result = PNone.NO_VALUE;
-            }
-            return getToSulongNode().execute(result);
-        }
-
-        private ToJavaNode getToJavaNode() {
-            if (toJavaNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toJavaNode = insert(ToJavaNode.create());
-            }
-            return toJavaNode;
-        }
-
-        private ToSulongNode getToSulongNode() {
-            if (toSulongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(ToSulongNode.create());
-            }
-            return toSulongNode;
-        }
     }
 
     @Resolve(message = "KEY_INFO")

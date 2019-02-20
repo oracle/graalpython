@@ -109,6 +109,8 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -963,6 +965,41 @@ public abstract class NativeWrappers {
         @ExportMessage
         protected void removeMember(String member) throws UnsupportedMessageException, UnknownIdentifierException {
             throw UnsupportedMessageException.create();
+        }
+
+        // EXECUTE
+        abstract static class ExecuteNode extends Node {
+            public abstract Object execute(PythonNativeWrapper object, Object[] arguments);
+
+            @Specialization
+            public Object execute(PythonNativeWrapper object, Object[] arguments,
+                      @Cached.Exclusive @Cached PythonMessageResolution.ExecuteNode executeNode,
+                      @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
+                      @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) {
+                // convert args
+                Object[] converted = new Object[arguments.length];
+                for (int i = 0; i < arguments.length; i++) {
+                    converted[i] = toJavaNode.execute(arguments[i]);
+                }
+                Object result;
+                try {
+                    result = executeNode.execute(object.getDelegate(), converted);
+                } catch (PException e) {
+                    result = PNone.NO_VALUE;
+                }
+                return toSulongNode.execute(result);
+            }
+        }
+
+        @ExportMessage
+        protected boolean isExecutable() {
+            return true;
+        }
+
+        @ExportMessage
+        protected Object execute(Object[] arguments,
+                 @Cached.Exclusive @Cached(allowUncached = true) ExecuteNode executeNode) {
+            return executeNode.execute(this, arguments);
         }
     }
 

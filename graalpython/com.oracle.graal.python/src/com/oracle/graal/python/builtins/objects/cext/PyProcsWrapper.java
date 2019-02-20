@@ -65,7 +65,8 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    boolean isExecutable() {
+    @Override
+    protected boolean isExecutable() {
         return true;
     }
 

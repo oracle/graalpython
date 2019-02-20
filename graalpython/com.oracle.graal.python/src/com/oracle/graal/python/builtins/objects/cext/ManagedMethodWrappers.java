@@ -99,7 +99,8 @@ public abstract class ManagedMethodWrappers {
         }
 
         @ExportMessage
-        public boolean isExecutable() {
+        @Override
+        protected boolean isExecutable() {
             return true;
         }
 
@@ -154,7 +155,8 @@ public abstract class ManagedMethodWrappers {
         }
 
         @ExportMessage
-        public boolean isExecutable() {
+        @Override
+        protected boolean isExecutable() {
             return true;
         }
 
