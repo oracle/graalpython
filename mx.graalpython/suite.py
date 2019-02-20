@@ -177,6 +177,7 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
                 "regex:TREGEX",
+                "sulong:SULONG_API",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "javaCompliance" : "8+",
