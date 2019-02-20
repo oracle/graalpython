@@ -287,8 +287,9 @@ public final class PCode extends PythonBuiltinObject {
         Set<String> freeVarsSet = asSet((String[]) freevars);
         Set<String> cellVarsSet = asSet((String[]) cellvars);
 
-        List<ReadIndexedArgumentNode> readIndexedArgumentNodes = NodeUtil.findAllNodeInstances(funcRootNode, ReadIndexedArgumentNode.class);
-        Set<String> argNames = extractArgumentNames(readIndexedArgumentNodes);
+        Set<String> argNames = new HashSet<>();
+        argNames.addAll(Arrays.asList(arity.getParameterIds()));
+        argNames.addAll(Arrays.asList(arity.getKeywordNames()));
 
         Set<String> varnamesSet = new HashSet<>();
         for (Object identifier : getRootNode().getFrameDescriptor().getIdentifiers()) {
