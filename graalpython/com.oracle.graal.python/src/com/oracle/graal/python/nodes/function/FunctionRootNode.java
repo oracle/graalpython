@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.cell.CellSupplier;
@@ -63,8 +64,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     private ExpressionNode uninitializedBody;
 
     public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
-                    ExecutionCellSlots executionCellSlots) {
-        super(language, frameDescriptor, executionCellSlots);
+                    ExecutionCellSlots executionCellSlots, Arity arity) {
+        super(language, frameDescriptor, executionCellSlots, arity);
         this.contextRef = language.getContextReference();
         this.executionCellSlots = executionCellSlots;
         this.cells = new PCell[this.cellVarSlots.length];
@@ -76,6 +77,12 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
         this.body = NodeUtil.cloneNode(body);
         this.uninitializedBody = NodeUtil.cloneNode(body);
         this.generatorFrameProfile = isGenerator ? ValueProfile.createClassProfile() : null;
+    }
+
+    public FunctionRootNode copyWithNewArity(Arity newArity) {
+        FunctionRootNode copy = new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), body, executionCellSlots, newArity);
+        copy.setRewritten();
+        return copy;
     }
 
     public String getFunctionName() {
@@ -107,7 +114,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
 
     @Override
     public FunctionRootNode copy() {
-        return new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots);
+        return new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, getArity());
     }
 
     @ExplodeLoop

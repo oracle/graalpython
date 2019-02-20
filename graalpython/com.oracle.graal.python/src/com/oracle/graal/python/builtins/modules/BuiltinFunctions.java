@@ -795,7 +795,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 throw raise(ValueError, "compile() mode must be 'exec', 'eval' or 'single'");
             }
-            Supplier<PCode> createCode = () -> factory().createCode((RootNode) getCore().getParser().parse(pm, getCore(), source, null));
+            Supplier<PCode> createCode = () -> factory().createCode(Truffle.getRuntime().createCallTarget((RootNode) getCore().getParser().parse(pm, getCore(), source, null)));
             if (getCore().isInitialized()) {
                 return createCode.get();
             } else {
@@ -1752,25 +1752,25 @@ public final class BuiltinFunctions extends PythonBuiltins {
                  * parameter reads).
                  */
                 FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
-                if (!functionRootNode.isRewritten()) {
-                    functionRootNode.setRewritten();
-                    func.getFunctionRootNode().accept(new NodeVisitor() {
-                        public boolean visit(Node node) {
-                            if (node instanceof ReadVarArgsNode) {
-                                ReadVarArgsNode varArgsNode = (ReadVarArgsNode) node;
-                                node.replace(ReadVarArgsNode.create(varArgsNode.getIndex() + 1, varArgsNode.isBuiltin()));
-                            } else if (node instanceof ReadIndexedArgumentNode) {
-                                node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
-                            } else if (node instanceof PythonCallNode) {
-                                node.replace(((PythonCallNode) node).asSpecialCall());
-                            }
-                            return true;
+                assert !functionRootNode.isRewritten() : "a function cannot be annotated as builtin twice";
+                functionRootNode.setRewritten();
+                functionRootNode = functionRootNode.copyWithNewArity(arity.createWithSelf());
+                functionRootNode.accept(new NodeVisitor() {
+                    public boolean visit(Node node) {
+                        if (node instanceof ReadVarArgsNode) {
+                            ReadVarArgsNode varArgsNode = (ReadVarArgsNode) node;
+                            node.replace(ReadVarArgsNode.create(varArgsNode.getIndex() + 1, varArgsNode.isBuiltin()));
+                        } else if (node instanceof ReadIndexedArgumentNode) {
+                            node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
+                        } else if (node instanceof PythonCallNode) {
+                            node.replace(((PythonCallNode) node).asSpecialCall());
                         }
-                    });
-                }
+                        return true;
+                    }
+                });
 
                 String name = func.getName();
-                builtinFunc = factory().createFunction(name, func.getEnclosingClassName(), arity.createWithSelf(), Truffle.getRuntime().createCallTarget(func.getFunctionRootNode()),
+                builtinFunc = factory().createFunction(name, func.getEnclosingClassName(), Truffle.getRuntime().createCallTarget(functionRootNode),
                                 func.getGlobals(), func.getDefaults(), func.getKwDefaults(), func.getClosure());
             }
 

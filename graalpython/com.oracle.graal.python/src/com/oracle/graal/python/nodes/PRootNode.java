@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -77,4 +78,6 @@ public abstract class PRootNode extends RootNode {
     public boolean isCloningAllowed() {
         return true;
     }
+
+    public abstract Arity getArity();
 }

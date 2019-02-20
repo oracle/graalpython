@@ -45,10 +45,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
@@ -56,14 +59,19 @@ import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameSlotKind;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PCode extends PythonBuiltinObject {
@@ -71,14 +79,9 @@ public final class PCode extends PythonBuiltinObject {
     private final long FLAG_POS_VAR_ARGS = 2;
     private final long FLAG_POS_VAR_KW_ARGS = 3;
 
-    private RootCallTarget callTarget = null;
-    private final RootNode rootNode;
-    private final PythonCore core;
+    private final RootCallTarget callTarget;
+    private final Arity arity;
 
-    // number of arguments (not including keyword only arguments, * or ** args)
-    private int argcount = -1;
-    // number of keyword only arguments (not including ** arg)
-    private int kwonlyargcount = -1;
     // number of local variables
     private int nlocals = -1;
     // is the required stack size (including local variables)
@@ -110,14 +113,14 @@ public final class PCode extends PythonBuiltinObject {
     // tuple of names of cell variables (referenced by containing scopes)
     private Object[] cellvars;
 
-    // internal cache for keyword names
-    private String[] keywordNames;
-
-    public PCode(LazyPythonClass cls, RootNode rootNode, PythonCore core) {
+    public PCode(LazyPythonClass cls, RootCallTarget callTarget) {
         super(cls);
-        assert rootNode != null;
-        this.rootNode = rootNode;
-        this.core = core;
+        this.callTarget = callTarget;
+        if (callTarget.getRootNode() instanceof PRootNode) {
+            this.arity = ((PRootNode) callTarget.getRootNode()).getArity();
+        } else {
+            this.arity = Arity.createVarArgsAndKwArgsOnly();
+        }
     }
 
     public PCode(LazyPythonClass cls, int argcount, int kwonlyargcount,
@@ -127,11 +130,7 @@ public final class PCode extends PythonBuiltinObject {
                     String filename, String name, int firstlineno,
                     byte[] lnotab) {
         super(cls);
-        this.rootNode = null;
-        this.core = null;
-
-        this.argcount = argcount;
-        this.kwonlyargcount = kwonlyargcount;
+        CompilerDirectives.transferToInterpreter();
         this.nlocals = nlocals;
         this.stacksize = stacksize;
         this.flags = flags;
@@ -145,6 +144,43 @@ public final class PCode extends PythonBuiltinObject {
         this.lnotab = lnotab;
         this.freevars = freevars;
         this.cellvars = cellvars;
+
+        // Derive a new call target from the code string, if we can
+        FrameDescriptor frameDescriptor = new FrameDescriptor();
+        MaterializedFrame frame = Truffle.getRuntime().createMaterializedFrame(new Object[0], frameDescriptor);
+        for (int i = 0; i < cellvars.length; i++) {
+            Object ident = cellvars[i];
+            FrameSlot slot = frameDescriptor.addFrameSlot(ident);
+            frameDescriptor.setFrameSlotKind(slot, FrameSlotKind.Object);
+            frame.setObject(slot, new PCell());
+        }
+        RootNode rootNode = (RootNode) PythonLanguage.getCore().getParser().parse(ParserMode.File, PythonLanguage.getCore(), Source.newBuilder("python", new String(codestring), name).build(), frame);
+        this.callTarget = Truffle.getRuntime().createCallTarget(rootNode);
+
+        char paramNom = 'A';
+        String[] paramNames = new String[argcount];
+        for (int i = 0; i < paramNames.length; i++) {
+            if (varnames.length > i) {
+                Object varname = varnames[i];
+                if (varname instanceof String) {
+                    paramNames[i] = (String) varname;
+                    continue;
+                }
+            }
+            paramNames[i] = Character.toString(paramNom++);
+        }
+        String[] kwNames = new String[kwonlyargcount];
+        for (int i = 0; i < kwNames.length; i++) {
+            if (varnames.length > i + argcount) {
+                Object varname = varnames[i + argcount];
+                if (varname instanceof String) {
+                    kwNames[i] = (String) varname;
+                    continue;
+                }
+            }
+            kwNames[i] = Character.toString(paramNom++);
+        }
+        this.arity = new Arity(takesVarKeywordArgs(), takesVarArgs() ? argcount : -1, !takesVarArgs() && kwonlyargcount > 0, paramNames, kwNames);
     }
 
     @TruffleBoundary
@@ -251,28 +287,8 @@ public final class PCode extends PythonBuiltinObject {
         Set<String> freeVarsSet = asSet((String[]) freevars);
         Set<String> cellVarsSet = asSet((String[]) cellvars);
 
-        // List<ReadIndexedArgumentNode> readKeywordNodes =
-        // NodeUtil.findAllNodeInstances(funcRootNode, ReadKeywordNode.class);
-        // keywordNames = new String[readKeywordNodes.size()];
         List<ReadIndexedArgumentNode> readIndexedArgumentNodes = NodeUtil.findAllNodeInstances(funcRootNode, ReadIndexedArgumentNode.class);
-
-        // Set<String> kwNames = getKeywordArgumentNames(readKeywordNodes);
         Set<String> argNames = extractArgumentNames(readIndexedArgumentNodes);
-
-        Set<String> allArgNames = new HashSet<>();
-        // allArgNames.addAll(kwNames);
-        allArgNames.addAll(argNames);
-
-        this.argcount = readIndexedArgumentNodes.size();
-        this.kwonlyargcount = 0;
-
-        /*@formatter:off
-         * for (int i = 0; i < readKeywordNodes.size(); i++) {
-            ReadKeywordNode kwNode = readKeywordNodes.get(i);
-            keywordNames[i] = new String(kwNode.getName());
-            kwonlyargcount++;
-        } @formatter:on
-        */
 
         Set<String> varnamesSet = new HashSet<>();
         for (Object identifier : getRootNode().getFrameDescriptor().getIdentifiers()) {
@@ -281,8 +297,8 @@ public final class PCode extends PythonBuiltinObject {
 
                 if (FrameSlotIDs.RETURN_SLOT_ID.equals(varName) || varName.startsWith(FrameSlotIDs.TEMP_LOCAL_PREFIX)) {
                     // pass
-                } else if (core.getParser().isIdentifier(core, varName)) {
-                    if (allArgNames.contains(varName)) {
+                } else if (PythonLanguage.getCore().getParser().isIdentifier(PythonLanguage.getCore(), varName)) {
+                    if (argNames.contains(varName)) {
                         varnamesSet.add(varName);
                     } else if (!freeVarsSet.contains(varName) && !cellVarsSet.contains(varName)) {
                         varnamesSet.add(varName);
@@ -296,22 +312,18 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public RootNode getRootNode() {
-        return rootNode;
-    }
-
-    private boolean hasRootNode() {
-        return getRootNode() != null;
+        return getRootCallTarget().getRootNode();
     }
 
     public Object[] getFreeVars() {
-        if (freevars == null && hasRootNode()) {
+        if (freevars == null) {
             extractArgStats();
         }
         return freevars;
     }
 
     public Object[] getCellVars() {
-        if (freevars == null && hasRootNode()) {
+        if (freevars == null) {
             extractArgStats();
         }
         return cellvars;
@@ -322,63 +334,57 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public String getFilename() {
-        if (filename == null && hasRootNode()) {
+        if (filename == null) {
             filename = extractFileName(getRootNode());
         }
         return filename;
     }
 
     public int getFirstLineNo() {
-        if (firstlineno == -1 && hasRootNode()) {
+        if (firstlineno == -1) {
             firstlineno = extractFirstLineno(getRootNode());
         }
         return firstlineno;
     }
 
     public String getName() {
-        if (name == null && hasRootNode()) {
+        if (name == null) {
             name = extractName(getRootNode());
         }
         return name;
     }
 
     public int getArgcount() {
-        if (argcount == -1 && hasRootNode()) {
-            extractArgStats();
-        }
-        return argcount;
+        return arity.getMaxNumOfPositionalArgs();
     }
 
     public int getKwonlyargcount() {
-        if (kwonlyargcount == -1 && hasRootNode()) {
-            extractArgStats();
-        }
-        return kwonlyargcount;
+        return arity.getNumOfRequiredKeywords();
     }
 
     public int getNlocals() {
-        if (nlocals == -1 && hasRootNode()) {
+        if (nlocals == -1) {
             extractArgStats();
         }
         return nlocals;
     }
 
     public int getStacksize() {
-        if (stacksize == -1 && hasRootNode()) {
+        if (stacksize == -1) {
             stacksize = extractStackSize(getRootNode());
         }
         return stacksize;
     }
 
     public int getFlags() {
-        if (flags == -1 && hasRootNode()) {
+        if (flags == -1) {
             extractArgStats();
         }
         return flags;
     }
 
     public Object[] getVarnames() {
-        if (varnames == null && hasRootNode()) {
+        if (varnames == null) {
             extractArgStats();
         }
         return varnames;
@@ -400,13 +406,6 @@ public final class PCode extends PythonBuiltinObject {
         return lnotab;
     }
 
-    private String[] getKeywordNames() {
-        if (keywordNames == null && hasRootNode()) {
-            extractArgStats();
-        }
-        return keywordNames;
-    }
-
     public boolean isGenerator() {
         return (getFlags() & (1 << FLAG_POS_GENERATOR)) > 0;
     }
@@ -420,19 +419,10 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public Arity getArity() {
-        int varargsIdx = -1;
-        if (takesVarArgs()) {
-            varargsIdx = getArgcount() - getKwonlyargcount();
-        }
-        // TODO: (tfel) (args) param names
-        return new Arity(this.takesVarKeywordArgs(), varargsIdx, false, null, this.getKeywordNames());
+        return arity;
     }
 
     public RootCallTarget getRootCallTarget() {
-        if (rootNode != null && callTarget == null) {
-            CompilerDirectives.transferToInterpreter();
-            callTarget = Truffle.getRuntime().createCallTarget(rootNode);
-        }
         return callTarget;
     }
 }

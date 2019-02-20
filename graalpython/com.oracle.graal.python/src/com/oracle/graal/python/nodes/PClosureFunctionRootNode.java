@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -48,10 +49,12 @@ import com.oracle.truffle.api.frame.FrameSlot;
 
 public abstract class PClosureFunctionRootNode extends PClosureRootNode {
     @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] cellVarSlots;
+    private final Arity arity;
 
-    protected PClosureFunctionRootNode(TruffleLanguage<?> language, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots) {
+    protected PClosureFunctionRootNode(TruffleLanguage<?> language, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots, Arity arity) {
         super(language, frameDescriptor, executionCellSlots.getFreeVarSlots());
         this.cellVarSlots = executionCellSlots.getCellVarSlots();
+        this.arity = arity;
     }
 
     public String[] getCellVars() {
@@ -60,5 +63,10 @@ public abstract class PClosureFunctionRootNode extends PClosureRootNode {
             cellVars[i] = (String) cellVarSlots[i].getIdentifier();
         }
         return cellVars;
+    }
+
+    @Override
+    public Arity getArity() {
+        return arity;
     }
 }

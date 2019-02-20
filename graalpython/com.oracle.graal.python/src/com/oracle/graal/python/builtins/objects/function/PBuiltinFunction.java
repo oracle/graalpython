@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -51,18 +52,18 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final String name;
     private final LazyPythonClass enclosingType;
     private final RootCallTarget callTarget;
-    private final Arity arity;
     private final boolean isStatic;
+    private final Arity arity;
     @CompilationFinal(dimensions = 1) private final PNone[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    public PBuiltinFunction(LazyPythonClass clazz, String name, LazyPythonClass enclosingType, Arity arity, int numDefaults, RootCallTarget callTarget) {
+    public PBuiltinFunction(LazyPythonClass clazz, String name, LazyPythonClass enclosingType, int numDefaults, RootCallTarget callTarget) {
         super(clazz);
         this.name = name;
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingType = enclosingType;
         this.callTarget = callTarget;
-        this.arity = arity;
+        this.arity = ((PRootNode) callTarget.getRootNode()).getArity();
         this.defaults = new PNone[numDefaults];
         Arrays.fill(getDefaults(), PNone.NO_VALUE);
         String[] keywordNames = arity.getKeywordNames();
@@ -125,7 +126,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         if (klass == enclosingType) {
             return this;
         } else {
-            return factory.createBuiltinFunction(name, klass, arity, defaults.length, callTarget);
+            return factory.createBuiltinFunction(name, klass, defaults.length, callTarget);
         }
     }
 

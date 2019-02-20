@@ -30,6 +30,7 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -139,9 +140,9 @@ public class NodeFactory {
     }
 
     public FunctionRootNode createFunctionRoot(SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
-                    ExecutionCellSlots cellSlots) {
+                    ExecutionCellSlots cellSlots, Arity arity) {
         body.markAsRoot();
-        return new FunctionRootNode(language, sourceSection, functionName, isGenerator, frameDescriptor, body, cellSlots);
+        return new FunctionRootNode(language, sourceSection, functionName, isGenerator, frameDescriptor, body, cellSlots, arity);
     }
 
     public ClassBodyRootNode createClassBodyRoot(SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots cellSlots) {

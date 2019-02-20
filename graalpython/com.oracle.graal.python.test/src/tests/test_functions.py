@@ -105,9 +105,9 @@ def test_constructor():
     import types
     func_copy = types.FunctionType(f.__code__, f.__globals__, f.__name__, f.__defaults__, f.__closure__)
 
-    assert func_copy(1, 2) == (1, 2, 10, (), {})
-    assert func_copy(1, 2, 3) == (1, 2, 3, (), {})
-    assert func_copy(1, 2, 3, 4, 5, x=2) == (1, 2, 3, (4, 5), {'x': 2})
+    assert func_copy(1, 2) == (1, 2, 10, (), {}), func_copy(1, 2)
+    assert func_copy(1, 2, 3) == (1, 2, 3, (), {}), func_copy(1, 2, 3)
+    assert func_copy(1, 2, 3, 4, 5, x=2) == (1, 2, 3, (4, 5), {'x': 2}), func_copy(1, 2, 3, 4, 5, x=2)
 
 
 def test_inner_function_with_defaults():

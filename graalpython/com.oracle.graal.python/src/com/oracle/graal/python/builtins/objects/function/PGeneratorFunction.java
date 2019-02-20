@@ -32,14 +32,14 @@ import com.oracle.truffle.api.RootCallTarget;
 
 public final class PGeneratorFunction extends PFunction {
 
-    public static PGeneratorFunction create(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure,
+    public static PGeneratorFunction create(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure,
                     Object[] defaultValues, PKeyword[] kwDefaultValues) {
-        return new PGeneratorFunction(clazz, name, enclosingClassName, arity, callTarget, globals, closure, defaultValues, kwDefaultValues);
+        return new PGeneratorFunction(clazz, name, enclosingClassName, callTarget, globals, closure, defaultValues, kwDefaultValues);
     }
 
-    public PGeneratorFunction(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure, Object[] defaultValues,
+    public PGeneratorFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure, Object[] defaultValues,
                     PKeyword[] kwDefaultValues) {
-        super(clazz, name, enclosingClassName, arity, callTarget, globals, defaultValues, kwDefaultValues, closure);
+        super(clazz, name, enclosingClassName, callTarget, globals, defaultValues, kwDefaultValues, closure);
     }
 
     @Override

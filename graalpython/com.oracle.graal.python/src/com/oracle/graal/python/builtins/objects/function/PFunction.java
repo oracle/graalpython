@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.function;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -35,37 +36,38 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public class PFunction extends PythonObject {
     private static final Object[] EMPTY_DEFAULTS = new Object[0];
     private final String name;
     private final String enclosingClassName;
-    private final Arity arity;
-    private final RootCallTarget callTarget;
+    private final CyclicAssumption codeStableAssumption = new CyclicAssumption("function code unchanged");
+    private final CyclicAssumption defaultsStableAssumption = new CyclicAssumption("function defaults unchanged");
     private final PythonObject globals;
     private final PCell[] closure;
     private final boolean isStatic;
-    private PCode code;
-    private Object[] defaultValues;
-    private PKeyword[] kwDefaultValues;
+    @CompilationFinal private PCode code;
+    @CompilationFinal(dimensions = 1) private Object[] defaultValues;
+    @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
 
-    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
-        this(clazz, name, enclosingClassName, arity, callTarget, globals, EMPTY_DEFAULTS, PKeyword.EMPTY_KEYWORDS, closure);
+    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
+        this(clazz, name, enclosingClassName, callTarget, globals, EMPTY_DEFAULTS, PKeyword.EMPTY_KEYWORDS, closure);
     }
 
-    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
         super(clazz);
         this.name = name;
+        this.code = new PCode(PythonBuiltinClassType.PCode, callTarget);
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingClassName = enclosingClassName;
-        this.arity = arity;
-        this.callTarget = callTarget;
         this.globals = globals;
         this.defaultValues = defaultValues == null ? EMPTY_DEFAULTS : defaultValues;
         this.kwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
@@ -84,7 +86,15 @@ public class PFunction extends PythonObject {
     }
 
     public RootCallTarget getCallTarget() {
-        return callTarget;
+        return code.getRootCallTarget();
+    }
+
+    public CyclicAssumption getCodeStableAssumption() {
+        return codeStableAssumption;
+    }
+
+    public CyclicAssumption getDefaultsStableAssumption() {
+        return defaultsStableAssumption;
     }
 
     public PythonObject getGlobals() {
@@ -92,7 +102,7 @@ public class PFunction extends PythonObject {
     }
 
     public RootNode getFunctionRootNode() {
-        return callTarget.getRootNode();
+        return getCallTarget().getRootNode();
     }
 
     public String getName() {
@@ -100,7 +110,7 @@ public class PFunction extends PythonObject {
     }
 
     public Arity getArity() {
-        return arity;
+        return code.getArity();
     }
 
     public PCell[] getClosure() {
@@ -155,7 +165,7 @@ public class PFunction extends PythonObject {
 
     @TruffleBoundary
     public String getSourceCode() {
-        RootNode rootNode = callTarget.getRootNode();
+        RootNode rootNode = getCallTarget().getRootNode();
         if (rootNode instanceof GeneratorFunctionRootNode) {
             rootNode = ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
         }

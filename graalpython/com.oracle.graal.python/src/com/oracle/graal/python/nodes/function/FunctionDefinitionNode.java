@@ -28,7 +28,6 @@ package com.oracle.graal.python.nodes.function;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -46,14 +45,13 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     protected final String functionName;
     protected final String enclosingClassName;
     protected final RootCallTarget callTarget;
-    protected final Arity arity;
 
     @Children protected ExpressionNode[] defaults;
     @Children protected KwDefaultExpressionNode[] kwDefaults;
     @Child private ExpressionNode doc;
     @Child private WriteAttributeToObjectNode writeDocNode = WriteAttributeToObjectNode.create();
 
-    public FunctionDefinitionNode(String functionName, String enclosingClassName, ExpressionNode doc, Arity arity, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
+    public FunctionDefinitionNode(String functionName, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
                     RootCallTarget callTarget,
                     DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots) {
         super(definitionCellSlots, executionCellSlots);
@@ -61,7 +59,6 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         this.enclosingClassName = enclosingClassName;
         this.doc = doc;
         this.callTarget = callTarget;
-        this.arity = arity;
         assert defaults == null || Arrays.stream(defaults).noneMatch(x -> x == null);
         this.defaults = defaults;
         assert kwDefaults == null || Arrays.stream(kwDefaults).noneMatch(x -> x == null);
@@ -85,7 +82,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
             }
         }
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, arity, callTarget, PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure));
+        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, callTarget, PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure));
     }
 
     protected final <T extends PFunction> T withDocString(VirtualFrame frame, T func) {

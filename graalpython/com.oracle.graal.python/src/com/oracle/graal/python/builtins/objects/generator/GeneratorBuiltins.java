@@ -216,7 +216,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile hasCodeProfile) {
             PCode code = self.getCode();
             if (hasCodeProfile.profile(code == null)) {
-                code = factory().createCode(self.getGeneratorRootNode());
+                code = factory().createCode(self.getCallTarget());
                 self.setCode(code);
             }
             return code;

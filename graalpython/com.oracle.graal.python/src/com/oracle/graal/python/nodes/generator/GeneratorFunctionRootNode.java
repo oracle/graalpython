@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
@@ -60,9 +61,9 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final String name;
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots,
+    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots, Arity arity,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-        super(language, frameDescriptor, executionCellSlots);
+        super(language, frameDescriptor, executionCellSlots, arity);
         this.callTarget = callTarget;
         this.name = name;
         this.frameDescriptor = frameDescriptor;

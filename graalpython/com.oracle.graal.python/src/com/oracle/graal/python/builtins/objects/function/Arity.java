@@ -32,6 +32,8 @@ import java.util.List;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 public final class Arity {
+    public static final Arity EMPTY = new Arity(false, -1, false, new String[0], new String[0]);
+
     private final int varArgIndex;
     private final boolean isVarArgsMarker;
     private final boolean takesVarKeywordArgs;

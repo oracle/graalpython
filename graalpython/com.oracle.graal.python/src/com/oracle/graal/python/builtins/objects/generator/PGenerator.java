@@ -37,7 +37,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
-import com.oracle.truffle.api.nodes.RootNode;
 
 public final class PGenerator extends PythonBuiltinObject {
 
@@ -95,10 +94,6 @@ public final class PGenerator extends PythonBuiltinObject {
 
     public RootCallTarget getCallTarget() {
         return callTarget;
-    }
-
-    public RootNode getGeneratorRootNode() {
-        return callTarget.getRootNode();
     }
 
     public Object[] getArguments() {

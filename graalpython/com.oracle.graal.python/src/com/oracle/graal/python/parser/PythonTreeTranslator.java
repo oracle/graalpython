@@ -241,7 +241,8 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         deriveSourceSection(ctx, node);
         StatementNode evalReturn = factory.createFrameReturn(factory.createWriteLocal(node, environment.getReturnSlot()));
         ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, factory.createReadLocal(environment.getReturnSlot()));
-        FunctionRootNode functionRoot = factory.createFunctionRoot(node.getSourceSection(), name, false, ctx.scope.getFrameDescriptor(), returnTarget, environment.getExecutionCellSlots());
+        FunctionRootNode functionRoot = factory.createFunctionRoot(node.getSourceSection(), name, false, ctx.scope.getFrameDescriptor(), returnTarget, environment.getExecutionCellSlots(),
+                        Arity.EMPTY);
         environment.popScope();
         return functionRoot;
     }
@@ -516,7 +517,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     private GeneratorExpressionNode createGeneratorExpressionDefinition(ExpressionNode body, int lineNum) {
         FrameDescriptor fd = environment.getCurrentFrame();
         String generatorName = environment.getCurrentScope().getParent().getScopeId() + ".<locals>.<genexp>:" + source.getName() + ":" + lineNum;
-        FunctionRootNode funcRoot = factory.createFunctionRoot(body.getSourceSection(), generatorName, true, fd, body, environment.getExecutionCellSlots());
+        FunctionRootNode funcRoot = factory.createFunctionRoot(body.getSourceSection(), generatorName, true, fd, body, environment.getExecutionCellSlots(), Arity.EMPTY);
         GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, true);
         RootCallTarget callTarget = gtran.translate();
         ExpressionNode loopIterator = gtran.getGetOuterMostLoopIterator();
@@ -1499,8 +1500,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
          * Function root
          */
         FrameDescriptor fd = environment.getCurrentFrame();
-        FunctionRootNode funcRoot = factory.createFunctionRoot(deriveSourceSection(ctx), funcName, environment.isInGeneratorScope(), fd, returnTarget, environment.getExecutionCellSlots());
-        RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
+        FunctionRootNode funcRoot = factory.createFunctionRoot(deriveSourceSection(ctx), funcName, environment.isInGeneratorScope(), fd, returnTarget, environment.getExecutionCellSlots(), arity);
 
         /**
          * Definition
@@ -1508,12 +1508,13 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ExpressionNode funcDef;
         if (environment.isInGeneratorScope()) {
             GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, false);
-            RootCallTarget callTarget = gtran.translate();
-            funcDef = GeneratorFunctionDefinitionNode.create(funcName, enclosingClassName, doc, arity, defaults, kwDefaults, callTarget, fd,
+            RootCallTarget ct = gtran.translate();
+            funcDef = GeneratorFunctionDefinitionNode.create(funcName, enclosingClassName, doc, defaults, kwDefaults, ct, fd,
                             environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                             gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
         } else {
-            funcDef = new FunctionDefinitionNode(funcName, enclosingClassName, doc, arity, defaults, kwDefaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
+            RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
+            funcDef = new FunctionDefinitionNode(funcName, enclosingClassName, doc, defaults, kwDefaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         }
         environment.popScope();
 
@@ -1676,8 +1677,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
          * Lambda function root
          */
         FrameDescriptor fd = environment.getCurrentFrame();
-        FunctionRootNode funcRoot = factory.createFunctionRoot(deriveSourceSection(ctx), funcname, environment.isInGeneratorScope(), fd, returnTargetNode, environment.getExecutionCellSlots());
-        RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
+        FunctionRootNode funcRoot = factory.createFunctionRoot(deriveSourceSection(ctx), funcname, environment.isInGeneratorScope(), fd, returnTargetNode, environment.getExecutionCellSlots(), arity);
 
         /**
          * Definition
@@ -1685,12 +1685,13 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         PNode funcDef;
         if (environment.isInGeneratorScope()) {
             GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, false);
-            RootCallTarget callTarget = gtran.translate();
-            funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, arity, defaults, kwDefaults, callTarget, fd,
+            RootCallTarget ct = gtran.translate();
+            funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, defaults, kwDefaults, ct, fd,
                             environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                             gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
         } else {
-            funcDef = new FunctionDefinitionNode(funcname, null, null, arity, defaults, kwDefaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
+            RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
+            funcDef = new FunctionDefinitionNode(funcname, null, null, defaults, kwDefaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         }
         environment.popScope();
 
@@ -1760,8 +1761,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ExpressionNode body = asClassBody(ctx.suite().accept(this), qualName);
         ClassBodyRootNode classBodyRoot = factory.createClassBodyRoot(deriveSourceSection(ctx), className, environment.getCurrentFrame(), body, environment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
-        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(className, null, null, Arity.createOneArgumentWithVarKwArgs(),
-                        null, null, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
+        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(className, null, null, null, null, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         environment.popScope();
 
         argumentNodes.add(0, factory.createStringLiteral(className));
