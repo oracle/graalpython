@@ -47,7 +47,8 @@ import java.nio.file.spi.FileTypeDetector;
 public final class PythonFileDetector extends FileTypeDetector {
     @Override
     public String probeContentType(Path path) throws IOException {
-        if (path.getFileName().toString().endsWith(".py")) {
+        Path fileName = path.getFileName();
+        if (fileName != null && fileName.toString().endsWith(".py")) {
             return PythonLanguage.MIME_TYPE;
         }
         return null;

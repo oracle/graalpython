@@ -108,7 +108,8 @@ public class GraalPythonLD extends GraalPythonCompiler {
                         List<String> bcFiles = searchLib(libraryDirs, arg.substring(2));
                         for (String bcFile : bcFiles) {
                             try {
-                                if (Files.probeContentType(Paths.get(bcFile)).contains(LLVM_IR_BITCODE)) {
+                                String contentType = Files.probeContentType(Paths.get(bcFile));
+                                if (contentType != null && contentType.contains(LLVM_IR_BITCODE)) {
                                     logV("library input:", bcFile);
                                     addFile(bcFile);
                                 } else {
@@ -245,7 +246,8 @@ public class GraalPythonLD extends GraalPythonCompiler {
         // seems ok to emulate this at least for the very common case of ar archives with symbol
         // definitions that overlap what's defined in explicitly include .o files
         outer: for (String f : members) {
-            if (Files.probeContentType(Paths.get(f)).contains(LLVM_IR_BITCODE)) {
+            String contentType = Files.probeContentType(Paths.get(f));
+            if (contentType != null && contentType.contains(LLVM_IR_BITCODE)) {
                 HashSet<String> definedFuncs = new HashSet<>();
                 HashSet<String> definedGlobals = new HashSet<>();
 
