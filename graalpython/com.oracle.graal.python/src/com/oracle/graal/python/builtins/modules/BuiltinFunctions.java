@@ -613,8 +613,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object[] freeVars = code.getFreeVars();
             if (freeVars.length > 0) {
                 hasFreeVarsBranch.enter();
-                throw raise(PythonBuiltinClassType.TypeError, "code object passed to eval/exec may not contain free variables");
+                throw raise(PythonBuiltinClassType.TypeError, "code object passed to %s may not contain free variables", getMode());
             }
+        }
+
+        protected String getMode() {
+            return "eval";
         }
 
         protected boolean isMapping(Object object) {
@@ -631,7 +635,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected PCode createAndCheckCode(Object source) {
-            PCode code = compileNode.execute(source, "<string>", "eval", 0, false, -1);
+            PCode code = compileNode.execute(source, "<string>", getMode(), 0, false, -1);
             assertNoFreeVars(code);
             return code;
         }
@@ -735,6 +739,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ExecNode extends EvalNode {
         protected abstract Object executeInternal(VirtualFrame frame);
+
+        @Override
+        protected String getMode() {
+            return "exec";
+        }
 
         @Override
         public final Object execute(VirtualFrame frame) {
