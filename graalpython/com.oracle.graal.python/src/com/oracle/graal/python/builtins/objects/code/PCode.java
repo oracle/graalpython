@@ -194,6 +194,8 @@ public final class PCode extends PythonBuiltinObject {
             return ((FunctionRootNode) rootNode).getFreeVars();
         } else if (rootNode instanceof GeneratorFunctionRootNode) {
             return ((GeneratorFunctionRootNode) rootNode).getFreeVars();
+        } else if (rootNode instanceof ModuleRootNode) {
+            return ((ModuleRootNode) rootNode).getFreeVars();
         } else {
             return null;
         }
@@ -204,6 +206,8 @@ public final class PCode extends PythonBuiltinObject {
             return ((FunctionRootNode) rootNode).getCellVars();
         } else if (rootNode instanceof GeneratorFunctionRootNode) {
             return ((GeneratorFunctionRootNode) rootNode).getCellVars();
+        } else if (rootNode instanceof ModuleRootNode) {
+            return new String[0];
         } else {
             return null;
         }
@@ -225,13 +229,16 @@ public final class PCode extends PythonBuiltinObject {
     private static int extractFirstLineno(RootNode rootNode) {
         RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
         SourceSection sourceSection = funcRootNode.getSourceSection();
-        return (sourceSection != null) ? sourceSection.getStartLine() : 1;
+        if (sourceSection != null) {
+            return sourceSection.getStartLine();
+        }
+        return 1;
     }
 
     private static String extractName(RootNode rootNode) {
         String name;
         if (rootNode instanceof ModuleRootNode) {
-            name = "<module>";
+            name = rootNode.getName();
         } else if (rootNode instanceof FunctionRootNode) {
             name = ((FunctionRootNode) rootNode).getFunctionName();
         } else {
@@ -310,6 +317,19 @@ public final class PCode extends PythonBuiltinObject {
 
         this.varnames = varNameList.toArray();
         this.nlocals = varNameList.size();
+    }
+
+    @TruffleBoundary
+    private static byte[] extractCodeString(RootNode rootNode) {
+        RootNode funcRootNode = rootNode;
+        if (rootNode instanceof GeneratorFunctionRootNode) {
+            funcRootNode = ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
+        }
+        SourceSection sourceSection = funcRootNode.getSourceSection();
+        if (sourceSection != null) {
+            return sourceSection.getCharacters().toString().getBytes();
+        }
+        return new byte[0];
     }
 
     public RootNode getRootNode() {
@@ -392,6 +412,9 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public byte[] getCodestring() {
+        if (codestring == null) {
+            this.codestring = extractCodeString(getRootNode());
+        }
         return codestring;
     }
 

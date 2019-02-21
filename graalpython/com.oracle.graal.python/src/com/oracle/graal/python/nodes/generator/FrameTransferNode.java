@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,7 +26,6 @@
 package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -61,20 +60,14 @@ public abstract class FrameTransferNode extends FrameSlotNode {
     }
 
     @Specialization(guards = "isBooleanKind(frame)")
-    public boolean write(VirtualFrame frame, boolean right) {
-        getCargoFrame(frame).setBoolean(frameSlot, right);
-        return right;
+    public boolean write(VirtualFrame frame, boolean value) {
+        getCargoFrame(frame).setBoolean(frameSlot, value);
+        return value;
     }
 
     @Specialization(guards = "isIntegerKind(frame)")
     public int doInteger(VirtualFrame frame, int value) {
         getCargoFrame(frame).setInt(frameSlot, value);
-        return value;
-    }
-
-    @Specialization(guards = "isIntOrObjectKind(frame)")
-    public PInt write(VirtualFrame frame, PInt value) {
-        setObject(getCargoFrame(frame), value);
         return value;
     }
 
@@ -85,14 +78,15 @@ public abstract class FrameTransferNode extends FrameSlotNode {
     }
 
     @Specialization(guards = "isDoubleKind(frame)")
-    public double doDouble(VirtualFrame frame, double right) {
-        getCargoFrame(frame).setDouble(frameSlot, right);
-        return right;
+    public double doDouble(VirtualFrame frame, double value) {
+        getCargoFrame(frame).setDouble(frameSlot, value);
+        return value;
     }
 
-    @Specialization(guards = "isObjectKind(frame)")
-    public Object write(VirtualFrame frame, Object right) {
-        setObject(getCargoFrame(frame), right);
-        return right;
+    @Specialization
+    public Object write(VirtualFrame frame, Object value) {
+        ensureObjectKind(frame);
+        setObject(getCargoFrame(frame), value);
+        return value;
     }
 }

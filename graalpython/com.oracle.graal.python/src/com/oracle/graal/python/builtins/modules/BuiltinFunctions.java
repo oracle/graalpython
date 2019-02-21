@@ -171,6 +171,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -681,7 +682,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             // fall back (like their CPython counterparts) to writing to the globals. We only need
             // to ensure that the `locals()` call still gives us the globals dict
             PArguments.setPFrame(args, factory().createPFrame(globals));
-            return indirectCallNode.call(code.getRootCallTarget(), args);
+            RootCallTarget rootCallTarget = code.getRootCallTarget();
+            if (rootCallTarget == null) {
+                throw raise(ValueError, "cannot create the a call target from the code object: %p", code);
+            }
+            return indirectCallNode.call(rootCallTarget, args);
         }
 
         @Specialization(guards = {"isMapping(locals)"})

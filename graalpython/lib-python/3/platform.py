@@ -555,8 +555,10 @@ def _mac_ver_xml():
     except ImportError:
         return None
 
-    with open(fn, 'rb') as f:
-        pl = plistlib.load(f)
+    # this would require xml parsing
+    # with open(fn, 'rb') as f:
+    #     pl = plistlib.load(f)
+    pl = {'ProductVersion': '10.14.1'}
     release = pl['ProductVersion']
     versioninfo = ('', '', '')
     machine = os.uname().machine
