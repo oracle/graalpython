@@ -548,7 +548,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    public static abstract class DictNode extends PythonBinaryBuiltinNode {
+    public abstract static class DictNode extends PythonBinaryBuiltinNode {
         private final IsBuiltinClassProfile exactObjInstanceProfile = IsBuiltinClassProfile.create();
         private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
 
@@ -597,7 +597,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    static abstract class FormatNode extends PythonBinaryBuiltinNode {
+    abstract static class FormatNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isString(formatString)")
         Object format(Object self, @SuppressWarnings("unused") Object formatString,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
@@ -612,7 +612,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = RICHCMP, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    static abstract class RichCompareNode extends PythonTernaryBuiltinNode {
+    abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
         protected static final int NO_SLOW_PATH = Integer.MAX_VALUE;
 
         protected BinaryComparisonNode createOp(String op) {

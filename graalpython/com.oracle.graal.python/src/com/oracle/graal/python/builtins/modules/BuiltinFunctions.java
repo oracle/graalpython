@@ -915,7 +915,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
          * None, NotImplemented, True, False
          * </pre>
          */
-        private static long KNOWN_OBJECTS_COUNT = 4L;
+        private static final long KNOWN_OBJECTS_COUNT = 4L;
         // borrowed logic from pypy
         // -1 - (-maxunicode-1): unichar
         // 0 - 255: char
@@ -923,12 +923,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         // 257: empty unicode
         // 258: empty tuple
         // 259: empty frozenset
-        private static long BASE_EMPTY_BYTES = 256;
-        private static long BASE_EMPTY_UNICODE = 257;
-        private static long BASE_EMPTY_TUPLE = 258;
-        private static long BASE_EMPTY_FROZENSET = 259;
-        private static long IDTAG_SPECIAL = 11;
-        private static int IDTAG_SHIFT = 4;
+        private static final long BASE_EMPTY_BYTES = 256;
+        private static final long BASE_EMPTY_UNICODE = 257;
+        private static final long BASE_EMPTY_TUPLE = 258;
+        private static final long BASE_EMPTY_FROZENSET = 259;
+        private static final long IDTAG_SPECIAL = 11;
+        private static final int IDTAG_SHIFT = 4;
 
         /**
          * The next available global id. We reserve space for all integers to be their own id +
@@ -1214,7 +1214,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
 
-        private static Supplier<NoAttributeHandler> NO_LEN = () -> new NoAttributeHandler() {
+        private static final Supplier<NoAttributeHandler> NO_LEN = () -> new NoAttributeHandler() {
             @Override
             public Object execute(Object receiver) {
                 throw raise(TypeError, "object of type '%p' has no len()", receiver);
@@ -1724,7 +1724,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        synchronized public Object doIt(PFunction func) {
+        public synchronized Object doIt(PFunction func) {
             /*
              * (tfel): To be compatible with CPython, builtin module functions must be bound to
              * their respective builtin module. We ignore that builtin functions should really be

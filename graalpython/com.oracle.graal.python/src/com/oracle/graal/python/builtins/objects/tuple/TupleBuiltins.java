@@ -98,7 +98,7 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IndexNode extends PythonBuiltinNode {
 
-        private final static String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
+        private static final String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
 
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Child private SequenceStorageNodes.LenNode lenNode;
@@ -215,7 +215,7 @@ public class TupleBuiltins extends PythonBuiltins {
             return indexNode.execute(self, value, startValue, end);
         }
 
-        @Specialization(guards = {"!isNumber(end)",})
+        @Specialization(guards = {"!isNumber(end)"})
         int indexLO(PTuple self, Object value, long start, Object end,
                         @Cached("create(__INDEX__)") LookupAndCallUnaryNode endNode,
                         @Cached("createIndexNode()") IndexNode indexNode) {
@@ -227,7 +227,7 @@ public class TupleBuiltins extends PythonBuiltins {
             return indexNode.execute(self, value, start, endValue);
         }
 
-        @Specialization(guards = {"!isNumber(start) || !isNumber(end)",})
+        @Specialization(guards = {"!isNumber(start) || !isNumber(end)"})
         int indexOO(PTuple self, Object value, Object start, Object end,
                         @Cached("create(__INDEX__)") LookupAndCallUnaryNode startNode,
                         @Cached("create(__INDEX__)") LookupAndCallUnaryNode endNode,

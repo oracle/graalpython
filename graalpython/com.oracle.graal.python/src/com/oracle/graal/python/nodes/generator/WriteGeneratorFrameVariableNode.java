@@ -52,7 +52,7 @@ public abstract class WriteGeneratorFrameVariableNode extends StatementNode impl
         return WriteGeneratorFrameVariableNodeGen.create(slot, right);
     }
 
-    protected static abstract class WriteGeneraterFrameSlotNode extends FrameSlotNode {
+    protected abstract static class WriteGeneraterFrameSlotNode extends FrameSlotNode {
         public WriteGeneraterFrameSlotNode(FrameSlot slot) {
             super(slot);
         }

@@ -64,7 +64,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "select", minNumOfPositionalArgs = 3, parameterNames = {"rlist", "wlist", "xlist", "timeout"})
     @GenerateNodeFactory
-    static abstract class SelectNode extends PythonBuiltinNode {
+    abstract static class SelectNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
         PTuple select(Object rlist, Object wlist, Object xlist, @SuppressWarnings("unused") Object timeout) {
