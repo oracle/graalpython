@@ -496,11 +496,11 @@ public class SysModuleBuiltins extends PythonBuiltins {
             Env env = getContext().getEnv();
             LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
             SulongToolchain toolchain = env.lookup(llvmInfo, SulongToolchain.class);
-            String toolPath = toolchain.getToolPath(tool);
+            TruffleFile toolPath = toolchain.getToolPath(tool);
             if (toolPath == null) {
                 return PNone.NONE;
             }
-            return toolPath;
+            return toolPath.toString();
         }
     }
 
