@@ -77,9 +77,11 @@ import com.oracle.truffle.api.source.SourceSection;
 
 public final class PCode extends PythonBuiltinObject {
     private static final String[] EMPTY_STRINGS = new String[0];
-    private final static long FLAG_POS_GENERATOR = 5;
-    private final static long FLAG_POS_VAR_ARGS = 2;
-    private final static long FLAG_POS_VAR_KW_ARGS = 3;
+    private final static long FLAG_GENERATOR = 32;
+    private final static long FLAG_VAR_ARGS = 0x0004;
+    private final static long FLAG_VAR_KW_ARGS = 0x0008;
+    private final static long FLAG_MODULE = 0x0040; // CO_NOFREE on CPython, we only set it on
+                                                    // modules
 
     private final RootCallTarget callTarget;
     private final Arity arity;
@@ -300,23 +302,26 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static int extractFlags(RootNode rootNode) {
-        // 0x20 - generator
         int flags = 0;
         RootNode funcRootNode = rootNode;
-        if (funcRootNode instanceof GeneratorFunctionRootNode) {
-            flags |= (1 << FLAG_POS_GENERATOR);
-            funcRootNode = ((GeneratorFunctionRootNode) funcRootNode).getFunctionRootNode();
+        if (funcRootNode instanceof ModuleRootNode) {
+            // Not on CPython
+            flags |= FLAG_MODULE;
+        } else {
+            // 0x20 - generator
+            if (funcRootNode instanceof GeneratorFunctionRootNode) {
+                flags |= FLAG_GENERATOR;
+                funcRootNode = ((GeneratorFunctionRootNode) funcRootNode).getFunctionRootNode();
+            }
+            // 0x04 - *arguments
+            if (NodeUtil.findFirstNodeInstance(funcRootNode, ReadVarArgsNode.class) != null) {
+                flags |= FLAG_VAR_ARGS;
+            }
+            // 0x08 - **keywords
+            if (NodeUtil.findFirstNodeInstance(funcRootNode, ReadVarKeywordsNode.class) != null) {
+                flags |= FLAG_VAR_KW_ARGS;
+            }
         }
-
-        // 0x04 - *arguments
-        if (NodeUtil.findFirstNodeInstance(funcRootNode, ReadVarArgsNode.class) != null) {
-            flags |= (1 << FLAG_POS_VAR_ARGS);
-        }
-        // 0x08 - **keywords
-        if (NodeUtil.findFirstNodeInstance(funcRootNode, ReadVarKeywordsNode.class) != null) {
-            flags |= (1 << FLAG_POS_VAR_KW_ARGS);
-        }
-
         return flags;
     }
 
@@ -432,15 +437,15 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public boolean isGenerator() {
-        return (getFlags() & (1 << FLAG_POS_GENERATOR)) > 0;
+        return (getFlags() & FLAG_GENERATOR) > 0;
     }
 
     public boolean takesVarArgs() {
-        return (getFlags() & (1 << FLAG_POS_VAR_ARGS)) > 0;
+        return (getFlags() & FLAG_VAR_ARGS) > 0;
     }
 
     public boolean takesVarKeywordArgs() {
-        return (getFlags() & (1 << FLAG_POS_VAR_KW_ARGS)) > 0;
+        return (getFlags() & FLAG_VAR_KW_ARGS) > 0;
     }
 
     public Arity getArity() {
