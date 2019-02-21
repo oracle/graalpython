@@ -235,7 +235,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
                 SulongToolchain toolchain = env.lookup(llvmInfo, SulongToolchain.class);
-                TruffleFile capiFile = env.getTruffleFile(String.join(PythonCore.FILE_SEPARATOR, PythonCore.getCoreHome(env), toolchain.getIdentifier(), "capi.so"));
+                TruffleFile capiFile = env.getTruffleFile(String.join(PythonCore.FILE_SEPARATOR, PythonCore.getNativeModuleHome(env), toolchain.getIdentifier(), "capi.so"));
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);

@@ -182,6 +182,9 @@ suite = {
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "javaCompliance" : "8+",
             "checkstyleVersion" : "8.8",
+            "javaProperties": {
+                "graalpython.nativeModuleHome": "<path:GRAALPYTHON_GRAALVM_SUPPORT>/lib-graalpython",
+            },
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated" : True,
@@ -222,8 +225,7 @@ suite = {
             "subDir": "graalpython",
             "native": True,
             "vpath": True,
-            "results": ["graalpython/lib-graalpython"],
-            "output": ".",
+            "results": ["lib-graalpython"],
             "buildDependencies": [
                 "sulong:SULONG_LIBS",
             ],
@@ -348,8 +350,9 @@ suite = {
             "description": "Graal.Python support distribution for the GraalVM",
             "layout": {
                 "./": [
-                    "dependency:com.oracle.graal.python.cext/graalpython/lib-graalpython",
+                    "dependency:com.oracle.graal.python.cext/lib-graalpython",
                     "file:graalpython/com.oracle.graal.python.cext/include",
+                    "file:graalpython/lib-graalpython",
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
                 ],

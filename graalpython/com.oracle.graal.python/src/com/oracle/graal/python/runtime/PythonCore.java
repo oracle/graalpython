@@ -51,6 +51,7 @@ public interface PythonCore extends ParserErrorCallback {
     static final String NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
     static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
     static final String NO_STDLIB = "could not determine Graal.Python's standard library path. You need to pass --python.StdLibHome if you want to use the standard library.";
+    static final String NATIVE_MODULE_HOME = System.getProperty("graalpython.nativeModuleHome");
 
     /**
      * Load the core library and prepare all builtin classes and modules.
@@ -148,6 +149,14 @@ public interface PythonCore extends ParserErrorCallback {
             return LIB_GRAALPYTHON;
         }
         return coreHome;
+    }
+
+    @TruffleBoundary
+    public static String getNativeModuleHome(TruffleLanguage.Env env) {
+        if (NATIVE_MODULE_HOME != null) {
+            return NATIVE_MODULE_HOME;
+        }
+        return getCoreHome(env);
     }
 
     @TruffleBoundary

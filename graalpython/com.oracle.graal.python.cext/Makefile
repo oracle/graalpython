@@ -47,7 +47,7 @@ else
 SO_EXT=.so
 endif
 
-LIBDIR=${VPATH}/../lib-graalpython
+LIBDIR=lib-graalpython
 TARGET_LIB=${LIBDIR}/${PLATFORM}/capi${SO_EXT}
 
 SOURCE_FILES=$(wildcard ${VPATH}/src/*.c)
