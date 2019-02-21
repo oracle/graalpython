@@ -177,6 +177,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         sys.setAttribute("graal_python_stdlib_home", PythonOptions.getOption(context, PythonOptions.StdLibHome));
         sys.setAttribute("graal_python_opaque_filesystem", PythonOptions.getOption(context, PythonOptions.OpaqueFilesystem));
         sys.setAttribute("graal_python_opaque_filesystem_prefix", PythonOptions.getOption(context, PythonOptions.OpaqueFilesystemPrefixes));
+        sys.setAttribute("graal_python_unbuffered_io", PythonOptions.getOption(context, PythonOptions.UnbufferedIO));
         sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
                         !PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // debug

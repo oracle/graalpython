@@ -71,6 +71,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean noSite = false;
     private boolean stdinIsInteractive = System.console() != null;
     private boolean runLLI = false;
+    private boolean unbufferedIO = false;
     private VersionAction versionAction = VersionAction.None;
     private String sulongLibraryPath = null;
     private List<String> givenArguments;
@@ -184,8 +185,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     inputArgs.remove("-compile-truffle-immediately");
                     break;
                 case "-u":
-                    // TODO we currently don't support this option, but needs to be consumed
-                    // due pip/wheel installer.
+                    unbufferedIO = true;
                     break;
                 default:
                     if (!arg.startsWith("-")) {
@@ -340,6 +340,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             inspectFlag = inspectFlag || System.getenv("PYTHONINSPECT") != null;
             noUserSite = noUserSite || System.getenv("PYTHONNOUSERSITE") != null;
             verboseFlag = verboseFlag || System.getenv("PYTHONVERBOSE") != null;
+            unbufferedIO = unbufferedIO || System.getenv("PYTHONUNBUFFERED") != null;
         }
 
         // The unlikely separator is used because options need to be strings. See
@@ -359,6 +360,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.NoUserSiteFlag", Boolean.toString(noUserSite));
         contextBuilder.option("python.NoSiteFlag", Boolean.toString(noSite));
         contextBuilder.option("python.IgnoreEnvironmentFlag", Boolean.toString(ignoreEnv));
+        contextBuilder.option("python.UnbufferedIO", Boolean.toString(unbufferedIO));
 
         sulongLibraryPath = System.getenv("SULONG_LIBRARY_PATH");
         if (sulongLibraryPath != null) {
@@ -513,8 +515,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "-S     : don't imply 'import site' on initialization\n" +
                         // "-t : issue warnings about inconsistent tab usage (-tt: issue errors)\n"
                         // +
-                        // "-u : unbuffered binary stdout and stderr; also PYTHONUNBUFFERED=x\n" +
-                        // " see man page for details on internal buffering relating to '-u'\n" +
+                        "-u     : unbuffered binary stdout and stderr; also PYTHONUNBUFFERED=x\n" +
                         "-v     : verbose (trace import statements); also PYTHONVERBOSE=x\n" +
                         "         can be supplied multiple times to increase verbosity\n" +
                         "-V     : print the Python version number and exit (also --version)\n" +

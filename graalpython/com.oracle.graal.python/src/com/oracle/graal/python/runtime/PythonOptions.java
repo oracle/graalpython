@@ -84,6 +84,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -v flag. Turn on verbose mode.") //
     public static final OptionKey<Boolean> VerboseFlag = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -u flag. Force stdout and stderr to be unbuffered.") //
+    public static final OptionKey<Boolean> UnbufferedIO = new OptionKey<>(false);
+
     @Option(category = OptionCategory.DEBUG, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
     public static final OptionKey<Boolean> ExposeInternalSources = new OptionKey<>(false);
 
