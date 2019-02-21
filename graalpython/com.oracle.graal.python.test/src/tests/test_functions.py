@@ -196,9 +196,44 @@ def test_code_change():
     def foo():
         return "foo"
 
-    def bar():
-        return "bar"
+    def bar(a):
+        return "bar" + str(a)
 
     assert foo() == "foo"
     foo.__code__ = bar.__code__
-    assert foo() == "bar"
+    assert foo(1) == "bar1"
+    assert_raises(TypeError, foo)
+
+
+def test_code_marshal_with_freevars():
+    import marshal
+    def foo():
+        x,y = 1,2
+        def bar():
+            return x,y
+        return bar
+
+    def baz():
+        x,y = 2,3
+        def bar():
+            return y,x
+        return bar
+
+    foobar_str = marshal.dumps(foo().__code__)
+    print(foobar_str)
+    foobar_code = marshal.loads(foobar_str)
+    assert_raises(TypeError, exec, foobar_code)
+
+    bazbar = baz()
+    assert bazbar() == (3,2)
+
+    def assign_code(x, y):
+        if isinstance(y, type(assign_code)):
+            x.__code__ = y.__code__
+        else:
+            x.__code__ = y
+
+    assert_raises(ValueError, assign_code, foo, bazbar)
+    assert_raises(ValueError, assign_code, foo, foobar_code)
+    bazbar.__code__ = foobar_code
+    assert bazbar() == (2,3)

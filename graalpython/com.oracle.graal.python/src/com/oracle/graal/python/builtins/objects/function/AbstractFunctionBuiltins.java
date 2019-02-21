@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLOSURE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__GLOBALS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
@@ -45,7 +44,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -57,7 +55,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -227,28 +224,6 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         @Specialization
         Object getModule(PBuiltinFunction self, Object value) {
             throw raise(AttributeError, "'builtin_function_or_method' object has no attribute '__annotations__'");
-        }
-    }
-
-    @Builtin(name = __CODE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
-    @GenerateNodeFactory
-    public abstract static class GetCodeNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
-        Object getCode(PFunction self, @SuppressWarnings("unused") PNone none) {
-            return self.getCode();
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!isBuiltinFunction(self)")
-        Object setCode(PFunction self, PCode code) {
-            self.setCode(code);
-            return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        Object builtinCode(PBuiltinFunction self, Object none) {
-            throw raise(AttributeError, "'builtin_function_or_method' object has no attribute '__code__'");
         }
     }
 

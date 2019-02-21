@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.function;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__KWDEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -42,6 +43,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltinsFactory.GetFunctionDefaultsNodeFactory;
@@ -240,4 +242,24 @@ public class FunctionBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __CODE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetCodeNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = {"isNoValue(none)"})
+        Object getCode(PFunction self, @SuppressWarnings("unused") PNone none) {
+            return self.getCode();
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        Object setCode(PFunction self, PCode code) {
+            int closureLength = self.getClosure().length;
+            int freeVarsLength = code.getFreeVars().length;
+            if (closureLength != freeVarsLength) {
+                throw raise(PythonBuiltinClassType.ValueError, "%s() requires a code object with %d free vars, not %d", self.getName(), closureLength, freeVarsLength);
+            }
+            self.setCode(code);
+            return PNone.NONE;
+        }
+    }
 }

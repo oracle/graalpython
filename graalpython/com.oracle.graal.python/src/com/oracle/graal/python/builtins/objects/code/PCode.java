@@ -76,9 +76,10 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PCode extends PythonBuiltinObject {
-    private final long FLAG_POS_GENERATOR = 5;
-    private final long FLAG_POS_VAR_ARGS = 2;
-    private final long FLAG_POS_VAR_KW_ARGS = 3;
+    private static final String[] EMPTY_STRINGS = new String[0];
+    private final static long FLAG_POS_GENERATOR = 5;
+    private final static long FLAG_POS_VAR_ARGS = 2;
+    private final static long FLAG_POS_VAR_KW_ARGS = 3;
 
     private final RootCallTarget callTarget;
     private final Arity arity;
@@ -149,8 +150,8 @@ public final class PCode extends PythonBuiltinObject {
         // Derive a new call target from the code string, if we can
         FrameDescriptor frameDescriptor = new FrameDescriptor();
         MaterializedFrame frame = Truffle.getRuntime().createMaterializedFrame(new Object[0], frameDescriptor);
-        for (int i = 0; i < cellvars.length; i++) {
-            Object ident = cellvars[i];
+        for (int i = 0; i < freevars.length; i++) {
+            Object ident = freevars[i];
             FrameSlot slot = frameDescriptor.addFrameSlot(ident);
             frameDescriptor.setFrameSlotKind(slot, FrameSlotKind.Object);
             frame.setObject(slot, new PCell());
@@ -185,8 +186,8 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static Set<String> asSet(String[] values) {
-        return (values != null) ? new HashSet<>(Arrays.asList(values)) : new HashSet<>();
+    private static Set<Object> asSet(Object[] objects) {
+        return (objects != null) ? new HashSet<>(Arrays.asList(objects)) : new HashSet<>();
     }
 
     private static String[] extractFreeVars(RootNode rootNode) {
@@ -197,7 +198,7 @@ public final class PCode extends PythonBuiltinObject {
         } else if (rootNode instanceof ModuleRootNode) {
             return ((ModuleRootNode) rootNode).getFreeVars();
         } else {
-            return null;
+            return EMPTY_STRINGS;
         }
     }
 
@@ -206,10 +207,8 @@ public final class PCode extends PythonBuiltinObject {
             return ((FunctionRootNode) rootNode).getCellVars();
         } else if (rootNode instanceof GeneratorFunctionRootNode) {
             return ((GeneratorFunctionRootNode) rootNode).getCellVars();
-        } else if (rootNode instanceof ModuleRootNode) {
-            return new String[0];
         } else {
-            return null;
+            return EMPTY_STRINGS;
         }
     }
 
@@ -221,7 +220,7 @@ public final class PCode extends PythonBuiltinObject {
         } else if (funcRootNode instanceof ModuleRootNode) {
             return funcRootNode.getName();
         } else {
-            return null;
+            return "<unknown source>";
         }
     }
 
@@ -272,34 +271,15 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private void extractArgStats() {
-        // 0x20 - generator
-        this.flags = 0;
-        RootNode funcRootNode = getRootNode();
-        if (funcRootNode instanceof GeneratorFunctionRootNode) {
-            flags |= (1 << FLAG_POS_GENERATOR);
-            funcRootNode = ((GeneratorFunctionRootNode) funcRootNode).getFunctionRootNode();
-        }
-
-        // 0x04 - *arguments
-        if (NodeUtil.findAllNodeInstances(funcRootNode, ReadVarArgsNode.class).size() == 1) {
-            flags |= (1 << FLAG_POS_VAR_ARGS);
-        }
-        // 0x08 - **keywords
-        if (NodeUtil.findAllNodeInstances(funcRootNode, ReadVarKeywordsNode.class).size() == 1) {
-            flags |= (1 << FLAG_POS_VAR_KW_ARGS);
-        }
-
-        this.freevars = extractFreeVars(getRootNode());
-        this.cellvars = extractCellVars(getRootNode());
-        Set<String> freeVarsSet = asSet((String[]) freevars);
-        Set<String> cellVarsSet = asSet((String[]) cellvars);
+    private static Object[] extractVarnames(RootNode rootNode, String[] parameterIds, String[] keywordNames, Object[] freeVars, Object[] cellVars) {
+        Set<Object> freeVarsSet = asSet(freeVars);
+        Set<Object> cellVarsSet = asSet(cellVars);
 
         ArrayList<String> varNameList = new ArrayList<>(); // must be ordered!
-        varNameList.addAll(Arrays.asList(arity.getParameterIds()));
-        varNameList.addAll(Arrays.asList(arity.getKeywordNames()));
+        varNameList.addAll(Arrays.asList(parameterIds));
+        varNameList.addAll(Arrays.asList(keywordNames));
 
-        for (Object identifier : getRootNode().getFrameDescriptor().getIdentifiers()) {
+        for (Object identifier : rootNode.getFrameDescriptor().getIdentifiers()) {
             if (identifier instanceof String) {
                 String varName = (String) identifier;
 
@@ -315,8 +295,29 @@ public final class PCode extends PythonBuiltinObject {
             }
         }
 
-        this.varnames = varNameList.toArray();
-        this.nlocals = varNameList.size();
+        return varNameList.toArray();
+    }
+
+    @TruffleBoundary
+    private static int extractFlags(RootNode rootNode) {
+        // 0x20 - generator
+        int flags = 0;
+        RootNode funcRootNode = rootNode;
+        if (funcRootNode instanceof GeneratorFunctionRootNode) {
+            flags |= (1 << FLAG_POS_GENERATOR);
+            funcRootNode = ((GeneratorFunctionRootNode) funcRootNode).getFunctionRootNode();
+        }
+
+        // 0x04 - *arguments
+        if (NodeUtil.findFirstNodeInstance(funcRootNode, ReadVarArgsNode.class) != null) {
+            flags |= (1 << FLAG_POS_VAR_ARGS);
+        }
+        // 0x08 - **keywords
+        if (NodeUtil.findFirstNodeInstance(funcRootNode, ReadVarKeywordsNode.class) != null) {
+            flags |= (1 << FLAG_POS_VAR_KW_ARGS);
+        }
+
+        return flags;
     }
 
     @TruffleBoundary
@@ -338,14 +339,14 @@ public final class PCode extends PythonBuiltinObject {
 
     public Object[] getFreeVars() {
         if (freevars == null) {
-            extractArgStats();
+            freevars = extractFreeVars(getRootNode());
         }
         return freevars;
     }
 
     public Object[] getCellVars() {
-        if (freevars == null) {
-            extractArgStats();
+        if (cellvars == null) {
+            cellvars = extractCellVars(getRootNode());
         }
         return cellvars;
     }
@@ -385,7 +386,7 @@ public final class PCode extends PythonBuiltinObject {
 
     public int getNlocals() {
         if (nlocals == -1) {
-            extractArgStats();
+            nlocals = getVarnames().length;
         }
         return nlocals;
     }
@@ -399,14 +400,14 @@ public final class PCode extends PythonBuiltinObject {
 
     public int getFlags() {
         if (flags == -1) {
-            extractArgStats();
+            flags = extractFlags(getRootNode());
         }
         return flags;
     }
 
     public Object[] getVarnames() {
         if (varnames == null) {
-            extractArgStats();
+            varnames = extractVarnames(getRootNode(), getArity().getParameterIds(), getArity().getKeywordNames(), getFreeVars(), getCellVars());
         }
         return varnames;
     }

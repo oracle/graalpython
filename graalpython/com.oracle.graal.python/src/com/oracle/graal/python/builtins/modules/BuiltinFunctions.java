@@ -119,7 +119,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
-import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
@@ -597,6 +596,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EvalNode extends PythonBuiltinNode {
         protected final String funcname = "eval";
+        private final BranchProfile hasFreeVarsBranch = BranchProfile.create();
         @Child protected CompileNode compileNode = CompileNode.create(false);
         @Child private IndirectCallNode indirectCallNode = IndirectCallNode.create();
         @Child private HasInheritedAttributeNode hasGetItemNode;
@@ -607,6 +607,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 hasGetItemNode = insert(HasInheritedAttributeNode.create(SpecialMethodNames.__GETITEM__));
             }
             return hasGetItemNode;
+        }
+
+        protected void assertNoFreeVars(PCode code) {
+            Object[] freeVars = code.getFreeVars();
+            if (freeVars.length > 0) {
+                hasFreeVarsBranch.enter();
+                throw raise(PythonBuiltinClassType.TypeError, "code object passed to eval/exec may not contain free variables");
+            }
         }
 
         protected boolean isMapping(Object object) {
@@ -623,7 +631,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected PCode createAndCheckCode(Object source) {
-            return compileNode.execute(source, "<string>", "eval", 0, false, -1);
+            PCode code = compileNode.execute(source, "<string>", "eval", 0, false, -1);
+            assertNoFreeVars(code);
+            return code;
         }
 
         private static void inheritGlobals(Frame callerFrame, Object[] args) {
@@ -724,23 +734,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = EXEC, minNumOfPositionalArgs = 1, parameterNames = {"source", "globals", "locals"})
     @GenerateNodeFactory
     abstract static class ExecNode extends EvalNode {
-        private final BranchProfile hasFreeVars = BranchProfile.create();
-
-        private void assertNoFreeVars(PCode code) {
-            RootNode rootNode = code.getRootNode();
-            if (rootNode instanceof PClosureRootNode && ((PClosureRootNode) rootNode).hasFreeVars()) {
-                hasFreeVars.enter();
-                throw raise(PythonBuiltinClassType.TypeError, "code object passed to exec() may not contain free variables");
-            }
-        }
-
-        @Override
-        protected PCode createAndCheckCode(Object source) {
-            PCode code = compileNode.execute(source, "<string>", "exec", 0, false, -1);
-            assertNoFreeVars(code);
-            return code;
-        }
-
         protected abstract Object executeInternal(VirtualFrame frame);
 
         @Override
