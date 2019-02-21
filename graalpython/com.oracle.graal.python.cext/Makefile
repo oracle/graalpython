@@ -75,6 +75,7 @@ rebuild:
 	$(MAKE) -C ${VPATH} ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS}
 
 ${TARGET_LIB}: ${OBJ_FILES}
+	$(QUIETLY) mkdir -p $(dir $@)
 	$(QUIETLY) ${CLANG} -fPIC -shared -o $@ $+
 
 ${PLATFORM}/%.o: ${VPATH}/src/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h ${INCLUDE_FILES}
@@ -85,7 +86,7 @@ modules/${PLATFORM}/%.o: modules/%.c Makefile src/capi.h ${INCLUDE_FILES}
 	$(QUIETLY) mkdir -p $(dir $@)
 	$(QUIETLY) ${CLANG} ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
 
-${LIBDIR}/modules/${PLATFORM}/%.so: modules/${PLATFORM}/%.o
+${LIBDIR}/modules/${PLATFORM}/%${SO_EXT}: modules/${PLATFORM}/%.o
 	$(QUIETLY) mkdir -p $(dir $@)
 	$(QUIETLY) ${CLANG} -fPIC -shared ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ $<
 
