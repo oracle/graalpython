@@ -47,9 +47,15 @@ import java.util.List;
 import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -127,6 +133,7 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
+    @TruffleBoundary
     public PCode(LazyPythonClass cls, int argcount, int kwonlyargcount,
                     int nlocals, int stacksize, int flags,
                     byte[] codestring, Object[] constants, Object[] names,
@@ -150,15 +157,60 @@ public final class PCode extends PythonBuiltinObject {
         this.cellvars = cellvars;
 
         // Derive a new call target from the code string, if we can
-        FrameDescriptor frameDescriptor = new FrameDescriptor();
-        MaterializedFrame frame = Truffle.getRuntime().createMaterializedFrame(new Object[0], frameDescriptor);
-        for (int i = 0; i < freevars.length; i++) {
-            Object ident = freevars[i];
-            FrameSlot slot = frameDescriptor.addFrameSlot(ident);
-            frameDescriptor.setFrameSlotKind(slot, FrameSlotKind.Object);
-            frame.setObject(slot, new PCell());
+        RootNode rootNode = null;
+        if ((flags & FLAG_MODULE) == 0) {
+            // we're looking for the function, not the module
+            String funcdef;
+            if (freevars.length > 0) {
+                // we build an outer function to provide the initial scoping
+                String outernme = "_____" + System.nanoTime();
+                StringBuilder sb = new StringBuilder();
+                sb.append("def ").append(outernme).append("():\n");
+                for (Object freevar : freevars) {
+                    String v;
+                    if (freevar instanceof PString) {
+                        v = ((PString) freevar).getValue();
+                    } else if (freevar instanceof String) {
+                        v = (String) freevar;
+                    } else {
+                        continue;
+                    }
+                    sb.append(" ").append(v).append(" = None\n");
+                }
+                sb.append(" global ").append(name).append("\n");
+                sb.append(" ").append(new String(codestring));
+                sb.append("\n\n").append(outernme).append("()");
+                funcdef = sb.toString();
+            } else {
+                funcdef = new String(codestring);
+            }
+
+            rootNode = (RootNode) PythonLanguage.getCore().getParser().parse(ParserMode.File, PythonLanguage.getCore(), Source.newBuilder("python", funcdef, name).build(), null);
+            Object[] args = PArguments.create();
+            PDict globals = PythonLanguage.getCore().factory().createDict();
+            PArguments.setGlobals(args, globals);
+            Truffle.getRuntime().createCallTarget(rootNode).call(args);
+            Object function = globals.getDictStorage().getItem(name, HashingStorage.getSlowPathEquivalence(name));
+            if (function instanceof PFunction) {
+                rootNode = ((PFunction) function).getFunctionRootNode();
+            } else {
+                throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "got an invalid codestring trying to create a function code object");
+            }
+        } else {
+            MaterializedFrame frame = null;
+            if (freevars.length > 0) {
+                FrameDescriptor frameDescriptor = new FrameDescriptor();
+                frame = Truffle.getRuntime().createMaterializedFrame(new Object[0], frameDescriptor);
+                for (int i = 0; i < freevars.length; i++) {
+                    Object ident = freevars[i];
+                    FrameSlot slot = frameDescriptor.addFrameSlot(ident);
+                    frameDescriptor.setFrameSlotKind(slot, FrameSlotKind.Object);
+                    frame.setObject(slot, new PCell());
+                }
+            }
+            rootNode = (RootNode) PythonLanguage.getCore().getParser().parse(ParserMode.File, PythonLanguage.getCore(), Source.newBuilder("python", new String(codestring), name).build(), frame);
+            assert rootNode instanceof ModuleRootNode;
         }
-        RootNode rootNode = (RootNode) PythonLanguage.getCore().getParser().parse(ParserMode.File, PythonLanguage.getCore(), Source.newBuilder("python", new String(codestring), name).build(), frame);
         this.callTarget = Truffle.getRuntime().createCallTarget(rootNode);
 
         char paramNom = 'A';
