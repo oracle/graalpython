@@ -253,7 +253,7 @@ public class FunctionBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object setCode(PFunction self, PCode code) {
-            int closureLength = self.getClosure().length;
+            int closureLength = self.getClosure() == null ? 0 : self.getClosure().length;
             int freeVarsLength = code.getFreeVars().length;
             if (closureLength != freeVarsLength) {
                 throw raise(PythonBuiltinClassType.ValueError, "%s() requires a code object with %d free vars, not %d", self.getName(), closureLength, freeVarsLength);
