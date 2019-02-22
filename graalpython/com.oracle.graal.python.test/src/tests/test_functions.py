@@ -220,7 +220,6 @@ def test_code_marshal_with_freevars():
         return bar
 
     foobar_str = marshal.dumps(foo().__code__)
-    print(foobar_str)
     foobar_code = marshal.loads(foobar_str)
     assert_raises(TypeError, exec, foobar_code)
 
