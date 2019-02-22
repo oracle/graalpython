@@ -28,9 +28,9 @@ package com.oracle.graal.python.parser;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
@@ -69,9 +69,9 @@ public final class ScopeInfo {
      * Symbols which are local variables but are closed over in nested scopes
      */
     // variables that are referenced in enclosed contexts
-    private LinkedHashSet<String> cellVars;
+    private TreeSet<String> cellVars;
     // variables that are referenced from enclosing contexts
-    private LinkedHashSet<String> freeVars;
+    private TreeSet<String> freeVars;
 
     /**
      * An optional field that stores translated nodes of default argument values.
@@ -174,7 +174,7 @@ public final class ScopeInfo {
 
     public void addCellVar(String identifier, boolean createFrameSlot) {
         if (cellVars == null) {
-            cellVars = new LinkedHashSet<>();
+            cellVars = new TreeSet<>();
         }
         cellVars.add(identifier);
         if (createFrameSlot) {
@@ -188,7 +188,7 @@ public final class ScopeInfo {
 
     protected void addFreeVar(String identifier, boolean createFrameSlot) {
         if (freeVars == null) {
-            freeVars = new LinkedHashSet<>();
+            freeVars = new TreeSet<>();
         }
         freeVars.add(identifier);
         if (createFrameSlot) {
