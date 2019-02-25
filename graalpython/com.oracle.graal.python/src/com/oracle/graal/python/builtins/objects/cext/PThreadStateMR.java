@@ -40,32 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PThreadStateMRFactory.GetTypeIDNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PThreadStateMRFactory.ThreadStateWriteNodeGen;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -92,107 +79,6 @@ public class PThreadStateMR {
                 getTypeIDNode = insert(GetTypeIDNode.create());
             }
             return getTypeIDNode.execute();
-        }
-    }
-
-    @Resolve(message = "WRITE")
-    abstract static class WriteNode extends Node {
-        @Child private ThreadStateWriteNode writeNode = ThreadStateWriteNodeGen.create();
-        @Child private ToJavaNode toJavaNode = ToJavaNode.create();
-        @Child private ToSulongNode toSulongNode = ToSulongNode.create();
-
-        public Object access(@SuppressWarnings("unused") PThreadState object, String key, Object value) {
-            Object result = writeNode.execute(key, toJavaNode.execute(value));
-            return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
-        }
-    }
-
-    @ImportStatic(PThreadStateMR.class)
-    abstract static class ThreadStateWriteNode extends PNodeWithContext {
-        public abstract Object execute(Object key, Object value);
-
-        @Specialization(guards = "isCurrentExceptionMember(key)")
-        PNone doResetCurException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value) {
-            getContext().setCurrentException(null);
-            return PNone.NO_VALUE;
-        }
-
-        @Specialization(guards = "isCaughtExceptionMember(key)")
-        PNone doResetCaughtException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value) {
-            getContext().setCaughtException(null);
-            return PNone.NO_VALUE;
-        }
-
-        @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
-        PythonClass doCurExcType(@SuppressWarnings("unused") String key, PythonClass value) {
-            setCurrentException(factory().createBaseException(value));
-            return value;
-        }
-
-        @Specialization(guards = "eq(key, CUR_EXC_VALUE)")
-        PBaseException doCurExcValue(@SuppressWarnings("unused") String key, PBaseException value) {
-            setCurrentException(value);
-            return value;
-        }
-
-        @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
-        PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key, PTraceback value) {
-            setCurrentException(value.getException());
-            return value;
-        }
-
-        @Specialization(guards = "eq(key, EXC_TYPE)")
-        PythonClass doExcType(@SuppressWarnings("unused") String key, PythonClass value) {
-            setCaughtException(factory().createBaseException(value));
-            return value;
-        }
-
-        @Specialization(guards = "eq(key, EXC_VALUE)")
-        PBaseException doExcValue(@SuppressWarnings("unused") String key, PBaseException value) {
-            setCaughtException(value);
-            return value;
-        }
-
-        @Specialization(guards = "eq(key, EXC_TRACEBACK)")
-        PTraceback doExcTraceback(@SuppressWarnings("unused") String key, PTraceback value) {
-            setCaughtException(value.getException());
-            return value;
-        }
-
-        private void setCurrentException(PBaseException exceptionObject) {
-            try {
-                throw raise(exceptionObject);
-            } catch (PException e) {
-                exceptionObject.reifyException();
-                getContext().setCurrentException(e);
-            }
-        }
-
-        private void setCaughtException(PBaseException exceptionObject) {
-            try {
-                throw raise(exceptionObject);
-            } catch (PException e) {
-                exceptionObject.reifyException();
-                getContext().setCurrentException(e);
-            }
-        }
-
-        @Fallback
-        @TruffleBoundary
-        Object doGeneric(Object key, @SuppressWarnings("unused") Object value) {
-            throw UnknownIdentifierException.raise(key.toString());
-        }
-
-        protected static boolean eq(String key, String expected) {
-            return expected.equals(key);
-        }
-
-        protected static boolean isCurrentExceptionMember(String key) {
-            return eq(key, CUR_EXC_TYPE) || eq(key, CUR_EXC_VALUE) || eq(key, CUR_EXC_TRACEBACK);
-        }
-
-        protected static boolean isCaughtExceptionMember(String key) {
-            return eq(key, EXC_TYPE) || eq(key, EXC_VALUE) || eq(key, EXC_TRACEBACK);
         }
     }
 

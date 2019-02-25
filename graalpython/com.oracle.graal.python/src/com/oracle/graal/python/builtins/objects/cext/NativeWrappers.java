@@ -2149,5 +2149,160 @@ public abstract class NativeWrappers {
                 return expected.equals(key);
             }
         }
+
+        // WRITE
+        @ExportMessage
+        @Override
+        protected boolean isMemberModifiable(String member) {
+            switch (member) {
+                case CUR_EXC_TYPE:
+                case CUR_EXC_VALUE:
+                case CUR_EXC_TRACEBACK:
+                case EXC_TYPE:
+                case EXC_VALUE:
+                case EXC_TRACEBACK:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        @ExportMessage
+        @Override
+        protected boolean isMemberInsertable(String member) {
+            // TODO: cbasca, fangerer is this true ?
+            switch (member) {
+                case CUR_EXC_TYPE:
+                case CUR_EXC_VALUE:
+                case CUR_EXC_TRACEBACK:
+                case EXC_TYPE:
+                case EXC_VALUE:
+                case EXC_TRACEBACK:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        @ExportMessage
+        protected void writeMember(String member, Object value,
+                                   @Cached.Exclusive @Cached(allowUncached = true) WriteNode writeNode) {
+            writeNode.execute(this, member, value);
+        }
+
+        @ExportMessage
+        @Override
+        protected boolean isMemberRemovable(String member) {
+            return false;
+        }
+
+        @ExportMessage
+        @Override
+        protected void removeMember(String member) throws UnsupportedMessageException, UnknownIdentifierException {
+            throw UnsupportedMessageException.create();
+        }
+
+        abstract static class WriteNode extends Node {
+            public abstract Object execute(PThreadState object, String key, Object value);
+
+            @Specialization
+            public Object execute(@SuppressWarnings("unused") PThreadState object, String key, Object value,
+                      @Cached.Exclusive @Cached ThreadStateWriteNode writeNode,
+                      @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
+                      @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) {
+                Object result = writeNode.execute(key, toJavaNode.execute(value));
+                return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
+            }
+        }
+
+        @ImportStatic(PThreadStateMR.class)
+        abstract static class ThreadStateWriteNode extends PNodeWithContext {
+            public abstract Object execute(Object key, Object value);
+
+            @Specialization(guards = "isCurrentExceptionMember(key)")
+            PNone doResetCurException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value) {
+                getContext().setCurrentException(null);
+                return PNone.NO_VALUE;
+            }
+
+            @Specialization(guards = "isCaughtExceptionMember(key)")
+            PNone doResetCaughtException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value) {
+                getContext().setCaughtException(null);
+                return PNone.NO_VALUE;
+            }
+
+            @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
+            PythonClass doCurExcType(@SuppressWarnings("unused") String key, PythonClass value) {
+                setCurrentException(factory().createBaseException(value));
+                return value;
+            }
+
+            @Specialization(guards = "eq(key, CUR_EXC_VALUE)")
+            PBaseException doCurExcValue(@SuppressWarnings("unused") String key, PBaseException value) {
+                setCurrentException(value);
+                return value;
+            }
+
+            @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
+            PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key, PTraceback value) {
+                setCurrentException(value.getException());
+                return value;
+            }
+
+            @Specialization(guards = "eq(key, EXC_TYPE)")
+            PythonClass doExcType(@SuppressWarnings("unused") String key, PythonClass value) {
+                setCaughtException(factory().createBaseException(value));
+                return value;
+            }
+
+            @Specialization(guards = "eq(key, EXC_VALUE)")
+            PBaseException doExcValue(@SuppressWarnings("unused") String key, PBaseException value) {
+                setCaughtException(value);
+                return value;
+            }
+
+            @Specialization(guards = "eq(key, EXC_TRACEBACK)")
+            PTraceback doExcTraceback(@SuppressWarnings("unused") String key, PTraceback value) {
+                setCaughtException(value.getException());
+                return value;
+            }
+
+            private void setCurrentException(PBaseException exceptionObject) {
+                try {
+                    throw raise(exceptionObject);
+                } catch (PException e) {
+                    exceptionObject.reifyException();
+                    getContext().setCurrentException(e);
+                }
+            }
+
+            private void setCaughtException(PBaseException exceptionObject) {
+                try {
+                    throw raise(exceptionObject);
+                } catch (PException e) {
+                    exceptionObject.reifyException();
+                    getContext().setCurrentException(e);
+                }
+            }
+
+            @Fallback
+            @TruffleBoundary
+            Object doGeneric(Object key, @SuppressWarnings("unused") Object value) {
+                throw UnknownIdentifierException.raise(key.toString());
+            }
+
+            protected static boolean eq(String key, String expected) {
+                return expected.equals(key);
+            }
+
+            protected static boolean isCurrentExceptionMember(String key) {
+                return eq(key, CUR_EXC_TYPE) || eq(key, CUR_EXC_VALUE) || eq(key, CUR_EXC_TRACEBACK);
+            }
+
+            protected static boolean isCaughtExceptionMember(String key) {
+                return eq(key, EXC_TYPE) || eq(key, EXC_VALUE) || eq(key, EXC_TRACEBACK);
+            }
+        }
+
     }
 }
