@@ -38,6 +38,7 @@ import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public class FunctionDefinitionNode extends ExpressionDefinitionNode {
@@ -67,13 +68,14 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        Object[] defaultValues = null;
-        if (defaults != null) {
-            defaultValues = new Object[defaults.length];
-            for (int i = 0; i < defaults.length; i++) {
-                defaultValues[i] = defaults[i].execute(frame);
-            }
-        }
+        Object[] defaultValues = computeDefaultValues(frame);
+        PKeyword[] kwDefaultValues = computeKwDefaultValues(frame);
+        PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
+        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, callTarget, PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure));
+    }
+
+    @ExplodeLoop
+    private PKeyword[] computeKwDefaultValues(VirtualFrame frame) {
         PKeyword[] kwDefaultValues = null;
         if (kwDefaults != null) {
             kwDefaultValues = new PKeyword[kwDefaults.length];
@@ -81,8 +83,19 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
                 kwDefaultValues[i] = new PKeyword(kwDefaults[i].name, kwDefaults[i].execute(frame));
             }
         }
-        PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, callTarget, PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure));
+        return kwDefaultValues;
+    }
+
+    @ExplodeLoop
+    private Object[] computeDefaultValues(VirtualFrame frame) {
+        Object[] defaultValues = null;
+        if (defaults != null) {
+            defaultValues = new Object[defaults.length];
+            for (int i = 0; i < defaults.length; i++) {
+                defaultValues[i] = defaults[i].execute(frame);
+            }
+        }
+        return defaultValues;
     }
 
     protected final <T extends PFunction> T withDocString(VirtualFrame frame, T func) {
