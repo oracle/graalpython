@@ -26,6 +26,7 @@
 package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -74,11 +75,30 @@ public abstract class CallDispatchNode extends Node {
 
     public abstract Object executeCall(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments);
 
-    @Specialization(guards = {"callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    // We only have a single context and this function never changed its code
+    @Specialization(guards = {"callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = {"singleContextAssumption()", "cachedCallee.getCodeStableAssumption()"})
     protected Object callFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
                     @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
         return invoke.execute(frame, arguments);
+    }
+
+    // We only have a single context and this function changed its code before, but now it's
+    // constant
+    @Specialization(guards = {"callee == cachedCallee", "callee.getCode() == cachedCode"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = {"singleContextAssumption()"})
+    protected Object callFunctionCachedCode(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
+                    @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
+                    @SuppressWarnings("unused") @Cached("callee.getCode()") PCode cachedCode,
+                    @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
+        return invoke.execute(frame, arguments);
+    }
+
+    // We have multiple contexts, don't cache the objects so that contexts can be cleaned up
+    @Specialization(guards = {"callee.getCallTarget() == ct"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    protected Object callFunctionCachedCt(VirtualFrame frame, PFunction callee, Object[] arguments,
+                    @SuppressWarnings("unused") @Cached("callee.getCallTarget()") RootCallTarget ct,
+                    @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
+        return invoke.execute(frame, callee.getGlobals(), callee.getClosure(), arguments);
     }
 
     @Specialization(guards = {"callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
@@ -86,13 +106,6 @@ public abstract class CallDispatchNode extends Node {
                     @SuppressWarnings("unused") @Cached("callee") PBuiltinFunction cachedCallee,
                     @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
         return invoke.execute(frame, arguments);
-    }
-
-    @Specialization(guards = "callee.getCallTarget() == ct", limit = "getCallSiteInlineCacheMaxDepth()")
-    protected Object callFunctionCachedCt(VirtualFrame frame, PFunction callee, Object[] arguments,
-                    @SuppressWarnings("unused") @Cached("callee.getCallTarget()") RootCallTarget ct,
-                    @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
-        return invoke.execute(frame, callee.getGlobals(), callee.getClosure(), arguments);
     }
 
     @Specialization(guards = "callee.getCallTarget() == ct", limit = "getCallSiteInlineCacheMaxDepth()")

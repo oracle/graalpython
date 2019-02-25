@@ -92,16 +92,6 @@ abstract class AbstractInvokeNode extends Node {
         }
     }
 
-    @TruffleBoundary
-    protected static Arity getArity(PFunction callee) {
-        return callee.getArity();
-    }
-
-    @TruffleBoundary
-    protected static Arity getArity(PBuiltinFunction callee) {
-        return callee.getArity();
-    }
-
     protected static boolean isBuiltin(Object callee) {
         return callee instanceof PBuiltinFunction || callee instanceof PBuiltinMethod;
     }
