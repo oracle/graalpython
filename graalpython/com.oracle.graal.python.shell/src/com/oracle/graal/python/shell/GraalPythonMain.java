@@ -512,7 +512,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "         GraalPython does not use bytecode, and thus this flag has no effect\n" +
                         "-OO    : remove doc-strings in addition to the -O optimizations;\n" +
                         "         GraalPython does not use bytecode, and thus this flag has no effect\n" +
-                        "-R     : on CPython, this enables the use of a pseudo-random salt to make\n"+
+                        "-R     : on CPython, this enables the use of a pseudo-random salt to make\n" +
                         "         hash()values of various types be unpredictable between separate\n" +
                         "         invocations of the interpreter, as a defense against denial-of-service\n" +
                         "         attacks; GraalPython always enables this and the flag has no effect.\n" +

@@ -85,10 +85,10 @@ import com.oracle.truffle.api.source.SourceSection;
 
 public final class PCode extends PythonBuiltinObject {
     private static final String[] EMPTY_STRINGS = new String[0];
-    private final static long FLAG_GENERATOR = 32;
-    private final static long FLAG_VAR_ARGS = 0x0004;
-    private final static long FLAG_VAR_KW_ARGS = 0x0008;
-    private final static long FLAG_MODULE = 0x0040; // CO_NOFREE on CPython, we only set it on
+    private static final long FLAG_GENERATOR = 32;
+    private static final long FLAG_VAR_ARGS = 0x0004;
+    private static final long FLAG_VAR_KW_ARGS = 0x0008;
+    private static final long FLAG_MODULE = 0x0040; // CO_NOFREE on CPython, we only set it on
                                                     // modules
 
     private final RootCallTarget callTarget;
