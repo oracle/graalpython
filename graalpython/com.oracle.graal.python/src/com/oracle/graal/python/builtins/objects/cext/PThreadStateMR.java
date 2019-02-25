@@ -42,18 +42,14 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PThreadState;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PThreadStateMRFactory.GetTypeIDNodeGen;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 
 @MessageResolution(receiverType = PThreadState.class)
@@ -79,51 +75,6 @@ public class PThreadStateMR {
                 getTypeIDNode = insert(GetTypeIDNode.create());
             }
             return getTypeIDNode.execute();
-        }
-    }
-
-    @Resolve(message = "TO_NATIVE")
-    abstract static class ToNativeNode extends Node {
-        @Child private NativeWrappers.PythonNativeWrapper.ToPyObjectNode toPyObjectNode = NativeWrappers.PythonNativeWrapper.ToPyObjectNode.create();
-        @Child private NativeWrappers.PythonNativeWrapper.InvalidateNativeObjectsAllManagedNode invalidateNode = NativeWrappers.PythonNativeWrapper.InvalidateNativeObjectsAllManagedNode.create();
-
-        Object access(PThreadState obj) {
-            invalidateNode.execute();
-            if (!obj.isNative()) {
-                obj.setNativePointer(toPyObjectNode.execute(obj));
-            }
-            return obj;
-        }
-    }
-
-    @Resolve(message = "IS_POINTER")
-    abstract static class IsPointerNode extends Node {
-        @Child private CExtNodes.IsPointerNode pIsPointerNode = CExtNodes.IsPointerNode.create();
-
-        boolean access(PThreadState obj) {
-            return pIsPointerNode.execute(obj);
-        }
-    }
-
-    @Resolve(message = "AS_POINTER")
-    abstract static class AsPointerNode extends Node {
-        @Child private Node asPointerNode;
-
-        long access(PySequenceArrayWrapper obj) {
-            // the native pointer object must either be a TruffleObject or a primitive
-            Object nativePointer = obj.getNativePointer();
-            if (nativePointer instanceof TruffleObject) {
-                if (asPointerNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    asPointerNode = insert(Message.AS_POINTER.createNode());
-                }
-                try {
-                    return ForeignAccess.sendAsPointer(asPointerNode, (TruffleObject) nativePointer);
-                } catch (UnsupportedMessageException e) {
-                    throw e.raise();
-                }
-            }
-            return (long) nativePointer;
         }
     }
 

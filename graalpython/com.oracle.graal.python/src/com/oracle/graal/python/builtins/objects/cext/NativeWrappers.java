@@ -2304,5 +2304,49 @@ public abstract class NativeWrappers {
             }
         }
 
+        // TO POINTER / AS POINTER / TO NATIVE
+        @ExportMessage
+        protected boolean isPointer(@Cached.Exclusive @Cached(allowUncached = true) IsPointerNode isPointerNode) {
+            return isPointerNode.execute(this);
+        }
+
+        @ExportMessage
+        public long asPointer(@CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+            Object nativePointer = this.getNativePointer();
+            if (nativePointer instanceof Long) {
+                return (long) nativePointer;
+            }
+            return interopLibrary.asPointer(nativePointer);
+        }
+
+        @ExportMessage
+        protected void toNative(@Cached.Exclusive @Cached(allowUncached = true) ToNativeNode toNativeNode) {
+            toNativeNode.execute(this);
+        }
+
+        abstract static class ToNativeNode extends Node {
+            public abstract Object execute(PThreadState obj);
+
+            @Specialization
+            Object execute(PThreadState obj,
+                       @Cached.Exclusive @Cached ToPyObjectNode toPyObjectNode,
+                       @Cached.Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+                invalidateNode.execute();
+                if (!obj.isNative()) {
+                    obj.setNativePointer(toPyObjectNode.execute(obj));
+                }
+                return obj;
+            }
+        }
+
+        abstract static class IsPointerNode extends Node {
+            public abstract boolean execute(PThreadState obj);
+
+            @Specialization
+            boolean access(PThreadState obj,
+                       @Cached.Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
+                return pIsPointerNode.execute(obj);
+            }
+        }
     }
 }
