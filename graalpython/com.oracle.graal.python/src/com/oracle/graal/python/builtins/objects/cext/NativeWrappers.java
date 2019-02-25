@@ -1001,6 +1001,199 @@ public abstract class NativeWrappers {
                  @Cached.Exclusive @Cached(allowUncached = true) ExecuteNode executeNode) {
             return executeNode.execute(this, arguments);
         }
+
+        // TO NATIVE, IS POINTER, AS POINTER
+        abstract static class ToNativeNode extends Node {
+            public abstract Object execute(PythonNativeWrapper obj);
+
+            protected boolean isClassInitNativeWrapper(PythonNativeWrapper obj) {
+                return obj instanceof PythonClassInitNativeWrapper;
+            }
+
+            @Specialization
+            public Object executeClsInit(PythonClassInitNativeWrapper obj,
+                          @Cached.Shared("toPyObjectNode") @Cached ToPyObjectNode toPyObjectNode,
+                          @Cached.Shared("invalidateNode") @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+                invalidateNode.execute();
+                if (!obj.isNative()) {
+                    obj.setNativePointer(toPyObjectNode.execute(obj));
+                }
+                return obj;
+            }
+
+            @Specialization(guards = "!isClassInitNativeWrapper(obj)")
+            public Object execute(PythonNativeWrapper obj,
+                           @Cached.Shared("toPyObjectNode") @Cached ToPyObjectNode toPyObjectNode,
+                           @Cached.Shared("invalidateNode") @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+                invalidateNode.execute();
+                if (!obj.isNative()) {
+                    obj.setNativePointer(toPyObjectNode.execute(obj));
+                }
+                return obj;
+            }
+        }
+
+        abstract static class IsPointerNode extends Node {
+            public abstract boolean execute(PythonNativeWrapper obj);
+
+            @Specialization
+            public boolean execute(PythonNativeWrapper obj,
+                            @Cached.Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
+                return pIsPointerNode.execute(obj);
+            }
+        }
+
+        abstract static class InvalidateNativeObjectsAllManagedNode extends PNodeWithContext {
+
+            public abstract void execute();
+
+            @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
+            void doValid() {
+                nativeObjectsAllManagedAssumption().invalidate();
+            }
+
+            @Specialization
+            void doInvalid() {
+            }
+
+            protected Assumption nativeObjectsAllManagedAssumption() {
+                return getContext().getNativeObjectsAllManagedAssumption();
+            }
+
+            public static InvalidateNativeObjectsAllManagedNode create() {
+                return NativeWrappersFactory.PythonNativeWrapperFactory.InvalidateNativeObjectsAllManagedNodeGen.create();
+            }
+        }
+
+        abstract static class AsPointerNode extends Node {
+            public abstract long execute(PythonNativeWrapper obj);
+
+            @Specialization
+            long execute(PythonNativeWrapper obj,
+                         @Cached.Exclusive @Cached PAsPointerNode pAsPointerNode) {
+                return pAsPointerNode.execute(obj);
+            }
+        }
+
+        abstract static class PAsPointerNode extends PNodeWithContext {
+            @Child private Node asPointerNode;
+
+            public abstract long execute(PythonNativeWrapper o);
+
+            @Specialization(guards = {"obj.isBool()", "!obj.isNative()"})
+            long doBoolNotNative(PrimitiveNativeWrapper obj,
+                                 @Cached("create()") CExtNodes.MaterializeDelegateNode materializeNode) {
+                // special case for True and False singletons
+                PInt boxed = (PInt) materializeNode.execute(obj);
+                assert obj.getNativePointer() == boxed.getNativeWrapper().getNativePointer();
+                return doFast(obj);
+            }
+
+            @Specialization(guards = {"obj.isBool()", "obj.isNative()"})
+            long doBoolNative(PrimitiveNativeWrapper obj) {
+                return doFast(obj);
+            }
+
+            @Specialization(guards = "!isBoolNativeWrapper(obj)")
+            long doFast(PythonNativeWrapper obj) {
+                // the native pointer object must either be a TruffleObject or a primitive
+                return ensureLong(obj.getNativePointer());
+            }
+
+            private long ensureLong(Object nativePointer) {
+                if (nativePointer instanceof Long) {
+                    return (long) nativePointer;
+                } else {
+                    if (asPointerNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        asPointerNode = insert(Message.AS_POINTER.createNode());
+                    }
+                    try {
+                        return ForeignAccess.sendAsPointer(asPointerNode, (TruffleObject) nativePointer);
+                    } catch (UnsupportedMessageException e) {
+                        CompilerDirectives.transferToInterpreter();
+                        throw e.raise();
+                    }
+                }
+            }
+
+            protected static boolean isBoolNativeWrapper(Object obj) {
+                return obj instanceof PrimitiveNativeWrapper && ((PrimitiveNativeWrapper) obj).isBool();
+            }
+
+            public static PAsPointerNode create() {
+                return NativeWrappersFactory.PythonNativeWrapperFactory.PAsPointerNodeGen.create();
+            }
+        }
+
+        abstract static class ToPyObjectNode extends CExtNodes.CExtBaseNode {
+            @CompilationFinal private TruffleObject PyObjectHandle_FromJavaObject;
+            @CompilationFinal private TruffleObject PyObjectHandle_FromJavaType;
+            @CompilationFinal private TruffleObject PyNoneHandle;
+            @Child private PCallNativeNode callNativeUnary;
+            @Child private PCallNativeNode callNativeBinary;
+            @Child private CExtNodes.ToSulongNode toSulongNode;
+
+            public abstract Object execute(PythonNativeWrapper wrapper);
+
+            @Specialization(guards = "isManagedPythonClass(wrapper)")
+            Object doClass(PythonClassNativeWrapper wrapper) {
+                return callUnaryIntoCapi(getPyObjectHandle_ForJavaType(), wrapper);
+            }
+
+            @Fallback
+            Object doObject(PythonNativeWrapper wrapper) {
+                return callUnaryIntoCapi(getPyObjectHandle_ForJavaObject(), wrapper);
+            }
+
+            private TruffleObject getPyObjectHandle_ForJavaType() {
+                if (PyObjectHandle_FromJavaType == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    PyObjectHandle_FromJavaType = importCAPISymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE);
+                }
+                return PyObjectHandle_FromJavaType;
+            }
+
+            private TruffleObject getPyObjectHandle_ForJavaObject() {
+                if (PyObjectHandle_FromJavaObject == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    PyObjectHandle_FromJavaObject = importCAPISymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT);
+                }
+                return PyObjectHandle_FromJavaObject;
+            }
+
+            protected static boolean isManagedPythonClass(PythonClassNativeWrapper wrapper) {
+                assert wrapper.getDelegate() instanceof PythonClass;
+                return !(wrapper.getDelegate() instanceof PythonNativeClass);
+            }
+
+            private Object callUnaryIntoCapi(TruffleObject fun, Object arg) {
+                if (callNativeUnary == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    callNativeUnary = insert(PCallNativeNode.create());
+                }
+                return callNativeUnary.execute(fun, new Object[]{arg});
+            }
+
+            public static ToPyObjectNode create() {
+                return NativeWrappersFactory.PythonNativeWrapperFactory.ToPyObjectNodeGen.create();
+            }
+        }
+
+        @ExportMessage
+        protected boolean isPointer(@Cached.Exclusive @Cached(allowUncached = true) IsPointerNode isPointerNode) {
+            return isPointerNode.execute(this);
+        }
+
+        @ExportMessage
+        protected long asPointer(@Cached.Exclusive @Cached(allowUncached = true) AsPointerNode asPointerNode) {
+            return asPointerNode.execute(this);
+        }
+
+        @ExportMessage
+        protected void toNative(@Cached.Exclusive @Cached(allowUncached = true) ToNativeNode toNativeNode) {
+            toNativeNode.execute(this);
+        }
     }
 
     public abstract static class DynamicObjectNativeWrapper extends PythonNativeWrapper {
@@ -1494,7 +1687,7 @@ public abstract class NativeWrappers {
 
         @ExportMessage
         public void toNative(@Cached.Exclusive @Cached(allowUncached = true) ToNativeArrayNode toPyObjectNode,
-                             @Cached.Exclusive @Cached(allowUncached = true) PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode invalidateNode) {
+                             @Cached.Exclusive @Cached(allowUncached = true) InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
             if (!this.isNative()) {
                 this.setNativePointer(toPyObjectNode.execute(this));
@@ -1632,13 +1825,13 @@ public abstract class NativeWrappers {
         }
 
         @ExportMessage
-        public long asPointer(@Cached.Exclusive @Cached(allowUncached = true) PythonObjectNativeWrapperMR.PAsPointerNode pAsPointerNode) {
+        public long asPointer(@Cached.Exclusive @Cached(allowUncached = true) PAsPointerNode pAsPointerNode) {
             return pAsPointerNode.execute(this);
         }
 
         @ExportMessage
-        public void toNative(@Cached.Exclusive @Cached(allowUncached = true) PythonObjectNativeWrapperMR.ToPyObjectNode toPyObjectNode,
-                             @Cached.Exclusive @Cached(allowUncached = true) PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode invalidateNode) {
+        public void toNative(@Cached.Exclusive @Cached(allowUncached = true) ToPyObjectNode toPyObjectNode,
+                             @Cached.Exclusive @Cached(allowUncached = true) InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
             if (!this.isNative()) {
                 this.setNativePointer(toPyObjectNode.execute(this));

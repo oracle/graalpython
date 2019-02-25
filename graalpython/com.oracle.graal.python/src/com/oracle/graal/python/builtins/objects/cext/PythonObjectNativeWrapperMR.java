@@ -43,35 +43,22 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MaterializeDelegateNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.GetSulongTypeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.InvalidateNativeObjectsAllManagedNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PAsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PGetDynamicTypeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.KeyInfo;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -238,182 +225,6 @@ public class PythonObjectNativeWrapperMR {
             } else {
                 throw UnsupportedMessageException.raise(Message.KEYS);
             }
-        }
-    }
-
-    @Resolve(message = "TO_NATIVE")
-    abstract static class ToNativeNode extends Node {
-        @Child private ToPyObjectNode toPyObjectNode;
-        @Child private InvalidateNativeObjectsAllManagedNode invalidateNode = InvalidateNativeObjectsAllManagedNode.create();
-
-        Object access(PythonClassInitNativeWrapper obj) {
-            invalidateNode.execute();
-            if (!obj.isNative()) {
-                obj.setNativePointer(getToPyObjectNode().execute(obj));
-            }
-            return obj;
-        }
-
-        Object access(PythonNativeWrapper obj) {
-            assert !(obj instanceof PythonClassInitNativeWrapper);
-            invalidateNode.execute();
-            if (!obj.isNative()) {
-                obj.setNativePointer(getToPyObjectNode().execute(obj));
-            }
-            return obj;
-        }
-
-        private ToPyObjectNode getToPyObjectNode() {
-            if (toPyObjectNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toPyObjectNode = insert(ToPyObjectNode.create());
-            }
-            return toPyObjectNode;
-        }
-    }
-
-    @Resolve(message = "IS_POINTER")
-    abstract static class IsPointerNode extends Node {
-        @Child private CExtNodes.IsPointerNode pIsPointerNode = CExtNodes.IsPointerNode.create();
-
-        boolean access(PythonNativeWrapper obj) {
-            return pIsPointerNode.execute(obj);
-        }
-    }
-
-    abstract static class InvalidateNativeObjectsAllManagedNode extends PNodeWithContext {
-
-        public abstract void execute();
-
-        @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
-        void doValid() {
-            nativeObjectsAllManagedAssumption().invalidate();
-        }
-
-        @Specialization
-        void doInvalid() {
-        }
-
-        protected Assumption nativeObjectsAllManagedAssumption() {
-            return getContext().getNativeObjectsAllManagedAssumption();
-        }
-
-        public static InvalidateNativeObjectsAllManagedNode create() {
-            return InvalidateNativeObjectsAllManagedNodeGen.create();
-        }
-    }
-
-    @Resolve(message = "AS_POINTER")
-    abstract static class AsPointerNode extends Node {
-        @Child private PAsPointerNode pAsPointerNode = PAsPointerNode.create();
-
-        long access(PythonNativeWrapper obj) {
-            return pAsPointerNode.execute(obj);
-        }
-    }
-
-    abstract static class PAsPointerNode extends PNodeWithContext {
-        @Child private Node asPointerNode;
-
-        public abstract long execute(PythonNativeWrapper o);
-
-        @Specialization(guards = {"obj.isBool()", "!obj.isNative()"})
-        long doBoolNotNative(PrimitiveNativeWrapper obj,
-                        @Cached("create()") MaterializeDelegateNode materializeNode) {
-            // special case for True and False singletons
-            PInt boxed = (PInt) materializeNode.execute(obj);
-            assert obj.getNativePointer() == boxed.getNativeWrapper().getNativePointer();
-            return doFast(obj);
-        }
-
-        @Specialization(guards = {"obj.isBool()", "obj.isNative()"})
-        long doBoolNative(PrimitiveNativeWrapper obj) {
-            return doFast(obj);
-        }
-
-        @Specialization(guards = "!isBoolNativeWrapper(obj)")
-        long doFast(PythonNativeWrapper obj) {
-            // the native pointer object must either be a TruffleObject or a primitive
-            return ensureLong(obj.getNativePointer());
-        }
-
-        private long ensureLong(Object nativePointer) {
-            if (nativePointer instanceof Long) {
-                return (long) nativePointer;
-            } else {
-                if (asPointerNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    asPointerNode = insert(Message.AS_POINTER.createNode());
-                }
-                try {
-                    return ForeignAccess.sendAsPointer(asPointerNode, (TruffleObject) nativePointer);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreter();
-                    throw e.raise();
-                }
-            }
-        }
-
-        protected static boolean isBoolNativeWrapper(Object obj) {
-            return obj instanceof PrimitiveNativeWrapper && ((PrimitiveNativeWrapper) obj).isBool();
-        }
-
-        public static PAsPointerNode create() {
-            return PAsPointerNodeGen.create();
-        }
-    }
-
-    abstract static class ToPyObjectNode extends CExtBaseNode {
-        @CompilationFinal private TruffleObject PyObjectHandle_FromJavaObject;
-        @CompilationFinal private TruffleObject PyObjectHandle_FromJavaType;
-        @CompilationFinal private TruffleObject PyNoneHandle;
-        @Child private PCallNativeNode callNativeUnary;
-        @Child private PCallNativeNode callNativeBinary;
-        @Child private CExtNodes.ToSulongNode toSulongNode;
-
-        public abstract Object execute(PythonNativeWrapper wrapper);
-
-        @Specialization(guards = "isManagedPythonClass(wrapper)")
-        Object doClass(PythonClassNativeWrapper wrapper) {
-            return callUnaryIntoCapi(getPyObjectHandle_ForJavaType(), wrapper);
-        }
-
-        @Fallback
-        Object doObject(PythonNativeWrapper wrapper) {
-            return callUnaryIntoCapi(getPyObjectHandle_ForJavaObject(), wrapper);
-        }
-
-        private TruffleObject getPyObjectHandle_ForJavaType() {
-            if (PyObjectHandle_FromJavaType == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyObjectHandle_FromJavaType = importCAPISymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE);
-            }
-            return PyObjectHandle_FromJavaType;
-        }
-
-        private TruffleObject getPyObjectHandle_ForJavaObject() {
-            if (PyObjectHandle_FromJavaObject == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyObjectHandle_FromJavaObject = importCAPISymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT);
-            }
-            return PyObjectHandle_FromJavaObject;
-        }
-
-        protected static boolean isManagedPythonClass(PythonClassNativeWrapper wrapper) {
-            assert wrapper.getDelegate() instanceof PythonClass;
-            return !(wrapper.getDelegate() instanceof PythonNativeClass);
-        }
-
-        private Object callUnaryIntoCapi(TruffleObject fun, Object arg) {
-            if (callNativeUnary == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNativeUnary = insert(PCallNativeNode.create());
-            }
-            return callNativeUnary.execute(fun, new Object[]{arg});
-        }
-
-        public static ToPyObjectNode create() {
-            return ToPyObjectNodeGen.create();
         }
     }
 }

@@ -50,8 +50,6 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceAr
 import com.oracle.graal.python.builtins.objects.cext.PThreadStateMRFactory.GetTypeIDNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PThreadStateMRFactory.ThreadStateReadNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PThreadStateMRFactory.ThreadStateWriteNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -329,8 +327,8 @@ public class PThreadStateMR {
 
     @Resolve(message = "TO_NATIVE")
     abstract static class ToNativeNode extends Node {
-        @Child private ToPyObjectNode toPyObjectNode = ToPyObjectNode.create();
-        @Child private InvalidateNativeObjectsAllManagedNode invalidateNode = InvalidateNativeObjectsAllManagedNode.create();
+        @Child private NativeWrappers.PythonNativeWrapper.ToPyObjectNode toPyObjectNode = NativeWrappers.PythonNativeWrapper.ToPyObjectNode.create();
+        @Child private NativeWrappers.PythonNativeWrapper.InvalidateNativeObjectsAllManagedNode invalidateNode = NativeWrappers.PythonNativeWrapper.InvalidateNativeObjectsAllManagedNode.create();
 
         Object access(PThreadState obj) {
             invalidateNode.execute();

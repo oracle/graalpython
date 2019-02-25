@@ -81,12 +81,12 @@ public abstract class ManagedMethodWrappers {
         }
 
         @ExportMessage
-        public long asPointer(@Cached.Exclusive @Cached(allowUncached = true) PythonObjectNativeWrapperMR.PAsPointerNode pAsPointerNode) {
+        public long asPointer(@Cached.Exclusive @Cached(allowUncached = true) PAsPointerNode pAsPointerNode) {
             return pAsPointerNode.execute(this);
         }
 
         @ExportMessage
-        public void toNative(@Cached.Exclusive @Cached(allowUncached = true) PythonObjectNativeWrapperMR.ToPyObjectNode toPyObjectNode) {
+        public void toNative(@Cached.Exclusive @Cached(allowUncached = true) ToPyObjectNode toPyObjectNode) {
             toPyObjectNode.execute(this);
         }
     }

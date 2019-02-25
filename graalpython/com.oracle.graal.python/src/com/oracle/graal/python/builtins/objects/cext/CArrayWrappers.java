@@ -94,7 +94,7 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         public void toNative(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.AsCharPointer asCharPointerNode,
-                             @Cached.Exclusive @Cached(allowUncached = true) PythonObjectNativeWrapperMR.InvalidateNativeObjectsAllManagedNode invalidateNode) {
+                             @Cached.Exclusive @Cached(allowUncached = true) InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
             if (!this.isNative()) {
                 this.setNativePointer(asCharPointerNode.execute(this.getDelegate()));
