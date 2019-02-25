@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -61,6 +60,7 @@ import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -191,8 +191,8 @@ public final class PBaseException extends PythonObject {
     @TruffleBoundary
     public void reifyException() {
         if (stackTrace == null && traceback == null) {
-            TruffleStackTraceElement.fillIn(exception);
-            stackTrace = new ArrayList<>(TruffleStackTraceElement.getStackTrace(exception));
+            TruffleStackTrace.fillIn(exception);
+            stackTrace = TruffleStackTrace.getStacktrace(exception);
             Iterator<TruffleStackTraceElement> iter = stackTrace.iterator();
             while (iter.hasNext()) {
                 TruffleStackTraceElement element = iter.next();

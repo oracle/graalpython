@@ -44,8 +44,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
-import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleStackTrace;
+import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -55,7 +56,7 @@ public final class ExceptionUtils {
 
     @TruffleBoundary
     public static void printPythonLikeStackTrace(PException e) {
-        List<TruffleStackTraceElement> stackTrace = TruffleStackTraceElement.getStackTrace(e);
+        List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStacktrace(e);
         ArrayList<String> stack = new ArrayList<>();
         for (TruffleStackTraceElement frame : stackTrace) {
 
