@@ -233,6 +233,7 @@ graalpython/com.oracle.graal.python.test/src/tests/test_getattribute-bimorphic-i
 graalpython/com.oracle.graal.python.test/src/tests/test_getattribute-bimorphic-inobject.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_if-class-none.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_if.py,zippy.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_itertools.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_list.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_builtin.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_mandelbrot3.py,benchmarks.copyright

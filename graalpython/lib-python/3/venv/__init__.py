@@ -135,7 +135,7 @@ class EnvBuilder:
             if sys.platform == "win32":
                 f.write(" %*")
             else:
-                f.write(" $@")
+                f.write(" \"$@\"")
 
         if sys.platform != "win32":
             os.chmod(script, 0o777)
