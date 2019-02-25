@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
@@ -48,16 +47,11 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PThreadStateMRFactory.GetTypeIDNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PThreadStateMRFactory.ThreadStateReadNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PThreadStateMRFactory.ThreadStateWriteNodeGen;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -101,17 +95,6 @@ public class PThreadStateMR {
         }
     }
 
-    @Resolve(message = "READ")
-    abstract static class ReadNode extends Node {
-        @Child private ThreadStateReadNode readNode = ThreadStateReadNodeGen.create();
-        @Child private ToSulongNode toSulongNode = ToSulongNode.create();
-
-        public Object access(@SuppressWarnings("unused") PThreadState object, String key) {
-            Object result = readNode.execute(key);
-            return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
-        }
-    }
-
     @Resolve(message = "WRITE")
     abstract static class WriteNode extends Node {
         @Child private ThreadStateWriteNode writeNode = ThreadStateWriteNodeGen.create();
@@ -121,118 +104,6 @@ public class PThreadStateMR {
         public Object access(@SuppressWarnings("unused") PThreadState object, String key, Object value) {
             Object result = writeNode.execute(key, toJavaNode.execute(value));
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
-        }
-    }
-
-    @ImportStatic(PThreadStateMR.class)
-    abstract static class ThreadStateReadNode extends PNodeWithContext {
-        @Child private GetClassNode getClassNode;
-        @Child private ReadAttributeFromObjectNode readNativeNull;
-
-        public abstract Object execute(Object key);
-
-        @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
-        PythonClass doCurExcType(@SuppressWarnings("unused") String key) {
-            PythonContext context = getContext();
-            PException currentException = context.getCurrentException();
-            if (currentException != null) {
-                PBaseException exceptionObject = currentException.getExceptionObject();
-                return getClassNode().execute(exceptionObject);
-            }
-            return null;
-        }
-
-        @Specialization(guards = "eq(key, CUR_EXC_VALUE)")
-        PBaseException doCurExcValue(@SuppressWarnings("unused") String key) {
-            PythonContext context = getContext();
-            PException currentException = context.getCurrentException();
-            if (currentException != null) {
-                PBaseException exceptionObject = currentException.getExceptionObject();
-                return exceptionObject;
-            }
-            return null;
-        }
-
-        @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
-        PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key) {
-            PythonContext context = getContext();
-            PException currentException = context.getCurrentException();
-            if (currentException != null) {
-                PBaseException exceptionObject = currentException.getExceptionObject();
-                return exceptionObject.getTraceback(factory());
-            }
-            return null;
-        }
-
-        @Specialization(guards = "eq(key, EXC_TYPE)")
-        PythonClass doExcType(@SuppressWarnings("unused") String key) {
-            PythonContext context = getContext();
-            PException currentException = context.getCaughtException();
-            if (currentException != null) {
-                PBaseException exceptionObject = currentException.getExceptionObject();
-                return getClassNode().execute(exceptionObject);
-            }
-            return null;
-        }
-
-        @Specialization(guards = "eq(key, EXC_VALUE)")
-        PBaseException doExcValue(@SuppressWarnings("unused") String key) {
-            PythonContext context = getContext();
-            PException currentException = context.getCaughtException();
-            if (currentException != null) {
-                PBaseException exceptionObject = currentException.getExceptionObject();
-                return exceptionObject;
-            }
-            return null;
-        }
-
-        @Specialization(guards = "eq(key, EXC_TRACEBACK)")
-        PTraceback doExcTraceback(@SuppressWarnings("unused") String key) {
-            PythonContext context = getContext();
-            PException currentException = context.getCaughtException();
-            if (currentException != null) {
-                PBaseException exceptionObject = currentException.getExceptionObject();
-                return exceptionObject.getTraceback(factory());
-            }
-            return null;
-        }
-
-        @Specialization(guards = "eq(key, DICT)")
-        PDict doDict(@SuppressWarnings("unused") String key) {
-            PThreadState customThreadState = getContext().getCustomThreadState();
-            PDict threadStateDict = customThreadState.getThreadStateDict();
-            if (threadStateDict == null) {
-                threadStateDict = factory().createDict();
-                customThreadState.setThreadStateDict(threadStateDict);
-            }
-            return threadStateDict;
-        }
-
-        @Specialization(guards = "eq(key, PREV)")
-        Object doPrev(@SuppressWarnings("unused") String key) {
-            return getNativeNull();
-        }
-
-        protected Object getNativeNull() {
-            if (readNativeNull == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readNativeNull = insert(ReadAttributeFromObjectNode.create());
-            }
-            Object wrapper = readNativeNull.execute(getCore().lookupBuiltinModule("python_cext"), TruffleCextBuiltins.NATIVE_NULL);
-            assert wrapper instanceof PythonNativeNull;
-            return wrapper;
-        }
-
-        protected static boolean eq(String key, String expected) {
-            return expected.equals(key);
-        }
-
-        private GetClassNode getClassNode() {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            return getClassNode;
         }
     }
 

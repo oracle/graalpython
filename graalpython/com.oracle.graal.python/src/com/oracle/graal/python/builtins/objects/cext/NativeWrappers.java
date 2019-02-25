@@ -55,6 +55,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -85,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
@@ -108,6 +111,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
@@ -1966,7 +1970,16 @@ public abstract class NativeWrappers {
 
     }
 
+    @ExportLibrary(InteropLibrary.class)
     public static class PThreadState extends PythonNativeWrapper {
+        public static final String CUR_EXC_TYPE = "curexc_type";
+        public static final String CUR_EXC_VALUE = "curexc_value";
+        public static final String CUR_EXC_TRACEBACK = "curexc_traceback";
+        public static final String EXC_TYPE = "exc_type";
+        public static final String EXC_VALUE = "exc_value";
+        public static final String EXC_TRACEBACK = "exc_traceback";
+        public static final String DICT = "dict";
+        public static final String PREV = "prev";
 
         private PDict dict;
 
@@ -1985,6 +1998,156 @@ public abstract class NativeWrappers {
 
         public void setThreadStateDict(PDict dict) {
             this.dict = dict;
+        }
+
+
+        // READ
+        @ExportMessage
+        @Override
+        boolean hasMembers() {
+            return true;
+        }
+
+        @ExportMessage
+        @Override
+        protected boolean isMemberReadable(String member) {
+            switch (member) {
+                case CUR_EXC_TYPE:
+                case CUR_EXC_VALUE:
+                case CUR_EXC_TRACEBACK:
+                case EXC_TYPE:
+                case EXC_VALUE:
+                case EXC_TRACEBACK:
+                case DICT:
+                case PREV:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        @ExportMessage
+        @Override
+        protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+            throw UnsupportedMessageException.create();
+        }
+
+        @ExportMessage
+        protected Object readMember(String member,
+                                    @Cached.Exclusive @Cached(allowUncached = true) ReadNode readNode) {
+            return readNode.execute(this, member);
+        }
+
+        abstract static class ReadNode extends Node {
+            public abstract Object execute(PThreadState object, String key);
+
+            @Specialization
+            public Object execute(@SuppressWarnings("unused") PThreadState object, String key,
+                                  @Cached.Exclusive @Cached ThreadStateReadNode readNode,
+                                  @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) {
+                Object result = readNode.execute(key);
+                return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
+            }
+        }
+
+        @ImportStatic(PThreadStateMR.class)
+        abstract static class ThreadStateReadNode extends PNodeWithContext {
+            public abstract Object execute(Object key);
+
+            @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
+            PythonClass doCurExcType(@SuppressWarnings("unused") String key,
+                             @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode) {
+                PythonContext context = getContext();
+                PException currentException = context.getCurrentException();
+                if (currentException != null) {
+                    PBaseException exceptionObject = currentException.getExceptionObject();
+                    return getClassNode.execute(exceptionObject);
+                }
+                return null;
+            }
+
+            @Specialization(guards = "eq(key, CUR_EXC_VALUE)")
+            PBaseException doCurExcValue(@SuppressWarnings("unused") String key) {
+                PythonContext context = getContext();
+                PException currentException = context.getCurrentException();
+                if (currentException != null) {
+                    PBaseException exceptionObject = currentException.getExceptionObject();
+                    return exceptionObject;
+                }
+                return null;
+            }
+
+            @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
+            PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key) {
+                PythonContext context = getContext();
+                PException currentException = context.getCurrentException();
+                if (currentException != null) {
+                    PBaseException exceptionObject = currentException.getExceptionObject();
+                    return exceptionObject.getTraceback(factory());
+                }
+                return null;
+            }
+
+            @Specialization(guards = "eq(key, EXC_TYPE)")
+            PythonClass doExcType(@SuppressWarnings("unused") String key,
+                          @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode) {
+                PythonContext context = getContext();
+                PException currentException = context.getCaughtException();
+                if (currentException != null) {
+                    PBaseException exceptionObject = currentException.getExceptionObject();
+                    return getClassNode.execute(exceptionObject);
+                }
+                return null;
+            }
+
+            @Specialization(guards = "eq(key, EXC_VALUE)")
+            PBaseException doExcValue(@SuppressWarnings("unused") String key) {
+                PythonContext context = getContext();
+                PException currentException = context.getCaughtException();
+                if (currentException != null) {
+                    PBaseException exceptionObject = currentException.getExceptionObject();
+                    return exceptionObject;
+                }
+                return null;
+            }
+
+            @Specialization(guards = "eq(key, EXC_TRACEBACK)")
+            PTraceback doExcTraceback(@SuppressWarnings("unused") String key) {
+                PythonContext context = getContext();
+                PException currentException = context.getCaughtException();
+                if (currentException != null) {
+                    PBaseException exceptionObject = currentException.getExceptionObject();
+                    return exceptionObject.getTraceback(factory());
+                }
+                return null;
+            }
+
+            @Specialization(guards = "eq(key, DICT)")
+            PDict doDict(@SuppressWarnings("unused") String key) {
+                PThreadState customThreadState = getContext().getCustomThreadState();
+                PDict threadStateDict = customThreadState.getThreadStateDict();
+                if (threadStateDict == null) {
+                    threadStateDict = factory().createDict();
+                    customThreadState.setThreadStateDict(threadStateDict);
+                }
+                return threadStateDict;
+            }
+
+            @Specialization(guards = "eq(key, PREV)")
+            Object doPrev(@SuppressWarnings("unused") String key,
+                          @Cached.Exclusive @Cached ReadAttributeFromObjectNode readNativeNull) {
+                return getNativeNull(readNativeNull);
+            }
+
+            protected Object getNativeNull(ReadAttributeFromObjectNode readNativeNull) {
+                Object wrapper = readNativeNull.execute(getCore().lookupBuiltinModule("python_cext"), TruffleCextBuiltins.NATIVE_NULL);
+                assert wrapper instanceof PythonNativeNull;
+                return wrapper;
+            }
+
+            protected static boolean eq(String key, String expected) {
+                return expected.equals(key);
+            }
         }
     }
 }
