@@ -40,12 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.GetSulongTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PGetDynamicTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -55,11 +53,8 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.KeyInfo;
-import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -188,43 +183,5 @@ public class PythonObjectNativeWrapperMR {
             return GetSulongTypeNodeGen.create();
         }
 
-    }
-
-    @Resolve(message = "KEY_INFO")
-    abstract static class KeyInfoNode extends Node {
-        public int access(Object object, Object fieldName) {
-            int info = KeyInfo.NONE;
-            if (object instanceof PythonObjectNativeWrapper) {
-                if (fieldName.equals(GP_OBJECT)) {
-                    info |= KeyInfo.READABLE;
-                } else if (fieldName instanceof String && NativeMemberNames.isValid((String) fieldName)) {
-                    info |= KeyInfo.READABLE;
-
-                    // TODO be more specific
-                    info |= KeyInfo.MODIFIABLE;
-                }
-            }
-            return info;
-        }
-    }
-
-    @Resolve(message = "HAS_KEYS")
-    abstract static class HasKeysNode extends Node {
-        public Object access(Object obj) {
-            return obj instanceof PythonNativeWrapper;
-        }
-    }
-
-    @Resolve(message = "KEYS")
-    abstract static class PForeignKeysNode extends Node {
-        @Child Node objKeys = Message.KEYS.createNode();
-
-        public Object access(Object object) {
-            if (object instanceof PythonNativeWrapper) {
-                return PythonLanguage.getContextRef().get().getEnv().asGuestValue(new String[]{GP_OBJECT});
-            } else {
-                throw UnsupportedMessageException.raise(Message.KEYS);
-            }
-        }
     }
 }

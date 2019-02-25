@@ -147,10 +147,10 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class NativeWrappers {
+    private static final String GP_OBJECT = "gp_object";
 
     @ExportLibrary(InteropLibrary.class)
     public abstract static class PythonNativeWrapper implements TruffleObject {
-        private static final String GP_OBJECT = "gp_object";
 
         private Object delegate;
         private Object nativePointer;
@@ -202,7 +202,7 @@ public abstract class NativeWrappers {
 
         @ExportMessage
         protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
-            throw UnsupportedMessageException.create();
+            return PythonLanguage.getContextRef().get().getEnv().asGuestValue(new String[]{GP_OBJECT});
         }
 
         @ExportMessage
@@ -1229,6 +1229,7 @@ public abstract class NativeWrappers {
      * Used to wrap {@link PythonAbstractObject} when used in native code. This wrapper mimics the
      * correct shape of the corresponding native type {@code struct _object}.
      */
+    @ExportLibrary(InteropLibrary.class)
     public static class PythonObjectNativeWrapper extends DynamicObjectNativeWrapper {
 
         public PythonObjectNativeWrapper(PythonAbstractObject object) {
@@ -1253,6 +1254,17 @@ public abstract class NativeWrappers {
         public String toString() {
             CompilerAsserts.neverPartOfCompilation();
             return String.format("PythonObjectNativeWrapper(%s, isNative=%s)", getDelegate(), isNative());
+        }
+
+        @ExportMessage
+        public Object readMember(String member) {
+            return member.equals(GP_OBJECT) || NativeMemberNames.isValid(member);
+        }
+
+        @ExportMessage
+        @Override
+        public boolean isMemberModifiable(String member) {
+            return NativeMemberNames.isValid(member);
         }
     }
 
@@ -1869,12 +1881,6 @@ public abstract class NativeWrappers {
         }
 
         @ExportMessage
-        @Override
-        protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
-            throw UnsupportedMessageException.create();
-        }
-
-        @ExportMessage
         protected Object readMember(String member,
                     @Cached.Exclusive @Cached(value = "create(0)", allowUncached = true) UnicodeObjectNodes.UnicodeAsWideCharNode asWideCharNode,
                     @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.SizeofWCharNode sizeofWcharNode) {
@@ -1921,12 +1927,6 @@ public abstract class NativeWrappers {
                 default:
                     return false;
             }
-        }
-
-        @ExportMessage
-        @Override
-        protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
-            throw UnsupportedMessageException.create();
         }
 
         @ExportMessage
