@@ -523,7 +523,7 @@ class combinations():
 
     def __init__(self, pool, indices, r):
         self.pool = pool
-        self.indices = range(indices)
+        self.indices = indices
         if r < 0:
             raise ValueError("r must be non-negative")
         self.r = r
@@ -593,7 +593,7 @@ class combinations_with_replacement(combinations):
         if r < 0:
             raise ValueError("r must be non-negative")
         indices = [0] * r
-        combinations.__init__(pool, indices, r)
+        super().__init__(pool, indices, r)
         self.stopped = len(pool) == 0 and r > 0
 
     def get_maximum(self, i):
