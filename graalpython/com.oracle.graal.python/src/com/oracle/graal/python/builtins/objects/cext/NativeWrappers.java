@@ -49,8 +49,6 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_SUBCLASSES;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -498,13 +496,13 @@ public abstract class NativeWrappers {
 
             @Specialization(guards = "eq(UNICODE_DATA, key)")
             Object doUnicodeData(PString object, @SuppressWarnings("unused") String key) {
-                return new PyUnicodeData(object);
+                return new PyUnicodeWrappers.PyUnicodeData(object);
             }
 
             @Specialization(guards = "eq(UNICODE_STATE, key)")
             Object doState(PString object, @SuppressWarnings("unused") String key) {
                 // TODO also support bare 'String' ?
-                return new PyUnicodeState(object);
+                return new PyUnicodeWrappers.PyUnicodeState(object);
             }
 
             @Specialization(guards = "eq(UNICODE_HASH, key)")
@@ -1434,155 +1432,5 @@ public abstract class NativeWrappers {
             assert !(foreignObject instanceof PythonNativeWrapper) : "attempting to wrap a native wrapper";
             return new TruffleObjectNativeWrapper(foreignObject);
         }
-    }
-
-    @ExportLibrary(InteropLibrary.class)
-    abstract static class PyUnicodeWrapper extends PythonNativeWrapper {
-
-        public PyUnicodeWrapper(PString delegate) {
-            super(delegate);
-        }
-
-        public PString getPString() {
-            return (PString) getDelegate();
-        }
-
-        static boolean isInstance(TruffleObject o) {
-            return o instanceof PyUnicodeWrapper;
-        }
-
-        @ExportMessage
-        public boolean isPointer(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.IsPointerNode pIsPointerNode) {
-            return pIsPointerNode.execute(this);
-        }
-
-        @ExportMessage
-        public long asPointer(@Cached.Exclusive @Cached(allowUncached = true) PAsPointerNode pAsPointerNode) {
-            return pAsPointerNode.execute(this);
-        }
-
-        @ExportMessage
-        public void toNative(@Cached.Exclusive @Cached(allowUncached = true) ToPyObjectNode toPyObjectNode,
-                             @Cached.Exclusive @Cached(allowUncached = true) InvalidateNativeObjectsAllManagedNode invalidateNode) {
-            invalidateNode.execute();
-            if (!this.isNative()) {
-                this.setNativePointer(toPyObjectNode.execute(this));
-            }
-        }
-    }
-
-    /**
-     * A native wrapper for the {@code data} member of {@code PyUnicodeObject}.
-     */
-    @ExportLibrary(InteropLibrary.class)
-    public static class PyUnicodeData extends PyUnicodeWrapper {
-        public PyUnicodeData(PString delegate) {
-            super(delegate);
-        }
-
-        @ExportMessage
-        @Override
-        boolean hasMembers() {
-            return true;
-        }
-
-        @ExportMessage
-        @Override
-        protected boolean isMemberReadable(String member) {
-            switch (member) {
-                case NativeMemberNames.UNICODE_DATA_ANY:
-                case NativeMemberNames.UNICODE_DATA_LATIN1:
-                case NativeMemberNames.UNICODE_DATA_UCS2:
-                case NativeMemberNames.UNICODE_DATA_UCS4:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        @ExportMessage
-        protected Object readMember(String member,
-                    @Cached.Exclusive @Cached(value = "create(0)", allowUncached = true) UnicodeObjectNodes.UnicodeAsWideCharNode asWideCharNode,
-                    @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.SizeofWCharNode sizeofWcharNode) {
-            switch (member) {
-                case NativeMemberNames.UNICODE_DATA_ANY:
-                case NativeMemberNames.UNICODE_DATA_LATIN1:
-                case NativeMemberNames.UNICODE_DATA_UCS2:
-                case NativeMemberNames.UNICODE_DATA_UCS4:
-                    int elementSize = (int) sizeofWcharNode.execute();
-                    PString s = this.getPString();
-                    return new PySequenceArrayWrapper(asWideCharNode.execute(s, elementSize, s.len()), elementSize);
-            }
-            throw UnknownIdentifierException.raise(member);
-        }
-    }
-
-    /**
-     * A native wrapper for the {@code state} member of {@code PyASCIIObject}.
-     */
-    @ExportLibrary(InteropLibrary.class)
-    public static class PyUnicodeState extends PyUnicodeWrapper {
-        @CompilationFinal private CharsetEncoder asciiEncoder;
-
-        public PyUnicodeState(PString delegate) {
-            super(delegate);
-        }
-
-        @ExportMessage
-        @Override
-        boolean hasMembers() {
-            return true;
-        }
-
-        @ExportMessage
-        @Override
-        protected boolean isMemberReadable(String member) {
-            switch (member) {
-                case NativeMemberNames.UNICODE_STATE_INTERNED:
-                case NativeMemberNames.UNICODE_STATE_KIND:
-                case NativeMemberNames.UNICODE_STATE_COMPACT:
-                case NativeMemberNames.UNICODE_STATE_ASCII:
-                case NativeMemberNames.UNICODE_STATE_READY:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        @ExportMessage
-        protected Object readMember(String member,
-                                    @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.SizeofWCharNode sizeofWcharNode) {
-            // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
-            int value = 0b000000000000000000000000_1_0_0_000_00;
-            if (onlyAscii(this.getPString().getValue())) {
-                value |= 0b1_0_000_00;
-            }
-            value |= ((int) sizeofWcharNode.execute() << 2) & 0b11100;
-            switch (member) {
-                case NativeMemberNames.UNICODE_STATE_INTERNED:
-                case NativeMemberNames.UNICODE_STATE_KIND:
-                case NativeMemberNames.UNICODE_STATE_COMPACT:
-                case NativeMemberNames.UNICODE_STATE_ASCII:
-                case NativeMemberNames.UNICODE_STATE_READY:
-                    // it's a bit field; so we need to return the whole 32-bit word
-                    return value;
-            }
-            throw UnknownIdentifierException.raise(member);
-        }
-
-        private boolean onlyAscii(String value) {
-            if (asciiEncoder == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asciiEncoder = Charset.forName("US-ASCII").newEncoder();
-            }
-            return doCheck(value, asciiEncoder);
-        }
-
-        @TruffleBoundary
-        private static boolean doCheck(String value, CharsetEncoder asciiEncoder) {
-            return asciiEncoder.canEncode(value);
-        }
-
-
     }
 }
