@@ -60,8 +60,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @MessageResolution(receiverType = PythonNativeWrapper.class)
 public class PythonObjectNativeWrapperMR {
-    private static final String GP_OBJECT = "gp_object";
-
     @SuppressWarnings("unknown-message")
     @Resolve(message = "com.oracle.truffle.llvm.spi.GetDynamicType")
     abstract static class GetDynamicTypeNode extends Node {
