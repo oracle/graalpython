@@ -524,7 +524,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     }
 
     // zlib.compress(data, level=-1)
-    @Builtin(name = "compress", minNumOfPositionalArgs = 1, parameterNames = {"data", "level"})
+    @Builtin(name = "compress", minNumOfPositionalArgs = 1, parameterNames = {"", "level"})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class CompressNode extends PythonBinaryBuiltinNode {
