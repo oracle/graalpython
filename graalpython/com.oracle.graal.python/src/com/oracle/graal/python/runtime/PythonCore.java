@@ -130,7 +130,7 @@ public interface PythonCore extends ParserErrorCallback {
         String sysPrefix = env.getOptions().get(PythonOptions.SysBasePrefix);
         if (sysPrefix.isEmpty()) {
             String homePrefix = PythonLanguage.getCurrent().getHome();
-            if (homePrefix.isEmpty()) {
+            if (homePrefix == null || homePrefix.isEmpty()) {
                 homePrefix = PREFIX;
             }
             env.getOptions().set(PythonOptions.SysBasePrefix, homePrefix);
