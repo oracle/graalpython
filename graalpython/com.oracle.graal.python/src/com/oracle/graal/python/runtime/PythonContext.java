@@ -41,7 +41,7 @@ import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
