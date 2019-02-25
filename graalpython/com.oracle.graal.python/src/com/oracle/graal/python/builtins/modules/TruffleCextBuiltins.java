@@ -91,7 +91,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUn
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
