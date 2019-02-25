@@ -50,8 +50,8 @@ public class PFunction extends PythonObject {
     private static final Object[] EMPTY_DEFAULTS = new Object[0];
     private final String name;
     private final String enclosingClassName;
-    private final Assumption codeStableAssumption = Truffle.getRuntime().createAssumption("function code unchanged for " + toString());
-    private final Assumption defaultsStableAssumption = Truffle.getRuntime().createAssumption("function defaults unchanged " + toString());
+    private final Assumption codeStableAssumption = Truffle.getRuntime().createAssumption("function code unchanged for " + getQualifiedName());
+    private final Assumption defaultsStableAssumption = Truffle.getRuntime().createAssumption("function defaults unchanged " + getQualifiedName());
     private final PythonObject globals;
     private final PCell[] closure;
     private final boolean isStatic;
@@ -114,6 +114,14 @@ public class PFunction extends PythonObject {
         return name;
     }
 
+    public String getQualifiedName() {
+        if (enclosingClassName == null) {
+            return name;
+        } else {
+            return enclosingClassName + "." + name;
+        }
+    }
+
     public Arity getArity() {
         return getCode().getArity();
     }
@@ -133,11 +141,7 @@ public class PFunction extends PythonObject {
     @Override
     public final String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        if (enclosingClassName == null) {
-            return String.format("PFunction %s at 0x%x", name, hashCode());
-        } else {
-            return String.format("PFunction %s.%s at 0x%x", enclosingClassName, name, hashCode());
-        }
+        return String.format("PFunction %s at 0x%x", getQualifiedName(), hashCode());
     }
 
     public PCode getCode() {
