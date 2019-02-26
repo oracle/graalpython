@@ -61,7 +61,7 @@ import com.oracle.truffle.api.nodes.Node;
  * @author tim
  */
 abstract class ApplyKeywordsNode extends PNodeWithContext {
-    public abstract Object[] execute(String calleeName, Arity calleeArity, Object[] arguments, PKeyword[] keywords);
+    public abstract Object[] execute(Object callee, Arity calleeArity, Object[] arguments, PKeyword[] keywords);
 
     public static ApplyKeywordsNode create() {
         return ApplyKeywordsNodeGen.create();
@@ -77,7 +77,7 @@ abstract class ApplyKeywordsNode extends PNodeWithContext {
 
     @Specialization(guards = {"kwLen == keywords.length", "calleeArity == cachedArity"})
     @ExplodeLoop
-    Object[] applyCached(String calleeName, @SuppressWarnings("unused") Arity calleeArity, Object[] arguments, PKeyword[] keywords,
+    Object[] applyCached(Object callee, @SuppressWarnings("unused") Arity calleeArity, Object[] arguments, PKeyword[] keywords,
                     @Cached("keywords.length") int kwLen,
                     @SuppressWarnings("unused") @Cached("calleeArity") Arity cachedArity,
                     @Cached("cachedArity.takesVarKeywordArgs()") boolean takesVarKwds,
@@ -104,7 +104,7 @@ abstract class ApplyKeywordsNode extends PNodeWithContext {
 
             if (kwIdx != -1) {
                 if (PArguments.getArgument(arguments, kwIdx) != null) {
-                    throw raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", calleeName, name);
+                    throw raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
                 }
                 PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
             } else if (takesVarKwds) {
@@ -119,7 +119,7 @@ abstract class ApplyKeywordsNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = "applyCached")
-    Object[] applyUncached(String calleeName, Arity calleeArity, Object[] arguments, PKeyword[] keywords,
+    Object[] applyUncached(Object callee, Arity calleeArity, Object[] arguments, PKeyword[] keywords,
                     @Cached("createSearchNamedParameterNode()") SearchNamedParameterNode searchParamNode,
                     @Cached("createSearchNamedParameterNode()") SearchNamedParameterNode searchKwNode) {
         boolean takesVarKwds = calleeArity.takesVarKeywordArgs();
@@ -144,7 +144,7 @@ abstract class ApplyKeywordsNode extends PNodeWithContext {
 
             if (kwIdx != -1) {
                 if (PArguments.getArgument(arguments, kwIdx) != null) {
-                    throw raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", calleeName, name);
+                    throw raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
                 }
                 PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
             } else if (takesVarKwds) {

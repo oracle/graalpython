@@ -288,6 +288,10 @@ public abstract class PGuards {
         return obj instanceof PBuiltinFunction;
     }
 
+    public static boolean isMethod(Object value) {
+        return value instanceof PMethod || value instanceof PBuiltinMethod;
+    }
+
     public static boolean isBuiltinMethod(Object obj) {
         return obj instanceof PBuiltinMethod;
     }
