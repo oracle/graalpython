@@ -47,6 +47,7 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class PClosureRootNode extends PRootNode {
@@ -88,6 +89,8 @@ public abstract class PClosureRootNode extends PRootNode {
     public boolean hasFreeVars() {
         return freeVarSlots != null && freeVarSlots.length > 0;
     }
+
+    public abstract void initializeFrame(VirtualFrame frame);
 
     public String[] getFreeVars() {
         if (freeVarSlots != null) {

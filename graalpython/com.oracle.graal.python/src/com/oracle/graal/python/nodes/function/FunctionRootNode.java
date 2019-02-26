@@ -73,21 +73,9 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
         assert sourceSection != null;
         this.functionName = functionName;
         this.isGenerator = isGenerator;
-        this.body = NodeUtil.cloneNode(body);
+        this.body = new InnerRootNode(this, NodeUtil.cloneNode(body));
         this.uninitializedBody = NodeUtil.cloneNode(body);
         this.generatorFrameProfile = isGenerator ? ValueProfile.createClassProfile() : null;
-    }
-
-    public String getFunctionName() {
-        return functionName;
-    }
-
-    public ExpressionNode getBody() {
-        return body;
-    }
-
-    public ExpressionNode getUninitializedBody() {
-        return uninitializedBody;
     }
 
     @Override
@@ -145,7 +133,6 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
         if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
             contextRef.get().triggerAsyncActions();
         }
-        initClosureAndCellVars(frame);
         return body.execute(frame);
     }
 
@@ -166,5 +153,10 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
 
     public void setRewritten() {
         this.isRewritten = true;
+    }
+
+    @Override
+    public void initializeFrame(VirtualFrame frame) {
+        initClosureAndCellVars(frame);
     }
 }
