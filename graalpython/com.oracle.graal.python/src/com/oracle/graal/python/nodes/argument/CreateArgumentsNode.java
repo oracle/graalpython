@@ -335,25 +335,49 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         private PException raiseTooManyArguments(Object callable, int co_argcount, int ndefaults, int avail, boolean forgotSelf, int kwonly_given) {
-            String msg = ndefaults > 0 ? "%s() takes from %d to " : "%s() takes ";
-            if (kwonly_given == 0) {
-                throw raise(PythonBuiltinClassType.TypeError, msg + "%d positional argument%s but %d %s given%s",
-                                getName(callable),
-                                co_argcount - ndefaults,
-                                co_argcount,
-                                avail,
-                                avail == 1 ? "was" : "were",
-                                forgotSelf ? ". Did you forget 'self' in the function definition?" : "");
+            String forgotSelfMsg = forgotSelf ? ". Did you forget 'self' in the function definition?" : "";
+            if (ndefaults > 0) {
+                if (kwonly_given == 0) {
+                    throw raise(PythonBuiltinClassType.TypeError, "%s() takes from %d to %d positional argument%s but %d %s given%s",
+                                    getName(callable),
+                                    co_argcount - ndefaults,
+                                    co_argcount,
+                                    co_argcount == 1 ? "" : "s",
+                                    avail,
+                                    avail == 1 ? "was" : "were",
+                                    forgotSelfMsg);
+                } else {
+                    throw raise(PythonBuiltinClassType.TypeError, "%s() takes from %d to %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s",
+                                    getName(callable),
+                                    co_argcount - ndefaults,
+                                    co_argcount,
+                                    co_argcount == 1 ? "" : "s",
+                                    avail,
+                                    avail == 1 ? "" : "s",
+                                    kwonly_given,
+                                    kwonly_given == 1 ? "" : "s",
+                                    forgotSelfMsg);
+                }
             } else {
-                throw raise(PythonBuiltinClassType.TypeError, msg + "%d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s",
-                                getName(callable),
-                                co_argcount,
-                                co_argcount == 1 ? "" : "s",
-                                avail,
-                                avail == 1 ? "" : "s",
-                                kwonly_given,
-                                kwonly_given == 1 ? "" : "s",
-                                forgotSelf ? ". Did you forget 'self' in the function definition?" : "");
+                if (kwonly_given == 0) {
+                    throw raise(PythonBuiltinClassType.TypeError, "%s() takes %d positional argument%s but %d %s given%s",
+                                    getName(callable),
+                                    co_argcount - ndefaults,
+                                    co_argcount == 1 ? "" : "s",
+                                    avail,
+                                    avail == 1 ? "was" : "were",
+                                    forgotSelfMsg);
+                } else {
+                    throw raise(PythonBuiltinClassType.TypeError, "%s() takes %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s",
+                                    getName(callable),
+                                    co_argcount,
+                                    co_argcount == 1 ? "" : "s",
+                                    avail,
+                                    avail == 1 ? "" : "s",
+                                    kwonly_given,
+                                    kwonly_given == 1 ? "" : "s",
+                                    forgotSelfMsg);
+                }
             }
         }
 
