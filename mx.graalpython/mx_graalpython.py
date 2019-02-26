@@ -434,8 +434,8 @@ def run_shared_lib_test(args=None):
                 return status;
             }
 
-            poly_destroy_handle(isolate_thread, engine_builder);
-            poly_destroy_handle(isolate_thread, builder);
+            poly_delete_reference(isolate_thread, engine_builder);
+            poly_delete_reference(isolate_thread, builder);
 
             return poly_ok;
         }
@@ -446,7 +446,7 @@ def run_shared_lib_test(args=None):
                 return status;
             }
 
-            status = poly_destroy_handle(isolate_thread, context);
+            status = poly_delete_reference(isolate_thread, context);
             if (status != poly_ok) {
                 return status;
             }
@@ -456,7 +456,7 @@ def run_shared_lib_test(args=None):
                 return status;
             }
 
-            status = poly_destroy_handle(isolate_thread, engine);
+            status = poly_delete_reference(isolate_thread, engine);
             if (status != poly_ok) {
                 return status;
             }
@@ -483,10 +483,10 @@ def run_shared_lib_test(args=None):
             int32_t result_value;
             poly_value_as_int32(isolate_thread, value, &result_value);
 
-            assert_ok("primitive free failed", poly_destroy_handle(isolate_thread, primitive_object) == poly_ok);
-            assert_ok("value free failed", poly_destroy_handle(isolate_thread, value) == poly_ok);
+            assert_ok("primitive free failed", poly_delete_reference(isolate_thread, primitive_object) == poly_ok);
+            assert_ok("value free failed", poly_delete_reference(isolate_thread, value) == poly_ok);
             assert_ok("value computation was incorrect", result_value == 42 * 42);
-            assert_ok("func free failed", poly_destroy_handle(isolate_thread, func) == poly_ok);
+            assert_ok("func free failed", poly_delete_reference(isolate_thread, func) == poly_ok);
             assert_ok("Context tear down failed.", tear_down_context() == poly_ok);
             return 0;
         }
