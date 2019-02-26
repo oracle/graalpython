@@ -230,24 +230,24 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"})
-        protected Object doIt(VirtualFrame frame, @SuppressWarnings("unused") PythonAbstractClass self, Object[] arguments, PKeyword[] keywords,
+        protected Object doIt0(VirtualFrame frame, @SuppressWarnings("unused") PythonAbstractClass self, Object[] arguments, PKeyword[] keywords,
                         @Cached("self") PythonAbstractClass cachedSelf) {
             return op(frame, cachedSelf, arguments, keywords, true);
         }
 
-        @Specialization(replaces = "doIt")
-        protected Object doItIndirect(VirtualFrame frame, PythonAbstractClass self, Object[] arguments, PKeyword[] keywords) {
+        @Specialization(replaces = "doIt0")
+        protected Object doItIndirect0(VirtualFrame frame, PythonAbstractClass self, Object[] arguments, PKeyword[] keywords) {
             return op(frame, self, arguments, keywords, true);
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"})
-        protected Object doIt(VirtualFrame frame, @SuppressWarnings("unused") PythonNativeObject self, Object[] arguments, PKeyword[] keywords,
+        protected Object doIt1(VirtualFrame frame, @SuppressWarnings("unused") PythonNativeObject self, Object[] arguments, PKeyword[] keywords,
                         @Cached("self") PythonNativeObject cachedSelf) {
             return op(frame, PythonNativeClass.cast(cachedSelf), arguments, keywords, true);
         }
 
-        @Specialization(replaces = "doIt")
-        protected Object doItIndirect(VirtualFrame frame, PythonNativeObject self, Object[] arguments, PKeyword[] keywords) {
+        @Specialization(replaces = "doIt1")
+        protected Object doItIndirect1(VirtualFrame frame, PythonNativeObject self, Object[] arguments, PKeyword[] keywords) {
             return op(frame, PythonNativeClass.cast(self), arguments, keywords, true);
         }
 

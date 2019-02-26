@@ -1436,7 +1436,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"doUnpackLong", "doUnpack"})
-        Object doUnpackLongOvf(long start, long stop, long step, long length) {
+        Object doUnpackLongOvf0(long start, long stop, long step, long length) {
             try {
                 PSlice tmpSlice = factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), PInt.intValueExact(step));
                 SliceInfo actualIndices = tmpSlice.computeIndices(length > Integer.MAX_VALUE ? Integer.MAX_VALUE : PInt.intValueExact(length));
@@ -1446,8 +1446,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(replaces = {"doUnpackLongOvf"})
-        Object doUnpackLongOvf(Object start, Object stop, Object step, Object lengthObj,
+        @Specialization(replaces = {"doUnpackLongOvf0"})
+        Object doUnpackLongOvf1(Object start, Object stop, Object step, Object lengthObj,
                         @Cached("createOverflow()") CastToIndexNode castToIndexNode,
                         @Cached("create()") IsBuiltinClassProfile profile,
                         @Cached("create()") SliceLiteralNode sliceLiteralNode) {

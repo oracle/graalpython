@@ -304,7 +304,7 @@ public final class PCode extends PythonBuiltinObject {
         if (rootNode instanceof ModuleRootNode) {
             name = rootNode.getName();
         } else if (rootNode instanceof FunctionRootNode) {
-            name = ((FunctionRootNode) rootNode).getFunctionName();
+            name = ((FunctionRootNode) rootNode).getName();
         } else {
             name = rootNode.getName();
         }

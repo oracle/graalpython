@@ -87,16 +87,16 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -u flag. Force stdout and stderr to be unbuffered.") //
     public static final OptionKey<Boolean> UnbufferedIO = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.DEBUG, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
+    @Option(category = OptionCategory.INTERNAL, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
     public static final OptionKey<Boolean> ExposeInternalSources = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.DEBUG, help = "Print the java stacktrace if enabled") //
+    @Option(category = OptionCategory.INTERNAL, help = "Print the java stacktrace if enabled") //
     public static final OptionKey<Boolean> WithJavaStacktrace = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.DEBUG, help = "") //
+    @Option(category = OptionCategory.INTERNAL, help = "") //
     public static final OptionKey<Boolean> CatchGraalPythonExceptionForUnitTesting = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.DEBUG, help = "Enable catching all Exceptions in generic try-catch statements.") //
+    @Option(category = OptionCategory.INTERNAL, help = "Enable catching all Exceptions in generic try-catch statements.") //
     public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, help = "") //

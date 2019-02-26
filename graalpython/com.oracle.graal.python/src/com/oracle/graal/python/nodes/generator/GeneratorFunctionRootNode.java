@@ -87,4 +87,9 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     public String getName() {
         return name;
     }
+
+    @Override
+    public void initializeFrame(VirtualFrame frame) {
+        // nothing to do
+    }
 }

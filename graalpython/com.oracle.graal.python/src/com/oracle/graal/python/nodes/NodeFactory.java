@@ -135,18 +135,15 @@ public class NodeFactory {
     }
 
     public ModuleRootNode createModuleRoot(String name, String doc, ExpressionNode file, FrameDescriptor fd) {
-        file.markAsRoot();
         return new ModuleRootNode(language, name, doc, file, fd, null);
     }
 
     public FunctionRootNode createFunctionRoot(SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
                     ExecutionCellSlots cellSlots, Arity arity) {
-        body.markAsRoot();
         return new FunctionRootNode(language, sourceSection, functionName, isGenerator, frameDescriptor, body, cellSlots, arity);
     }
 
     public ClassBodyRootNode createClassBodyRoot(SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots cellSlots) {
-        body.markAsRoot();
         return new ClassBodyRootNode(language, sourceSection, functionName, frameDescriptor, body, cellSlots);
     }
 

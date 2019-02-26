@@ -3,6 +3,15 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 1.0.0 RC13
+
+* Support marshal.dumps and marshal.loads for code objects and some other built-in objects
+* Fix installation of NumPy in a venv
+* Initial support for module mmap
+* Support debugging with workspace files in the Chrome debugger
+* Support the PEP 553 breakpoint() message
+* Support running weak reference callbacks and signals on the main thread
+
 ## Version 1.0.0 RC12
 
 * Support the `__class__` variable in the class scope
