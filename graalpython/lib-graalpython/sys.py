@@ -176,5 +176,55 @@ del make_excepthook
 
 
 @__builtin__
+def breakpointhook(*args, **kws):
+    import importlib, os, warnings
+    hookname = os.getenv('PYTHONBREAKPOINT')
+    if hookname is None or len(hookname) == 0:
+        warnings.warn('Graal Python cannot run pdb, yet, consider using `--inspect` on the commandline', RuntimeWarning)
+        hookname = 'pdb.set_trace'
+    elif hookname == '0':
+        return None
+    modname, dot, funcname = hookname.rpartition('.')
+    if dot == '':
+        modname = 'builtins'
+    try:
+        module = importlib.import_module(modname)
+        hook = getattr(module, funcname)
+    except:
+        warnings.warn(
+            'Ignoring unimportable $PYTHONBREAKPOINT: {}'.format(
+                hookname),
+            RuntimeWarning)
+    return hook(*args, **kws)
+
+
+__breakpointhook__ = breakpointhook
+
+
+@__builtin__
 def getrecursionlimit():
     return 1000
+
+
+@__builtin__
+def displayhook(value):
+    if value is None:
+        return
+    builtins = modules['builtins']
+    # Set '_' to None to avoid recursion
+    builtins._ = None
+    text = repr(value)
+    try:
+        stdout.write(text)
+    except UnicodeEncodeError:
+        bytes = text.encode(stdout.encoding, 'backslashreplace')
+        if hasattr(stdout, 'buffer'):
+            stdout.buffer.write(bytes)
+        else:
+            text = bytes.decode(stdout.encoding, 'strict')
+            stdout.write(text)
+    stdout.write("\n")
+    builtins._ = value
+
+
+__displayhook__ = displayhook

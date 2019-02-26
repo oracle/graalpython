@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -80,9 +80,10 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result);
     }
 
-    @Specialization(guards = "isInBuiltinDict(frame)")
+    @Specialization(guards = "isInBuiltinDict(frame, builtinProfile)")
     protected Object readGlobalDict(VirtualFrame frame,
-                    @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+                    @Cached("create()") HashingStorageNodes.GetItemNode getItemNode,
+                    @Cached("create()") @SuppressWarnings("unused") IsBuiltinClassProfile builtinProfile) {
         PythonObject globals = PArguments.getGlobals(frame);
         Object result = getItemNode.execute(((PDict) globals).getDictStorage(), attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);

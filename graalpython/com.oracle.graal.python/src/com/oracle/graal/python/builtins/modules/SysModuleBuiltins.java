@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -54,25 +55,32 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsFactory.GetFrameNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -96,7 +104,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         COMPILE_TIME = compile_time;
     }
 
-    public static final String[] SYS_PREFIX_ATTRIBUTES = new String[]{"prefix", "exec_prefix", "base_prefix", "base_exec_prefix"};
+    public static final String[] SYS_PREFIX_ATTRIBUTES = new String[]{"prefix", "exec_prefix"};
+    public static final String[] BASE_PREFIX_ATTRIBUTES = new String[]{"base_prefix", "base_exec_prefix"};
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -139,6 +148,91 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("__gmultiarch", getPythonArch() + "-" + os);
 
         super.initialize(core);
+
+        // we need these during core initialization, they are re-set in postInitialize
+        postInitialize(core);
+    }
+
+    @Override
+    public void postInitialize(PythonCore core) {
+        super.postInitialize(core);
+        PythonModule sys = core.lookupBuiltinModule("sys");
+        PythonContext context = core.getContext();
+        String[] args = context.getEnv().getApplicationArguments();
+        sys.setAttribute("argv", core.factory().createList(Arrays.copyOf(args, args.length, Object[].class)));
+
+        String prefix = PythonCore.getSysPrefix(context.getEnv());
+        for (String name : SysModuleBuiltins.SYS_PREFIX_ATTRIBUTES) {
+            sys.setAttribute(name, prefix);
+        }
+
+        String base_prefix = PythonCore.getSysBasePrefix(context.getEnv());
+        for (String name : SysModuleBuiltins.BASE_PREFIX_ATTRIBUTES) {
+            sys.setAttribute(name, base_prefix);
+        }
+
+        sys.setAttribute("executable", PythonOptions.getOption(context, PythonOptions.Executable));
+        sys.setAttribute("graal_python_home", context.getLanguage().getHome());
+        sys.setAttribute("graal_python_core_home", PythonOptions.getOption(context, PythonOptions.CoreHome));
+        sys.setAttribute("graal_python_stdlib_home", PythonOptions.getOption(context, PythonOptions.StdLibHome));
+        sys.setAttribute("graal_python_opaque_filesystem", PythonOptions.getOption(context, PythonOptions.OpaqueFilesystem));
+        sys.setAttribute("graal_python_opaque_filesystem_prefix", PythonOptions.getOption(context, PythonOptions.OpaqueFilesystemPrefixes));
+        sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
+                        false, // bytes_warning
+                        !PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // debug
+                        true,  // dont_write_bytecode
+                        false, // hash_randomization
+                        PythonOptions.getFlag(context, PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
+                        PythonOptions.getFlag(context, PythonOptions.InspectFlag), // inspect
+                        PythonOptions.getFlag(context, PythonOptions.TerminalIsInteractive), // interactive
+                        !context.isExecutableAccessAllowed(), // isolated
+                        PythonOptions.getFlag(context, PythonOptions.NoSiteFlag), // no_site
+                        PythonOptions.getFlag(context, PythonOptions.NoUserSiteFlag), // no_user_site
+                        PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // optimize
+                        PythonOptions.getFlag(context, PythonOptions.QuietFlag), // quiet
+                        PythonOptions.getFlag(context, PythonOptions.VerboseFlag), // verbose
+        }));
+
+        Env env = context.getEnv();
+        String option = PythonOptions.getOption(context, PythonOptions.PythonPath);
+        Object[] path;
+        int pathIdx = 0;
+        if (option.length() > 0) {
+            String[] split = option.split(PythonCore.PATH_SEPARATOR);
+            path = new Object[split.length + 3];
+            System.arraycopy(split, 0, path, 0, split.length);
+            pathIdx = split.length;
+        } else {
+            path = new Object[3];
+        }
+        path[pathIdx] = getScriptPath(env, args);
+        path[pathIdx + 1] = PythonCore.getStdlibHome(env);
+        path[pathIdx + 2] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
+        PList sysPaths = core.factory().createList(path);
+        sys.setAttribute("path", sysPaths);
+    }
+
+    private static String getScriptPath(Env env, String[] args) {
+        String scriptPath;
+        if (args.length > 0) {
+            String argv0 = args[0];
+            if (argv0 != null && !argv0.startsWith("-") && !argv0.isEmpty()) {
+                TruffleFile scriptFile = env.getTruffleFile(argv0);
+                try {
+                    scriptPath = scriptFile.getAbsoluteFile().getParent().getPath();
+                } catch (SecurityException e) {
+                    scriptPath = scriptFile.getParent().getPath();
+                }
+                if (scriptPath == null) {
+                    scriptPath = ".";
+                }
+            } else {
+                scriptPath = "";
+            }
+        } else {
+            scriptPath = "";
+        }
+        return scriptPath;
     }
 
     static String getPythonArch() {
@@ -171,7 +265,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "exc_info", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public static abstract class ExcInfoNode extends PythonBuiltinNode {
+    public abstract static class ExcInfoNode extends PythonBuiltinNode {
         @Specialization
         public Object run(
                         @Cached("create()") GetClassNode getClassNode) {
@@ -189,7 +283,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_getframe", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public static abstract class GetFrameNode extends PythonBuiltinNode {
+    public abstract static class GetFrameNode extends PythonUnaryBuiltinNode {
+        public static GetFrameNode create() {
+            return GetFrameNodeFactory.create();
+        }
 
         @Child private DirectCallNode call;
 
@@ -232,7 +329,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
             int actual = num + 1; // skip dummy frame
             try {
-                call.call(new Object[0]);
+                @SuppressWarnings("unused")
+                Object r = call.call(new Object[0]);
+                // r is just assigned to make spotbugs happy
                 throw raise(PythonErrorType.SystemError, "should not reach here");
             } catch (PException e) {
                 PBaseException exception = e.getExceptionObject();
@@ -280,7 +379,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "getfilesystemencoding", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public static abstract class GetFileSystemEncodingNode extends PythonBuiltinNode {
+    public abstract static class GetFileSystemEncodingNode extends PythonBuiltinNode {
         @Specialization
         protected String getFileSystemEncoding() {
             return System.getProperty("file.encoding");
@@ -289,7 +388,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "getfilesystemencodeerrors", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public static abstract class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
+    public abstract static class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
         @Specialization
         protected String getFileSystemEncoding() {
             return "surrogateescape";
@@ -315,7 +414,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "getdefaultencoding", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public static abstract class GetDefaultEncodingNode extends PythonBuiltinNode {
+    public abstract static class GetDefaultEncodingNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
         protected String getFileSystemEncoding() {
@@ -325,7 +424,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "getsizeof", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public static abstract class GetsizeofNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetsizeofNode extends PythonBinaryBuiltinNode {
         @Child private CastToIntegerFromIntNode castToIntNode = CastToIntegerFromIntNode.create();
 
         @Specialization(guards = "isNoValue(dflt)")

@@ -1,5 +1,5 @@
 {
-  overlay: "3cf78c3623442ad827eed58a1780784a6eb95676",
+  overlay: "d20cc2abdeb3cfb022e1a8035e40e350e5cfe5fc",
 
   // ======================================================================================================
   // 
@@ -88,6 +88,7 @@
 
   local darwinMixin = {
     capabilities +: ["darwin_sierra", "amd64"],
+    timelimit: TIME_LIMIT["1h"],
     packages +: {
       "pip:astroid": "==1.1.0",
       "pip:pylint": "==1.1.0",
@@ -127,7 +128,7 @@
 
   local labsjdk8Mixin = {
     downloads +: {
-      JAVA_HOME: utils.download("labsjdk", "8u172-jvmci-0.48"),
+      JAVA_HOME: utils.download("labsjdk", "8u192-jvmci-0.54"),
       EXTRA_JAVA_HOMES : { pathlist: [utils.download("oraclejdk", "11+20")] },
     },
     environment +: {

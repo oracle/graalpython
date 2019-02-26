@@ -59,7 +59,7 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
-import com.oracle.graal.python.nodes.classes.ClassDefinitionEpilogNode;
+import com.oracle.graal.python.nodes.classes.ClassDefinitionPrologueNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.control.ForNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -95,6 +95,7 @@ import com.oracle.graal.python.parser.antlr.Python3Parser.Lambdef_bodyContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Lambdef_nocond_bodyContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.VarargslistContext;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -114,33 +115,32 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     protected final Source source;
     protected final String name;
 
-    protected final boolean isInlineMode;
+    protected final ParserMode mode;
 
-    public PythonTreeTranslator(ParserErrorCallback errors, String name, TranslationEnvironment environment, Source source, boolean isInlineMode) {
+    public PythonTreeTranslator(ParserErrorCallback errors, String name, TranslationEnvironment environment, Source source, ParserMode mode) {
         this.errors = errors;
         this.name = name;
         this.environment = environment;
         this.source = source;
-        this.isInlineMode = isInlineMode;
+        this.mode = mode;
         this.factory = errors.getLanguage().getNodeFactory();
         this.loops = new LoopsBookKeeper();
         this.assigns = new AssignmentTranslator(errors, environment, this);
     }
 
-    public static Node translate(ParserErrorCallback errors, String name, ParserRuleContext input, TranslationEnvironment environment, Source source, boolean isInlineMode) {
-        PythonTreeTranslator translator = new PythonTreeTranslator(errors, name, environment, source, isInlineMode);
+    public static Node translate(ParserErrorCallback errors, String name, ParserRuleContext input, TranslationEnvironment environment, Source source, ParserMode mode) {
+        PythonTreeTranslator translator = new PythonTreeTranslator(errors, name, environment, source, mode);
         try {
             Object parseResult = input.accept(translator);
-            if (!isInlineMode && parseResult instanceof RootNode || isInlineMode && parseResult instanceof PNode) {
+            if (mode == ParserMode.InlineEvaluation) {
+                assert parseResult instanceof PNode : "expected PNode result for InlineEvaluation";
                 return (Node) parseResult;
             } else {
-                throw new RuntimeException("Unexpected parse result");
+                assert parseResult instanceof RootNode : "expected RootNode result from parsing";
+                return (Node) parseResult;
             }
         } catch (PException e) {
             throw e;
-        } catch (Exception t) {
-            t.printStackTrace();
-            throw new RuntimeException("Failed in " + translator + " with error " + t, t);
         }
     }
 
@@ -253,8 +253,12 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ExpressionNode body = asExpression(super.visitSingle_input(ctx));
         deriveSourceSection(ctx, body);
         environment.popScope();
-        if (isInlineMode) {
+        if (mode == ParserMode.InlineEvaluation) {
             return body;
+        } else if (mode == ParserMode.Statement) {
+            body = factory.createPrintExpression(body);
+            deriveSourceSection(ctx, body);
+            return factory.createModuleRoot("<expression>", getModuleDoc(ctx), body, ctx.scope.getFrameDescriptor());
         } else {
             return factory.createModuleRoot("<expression>", getModuleDoc(ctx), body, ctx.scope.getFrameDescriptor());
         }
@@ -1855,7 +1859,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             environment.createLocal(__DOC__);
             body.set(0, environment.findVariable(__DOC__).makeWriteNode((ExpressionNode) body.get(0)));
         }
-        body.add(new ClassDefinitionEpilogNode(qualName));
+        body.add(0, new ClassDefinitionPrologueNode(qualName));
         return new ReturnTargetNode(asBlock(body), factory.createNullLiteral());
     }
 

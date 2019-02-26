@@ -272,6 +272,6 @@ public abstract class PythonCallNode extends ExpressionNode {
     }
 
     private boolean isBreakpoint(Class<?> tag) {
-        return tag == DebuggerTags.AlwaysHalt.class && calleeName.equals(BuiltinNames.__BREAKPOINT__);
+        return tag == DebuggerTags.AlwaysHalt.class && calleeName.equals(BuiltinNames.BREAKPOINT);
     }
 }

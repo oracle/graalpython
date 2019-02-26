@@ -78,7 +78,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
         ArrayList<String> unrecognized = new ArrayList<>();
-        ArrayList<String> inputArgs = new ArrayList<>(getDefaultEnvironmentArgs());
+        List<String> defaultEnvironmentArgs = getDefaultEnvironmentArgs();
+        ArrayList<String> inputArgs = new ArrayList<>(defaultEnvironmentArgs);
         inputArgs.addAll(givenArgs);
         givenArguments = new ArrayList<>(inputArgs);
         List<String> arguments = new ArrayList<>(inputArgs);
@@ -92,6 +93,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     break;
                 case "-c":
                     i += 1;
+                    programArgs.add(arg);
                     if (i < arguments.size()) {
                         commandString = arguments.get(i);
                     } else {
@@ -142,21 +144,27 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     versionAction = VersionAction.PrintAndContinue;
                     break;
                 case "-CC":
-                    if (i != 0) {
-                        throw new IllegalArgumentException("-CC must be the first argument");
+                    if (i != defaultEnvironmentArgs.size()) {
+                        throw new IllegalArgumentException("-CC must be the first given argument");
                     }
                     GraalPythonCC.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
                     System.exit(0);
                     break;
                 case "-LD":
-                    if (i != 0) {
-                        throw new IllegalArgumentException("-LD must be the first argument");
+                    if (i != defaultEnvironmentArgs.size()) {
+                        throw new IllegalArgumentException("-LD must be the first given argument");
                     }
                     GraalPythonLD.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
                     System.exit(0);
                     break;
                 case "-LLI":
                     runLLI = true;
+                    break;
+                case "-debug-java":
+                    if (!isAOT()) {
+                        subprocessArgs.add("Xrunjdwp:transport=dt_socket,server=y,address=8000,suspend=y");
+                        inputArgs.remove("-debug-java");
+                    }
                     break;
                 case "-debug-perf":
                     subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
@@ -174,6 +182,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     subprocessArgs.add("Dgraal.TruffleCompileImmediately=true");
                     subprocessArgs.add("Dgraal.TruffleCompilationExceptionsAreThrown=true");
                     inputArgs.remove("-compile-truffle-immediately");
+                    break;
+                case "-u":
+                    // TODO we currently don't support this option, but needs to be consumed
+                    // due pip/wheel installer.
                     break;
                 default:
                     if (!arg.startsWith("-")) {
@@ -739,7 +751,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             cmd.add("-cp");
             cmd.add(ManagementFactory.getRuntimeMXBean().getClassPath());
             for (String subProcArg : subProcessDefs) {
-                assert subProcArg.startsWith("D");
+                assert subProcArg.startsWith("D") || subProcArg.startsWith("X");
                 cmd.add("-" + subProcArg);
             }
             cmd.add(GraalPythonMain.class.getName());

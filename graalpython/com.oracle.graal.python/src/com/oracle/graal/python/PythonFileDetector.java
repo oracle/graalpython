@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,8 @@ import java.nio.file.spi.FileTypeDetector;
 public final class PythonFileDetector extends FileTypeDetector {
     @Override
     public String probeContentType(Path path) throws IOException {
-        if (path.getFileName().toString().endsWith(".py")) {
+        Path fileName = path.getFileName();
+        if (fileName != null && fileName.toString().endsWith(".py")) {
             return PythonLanguage.MIME_TYPE;
         }
         return null;

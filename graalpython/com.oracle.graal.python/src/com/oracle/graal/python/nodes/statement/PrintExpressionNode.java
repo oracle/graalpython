@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,39 +38,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.classes;
+package com.oracle.graal.python.nodes.statement;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
+import static com.oracle.graal.python.nodes.BuiltinNames.DISPLAYHOOK;
 
-import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
-import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
-import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.nodes.subscript.SetItemIfNotPresentNode;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public class ClassDefinitionEpilogNode extends StatementNode {
-    @Child private ReadGlobalOrBuiltinNode readGlobalNameNode = ReadGlobalOrBuiltinNode.create(__NAME__);
-    @Child private ReadIndexedArgumentNode readPrimaryArgNode = ReadIndexedArgumentNode.create(0);
-    @Child private SetItemIfNotPresentNode setItemIfNotPresentNode = SetItemIfNotPresentNode.create();
+public class PrintExpressionNode extends ExpressionNode {
+    @Child GetAttributeNode getAttribute = GetAttributeNode.create(DISPLAYHOOK);
+    @Child CallNode callNode = CallNode.create();
+    @Child ExpressionNode valueNode;
 
-    private final String qualName;
-
-    public ClassDefinitionEpilogNode() {
-        this(null);
-    }
-
-    public ClassDefinitionEpilogNode(String qualName) {
-        this.qualName = qualName;
+    public PrintExpressionNode(ExpressionNode valueNode) {
+        this.valueNode = valueNode;
     }
 
     @Override
-    public void executeVoid(VirtualFrame frame) {
-        Object moduleName = readGlobalNameNode.execute(frame);
-        Object primary = readPrimaryArgNode.execute(frame);
+    public Object execute(VirtualFrame frame) {
+        Object value = valueNode.execute(frame);
+        PythonModule sysModule = getContext().getCore().lookupBuiltinModule("sys");
+        Object displayhook = getAttribute.executeObject(sysModule);
+        callNode.execute(frame, displayhook, value);
+        return PNone.NONE;
+    }
 
-        setItemIfNotPresentNode.execute(primary, __QUALNAME__, qualName);
-        setItemIfNotPresentNode.execute(primary, __MODULE__, moduleName);
+    public static PrintExpressionNode create(ExpressionNode valueNode) {
+        return new PrintExpressionNode(valueNode);
     }
 }

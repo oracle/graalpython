@@ -2581,7 +2581,7 @@ def _proxy_bypass_macosx_sysconf(host, proxy_settings):
     return False
 
 
-if sys.platform == 'darwin':
+if sys.platform == 'darwin' and False: # changed: use default path in darwin
     from _scproxy import _get_proxy_settings, _get_proxies
 
     def proxy_bypass_macosx_sysconf(host):

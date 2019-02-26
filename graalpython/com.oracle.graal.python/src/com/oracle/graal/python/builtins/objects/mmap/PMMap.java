@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,33 +38,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.type;
+package com.oracle.graal.python.builtins.objects.mmap;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.truffle.api.dsl.Specialization;
+import java.nio.channels.SeekableByteChannel;
 
-public abstract class GetTypeFlagsNode extends PNodeWithContext {
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
-    public abstract long execute(PythonClass clazz);
+public final class PMMap extends PythonObject {
 
-    @Specialization(guards = "isInitialized(clazz)")
-    long doInitialized(PythonClass clazz) {
-        return clazz.getFlagsContainer().flags;
+    private final SeekableByteChannel mappedByteBuffer;
+    private final long length;
+    private final long offset;
+
+    public PMMap(LazyPythonClass pythonClass, SeekableByteChannel mappedByteBuffer, long length, long offset) {
+        super(pythonClass);
+        this.mappedByteBuffer = mappedByteBuffer;
+        this.length = length;
+        this.offset = offset;
     }
 
-    @Specialization
-    long doGeneric(PythonClass clazz) {
-        if (!isInitialized(clazz)) {
-            return clazz.getFlags();
-        }
-        return clazz.getFlagsContainer().flags;
+    public SeekableByteChannel getChannel() {
+        return mappedByteBuffer;
     }
 
-    protected static boolean isInitialized(PythonClass clazz) {
-        return clazz.getFlagsContainer().initialDominantBase == null;
+    public long getLength() {
+        return length;
     }
 
-    public static GetTypeFlagsNode create() {
-        return GetTypeFlagsNodeGen.create();
+    public long getOffset() {
+        return offset;
     }
 }

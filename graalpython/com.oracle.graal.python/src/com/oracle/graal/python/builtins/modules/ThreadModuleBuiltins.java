@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,7 +54,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -91,7 +91,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ConstructLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PLock construct(PythonClass cls) {
+        PLock construct(LazyPythonClass cls) {
             return factory().createLock(cls);
         }
     }
@@ -100,7 +100,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ConstructRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PRLock construct(PythonClass cls) {
+        PRLock construct(LazyPythonClass cls) {
             return factory().createRLock(cls);
         }
     }
@@ -157,7 +157,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class StartNewThreadNode extends PythonBuiltinNode {
         @Specialization
-        long start(VirtualFrame frame, PythonClass cls, Object callable, Object args, Object kwargs,
+        long start(VirtualFrame frame, LazyPythonClass cls, Object callable, Object args, Object kwargs,
                         @Cached("create()") CallNode callNode,
                         @Cached("create()") ExecutePositionalStarargsNode getArgsNode,
                         @Cached("create()") ExecuteKeywordStarargsNode getKwArgsNode) {

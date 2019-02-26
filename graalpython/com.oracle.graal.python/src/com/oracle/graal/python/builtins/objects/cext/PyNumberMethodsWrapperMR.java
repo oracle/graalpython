@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,7 +57,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.PyNumberMethodsWrapperMRFactory.ReadMethodNodeGen;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -78,7 +78,7 @@ public class PyNumberMethodsWrapperMR {
 
         public Object access(PyNumberMethodsWrapper object, String key) {
             // translate key to attribute name
-            PythonClass delegate = object.getPythonClass();
+            PythonManagedClass delegate = object.getPythonClass();
             return getToSulongNode().execute(readMethodNode.execute(delegate, key));
         }
 
@@ -93,10 +93,10 @@ public class PyNumberMethodsWrapperMR {
 
     abstract static class ReadMethodNode extends PNodeWithContext {
 
-        public abstract Object execute(PythonClass clazz, String key);
+        public abstract Object execute(PythonManagedClass clazz, String key);
 
         @Specialization(limit = "99", guards = {"eq(cachedKey, key)"})
-        Object getMethod(PythonClass clazz, @SuppressWarnings("unused") String key,
+        Object getMethod(PythonManagedClass clazz, @SuppressWarnings("unused") String key,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Cached("createLookupNode(cachedKey)") LookupAttributeInMRONode lookupNode) {
             if (lookupNode != null) {

@@ -43,7 +43,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -51,9 +51,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -154,7 +154,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ThrowNode extends PythonBuiltinNode {
         @Specialization
-        Object sendThrow(VirtualFrame frame, PGenerator self, PythonClass typ, @SuppressWarnings("unused") PNone val, @SuppressWarnings("unused") PNone tb,
+        Object sendThrow(VirtualFrame frame, PGenerator self, LazyPythonClass typ, @SuppressWarnings("unused") PNone val, @SuppressWarnings("unused") PNone tb,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
             Object instance = callTyp.execute(frame, typ, new Object[0]);
             if (instance instanceof PBaseException) {
@@ -167,7 +167,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object sendThrow(VirtualFrame frame, PGenerator self, PythonClass typ, PTuple val, @SuppressWarnings("unused") PNone tb,
+        Object sendThrow(VirtualFrame frame, PGenerator self, LazyPythonClass typ, PTuple val, @SuppressWarnings("unused") PNone tb,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
             Object instance = callTyp.execute(frame, typ, val.getArray());
             if (instance instanceof PBaseException) {
@@ -180,7 +180,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPNone(val)", "!isPTuple(val)"})
-        Object sendThrow(VirtualFrame frame, PGenerator self, PythonClass typ, Object val, @SuppressWarnings("unused") PNone tb,
+        Object sendThrow(VirtualFrame frame, PGenerator self, LazyPythonClass typ, Object val, @SuppressWarnings("unused") PNone tb,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
             Object instance = callTyp.execute(frame, typ, new Object[]{val});
             if (instance instanceof PBaseException) {
@@ -200,7 +200,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object sendThrow(PGenerator self, @SuppressWarnings("unused") PythonClass typ, PBaseException instance, PTraceback tb) {
+        Object sendThrow(PGenerator self, @SuppressWarnings("unused") LazyPythonClass typ, PBaseException instance, PTraceback tb) {
             PException pException = PException.fromObject(instance, this);
             instance.setTraceback(tb);
             PArguments.setSpecialArgument(self.getArguments(), pException);

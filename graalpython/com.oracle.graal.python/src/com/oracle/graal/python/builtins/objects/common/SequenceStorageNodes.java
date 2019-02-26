@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -48,14 +48,13 @@ import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.L
 
 import java.util.Arrays;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.AppendNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CastToByteNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CmpNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatNodeGen;
@@ -82,10 +81,12 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetLenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetStorageSliceNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.VerifyNativeItemNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -102,6 +103,7 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -1174,97 +1176,6 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    public abstract static class CastToByteNode extends PNodeWithContext {
-
-        private final Function<Object, Byte> rangeErrorHandler;
-        private final Function<Object, Byte> typeErrorHandler;
-
-        protected CastToByteNode(Function<Object, Byte> rangeErrorHandler, Function<Object, Byte> typeErrorHandler) {
-            this.rangeErrorHandler = rangeErrorHandler;
-            this.typeErrorHandler = typeErrorHandler;
-        }
-
-        public abstract byte execute(Object val);
-
-        @Specialization
-        protected byte doByte(byte value) {
-            return value;
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        protected byte doInt(int value) {
-            return PInt.byteValueExact(value);
-        }
-
-        @Specialization(replaces = "doInt")
-        protected byte doIntOvf(int value) {
-            try {
-                return PInt.byteValueExact(value);
-            } catch (ArithmeticException e) {
-                return handleRangeError(value);
-            }
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        protected byte doLong(long value) {
-            return PInt.byteValueExact(value);
-        }
-
-        @Specialization(replaces = "doLong")
-        protected byte doLongOvf(long value) {
-            try {
-                return PInt.byteValueExact(value);
-            } catch (ArithmeticException e) {
-                return handleRangeError(value);
-            }
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        protected byte doPInt(PInt value) {
-            return PInt.byteValueExact(value.longValueExact());
-        }
-
-        @Specialization(replaces = "doPInt")
-        protected byte doPIntOvf(PInt value) {
-            try {
-                return PInt.byteValueExact(value.longValueExact());
-            } catch (ArithmeticException e) {
-                return handleRangeError(value);
-            }
-        }
-
-        @Specialization
-        protected byte doBoolean(boolean value) {
-            return value ? (byte) 1 : (byte) 0;
-        }
-
-        @Fallback
-        protected byte doGeneric(@SuppressWarnings("unused") Object val) {
-            if (typeErrorHandler != null) {
-                return typeErrorHandler.apply(val);
-            } else {
-                throw raise(TypeError, "an integer is required (got type %p)", val);
-            }
-        }
-
-        private byte handleRangeError(Object val) {
-            if (rangeErrorHandler != null) {
-                return rangeErrorHandler.apply(val);
-            } else {
-                throw raise(ValueError, "byte must be in range(0, 256)");
-            }
-        }
-
-        public static CastToByteNode create() {
-            return CastToByteNodeGen.create(null, null);
-        }
-
-        public static CastToByteNode create(Function<Object, Byte> rangeErrorHandler, Function<Object, Byte> typeErrorHandler) {
-            return CastToByteNodeGen.create(rangeErrorHandler, typeErrorHandler);
-        }
-
-    }
-
     protected abstract static class BinCmpOp {
         protected abstract boolean cmp(int l, int r);
 
@@ -1834,7 +1745,6 @@ public abstract class SequenceStorageNodes {
             throw raise(TypeError, "expected a bytes-like object");
         }
 
-        @TruffleBoundary(transferToInterpreterOnException = false)
         private static byte[] exactCopy(byte[] barr, int len) {
             return Arrays.copyOf(barr, len);
         }
@@ -3045,4 +2955,93 @@ public abstract class SequenceStorageNodes {
             return ItemIndexNodeGen.create();
         }
     }
+
+    public abstract static class ToArrayNode extends SequenceStorageBaseNode {
+
+        @Child private GetItemScalarNode getItemNode;
+
+        private final boolean exact;
+
+        public ToArrayNode(boolean exact) {
+            this.exact = exact;
+        }
+
+        public abstract Object[] execute(SequenceStorage s);
+
+        @Specialization
+        Object[] doObjectSequenceStorage(ObjectSequenceStorage s) {
+            Object[] barr = s.getInternalArray();
+            if (exact) {
+                return exactCopy(barr, s.length());
+            }
+            return barr;
+        }
+
+        @Specialization
+        Object[] doTypedSequenceStorage(TypedSequenceStorage s) {
+            Object[] internalArray = s.getInternalArray();
+            assert internalArray.length == s.length();
+            return internalArray;
+        }
+
+        @Specialization
+        Object[] doNativeObject(NativeSequenceStorage s) {
+            Object[] barr = new Object[s.length()];
+            for (int i = 0; i < barr.length; i++) {
+                barr[i] = getGetItemNode().execute(s, i);
+            }
+            return barr;
+        }
+
+        @Specialization
+        Object[] doEmptySequenceStorage(EmptySequenceStorage s) {
+            return s.getInternalArray();
+        }
+
+        @Specialization
+        Object[] doRangeSequenceStorage(RangeSequenceStorage s) {
+            int length = s.length();
+            PRange range = s.getRange();
+            Object[] result = new Object[length];
+            for (int i = 0, cur = range.getStart(); i < result.length; i++, cur += range.getStep()) {
+                result[i] = cur;
+            }
+            return result;
+        }
+
+        @Fallback
+        Object[] doFallback(@SuppressWarnings("unused") SequenceStorage s) {
+            throw raise(TypeError, "unsupported sequence type");
+        }
+
+        private static <T> T[] exactCopy(T[] barr, int len) {
+            return Arrays.copyOf(barr, len);
+        }
+
+        protected GetItemScalarNode getGetItemNode() {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(GetItemScalarNode.create());
+            }
+            return getItemNode;
+        }
+
+        public static ToArrayNode create() {
+            return ToArrayNodeGen.create(true);
+        }
+
+        public static ToArrayNode create(boolean exact) {
+            return ToArrayNodeGen.create(exact);
+        }
+
+        @TruffleBoundary
+        public static Object[] doSlowPath(SequenceStorage s) {
+            if (s instanceof BasicSequenceStorage) {
+                return s.getInternalArray();
+            }
+            // TODO implement remaining cases
+            throw PythonLanguage.getCore().raise(TypeError, "unsupported sequence type");
+        }
+    }
+
 }

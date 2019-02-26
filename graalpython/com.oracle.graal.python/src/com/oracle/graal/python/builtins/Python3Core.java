@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CtypesModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.IOModuleBuiltins;
@@ -124,7 +125,6 @@ import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
@@ -134,6 +134,7 @@ import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
+import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -154,8 +155,8 @@ import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -330,7 +331,9 @@ public final class Python3Core implements PythonCore {
                         new ZipImporterBuiltins(),
                         new ZipImportModuleBuiltins(),
                         new ZLibModuleBuiltins(),
-                        new MMapModuleBuiltins()));
+                        new MMapModuleBuiltins(),
+                        new FcntlModuleBuiltins(),
+                        new MMapBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
             for (PythonBuiltins builtin : providers) {
@@ -398,7 +401,6 @@ public final class Python3Core implements PythonCore {
     public void initialize(PythonContext context) {
         singletonContext = context;
         initializeJavaCore();
-        initializeSysModule();
         initializePythonCore();
         initialized = true;
     }
@@ -425,94 +427,14 @@ public final class Python3Core implements PythonCore {
         if (!TruffleOptions.AOT || ImageInfo.inImageRuntimeCode()) {
             initialized = false;
 
-            loadFile(__BUILTINS_PATCHES__, PythonCore.getCoreHomeOrFail());
+            for (PythonBuiltins builtin : builtins) {
+                builtin.postInitialize(this);
+            }
 
-            PythonModule os = lookupBuiltinModule("posix");
-            Object environAttr = os.getAttribute("environ");
-            ((PDict) environAttr).setDictStorage(createEnvironDict().getDictStorage());
+            loadFile(__BUILTINS_PATCHES__, PythonCore.getCoreHomeOrFail());
 
             initialized = true;
         }
-    }
-
-    public PythonModule initializeSysModule() {
-        PythonModule sys = builtinModules.get("sys");
-        PythonContext context = getContext();
-        String[] args = context.getEnv().getApplicationArguments();
-        sys.setAttribute("argv", factory().createList(Arrays.copyOf(args, args.length, Object[].class)));
-        String prefix = PythonCore.getSysPrefix(context.getEnv());
-        for (String name : SysModuleBuiltins.SYS_PREFIX_ATTRIBUTES) {
-            sys.setAttribute(name, prefix);
-        }
-
-        sys.setAttribute("executable", PythonOptions.getOption(context, PythonOptions.Executable));
-        sys.setAttribute("graal_python_home", context.getLanguage().getHome());
-        sys.setAttribute("graal_python_core_home", PythonOptions.getOption(context, PythonOptions.CoreHome));
-        sys.setAttribute("graal_python_stdlib_home", PythonOptions.getOption(context, PythonOptions.StdLibHome));
-        sys.setAttribute("graal_python_opaque_filesystem", PythonOptions.getOption(context, PythonOptions.OpaqueFilesystem));
-        sys.setAttribute("graal_python_opaque_filesystem_prefix", PythonOptions.getOption(context, PythonOptions.OpaqueFilesystemPrefixes));
-        sys.setAttribute("__flags__", factory().createTuple(new Object[]{
-                        false, // bytes_warning
-                        !PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // debug
-                        true,  // dont_write_bytecode
-                        false, // hash_randomization
-                        PythonOptions.getFlag(context, PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
-                        PythonOptions.getFlag(context, PythonOptions.InspectFlag), // inspect
-                        PythonOptions.getFlag(context, PythonOptions.TerminalIsInteractive), // interactive
-                        !context.isExecutableAccessAllowed(), // isolated
-                        PythonOptions.getFlag(context, PythonOptions.NoSiteFlag), // no_site
-                        PythonOptions.getFlag(context, PythonOptions.NoUserSiteFlag), // no_user_site
-                        PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // optimize
-                        PythonOptions.getFlag(context, PythonOptions.QuietFlag), // quiet
-                        PythonOptions.getFlag(context, PythonOptions.VerboseFlag), // verbose
-        }));
-
-        initializeSysPath(sys, args);
-
-        return sys;
-    }
-
-    private void initializeSysPath(PythonModule sys, String[] args) {
-        Env env = getContext().getEnv();
-        String option = PythonOptions.getOption(getContext(), PythonOptions.PythonPath);
-        Object[] path;
-        int pathIdx = 0;
-        if (option.length() > 0) {
-            String[] split = option.split(PythonCore.PATH_SEPARATOR);
-            path = new Object[split.length + 3];
-            System.arraycopy(split, 0, path, 0, split.length);
-            pathIdx = split.length;
-        } else {
-            path = new Object[3];
-        }
-        path[pathIdx] = getScriptPath(env, args);
-        path[pathIdx + 1] = PythonCore.getStdlibHome(env);
-        path[pathIdx + 2] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
-        PList sysPaths = factory().createList(path);
-        sys.setAttribute("path", sysPaths);
-    }
-
-    private static String getScriptPath(Env env, String[] args) {
-        String scriptPath;
-        if (args.length > 0) {
-            String argv0 = args[0];
-            if (argv0 != null && !argv0.startsWith("-") && !argv0.isEmpty()) {
-                TruffleFile scriptFile = env.getTruffleFile(argv0);
-                try {
-                    scriptPath = scriptFile.getAbsoluteFile().getParent().getPath();
-                } catch (SecurityException e) {
-                    scriptPath = scriptFile.getParent().getPath();
-                }
-                if (scriptPath == null) {
-                    scriptPath = ".";
-                }
-            } else {
-                scriptPath = "";
-            }
-        } else {
-            scriptPath = "";
-        }
-        return scriptPath;
     }
 
     @TruffleBoundary
@@ -563,13 +485,13 @@ public final class Python3Core implements PythonCore {
 
             // export all exception classes for the C API
             for (PythonBuiltinClassType errorType : PythonBuiltinClassType.EXCEPTIONS) {
-                PythonClass errorClass = lookupType(errorType);
-                env.exportSymbol("python_" + errorClass.getName(), errorClass);
+                PythonBuiltinClass errorClass = lookupType(errorType);
+                env.exportSymbol("python_" + GetNameNode.doSlowPath(errorClass), errorClass);
             }
         }
     }
 
-    private PythonClass initializeBuiltinClass(PythonBuiltinClassType type) {
+    private PythonBuiltinClass initializeBuiltinClass(PythonBuiltinClassType type) {
         int index = type.ordinal();
         if (builtinTypes[index] == null) {
             if (type.getBase() == type) {
@@ -668,7 +590,7 @@ public final class Python3Core implements PythonCore {
             boolean isPublic = entry.getValue().getValue();
             if (isPublic) {
                 PythonBuiltinClass pythonClass = entry.getKey();
-                obj.setAttribute(pythonClass.getName(), pythonClass);
+                obj.setAttribute(GetNameNode.doSlowPath(pythonClass), pythonClass);
             }
         }
     }
@@ -715,16 +637,6 @@ public final class Python3Core implements PythonCore {
             mod = factory().createPythonModule("__anonymous__");
         }
         callTarget.call(PArguments.withGlobals(mod));
-    }
-
-    @TruffleBoundary
-    private PDict createEnvironDict() {
-        Map<String, String> getenv = System.getenv();
-        PDict environ = factory.createDict();
-        for (Entry<String, String> entry : getenv.entrySet()) {
-            environ.setItem(factory.createBytes(entry.getKey().getBytes()), factory.createBytes(entry.getValue().getBytes()));
-        }
-        return environ;
     }
 
     public PythonObjectFactory factory() {

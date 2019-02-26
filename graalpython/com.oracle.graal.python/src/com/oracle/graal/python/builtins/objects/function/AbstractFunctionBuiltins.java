@@ -262,7 +262,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
 
     @Builtin(name = __DICT__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    static abstract class DictNode extends PythonUnaryBuiltinNode {
+    abstract static class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object dict(PFunction self) {
             PHashingCollection dict = self.getDict();

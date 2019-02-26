@@ -135,7 +135,7 @@ class EnvBuilder:
             if sys.platform == "win32":
                 f.write(" %*")
             else:
-                f.write(" $@")
+                f.write(" \"$@\"")
 
         if sys.platform != "win32":
             os.chmod(script, 0o777)
@@ -326,9 +326,11 @@ class EnvBuilder:
         # Truffle change: we need to set some extra options for the launcher to work
         text = text.replace(
             '__VENV_GRAAL_PYTHON_OPTIONS__',
-            "--python.CoreHome='%s' --python.StdLibHome='%s' --python.Executable='%s'" % (
+            "--python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s'" % (
                 sys.graal_python_core_home,
                 sys.graal_python_stdlib_home,
+                context.env_dir,
+                sys.base_prefix,
                 context.env_exe,
             )
         )

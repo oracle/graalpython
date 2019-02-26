@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -37,7 +36,6 @@ import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -54,7 +52,7 @@ public abstract class WriteGeneratorFrameVariableNode extends StatementNode impl
         return WriteGeneratorFrameVariableNodeGen.create(slot, right);
     }
 
-    protected static abstract class WriteGeneraterFrameSlotNode extends FrameSlotNode {
+    protected abstract static class WriteGeneraterFrameSlotNode extends FrameSlotNode {
         public WriteGeneraterFrameSlotNode(FrameSlot slot) {
             super(slot);
         }
@@ -96,54 +94,48 @@ public abstract class WriteGeneratorFrameVariableNode extends StatementNode impl
 
         public abstract Object executeWith(VirtualFrame frame, Object value);
 
-        private Frame getGeneratorFrame(VirtualFrame frame) {
+        protected Frame getGeneratorFrame(VirtualFrame frame) {
             return frameProfile.profile(PArguments.getGeneratorFrame(frame));
         }
 
-        @Specialization(guards = "isBooleanKind(frame)")
-        public PNone write(VirtualFrame frame, PNone right) {
-            getGeneratorFrame(frame).setObject(frameSlot, PNone.NONE);
-            return right;
+        @Specialization(guards = "isBooleanKind(getGeneratorFrame(frame))")
+        public boolean write(VirtualFrame frame, boolean value) {
+            getGeneratorFrame(frame).setBoolean(frameSlot, value);
+            return value;
         }
 
-        @Specialization(guards = "isBooleanKind(frame)")
-        public boolean write(VirtualFrame frame, boolean right) {
-            getGeneratorFrame(frame).setBoolean(frameSlot, right);
-            return right;
-        }
-
-        @Specialization(guards = "isIntegerKind(frame)")
+        @Specialization(guards = "isIntegerKind(getGeneratorFrame(frame))")
         public int write(VirtualFrame frame, int value) {
             getGeneratorFrame(frame).setInt(frameSlot, value);
             return value;
         }
 
-        @Specialization(guards = {"isLongOrObjectKind(frame)", "isPrimitiveInt(value)", "!value.isNative()"}, rewriteOn = ArithmeticException.class)
-        public PInt writePIntAsLong(VirtualFrame frame, PInt value) {
-            Frame generatorFrame = getGeneratorFrame(frame);
-            generatorFrame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Long);
-            generatorFrame.setLong(frameSlot, value.longValueExact());
+        @Specialization(guards = {"isPrimitiveInt(value)", "!value.isNative()", "isLongKind(getGeneratorFrame(frame))"}, rewriteOn = ArithmeticException.class)
+        public long writeSmallPIntAsLong(VirtualFrame frame, PInt value) {
+            long longValue = value.longValueExact();
+            getGeneratorFrame(frame).setLong(frameSlot, longValue);
+            return longValue;
+        }
+
+        @Specialization(guards = {"isPrimitiveInt(value)", "!value.isNative()"}, rewriteOn = ArithmeticException.class)
+        public long writeSmallPIntAsObject(VirtualFrame frame, PInt value) {
+            ensureObjectKind(frame);
+            long longValue = value.longValueExact();
+            getGeneratorFrame(frame).setObject(frameSlot, longValue);
+            return longValue;
+        }
+
+        @Specialization(guards = "isDoubleKind(getGeneratorFrame(frame))")
+        public double write(VirtualFrame frame, double value) {
+            getGeneratorFrame(frame).setDouble(frameSlot, value);
             return value;
         }
 
-        @Specialization(guards = "isLongOrObjectKind(frame)")
-        public PInt writePIntAsObject(VirtualFrame frame, PInt value) {
-            Frame generatorFrame = getGeneratorFrame(frame);
-            generatorFrame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Object);
-            generatorFrame.setObject(frameSlot, value);
+        @Specialization
+        public Object write(VirtualFrame frame, Object value) {
+            ensureObjectKind(frame);
+            getGeneratorFrame(frame).setObject(frameSlot, value);
             return value;
-        }
-
-        @Specialization(guards = "isDoubleKind(frame)")
-        public double write(VirtualFrame frame, double right) {
-            getGeneratorFrame(frame).setDouble(frameSlot, right);
-            return right;
-        }
-
-        @Specialization(guards = "isObjectKind(frame)")
-        public Object write(VirtualFrame frame, Object right) {
-            getGeneratorFrame(frame).setObject(frameSlot, right);
-            return right;
         }
     }
 

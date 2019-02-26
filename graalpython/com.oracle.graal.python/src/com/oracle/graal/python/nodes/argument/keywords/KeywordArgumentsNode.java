@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -54,7 +54,7 @@ public abstract class KeywordArgumentsNode extends Node {
 
     public abstract PKeyword[] execute(VirtualFrame frame);
 
-    @Specialization(guards = "starargs.length == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
+    @Specialization(guards = {"starargs.length == cachedLen", "starargs.length < 32"}, limit = "getVariableArgumentInlineCacheLimit()")
     @ExplodeLoop
     PKeyword[] makeKeywords(VirtualFrame frame, PKeyword[] starargs,
                     @Cached("starargs.length") int cachedLen) {
@@ -83,6 +83,7 @@ public abstract class KeywordArgumentsNode extends Node {
     }
 
     @Specialization(replaces = "makeKeywords")
+    @ExplodeLoop
     PKeyword[] makeKeywordsUncached(VirtualFrame frame, PKeyword[] starargs) {
         int length = arguments.length;
         CompilerAsserts.partialEvaluationConstant(length);
@@ -97,14 +98,20 @@ public abstract class KeywordArgumentsNode extends Node {
             }
         }
 
-        for (int i = 0; i < starargs.length; i++) {
-            keywords[arguments.length + i] = starargs[i];
-        }
+        copyStarargs(keywords, starargs);
 
         if (reshape > 0) {
             return compactNode.execute(keywords, reshape);
         } else {
             return keywords;
+        }
+    }
+
+    private void copyStarargs(PKeyword[] keywords, PKeyword[] starargs) {
+        // This loop has deliberately been moved out such that it won't be exploded since the length
+        // of iterations is not constant.
+        for (int i = 0; i < starargs.length; i++) {
+            keywords[arguments.length + i] = starargs[i];
         }
     }
 }

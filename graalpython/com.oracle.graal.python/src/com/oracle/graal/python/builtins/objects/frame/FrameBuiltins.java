@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -51,7 +52,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -135,16 +135,12 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization
         Object get(PFrame self) {
-            Node callNode = self.getCallNode();
-            if (callNode == null) {
-                return PNone.NONE;
-            }
-            RootNode rootNode = callNode.getRootNode();
-            if (rootNode == null) {
-                return PNone.NONE;
-            } else {
+            RootNode rootNode = self.getTarget();
+            if (rootNode != null) {
                 return factory().createCode(rootNode);
             }
+            return factory().createCode(PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, new byte[0], new Object[0], new Object[0], new Object[0], new Object[0], new Object[0], "<internal>",
+                            "<internal>", -1, new byte[0]);
         }
     }
 
@@ -176,7 +172,13 @@ public final class FrameBuiltins extends PythonBuiltins {
                         @Cached("create()") BranchProfile noFrameOnPFrame) {
             PFrame pFrame = PArguments.getPFrame(owner);
             if (noPFrame.profile(pFrame == null)) {
-                pFrame = factory().createPFrame(owner);
+                Object specialArgument = PArguments.getSpecialArgument(owner);
+                if (specialArgument instanceof ClassBodyRootNode) {
+                    // the namespace argument stores the locals
+                    pFrame = factory().createPFrame(owner, PArguments.getArgument(owner, 0));
+                } else {
+                    pFrame = factory().createPFrame(owner);
+                }
                 PArguments.setPFrame(owner, pFrame);
             } else if (!pFrame.hasFrame()) {
                 noFrameOnPFrame.enter();

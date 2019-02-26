@@ -39,9 +39,19 @@
 
 import _imp
 import sys
-import python_cext
 
 _thread = None
+capi = capi_to_java = None
+_capi_hooks = []
+
+
+def register_capi_hook(hook):
+    assert callable(hook)
+    if capi:
+        hook()
+    else:
+        _capi_hooks.append(hook)
+    
 
 def may_raise(error_result=native_null):
     if isinstance(error_result, type(may_raise)):
@@ -748,8 +758,8 @@ class cstaticmethod():
         return self.__func__(None, *args, **kwargs)
 
 
-def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
-    owner = to_java(primary)
+def AddFunction(primary, tpDict, name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
+    owner = to_java_type(primary)
     if isinstance(owner, moduletype):
         # module case, we create the bound function-or-method
         func = PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, owner, owner.__name__, doc)
@@ -762,13 +772,14 @@ def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, iss
             func = cstaticmethod(func)
         PyTruffle_SetAttr(func, "__name__", name)
         PyTruffle_SetAttr(func, "__doc__", doc)
+        type_dict = to_java(tpDict)
         if name == "__init__":
             def __init__(self, *args, **kwargs):
                 if func(self, *args, **kwargs) != 0:
                     raise TypeError("__init__ failed")
-            object.__setattr__(owner, name, __init__)
+            type_dict[name] = __init__
         else:
-            object.__setattr__(owner, name, func)
+            type_dict[name] = func
 
 
 def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
@@ -788,10 +799,10 @@ def PyMethod_New(func, self):
     return bound_function
 
 
-def AddMember(primary, name, memberType, offset, canSet, doc):
+def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
     # the ReadMemberFunctions and WriteMemberFunctions don't have a wrapper to
     # convert arguments to Sulong, so we can avoid boxing the offsets into PInts
-    pclass = primary
+    pclass = to_java_type(primary)
     member = property()
     getter = ReadMemberFunctions[memberType]
     def member_getter(self):
@@ -803,12 +814,13 @@ def AddMember(primary, name, memberType, offset, canSet, doc):
             setter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8), to_sulong(value))
         member.setter(member_setter)
     member.__doc__ = doc
-    object.__setattr__(pclass, name, member)
+    type_dict = to_java(tpDict)
+    type_dict[name] = member
 
 
 getset_descriptor = type(type(AddMember).__code__)
 def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc, closure):
-    pclass = to_java(primary)
+    pclass = to_java_type(primary)
     fset = fget = None
     if getter:
         getter_w = CreateFunction(name, getter, getter_wrapper, pclass)
@@ -1188,7 +1200,6 @@ def import_c_func(name):
     return CreateFunction(name, capi[name])
 
 
-capi = capi_to_java = None
 def initialize_capi(capi_library):
     """This method is called from a C API constructor function"""
     global capi
@@ -1198,6 +1209,14 @@ def initialize_capi(capi_library):
 
     initialize_member_accessors()
     initialize_datetime_capi()
+    
+
+# run C API initialize hooks
+def run_capi_loaded_hooks(capi_library):
+    local_hooks = _capi_hooks.copy()
+    _capi_hooks.clear()
+    for hook in local_hooks:
+        hook()
 
 
 def import_native_memoryview(capi_library):

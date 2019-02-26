@@ -1,15 +1,16 @@
+# pylint: disable=anomalous-backslash-in-string
 suite = {
     # --------------------------------------------------------------------------------------------------------------
     #
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "5.190.1",
+    "mxversion": "5.210.4",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "1.0.0-rc12",
-    "release": True,
+    "version": "1.0.0-rc13",
+    "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
 
@@ -43,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "9d229909cf650948b7cf438fee2addb4b97603c1",
+                "version": "175738c97f96974ba44251e913a597aa64a7d3c2",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -51,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "9d229909cf650948b7cf438fee2addb4b97603c1",
+                "version": "175738c97f96974ba44251e913a597aa64a7d3c2",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -163,7 +164,8 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
             ],
-            "javaCompliance": "1.8",
+            "javaCompliance": "8+",
+            "checkstyle": "com.oracle.graal.python",
         },
 
         # GRAALPYTHON
@@ -177,10 +179,11 @@ suite = {
                 "regex:TREGEX",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
-            "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "1.8",
+            "javaCompliance" : "8+",
+            "checkstyleVersion" : "8.8",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
             "workingSets": "Truffle,Python",
+            "spotbugsIgnoresGenerated" : True,
         },
 
         # GRAALPYTHON TEST
@@ -194,7 +197,7 @@ suite = {
                 "mx:JUNIT"
             ],
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "1.8",
+            "javaCompliance": "8+",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
             "workingSets": "Truffle,Python",
             "testProject": True,
@@ -208,7 +211,7 @@ suite = {
                 "mx:JUNIT"
             ],
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "1.8",
+            "javaCompliance": "8+",
             "workingSets": "Truffle,Python",
             "testProject": True,
         },

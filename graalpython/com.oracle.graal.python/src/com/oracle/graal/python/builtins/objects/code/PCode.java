@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,8 +58,8 @@ import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.nodes.Node;
@@ -158,6 +158,8 @@ public final class PCode extends PythonBuiltinObject {
             return ((FunctionRootNode) rootNode).getFreeVars();
         } else if (rootNode instanceof GeneratorFunctionRootNode) {
             return ((GeneratorFunctionRootNode) rootNode).getFreeVars();
+        } else if (rootNode instanceof ModuleRootNode) {
+            return ((ModuleRootNode) rootNode).getFreeVars();
         } else {
             return null;
         }
@@ -168,6 +170,8 @@ public final class PCode extends PythonBuiltinObject {
             return ((FunctionRootNode) rootNode).getCellVars();
         } else if (rootNode instanceof GeneratorFunctionRootNode) {
             return ((GeneratorFunctionRootNode) rootNode).getCellVars();
+        } else if (rootNode instanceof ModuleRootNode) {
+            return new String[0];
         } else {
             return null;
         }
@@ -189,13 +193,16 @@ public final class PCode extends PythonBuiltinObject {
     private static int extractFirstLineno(RootNode rootNode) {
         RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
         SourceSection sourceSection = funcRootNode.getSourceSection();
-        return (sourceSection != null) ? sourceSection.getStartLine() : 1;
+        if (sourceSection != null) {
+            return sourceSection.getStartLine();
+        }
+        return 1;
     }
 
     private static String extractName(RootNode rootNode) {
         String name;
         if (rootNode instanceof ModuleRootNode) {
-            name = "<module>";
+            name = rootNode.getName();
         } else if (rootNode instanceof FunctionRootNode) {
             name = ((FunctionRootNode) rootNode).getFunctionName();
         } else {
@@ -299,6 +306,19 @@ public final class PCode extends PythonBuiltinObject {
         this.nlocals = varnamesSet.size();
     }
 
+    @TruffleBoundary
+    private static byte[] extractCodeString(RootNode rootNode) {
+        RootNode funcRootNode = rootNode;
+        if (rootNode instanceof GeneratorFunctionRootNode) {
+            funcRootNode = ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
+        }
+        SourceSection sourceSection = funcRootNode.getSourceSection();
+        if (sourceSection != null) {
+            return sourceSection.getCharacters().toString().getBytes();
+        }
+        return null;
+    }
+
     public RootNode getRootNode() {
         return rootNode;
     }
@@ -389,6 +409,9 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public byte[] getCodestring() {
+        if (codestring == null && hasRootNode()) {
+            this.codestring = extractCodeString(getRootNode());
+        }
         return codestring;
     }
 

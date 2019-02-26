@@ -27,7 +27,6 @@ package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
-import static com.oracle.graal.python.nodes.BuiltinNames.__DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
@@ -36,15 +35,18 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
@@ -54,6 +56,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonContext {
 
@@ -61,6 +64,7 @@ public final class PythonContext {
     private PythonModule mainModule;
     private final PythonCore core;
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
+    private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
 
@@ -86,20 +90,24 @@ public final class PythonContext {
     private OutputStream err;
     private InputStream in;
     @CompilationFinal private Object capiLibrary = null;
-    private final static Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
-    private final static Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
+    private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
+    private static final Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
 
     /** The thread-local state object. */
     private ThreadLocal<PThreadState> customThreadState;
+
+    // The context-local resources
     private final PosixResources resources;
+    private final AsyncHandler handler;
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
         this.core = core;
         this.env = env;
         this.resources = new PosixResources();
+        this.handler = new AsyncHandler(language);
         if (env == null) {
             this.in = System.in;
             this.out = System.out;
@@ -234,17 +242,19 @@ public final class PythonContext {
     }
 
     private void setupRuntimeInformation() {
-        PythonModule sysModule = core.initializeSysModule();
+        PythonModule sysModule = core.lookupBuiltinModule("sys");
         sysModules = (PDict) sysModule.getAttribute("modules");
 
-        builtinsModule = (PythonModule) sysModules.getItem("builtins");
-        builtinsModule.setAttribute(__DEBUG__, !PythonOptions.getOption(core.getContext(), PythonOptions.PythonOptimizeFlag));
+        builtinsModule = core.lookupBuiltinModule("builtins");
 
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
         mainModule.setDict(core.factory().createDictFixedStorage(mainModule));
+
         sysModules.setItem(__MAIN__, mainModule);
+
         OpaqueBytes.initializeForNewContext(this);
+
         currentException = null;
         isInitialized = true;
     }
@@ -281,6 +291,7 @@ public final class PythonContext {
 
     @TruffleBoundary
     public void runShutdownHooks() {
+        handler.shutdown();
         for (CallTarget f : atExitHooks.values()) {
             f.call();
         }
@@ -320,5 +331,26 @@ public final class PythonContext {
 
     public PosixResources getResources() {
         return resources;
+    }
+
+    /**
+     * Trigger any pending asynchronous actions
+     */
+    public void triggerAsyncActions() {
+        handler.triggerAsyncActions();
+    }
+
+    public void registerAsyncAction(Supplier<AsyncAction> actionSupplier) {
+        handler.registerAction(actionSupplier);
+    }
+
+    @TruffleBoundary
+    public CyclicAssumption getNativeClassStableAssumption(PythonNativeClass cls, boolean createOnDemand) {
+        CyclicAssumption assumption = nativeClassStableAssumptions.get(cls);
+        if (assumption == null && createOnDemand) {
+            assumption = new CyclicAssumption("Native class " + cls + " stable");
+            nativeClassStableAssumptions.put(cls, assumption);
+        }
+        return assumption;
     }
 }

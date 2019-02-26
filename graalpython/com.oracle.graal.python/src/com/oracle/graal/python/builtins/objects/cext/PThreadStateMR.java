@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,7 +55,8 @@ import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -134,7 +135,7 @@ public class PThreadStateMR {
         public abstract Object execute(Object key);
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
-        PythonClass doCurExcType(@SuppressWarnings("unused") String key) {
+        PythonAbstractClass doCurExcType(@SuppressWarnings("unused") String key) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
             if (currentException != null) {
@@ -167,7 +168,7 @@ public class PThreadStateMR {
         }
 
         @Specialization(guards = "eq(key, EXC_TYPE)")
-        PythonClass doExcType(@SuppressWarnings("unused") String key) {
+        PythonAbstractClass doExcType(@SuppressWarnings("unused") String key) {
             PythonContext context = getContext();
             PException currentException = context.getCaughtException();
             if (currentException != null) {
@@ -255,7 +256,7 @@ public class PThreadStateMR {
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
-        PythonClass doCurExcType(@SuppressWarnings("unused") String key, PythonClass value) {
+        LazyPythonClass doCurExcType(@SuppressWarnings("unused") String key, LazyPythonClass value) {
             setCurrentException(factory().createBaseException(value));
             return value;
         }
@@ -273,7 +274,7 @@ public class PThreadStateMR {
         }
 
         @Specialization(guards = "eq(key, EXC_TYPE)")
-        PythonClass doExcType(@SuppressWarnings("unused") String key, PythonClass value) {
+        LazyPythonClass doExcType(@SuppressWarnings("unused") String key, LazyPythonClass value) {
             setCaughtException(factory().createBaseException(value));
             return value;
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -58,7 +59,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         this.arity = arity;
         this.getStorage().define(__NAME__, name);
         if (enclosingType != null) {
-            this.getStorage().define(__QUALNAME__, enclosingType.getName() + "." + name);
+            this.getStorage().define(__QUALNAME__, GetNameNode.doSlowPath(enclosingType) + "." + name);
         } else {
             this.getStorage().define(__QUALNAME__, name);
         }
@@ -103,7 +104,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         if (enclosingType == null) {
             return String.format("PBuiltinFunction %s at 0x%x", name, hashCode());
         } else {
-            return String.format("PBuiltinFunction %s.%s at 0x%x", enclosingType.getName(), name, hashCode());
+            return String.format("PBuiltinFunction %s.%s at 0x%x", GetNameNode.doSlowPath(enclosingType), name, hashCode());
         }
     }
 

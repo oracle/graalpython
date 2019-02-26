@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -60,7 +60,7 @@ public class PySequenceMethodsWrapperMR {
         @Child private ToSulongNode toSulongNode;
 
         public Object access(PySequenceMethodsWrapper object, String key) {
-            PythonClass delegate = object.getPythonClass();
+            PythonManagedClass delegate = object.getPythonClass();
             Object result;
             switch (key) {
                 case NativeMemberNames.SQ_REPEAT:

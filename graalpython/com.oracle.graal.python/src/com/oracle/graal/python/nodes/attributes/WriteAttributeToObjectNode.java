@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,9 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -52,7 +54,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
@@ -63,32 +65,40 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@ImportStatic(PythonOptions.class)
+@ImportStatic({PythonOptions.class, NativeMemberNames.class})
 public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     private final ConditionProfile isClassProfile = ConditionProfile.createBinaryProfile();
     private final IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
+
+    protected final boolean forceType;
+
+    public WriteAttributeToObjectNode(boolean forceType) {
+        this.forceType = forceType;
+    }
 
     public abstract boolean execute(Object primary, Object key, Object value);
 
     public abstract boolean execute(Object primary, String key, Object value);
 
     public static WriteAttributeToObjectNode create() {
-        return WriteAttributeToObjectNodeGen.create();
+        return WriteAttributeToObjectNodeGen.create(false);
+    }
+
+    public static WriteAttributeToObjectNode createForceType() {
+        return WriteAttributeToObjectNodeGen.create(true);
     }
 
     protected boolean isAttrWritable(PythonObject self, Object key) {
-        if (isHiddenKey(key) || self instanceof PythonClass || self instanceof PFunction || self instanceof PMethod || self instanceof PythonModule || self instanceof PBaseException) {
+        if (isHiddenKey(key) || self instanceof PythonManagedClass || self instanceof PFunction || self instanceof PMethod || self instanceof PythonModule || self instanceof PBaseException) {
             return true;
         }
         return !exactBuiltinInstanceProfile.profileIsAnyBuiltinObject(self);
     }
 
     private void handlePythonClass(PythonObject object, Object key) {
-        if (isClassProfile.profile(object instanceof PythonClass)) {
-            if (key instanceof String) {
-                ((PythonClass) object).invalidateAttributeInMROFinalAssumptions((String) key);
-            }
+        if (isClassProfile.profile(object instanceof PythonManagedClass)) {
+            ((PythonManagedClass) object).invalidateFinalAttribute(key);
         }
     }
 
@@ -162,14 +172,21 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return true;
     }
 
-    @Specialization(guards = {
-                    "!isHiddenKey(key)",
-                    "!isPythonObject(object)"
-    })
-    protected boolean readNative(PythonNativeObject object, Object key, Object value,
+    @Specialization(guards = {"!forceType", "!isHiddenKey(key)"})
+    protected boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
                     @Cached("create()") GetObjectDictNode getNativeDict,
                     @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
-        Object d = getNativeDict.execute(object);
+        return writeNativeGeneric(object, key, value, getNativeDict.execute(object), setItemNode);
+    }
+
+    @Specialization(guards = {"forceType", "!isHiddenKey(key)"})
+    protected boolean writeNativeClass(PythonAbstractNativeObject object, Object key, Object value,
+                    @Cached("create(TP_DICT)") GetTypeMemberNode getNativeDict,
+                    @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
+        return writeNativeGeneric(object, key, value, getNativeDict.execute(object), setItemNode);
+    }
+
+    private boolean writeNativeGeneric(PythonAbstractNativeObject object, Object key, Object value, Object d, HashingCollectionNodes.SetItemNode setItemNode) {
         if (d instanceof PHashingCollection) {
             setItemNode.execute(((PHashingCollection) d), key, value);
             return true;

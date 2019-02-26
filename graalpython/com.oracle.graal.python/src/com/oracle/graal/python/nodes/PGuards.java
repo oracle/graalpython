@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,9 +65,10 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -117,7 +118,7 @@ public abstract class PGuards {
     }
 
     public static boolean isClass(Object value) {
-        return value instanceof PythonClass;
+        return value instanceof PythonAbstractClass;
     }
 
     public static boolean isEmptyStorage(PSequence sequence) {
@@ -256,11 +257,15 @@ public abstract class PGuards {
     }
 
     public static boolean isNativeObject(Object object) {
-        return object instanceof PythonNativeObject;
+        return PythonNativeObject.isInstance(object);
+    }
+
+    public static boolean isManagedClass(Object klass) {
+        return klass instanceof PythonManagedClass;
     }
 
     public static boolean isNativeClass(Object klass) {
-        return klass instanceof PythonNativeClass;
+        return PythonNativeClass.isInstance(klass);
     }
 
     public static boolean isPRange(Object obj) {

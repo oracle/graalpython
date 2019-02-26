@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,11 +46,12 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -78,145 +79,145 @@ public abstract class GetClassNode extends PNodeWithContext {
         return GetClassNodeGen.create();
     }
 
-    public abstract PythonClass execute(boolean object);
+    public abstract PythonBuiltinClass execute(boolean object);
 
-    public abstract PythonClass execute(int object);
+    public abstract PythonBuiltinClass execute(int object);
 
-    public abstract PythonClass execute(long object);
+    public abstract PythonBuiltinClass execute(long object);
 
-    public abstract PythonClass execute(double object);
+    public abstract PythonBuiltinClass execute(double object);
 
-    public final PythonClass execute(Object object) {
+    public final PythonAbstractClass execute(Object object) {
         return executeGetClass(classProfile.profile(object));
     }
 
-    protected abstract PythonClass executeGetClass(Object object);
+    protected abstract PythonAbstractClass executeGetClass(Object object);
 
     @Specialization(assumptions = "singleContextAssumption()")
-    protected PythonClass getIt(@SuppressWarnings("unused") GetSetDescriptor object,
-                    @Cached("getIt(object)") PythonClass klass) {
+    protected PythonBuiltinClass getIt(@SuppressWarnings("unused") GetSetDescriptor object,
+                    @Cached("getIt(object)") PythonBuiltinClass klass) {
         return klass;
     }
 
     @Specialization
-    protected PythonClass getIt(@SuppressWarnings("unused") GetSetDescriptor object) {
+    protected PythonBuiltinClass getIt(@SuppressWarnings("unused") GetSetDescriptor object) {
         return getCore().lookupType(PythonBuiltinClassType.GetSetDescriptor);
     }
 
     @Specialization(assumptions = "singleContextAssumption()")
-    protected PythonClass getIt(@SuppressWarnings("unused") PNone object,
-                    @Cached("getIt(object)") PythonClass klass) {
+    protected PythonBuiltinClass getIt(@SuppressWarnings("unused") PNone object,
+                    @Cached("getIt(object)") PythonBuiltinClass klass) {
         return klass;
     }
 
     @Specialization
-    protected PythonClass getIt(@SuppressWarnings("unused") PNone object) {
+    protected PythonBuiltinClass getIt(@SuppressWarnings("unused") PNone object) {
         return getCore().lookupType(PythonBuiltinClassType.PNone);
     }
 
     @Specialization(assumptions = "singleContextAssumption()")
-    protected PythonClass getIt(@SuppressWarnings("unused") PNotImplemented object,
-                    @Cached("getIt(object)") PythonClass klass) {
+    protected PythonBuiltinClass getIt(@SuppressWarnings("unused") PNotImplemented object,
+                    @Cached("getIt(object)") PythonBuiltinClass klass) {
         return klass;
     }
 
     @SuppressWarnings("unused")
     @Specialization
-    protected PythonClass getIt(PNotImplemented object) {
+    protected PythonBuiltinClass getIt(PNotImplemented object) {
         return getCore().lookupType(PythonBuiltinClassType.PNotImplemented);
     }
 
     @Specialization(assumptions = "singleContextAssumption()")
-    protected PythonClass getIt(@SuppressWarnings("unused") PEllipsis object,
-                    @Cached("getIt(object)") PythonClass klass) {
+    protected PythonBuiltinClass getIt(@SuppressWarnings("unused") PEllipsis object,
+                    @Cached("getIt(object)") PythonBuiltinClass klass) {
         return klass;
     }
 
     @SuppressWarnings("unused")
     @Specialization
-    protected PythonClass getIt(PEllipsis object) {
+    protected PythonBuiltinClass getIt(PEllipsis object) {
         return getCore().lookupType(PythonBuiltinClassType.PEllipsis);
     }
 
     @Specialization(assumptions = "singleContextAssumption()")
-    protected PythonClass getIt(@SuppressWarnings("unused") boolean object,
-                    @Cached("getIt(object)") PythonClass klass) {
+    protected PythonBuiltinClass getIt(@SuppressWarnings("unused") boolean object,
+                    @Cached("getIt(object)") PythonBuiltinClass klass) {
         return klass;
     }
 
     @SuppressWarnings("unused")
     @Specialization
-    protected PythonClass getIt(boolean object) {
+    protected PythonBuiltinClass getIt(boolean object) {
         return getCore().lookupType(PythonBuiltinClassType.Boolean);
     }
 
     @Specialization(assumptions = "singleContextAssumption()")
-    protected PythonClass getIt(@SuppressWarnings("unused") int object,
-                    @Cached("getIt(object)") PythonClass klass) {
+    protected PythonBuiltinClass getIt(@SuppressWarnings("unused") int object,
+                    @Cached("getIt(object)") PythonBuiltinClass klass) {
         return klass;
     }
 
     @SuppressWarnings("unused")
     @Specialization
-    protected PythonClass getIt(int object) {
+    protected PythonBuiltinClass getIt(int object) {
         return getCore().lookupType(PythonBuiltinClassType.PInt);
     }
 
     @Specialization(assumptions = "singleContextAssumption()")
-    protected PythonClass getIt(@SuppressWarnings("unused") long object,
-                    @Cached("getIt(object)") PythonClass klass) {
+    protected PythonBuiltinClass getIt(@SuppressWarnings("unused") long object,
+                    @Cached("getIt(object)") PythonBuiltinClass klass) {
         return klass;
     }
 
     @SuppressWarnings("unused")
     @Specialization
-    protected PythonClass getIt(long object) {
+    protected PythonBuiltinClass getIt(long object) {
         return getCore().lookupType(PythonBuiltinClassType.PInt);
     }
 
     @Specialization(assumptions = "singleContextAssumption()")
-    protected PythonClass getIt(@SuppressWarnings("unused") double object,
-                    @Cached("getIt(object)") PythonClass klass) {
+    protected PythonBuiltinClass getIt(@SuppressWarnings("unused") double object,
+                    @Cached("getIt(object)") PythonBuiltinClass klass) {
         return klass;
     }
 
     @SuppressWarnings("unused")
     @Specialization
-    protected PythonClass getIt(double object) {
+    protected PythonBuiltinClass getIt(double object) {
         return getCore().lookupType(PythonBuiltinClassType.PFloat);
     }
 
     @Specialization(assumptions = "singleContextAssumption()")
-    protected PythonClass getIt(@SuppressWarnings("unused") String object,
-                    @Cached("getIt(object)") PythonClass klass) {
+    protected PythonBuiltinClass getIt(@SuppressWarnings("unused") String object,
+                    @Cached("getIt(object)") PythonBuiltinClass klass) {
         return klass;
     }
 
     @SuppressWarnings("unused")
     @Specialization
-    protected PythonClass getIt(String object) {
+    protected PythonBuiltinClass getIt(String object) {
         return getCore().lookupType(PythonBuiltinClassType.PString);
     }
 
     @Specialization
-    protected PythonClass getIt(PythonNativeObject object,
+    protected PythonAbstractClass getIt(PythonAbstractNativeObject object,
                     @Cached("create()") GetNativeClassNode getNativeClassNode) {
         return getNativeClassNode.execute(object);
     }
 
     @Specialization(assumptions = "singleContextAssumption()")
-    protected PythonClass getIt(@SuppressWarnings("unused") PythonNativeVoidPtr object,
-                    @Cached("getIt(object)") PythonClass klass) {
+    protected PythonBuiltinClass getIt(@SuppressWarnings("unused") PythonNativeVoidPtr object,
+                    @Cached("getIt(object)") PythonBuiltinClass klass) {
         return klass;
     }
 
     @Specialization
-    protected PythonClass getIt(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
+    protected PythonBuiltinClass getIt(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
         return getCore().lookupType(PythonBuiltinClassType.PInt);
     }
 
     @Specialization
-    protected PythonClass getPythonClassGeneric(PythonObject object,
+    protected PythonAbstractClass getPythonClassGeneric(PythonObject object,
                     @Cached("create()") GetLazyClassNode getLazyClass,
                     @Cached("createIdentityProfile()") ValueProfile profile,
                     @Cached("createBinaryProfile()") ConditionProfile getClassProfile) {
@@ -224,19 +225,19 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "isForeignObject(object)", assumptions = "singleContextAssumption()")
-    protected PythonClass getIt(@SuppressWarnings("unused") TruffleObject object,
-                    @Cached("getIt(object)") PythonClass klass) {
+    protected PythonBuiltinClass getIt(@SuppressWarnings("unused") TruffleObject object,
+                    @Cached("getIt(object)") PythonBuiltinClass klass) {
         return klass;
     }
 
     @SuppressWarnings("unused")
     @Specialization(guards = "isForeignObject(object)")
-    protected PythonClass getIt(TruffleObject object) {
+    protected PythonBuiltinClass getIt(TruffleObject object) {
         return getCore().lookupType(PythonBuiltinClassType.TruffleObject);
     }
 
     @TruffleBoundary
-    public static PythonClass getItSlowPath(Object o) {
+    public static PythonAbstractClass getItSlowPath(Object o) {
         PythonCore core = PythonLanguage.getContextRef().get().getCore();
         if (PGuards.isForeignObject(o)) {
             return core.lookupType(PythonBuiltinClassType.TruffleObject);
@@ -246,10 +247,12 @@ public abstract class GetClassNode extends PNodeWithContext {
             return core.lookupType(PythonBuiltinClassType.Boolean);
         } else if (o instanceof Double || o instanceof Float) {
             return core.lookupType(PythonBuiltinClassType.PFloat);
-        } else if (o instanceof Integer || o instanceof Long || o instanceof Short || o instanceof Byte) {
+        } else if (o instanceof Integer || o instanceof Long || o instanceof Short || o instanceof Byte || o instanceof PythonNativeVoidPtr) {
             return core.lookupType(PythonBuiltinClassType.PInt);
         } else if (o instanceof PythonObject) {
             return ((PythonObject) o).getPythonClass();
+        } else if (o instanceof PythonAbstractNativeObject) {
+            return GetNativeClassNode.doSlowPath((PythonAbstractNativeObject) o);
         } else if (o instanceof PEllipsis) {
             return core.lookupType(PythonBuiltinClassType.PEllipsis);
         } else if (o instanceof PNotImplemented) {

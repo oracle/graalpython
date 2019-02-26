@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -96,8 +97,10 @@ public class MethodBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object reprMethod(PMethod self,
                         @Cached("create()") GetLazyClassNode getClassNode,
-                        @Cached("createGetAttributeNode()") GetAttributeNode getNameAttrNode) {
-            return String.format("<built-in method %s of %s object at 0x%x>", getNameAttrNode.executeObject(self.getFunction()), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
+                        @Cached("createGetAttributeNode()") GetAttributeNode getNameAttrNode,
+                        @Cached("create()") GetNameNode getTypeNameNode) {
+            String typeName = getTypeNameNode.execute(getClassNode.execute(self.getSelf()));
+            return String.format("<built-in method %s of %s object at 0x%x>", getNameAttrNode.executeObject(self.getFunction()), typeName, self.hashCode());
         }
 
         protected static GetAttributeNode createGetAttributeNode() {

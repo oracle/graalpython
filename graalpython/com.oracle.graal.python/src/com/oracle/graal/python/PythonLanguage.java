@@ -26,7 +26,6 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -38,7 +37,6 @@ import org.graalvm.options.OptionDescriptors;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -49,9 +47,11 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NodeFactory;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -89,7 +89,6 @@ import com.oracle.truffle.api.object.Layout;
 import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.Source.LiteralBuilder;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -147,14 +146,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private void ensureHomeInOptions(Env env) {
         String languageHome = getLanguageHome();
         String sysPrefix = env.getOptions().get(PythonOptions.SysPrefix);
+        String basePrefix = env.getOptions().get(PythonOptions.SysBasePrefix);
         String coreHome = env.getOptions().get(PythonOptions.CoreHome);
         String stdLibHome = env.getOptions().get(PythonOptions.StdLibHome);
 
         PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
-                        "\n\tCoreHome: {2}" +
-                        "\n\tStdLibHome: {3}", languageHome, sysPrefix, coreHome, stdLibHome)));
+                        "\n\tBaseSysPrefix: {2}" +
+                        "\n\tCoreHome: {3}" +
+                        "\n\tStdLibHome: {4}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome)));
 
         TruffleFile home = null;
         if (languageHome != null) {
@@ -174,7 +175,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         if (home != null) {
             if (sysPrefix.isEmpty()) {
-                env.getOptions().set(PythonOptions.SysPrefix, home.getAbsoluteFile().getPath());
+                sysPrefix = home.getAbsoluteFile().getPath();
+                env.getOptions().set(PythonOptions.SysPrefix, sysPrefix);
+            }
+
+            if (basePrefix.isEmpty()) {
+                basePrefix = home.getAbsoluteFile().getPath();
+                env.getOptions().set(PythonOptions.SysBasePrefix, basePrefix);
             }
 
             if (coreHome.isEmpty()) {
@@ -210,8 +217,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
                             "\n\tLanguage home: {0}" +
                             "\n\tSysPrefix: {1}" +
-                            "\n\tCoreHome: {2}" +
-                            "\n\tStdLibHome: {3}", home.getPath(), sysPrefix, coreHome, stdLibHome)));
+                            "\n\tSysBasePrefix: {2}" +
+                            "\n\tCoreHome: {3}" +
+                            "\n\tStdLibHome: {4}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome)));
         }
     }
 
@@ -234,7 +242,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (core.isInitialized()) {
             context.initializeMainModule(source.getPath());
         }
-        RootNode root = doParse(core, source);
+        RootNode root = doParse(context, source);
         if (core.isInitialized()) {
             return Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, root));
         } else {
@@ -242,9 +250,25 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private RootNode doParse(PythonCore pythonCore, Source source) {
+    private RootNode doParse(PythonContext context, Source source) {
+        ParserMode mode = null;
+        if (source.isInteractive()) {
+            if (PythonOptions.getOption(context, PythonOptions.TerminalIsInteractive)) {
+                // if we run through our own launcher, the sys.__displayhook__ would provide the
+                // printing
+                mode = ParserMode.Statement;
+            } else {
+                // if we're not run through our own launcher, the embedder will expect the normal
+                // Truffle printing
+                mode = ParserMode.InteractiveStatement;
+            }
+        } else {
+            // by default we assume a module
+            mode = ParserMode.File;
+        }
+        PythonCore pythonCore = context.getCore();
         try {
-            return (RootNode) pythonCore.getParser().parse(source.isInteractive() ? ParserMode.InteractiveStatement : ParserMode.File, pythonCore, source, null);
+            return (RootNode) pythonCore.getParser().parse(mode, pythonCore, source, null);
         } catch (PException e) {
             // handle PException during parsing (PIncompleteSourceException will propagate through)
             Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, e)).call();
@@ -313,7 +337,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (value != null) {
             if (value instanceof PythonObject) {
                 return ((PythonObject) value).asPythonClass();
-            } else if (value instanceof PythonNativeObject) {
+            } else if (PGuards.isNativeObject(value)) {
+                // TODO(fa): we could also use 'GetClassNode.getItSlowPath(value)' here
                 return null;
             } else if (value instanceof PythonAbstractObject ||
                             value instanceof Number ||
@@ -398,9 +423,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             return callable.getCallTarget().getRootNode().getSourceSection();
         } else if (value instanceof PCode) {
             return ((PCode) value).getRootNode().getSourceSection();
-        } else if (value instanceof PythonClass) {
-            for (String k : ((PythonClass) value).getAttributeNames()) {
-                SourceSection attrSourceLocation = findSourceLocation(context, ((PythonClass) value).getAttribute(k));
+        } else if (value instanceof PythonManagedClass) {
+            for (String k : ((PythonManagedClass) value).getAttributeNames()) {
+                Object attrValue = ReadAttributeFromDynamicObjectNode.doSlowPath(((PythonManagedClass) value).getStorage(), k);
+                SourceSection attrSourceLocation = findSourceLocation(context, attrValue);
                 if (attrSourceLocation != null) {
                     return attrSourceLocation;
                 }
@@ -428,13 +454,31 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return TruffleLogger.getLogger(ID);
     }
 
-    public static Source newSource(PythonContext ctxt, String src, String name, URI uri) {
+    public static Source newSource(PythonContext ctxt, String src, String name, boolean mayBeFile) {
         try {
-            LiteralBuilder sourceBuilder = Source.newBuilder(ID, src, name);
-            if (uri != null) {
-                sourceBuilder.uri(uri);
+            SourceBuilder sourceBuilder = null;
+            if (mayBeFile) {
+                try {
+                    TruffleFile truffleFile = ctxt.getEnv().getTruffleFile(name);
+                    if (truffleFile.exists()) {
+                        // XXX: (tfel): We don't know if the expression has anything to do with the
+                        // filename that's given. We would really have to compare the entire
+                        // contents, but as a first approximation, we compare the content lengths.
+                        // We override the contents of the source builder with the given source
+                        // regardless.
+                        if (src.length() == truffleFile.size()) {
+                            sourceBuilder = Source.newBuilder(ID, truffleFile);
+                            sourceBuilder.content(src);
+                        }
+                    }
+                } catch (SecurityException | IOException e) {
+                    sourceBuilder = null;
+                }
             }
-            return newSource(ctxt, sourceBuilder, name);
+            if (sourceBuilder == null) {
+                sourceBuilder = Source.newBuilder(ID, src, name);
+            }
+            return newSource(ctxt, sourceBuilder);
         } catch (IOException e) {
             throw new AssertionError();
         }
@@ -446,7 +490,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         try {
             return cachedSources.computeIfAbsent(src, t -> {
                 try {
-                    return newSource(ctxt, Source.newBuilder(ID, src), name);
+                    return newSource(ctxt, Source.newBuilder(ID, src).name(name));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -460,7 +504,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         try {
             return cachedSources.computeIfAbsent(url, t -> {
                 try {
-                    return newSource(ctxt, Source.newBuilder(ID, url), name);
+                    return newSource(ctxt, Source.newBuilder(ID, url).name(name));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -470,14 +514,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder, String name) throws IOException {
-        SourceBuilder newBuilder = srcBuilder.name(name).mimeType(MIME_TYPE);
+    private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder) throws IOException {
         boolean coreIsInitialized = ctxt.getCore().isInitialized();
         boolean internal = !coreIsInitialized && !PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources);
         if (internal) {
             srcBuilder.internal(true);
         }
-        return newBuilder.build();
+        return srcBuilder.build();
     }
 
     @Override

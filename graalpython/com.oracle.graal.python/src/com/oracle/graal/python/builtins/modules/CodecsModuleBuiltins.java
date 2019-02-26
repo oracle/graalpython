@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -81,10 +81,10 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "_codecs")
 public class CodecsModuleBuiltins extends PythonBuiltins {
-    public static String DEFAULT_ENCODING = "utf-8";
+    public static final String DEFAULT_ENCODING = "utf-8";
 
     // python to java codecs mapping
-    private static Map<String, String> PY_CODECS_ALIASES = new HashMap<>();
+    private static final Map<String, String> PY_CODECS_ALIASES = new HashMap<>();
     static {
         // ascii
         PY_CODECS_ALIASES.put("us-ascii", "us-ascii");

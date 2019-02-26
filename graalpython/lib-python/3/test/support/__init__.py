@@ -49,27 +49,21 @@ threading = None
 #     multiprocessing = None
 multiprocessing = None
 
-# TODO: Truffle reenable me once supported (GR-9146)
-# try:
-#     import zlib
-# except ImportError:
-#     zlib = None
-zlib = None
+try:
+    import zlib
+except ImportError:
+    zlib = None
 
-# TODO: Truffle reenable me once supported (GR-9147)
-# try:
-#     import gzip
-# except ImportError:
-#     gzip = None
-gzip = None
+try:
+    import gzip
+except ImportError:
+    gzip = None
 
 
-# TODO: Truffle reenable me once supported (GR-9148)
-# try:
-#     import bz2
-# except ImportError:
-#     bz2 = None
-bz2 = None
+try:
+    import bz2
+except ImportError:
+    bz2 = None
 
 # TODO: Truffle reenable me once supported (GR-9149)
 # try:

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -30,6 +30,7 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 from os.path import join
 
 import mx
+import mx_subst
 import mx_benchmark
 from mx_benchmark import StdOutRule, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
 from mx_graalpython_bench_param import HARNESS_PATH
@@ -54,7 +55,8 @@ GROUP_GRAAL = "Graal"
 SUBGROUP_GRAAL_PYTHON = "graalpython"
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
-CONFIGURATION_EXPERIMENTAL_SPLITTING = "experimental_splitting"
+CONFIG_EXPERIMENTAL_SPLITTING = "experimental_splitting"
+CONFIGURATION_SANDBOXED = "sandboxed"
 
 DEFAULT_ITERATIONS = 10
 
@@ -130,7 +132,7 @@ class AbstractPythonIterationsControlVm(AbstractPythonVm):
         super(AbstractPythonIterationsControlVm, self).__init__(config_name, options)
         try:
             self._iterations = int(iterations)
-        except Exception:
+        except:
             self._iterations = None
 
     def _override_iterations_args(self, args):
@@ -187,13 +189,14 @@ class PyPyVm(AbstractPythonIterationsControlVm):
 
 class GraalPythonVm(GuestVm):
     def __init__(self, config_name=CONFIGURATION_DEFAULT, distributions=None, cp_suffix=None, cp_prefix=None,
-                 host_vm=None, extra_vm_args=None):
+                 host_vm=None, extra_vm_args=None, extra_polyglot_args=None):
         super(GraalPythonVm, self).__init__(host_vm=host_vm)
         self._config_name = config_name
         self._distributions = distributions
         self._cp_suffix = cp_suffix
         self._cp_prefix = cp_prefix
         self._extra_vm_args = extra_vm_args
+        self._extra_polyglot_args = extra_polyglot_args
 
     def hosting_registry(self):
         return java_vm_registry
@@ -211,10 +214,15 @@ class GraalPythonVm(GuestVm):
             assert isinstance(self._distributions, list), "distributions must be either None or a list"
             dists += self._distributions
 
+        extra_polyglot_args = self._extra_polyglot_args if isinstance(self._extra_polyglot_args, list) else []
         if mx.suite("sulong", fatalIfMissing=False):
             dists.append('SULONG')
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
+                extra_polyglot_args += [mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_MANAGED_LIBS>')]
+            else:
+                extra_polyglot_args += [mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_LIBS>')]
+
 
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
         if isinstance(self._extra_vm_args, list):
@@ -223,7 +231,7 @@ class GraalPythonVm(GuestVm):
             "-Dpython.home=%s" % join(SUITE.dir, "graalpython"),
             "com.oracle.graal.python.shell.GraalPythonMain"
         ]
-        cmd = truffle_options + vm_args + args
+        cmd = truffle_options + vm_args + extra_polyglot_args + args
         return self.host_vm().run(cwd, cmd)
 
     def name(self):
@@ -234,7 +242,8 @@ class GraalPythonVm(GuestVm):
 
     def with_host_vm(self, host_vm):
         return self.__class__(config_name=self._config_name, distributions=self._distributions,
-                              cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix, host_vm=host_vm)
+                              cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix, host_vm=host_vm,
+                              extra_vm_args=self._extra_vm_args, extra_polyglot_args=self._extra_polyglot_args)
 
 
 # ----------------------------------------------------------------------------------------------------------------------

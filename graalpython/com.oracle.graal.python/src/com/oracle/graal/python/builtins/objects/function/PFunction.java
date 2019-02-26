@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -144,7 +145,11 @@ public class PFunction extends PythonObject {
 
     @TruffleBoundary
     public String getSourceCode() {
-        SourceSection sourceSection = callTarget.getRootNode().getSourceSection();
+        RootNode rootNode = callTarget.getRootNode();
+        if (rootNode instanceof GeneratorFunctionRootNode) {
+            rootNode = ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
+        }
+        SourceSection sourceSection = rootNode.getSourceSection();
         if (sourceSection != null) {
             return sourceSection.getCharacters().toString();
         }

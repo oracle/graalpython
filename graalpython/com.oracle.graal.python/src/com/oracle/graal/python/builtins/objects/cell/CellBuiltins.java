@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltinsFactory.GetRefNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
@@ -120,12 +121,14 @@ public class CellBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public String repr(PCell self,
                         @Cached("create()") GetRefNode getRef,
-                        @Cached("create()") GetLazyClassNode getClassNode) {
+                        @Cached("create()") GetLazyClassNode getClassNode,
+                        @Cached("create()") TypeNodes.GetNameNode getNameNode) {
             Object ref = getRef.execute(self);
             if (ref == null) {
                 return String.format("<cell at %s: empty>", self.hashCode());
             }
-            return String.format("<cell at %s: %s object at %s>", self.hashCode(), getClassNode.execute(ref).getName(), ref.hashCode());
+            String typeName = getNameNode.execute(getClassNode.execute(ref));
+            return String.format("<cell at %s: %s object at %s>", self.hashCode(), typeName, ref.hashCode());
         }
 
         @Fallback

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,14 +51,19 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRandom)
@@ -70,6 +75,7 @@ public class RandomBuiltins extends PythonBuiltins {
 
     @Builtin(name = "seed", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SeedNode extends PythonBuiltinNode {
 
         @Specialization
@@ -80,7 +86,7 @@ public class RandomBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PNone seed(PRandom random, int inputSeed) {
+        public PNone seed(PRandom random, long inputSeed) {
             random.setSeed(inputSeed);
             return PNone.NONE;
         }
@@ -97,26 +103,47 @@ public class RandomBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(rewriteOn = UnexpectedResultException.class)
-        public PNone seedObject(PRandom random, Object inputSeed,
-                        @Cached("create(__HASH__)") LookupAndCallUnaryNode callHash) throws UnexpectedResultException {
-            long hash = callHash.executeLong(inputSeed);
-            random.setSeed(hash);
-            return PNone.NONE;
-        }
+        @CompilationFinal boolean gotUnexpectedHashResult = false;
+        @Child LookupAndCallUnaryNode callHash;
 
-        @Specialization(replaces = "seedObject")
-        public PNone seedNonLong(PRandom random, Object inputSeed,
-                        @Cached("create(__HASH__)") LookupAndCallUnaryNode callHash) {
-            Object object = callHash.executeObject(inputSeed);
-            if (PGuards.isInteger(object)) {
-                random.setSeed(((Number) object).intValue());
-            } else if (PGuards.isPInt(object)) {
-                random.setSeed(((PInt) object).intValue());
+        @Fallback
+        public PNone seedNonLong(Object random, Object inputSeed) {
+            if (random instanceof PRandom) {
+                if (callHash == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    callHash = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__HASH__));
+                }
+                Object hashResult = null;
+                if (!gotUnexpectedHashResult) {
+                    try {
+                        long hash = callHash.executeLong(inputSeed);
+                        ((PRandom) random).setSeed(hash);
+                        return PNone.NONE;
+                    } catch (UnexpectedResultException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        gotUnexpectedHashResult = true;
+                        hashResult = e.getResult();
+                    }
+                }
+                if (gotUnexpectedHashResult) {
+                    if (hashResult == null) {
+                        hashResult = callHash.executeObject(inputSeed);
+                    }
+                    if (PGuards.isInteger(hashResult)) {
+                        ((PRandom) random).setSeed(((Number) hashResult).intValue());
+                    } else if (PGuards.isPInt(hashResult)) {
+                        ((PRandom) random).setSeed(((PInt) hashResult).intValue());
+                    } else {
+                        throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
+                    }
+                    return PNone.NONE;
+                } else {
+                    assert false : "cannot reach here";
+                    return PNone.NONE;
+                }
             } else {
-                throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
+                throw raise(PythonErrorType.TypeError, "descriptor 'seed' requires a '_random.Random' object but received a '%p'", random);
             }
-            return PNone.NONE;
         }
     }
 

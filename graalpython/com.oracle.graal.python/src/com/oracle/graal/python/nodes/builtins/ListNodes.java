@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -89,7 +89,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public abstract class ListNodes {
 
-    public final static class CreateStorageFromIteratorNode extends PNodeWithContext {
+    public static final class CreateStorageFromIteratorNode extends PNodeWithContext {
 
         private static final int START_SIZE = 2;
 

@@ -44,6 +44,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Set the location of sys.prefix. Overrides any environment variables or Java options.") //
     public static final OptionKey<String> SysPrefix = new OptionKey<>("");
 
+    @Option(category = OptionCategory.EXPERT, help = "Set the location of sys.base_prefix. Overrides any environment variables or Java options.") //
+    public static final OptionKey<String> SysBasePrefix = new OptionKey<>("");
+
     @Option(category = OptionCategory.USER, help = "Set the location of lib-graalpython. Overrides any environment variables or Java options.") //
     public static final OptionKey<String> CoreHome = new OptionKey<>("");
 
@@ -123,8 +126,8 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Switch on/off using lazy strings for performance reasons. Default true.") //
     public static final OptionKey<Boolean> LazyStrings = new OptionKey<>(true);
 
-    @Option(category = OptionCategory.EXPERT, help = "Enable forced splitting (of builtins). Default true.") //
-    public static final OptionKey<Boolean> EnableForcedSplits = new OptionKey<>(true);
+    @Option(category = OptionCategory.EXPERT, help = "Enable forced splitting (of builtins). Default false.") //
+    public static final OptionKey<Boolean> EnableForcedSplits = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, help = "Set by the launcher if an interactive console is used to run Python.") //
     public static final OptionKey<Boolean> TerminalIsInteractive = new OptionKey<>(false);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -90,10 +90,13 @@ public abstract class PClosureRootNode extends PRootNode {
     }
 
     public String[] getFreeVars() {
-        String[] freeVars = new String[freeVarSlots.length];
-        for (int i = 0; i < freeVarSlots.length; i++) {
-            freeVars[i] = (String) freeVarSlots[i].getIdentifier();
+        if (freeVarSlots != null) {
+            String[] freeVars = new String[freeVarSlots.length];
+            for (int i = 0; i < freeVarSlots.length; i++) {
+                freeVars[i] = (String) freeVarSlots[i].getIdentifier();
+            }
+            return freeVars;
         }
-        return freeVars;
+        return new String[0];
     }
 }
