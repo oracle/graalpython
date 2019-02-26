@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,52 +38,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.exception;
+package com.oracle.graal.python.nodes.function;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ListIterator;
+import com.oracle.graal.python.nodes.PClosureRootNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.instrumentation.Tag;
 
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleStackTrace;
-import com.oracle.truffle.api.TruffleStackTraceElement;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.source.SourceSection;
+/**
+ * The sole purpose of this class is to handle the pre-amble of the root node, so that frame
+ * restarting works when instrumented.
+ */
+public class InnerRootNode extends ExpressionNode {
+    @Child private ExpressionNode body;
+    private final PClosureRootNode root;
 
-public final class ExceptionUtils {
-    private ExceptionUtils() {
+    public InnerRootNode(PClosureRootNode functionRootNode, ExpressionNode body) {
+        this.body = body;
+        this.assignSourceSection(body.getSourceSection());
+        this.root = functionRootNode;
     }
 
-    @TruffleBoundary
-    public static void printPythonLikeStackTrace(PException e) {
-        List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStacktrace(e);
-        ArrayList<String> stack = new ArrayList<>();
-        for (TruffleStackTraceElement frame : stackTrace) {
+    @Override
+    public Object execute(VirtualFrame frame) {
+        root.initializeFrame(frame);
+        return body.execute(frame);
+    }
 
-            StringBuilder sb = new StringBuilder();
-            Node location = frame.getLocation();
-            SourceSection sourceSection = location != null ? location.getSourceSection() : null;
-            String rootName = frame.getTarget().getRootNode().getName();
-            if (sourceSection != null) {
-                sb.append("  ");
-                String path = sourceSection.getSource().getPath();
-                if (path != null) {
-                    sb.append("File ");
-                }
-                sb.append('"');
-                sb.append(sourceSection.getSource().getName());
-                sb.append("\", line ");
-                sb.append(sourceSection.getStartLine());
-                sb.append(", in ");
-                sb.append(rootName);
-                stack.add(sb.toString());
-            }
-        }
-        System.err.println("Traceback (most recent call last):");
-        ListIterator<String> listIterator = stack.listIterator(stack.size());
-        while (listIterator.hasPrevious()) {
-            System.err.println(listIterator.previous());
-        }
-        System.err.println(e.getMessage());
+    @Override
+    public boolean hasTag(Class<? extends Tag> tag) {
+        return StandardTags.RootTag.class == tag;
+    }
+
+    @Override
+    public boolean hasSideEffectAsAnExpression() {
+        return true;
     }
 }

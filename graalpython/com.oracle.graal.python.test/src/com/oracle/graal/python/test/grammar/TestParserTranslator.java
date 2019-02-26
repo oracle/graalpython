@@ -86,6 +86,7 @@ import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
+import com.oracle.graal.python.nodes.function.InnerRootNode;
 import com.oracle.graal.python.nodes.generator.DictConcatNode;
 import com.oracle.graal.python.nodes.literal.BooleanLiteralNode;
 import com.oracle.graal.python.nodes.literal.ComplexLiteralNode;
@@ -155,6 +156,8 @@ public class TestParserTranslator {
             if (((WriteLocalVariableNode) n).getIdentifier().equals(FrameSlotIDs.RETURN_SLOT_ID)) {
                 actual = ((WriteLocalVariableNode) n).getRhs();
             }
+        } else if (n instanceof InnerRootNode) {
+            actual = n.getChildren().iterator().next();
         }
         if (actual == n) {
             return n;
