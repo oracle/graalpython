@@ -2,16 +2,18 @@ import enum
 import inspect
 import pydoc
 import unittest
+import threading
 from collections import OrderedDict
 from enum import Enum, IntEnum, EnumMeta, Flag, IntFlag, unique, auto
 from io import StringIO
 from pickle import dumps, loads, PicklingError, HIGHEST_PROTOCOL
 from test import support
+from datetime import timedelta
+
 try:
     import threading
 except ImportError:
     threading = None
-
 
 # for pickle tests
 try:
@@ -323,7 +325,10 @@ class TestEnum(unittest.TestCase):
     def test_contains(self):
         Season = self.Season
         self.assertIn(Season.AUTUMN, Season)
-        self.assertNotIn(3, Season)
+        with self.assertWarns(DeprecationWarning):
+            self.assertNotIn(3, Season)
+        with self.assertWarns(DeprecationWarning):
+            self.assertNotIn('AUTUMN', Season)
 
         val = Season(3)
         self.assertIn(val, Season)
@@ -331,6 +336,11 @@ class TestEnum(unittest.TestCase):
         class OtherEnum(Enum):
             one = 1; two = 2
         self.assertNotIn(OtherEnum.two, Season)
+
+    def test_member_contains(self):
+        self.assertRaises(TypeError, lambda: 'test' in self.Season.AUTUMN)
+        self.assertRaises(TypeError, lambda: 3 in self.Season.AUTUMN)
+        self.assertRaises(TypeError, lambda: 'AUTUMN' in self.Season.AUTUMN)
 
     def test_comparisons(self):
         Season = self.Season
@@ -1550,6 +1560,34 @@ class TestEnum(unittest.TestCase):
         self.assertEqual(round(Planet.EARTH.surface_gravity, 2), 9.80)
         self.assertEqual(Planet.EARTH.value, (5.976e+24, 6.37814e6))
 
+    def test_ignore(self):
+        class Period(timedelta, Enum):
+            '''
+            different lengths of time
+            '''
+            def __new__(cls, value, period):
+                obj = timedelta.__new__(cls, value)
+                obj._value_ = value
+                obj.period = period
+                return obj
+            _ignore_ = 'Period i'
+            Period = vars()
+            for i in range(13):
+                Period['month_%d' % i] = i*30, 'month'
+            for i in range(53):
+                Period['week_%d' % i] = i*7, 'week'
+            for i in range(32):
+                Period['day_%d' % i] = i, 'day'
+            OneDay = day_1
+            OneWeek = week_1
+            OneMonth = month_1
+        self.assertFalse(hasattr(Period, '_ignore_'))
+        self.assertFalse(hasattr(Period, 'Period'))
+        self.assertFalse(hasattr(Period, 'i'))
+        self.assertTrue(isinstance(Period.day_1, timedelta))
+        self.assertTrue(Period.month_1 is Period.day_30)
+        self.assertTrue(Period.week_4 is Period.day_28)
+
     def test_nonhash_value(self):
         class AutoNumberInAList(Enum):
             def __new__(cls):
@@ -1714,6 +1752,13 @@ class TestFlag(unittest.TestCase):
 
     class Perm(Flag):
         R, W, X = 4, 2, 1
+
+    class Color(Flag):
+        BLACK = 0
+        RED = 1
+        GREEN = 2
+        BLUE = 4
+        PURPLE = RED|BLUE
 
     class Open(Flag):
         RO = 0
@@ -1924,7 +1969,21 @@ class TestFlag(unittest.TestCase):
         test_pickle_dump_load(self.assertIs, FlagStooges.CURLY|FlagStooges.MOE)
         test_pickle_dump_load(self.assertIs, FlagStooges)
 
-    def test_containment(self):
+    def test_contains(self):
+        Open = self.Open
+        Color = self.Color
+        self.assertFalse(Color.BLACK in Open)
+        self.assertFalse(Open.RO in Color)
+        with self.assertWarns(DeprecationWarning):
+            self.assertFalse('BLACK' in Color)
+        with self.assertWarns(DeprecationWarning):
+            self.assertFalse('RO' in Open)
+        with self.assertWarns(DeprecationWarning):
+            self.assertFalse(1 in Color)
+        with self.assertWarns(DeprecationWarning):
+            self.assertFalse(1 in Open)
+
+    def test_member_contains(self):
         Perm = self.Perm
         R, W, X = Perm
         RW = R | W
@@ -1988,7 +2047,6 @@ class TestFlag(unittest.TestCase):
             d = 6
         self.assertEqual(repr(Bizarre(7)), '<Bizarre.d|c|b: 7>')
 
-    @unittest.skipUnless(threading, 'Threading required for this test.')
     @support.reap_threads
     def test_unique_composite(self):
         # override __eq__ to be identity only
@@ -2035,6 +2093,13 @@ class TestIntFlag(unittest.TestCase):
         X = 1 << 0
         W = 1 << 1
         R = 1 << 2
+
+    class Color(IntFlag):
+        BLACK = 0
+        RED = 1
+        GREEN = 2
+        BLUE = 4
+        PURPLE = RED|BLUE
 
     class Open(IntFlag):
         RO = 0
@@ -2311,7 +2376,23 @@ class TestIntFlag(unittest.TestCase):
         self.assertEqual(len(lst), len(Thing))
         self.assertEqual(len(Thing), 0, Thing)
 
-    def test_containment(self):
+    def test_contains(self):
+        Color = self.Color
+        Open = self.Open
+        self.assertTrue(Color.GREEN in Color)
+        self.assertTrue(Open.RW in Open)
+        self.assertFalse(Color.GREEN in Open)
+        self.assertFalse(Open.RW in Color)
+        with self.assertWarns(DeprecationWarning):
+            self.assertFalse('GREEN' in Color)
+        with self.assertWarns(DeprecationWarning):
+            self.assertFalse('RW' in Open)
+        with self.assertWarns(DeprecationWarning):
+            self.assertFalse(2 in Color)
+        with self.assertWarns(DeprecationWarning):
+            self.assertFalse(2 in Open)
+
+    def test_member_contains(self):
         Perm = self.Perm
         R, W, X = Perm
         RW = R | W
@@ -2330,6 +2411,8 @@ class TestIntFlag(unittest.TestCase):
         self.assertFalse(R in WX)
         self.assertFalse(W in RX)
         self.assertFalse(X in RW)
+        with self.assertWarns(DeprecationWarning):
+            self.assertFalse('swallow' in RW)
 
     def test_bool(self):
         Perm = self.Perm
@@ -2339,7 +2422,6 @@ class TestIntFlag(unittest.TestCase):
         for f in Open:
             self.assertEqual(bool(f.value), bool(f))
 
-    @unittest.skipUnless(threading, 'Threading required for this test.')
     @support.reap_threads
     def test_unique_composite(self):
         # override __eq__ to be identity only
@@ -2429,6 +2511,8 @@ expected_help_output_with_docs = """\
 Help on class Color in module %s:
 
 class Color(enum.Enum)
+ |  Color(value, names=None, *, module=None, qualname=None, type=None, start=1)
+ |\x20\x20
  |  An enumeration.
  |\x20\x20
  |  Method resolution order:
@@ -2466,6 +2550,8 @@ expected_help_output_without_docs = """\
 Help on class Color in module %s:
 
 class Color(enum.Enum)
+ |  Color(value, names=None, *, module=None, qualname=None, type=None, start=1)
+ |\x20\x20
  |  Method resolution order:
  |      Color
  |      enum.Enum

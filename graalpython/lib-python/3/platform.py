@@ -302,7 +302,7 @@ def linux_distribution(distname='', version='', id='',
                        full_distribution_name=1):
     import warnings
     warnings.warn("dist() and linux_distribution() functions are deprecated "
-                  "in Python 3.5", PendingDeprecationWarning, stacklevel=2)
+                  "in Python 3.5", DeprecationWarning, stacklevel=2)
     return _linux_distribution(distname, version, id, supported_dists,
                                full_distribution_name)
 
@@ -376,7 +376,7 @@ def dist(distname='', version='', id='',
     """
     import warnings
     warnings.warn("dist() and linux_distribution() functions are deprecated "
-                  "in Python 3.5", PendingDeprecationWarning, stacklevel=2)
+                  "in Python 3.5", DeprecationWarning, stacklevel=2)
     return _linux_distribution(distname, version, id,
                                supported_dists=supported_dists,
                                full_distribution_name=0)
@@ -1202,9 +1202,6 @@ def _sys_version(sys_version=None):
         _, branch, revision = sys._git
     elif hasattr(sys, '_mercurial'):
         _, branch, revision = sys._mercurial
-    elif hasattr(sys, 'subversion'):
-        # sys.subversion was added in Python 2.5
-        _, branch, revision = sys.subversion
     else:
         branch = ''
         revision = ''
@@ -1259,7 +1256,7 @@ def python_branch():
     """ Returns a string identifying the Python implementation
         branch.
 
-        For CPython this is the Subversion branch from which the
+        For CPython this is the SCM branch from which the
         Python binary was built.
 
         If not available, an empty string is returned.
@@ -1273,7 +1270,7 @@ def python_revision():
     """ Returns a string identifying the Python implementation
         revision.
 
-        For CPython this is the Subversion revision from which the
+        For CPython this is the SCM revision from which the
         Python binary was built.
 
         If not available, an empty string is returned.
@@ -1348,7 +1345,7 @@ def platform(aliased=0, terse=0):
                 'ignore',
                 r'dist\(\) and linux_distribution\(\) '
                 'functions are deprecated .*',
-                PendingDeprecationWarning,
+                DeprecationWarning,
             )
             distname, distversion, distid = dist('')
         if distname and not terse:

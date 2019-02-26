@@ -1,6 +1,8 @@
 /* Memoryview object implementation */
 
 #include "Python.h"
+#include "internal/mem.h"
+#include "internal/pystate.h"
 #include "pystrhex.h"
 #include <stddef.h>
 
@@ -2143,7 +2145,7 @@ memory_hex(PyMemoryViewObject *self, PyObject *dummy)
     if (bytes == NULL)
         return NULL;
 
-    ret = _Py_strhex(PyBytes_AS_STRING(bytes), Py_SIZE(bytes));
+    ret = _Py_strhex(PyBytes_AS_STRING(bytes), PyBytes_GET_SIZE(bytes));
     Py_DECREF(bytes);
 
     return ret;

@@ -6,7 +6,7 @@ Coverage: 88%
 
 from collections import deque
 import os.path
-from idlelib import _pyclbr as pyclbr
+import pyclbr
 from tkinter import Tk
 
 from test.support import requires
