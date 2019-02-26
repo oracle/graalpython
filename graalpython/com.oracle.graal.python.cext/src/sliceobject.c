@@ -49,21 +49,6 @@ PyObject _Py_EllipsisObject = {
 };
 
 UPCALL_ID(PySlice_GetIndicesEx);
-int PySlice_GetIndicesEx(PyObject *_r, Py_ssize_t length,
-                         Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step,
-                         Py_ssize_t *slicelength) {
-    PySliceObject *r = (PySliceObject*)_r;
-    PyObject* result = UPCALL_CEXT_O(_jls_PySlice_GetIndicesEx, native_to_java(r->start), native_to_java(r->stop), native_to_java(r->step), length);
-    if (result == NULL) {
-        return -1;
-    }
-    *start = PyLong_AsSsize_t(PyTuple_GetItem(result, 0));
-    *stop = PyLong_AsSsize_t(PyTuple_GetItem(result, 1));
-    *step =  PyLong_AsSsize_t(PyTuple_GetItem(result, 2));
-    *slicelength =  PyLong_AsSsize_t(PyTuple_GetItem(result, 3));
-    return 0;
-}
-
 int PySlice_Unpack(PyObject *_r, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step) {
     PySliceObject *r = (PySliceObject*)_r;
     PyObject* result = UPCALL_CEXT_O(_jls_PySlice_GetIndicesEx, native_to_java(r->start), native_to_java(r->stop), native_to_java(r->step), PY_SSIZE_T_MAX);

@@ -243,11 +243,11 @@ PyObject * PyUnicode_InternFromString(const char *cp) {
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
-char* PyUnicode_AsUTF8(PyObject *unicode) {
+const char* PyUnicode_AsUTF8(PyObject *unicode) {
     return PyUnicode_AsUTF8AndSize(unicode, NULL);
 }
 
-char* PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize) {
+const char* PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize) {
     PyObject *result;
     result = _PyUnicode_AsUTF8String(unicode, NULL);
     if (psize) {

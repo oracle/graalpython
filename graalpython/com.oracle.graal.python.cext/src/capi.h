@@ -202,7 +202,8 @@ int wrap_setter(PyCFunction fun, PyObject *self, PyObject *value, void *closure)
 void* wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
 void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
 void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
-void* wrap_fastcall(_PyCFunctionFast        fun, PyObject *  self, PyObject   **args, PyObject  *nargs, PyObject *kwnames);
+void* wrap_fastcall(_PyCFunctionFast fun, PyObject *  self, PyObject   **args, PyObject  *nargs);
+void* wrap_fastcall_with_keywords(_PyCFunctionFastWithKeywords fun, PyObject *  self, PyObject   **args, PyObject  *nargs, PyObject *kwnames);
 void* wrap_unsupported(void *fun, ...);
 
 #define TDEBUG __builtin_debugtrap()

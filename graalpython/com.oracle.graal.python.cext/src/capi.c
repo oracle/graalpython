@@ -707,7 +707,11 @@ void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone) {
     return native_to_java(fun(module, pnone));
 }
 
-void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObject *nargs, PyObject *kwnames) {
+void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObject *nargs) {
+    return native_to_java(fun(self, PySequence_Fast_ITEMS((PyObject*)args), PyLong_AsSsize_t(nargs)));
+}
+
+void* wrap_fastcall_with_keywords(_PyCFunctionFastWithKeywords fun, PyObject *self, PyObject **args, PyObject *nargs, PyObject *kwnames) {
     return native_to_java(fun(self, PySequence_Fast_ITEMS((PyObject*)args), PyLong_AsSsize_t(nargs), kwnames));
 }
 

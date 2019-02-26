@@ -32,13 +32,6 @@ Py_complex PyComplex_AsCComplex(PyObject *op) {
 #include "Python.h"
 #include "structmember.h"
 
-/*[clinic input]
-class complex "PyComplexObject *" "&PyComplex_Type"
-[clinic start generated code]*/
-/*[clinic end generated code: output=da39a3ee5e6b4b0d input=819e057d2d10f5ec]*/
-
-#include "clinic/complexobject.c.h"
-
 /* elementary operations on complex numbers */
 
 static Py_complex c_1 = {1., 0.};

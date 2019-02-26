@@ -447,12 +447,25 @@ _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *argv,
 #undef _PyArg_ParseStack
 #endif
 // for binary compatibility, also define the function properly
-int _PyArg_ParseStack(PyObject** args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
+int _PyArg_ParseStack(PyObject *const *args, Py_ssize_t nargs, const char *format, ...) {
     return -1;
 }
 #ifdef __backup_PyArg_ParseStack
 #define _PyArg_ParseStack __backup_PyArg_ParseStack
 #undef __backup_PyArg_ParseStack
+#endif
+
+#ifdef _PyArg_ParseStackAndKeywords
+#define __backup_PyArg_ParseStackAndKeywords _PyArg_ParseStackAndKeywords
+#undef _PyArg_ParseStackAndKeywords
+#endif
+// for binary compatibility, also define the function properly
+int _PyArg_ParseStackAndKeywords(PyObject *const *args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
+    return -1;
+}
+#ifdef __backup_PyArg_ParseStackAndKeywords
+#define _PyArg_ParseStackAndKeywords __backup_PyArg_ParseStackAndKeywords
+#undef __backup_PyArg_ParseStackAndKeywords
 #endif
 
 
@@ -860,36 +873,3 @@ int PyArg_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssize
 #define PyArg_UnpackTuple _backup_PyArg_UnpackTuple
 #undef _backup_PyArg_UnpackTuple
 #endif
-
-// taken from CPython 3.6.5 "Python/getargs.c"
-int _PyArg_NoKeywords(const char *funcname, PyObject *kw) {
-    if (kw == NULL)
-        return 1;
-    if (!PyDict_CheckExact(kw)) {
-        PyErr_BadInternalCall();
-        return 0;
-    }
-    if (PyDict_Size(kw) == 0)
-        return 1;
-
-    PyErr_Format(PyExc_TypeError, "%s does not take keyword arguments",
-                    funcname);
-    return 0;
-}
-
-int
-_PyArg_NoPositional(const char *funcname, PyObject *args)
-{
-    if (args == NULL)
-        return 1;
-    if (!PyTuple_CheckExact(args)) {
-        PyErr_BadInternalCall();
-        return 0;
-    }
-    if (PyTuple_GET_SIZE(args) == 0)
-        return 1;
-
-    PyErr_Format(PyExc_TypeError, "%s does not take positional arguments",
-                    funcname);
-    return 0;
-}
