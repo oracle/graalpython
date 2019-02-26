@@ -1,13 +1,10 @@
 import io
 import os
+import threading
 import unittest
 import urllib.robotparser
 from test import support
 from http.server import BaseHTTPRequestHandler, HTTPServer
-try:
-    import threading
-except ImportError:
-    threading = None
 
 
 class BaseRobotTest:
@@ -249,6 +246,33 @@ Disallow: /cyberworld/map/
     bad = ['/cyberworld/map/index.html']
 
 
+class StringFormattingTest(BaseRobotTest, unittest.TestCase):
+    robots_txt = """\
+User-agent: *
+Crawl-delay: 1
+Request-rate: 3/15
+Disallow: /cyberworld/map/ # This is an infinite virtual URL space
+
+# Cybermapper knows where to go.
+User-agent: cybermapper
+Disallow: /some/path
+    """
+
+    expected_output = """\
+User-agent: cybermapper
+Disallow: /some/path
+
+User-agent: *
+Crawl-delay: 1
+Request-rate: 3/15
+Disallow: /cyberworld/map/
+
+"""
+
+    def test_string_formatting(self):
+        self.assertEqual(str(self.parser), self.expected_output)
+
+
 class RobotHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
@@ -258,7 +282,6 @@ class RobotHandler(BaseHTTPRequestHandler):
         pass
 
 
-@unittest.skipUnless(threading, 'threading required for this test')
 class PasswordProtectedSiteTestCase(unittest.TestCase):
 
     def setUp(self):
