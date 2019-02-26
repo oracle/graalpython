@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyPositionalArgumentsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.CreateAndCheckArgumentsNodeGen;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillDefaultsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.HandleTooManyArgumentsNodeGen;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -139,6 +140,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @Child private ApplyKeywordsNode applyKeywords;
         @Child private HandleTooManyArgumentsNode handleTooManyArgumentsNode;
         @Child private ApplyPositionalArguments applyPositional = ApplyPositionalArguments.create();
+        @Child private FillDefaultsNode fillDefaultsNode;
 
         public static CreateAndCheckArgumentsNode create() {
             return CreateAndCheckArgumentsNodeGen.create();
@@ -230,24 +232,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
             boolean more_filling = input_argcount < co_argcount + co_kwonlyargcount;
             if (more_filling) {
-                int firstDefaultArgIdx = co_argcount - defaults.length;
 
-                int missingCnt = 0;
                 String[] missingNames = new String[co_argcount + co_kwonlyargcount];
 
                 // then, fill the normal arguments with defaults_w (if needed)
-                for (int i = input_argcount; i < co_argcount; i++) {
-                    if (PArguments.getArgument(scope_w, i) != null) {
-                        continue;
-                    }
-                    int defnum = i - firstDefaultArgIdx;
-                    if (defnum >= 0) {
-                        PArguments.setArgument(scope_w, i, defaults[defnum]);
-                    } else {
-                        missingNames[missingCnt++] = arity.getParameterIds()[i];
-                    }
+                if (fillDefaultsNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    fillDefaultsNode = insert(FillDefaultsNode.create());
                 }
-
+                int missingCnt = fillDefaultsNode.execute(arity, scope_w, defaults, input_argcount, co_argcount, missingNames);
                 if (missingCnt > 0) {
                     throw raise(PythonBuiltinClassType.TypeError, "%s() missing %d required positional argument%s: %s",
                                     getName(callable),
@@ -405,6 +398,58 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         public static ApplyPositionalArguments create() {
             return ApplyPositionalArgumentsNodeGen.create();
+        }
+    }
+
+    protected abstract static class FillDefaultsNode extends Node {
+
+        public abstract int execute(Arity arity, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount, String[] missingNames);
+
+        @Specialization(guards = {"input_argcount == cachedInputArgcount", "co_argcount == cachedArgcount", "checkIterations(input_argcount, co_argcount)"})
+        @ExplodeLoop
+        int doCached(Arity arity, Object[] scope_w, Object[] defaults, @SuppressWarnings("unused") int input_argcount, @SuppressWarnings("unused") int co_argcount, String[] missingNames,
+                        @Cached("input_argcount") int cachedInputArgcount,
+                        @Cached("co_argcount") int cachedArgcount) {
+            int firstDefaultArgIdx = cachedArgcount - defaults.length;
+            int missingCnt = 0;
+            for (int i = cachedInputArgcount; i < cachedArgcount; i++) {
+                if (PArguments.getArgument(scope_w, i) != null) {
+                    continue;
+                }
+                int defnum = i - firstDefaultArgIdx;
+                if (defnum >= 0) {
+                    PArguments.setArgument(scope_w, i, defaults[defnum]);
+                } else {
+                    missingNames[missingCnt++] = arity.getParameterIds()[i];
+                }
+            }
+            return missingCnt;
+        }
+
+        @Specialization(replaces = "doCached")
+        int doUncached(Arity arity, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount, String[] missingNames) {
+            int firstDefaultArgIdx = co_argcount - defaults.length;
+            int missingCnt = 0;
+            for (int i = input_argcount; i < co_argcount; i++) {
+                if (PArguments.getArgument(scope_w, i) != null) {
+                    continue;
+                }
+                int defnum = i - firstDefaultArgIdx;
+                if (defnum >= 0) {
+                    PArguments.setArgument(scope_w, i, defaults[defnum]);
+                } else {
+                    missingNames[missingCnt++] = arity.getParameterIds()[i];
+                }
+            }
+            return missingCnt;
+        }
+
+        protected static boolean checkIterations(int input_argcount, int co_argcount) {
+            return co_argcount - input_argcount < 32;
+        }
+
+        public static FillDefaultsNode create() {
+            return FillDefaultsNodeGen.create();
         }
     }
 
