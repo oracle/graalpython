@@ -554,12 +554,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "GRAAL_PYTHON_OPTIONS: This environment variable can include default options that\n" +
                         "   are always passed to the launcher. These are not shell expanded and given to\n" +
                         "   the launcher as-is.");
-        if (maxCategory.compareTo(OptionCategory.DEBUG) >= 0) {
-            print("\nGraalPython performance debugging options:\n" +
-                            "-debug-perf                  : Enable tracing of Truffle compilations and its warnings\n" +
-                            "-dump                        : Enable dumping of compilation graphs to IGV\n" +
-                            "-compile-truffle-immediately : Start compiling on first invocation and throw compilation exceptions");
-        }
     }
 
     @Override
