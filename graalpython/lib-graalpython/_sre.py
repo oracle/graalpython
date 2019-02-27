@@ -118,7 +118,7 @@ def setup(sre_compiler, error_class, flags_table):
 
 CODESIZE = 4
 
-MAGIC = 20140917
+MAGIC = 20171005
 MAXREPEAT = 4294967295
 MAXGROUPS = 2147483647
 FLAG_NAMES = ["re.TEMPLATE", "re.IGNORECASE", "re.LOCALE", "re.MULTILINE",
