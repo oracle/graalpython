@@ -51,4 +51,5 @@ def load(suffix=""):
 load("_external")
 importlib = load()
 importlib._install(sys, _imp)
+importlib._install_external_importers()
 sys.modules["builtins"].__import__ = __builtin__(importlib.__import__)
