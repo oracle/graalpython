@@ -86,13 +86,3 @@ sys.__stdout__ = sys.stdout
 sys.stderr = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stderr), encoding="utf-8", line_buffering=True)
 sys.stderr.mode = "w"
 sys.__stderr__ = sys.stderr
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
-# patch _thread (needed for setuptools if threading is disabled)
-#
-# ----------------------------------------------------------------------------------------------------------------------
-if not _sysconfig.get_config_var('WITH_THREAD'):
-    import _dummy_thread
-    sys.modules["_thread"] = _dummy_thread
