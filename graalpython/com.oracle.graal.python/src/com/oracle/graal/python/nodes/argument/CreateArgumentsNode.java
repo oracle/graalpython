@@ -57,6 +57,8 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyPositionalArgumentsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.CreateAndCheckArgumentsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillDefaultsNodeGen;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillKwDefaultsNodeGen;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FindKwDefaultNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.HandleTooManyArgumentsNodeGen;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -66,6 +68,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic({PythonOptions.class, PGuards.class})
 public abstract class CreateArgumentsNode extends PNodeWithContext {
@@ -141,6 +144,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @Child private HandleTooManyArgumentsNode handleTooManyArgumentsNode;
         @Child private ApplyPositionalArguments applyPositional = ApplyPositionalArguments.create();
         @Child private FillDefaultsNode fillDefaultsNode;
+        @Child private FillKwDefaultsNode fillKwDefaultsNode;
 
         public static CreateAndCheckArgumentsNode create() {
             return CreateAndCheckArgumentsNodeGen.create();
@@ -227,50 +231,18 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             }
 
             if (too_many_args) {
+                // the node acts as a profile
                 throw handleTooManyArguments(scope_w, callable, arity, co_argcount, co_kwonlyargcount, defaults.length, avail, methodcall);
             }
 
             boolean more_filling = input_argcount < co_argcount + co_kwonlyargcount;
             if (more_filling) {
 
-                String[] missingNames = new String[co_argcount + co_kwonlyargcount];
-
                 // then, fill the normal arguments with defaults_w (if needed)
-                if (fillDefaultsNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    fillDefaultsNode = insert(FillDefaultsNode.create());
-                }
-                int missingCnt = fillDefaultsNode.execute(arity, scope_w, defaults, input_argcount, co_argcount, missingNames);
-                if (missingCnt > 0) {
-                    throw raise(PythonBuiltinClassType.TypeError, "%s() missing %d required positional argument%s: %s",
-                                    getName(callable),
-                                    missingCnt,
-                                    missingCnt == 1 ? "" : "s",
-                                    String.join(",", Arrays.copyOf(missingNames, missingCnt)));
-                }
+                fillDefaults(callable, arity, scope_w, defaults, input_argcount, co_argcount);
 
                 // finally, fill kwonly arguments with w_kw_defs (if needed)
-                kwnames: for (int i = co_argcount; i < co_argcount + co_kwonlyargcount; i++) {
-                    if (PArguments.getArgument(scope_w, i) != null) {
-                        continue;
-                    }
-                    String kwname = arity.getKeywordNames()[i - co_argcount];
-                    for (int j = 0; j < kwdefaults.length; j++) {
-                        if (kwdefaults[j].getName().equals(kwname)) {
-                            PArguments.setArgument(scope_w, i, kwdefaults[j].getValue());
-                            continue kwnames;
-                        }
-                    }
-                    missingNames[missingCnt++] = kwname;
-                }
-
-                if (missingCnt > 0) {
-                    throw raise(PythonBuiltinClassType.TypeError, "%s() missing %d required keyword-only argument%s: %s",
-                                    getName(callable),
-                                    missingCnt,
-                                    missingCnt == 1 ? "" : "s",
-                                    String.join(",", Arrays.copyOf(missingNames, missingCnt)));
-                }
+                fillKwDefaults(callable, scope_w, arity, kwdefaults, co_argcount, co_kwonlyargcount);
             }
 
             return scope_w;
@@ -290,6 +262,22 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 handleTooManyArgumentsNode = insert(HandleTooManyArgumentsNode.create());
             }
             return handleTooManyArgumentsNode.execute(scope_w, callable, arity, co_argcount, co_kwonlyargcount, ndefaults, avail, methodcall);
+        }
+
+        private void fillDefaults(Object callable, Arity arity, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount) {
+            if (fillDefaultsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                fillDefaultsNode = insert(FillDefaultsNode.create());
+            }
+            fillDefaultsNode.execute(callable, arity, scope_w, defaults, input_argcount, co_argcount);
+        }
+
+        private void fillKwDefaults(Object callable, Object[] scope_w, Arity arity, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount) {
+            if (fillKwDefaultsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                fillKwDefaultsNode = insert(FillKwDefaultsNode.create());
+            }
+            fillKwDefaultsNode.execute(callable, scope_w, arity, kwdefaults, co_argcount, co_kwonlyargcount);
         }
 
     }
@@ -401,15 +389,32 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
     }
 
-    protected abstract static class FillDefaultsNode extends Node {
+    protected abstract static class FillBaseNode extends PNodeWithContext {
 
-        public abstract int execute(Arity arity, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount, String[] missingNames);
+        protected PException raiseMissing(Object callable, String[] missingNames, int missingCnt) {
+            throw raise(PythonBuiltinClassType.TypeError, "%s() missing %d required positional argument%s: %s",
+                            getName(callable),
+                            missingCnt,
+                            missingCnt == 1 ? "" : "s",
+                            String.join(",", Arrays.copyOf(missingNames, missingCnt)));
+        }
+
+        protected static boolean checkIterations(int input_argcount, int co_argcount) {
+            return co_argcount - input_argcount < 32;
+        }
+    }
+
+    protected abstract static class FillDefaultsNode extends FillBaseNode {
+
+        public abstract void execute(Object callable, Arity arity, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount);
 
         @Specialization(guards = {"input_argcount == cachedInputArgcount", "co_argcount == cachedArgcount", "checkIterations(input_argcount, co_argcount)"})
         @ExplodeLoop
-        int doCached(Arity arity, Object[] scope_w, Object[] defaults, @SuppressWarnings("unused") int input_argcount, @SuppressWarnings("unused") int co_argcount, String[] missingNames,
+        void doCached(Object callable, Arity arity, Object[] scope_w, Object[] defaults, @SuppressWarnings("unused") int input_argcount, @SuppressWarnings("unused") int co_argcount,
                         @Cached("input_argcount") int cachedInputArgcount,
-                        @Cached("co_argcount") int cachedArgcount) {
+                        @Cached("co_argcount") int cachedArgcount,
+                        @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
+            String[] missingNames = new String[cachedArgcount - cachedInputArgcount];
             int firstDefaultArgIdx = cachedArgcount - defaults.length;
             int missingCnt = 0;
             for (int i = cachedInputArgcount; i < cachedArgcount; i++) {
@@ -423,11 +428,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     missingNames[missingCnt++] = arity.getParameterIds()[i];
                 }
             }
-            return missingCnt;
+            if (missingProfile.profile(missingCnt > 0)) {
+                throw raiseMissing(callable, missingNames, missingCnt);
+            }
         }
 
         @Specialization(replaces = "doCached")
-        int doUncached(Arity arity, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount, String[] missingNames) {
+        void doUncached(Object callable, Arity arity, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount,
+                        @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
+            String[] missingNames = new String[co_argcount - input_argcount];
             int firstDefaultArgIdx = co_argcount - defaults.length;
             int missingCnt = 0;
             for (int i = input_argcount; i < co_argcount; i++) {
@@ -441,15 +450,113 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     missingNames[missingCnt++] = arity.getParameterIds()[i];
                 }
             }
-            return missingCnt;
-        }
-
-        protected static boolean checkIterations(int input_argcount, int co_argcount) {
-            return co_argcount - input_argcount < 32;
+            if (missingProfile.profile(missingCnt > 0)) {
+                throw raiseMissing(callable, missingNames, missingCnt);
+            }
         }
 
         public static FillDefaultsNode create() {
             return FillDefaultsNodeGen.create();
+        }
+    }
+
+    protected abstract static class FillKwDefaultsNode extends FillBaseNode {
+
+        @Child private FindKwDefaultNode findKwDefaultNode;
+
+        public abstract void execute(Object callable, Object[] scope_w, Arity arity, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount);
+
+        @Specialization(guards = {"co_argcount == cachedArgcount", "co_kwonlyargcount == cachedKwOnlyArgcount", "checkIterations(co_argcount, co_kwonlyargcount)"})
+        @ExplodeLoop
+        void doCached(Object callable, Object[] scope_w, Arity arity, PKeyword[] kwdefaults, @SuppressWarnings("unused") int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount,
+                        @Cached("co_argcount") int cachedArgcount,
+                        @Cached("co_kwonlyargcount") int cachedKwOnlyArgcount,
+                        @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
+            String[] missingNames = new String[cachedKwOnlyArgcount];
+            int missingCnt = 0;
+            for (int i = cachedArgcount; i < cachedArgcount + cachedKwOnlyArgcount; i++) {
+                if (PArguments.getArgument(scope_w, i) != null) {
+                    continue;
+                }
+
+                String kwname = arity.getKeywordNames()[i - cachedArgcount];
+                PKeyword kwdefault = findKwDefault(kwdefaults, kwname);
+                if (kwdefault != null) {
+                    PArguments.setArgument(scope_w, i, kwdefault.getValue());
+                } else {
+                    missingNames[missingCnt++] = kwname;
+                }
+            }
+            if (missingProfile.profile(missingCnt > 0)) {
+                throw raiseMissing(callable, missingNames, missingCnt);
+            }
+        }
+
+        @Specialization(replaces = "doCached")
+        void doUncached(Object callable, Object[] scope_w, Arity arity, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount,
+                        @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
+            String[] missingNames = new String[co_kwonlyargcount];
+            int missingCnt = 0;
+            for (int i = co_argcount; i < co_argcount + co_kwonlyargcount; i++) {
+                if (PArguments.getArgument(scope_w, i) != null) {
+                    continue;
+                }
+
+                String kwname = arity.getKeywordNames()[i - co_argcount];
+                PKeyword kwdefault = findKwDefault(kwdefaults, kwname);
+                if (kwdefault != null) {
+                    PArguments.setArgument(scope_w, i, kwdefault.getValue());
+                } else {
+                    missingNames[missingCnt++] = kwname;
+                }
+            }
+            if (missingProfile.profile(missingCnt > 0)) {
+                throw raiseMissing(callable, missingNames, missingCnt);
+            }
+        }
+
+        private PKeyword findKwDefault(PKeyword[] kwdefaults, String kwname) {
+            if (findKwDefaultNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                findKwDefaultNode = insert(FindKwDefaultNode.create());
+            }
+            return findKwDefaultNode.execute(kwdefaults, kwname);
+        }
+
+        public static FillKwDefaultsNode create() {
+            return FillKwDefaultsNodeGen.create();
+        }
+    }
+
+    /** finds a keyword-default value by a given name */
+    protected abstract static class FindKwDefaultNode extends Node {
+
+        public abstract PKeyword execute(PKeyword[] kwdefaults, String kwname);
+
+        @Specialization(guards = {"kwdefaults.length == cachedLength", "kwdefaults.length < 32"})
+        @ExplodeLoop
+        PKeyword doCached(PKeyword[] kwdefaults, String kwname,
+                        @Cached("kwdefaults.length") int cachedLength) {
+            for (int j = 0; j < cachedLength; j++) {
+                if (kwdefaults[j].getName().equals(kwname)) {
+                    return kwdefaults[j];
+                }
+            }
+            return null;
+        }
+
+        @Specialization(replaces = "doCached")
+        PKeyword doUncached(PKeyword[] kwdefaults, String kwname) {
+            for (int j = 0; j < kwdefaults.length; j++) {
+                if (kwdefaults[j].getName().equals(kwname)) {
+                    return kwdefaults[j];
+                }
+            }
+            return null;
+        }
+
+        public static FindKwDefaultNode create() {
+            return FindKwDefaultNodeGen.create();
         }
     }
 
