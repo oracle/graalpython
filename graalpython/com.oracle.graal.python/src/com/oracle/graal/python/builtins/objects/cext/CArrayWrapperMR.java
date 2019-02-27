@@ -53,6 +53,8 @@ import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.nodes.Node;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID;
+
 @MessageResolution(receiverType = CArrayWrapper.class)
 public class CArrayWrapperMR {
 
@@ -81,9 +83,9 @@ public class CArrayWrapperMR {
         private Object callGetByteArrayTypeID(long len) {
             if (callUnaryNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callUnaryNode = insert(PCallCapiFunction.create(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID));
+                callUnaryNode = insert(PCallCapiFunction.create());
             }
-            return callUnaryNode.call(new Object[]{len});
+            return callUnaryNode.execute(FUN_GET_BYTE_ARRAY_TYPE_ID, new Object[]{len});
         }
     }
 

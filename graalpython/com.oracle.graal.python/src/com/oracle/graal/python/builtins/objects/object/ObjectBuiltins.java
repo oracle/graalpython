@@ -226,8 +226,8 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         public boolean eq(PythonNativeObject self, PythonNativeObject other,
-                        @Cached("create(__EQ__)") CExtNodes.PointerCompareNode nativeIsNode) {
-            return nativeIsNode.execute(self, other);
+                        @Cached CExtNodes.PointerCompareNode nativeIsNode) {
+            return nativeIsNode.execute(__EQ__, self, other);
         }
 
         @Fallback
@@ -245,8 +245,8 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         public boolean ne(PythonNativeObject self, PythonNativeObject other,
-                        @Cached("create(__NE__)") CExtNodes.PointerCompareNode nativeNeNode) {
-            return nativeNeNode.execute(self, other);
+                        @Cached CExtNodes.PointerCompareNode nativeNeNode) {
+            return nativeNeNode.execute(__NE__, self, other);
         }
 
         @Fallback

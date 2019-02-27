@@ -40,15 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_THREAD_STATE_TYPE_ID;
+
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.PThreadStateMRFactory.GetTypeIDNodeGen;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @MessageResolution(receiverType = PThreadState.class)
@@ -78,41 +81,34 @@ public class PThreadStateMR {
     }
 
     abstract static class GetTypeIDNode extends CExtBaseNode {
-
-        @Child private PCallNativeNode callUnaryNode;
-
-        @CompilationFinal private TruffleObject funGetThreadStateTypeID;
-
         public abstract Object execute();
 
         @Specialization(assumptions = "singleContextAssumption()")
-        Object doByteArray(@Cached("callGetByteArrayTypeID()") Object nativeType) {
+        Object doByteArray(
+                @SuppressWarnings("unused") @CachedLibrary(limit = "1")InteropLibrary interopLibrary,
+                @SuppressWarnings("unused") @Cached.Exclusive @Cached PCallNativeNode callUnaryNode,
+                @Cached("callGetByteArrayTypeID(interopLibrary, callUnaryNode)") Object nativeType) {
             // TODO(fa): use weak reference ?
             return nativeType;
         }
 
         @Specialization(replaces = "doByteArray")
-        Object doByteArrayMultiCtx() {
-            return callGetByteArrayTypeIDCached();
+        Object doByteArrayMultiCtx(
+                @CachedLibrary(limit = "1")InteropLibrary interopLibrary,
+                @Cached.Exclusive @Cached PCallNativeNode callUnaryNode) {
+            return callGetByteArrayTypeIDCached(interopLibrary, callUnaryNode);
         }
 
-        protected Object callGetByteArrayTypeID() {
-            return callGetArrayTypeID(importCAPISymbol(NativeCAPISymbols.FUN_GET_THREAD_STATE_TYPE_ID));
+        protected Object callGetByteArrayTypeID(InteropLibrary interopLibrary, PCallNativeNode callUnaryNode) {
+            return callGetArrayTypeID(importCAPISymbol(interopLibrary, FUN_GET_THREAD_STATE_TYPE_ID), callUnaryNode);
         }
 
-        private Object callGetByteArrayTypeIDCached() {
-            if (funGetThreadStateTypeID == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                funGetThreadStateTypeID = importCAPISymbol(NativeCAPISymbols.FUN_GET_THREAD_STATE_TYPE_ID);
-            }
-            return callGetArrayTypeID(funGetThreadStateTypeID);
+        private Object callGetByteArrayTypeIDCached(InteropLibrary interopLibrary, PCallNativeNode callUnaryNode) {
+            TruffleObject funGetThreadStateTypeID = importCAPISymbol(interopLibrary, FUN_GET_THREAD_STATE_TYPE_ID);
+            return callGetArrayTypeID(funGetThreadStateTypeID, callUnaryNode);
         }
 
-        private Object callGetArrayTypeID(TruffleObject fun) {
-            if (callUnaryNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callUnaryNode = insert(PCallNativeNode.create());
-            }
+        private Object callGetArrayTypeID(TruffleObject fun, PCallNativeNode callUnaryNode) {
             return callUnaryNode.execute(fun, new Object[0]);
         }
 

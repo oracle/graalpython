@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
@@ -72,6 +73,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.datamodel.IsIterableNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -79,6 +81,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
@@ -1429,7 +1432,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LtNode extends PythonBinaryBuiltinNode {
@@ -1467,29 +1470,37 @@ public class IntBuiltins extends PythonBuiltins {
             return left.getValue().compareTo(right.getValue()) < 0;
         }
 
-        @Specialization(guards = "fromNativeNode.isSubtype(y)", limit = "1")
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(y, getClass, isSubtype)", limit = "1")
         boolean doDN(long x, PythonNativeObject y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
-            return x < fromNativeNode.execute(y);
+                     @Cached GetClassNode getClass,
+                     @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode<Double> fromNativeNode) {
+            return x < fromNativeNode.executeFloat(y);
         }
 
-        @Specialization(guards = {"nativeLeft.isSubtype(x)", "nativeRight.isSubtype(y)"}, limit = "1")
+        @Specialization(guards = {
+                "nativeLeft.isFloatSubtype(x, getClass, isSubtype)",
+                "nativeRight.isFloatSubtype(y, getClass, isSubtype)"}, limit = "1")
         boolean doDN(PythonNativeObject x, PythonNativeObject y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> nativeLeft,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> nativeRight) {
-            return nativeLeft.execute(x) < nativeRight.execute(y);
+                     @Cached GetClassNode getClass,
+                     @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode<Double> nativeLeft,
+                        @Cached FromNativeSubclassNode<Double> nativeRight) {
+            return nativeLeft.executeFloat(x) < nativeRight.executeFloat(y);
         }
 
-        @Specialization(guards = "fromNativeNode.isSubtype(x)", limit = "1")
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(x, getClass, isSubtype)", limit = "1")
         boolean doDN(PythonNativeObject x, double y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
-            return fromNativeNode.execute(x) < y;
+                     @Cached GetClassNode getClass,
+                     @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode<Double> fromNativeNode) {
+            return fromNativeNode.executeFloat(x) < y;
         }
 
         @Specialization
         boolean doVoidPtr(PythonNativeVoidPtr x, long y,
-                        @Cached("create(__LT__)") CExtNodes.PointerCompareNode ltNode) {
-            return ltNode.execute(x, y);
+                        @Cached CExtNodes.PointerCompareNode ltNode) {
+            return ltNode.execute(__LT__, x, y);
         }
 
         @SuppressWarnings("unused")

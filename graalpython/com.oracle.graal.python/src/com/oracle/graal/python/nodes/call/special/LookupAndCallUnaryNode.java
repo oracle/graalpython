@@ -216,4 +216,9 @@ public abstract class LookupAndCallUnaryNode extends Node {
             return dispatchNode.executeObject(attr, receiver);
         }
     }
+
+    public static LookupAndCallUnaryNode getUncached() {
+        // TODO: TRUFFLE LIBRARY GETUNCACHED MIGRATION IMPLEMENT ME
+        return null;
+    }
 }

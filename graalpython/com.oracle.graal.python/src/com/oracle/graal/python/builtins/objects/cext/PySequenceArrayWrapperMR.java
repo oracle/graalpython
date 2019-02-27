@@ -40,20 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_PTR_ARRAY_TYPE_ID;
+
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.GetTypeIDNodeGen;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @MessageResolution(receiverType = PySequenceArrayWrapper.class)
@@ -73,38 +76,25 @@ public class PySequenceArrayWrapperMR {
     @ImportStatic(SpecialMethodNames.class)
     abstract static class GetTypeIDNode extends CExtBaseNode {
 
-        @Child private PCallNativeNode callUnaryNode = PCallNativeNode.create();
-
-        @CompilationFinal private TruffleObject funGetByteArrayTypeID;
-        @CompilationFinal private TruffleObject funGetPtrArrayTypeID;
-
         public abstract Object execute(Object delegate);
 
-        protected Object callGetByteArrayTypeID() {
-            return callGetArrayTypeID(importCAPISymbol(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID));
+        protected Object callGetByteArrayTypeID(PCallNativeNode callUnaryNode, InteropLibrary interopLibrary) {
+            return callGetArrayTypeID(callUnaryNode, importCAPISymbol(interopLibrary, FUN_GET_BYTE_ARRAY_TYPE_ID));
         }
 
-        protected Object callGetPtrArrayTypeID() {
-            return callGetArrayTypeID(importCAPISymbol(NativeCAPISymbols.FUN_GET_PTR_ARRAY_TYPE_ID));
+        protected Object callGetPtrArrayTypeID(PCallNativeNode callUnaryNode, InteropLibrary interopLibrary) {
+            return callGetArrayTypeID(callUnaryNode, importCAPISymbol(interopLibrary, FUN_GET_PTR_ARRAY_TYPE_ID));
         }
 
-        private Object callGetByteArrayTypeIDCached() {
-            if (funGetByteArrayTypeID == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                funGetByteArrayTypeID = importCAPISymbol(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID);
-            }
-            return callGetArrayTypeID(funGetByteArrayTypeID);
+        private Object callGetByteArrayTypeIDCached(PCallNativeNode callUnaryNode, InteropLibrary interopLibrary) {
+            return callGetArrayTypeID(callUnaryNode, importCAPISymbol(interopLibrary, FUN_GET_BYTE_ARRAY_TYPE_ID));
         }
 
-        private Object callGetPtrArrayTypeIDCached() {
-            if (funGetPtrArrayTypeID == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                funGetPtrArrayTypeID = importCAPISymbol(NativeCAPISymbols.FUN_GET_PTR_ARRAY_TYPE_ID);
-            }
-            return callGetArrayTypeID(funGetPtrArrayTypeID);
+        private Object callGetPtrArrayTypeIDCached(PCallNativeNode callUnaryNode, InteropLibrary interopLibrary) {
+            return callGetArrayTypeID(callUnaryNode, importCAPISymbol(interopLibrary, FUN_GET_PTR_ARRAY_TYPE_ID));
         }
 
-        private Object callGetArrayTypeID(TruffleObject fun) {
+        private Object callGetArrayTypeID(PCallNativeNode callUnaryNode, TruffleObject fun) {
             // We use length=0 indicating an unknown length. This allows us to reuse the type but
             // Sulong will report the wrong length via interop for a pointer to this object.
             return callUnaryNode.execute(fun, new Object[]{0});
@@ -112,26 +102,34 @@ public class PySequenceArrayWrapperMR {
 
         @Specialization(assumptions = "singleContextAssumption()", guards = "hasByteArrayContent(object)")
         Object doByteArray(@SuppressWarnings("unused") PSequence object,
-                        @Cached("callGetByteArrayTypeID()") Object nativeType) {
+                        @SuppressWarnings("unused") @Cached.Shared("callUnaryNode") @Cached PCallNativeNode callUnaryNode,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1")InteropLibrary interopLibrary,
+                        @Cached("callGetByteArrayTypeID(callUnaryNode, interopLibrary)") Object nativeType) {
             // TODO(fa): use weak reference ?
             return nativeType;
         }
 
         @Specialization(guards = "hasByteArrayContent(object)", replaces = "doByteArray")
-        Object doByteArrayMultiCtx(@SuppressWarnings("unused") Object object) {
-            return callGetByteArrayTypeIDCached();
+        Object doByteArrayMultiCtx(@SuppressWarnings("unused") Object object,
+                        @Cached.Shared("callUnaryNode") @Cached PCallNativeNode callUnaryNode,
+                        @CachedLibrary(limit = "1")InteropLibrary interopLibrary) {
+            return callGetByteArrayTypeIDCached(callUnaryNode, interopLibrary);
         }
 
         @Specialization(assumptions = "singleContextAssumption()", guards = "!hasByteArrayContent(object)")
         Object doPtrArray(@SuppressWarnings("unused") Object object,
-                        @Cached("callGetPtrArrayTypeID()") Object nativeType) {
+                        @SuppressWarnings("unused") @Cached.Shared("callUnaryNode") @Cached PCallNativeNode callUnaryNode,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1")InteropLibrary interopLibrary,
+                        @Cached("callGetPtrArrayTypeID(callUnaryNode, interopLibrary)") Object nativeType) {
             // TODO(fa): use weak reference ?
             return nativeType;
         }
 
         @Specialization(guards = "!hasByteArrayContent(object)", replaces = "doPtrArray")
-        Object doPtrArrayMultiCtx(@SuppressWarnings("unused") PSequence object) {
-            return callGetPtrArrayTypeIDCached();
+        Object doPtrArrayMultiCtx(@SuppressWarnings("unused") PSequence object,
+                        @Cached.Shared("callUnaryNode") @Cached PCallNativeNode callUnaryNode,
+                        @CachedLibrary(limit = "1")InteropLibrary interopLibrary) {
+            return callGetPtrArrayTypeIDCached(callUnaryNode, interopLibrary);
         }
 
         protected static boolean hasByteArrayContent(Object object) {

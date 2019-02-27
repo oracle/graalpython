@@ -25,6 +25,11 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
@@ -1132,37 +1137,37 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         NativeSequenceStorage doByte(byte[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE)") PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.call(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Byte);
+                        @Cached PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.execute(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE, wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Byte);
         }
 
         @Specialization
         NativeSequenceStorage doInt(int[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE)") PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.call(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Int);
+                        @Cached PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.execute(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Int);
         }
 
         @Specialization
         NativeSequenceStorage doLong(long[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE)") PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.call(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Long);
+                        @Cached PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.execute(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE, wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Long);
         }
 
         @Specialization
         NativeSequenceStorage doDouble(double[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE)") PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.call(wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Double);
+                        @Cached PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.execute(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE, wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Double);
         }
 
         @Specialization
         NativeSequenceStorage doObject(Object[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE)") PCallCapiFunction callNode,
+                        @Cached PCallCapiFunction callNode,
                         @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
             Object[] wrappedValues = new Object[arr.length];
             for (int i = 0; i < wrappedValues.length; i++) {
                 wrappedValues[i] = toSulongNode.execute(arr[i]);
             }
-            return new NativeSequenceStorage(callNode.call(wrap(wrappedValues), wrappedValues.length), wrappedValues.length, wrappedValues.length, ListStorageType.Generic);
+            return new NativeSequenceStorage(callNode.execute(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE, wrap(wrappedValues), wrappedValues.length), wrappedValues.length, wrappedValues.length, ListStorageType.Generic);
         }
 
         private Object wrap(Object arr) {

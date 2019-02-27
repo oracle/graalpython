@@ -42,28 +42,24 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.library.CachedLibrary;
 
-public class PCallNativeNode extends PNodeWithContext {
-    @Child private Node executeNode;
+@GenerateUncached
+public abstract class PCallNativeNode extends PNodeWithContext {
+    public abstract Object execute(TruffleObject func, Object[] args);
 
-    private Node getExecuteNode() {
-        if (executeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            executeNode = insert(Message.EXECUTE.createNode());
-        }
-        return executeNode;
-    }
-
-    public Object execute(TruffleObject func, Object[] args) {
+    @Specialization
+    public Object doCached(TruffleObject func, Object[] args,
+                          @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
         try {
-            return ForeignAccess.sendExecute(getExecuteNode(), func, args);
+            return interopLibrary.execute(func, args);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             CompilerDirectives.transferToInterpreter();
             throw e.raise();
@@ -71,11 +67,6 @@ public class PCallNativeNode extends PNodeWithContext {
     }
 
     public static PCallNativeNode create() {
-        return new PCallNativeNode();
-    }
-
-    public static PCallNativeNode getUncached() {
-        // TODO: TRUFFLE LIBRARY GETUNCACHED MIGRATION IMPLEMENT ME
-        return null;
+        return PCallNativeNodeGen.create();
     }
 }

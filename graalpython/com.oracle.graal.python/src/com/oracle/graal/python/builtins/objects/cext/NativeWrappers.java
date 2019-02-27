@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.MD_DEF;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.OB_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_BASICSIZE;
@@ -104,7 +106,6 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -118,6 +119,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -1110,39 +1112,28 @@ public abstract class NativeWrappers {
         }
 
         abstract static class ToPyObjectNode extends CExtNodes.CExtBaseNode {
-            @CompilationFinal private TruffleObject PyObjectHandle_FromJavaObject;
-            @CompilationFinal private TruffleObject PyObjectHandle_FromJavaType;
-            @CompilationFinal private TruffleObject PyNoneHandle;
-            @Child private PCallNativeNode callNativeUnary;
-            @Child private PCallNativeNode callNativeBinary;
-            @Child private CExtNodes.ToSulongNode toSulongNode;
-
             public abstract Object execute(PythonNativeWrapper wrapper);
 
             @Specialization(guards = "isManagedPythonClass(wrapper)")
-            Object doClass(PythonClassNativeWrapper wrapper) {
-                return callUnaryIntoCapi(getPyObjectHandle_ForJavaType(), wrapper);
+            Object doClass(PythonClassNativeWrapper wrapper,
+                           @Cached.Exclusive @Cached PCallNativeNode callNativeUnary,
+                           @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+                return callUnaryIntoCapi(callNativeUnary, getPyObjectHandle_ForJavaType(interopLibrary), wrapper);
             }
 
             @Fallback
             Object doObject(PythonNativeWrapper wrapper) {
-                return callUnaryIntoCapi(getPyObjectHandle_ForJavaObject(), wrapper);
+                InteropLibrary interopLibrary = InteropLibrary.getFactory().getUncached();
+                PCallNativeNode callNativeUnary = PCallNativeNodeGen.getUncached();
+                return callUnaryIntoCapi(callNativeUnary, getPyObjectHandle_ForJavaObject(interopLibrary), wrapper);
             }
 
-            private TruffleObject getPyObjectHandle_ForJavaType() {
-                if (PyObjectHandle_FromJavaType == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    PyObjectHandle_FromJavaType = importCAPISymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE);
-                }
-                return PyObjectHandle_FromJavaType;
+            private TruffleObject getPyObjectHandle_ForJavaType(InteropLibrary interopLibrary) {
+                return importCAPISymbol(interopLibrary, FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE);
             }
 
-            private TruffleObject getPyObjectHandle_ForJavaObject() {
-                if (PyObjectHandle_FromJavaObject == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    PyObjectHandle_FromJavaObject = importCAPISymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT);
-                }
-                return PyObjectHandle_FromJavaObject;
+            private TruffleObject getPyObjectHandle_ForJavaObject(InteropLibrary interopLibrary) {
+                return importCAPISymbol(interopLibrary, FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT);
             }
 
             protected static boolean isManagedPythonClass(PythonClassNativeWrapper wrapper) {
@@ -1150,11 +1141,7 @@ public abstract class NativeWrappers {
                 return !(wrapper.getDelegate() instanceof PythonNativeClass);
             }
 
-            private Object callUnaryIntoCapi(TruffleObject fun, Object arg) {
-                if (callNativeUnary == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    callNativeUnary = insert(PCallNativeNode.create());
-                }
+            private Object callUnaryIntoCapi(PCallNativeNode callNativeUnary, TruffleObject fun, Object arg) {
                 return callNativeUnary.execute(fun, new Object[]{arg});
             }
 

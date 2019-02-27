@@ -1,5 +1,7 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_NATIVE_HANDLE_FOR_ARRAY;
+
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -20,6 +22,8 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -60,8 +64,8 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
     @ExportMessage
     final long getArraySize(
-            @Cached.Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-            @Cached.Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
+            @Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+            @Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
         return lenNode.execute(getSequenceStorageNode.execute(this.getDelegate()));
     }
 
@@ -72,14 +76,14 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
     @ExportMessage
     final Object readArrayElement(long index,
-                       @Cached.Exclusive  @Cached(allowUncached = true) ReadArrayItemNode readArrayItemNode) {
+             @Exclusive @Cached(allowUncached = true) ReadArrayItemNode readArrayItemNode) {
         return readArrayItemNode.execute(this.getDelegate(), index);
     }
 
     @ExportMessage
     final boolean isArrayElementReadable(long identifier,
-             @Cached.Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-             @Cached.Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
+             @Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+             @Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
         return 0 <= identifier && identifier < getArraySize(getSequenceStorageNode, lenNode);
     }
 
@@ -92,14 +96,14 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
         @Specialization
         Object doTuple(PTuple tuple, long idx,
                        @Cached(value = "createTupleGetItem()", allowUncached = true) TupleBuiltins.GetItemNode getItemNode,
-                       @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                       @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(getItemNode.execute(tuple, idx));
         }
 
         @Specialization
         Object doTuple(PList list, long idx,
                        @Cached("createListGetItem()") ListBuiltins.GetItemNode getItemNode,
-                       @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                       @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(getItemNode.execute(list, idx));
         }
 
@@ -113,7 +117,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
                         @Cached("createClassProfile()") ValueProfile profile,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             PIBytesLike profiled = profile.profile(bytesLike);
             int len = lenNode.execute(profiled.getSequenceStorage());
             // simulate sentinel value
@@ -144,7 +148,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
         @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
         Object doGeneric(Object object, long idx,
                          @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
-                         @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(getItemNode.executeObject(object, idx));
         }
 
@@ -171,7 +175,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
     @ExportMessage
     public void writeArrayElement(long index, Object value,
-          @Cached.Exclusive @Cached(allowUncached = true) WriteArrayItemNode writeArrayItemNode) {
+          @Exclusive @Cached(allowUncached = true) WriteArrayItemNode writeArrayItemNode) {
         writeArrayItemNode.execute(this.getDelegate(), index, value);
     }
 
@@ -182,22 +186,22 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
     @ExportMessage
     public boolean isArrayElementModifiable(long index,
-            @Cached.Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-            @Cached.Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
+            @Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+            @Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
         return 0 <= index && index < getArraySize(getSequenceStorageNode, lenNode);
     }
 
     @ExportMessage
     public boolean isArrayElementInsertable(long index,
-            @Cached.Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-            @Cached.Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
+            @Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+            @Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
         return 0 <= index && index <= getArraySize(getSequenceStorageNode, lenNode);
     }
 
     @ExportMessage
     public boolean isArrayElementRemovable(long index,
-           @Cached.Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-           @Cached.Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
+           @Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+           @Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
         return 0 <= index && index < getArraySize(getSequenceStorageNode, lenNode);
     }
 
@@ -208,8 +212,8 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
         @Specialization
         Object doBytes(PIBytesLike s, long idx, byte value,
-                       @Cached.Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                       @Cached.Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
+                       @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                       @Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
             setByteItemNode.executeLong(getSequenceStorageNode.execute(s), idx, value);
             return value;
         }
@@ -217,8 +221,8 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
         @Specialization
         @ExplodeLoop
         Object doBytes(PIBytesLike s, long idx, short value,
-                       @Cached.Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                       @Cached.Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
+                       @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                       @Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
             for (int offset = 0; offset < Short.BYTES; offset++) {
                 setByteItemNode.executeLong(getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
@@ -228,8 +232,8 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
         @Specialization
         @ExplodeLoop
         Object doBytes(PIBytesLike s, long idx, int value,
-                       @Cached.Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                       @Cached.Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
+                       @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                       @Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
             for (int offset = 0; offset < Integer.BYTES; offset++) {
                 setByteItemNode.executeLong(getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
@@ -239,8 +243,8 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
         @Specialization
         @ExplodeLoop
         Object doBytes(PIBytesLike s, long idx, long value,
-                       @Cached.Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                       @Cached.Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
+                       @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                       @Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
             for (int offset = 0; offset < Long.BYTES; offset++) {
                 setByteItemNode.executeLong(getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
@@ -249,7 +253,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
         @Specialization
         Object doList(PList s, long idx, Object value,
-                      @Cached.Shared("toJavaNode") @Cached CExtNodes.ToJavaNode toJavaNode,
+                      @Shared("toJavaNode") @Cached CExtNodes.ToJavaNode toJavaNode,
                       @Cached("createSetListItem()") SequenceStorageNodes.SetItemNode setListItemNode,
                       @Cached("createBinaryProfile()") ConditionProfile updateStorageProfile) {
             SequenceStorage storage = s.getSequenceStorage();
@@ -262,7 +266,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
         @Specialization
         Object doTuple(PTuple s, long idx, Object value,
-                       @Cached.Shared("toJavaNode") @Cached CExtNodes.ToJavaNode toJavaNode,
+                       @Shared("toJavaNode") @Cached CExtNodes.ToJavaNode toJavaNode,
                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setListItemNode) {
             setListItemNode.executeLong(s.getSequenceStorage(), idx, toJavaNode.execute(value));
             return value;
@@ -290,8 +294,8 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
     }
 
     @ExportMessage
-    public void toNative(@Cached.Exclusive @Cached(allowUncached = true) ToNativeArrayNode toPyObjectNode,
-                         @Cached.Exclusive @Cached(allowUncached = true) InvalidateNativeObjectsAllManagedNode invalidateNode) {
+    public void toNative(@Exclusive @Cached(allowUncached = true) ToNativeArrayNode toPyObjectNode,
+                         @Exclusive @Cached(allowUncached = true) InvalidateNativeObjectsAllManagedNode invalidateNode) {
         invalidateNode.execute();
         if (!this.isNative()) {
             this.setNativePointer(toPyObjectNode.execute(this));
@@ -303,7 +307,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
         @Specialization(guards = "isPSequence(object.getDelegate())")
         Object doPSequence(PySequenceArrayWrapper object,
-                           @Cached.Exclusive @Cached ToNativeStorageNode toNativeStorageNode) {
+                           @Exclusive @Cached ToNativeStorageNode toNativeStorageNode) {
             PSequence sequence = (PSequence) object.getDelegate();
             NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(sequence.getSequenceStorage());
             if (nativeStorage == null) {
@@ -317,8 +321,9 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
         @Fallback
         Object doGeneric(PySequenceArrayWrapper object) {
             // TODO correct element size
-            PCallNativeNode callNativeBinary = PCallNativeNode.getUncached();
-            TruffleObject PyObjectHandle_FromJavaObject = importCAPISymbol(NativeCAPISymbols.FUN_NATIVE_HANDLE_FOR_ARRAY);
+            PCallNativeNode callNativeBinary = PCallNativeNodeGen.getUncached();
+            InteropLibrary interopLibrary = InteropLibrary.getFactory().getUncached();
+            TruffleObject PyObjectHandle_FromJavaObject = importCAPISymbol(interopLibrary, FUN_NATIVE_HANDLE_FOR_ARRAY);
             return callBinaryIntoCapi(PyObjectHandle_FromJavaObject, object, 8L, callNativeBinary);
         }
 
@@ -381,7 +386,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
     }
 
     @ExportMessage
-    public boolean isPointer(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.IsPointerNode pIsPointerNode) {
+    public boolean isPointer(@Exclusive @Cached(allowUncached = true) CExtNodes.IsPointerNode pIsPointerNode) {
         return pIsPointerNode.execute(this);
     }
 

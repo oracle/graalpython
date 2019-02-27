@@ -47,6 +47,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+
 public abstract class IsNode extends BinaryOpNode {
     public static IsNode create(ExpressionNode left, ExpressionNode right) {
         return IsNodeGen.create(left, right);
@@ -162,8 +164,8 @@ public abstract class IsNode extends BinaryOpNode {
 
     @Specialization
     boolean doNative(PythonNativeObject left, PythonNativeObject right,
-                    @Cached("create(__EQ__)") CExtNodes.PointerCompareNode isNode) {
-        return isNode.execute(left, right);
+                    @Cached CExtNodes.PointerCompareNode isNode) {
+        return isNode.execute(__EQ__, left, right);
     }
 
     @Fallback

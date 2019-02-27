@@ -167,4 +167,9 @@ public abstract class CastToIndexNode extends PNodeWithContext {
     public static CastToIndexNode create(PythonBuiltinClassType errorType, Function<Object, Integer> typeErrorHandler) {
         return CastToIndexNodeGen.create(errorType, true, typeErrorHandler);
     }
+
+    public static CastToIndexNode getUncached() {
+        // TODO: TRUFFLE LIBRARY GETUNCACHED MIGRATION IMPLEMENT ME
+        return null;
+    }
 }

@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_NEW;
 import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.BOOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTEARRAY;
@@ -801,7 +803,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         protected CExtNodes.SubtypeNew createSubtypeNew() {
-            return new CExtNodes.SubtypeNew("float");
+            return CExtNodes.FloatSubtypeNew.create();
         }
 
         protected PythonBuiltinClass getBuiltinFloatClass() {
@@ -1375,7 +1377,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private Object callNativeGenericNewNode(PythonNativeClass self, Object[] varargs, PKeyword[] kwargs) {
             if (callNativeGenericNewNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNativeGenericNewNode = insert(PCallCapiFunction.create(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_NEW));
+                callNativeGenericNewNode = insert(PCallCapiFunction.create());
             }
             if (toSulongNodes == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1392,7 +1394,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PTuple targs = factory().createTuple(varargs);
             PDict dkwargs = factory().createDict(kwarr);
             return asPythonObjectNode.execute(
-                            callNativeGenericNewNode.call(toSulongNodes[0].execute(self), toSulongNodes[1].execute(self), toSulongNodes[2].execute(targs), toSulongNodes[3].execute(dkwargs)));
+                            callNativeGenericNewNode.execute(FUN_PY_OBJECT_GENERIC_NEW, toSulongNodes[0].execute(self), toSulongNodes[1].execute(self), toSulongNodes[2].execute(targs), toSulongNodes[3].execute(dkwargs)));
         }
     }
 
@@ -1999,9 +2001,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private void addNativeSlots(PythonClass pythonClass, PTuple slots) {
             if (callAddNativeSlotsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callAddNativeSlotsNode = insert(CExtNodes.PCallCapiFunction.create(NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS));
+                callAddNativeSlotsNode = insert(CExtNodes.PCallCapiFunction.create());
             }
-            callAddNativeSlotsNode.call(toSulongNode.execute(pythonClass), toSulongNode.execute(slots));
+            callAddNativeSlotsNode.execute(FUN_ADD_NATIVE_SLOTS, toSulongNode.execute(pythonClass), toSulongNode.execute(slots));
         }
 
         private CastToListNode getCastToListNode() {
