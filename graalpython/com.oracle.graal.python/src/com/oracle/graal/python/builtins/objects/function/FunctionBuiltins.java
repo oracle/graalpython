@@ -191,7 +191,6 @@ public class FunctionBuiltins extends PythonBuiltins {
                 if (!(k instanceof String)) {
                     throw raise(PythonBuiltinClassType.TypeError, "keyword names must be str, get %p", k);
                 }
-                arg.getDictStorage();
                 keywords.add(new PKeyword((String) k, arg.getDictStorage().getItem(k, HashingStorage.getSlowPathEquivalence(k))));
             }
             self.setKwDefaults(keywords.toArray(new PKeyword[keywords.size()]));
