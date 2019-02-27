@@ -80,8 +80,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     }
 
     public FunctionRootNode copyWithNewArity(Arity newArity) {
-        FunctionRootNode copy = new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), body, executionCellSlots, newArity);
-        copy.setRewritten();
+        FunctionRootNode copy = new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots,
+                        newArity);
         return copy;
     }
 

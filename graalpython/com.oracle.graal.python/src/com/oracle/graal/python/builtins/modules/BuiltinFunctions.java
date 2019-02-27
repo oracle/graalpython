@@ -1760,8 +1760,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                  */
                 FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
                 assert !functionRootNode.isRewritten() : "a function cannot be annotated as builtin twice";
-                functionRootNode.setRewritten();
                 functionRootNode = functionRootNode.copyWithNewArity(arity.createWithSelf());
+                functionRootNode.setRewritten();
                 functionRootNode.accept(new NodeVisitor() {
                     public boolean visit(Node node) {
                         if (node instanceof ReadVarArgsNode) {
