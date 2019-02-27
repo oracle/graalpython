@@ -154,6 +154,10 @@ public class PFunction extends PythonObject {
         return uncachedCode;
     }
 
+    public PCode getUncachedCode() {
+        return uncachedCode;
+    }
+
     public void setCode(PCode code) {
         codeStableAssumption.invalidate("code changed for function " + getName());
         this.code = this.uncachedCode = code;
@@ -173,6 +177,10 @@ public class PFunction extends PythonObject {
         return uncachedDefaultValues;
     }
 
+    public Object[] getUncachedDefaultValues() {
+        return uncachedDefaultValues;
+    }
+
     public void setDefaults(Object[] defaults) {
         this.defaultsStableAssumption.invalidate("defaults changed for function " + getName());
         this.defaultValues = this.uncachedDefaultValues = defaults;
@@ -185,6 +193,10 @@ public class PFunction extends PythonObject {
                 return kwDefaultValues;
             }
         }
+        return uncachedKwDefaultValues;
+    }
+
+    public PKeyword[] getUncachedKwDefaults() {
         return uncachedKwDefaultValues;
     }
 

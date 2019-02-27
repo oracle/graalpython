@@ -77,7 +77,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"isMethod(method)", "method == cachedMethod"}, limit = "getVariableArgumentInlineCacheLimit()")
-    @ExplodeLoop
     Object[] doMethodCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
                     @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached("method") @SuppressWarnings("unused") PythonObject cachedMethod) {
@@ -93,8 +92,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
     @Specialization(guards = {"isMethod(method)", "getFunction(method) == cachedFunction",
                     "getSelf(method) == cachedSelf"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodCached")
-    @ExplodeLoop
-    Object[] doMethodFunctionCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
+    Object[] doMethodFunctionAndSelfCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
                     @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached("getFunction(method)") @SuppressWarnings("unused") Object cachedFunction,
                     @Cached("getSelf(method)") Object cachedSelf) {
@@ -107,8 +105,21 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return createAndCheckArgumentsNode.execute(method, userArguments, keywords, arity, cachedSelf, defaults, kwdefaults, isMethodCall(cachedSelf));
     }
 
+    @Specialization(guards = {"isMethod(method)", "getFunction(method) == cachedFunction"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodFunctionAndSelfCached")
+    Object[] doMethodFunctionCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
+                    @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @Cached("getFunction(method)") @SuppressWarnings("unused") Object cachedFunction) {
+
+        // We do not directly cache these objects because they are compilation final anyway and the
+        // getter check the appropriate assumptions.
+        Arity arity = getArity(cachedFunction);
+        Object[] defaults = getDefaults(cachedFunction);
+        PKeyword[] kwdefaults = getKwDefaults(cachedFunction);
+        Object self = getSelf(method);
+        return createAndCheckArgumentsNode.execute(method, userArguments, keywords, arity, self, defaults, kwdefaults, isMethodCall(self));
+    }
+
     @Specialization(guards = {"isFunction(callable)", "callable == cachedCallable"}, limit = "getVariableArgumentInlineCacheLimit()")
-    @ExplodeLoop
     Object[] doFunctionCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
                     @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached("callable") @SuppressWarnings("unused") PythonObject cachedCallable) {
@@ -121,7 +132,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, arity, null, defaults, kwdefaults, false);
     }
 
-    @Specialization(replaces = {"doFunctionCached", "doMethodCached", "doMethodFunctionCached"})
+    @Specialization(replaces = {"doFunctionCached", "doMethodCached", "doMethodFunctionAndSelfCached", "doMethodFunctionCached"})
     Object[] uncached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
                     @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode) {
 
@@ -129,9 +140,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         // but sometimes also methods that have functions directly.
         // In all other cases, the arguments
 
-        Arity arity = getArity(callable);
-        Object[] defaults = getDefaults(callable);
-        PKeyword[] kwdefaults = getKwDefaults(callable);
+        Arity arity = getArityUncached(callable);
+        Object[] defaults = getDefaultsUncached(callable);
+        PKeyword[] kwdefaults = getKwDefaultsUncached(callable);
         Object self = getSelf(callable);
         boolean methodcall = !(self instanceof PythonModule);
 
@@ -560,6 +571,18 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
     }
 
+    protected static Arity getArityUncached(Object callable) {
+        return getProperty(callable, UncachedArityGetter.INSTANCE);
+    }
+
+    protected static Object[] getDefaultsUncached(Object callable) {
+        return getProperty(callable, UncachedDefaultsGetter.INSTANCE);
+    }
+
+    protected static PKeyword[] getKwDefaultsUncached(Object callable) {
+        return getProperty(callable, UncachedKwDefaultsGetter.INSTANCE);
+    }
+
     protected static Arity getArity(Object callable) {
         return getProperty(callable, ArityGetter.INSTANCE);
     }
@@ -662,6 +685,48 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @Override
         public PKeyword[] fromPFunction(PFunction fun) {
             return fun.getKwDefaults();
+        }
+
+        @Override
+        public PKeyword[] fromPBuiltinFunction(PBuiltinFunction fun) {
+            return fun.getKwDefaults();
+        }
+    }
+
+    private static final class UncachedArityGetter extends Getter<Arity> {
+        private static final UncachedArityGetter INSTANCE = new UncachedArityGetter();
+
+        @Override
+        public Arity fromPFunction(PFunction fun) {
+            return fun.getUncachedCode().getArity();
+        }
+
+        @Override
+        public Arity fromPBuiltinFunction(PBuiltinFunction fun) {
+            return fun.getArity();
+        }
+    }
+
+    private static final class UncachedDefaultsGetter extends Getter<Object[]> {
+        private static final UncachedDefaultsGetter INSTANCE = new UncachedDefaultsGetter();
+
+        @Override
+        public Object[] fromPFunction(PFunction fun) {
+            return fun.getUncachedDefaultValues();
+        }
+
+        @Override
+        public Object[] fromPBuiltinFunction(PBuiltinFunction fun) {
+            return fun.getDefaults();
+        }
+    }
+
+    private static final class UncachedKwDefaultsGetter extends Getter<PKeyword[]> {
+        private static final UncachedKwDefaultsGetter INSTANCE = new UncachedKwDefaultsGetter();
+
+        @Override
+        public PKeyword[] fromPFunction(PFunction fun) {
+            return fun.getUncachedKwDefaults();
         }
 
         @Override
