@@ -48,6 +48,21 @@ tokens { INDENT, DEDENT }
   private Token lastToken = null;
   // wether we have expanded EOF to include necessary DEDENTS and a NEWLINE
   private boolean expandedEOF = false;
+  
+  // whether we are in a format string
+  private boolean isInFormatString = false;
+  
+  public void enterFormatString() {
+    isInFormatString = true;
+  }
+  
+  public void leaveFormatString() {
+    isInFormatString = false;
+  }
+  
+  public boolean inFormatString() {
+    return isInFormatString;
+  }
 
   @Override
   public void emit(Token t) {
@@ -250,7 +265,7 @@ atom_expr: (AWAIT)? atom trailer*;
 atom: ('(' (yield_expr|testlist_comp)? ')' |
        '[' (testlist_comp)? ']' |
        '{' (dictorsetmaker)? '}' |
-       NAME | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False');
+       NAME | NUMBER | string+ | '...' | 'None' | 'True' | 'False');
 testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* (',')? );
 trailer: '(' (arglist)? ')' | '[' subscriptlist ']' | '.' NAME;
 subscriptlist: subscript (',' subscript)* (',')?;
@@ -292,14 +307,43 @@ encoding_decl: NAME;
 yield_expr: 'yield' (yield_arg)?;
 yield_arg: 'from' test | testlist;
 
+string: STRING_LITERAL | BYTES_LITERAL | format_string_literal;
+
+format_string_literal: FORMAT_STRING_PREFIX_SINGLE short_format_string_single FORMAT_STRING_SUFFIX_SINGLE |
+                       FORMAT_STRING_PREFIX_DOUBLE short_format_string_double FORMAT_STRING_SUFFIX_DOUBLE |
+                       FORMAT_LONG_STRING_PREFIX_SINGLE long_format_string FORMAT_LONG_STRING_SUFFIX_SINGLE |
+                       FORMAT_LONG_STRING_PREFIX_DOUBLE long_format_string FORMAT_LONG_STRING_SUFFIX_DOUBLE;
+
+short_format_string_single: interpolation ( FORMAT_STRING_INNER_SINGLE interpolation )*;
+
+short_format_string_double: interpolation ( FORMAT_STRING_INNER_DOUBLE interpolation )*;
+
+long_format_string: interpolation ( FORMAT_LONG_STRING_INNER interpolation )*;
+
+interpolation: test;
+
 /*
  * lexer rules
  */
 
-STRING
- : STRING_LITERAL
- | BYTES_LITERAL
- ;
+FORMAT_STRING_PREFIX_SINGLE : ( [fF] | [rR] [fF] | [fF] [rR] ) '\'' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\\r\n\f{}'] )* '{' ;
+FORMAT_STRING_INNER_SINGLE : '}' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\\r\n\f{}'] )* '{' ;
+FORMAT_STRING_SUFFIX_SINGLE : '}' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\\r\n\f{}'] )* '\'' ;
+
+FORMAT_STRING_PREFIX_DOUBLE : ( [fF] | [rR] [fF] | [fF] [rR] ) '"' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\\r\n\f{}"] )* '{' ;
+FORMAT_STRING_INNER_DOUBLE : '}' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\\r\n\f{}"] )* '{' ;
+FORMAT_STRING_SUFFIX_DOUBLE : '}' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\\r\n\f{}"] )* '"' ;
+
+FORMAT_LONG_STRING_PREFIX_SINGLE : ( [fF] | [rR] [fF] | [fF] [rR] ) '\'\'\'' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\{}] )* '{' ;
+FORMAT_LONG_STRING_INNER : '}' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\{}] )* '{' ;
+FORMAT_LONG_STRING_SUFFIX_SINGLE : '}' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\{}] )* '\'\'\'' ;
+
+FORMAT_LONG_STRING_PREFIX_DOUBLE : ( [fF] | [rR] [fF] | [fF] [rR] ) '"""' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\{}] )* '{' ;
+FORMAT_LONG_STRING_SUFFIX_DOUBLE : '}' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\\r\n\f{}] )* '"""' ;
+
+fragment FORMAT_STRING_ESCAPE
+ : '{{'
+ | '}}';
 
 NUMBER
  : INTEGER
@@ -397,10 +441,9 @@ NAME
  ;
 
 /// stringliteral   ::=  [stringprefix](shortstring | longstring)
-/// stringprefix    ::=  "r" | "u" | "R" | "U" | "f" | "F"
-///                      | "fr" | "Fr" | "fR" | "FR" | "rf" | "rF" | "Rf" | "RF"
+/// stringprefix    ::=  "r" | "u" | "R" | "U"
 STRING_LITERAL
- : ( [rR] | [uU] | [fF] | ( [fF] [rR] ) | ( [rR] [fF] ) )? ( SHORT_STRING | LONG_STRING )
+ : ( [rR] | [uU] )? ( SHORT_STRING | LONG_STRING )
  ;
 
 /// bytesliteral   ::=  bytesprefix(shortbytes | longbytes)

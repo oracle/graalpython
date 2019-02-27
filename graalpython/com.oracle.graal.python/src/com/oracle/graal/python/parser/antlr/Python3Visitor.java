@@ -621,4 +621,40 @@ public interface Python3Visitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitYield_arg(Python3Parser.Yield_argContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link Python3Parser#string}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitString(Python3Parser.StringContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link Python3Parser#format_string_literal}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFormat_string_literal(Python3Parser.Format_string_literalContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link Python3Parser#short_format_string_single}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitShort_format_string_single(Python3Parser.Short_format_string_singleContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link Python3Parser#short_format_string_double}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitShort_format_string_double(Python3Parser.Short_format_string_doubleContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link Python3Parser#long_format_string}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLong_format_string(Python3Parser.Long_format_stringContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link Python3Parser#interpolation}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitInterpolation(Python3Parser.InterpolationContext ctx);
 }
