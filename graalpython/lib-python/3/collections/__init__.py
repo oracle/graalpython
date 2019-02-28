@@ -391,8 +391,8 @@ def namedtuple(typename, field_names, *, rename=False, defaults=None, module=Non
 
     # Create all the named tuple methods to be added to the class namespace
 
-    s = f'def __new__(_cls, {arg_list}): return _tuple_new(_cls, ({arg_list}))'
-    namespace = {'_tuple_new': tuple_new, '__name__': f'namedtuple_{typename}'}
+    s = 'def __new__(_cls, {0}): return _tuple_new(_cls, ({0}))'.format(arg_list)
+    namespace = {'_tuple_new': tuple_new, '__name__': 'namedtuple_{}'.format(typename)}
     # Note: exec() has the side-effect of interning the field names
     exec(s, namespace)
     __new__ = namespace['__new__']
