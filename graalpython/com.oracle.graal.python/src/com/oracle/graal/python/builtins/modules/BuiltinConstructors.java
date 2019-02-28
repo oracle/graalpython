@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
@@ -2422,8 +2423,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         String codestring, PTuple constants, PTuple names,
                         PTuple varnames, Object filename, Object name,
                         int firstlineno, String lnotab,
-                        PTuple freevars, PTuple cellvars) {
-            return factory().createCode(cls, argcount, kwonlyargcount,
+                        PTuple freevars, PTuple cellvars,
+                        @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
+            return createCodeNode.execute(cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
                             toBytes(codestring), constants.getArray(), names.getArray(),
                             varnames.getArray(), freevars.getArray(), cellvars.getArray(),
@@ -2438,11 +2440,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PTuple varnames, Object filename, Object name,
                         int firstlineno, PBytes lnotab,
                         PTuple freevars, PTuple cellvars,
-                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
+                        @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
             byte[] codeBytes = toByteArrayNode.execute(codestring.getSequenceStorage());
             byte[] lnotabBytes = toByteArrayNode.execute(lnotab.getSequenceStorage());
 
-            return factory().createCode(cls, argcount, kwonlyargcount,
+            return createCodeNode.execute(cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
                             codeBytes, constants.getArray(), names.getArray(),
                             varnames.getArray(), freevars.getArray(), cellvars.getArray(),

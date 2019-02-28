@@ -47,16 +47,8 @@ import java.util.List;
 import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.Arity;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -67,29 +59,20 @@ import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
-import com.oracle.graal.python.runtime.PythonParser.ParserMode;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotKind;
-import com.oracle.truffle.api.frame.MaterializedFrame;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PCode extends PythonBuiltinObject {
-    private static final String[] EMPTY_STRINGS = new String[0];
-    private static final long FLAG_GENERATOR = 32;
-    private static final long FLAG_VAR_ARGS = 0x0004;
-    private static final long FLAG_VAR_KW_ARGS = 0x0008;
-    private static final long FLAG_MODULE = 0x0040; // CO_NOFREE on CPython, we only set it on
-                                                    // modules
+    static final String[] EMPTY_STRINGS = new String[0];
+    static final long FLAG_GENERATOR = 32;
+    static final long FLAG_VAR_ARGS = 0x0004;
+    static final long FLAG_VAR_KW_ARGS = 0x0008;
+    static final long FLAG_MODULE = 0x0040; // CO_NOFREE on CPython, we only set it on
+                                            // modules
 
     private final RootCallTarget callTarget;
     private final Arity arity;
@@ -135,15 +118,13 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
-    @TruffleBoundary
-    public PCode(LazyPythonClass cls, int argcount, int kwonlyargcount,
+    public PCode(LazyPythonClass cls, RootCallTarget callTarget, Arity arity,
                     int nlocals, int stacksize, int flags,
                     byte[] codestring, Object[] constants, Object[] names,
                     Object[] varnames, Object[] freevars, Object[] cellvars,
                     String filename, String name, int firstlineno,
                     byte[] lnotab) {
         super(cls);
-        CompilerDirectives.transferToInterpreter();
         this.nlocals = nlocals;
         this.stacksize = stacksize;
         this.flags = flags;
@@ -157,97 +138,8 @@ public final class PCode extends PythonBuiltinObject {
         this.lnotab = lnotab;
         this.freevars = freevars;
         this.cellvars = cellvars;
-
-        // Derive a new call target from the code string, if we can
-        RootNode rootNode = null;
-        if (codestring.length > 0) {
-            if ((flags & FLAG_MODULE) == 0) {
-                // we're looking for the function, not the module
-                String funcdef;
-                if (freevars.length > 0) {
-                    // we build an outer function to provide the initial scoping
-                    String outernme = "_____" + System.nanoTime();
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("def ").append(outernme).append("():\n");
-                    for (Object freevar : freevars) {
-                        String v;
-                        if (freevar instanceof PString) {
-                            v = ((PString) freevar).getValue();
-                        } else if (freevar instanceof String) {
-                            v = (String) freevar;
-                        } else {
-                            continue;
-                        }
-                        sb.append(" ").append(v).append(" = None\n");
-                    }
-                    sb.append(" global ").append(name).append("\n");
-                    sb.append(" ").append(new String(codestring));
-                    sb.append("\n\n").append(outernme).append("()");
-                    funcdef = sb.toString();
-                } else {
-                    funcdef = new String(codestring);
-                }
-
-                rootNode = (RootNode) PythonLanguage.getCore().getParser().parse(ParserMode.File, PythonLanguage.getCore(), Source.newBuilder("python", funcdef, name).build(), null);
-                Object[] args = PArguments.create();
-                PDict globals = PythonLanguage.getCore().factory().createDict();
-                PArguments.setGlobals(args, globals);
-                Truffle.getRuntime().createCallTarget(rootNode).call(args);
-                Object function = globals.getDictStorage().getItem(name, HashingStorage.getSlowPathEquivalence(name));
-                if (function instanceof PFunction) {
-                    rootNode = ((PFunction) function).getFunctionRootNode();
-                } else {
-                    throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "got an invalid codestring trying to create a function code object");
-                }
-            } else {
-                MaterializedFrame frame = null;
-                if (freevars.length > 0) {
-                    FrameDescriptor frameDescriptor = new FrameDescriptor();
-                    frame = Truffle.getRuntime().createMaterializedFrame(new Object[0], frameDescriptor);
-                    for (int i = 0; i < freevars.length; i++) {
-                        Object ident = freevars[i];
-                        FrameSlot slot = frameDescriptor.addFrameSlot(ident);
-                        frameDescriptor.setFrameSlotKind(slot, FrameSlotKind.Object);
-                        frame.setObject(slot, new PCell());
-                    }
-                }
-                rootNode = (RootNode) PythonLanguage.getCore().getParser().parse(ParserMode.File, PythonLanguage.getCore(), Source.newBuilder("python", new String(codestring), name).build(), frame);
-                assert rootNode instanceof ModuleRootNode;
-            }
-            this.callTarget = Truffle.getRuntime().createCallTarget(rootNode);
-        } else {
-            this.callTarget = Truffle.getRuntime().createCallTarget(new RootNode(PythonLanguage.getCurrent()) {
-                @Override
-                public Object execute(VirtualFrame frame) {
-                    return PNone.NONE;
-                }
-            });
-        }
-
-        char paramNom = 'A';
-        String[] paramNames = new String[argcount];
-        for (int i = 0; i < paramNames.length; i++) {
-            if (varnames.length > i) {
-                Object varname = varnames[i];
-                if (varname instanceof String) {
-                    paramNames[i] = (String) varname;
-                    continue;
-                }
-            }
-            paramNames[i] = Character.toString(paramNom++);
-        }
-        String[] kwNames = new String[kwonlyargcount];
-        for (int i = 0; i < kwNames.length; i++) {
-            if (varnames.length > i + argcount) {
-                Object varname = varnames[i + argcount];
-                if (varname instanceof String) {
-                    kwNames[i] = (String) varname;
-                    continue;
-                }
-            }
-            kwNames[i] = Character.toString(paramNom++);
-        }
-        this.arity = new Arity(takesVarKeywordArgs(), takesVarArgs() ? argcount : -1, !takesVarArgs() && kwonlyargcount > 0, paramNames, kwNames);
+        this.callTarget = callTarget;
+        this.arity = arity;
     }
 
     @TruffleBoundary
@@ -503,12 +395,20 @@ public final class PCode extends PythonBuiltinObject {
         return (getFlags() & FLAG_GENERATOR) > 0;
     }
 
+    static boolean takesVarArgs(int flags) {
+        return (flags & FLAG_VAR_ARGS) > 0;
+    }
+
+    static boolean takesVarKeywordArgs(int flags) {
+        return (flags & FLAG_VAR_KW_ARGS) > 0;
+    }
+
     public boolean takesVarArgs() {
-        return (getFlags() & FLAG_VAR_ARGS) > 0;
+        return PCode.takesVarArgs(getFlags());
     }
 
     public boolean takesVarKeywordArgs() {
-        return (getFlags() & FLAG_VAR_KW_ARGS) > 0;
+        return PCode.takesVarKeywordArgs(getFlags());
     }
 
     public Arity getArity() {
