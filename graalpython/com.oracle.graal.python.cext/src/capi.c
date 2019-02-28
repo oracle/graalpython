@@ -189,6 +189,10 @@ static void initialize_globals() {
     // error marker
     void *jerrormarker = UPCALL_CEXT_PTR(polyglot_from_string("Py_ErrorHandler", SRC_CS));
     truffle_assign_managed(&marker_struct, jerrormarker);
+
+    // long zero, long one
+    _PyLong_Zero = (PyObject *)&_Py_FalseStruct;
+    _PyLong_One = (PyObject *)&_Py_TrueStruct;
 }
 
 static void initialize_bufferprocs() {
