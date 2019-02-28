@@ -71,7 +71,7 @@ public final class PythonParserImpl implements PythonParser {
                     throw new RuntimeException("unexpected mode: " + mode);
             }
         } catch (Exception e) {
-            if (mode == ParserMode.InteractiveStatement && e instanceof PIncompleteSourceException) {
+            if ((mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement) && e instanceof PIncompleteSourceException) {
                 ((PIncompleteSourceException) e).setSource(source);
                 throw e;
             } else if (mode == ParserMode.InlineEvaluation) {
