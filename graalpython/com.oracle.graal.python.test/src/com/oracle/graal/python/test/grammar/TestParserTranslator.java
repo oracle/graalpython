@@ -45,29 +45,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.ModuleRootNode;
-import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -75,7 +68,6 @@ import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BinaryArithmeticExpression;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode.NotNode;
@@ -93,7 +85,6 @@ import com.oracle.graal.python.nodes.frame.WriteLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
-import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.function.InnerRootNode;
 import com.oracle.graal.python.nodes.generator.DictConcatNode;
@@ -113,60 +104,25 @@ import com.oracle.graal.python.nodes.statement.ImportStarNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
-import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.graal.python.parser.PythonParserImpl;
-import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
-import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.SourceSection;
 
 public class TestParserTranslator {
-    private static final class MockErrors implements ParserErrorCallback {
-        public RuntimeException raise(PythonBuiltinClassType type, String message, Object... args) {
-            throw new RuntimeException(message);
-        }
+    PythonContext context;
 
-        public RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {
-            throw new RuntimeException(message);
-        }
-
-        public PythonLanguage getLanguage() {
-            return pythonLanguage;
-        }
-    }
-
-    private static final class MockFactory extends NodeFactory {
-        public MockFactory() {
-            super(null);
-        }
-    }
-
-    private static PythonLanguage pythonLanguage;
-
-    @BeforeClass
-    public static void setUp() {
-        pythonLanguage = new PythonLanguage();
-        try {
-            Field field = pythonLanguage.getClass().getDeclaredField("nodeFactory");
-            field.setAccessible(true);
-            field.set(pythonLanguage, new MockFactory());
-        } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
-            fail();
-        }
-    }
-
-    @AfterClass
-    public static void tearDown() {
+    public TestParserTranslator() {
+        PythonTests.enterContext();
+        context = PythonLanguage.getContextRef().get();
     }
 
     RootNode parse(String src) {
         Source source = Source.newBuilder(PythonLanguage.ID, src, "foo").build();
-        PythonParserImpl parser = new PythonParserImpl();
-        return (RootNode) parser.parse(ParserMode.File, new MockErrors(), source, null);
+        return (RootNode) context.getCore().getParser().parse(ParserMode.File, context.getCore(), source, null);
     }
 
     String parseToString(String src) {
@@ -232,17 +188,6 @@ public class TestParserTranslator {
     <T> T assertInstanceOf(PNode value, Class<? extends T> klass) {
         assertTrue("Expected an instance of " + klass + ", got " + value.getClass(), klass.isInstance(value));
         return klass.cast(value);
-    }
-
-    <T> T childAs(PNode owner, String fieldName, Class<? extends T> klass) {
-        try {
-            Field declaredField = owner.getClass().getDeclaredField(fieldName);
-            declaredField.setAccessible(true);
-            return klass.cast(declaredField.get(owner));
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-            fail();
-        }
-        return null;
     }
 
     @Test
@@ -320,20 +265,6 @@ public class TestParserTranslator {
         assertEquals("a\tstring\n", literalAs("'a\\tstring\\n'", StringLiteralNode.class));
         assertEquals("\t\n\u000B\r\f\u0007\b", literalAs("'\\t\\n\\v\\r\\f\\a\\b'", StringLiteralNode.class));
         assertEquals("\\t\\n\\v\\r\\f\\a\\b", literalAs("r'\\t\\n\\v\\r\\f\\a\\b'", StringLiteralNode.class));
-    }
-
-    @Test
-    public void parseLiteralFormatString() {
-        assertTrue(childAs(parseAs("f'{True}'", BinaryArithmeticExpression.class), "right", BooleanLiteralNode.class).executeBoolean(null));
-
-        BinaryArithmeticExpression parseAs = parseAs("f'another {True}'", BinaryArithmeticExpression.class);
-        assertTrue(childAs(parseAs, "right", BooleanLiteralNode.class).executeBoolean(null));
-        assertEquals("another ", childAs(parseAs, "left", StringLiteralNode.class).execute(null));
-
-        parseAs = parseAs("f'another {1 + 2}'", BinaryArithmeticExpression.class);
-        parseAs = childAs(parseAs, "right", BinaryArithmeticExpression.class);
-        childAs(parseAs, "left", IntegerLiteralNode.class);
-        childAs(parseAs, "right", IntegerLiteralNode.class);
     }
 
     @Test

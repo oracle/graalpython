@@ -36,18 +36,15 @@
 # SOFTWARE.
 
 QUIETLY$(MX_VERBOSE) = @
-TARGETS=${OUTPUT_PATH}/Python3ParserBaseVisitor.java \
-	${OUTPUT_PATH}/Python3ParserListener.java \
-	${OUTPUT_PATH}/Python3ParserBaseListener.java \
-	${OUTPUT_PATH}/Python3ParserVisitor.java \
+TARGETS=${OUTPUT_PATH}/Python3BaseVisitor.java \
+	${OUTPUT_PATH}/Python3Listener.java \
+	${OUTPUT_PATH}/Python3BaseListener.java \
+	${OUTPUT_PATH}/Python3Visitor.java \
 	${OUTPUT_PATH}/Python3Parser.java \
 	${OUTPUT_PATH}/Python3Lexer.java
 
-SOURCE=${PARSER_PATH}/Python3Parser.g4
-STAMP=${PARSER_PATH}/Python3Parser.stamp
-
-LEX_SOURCE=${PARSER_PATH}/Python3Lexer.g4
-LEX_STAMP=${PARSER_PATH}/Python3Lexer.stamp
+SOURCE=${PARSER_PATH}/Python3.g4
+STAMP=${PARSER_PATH}/Python3.g4.stamp
 
 .PHONY: default clean
 default: ${STAMP}
@@ -57,15 +54,10 @@ define postprocess_file
 	python ${POSTPROCESSOR} $(1)
 endef
 
-${STAMP}: ${SOURCE} ${LEX_STAMP}
+${STAMP}: ${SOURCE}
+	$(QUIETLY) touch $@
 	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${OUTPUT_PATH} ${SOURCE}
 	$(foreach var,$(TARGETS),$(call postprocess_file,$(var));)
-	$(QUIETLY) touch $@
-
-${LEX_STAMP}: ${LEX_SOURCE}
-	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${OUTPUT_PATH} ${LEX_SOURCE}
-	$(foreach var,$(TARGETS),$(call postprocess_file,$(var));)
-	$(QUIETLY) touch $@
 
 clean:
 	rm -f ${TARGETS}

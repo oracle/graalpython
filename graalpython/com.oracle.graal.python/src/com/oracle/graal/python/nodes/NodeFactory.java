@@ -121,7 +121,7 @@ public class NodeFactory {
 
     private final PythonLanguage language;
 
-    protected NodeFactory(PythonLanguage language) {
+    private NodeFactory(PythonLanguage language) {
         this.language = language;
     }
 

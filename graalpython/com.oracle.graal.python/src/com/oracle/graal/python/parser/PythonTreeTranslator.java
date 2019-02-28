@@ -67,8 +67,6 @@ import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode.ExpressionWithSideEffect;
-import com.oracle.graal.python.nodes.expression.ExpressionNode.ExpressionWithSideEffects;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
@@ -89,12 +87,12 @@ import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.parser.antlr.Python3Parser.ArgumentContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Lambdef_bodyContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Lambdef_nocond_bodyContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.VarargslistContext;
-import com.oracle.graal.python.parser.antlr.Python3ParserBaseVisitor;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -102,12 +100,11 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
-public final class PythonTreeTranslator extends Python3ParserBaseVisitor<Object> {
+public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
     protected final ParserErrorCallback errors;
     protected final NodeFactory factory;
@@ -234,7 +231,7 @@ public final class PythonTreeTranslator extends Python3ParserBaseVisitor<Object>
         ExpressionNode file = asExpression(super.visitFile_input(ctx));
         deriveSourceSection(ctx, file);
         environment.popScope();
-        return factory.createModuleRoot(name, getModuleDoc(file), file, ctx.scope.getFrameDescriptor());
+        return factory.createModuleRoot(name, getModuleDoc(ctx), file, ctx.scope.getFrameDescriptor());
     }
 
     @Override
@@ -261,29 +258,34 @@ public final class PythonTreeTranslator extends Python3ParserBaseVisitor<Object>
         } else if (mode == ParserMode.Statement) {
             body = factory.createPrintExpression(body);
             deriveSourceSection(ctx, body);
-            return factory.createModuleRoot("<expression>", getModuleDoc(body), body, ctx.scope.getFrameDescriptor());
+            return factory.createModuleRoot("<expression>", getModuleDoc(ctx), body, ctx.scope.getFrameDescriptor());
         } else {
-            return factory.createModuleRoot("<expression>", getModuleDoc(body), body, ctx.scope.getFrameDescriptor());
+            return factory.createModuleRoot("<expression>", getModuleDoc(ctx), body, ctx.scope.getFrameDescriptor());
         }
     }
 
-    private static final class DocStringFinder implements NodeVisitor {
-        public static final DocStringFinder INSTANCE = new DocStringFinder();
-        private String doc = null;
-
-        public boolean visit(Node node) {
-            if (node instanceof StringLiteralNode) {
-                doc = ((StringLiteralNode) node).getValue();
-            } else if (node instanceof ExpressionWithSideEffect || node instanceof ExpressionWithSideEffects || node instanceof BlockNode) {
-                return true;
+    private String getModuleDoc(ParserRuleContext ctx) {
+        Python3Parser.Simple_stmtContext firstStatement = null;
+        if (ctx instanceof Python3Parser.Single_inputContext) {
+            firstStatement = ((Python3Parser.Single_inputContext) ctx).simple_stmt();
+        } else if (ctx instanceof Python3Parser.File_inputContext) {
+            List<Python3Parser.StmtContext> stmt = ((Python3Parser.File_inputContext) ctx).stmt();
+            if (!stmt.isEmpty()) {
+                firstStatement = stmt.get(0).simple_stmt();
             }
-            return false;
         }
-    }
 
-    private static String getModuleDoc(ExpressionNode body) {
-        body.accept(DocStringFinder.INSTANCE);
-        return DocStringFinder.INSTANCE.doc;
+        if (firstStatement != null) {
+            try {
+                PNode stringNode = parseString(new String[]{firstStatement.getText().trim()});
+                if (stringNode instanceof StringLiteralNode) {
+                    return ((StringLiteralNode) stringNode).getValue();
+                }
+            } catch (Exception ignored) {
+                // not a string literal
+            }
+        }
+        return null;
     }
 
     @Override
@@ -398,7 +400,7 @@ public final class PythonTreeTranslator extends Python3ParserBaseVisitor<Object>
         return ctx.getChild(0) instanceof TerminalNode && ctx.getChild(0).getText().equals("**");
     }
 
-    private static class ExtractNameVisitor extends Python3ParserBaseVisitor<String> {
+    private static class ExtractNameVisitor extends Python3BaseVisitor<String> {
         @Override
         protected String aggregateResult(String aggregate, String nextResult) {
             return aggregate == null ? nextResult : aggregate;
@@ -446,8 +448,12 @@ public final class PythonTreeTranslator extends Python3ParserBaseVisitor<Object>
     public Object visitAtom(Python3Parser.AtomContext ctx) {
         if (ctx.NUMBER() != null) {
             return parseNumber(ctx.NUMBER().getText());
-        } else if (!ctx.string().isEmpty()) {
-            return parseString(ctx.string());
+        } else if (!ctx.STRING().isEmpty()) {
+            String[] textStr = new String[ctx.STRING().size()];
+            for (int i = 0; i < ctx.STRING().size(); i++) {
+                textStr[i] = ctx.STRING().get(i).getText();
+            }
+            return parseString(textStr);
         } else if (ctx.NAME() != null) {
             return environment.findVariable(ctx.NAME().getText());
         } else if (ctx.getChildCount() == 1) {
@@ -605,19 +611,17 @@ public final class PythonTreeTranslator extends Python3ParserBaseVisitor<Object>
     }
 
     @SuppressWarnings("unused")
-    private PNode parseString(List<Python3Parser.StringContext> list) {
+    private PNode parseString(String[] strings) {
         StringBuilder sb = null;
         BytesBuilder bb = null;
-        ExpressionNode returnValue = null;
 
-        for (Python3Parser.StringContext str : list) {
+        for (String text : strings) {
             boolean isRaw = false;
-            boolean isBytes = str.BYTES_LITERAL() != null;
-            boolean isFormat = str.format_string_literal() != null;
+            boolean isBytes = false;
+            boolean isFormat = false;
 
-            String text = str.getText();
             int strStartIndex = 1;
-            int strEndIndex = -1;
+            int strEndIndex = text.length() - 1;
 
             for (int i = 0; i < 3; i++) {
                 char chr = Character.toLowerCase(text.charAt(i));
@@ -627,10 +631,9 @@ public final class PythonTreeTranslator extends Python3ParserBaseVisitor<Object>
                 } else if (chr == 'u') {
                     // unicode case (default)
                 } else if (chr == 'b') {
-                    assert isBytes;
+                    isBytes = true;
                 } else if (chr == 'f') {
-                    assert isFormat;
-                    assert !isBytes;
+                    isFormat = true;
                 } else if (chr == '\'' || chr == '"') {
                     strStartIndex = i + 1;
                     break;
@@ -669,101 +672,29 @@ public final class PythonTreeTranslator extends Python3ParserBaseVisitor<Object>
                 strEndIndex -= 2;
             }
 
-            if (!isFormat) {
-                text = text.substring(strStartIndex, text.length() + strEndIndex);
-
-                if (isBytes) {
-                    if (isRaw) {
-                        bb.append(text.getBytes());
-                    } else {
-                        bb.append(BytesUtils.fromString(errors, text));
-                    }
+            text = text.substring(strStartIndex, strEndIndex);
+            if (isBytes) {
+                if (isRaw) {
+                    bb.append(text.getBytes());
                 } else {
-                    if (isRaw) {
-                        sb.append(text);
-                    } else {
-                        sb.append(unescapeJavaString(text));
-                    }
+                    bb.append(BytesUtils.fromString(errors, text));
                 }
             } else {
-                assert !isBytes;
-                Python3Parser.Format_string_literalContext stringLiteral = str.format_string_literal();
-
-                // prefix
-                text = stringLiteral.getChild(0).getText();
-                assert text.endsWith("{");
-                text = text.substring(strStartIndex, text.length() - 1); // drop '{'
-                sb.append(text);
-
-                if (returnValue == null) {
-                    returnValue = factory.createStringLiteral(sb.toString());
+                if (isRaw) {
+                    sb.append(text);
                 } else {
-                    returnValue = factory.createBinaryOperation("+", returnValue, factory.createStringLiteral(sb.toString()));
+                    sb.append(unescapeJavaString(text));
                 }
-                sb.setLength(0);
-
-                if (stringLiteral.short_format_string_single() != null) {
-                    returnValue = appendStringItem(sb, returnValue, isRaw, stringLiteral.short_format_string_single());
-                } else if (stringLiteral.short_format_string_double() != null) {
-                    returnValue = appendStringItem(sb, returnValue, isRaw, stringLiteral.short_format_string_double());
-                } else {
-                    assert stringLiteral.long_format_string() != null;
-                    returnValue = appendStringItem(sb, returnValue, isRaw, stringLiteral.long_format_string());
-                }
-
-                // suffix
-                text = stringLiteral.getChild(stringLiteral.getChildCount() - 1).getText();
-                assert text.startsWith("}");
-                text = text.substring(1, text.length() + strEndIndex);
-                sb.append(text);
             }
         }
 
-        if (returnValue != null) {
-            if (sb.length() > 0) {
-                returnValue = factory.createBinaryOperation("+", returnValue, factory.createStringLiteral(sb.toString()));
-            }
-            return returnValue;
-        } else if (bb != null) {
+        if (bb != null) {
             return factory.createBytesLiteral(bb.build());
         } else if (sb != null) {
             return factory.createStringLiteral(sb.toString());
         } else {
             return factory.createStringLiteral("");
         }
-    }
-
-    private ExpressionNode appendStringItem(StringBuilder sb, ExpressionNode inputReturnValue, boolean isRaw, ParserRuleContext stringItem) {
-        ExpressionNode returnValue = inputReturnValue;
-        int childCount = stringItem.getChildCount();
-        for (int j = 0; j < childCount; j++) {
-            ParseTree child = stringItem.getChild(j);
-            if (child instanceof Python3Parser.InterpolationContext) {
-                if (((Python3Parser.InterpolationContext) child).test() == null) {
-                    String text = child.getText();
-                    if (text.equals("{{")) {
-                        sb.append('{');
-                    } else if (text.equals("}}")) {
-                        sb.append('}');
-                    } else {
-                        assert text.equals("{}");
-                        throw errors.raiseInvalidSyntax(source, deriveSourceSection(((Python3Parser.InterpolationContext) child)), "f-string: empty expression not allowed");
-                    }
-                } else {
-                    if (sb.length() > 0) {
-                        returnValue = factory.createBinaryOperation("+", returnValue, factory.createStringLiteral(sb.toString()));
-                        sb.setLength(0);
-                    }
-                    ExpressionNode node = (ExpressionNode) ((Python3Parser.InterpolationContext) child).test().accept(this);
-                    returnValue = factory.createBinaryOperation("+", returnValue, node);
-                }
-            } else if (child instanceof TerminalNode) {
-                sb.append(isRaw ? child.getText() : unescapeJavaString(child.getText()));
-            } else {
-                assert false;
-            }
-        }
-        return returnValue;
     }
 
     public static String unescapeJavaString(String st) {
