@@ -27,7 +27,7 @@
  */
 // Checkstyle: stop
 //@formatter:off
-// Generated from Python3.g4 by ANTLR 4.7.1
+// Generated from Python3Parser.g4 by ANTLR 4.7.1
 package com.oracle.graal.python.parser.antlr;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -35,11 +35,11 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link Python3Listener},
+ * This class provides an empty implementation of {@link Python3ParserListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
-public class Python3BaseListener implements Python3Listener {
+public class Python3ParserBaseListener implements Python3ParserListener {
 	/**
 	 * {@inheritDoc}
 	 *
@@ -1204,78 +1204,6 @@ public class Python3BaseListener implements Python3Listener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitYield_arg(Python3Parser.Yield_argContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterString(Python3Parser.StringContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitString(Python3Parser.StringContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterFormat_string_literal(Python3Parser.Format_string_literalContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitFormat_string_literal(Python3Parser.Format_string_literalContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterShort_format_string_single(Python3Parser.Short_format_string_singleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitShort_format_string_single(Python3Parser.Short_format_string_singleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterShort_format_string_double(Python3Parser.Short_format_string_doubleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitShort_format_string_double(Python3Parser.Short_format_string_doubleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterLong_format_string(Python3Parser.Long_format_stringContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitLong_format_string(Python3Parser.Long_format_stringContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterInterpolation(Python3Parser.InterpolationContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitInterpolation(Python3Parser.InterpolationContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

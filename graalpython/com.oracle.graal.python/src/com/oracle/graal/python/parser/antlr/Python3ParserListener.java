@@ -27,7 +27,7 @@
  */
 // Checkstyle: stop
 //@formatter:off
-// Generated from Python3.g4 by ANTLR 4.7.1
+// Generated from Python3Parser.g4 by ANTLR 4.7.1
 package com.oracle.graal.python.parser.antlr;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -35,7 +35,7 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * This interface defines a complete listener for a parse tree produced by
  * {@link Python3Parser}.
  */
-public interface Python3Listener extends ParseTreeListener {
+public interface Python3ParserListener extends ParseTreeListener {
 	/**
 	 * Enter a parse tree produced by {@link Python3Parser#single_input}.
 	 * @param ctx the parse tree
@@ -1006,64 +1006,4 @@ public interface Python3Listener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitYield_arg(Python3Parser.Yield_argContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link Python3Parser#string}.
-	 * @param ctx the parse tree
-	 */
-	void enterString(Python3Parser.StringContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#string}.
-	 * @param ctx the parse tree
-	 */
-	void exitString(Python3Parser.StringContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link Python3Parser#format_string_literal}.
-	 * @param ctx the parse tree
-	 */
-	void enterFormat_string_literal(Python3Parser.Format_string_literalContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#format_string_literal}.
-	 * @param ctx the parse tree
-	 */
-	void exitFormat_string_literal(Python3Parser.Format_string_literalContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link Python3Parser#short_format_string_single}.
-	 * @param ctx the parse tree
-	 */
-	void enterShort_format_string_single(Python3Parser.Short_format_string_singleContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#short_format_string_single}.
-	 * @param ctx the parse tree
-	 */
-	void exitShort_format_string_single(Python3Parser.Short_format_string_singleContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link Python3Parser#short_format_string_double}.
-	 * @param ctx the parse tree
-	 */
-	void enterShort_format_string_double(Python3Parser.Short_format_string_doubleContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#short_format_string_double}.
-	 * @param ctx the parse tree
-	 */
-	void exitShort_format_string_double(Python3Parser.Short_format_string_doubleContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link Python3Parser#long_format_string}.
-	 * @param ctx the parse tree
-	 */
-	void enterLong_format_string(Python3Parser.Long_format_stringContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#long_format_string}.
-	 * @param ctx the parse tree
-	 */
-	void exitLong_format_string(Python3Parser.Long_format_stringContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link Python3Parser#interpolation}.
-	 * @param ctx the parse tree
-	 */
-	void enterInterpolation(Python3Parser.InterpolationContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#interpolation}.
-	 * @param ctx the parse tree
-	 */
-	void exitInterpolation(Python3Parser.InterpolationContext ctx);
 }

@@ -89,12 +89,12 @@ import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
-import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.parser.antlr.Python3Parser.ArgumentContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Lambdef_bodyContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Lambdef_nocond_bodyContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.VarargslistContext;
+import com.oracle.graal.python.parser.antlr.Python3ParserBaseVisitor;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -107,7 +107,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
-public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
+public final class PythonTreeTranslator extends Python3ParserBaseVisitor<Object> {
 
     protected final ParserErrorCallback errors;
     protected final NodeFactory factory;
@@ -398,7 +398,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         return ctx.getChild(0) instanceof TerminalNode && ctx.getChild(0).getText().equals("**");
     }
 
-    private static class ExtractNameVisitor extends Python3BaseVisitor<String> {
+    private static class ExtractNameVisitor extends Python3ParserBaseVisitor<String> {
         @Override
         protected String aggregateResult(String aggregate, String nextResult) {
             return aggregate == null ? nextResult : aggregate;

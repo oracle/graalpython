@@ -47,16 +47,16 @@ import java.util.List;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 
-import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser.DefparameterContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.KwargsparameterContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.SplatparameterContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.VdefparameterContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.VkwargsparameterContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.VsplatparameterContext;
+import com.oracle.graal.python.parser.antlr.Python3ParserBaseVisitor;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 
-public class ArgListCompiler<T> extends Python3BaseVisitor<T> {
+public class ArgListCompiler<T> extends Python3ParserBaseVisitor<T> {
     public boolean arglist, keywordlist;
     public final List<String> names;
     public final List<String> fpnames;

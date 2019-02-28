@@ -27,19 +27,19 @@
  */
 // Checkstyle: stop
 //@formatter:off
-// Generated from Python3.g4 by ANTLR 4.7.1
+// Generated from Python3Parser.g4 by ANTLR 4.7.1
 package com.oracle.graal.python.parser.antlr;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link Python3Visitor},
+ * This class provides an empty implementation of {@link Python3ParserVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
  * operations with no return type.
  */
-public class Python3BaseVisitor<T> extends AbstractParseTreeVisitor<T> implements Python3Visitor<T> {
+public class Python3ParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements Python3ParserVisitor<T> {
 	/**
 	 * {@inheritDoc}
 	 *
@@ -719,46 +719,4 @@ public class Python3BaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitYield_arg(Python3Parser.Yield_argContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitString(Python3Parser.StringContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitFormat_string_literal(Python3Parser.Format_string_literalContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitShort_format_string_single(Python3Parser.Short_format_string_singleContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitShort_format_string_double(Python3Parser.Short_format_string_doubleContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitLong_format_string(Python3Parser.Long_format_stringContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitInterpolation(Python3Parser.InterpolationContext ctx) { return visitChildren(ctx); }
 }

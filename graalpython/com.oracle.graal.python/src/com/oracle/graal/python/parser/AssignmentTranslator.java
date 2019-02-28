@@ -47,7 +47,6 @@ import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.AssignmentNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.parser.antlr.Python3Parser.ExprContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Expr_stmtContext;
@@ -55,9 +54,10 @@ import com.oracle.graal.python.parser.antlr.Python3Parser.ExprlistContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.NormassignContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Star_exprContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.TestContext;
+import com.oracle.graal.python.parser.antlr.Python3ParserBaseVisitor;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 
-public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
+public class AssignmentTranslator extends Python3ParserBaseVisitor<PNode> {
 
     private final NodeFactory factory;
     private final TranslationEnvironment environment;

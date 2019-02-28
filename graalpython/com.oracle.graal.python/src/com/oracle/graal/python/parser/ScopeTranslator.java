@@ -38,13 +38,14 @@ import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Single_inputContext;
+import com.oracle.graal.python.parser.antlr.Python3ParserBaseVisitor;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameUtil;
 
-public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
+public final class ScopeTranslator<T> extends Python3ParserBaseVisitor<T> {
 
     private final TranslationEnvironment environment;
     private final ArrayList<ArgListCompiler<T>> argListCompilers;

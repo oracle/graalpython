@@ -30,10 +30,8 @@
  *                https://github.com/bkiers/python3-parser
  * Developed by : Bart Kiers, bart@big-o.nl
  */
-grammar Python3;
 
-// All comments that start with "///" are copy-pasted from
-// The Python Language Reference
+lexer grammar Python3Lexer;
 
 tokens { INDENT, DEDENT }
 
@@ -48,21 +46,6 @@ tokens { INDENT, DEDENT }
   private Token lastToken = null;
   // wether we have expanded EOF to include necessary DEDENTS and a NEWLINE
   private boolean expandedEOF = false;
-  
-  // whether we are in a format string
-  private boolean isInFormatString = false;
-  
-  public void enterFormatString() {
-    isInFormatString = true;
-  }
-  
-  public void leaveFormatString() {
-    isInFormatString = false;
-  }
-  
-  public boolean inFormatString() {
-    return isInFormatString;
-  }
 
   @Override
   public void emit(Token t) {
@@ -154,196 +137,10 @@ tokens { INDENT, DEDENT }
   }
 }
 
-/*
- * parser rules
- */
-
-single_input locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: NEWLINE | simple_stmt | compound_stmt NEWLINE;
-file_input locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: (NEWLINE | stmt)* EOF;
-eval_input locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: testlist NEWLINE* EOF;
-
-decorator: '@' dotted_name ( '(' (arglist)? ')' )? NEWLINE;
-decorators: decorator+;
-decorated: decorators (classdef | funcdef | async_funcdef);
-
-async_funcdef: ASYNC funcdef;
-funcdef locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: 'def' NAME parameters ('->' test)? ':' suite;
-
-parameters: '(' (typedargslist)? ')';
-typedargslist: (defparameter (',' defparameter)* (',' (
-        splatparameter (',' defparameter)* (',' (kwargsparameter (',')?)?)?
-      | kwargsparameter (',')?)?)?
-  | splatparameter (',' defparameter)* (',' (kwargsparameter (',')?)?)?
-  | kwargsparameter (',')?);
-tfpdef: NAME (':' test)?;
-defparameter: tfpdef ('=' test)?;
-splatparameter: '*' (tfpdef)?;
-kwargsparameter: '**' tfpdef;
-varargslist: (vdefparameter (',' vdefparameter)* (',' (
-        vsplatparameter (',' vdefparameter)* (',' (vkwargsparameter (',')?)?)?
-      | vkwargsparameter (',')?)?)?
-  | vsplatparameter (',' vdefparameter)* (',' (vkwargsparameter (',')?)?)?
-  | vkwargsparameter (',')?
-);
-vfpdef: NAME;
-vdefparameter: vfpdef ('=' test)?;
-vsplatparameter: '*' (vfpdef)?;
-vkwargsparameter: '**' vfpdef;
-
-stmt: simple_stmt | compound_stmt;
-simple_stmt: small_stmt (';' small_stmt)* (';')? NEWLINE;
-small_stmt: (expr_stmt | del_stmt | pass_stmt | flow_stmt |
-             import_stmt | global_stmt | nonlocal_stmt | assert_stmt);
-expr_stmt: testlist_star_expr (annassign | augassign (yield_expr|testlist) |
-                     (normassign)*);
-normassign: '=' (yield_expr | testlist_star_expr);
-annassign: ':' test ('=' test)?;
-testlist_star_expr: (test|star_expr) (',' (test|star_expr))* (',')?;
-augassign: ('+=' | '-=' | '*=' | '@=' | '/=' | '%=' | '&=' | '|=' | '^=' | '<<=' | '>>=' | '**=' | '//=');
-// For normal and annotated assignments, additional restrictions enforced by the interpreter
-del_stmt: 'del' exprlist;
-pass_stmt: 'pass';
-flow_stmt: break_stmt | continue_stmt | return_stmt | raise_stmt | yield_stmt;
-break_stmt: 'break';
-continue_stmt: 'continue';
-return_stmt: 'return' (testlist)?;
-yield_stmt: yield_expr;
-raise_stmt: 'raise' (test ('from' test)?)?;
-import_stmt: import_name | import_from;
-import_name: 'import' dotted_as_names;
-// note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS
-import_from: ('from' (('.' | '...')* dotted_name | ('.' | '...')+)
-              'import' ('*' | '(' import_as_names ')' | import_as_names));
-import_as_name: NAME ('as' NAME)?;
-dotted_as_name: dotted_name ('as' NAME)?;
-import_as_names: import_as_name (',' import_as_name)* (',')?;
-dotted_as_names: dotted_as_name (',' dotted_as_name)*;
-dotted_name: NAME ('.' NAME)*;
-global_stmt: 'global' NAME (',' NAME)*;
-nonlocal_stmt: 'nonlocal' NAME (',' NAME)*;
-assert_stmt: 'assert' test (',' test)?;
-
-compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated | async_stmt;
-async_stmt: ASYNC (funcdef | with_stmt | for_stmt);
-if_stmt: 'if' test ':' suite ('elif' test ':' suite)* ('else' ':' suite)?;
-while_stmt: 'while' test ':' suite ('else' ':' suite)?;
-for_stmt: 'for' exprlist 'in' testlist ':' suite ('else' ':' suite)?;
-try_stmt: ('try' ':' suite
-           ((except_clause ':' suite)+
-            ('else' ':' suite)?
-            ('finally' ':' suite)? |
-           'finally' ':' suite));
-with_stmt: 'with' with_item (',' with_item)*  ':' suite;
-with_item: test ('as' expr)?;
-// NB compile.c makes sure that the default except clause is last
-except_clause: 'except' (test ('as' NAME)?)?;
-suite: simple_stmt | NEWLINE INDENT stmt+ DEDENT;
-
-test: or_test ('if' or_test 'else' test)? | lambdef;
-test_nocond: or_test | lambdef_nocond;
-lambdef locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: 'lambda' (varargslist)? ':' lambdef_body;
-lambdef_body: test;
-lambdef_nocond locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: 'lambda' (varargslist)? ':' lambdef_nocond_body;
-lambdef_nocond_body: test_nocond;
-or_test: and_test ('or' and_test)*;
-and_test: not_test ('and' not_test)*;
-not_test: 'not' not_test | comparison;
-comparison: expr (comp_op expr)*;
-// <> isn't actually a valid comparison operator in Python. It's here for the
-// sake of a __future__ import described in PEP 401 (which really works :-)
-comp_op: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not';
-star_expr: '*' expr;
-expr: xor_expr ('|' xor_expr)*;
-xor_expr: and_expr ('^' and_expr)*;
-and_expr: shift_expr ('&' shift_expr)*;
-shift_expr: arith_expr (('<<'|'>>') arith_expr)*;
-arith_expr: term (('+'|'-') term)*;
-term: factor (('*'|'@'|'/'|'%'|'//') factor)*;
-factor: ('+'|'-'|'~') factor | power;
-power: atom_expr ('**' factor)?;
-atom_expr: (AWAIT)? atom trailer*;
-atom: ('(' (yield_expr|testlist_comp)? ')' |
-       '[' (testlist_comp)? ']' |
-       '{' (dictorsetmaker)? '}' |
-       NAME | NUMBER | string+ | '...' | 'None' | 'True' | 'False');
-testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* (',')? );
-trailer: '(' (arglist)? ')' | '[' subscriptlist ']' | '.' NAME;
-subscriptlist: subscript (',' subscript)* (',')?;
-subscript: test | (test)? ':' (test)? (sliceop)?;
-sliceop: ':' (test)?;
-exprlist: (expr|star_expr) (',' (expr|star_expr))* (',')?;
-testlist: test (',' test)* (',')?;
-dictorsetmaker: dictmaker | setmaker;
-dictmaker: ((test ':' test | '**' expr)
-                   (comp_for | (',' (test ':' test | '**' expr))* (',')?));
-setmaker: ((test | star_expr)
-                   (comp_for | (',' (test | star_expr))* (',')?));
-
-classdef locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: 'class' NAME ('(' arglist? ')')? ':' suite;
-
-arglist: argument (',' argument)*  (',')?;
-
-// The reason that keywords are test nodes instead of NAME is that using NAME
-// results in an ambiguity. ast.c makes sure it's a NAME.
-// "test '=' test" is really "keyword '=' test", but we have no such token.
-// These need to be in a single rule to avoid grammar that is ambiguous
-// to our LL(1) parser. Even though 'test' includes '*expr' in star_expr,
-// we explicitly match '*' here, too, to give it proper precedence.
-// Illegal combinations and orderings are blocked in ast.c:
-// multiple (test comp_for) arguments are blocked; keyword unpackings
-// that precede iterable unpackings are blocked; etc.
-argument: ( test (comp_for)? |
-            test '=' test |
-            '**' test |
-            '*' test );
-
-comp_iter: comp_for | comp_if;
-comp_for locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: (ASYNC)? 'for' exprlist 'in' or_test (comp_iter)?;
-comp_if: 'if' test_nocond (comp_iter)?;
-
-// not used in grammar, but may appear in "node" passed from Parser to Compiler
-encoding_decl: NAME;
-
-yield_expr: 'yield' (yield_arg)?;
-yield_arg: 'from' test | testlist;
-
-string: STRING_LITERAL | BYTES_LITERAL | format_string_literal;
-
-format_string_literal: FORMAT_STRING_PREFIX_SINGLE short_format_string_single FORMAT_STRING_SUFFIX_SINGLE |
-                       FORMAT_STRING_PREFIX_DOUBLE short_format_string_double FORMAT_STRING_SUFFIX_DOUBLE |
-                       FORMAT_LONG_STRING_PREFIX_SINGLE long_format_string FORMAT_LONG_STRING_SUFFIX_SINGLE |
-                       FORMAT_LONG_STRING_PREFIX_DOUBLE long_format_string FORMAT_LONG_STRING_SUFFIX_DOUBLE;
-
-short_format_string_single: interpolation ( FORMAT_STRING_INNER_SINGLE interpolation )*;
-
-short_format_string_double: interpolation ( FORMAT_STRING_INNER_DOUBLE interpolation )*;
-
-long_format_string: interpolation ( FORMAT_LONG_STRING_INNER interpolation )*;
-
-interpolation: test;
-
-/*
- * lexer rules
- */
-
-FORMAT_STRING_PREFIX_SINGLE : ( [fF] | [rR] [fF] | [fF] [rR] ) '\'' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\\r\n\f{}'] )* '{' ;
-FORMAT_STRING_INNER_SINGLE : '}' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\\r\n\f{}'] )* '{' ;
-FORMAT_STRING_SUFFIX_SINGLE : '}' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\\r\n\f{}'] )* '\'' ;
-
-FORMAT_STRING_PREFIX_DOUBLE : ( [fF] | [rR] [fF] | [fF] [rR] ) '"' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\\r\n\f{}"] )* '{' ;
-FORMAT_STRING_INNER_DOUBLE : '}' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\\r\n\f{}"] )* '{' ;
-FORMAT_STRING_SUFFIX_DOUBLE : '}' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\\r\n\f{}"] )* '"' ;
-
-FORMAT_LONG_STRING_PREFIX_SINGLE : ( [fF] | [rR] [fF] | [fF] [rR] ) '\'\'\'' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\{}] )* '{' ;
-FORMAT_LONG_STRING_INNER : '}' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\{}] )* '{' ;
-FORMAT_LONG_STRING_SUFFIX_SINGLE : '}' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\{}] )* '\'\'\'' ;
-
-FORMAT_LONG_STRING_PREFIX_DOUBLE : ( [fF] | [rR] [fF] | [fF] [rR] ) '"""' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\{}] )* '{' ;
-FORMAT_LONG_STRING_SUFFIX_DOUBLE : '}' ( FORMAT_STRING_ESCAPE | STRING_ESCAPE_SEQ | ~[\\\r\n\f{}] )* '"""' ;
-
-fragment FORMAT_STRING_ESCAPE
- : '{{'
- | '}}';
+STRING
+ : STRING_LITERAL
+ | BYTES_LITERAL
+ ;
 
 NUMBER
  : INTEGER
@@ -440,8 +237,13 @@ NAME
  : ID_START ID_CONTINUE*
  ;
 
+FORMAT_STRING_LITERAL
+ : ( [fF] | ( [fF] [rR] ) | ( [rR] [fF] ) ) ( SHORT_STRING | LONG_STRING )
+ ;
+
 /// stringliteral   ::=  [stringprefix](shortstring | longstring)
-/// stringprefix    ::=  "r" | "u" | "R" | "U"
+/// stringprefix    ::=  "r" | "u" | "R" | "U" | "f" | "F"
+///                      | "fr" | "Fr" | "fR" | "FR" | "rf" | "rF" | "Rf" | "RF"
 STRING_LITERAL
  : ( [rR] | [uU] )? ( SHORT_STRING | LONG_STRING )
  ;
