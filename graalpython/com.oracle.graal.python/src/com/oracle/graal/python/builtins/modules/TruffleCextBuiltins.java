@@ -101,7 +101,7 @@ import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -330,13 +330,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CreateFunctionNode extends PythonBuiltinNode {
-        private static final Arity ARITY = Arity.createVarArgsAndKwArgsOnly();
+        private static final Signature SIGNATURE = Signature.createVarArgsAndKwArgsOnly();
 
         @Specialization(guards = "isNoValue(cwrapper)")
         @TruffleBoundary
         PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, LazyPythonClass type) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable, ARITY));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable, SIGNATURE));
             return factory().createBuiltinFunction(name, type, 0, callTarget);
         }
 
@@ -344,7 +344,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, @SuppressWarnings("unused") PNone type) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable, ARITY));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable, SIGNATURE));
             return factory().createBuiltinFunction(name, null, 0, callTarget);
         }
 
@@ -352,7 +352,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, TruffleObject cwrapper, @SuppressWarnings("unused") PNone type) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable, ARITY));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable, SIGNATURE));
             return factory().createBuiltinFunction(name, null, 0, callTarget);
         }
 
@@ -360,7 +360,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         PBuiltinFunction run(String name, TruffleObject callable, TruffleObject cwrapper, LazyPythonClass type) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable, ARITY));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable, SIGNATURE));
             return factory().createBuiltinFunction(name, type, 0, callTarget);
         }
     }
@@ -669,7 +669,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     }
 
     static class ExternalFunctionNode extends PRootNode {
-        private final Arity arity;
+        private final Signature signature;
         private final TruffleObject cwrapper;
         private final TruffleObject callable;
         private final String name;
@@ -680,9 +680,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private CheckFunctionResultNode checkResultNode = CheckFunctionResultNode.create();
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
 
-        ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable, Arity arity) {
+        ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable, Signature signature) {
             super(lang);
-            this.arity = arity;
+            this.signature = signature;
             this.name = name;
             this.cwrapper = cwrapper;
             this.callable = callable;
@@ -758,8 +758,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Override
-        public Arity getArity() {
-            return arity;
+        public Signature getSignature() {
+            return signature;
         }
     }
 
@@ -1537,7 +1537,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     }
 
     static class MethKeywordsRoot extends MethodDescriptorRoot {
-        private static final Arity ARITY = new Arity(true, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(true, 1, false, new String[]{"self"}, new String[0]);
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -1559,13 +1559,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Override
-        public Arity getArity() {
-            return ARITY;
+        public Signature getSignature() {
+            return SIGNATURE;
         }
     }
 
     static class MethVarargsRoot extends MethodDescriptorRoot {
-        private static final Arity ARITY = new Arity(false, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, new String[0]);
 
         @Child private ReadVarArgsNode readVarargsNode;
 
@@ -1584,13 +1584,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Override
-        public Arity getArity() {
-            return ARITY;
+        public Signature getSignature() {
+            return SIGNATURE;
         }
     }
 
     static class MethNoargsRoot extends MethodDescriptorRoot {
-        private static final Arity ARITY = new Arity(false, -1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self"}, new String[0]);
 
         protected MethNoargsRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
             super(language, factory, callTarget);
@@ -1605,13 +1605,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Override
-        public Arity getArity() {
-            return ARITY;
+        public Signature getSignature() {
+            return SIGNATURE;
         }
     }
 
     static class MethORoot extends MethodDescriptorRoot {
-        private static final Arity ARITY = new Arity(false, -1, false, new String[]{"self", "arg"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "arg"}, new String[0]);
 
         @Child private ReadIndexedArgumentNode readArgNode;
 
@@ -1630,13 +1630,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Override
-        public Arity getArity() {
-            return ARITY;
+        public Signature getSignature() {
+            return SIGNATURE;
         }
     }
 
     static class MethFastcallRoot extends MethodDescriptorRoot {
-        private static final Arity ARITY = new Arity(true, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(true, 1, false, new String[]{"self"}, new String[0]);
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -1658,8 +1658,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Override
-        public Arity getArity() {
-            return ARITY;
+        public Signature getSignature() {
+            return SIGNATURE;
         }
     }
 
@@ -1943,9 +1943,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             });
 
             RootNode rootNode = null;
-            Arity funcArity = func.getArity();
-            if (funcArity.takesPositionalOnly()) {
-                switch (funcArity.getMaxNumOfPositionalArgs()) {
+            Signature funcSignature = func.getSignature();
+            if (funcSignature.takesPositionalOnly()) {
+                switch (funcSignature.getMaxNumOfPositionalArgs()) {
                     case 1:
                         rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), unaryBuiltin,
                                         new MayRaiseNodeFactory<PythonUnaryBuiltinNode>(MayRaiseUnaryNodeGen.create(func, errorResult)),

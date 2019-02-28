@@ -27,7 +27,7 @@ package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.cell.CellSupplier;
@@ -64,8 +64,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     private ExpressionNode uninitializedBody;
 
     public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
-                    ExecutionCellSlots executionCellSlots, Arity arity) {
-        super(language, frameDescriptor, executionCellSlots, arity);
+                    ExecutionCellSlots executionCellSlots, Signature signature) {
+        super(language, frameDescriptor, executionCellSlots, signature);
         this.contextRef = language.getContextReference();
         this.executionCellSlots = executionCellSlots;
         this.cells = new PCell[this.cellVarSlots.length];
@@ -79,10 +79,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
         this.generatorFrameProfile = isGenerator ? ValueProfile.createClassProfile() : null;
     }
 
-    public FunctionRootNode copyWithNewArity(Arity newArity) {
-        FunctionRootNode copy = new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots,
-                        newArity);
-        return copy;
+    public FunctionRootNode copyWithNewSignature(Signature newSignature) {
+        return new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
     }
 
     @Override
@@ -102,7 +100,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
 
     @Override
     public FunctionRootNode copy() {
-        return new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, getArity());
+        return new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, getSignature());
     }
 
     @ExplodeLoop

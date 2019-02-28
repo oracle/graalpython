@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.argument;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -83,11 +83,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         // We do not directly cache these objects because they are compilation final anyway and the
         // getter check the appropriate assumptions.
-        Arity arity = getArity(cachedMethod);
+        Signature signature = getSignature(cachedMethod);
         Object[] defaults = getDefaults(cachedMethod);
         PKeyword[] kwdefaults = getKwDefaults(cachedMethod);
         Object self = getSelf(cachedMethod);
-        return createAndCheckArgumentsNode.execute(method, userArguments, keywords, arity, self, defaults, kwdefaults, isMethodCall(self));
+        return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, self, defaults, kwdefaults, isMethodCall(self));
     }
 
     @Specialization(guards = {"isMethod(method)", "getFunction(method) == cachedFunction",
@@ -99,10 +99,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         // We do not directly cache these objects because they are compilation final anyway and the
         // getter check the appropriate assumptions.
-        Arity arity = getArity(cachedFunction);
+        Signature signature = getSignature(cachedFunction);
         Object[] defaults = getDefaults(cachedFunction);
         PKeyword[] kwdefaults = getKwDefaults(cachedFunction);
-        return createAndCheckArgumentsNode.execute(method, userArguments, keywords, arity, cachedSelf, defaults, kwdefaults, isMethodCall(cachedSelf));
+        return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, cachedSelf, defaults, kwdefaults, isMethodCall(cachedSelf));
     }
 
     @Specialization(guards = {"isMethod(method)", "getFunction(method) == cachedFunction"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodFunctionAndSelfCached")
@@ -112,11 +112,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         // We do not directly cache these objects because they are compilation final anyway and the
         // getter check the appropriate assumptions.
-        Arity arity = getArity(cachedFunction);
+        Signature signature = getSignature(cachedFunction);
         Object[] defaults = getDefaults(cachedFunction);
         PKeyword[] kwdefaults = getKwDefaults(cachedFunction);
         Object self = getSelf(method);
-        return createAndCheckArgumentsNode.execute(method, userArguments, keywords, arity, self, defaults, kwdefaults, isMethodCall(self));
+        return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, self, defaults, kwdefaults, isMethodCall(self));
     }
 
     @Specialization(guards = {"isFunction(callable)", "callable == cachedCallable"}, limit = "getVariableArgumentInlineCacheLimit()")
@@ -126,10 +126,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         // We do not directly cache these objects because they are compilation final anyway and the
         // getter check the appropriate assumptions.
-        Arity arity = getArity(cachedCallable);
+        Signature signature = getSignature(cachedCallable);
         Object[] defaults = getDefaults(cachedCallable);
         PKeyword[] kwdefaults = getKwDefaults(cachedCallable);
-        return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, arity, null, defaults, kwdefaults, false);
+        return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, null, defaults, kwdefaults, false);
     }
 
     @Specialization(replaces = {"doFunctionCached", "doMethodCached", "doMethodFunctionAndSelfCached", "doMethodFunctionCached"})
@@ -140,13 +140,13 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         // but sometimes also methods that have functions directly.
         // In all other cases, the arguments
 
-        Arity arity = getArityUncached(callable);
+        Signature signature = getSignatureUncached(callable);
         Object[] defaults = getDefaultsUncached(callable);
         PKeyword[] kwdefaults = getKwDefaultsUncached(callable);
         Object self = getSelf(callable);
         boolean methodcall = !(self instanceof PythonModule);
 
-        return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, arity, self, defaults, kwdefaults, methodcall);
+        return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, self, defaults, kwdefaults, methodcall);
     }
 
     protected abstract static class CreateAndCheckArgumentsNode extends PNodeWithContext {
@@ -161,34 +161,35 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return CreateAndCheckArgumentsNodeGen.create();
         }
 
-        public abstract Object[] execute(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Arity arity, Object self, Object[] defaults, PKeyword[] kwdefaults, boolean methodcall);
+        public abstract Object[] execute(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults,
+                        boolean methodcall);
 
-        @Specialization(guards = {"userArguments.length == cachedLength", "arity.getMaxNumOfPositionalArgs() == cachedMaxPos", "arity.getNumOfRequiredKeywords() == cachedNumKwds"})
-        Object[] doCached0(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Arity arity, Object self, Object[] defaults, PKeyword[] kwdefaults,
+        @Specialization(guards = {"userArguments.length == cachedLength", "signature.getMaxNumOfPositionalArgs() == cachedMaxPos", "signature.getNumOfRequiredKeywords() == cachedNumKwds"})
+        Object[] doCached0(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults,
                         boolean methodcall,
                         @Cached("userArguments.length") int cachedLength,
-                        @Cached("arity.getMaxNumOfPositionalArgs()") int cachedMaxPos,
-                        @Cached("arity.getNumOfRequiredKeywords()") int cachedNumKwds) {
+                        @Cached("signature.getMaxNumOfPositionalArgs()") int cachedMaxPos,
+                        @Cached("signature.getNumOfRequiredKeywords()") int cachedNumKwds) {
 
-            return createAndCheckArguments(callable, userArguments, cachedLength, keywords, arity, self, defaults, kwdefaults, methodcall, cachedMaxPos, cachedNumKwds);
+            return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, defaults, kwdefaults, methodcall, cachedMaxPos, cachedNumKwds);
         }
 
         @Specialization(guards = "userArguments.length == cachedLength", replaces = "doCached0")
-        Object[] doCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Arity arity, Object self, Object[] defaults, PKeyword[] kwdefaults,
+        Object[] doCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults,
                         boolean methodcall,
                         @Cached("userArguments.length") int cachedLength) {
 
-            return createAndCheckArguments(callable, userArguments, cachedLength, keywords, arity, self, defaults, kwdefaults, methodcall, arity.getMaxNumOfPositionalArgs(),
-                            arity.getNumOfRequiredKeywords());
+            return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, defaults, kwdefaults, methodcall, signature.getMaxNumOfPositionalArgs(),
+                            signature.getNumOfRequiredKeywords());
         }
 
         @Specialization(replaces = "doCached")
-        Object[] doUncached(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Arity arity, Object self, Object[] defaults, PKeyword[] kwdefaults, boolean methodcall) {
-            return createAndCheckArguments(callable, userArguments, userArguments.length, keywords, arity, self, defaults, kwdefaults, methodcall, arity.getMaxNumOfPositionalArgs(),
-                            arity.getNumOfRequiredKeywords());
+        Object[] doUncached(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults, boolean methodcall) {
+            return createAndCheckArguments(callable, userArguments, userArguments.length, keywords, signature, self, defaults, kwdefaults, methodcall, signature.getMaxNumOfPositionalArgs(),
+                            signature.getNumOfRequiredKeywords());
         }
 
-        private Object[] createAndCheckArguments(PythonObject callable, Object[] args_w, int num_args, PKeyword[] keywords, Arity arity, Object self, Object[] defaults, PKeyword[] kwdefaults,
+        private Object[] createAndCheckArguments(PythonObject callable, Object[] args_w, int num_args, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults,
                         boolean methodcall, int co_argcount, int co_kwonlyargcount) {
             assert args_w.length == num_args;
 
@@ -215,7 +216,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             int input_argcount = applyPositional.execute(args_w, scope_w, upfront, co_argcount, num_args);
 
             // collect extra positional arguments into the *vararg
-            if (arity.takesVarArgs()) {
+            if (signature.takesVarArgs()) {
                 int args_left = co_argcount - upfront;
                 if (args_left < 0) {
                     // everything goes to starargs, including any magic self
@@ -238,68 +239,68 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             // the called node takes and collect the rest in the keywords.
             if (keywords.length > 0) {
                 // the node acts as a profile
-                applyKeywords(callable, arity, scope_w, keywords);
+                applyKeywords(callable, signature, scope_w, keywords);
             }
 
             if (too_many_args) {
                 // the node acts as a profile
-                throw handleTooManyArguments(scope_w, callable, arity, co_argcount, co_kwonlyargcount, defaults.length, avail, methodcall);
+                throw handleTooManyArguments(scope_w, callable, signature, co_argcount, co_kwonlyargcount, defaults.length, avail, methodcall);
             }
 
             boolean more_filling = input_argcount < co_argcount + co_kwonlyargcount;
             if (more_filling) {
 
                 // then, fill the normal arguments with defaults_w (if needed)
-                fillDefaults(callable, arity, scope_w, defaults, input_argcount, co_argcount);
+                fillDefaults(callable, signature, scope_w, defaults, input_argcount, co_argcount);
 
                 // finally, fill kwonly arguments with w_kw_defs (if needed)
-                fillKwDefaults(callable, scope_w, arity, kwdefaults, co_argcount, co_kwonlyargcount);
+                fillKwDefaults(callable, scope_w, signature, kwdefaults, co_argcount, co_kwonlyargcount);
             }
 
             return scope_w;
         }
 
-        private void applyKeywords(Object callable, Arity arity, Object[] scope_w, PKeyword[] keywords) {
+        private void applyKeywords(Object callable, Signature signature, Object[] scope_w, PKeyword[] keywords) {
             if (applyKeywords == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 applyKeywords = insert(ApplyKeywordsNode.create());
             }
-            applyKeywords.execute(callable, arity, scope_w, keywords);
+            applyKeywords.execute(callable, signature, scope_w, keywords);
         }
 
-        private PException handleTooManyArguments(Object[] scope_w, Object callable, Arity arity, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall) {
+        private PException handleTooManyArguments(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall) {
             if (handleTooManyArgumentsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 handleTooManyArgumentsNode = insert(HandleTooManyArgumentsNode.create());
             }
-            return handleTooManyArgumentsNode.execute(scope_w, callable, arity, co_argcount, co_kwonlyargcount, ndefaults, avail, methodcall);
+            return handleTooManyArgumentsNode.execute(scope_w, callable, signature, co_argcount, co_kwonlyargcount, ndefaults, avail, methodcall);
         }
 
-        private void fillDefaults(Object callable, Arity arity, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount) {
+        private void fillDefaults(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount) {
             if (fillDefaultsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 fillDefaultsNode = insert(FillDefaultsNode.create());
             }
-            fillDefaultsNode.execute(callable, arity, scope_w, defaults, input_argcount, co_argcount);
+            fillDefaultsNode.execute(callable, signature, scope_w, defaults, input_argcount, co_argcount);
         }
 
-        private void fillKwDefaults(Object callable, Object[] scope_w, Arity arity, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount) {
+        private void fillKwDefaults(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount) {
             if (fillKwDefaultsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 fillKwDefaultsNode = insert(FillKwDefaultsNode.create());
             }
-            fillKwDefaultsNode.execute(callable, scope_w, arity, kwdefaults, co_argcount, co_kwonlyargcount);
+            fillKwDefaultsNode.execute(callable, scope_w, signature, kwdefaults, co_argcount, co_kwonlyargcount);
         }
 
     }
 
     protected abstract static class HandleTooManyArgumentsNode extends PNodeWithContext {
 
-        public abstract PException execute(Object[] scope_w, Object callable, Arity arity, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall);
+        public abstract PException execute(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall);
 
         @Specialization(guards = {"co_kwonlyargcount == cachedKwOnlyArgCount"})
         @ExplodeLoop
-        PException doCached(Object[] scope_w, Object callable, Arity arity, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
+        PException doCached(Object[] scope_w, Object callable, Signature signature, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
                         boolean methodcall,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgCount) {
             int kwonly_given = 0;
@@ -309,12 +310,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
 
-            boolean forgotSelf = methodcall && avail + 1 == co_argcount && (arity.getParameterIds().length == 0 || !arity.getParameterIds()[0].equals("self"));
+            boolean forgotSelf = methodcall && avail + 1 == co_argcount && (signature.getParameterIds().length == 0 || !signature.getParameterIds()[0].equals("self"));
             throw raiseTooManyArguments(callable, co_argcount, ndefaults, avail, forgotSelf, kwonly_given);
         }
 
         @Specialization(replaces = "doCached")
-        PException doUncached(Object[] scope_w, Object callable, Arity arity, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall) {
+        PException doUncached(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall) {
             int kwonly_given = 0;
             for (int i = 0; i < co_kwonlyargcount; i++) {
                 if (PArguments.getArgument(scope_w, co_argcount + i) != null) {
@@ -322,7 +323,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
 
-            boolean forgotSelf = methodcall && avail + 1 == co_argcount && (arity.getParameterIds().length == 0 || !arity.getParameterIds()[0].equals("self"));
+            boolean forgotSelf = methodcall && avail + 1 == co_argcount && (signature.getParameterIds().length == 0 || !signature.getParameterIds()[0].equals("self"));
             throw raiseTooManyArguments(callable, co_argcount, ndefaults, avail, forgotSelf, kwonly_given);
         }
 
@@ -417,11 +418,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
     protected abstract static class FillDefaultsNode extends FillBaseNode {
 
-        public abstract void execute(Object callable, Arity arity, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount);
+        public abstract void execute(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount);
 
         @Specialization(guards = {"input_argcount == cachedInputArgcount", "co_argcount == cachedArgcount", "checkIterations(input_argcount, co_argcount)"})
         @ExplodeLoop
-        void doCached(Object callable, Arity arity, Object[] scope_w, Object[] defaults, @SuppressWarnings("unused") int input_argcount, @SuppressWarnings("unused") int co_argcount,
+        void doCached(Object callable, Signature signature, Object[] scope_w, Object[] defaults, @SuppressWarnings("unused") int input_argcount, @SuppressWarnings("unused") int co_argcount,
                         @Cached("input_argcount") int cachedInputArgcount,
                         @Cached("co_argcount") int cachedArgcount,
                         @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
@@ -436,7 +437,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 if (defnum >= 0) {
                     PArguments.setArgument(scope_w, i, defaults[defnum]);
                 } else {
-                    missingNames[missingCnt++] = arity.getParameterIds()[i];
+                    missingNames[missingCnt++] = signature.getParameterIds()[i];
                 }
             }
             if (missingProfile.profile(missingCnt > 0)) {
@@ -445,7 +446,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         @Specialization(replaces = "doCached")
-        void doUncached(Object callable, Arity arity, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount,
+        void doUncached(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount,
                         @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
             String[] missingNames = new String[co_argcount - input_argcount];
             int firstDefaultArgIdx = co_argcount - defaults.length;
@@ -458,7 +459,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 if (defnum >= 0) {
                     PArguments.setArgument(scope_w, i, defaults[defnum]);
                 } else {
-                    missingNames[missingCnt++] = arity.getParameterIds()[i];
+                    missingNames[missingCnt++] = signature.getParameterIds()[i];
                 }
             }
             if (missingProfile.profile(missingCnt > 0)) {
@@ -475,11 +476,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Child private FindKwDefaultNode findKwDefaultNode;
 
-        public abstract void execute(Object callable, Object[] scope_w, Arity arity, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount);
+        public abstract void execute(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount);
 
         @Specialization(guards = {"co_argcount == cachedArgcount", "co_kwonlyargcount == cachedKwOnlyArgcount", "checkIterations(co_argcount, co_kwonlyargcount)"})
         @ExplodeLoop
-        void doCached(Object callable, Object[] scope_w, Arity arity, PKeyword[] kwdefaults, @SuppressWarnings("unused") int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount,
+        void doCached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, @SuppressWarnings("unused") int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount,
                         @Cached("co_argcount") int cachedArgcount,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgcount,
                         @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
@@ -490,7 +491,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     continue;
                 }
 
-                String kwname = arity.getKeywordNames()[i - cachedArgcount];
+                String kwname = signature.getKeywordNames()[i - cachedArgcount];
                 PKeyword kwdefault = findKwDefault(kwdefaults, kwname);
                 if (kwdefault != null) {
                     PArguments.setArgument(scope_w, i, kwdefault.getValue());
@@ -504,7 +505,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         @Specialization(replaces = "doCached")
-        void doUncached(Object callable, Object[] scope_w, Arity arity, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount,
+        void doUncached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount,
                         @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
             String[] missingNames = new String[co_kwonlyargcount];
             int missingCnt = 0;
@@ -513,7 +514,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     continue;
                 }
 
-                String kwname = arity.getKeywordNames()[i - co_argcount];
+                String kwname = signature.getKeywordNames()[i - co_argcount];
                 PKeyword kwdefault = findKwDefault(kwdefaults, kwname);
                 if (kwdefault != null) {
                     PArguments.setArgument(scope_w, i, kwdefault.getValue());
@@ -571,8 +572,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
     }
 
-    protected static Arity getArityUncached(Object callable) {
-        return getProperty(callable, UncachedArityGetter.INSTANCE);
+    protected static Signature getSignatureUncached(Object callable) {
+        return getProperty(callable, UncachedSignatureGetter.INSTANCE);
     }
 
     protected static Object[] getDefaultsUncached(Object callable) {
@@ -583,8 +584,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return getProperty(callable, UncachedKwDefaultsGetter.INSTANCE);
     }
 
-    protected static Arity getArity(Object callable) {
-        return getProperty(callable, ArityGetter.INSTANCE);
+    protected static Signature getSignature(Object callable) {
+        return getProperty(callable, SignatureGetter.INSTANCE);
     }
 
     protected static Object[] getDefaults(Object callable) {
@@ -651,17 +652,17 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         public abstract T fromPBuiltinFunction(PBuiltinFunction fun);
     }
 
-    private static final class ArityGetter extends Getter<Arity> {
-        private static final ArityGetter INSTANCE = new ArityGetter();
+    private static final class SignatureGetter extends Getter<Signature> {
+        private static final SignatureGetter INSTANCE = new SignatureGetter();
 
         @Override
-        public Arity fromPFunction(PFunction fun) {
-            return fun.getArity();
+        public Signature fromPFunction(PFunction fun) {
+            return fun.getSignature();
         }
 
         @Override
-        public Arity fromPBuiltinFunction(PBuiltinFunction fun) {
-            return fun.getArity();
+        public Signature fromPBuiltinFunction(PBuiltinFunction fun) {
+            return fun.getSignature();
         }
     }
 
@@ -693,17 +694,17 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
     }
 
-    private static final class UncachedArityGetter extends Getter<Arity> {
-        private static final UncachedArityGetter INSTANCE = new UncachedArityGetter();
+    private static final class UncachedSignatureGetter extends Getter<Signature> {
+        private static final UncachedSignatureGetter INSTANCE = new UncachedSignatureGetter();
 
         @Override
-        public Arity fromPFunction(PFunction fun) {
-            return fun.getUncachedCode().getArity();
+        public Signature fromPFunction(PFunction fun) {
+            return fun.getUncachedCode().getSignature();
         }
 
         @Override
-        public Arity fromPBuiltinFunction(PBuiltinFunction fun) {
-            return fun.getArity();
+        public Signature fromPBuiltinFunction(PBuiltinFunction fun) {
+            return fun.getSignature();
         }
     }
 

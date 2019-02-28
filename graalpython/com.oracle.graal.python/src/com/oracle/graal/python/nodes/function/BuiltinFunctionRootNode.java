@@ -31,7 +31,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
@@ -49,7 +49,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 public final class BuiltinFunctionRootNode extends PRootNode {
-    private final Arity arity;
+    private final Signature signature;
     private final Builtin builtin;
     private final NodeFactory<? extends PythonBuiltinBaseNode> factory;
     private final boolean declaresExplicitSelf;
@@ -145,7 +145,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf) {
         super(language);
-        this.arity = createArity(factory, builtin, declaresExplicitSelf);
+        this.signature = createSignature(factory, builtin, declaresExplicitSelf);
         this.builtin = builtin;
         this.factory = factory;
         this.declaresExplicitSelf = declaresExplicitSelf;
@@ -155,9 +155,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     }
 
     /**
-     * Should return an Arity compatible with {@link #createArgumentsList(Builtin, boolean)}
+     * Should return a signature compatible with {@link #createArgumentsList(Builtin, boolean)}
      */
-    private static Arity createArity(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin, boolean declaresExplicitSelf) {
+    private static Signature createSignature(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin, boolean declaresExplicitSelf) {
         String[] parameterNames = builtin.parameterNames();
         int maxNumPosArgs = Math.max(builtin.minNumOfPositionalArgs(), parameterNames.length);
 
@@ -168,7 +168,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         }
 
         if (!declaresExplicitSelf) {
-            // if we don't take the explicit self, we still need to accept it by arity
+            // if we don't take the explicit self, we still need to accept it by signature
             maxNumPosArgs++;
         } else if (builtin.constructsClass().length > 0 && maxNumPosArgs == 0) {
             // we have this convention to always declare the cls argument without setting the num
@@ -197,13 +197,13 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             }
         }
 
-        return new Arity(builtin.takesVarKeywordArgs(), (builtin.takesVarArgs() || builtin.varArgsMarker()) ? parameterNames.length : -1, builtin.varArgsMarker(), parameterNames,
+        return new Signature(builtin.takesVarKeywordArgs(), (builtin.takesVarArgs() || builtin.varArgsMarker()) ? parameterNames.length : -1, builtin.varArgsMarker(), parameterNames,
                         builtin.keywordOnlyNames());
     }
 
     /**
      * Must return argument reads compatible with
-     * {@link #createArity(NodeFactory, Builtin, boolean)}
+     * {@link #createSignature(NodeFactory, Builtin, boolean)}
      */
     private static ReadArgumentNode[] createArgumentsList(Builtin builtin, boolean needsExplicitSelf) {
         ArrayList<ReadArgumentNode> args = new ArrayList<>();
@@ -328,7 +328,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     }
 
     @Override
-    public Arity getArity() {
-        return arity;
+    public Signature getSignature() {
+        return signature;
     }
 }

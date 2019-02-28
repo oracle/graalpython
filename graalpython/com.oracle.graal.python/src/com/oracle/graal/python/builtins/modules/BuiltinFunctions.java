@@ -101,7 +101,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -1735,9 +1735,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
              * won't work when they are called from an instance of that class due to the implicit
              * currying with "self".
              */
-            Arity arity = func.getArity();
+            Signature signature = func.getSignature();
             PFunction builtinFunc;
-            if (arity.getParameterIds().length > 0 && arity.getParameterIds()[0].equals("self")) {
+            if (signature.getParameterIds().length > 0 && signature.getParameterIds()[0].equals("self")) {
                 /*
                  * If the first parameter is called self, we assume the function does explicitly
                  * declare the module argument
@@ -1753,14 +1753,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 });
             } else {
                 /*
-                 * Otherwise, we create a new function with an arity that requires one extra
+                 * Otherwise, we create a new function with a signature that requires one extra
                  * argument in front. We actually modify the function's AST here, so the original
-                 * PFunction cannot be used anymore (its Arity won't agree with it's indexed
+                 * PFunction cannot be used anymore (its signature won't agree with it's indexed
                  * parameter reads).
                  */
                 FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
                 assert !functionRootNode.isRewritten() : "a function cannot be annotated as builtin twice";
-                functionRootNode = functionRootNode.copyWithNewArity(arity.createWithSelf());
+                functionRootNode = functionRootNode.copyWithNewSignature(signature.createWithSelf());
                 functionRootNode.setRewritten();
                 functionRootNode.accept(new NodeVisitor() {
                     public boolean visit(Node node) {

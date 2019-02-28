@@ -252,23 +252,21 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     public abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object doStatic(@SuppressWarnings("unused") PBuiltinFunction self) {
-            Arity arity = self.getArity();
-            return getSignature(arity);
+            return getSignature(self.getSignature());
         }
 
         @Specialization
         protected Object doStatic(@SuppressWarnings("unused") PFunction self) {
-            Arity arity = self.getArity();
-            return getSignature(arity);
+            return getSignature(self.getSignature());
         }
 
         @TruffleBoundary
-        private static Object getSignature(Arity arity) {
-            String[] keywordNames = arity.getKeywordNames();
-            boolean takesVarArgs = arity.takesVarArgs();
-            boolean takesVarKeywordArgs = arity.takesVarKeywordArgs();
+        private static Object getSignature(Signature signature) {
+            String[] keywordNames = signature.getKeywordNames();
+            boolean takesVarArgs = signature.takesVarArgs();
+            boolean takesVarKeywordArgs = signature.takesVarKeywordArgs();
 
-            String[] parameterNames = arity.getParameterIds();
+            String[] parameterNames = signature.getParameterIds();
             int paramIdx = 0;
 
             StringBuilder sb = new StringBuilder();

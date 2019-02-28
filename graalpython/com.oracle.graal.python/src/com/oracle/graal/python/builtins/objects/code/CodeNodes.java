@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -127,9 +127,9 @@ public abstract class CodeNodes {
                 });
             }
 
-            Arity arity = createArity(flags, argcount, kwonlyargcount, varnames);
+            Signature signature = createSignature(flags, argcount, kwonlyargcount, varnames);
 
-            return factory().createCode(cls, callTarget, arity, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
+            return factory().createCode(cls, callTarget, signature, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
         }
 
         private static String createFuncdef(byte[] codestring, Object[] freevars, String name) {
@@ -159,7 +159,7 @@ public abstract class CodeNodes {
             }
         }
 
-        private static Arity createArity(int flags, int argcount, int kwonlyargcount, Object[] varnames) {
+        private static Signature createSignature(int flags, int argcount, int kwonlyargcount, Object[] varnames) {
             CompilerAsserts.neverPartOfCompilation();
             char paramNom = 'A';
             String[] paramNames = new String[argcount];
@@ -184,7 +184,7 @@ public abstract class CodeNodes {
                 }
                 kwNames[i] = Character.toString(paramNom++);
             }
-            return new Arity(PCode.takesVarKeywordArgs(flags), PCode.takesVarArgs(flags) ? argcount : -1, !PCode.takesVarArgs(flags) && kwonlyargcount > 0, paramNames, kwNames);
+            return new Signature(PCode.takesVarKeywordArgs(flags), PCode.takesVarArgs(flags) ? argcount : -1, !PCode.takesVarArgs(flags) && kwonlyargcount > 0, paramNames, kwNames);
         }
 
         private HashingStorageNodes.GetItemNode ensureGetItemNode() {

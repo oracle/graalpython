@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes;
 
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -79,5 +79,5 @@ public abstract class PRootNode extends RootNode {
         return true;
     }
 
-    public abstract Arity getArity();
+    public abstract Signature getSignature();
 }

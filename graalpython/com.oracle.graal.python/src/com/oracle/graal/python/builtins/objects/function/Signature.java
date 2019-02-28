@@ -31,8 +31,8 @@ import java.util.List;
 
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
-public final class Arity {
-    public static final Arity EMPTY = new Arity(false, -1, false, new String[0], new String[0]);
+public final class Signature {
+    public static final Signature EMPTY = new Signature(false, -1, false, new String[0], new String[0]);
 
     private final int varArgIndex;
     private final boolean isVarArgsMarker;
@@ -41,14 +41,14 @@ public final class Arity {
     @CompilationFinal(dimensions = 1) private final String[] positionalParameterNames;
     @CompilationFinal(dimensions = 1) private final String[] keywordOnlyNames;
 
-    public Arity(boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+    public Signature(boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
                     List<String> parameterIds, List<String> keywordNames) {
         this(takesVarKeywordArgs, takesVarArgs, varArgsMarker,
                         parameterIds != null ? parameterIds.toArray(new String[0]) : null,
                         keywordNames != null ? keywordNames.toArray(new String[0]) : null);
     }
 
-    public Arity(boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+    public Signature(boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
                     String[] parameterIds, String[] keywordNames) {
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.varArgIndex = takesVarArgs;
@@ -57,20 +57,20 @@ public final class Arity {
         this.keywordOnlyNames = (keywordNames != null) ? keywordNames : new String[0];
     }
 
-    public static Arity createOneArgumentWithVarKwArgs() {
-        return new Arity(true, -1, false, new String[]{"a"}, null);
+    public static Signature createOneArgumentWithVarKwArgs() {
+        return new Signature(true, -1, false, new String[]{"a"}, null);
     }
 
-    public static Arity createVarArgsAndKwArgsOnly() {
-        return new Arity(true, 0, false, (String[]) null, (String[]) null);
+    public static Signature createVarArgsAndKwArgsOnly() {
+        return new Signature(true, 0, false, (String[]) null, (String[]) null);
     }
 
-    public Arity createWithSelf() {
+    public Signature createWithSelf() {
         String[] parameterIdsWithSelf = new String[getParameterIds().length + 1];
         parameterIdsWithSelf[0] = SELF;
         System.arraycopy(getParameterIds(), 0, parameterIdsWithSelf, 1, parameterIdsWithSelf.length - 1);
 
-        return new Arity(takesVarKeywordArgs, varArgIndex, isVarArgsMarker,
+        return new Signature(takesVarKeywordArgs, varArgIndex, isVarArgsMarker,
                         parameterIdsWithSelf, keywordOnlyNames);
     }
 

@@ -122,8 +122,8 @@ public class PFunction extends PythonObject {
         }
     }
 
-    public Arity getArity() {
-        return getCode().getArity();
+    public Signature getSignature() {
+        return getCode().getSignature();
     }
 
     public PCell[] getClosure() {

@@ -95,7 +95,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
         if (generatorCallTarget == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             GeneratorFunctionRootNode generatorFunctionRootNode = new GeneratorFunctionRootNode(getContext().getLanguage(), callTarget, functionName, frameDescriptor,
-                            executionCellSlots, ((PRootNode) callTarget.getRootNode()).getArity(), numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+                            executionCellSlots, ((PRootNode) callTarget.getRootNode()).getSignature(), numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
             generatorCallTarget = Truffle.getRuntime().createCallTarget(generatorFunctionRootNode);
         }
         return generatorCallTarget;

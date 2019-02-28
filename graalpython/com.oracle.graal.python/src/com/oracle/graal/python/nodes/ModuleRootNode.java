@@ -26,7 +26,7 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.graal.python.nodes.function.InnerRootNode;
@@ -40,7 +40,7 @@ import com.oracle.truffle.api.source.SourceSection;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 
 public class ModuleRootNode extends PClosureRootNode {
-    private static final Arity ARITY = new Arity(false, -1, false, new String[0], new String[0]);
+    private static final Signature SIGNATURE = new Signature(false, -1, false, new String[0], new String[0]);
     private final String name;
     private final String doc;
 
@@ -92,7 +92,7 @@ public class ModuleRootNode extends PClosureRootNode {
     }
 
     @Override
-    public Arity getArity() {
-        return ARITY;
+    public Signature getSignature() {
+        return SIGNATURE;
     }
 }

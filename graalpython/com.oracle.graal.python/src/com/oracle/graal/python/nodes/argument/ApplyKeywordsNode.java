@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.argument;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -61,7 +61,7 @@ import com.oracle.truffle.api.nodes.Node;
  * @author tim
  */
 abstract class ApplyKeywordsNode extends PNodeWithContext {
-    public abstract Object[] execute(Object callee, Arity calleeArity, Object[] arguments, PKeyword[] keywords);
+    public abstract Object[] execute(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords);
 
     public static ApplyKeywordsNode create() {
         return ApplyKeywordsNodeGen.create();
@@ -75,15 +75,15 @@ abstract class ApplyKeywordsNode extends PNodeWithContext {
         return SearchNamedParameterNodeGen.create();
     }
 
-    @Specialization(guards = {"kwLen == keywords.length", "calleeArity == cachedArity"})
+    @Specialization(guards = {"kwLen == keywords.length", "calleeSignature == cachedSignature"})
     @ExplodeLoop
-    Object[] applyCached(Object callee, @SuppressWarnings("unused") Arity calleeArity, Object[] arguments, PKeyword[] keywords,
+    Object[] applyCached(Object callee, @SuppressWarnings("unused") Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
                     @Cached("keywords.length") int kwLen,
-                    @SuppressWarnings("unused") @Cached("calleeArity") Arity cachedArity,
-                    @Cached("cachedArity.takesVarKeywordArgs()") boolean takesVarKwds,
-                    @Cached(value = "cachedArity.getParameterIds()", dimensions = 1) String[] parameters,
+                    @SuppressWarnings("unused") @Cached("calleeSignature") Signature cachedSignature,
+                    @Cached("cachedSignature.takesVarKeywordArgs()") boolean takesVarKwds,
+                    @Cached(value = "cachedSignature.getParameterIds()", dimensions = 1) String[] parameters,
                     @Cached("parameters.length") int positionalParamNum,
-                    @Cached(value = "cachedArity.getKeywordNames()", dimensions = 1) String[] kwNames,
+                    @Cached(value = "cachedSignature.getKeywordNames()", dimensions = 1) String[] kwNames,
                     @Cached("createSearchNamedParameterNode()") SearchNamedParameterNode searchParamNode,
                     @Cached("createSearchNamedParameterNode()") SearchNamedParameterNode searchKwNode) {
         PKeyword[] unusedKeywords = takesVarKwds ? new PKeyword[kwLen] : null;
@@ -119,13 +119,13 @@ abstract class ApplyKeywordsNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = "applyCached")
-    Object[] applyUncached(Object callee, Arity calleeArity, Object[] arguments, PKeyword[] keywords,
+    Object[] applyUncached(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
                     @Cached("createSearchNamedParameterNode()") SearchNamedParameterNode searchParamNode,
                     @Cached("createSearchNamedParameterNode()") SearchNamedParameterNode searchKwNode) {
-        boolean takesVarKwds = calleeArity.takesVarKeywordArgs();
-        String[] parameters = calleeArity.getParameterIds();
+        boolean takesVarKwds = calleeSignature.takesVarKeywordArgs();
+        String[] parameters = calleeSignature.getParameterIds();
         int positionalParamNum = parameters.length;
-        String[] kwNames = calleeArity.getKeywordNames();
+        String[] kwNames = calleeSignature.getKeywordNames();
         PKeyword[] unusedKeywords = new PKeyword[keywords.length];
         // same as above
         int k = 0;

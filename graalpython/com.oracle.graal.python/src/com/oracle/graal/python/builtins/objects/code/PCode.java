@@ -47,7 +47,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
@@ -75,7 +75,7 @@ public final class PCode extends PythonBuiltinObject {
                                             // modules
 
     private final RootCallTarget callTarget;
-    private final Arity arity;
+    private final Signature signature;
 
     // number of local variables
     private int nlocals = -1;
@@ -112,13 +112,13 @@ public final class PCode extends PythonBuiltinObject {
         super(cls);
         this.callTarget = callTarget;
         if (callTarget.getRootNode() instanceof PRootNode) {
-            this.arity = ((PRootNode) callTarget.getRootNode()).getArity();
+            this.signature = ((PRootNode) callTarget.getRootNode()).getSignature();
         } else {
-            this.arity = Arity.createVarArgsAndKwArgsOnly();
+            this.signature = Signature.createVarArgsAndKwArgsOnly();
         }
     }
 
-    public PCode(LazyPythonClass cls, RootCallTarget callTarget, Arity arity,
+    public PCode(LazyPythonClass cls, RootCallTarget callTarget, Signature signature,
                     int nlocals, int stacksize, int flags,
                     byte[] codestring, Object[] constants, Object[] names,
                     Object[] varnames, Object[] freevars, Object[] cellvars,
@@ -139,7 +139,7 @@ public final class PCode extends PythonBuiltinObject {
         this.freevars = freevars;
         this.cellvars = cellvars;
         this.callTarget = callTarget;
-        this.arity = arity;
+        this.signature = signature;
     }
 
     @TruffleBoundary
@@ -337,11 +337,11 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public int getArgcount() {
-        return arity.getMaxNumOfPositionalArgs();
+        return signature.getMaxNumOfPositionalArgs();
     }
 
     public int getKwonlyargcount() {
-        return arity.getNumOfRequiredKeywords();
+        return signature.getNumOfRequiredKeywords();
     }
 
     public int getNlocals() {
@@ -367,7 +367,7 @@ public final class PCode extends PythonBuiltinObject {
 
     public Object[] getVarnames() {
         if (varnames == null) {
-            varnames = extractVarnames(getRootNode(), getArity().getParameterIds(), getArity().getKeywordNames(), getFreeVars(), getCellVars());
+            varnames = extractVarnames(getRootNode(), getSignature().getParameterIds(), getSignature().getKeywordNames(), getFreeVars(), getCellVars());
         }
         return varnames;
     }
@@ -411,8 +411,8 @@ public final class PCode extends PythonBuiltinObject {
         return PCode.takesVarKeywordArgs(getFlags());
     }
 
-    public Arity getArity() {
-        return arity;
+    public Signature getSignature() {
+        return signature;
     }
 
     public RootCallTarget getRootCallTarget() {

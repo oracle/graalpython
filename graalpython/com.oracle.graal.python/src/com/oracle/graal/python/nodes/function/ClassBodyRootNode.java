@@ -41,16 +41,16 @@
 package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.source.SourceSection;
 
 public class ClassBodyRootNode extends FunctionRootNode {
-    private static final Arity ARITY = new Arity(false, -1, false, new String[]{"namespace"}, new String[0]);
+    private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"namespace"}, new String[0]);
 
     public ClassBodyRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots executionCellSlots) {
-        super(language, sourceSection, functionName, false, frameDescriptor, body, executionCellSlots, ARITY);
+        super(language, sourceSection, functionName, false, frameDescriptor, body, executionCellSlots, SIGNATURE);
     }
 }

@@ -53,7 +53,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final LazyPythonClass enclosingType;
     private final RootCallTarget callTarget;
     private final boolean isStatic;
-    private final Arity arity;
+    private final Signature signature;
     @CompilationFinal(dimensions = 1) private final PNone[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
@@ -63,10 +63,10 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingType = enclosingType;
         this.callTarget = callTarget;
-        this.arity = ((PRootNode) callTarget.getRootNode()).getArity();
+        this.signature = ((PRootNode) callTarget.getRootNode()).getSignature();
         this.defaults = new PNone[numDefaults];
         Arrays.fill(getDefaults(), PNone.NO_VALUE);
-        String[] keywordNames = arity.getKeywordNames();
+        String[] keywordNames = signature.getKeywordNames();
         this.kwDefaults = new PKeyword[keywordNames.length];
         for (int i = 0; i < keywordNames.length; i++) {
             kwDefaults[i] = new PKeyword(keywordNames[i], PNone.NO_VALUE);
@@ -96,8 +96,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         }
     }
 
-    public Arity getArity() {
-        return arity;
+    public Signature getSignature() {
+        return signature;
     }
 
     public RootCallTarget getCallTarget() {

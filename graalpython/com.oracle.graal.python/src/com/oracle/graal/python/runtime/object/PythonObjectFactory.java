@@ -59,7 +59,7 @@ import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PGeneratorFunction;
@@ -773,13 +773,13 @@ public final class PythonObjectFactory extends Node {
         return trace(new PCode(PythonBuiltinClassType.PCode, ct));
     }
 
-    public PCode createCode(LazyPythonClass cls, RootCallTarget callTarget, Arity arity,
+    public PCode createCode(LazyPythonClass cls, RootCallTarget callTarget, Signature signature,
                     int nlocals, int stacksize, int flags,
                     byte[] codestring, Object[] constants, Object[] names,
                     Object[] varnames, Object[] freevars, Object[] cellvars,
                     String filename, String name, int firstlineno,
                     byte[] lnotab) {
-        return trace(new PCode(cls, callTarget, arity,
+        return trace(new PCode(cls, callTarget, signature,
                         nlocals, stacksize, flags,
                         codestring, constants, names,
                         varnames, freevars, cellvars,
