@@ -89,13 +89,13 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBi
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
-import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeNull;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -173,6 +173,8 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -183,16 +185,20 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.regex.tregex.parser.flavors.PythonREMode;
 
 @CoreFunctions(defineModule = "python_cext")
 public class TruffleCextBuiltins extends PythonBuiltins {
@@ -904,11 +910,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     abstract static class NativeBuiltin extends PythonBuiltinNode {
 
-        @Child private Node hasSizeNode;
-        @Child private Node getSizeNode;
-        @Child private Node isBoxedNode;
-        @Child private Node unboxNode;
-        @Child private GetByteArrayNode getByteArrayNode;
         @Child private ReadAttributeFromObjectNode readNativeNull;
 
         protected Object getNativeNull(Object module) {
@@ -943,66 +944,23 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             }
         }
 
-        protected boolean isByteArray(TruffleObject o) {
-            return o instanceof PySequenceArrayWrapper || o instanceof CByteArrayWrapper || ForeignAccess.sendHasSize(getHasSizeNode(), o);
-        }
-
-        protected byte[] getByteArray(TruffleObject o) {
-            if (getByteArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getByteArrayNode = insert(GetByteArrayNode.create());
-            }
-            if (getSizeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getSizeNode = insert(Message.GET_SIZE.createNode());
-            }
-            Object sizeObj;
-            try {
-                sizeObj = ForeignAccess.sendGetSize(getSizeNode, o);
-                long size;
-                if (sizeObj instanceof Integer) {
-                    size = (int) sizeObj;
-                } else if (sizeObj instanceof Long) {
-                    size = (long) sizeObj;
-                } else {
-                    if (isBoxedNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        isBoxedNode = insert(Message.IS_BOXED.createNode());
-                    }
-                    if (unboxNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        unboxNode = insert(Message.UNBOX.createNode());
-                    }
-                    if (sizeObj instanceof TruffleObject && ForeignAccess.sendIsBoxed(isBoxedNode, (TruffleObject) sizeObj)) {
-                        size = (int) ForeignAccess.sendUnbox(unboxNode, (TruffleObject) sizeObj);
-                    } else {
-                        throw new RuntimeException("invalid size type");
-                    }
-                }
-                return getByteArrayNode.execute(o, size);
-            } catch (UnsupportedMessageException e) {
-                throw e.raise();
-            }
-        }
-
-        protected byte[] getByteArray(TruffleObject o, long size) {
-            if (getByteArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getByteArrayNode = insert(GetByteArrayNode.create());
-            }
-            return getByteArrayNode.execute(o, size);
-        }
-
         protected Object raiseBadArgument(Object errorMarker) {
             return raiseNative(errorMarker, PythonErrorType.TypeError, "bad argument type for built-in operation");
         }
 
-        private Node getHasSizeNode() {
-            if (hasSizeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                hasSizeNode = insert(Message.HAS_SIZE.createNode());
-            }
-            return hasSizeNode;
+        @TruffleBoundary(allowInlining = true)
+        protected static ByteBuffer wrap(byte[] data) {
+            return ByteBuffer.wrap(data);
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        protected static ByteBuffer wrap(byte[] data, int offset, int length) {
+            return ByteBuffer.wrap(data, offset, length);
+        }
+
+        @TruffleBoundary
+        protected static String getMessage(Throwable throwable) {
+            return throwable.getMessage();
         }
     }
 
@@ -1012,6 +970,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         private static Charset UTF32LE;
         private static Charset UTF32BE;
 
+        @TruffleBoundary
         protected static Charset getUTF32Charset(int byteorder) {
             String utf32Name = getUTF32Name(byteorder);
             if (byteorder == NativeUnicodeBuiltin.NATIVE_ORDER) {
@@ -1156,11 +1115,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
-        @Specialization(guards = "isByteArray(o)")
+        @Specialization
         @TruffleBoundary
-        Object doBytes(TruffleObject o, long elementSize, Object errorMarker) {
+        Object doBytes(TruffleObject o, long elementSize, Object errorMarker,
+                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
             try {
-                ByteBuffer bytes = ByteBuffer.wrap(getByteArray(o));
+                ByteBuffer bytes = wrap(getByteArrayNode.execute(o, -1));
                 CharBuffer decoded;
                 if (elementSize == 2L) {
                     decoded = bytes.asCharBuffer();
@@ -1174,14 +1134,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 return raiseNative(errorMarker, PythonErrorType.UnicodeError, e.getMessage());
             } catch (IllegalArgumentException e) {
                 return raiseNative(errorMarker, PythonErrorType.LookupError, e.getMessage());
+            } catch (InteropException e) {
+                return raiseNative(errorMarker, PythonErrorType.TypeError, e.getMessage());
             }
         }
 
-        @Specialization(guards = "isByteArray(o)")
+        @Specialization
         @TruffleBoundary
-        Object doBytes(TruffleObject o, PInt elementSize, Object errorMarker) {
+        Object doBytes(TruffleObject o, PInt elementSize, Object errorMarker,
+                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
             try {
-                return doBytes(o, elementSize.longValueExact(), errorMarker);
+                return doBytes(o, elementSize.longValueExact(), errorMarker, getByteArrayNode);
             } catch (ArithmeticException e) {
                 return raiseNative(errorMarker, PythonErrorType.ValueError, "invalid parameters");
             }
@@ -1190,18 +1153,20 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Unicode_FromUTF8", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @ImportStatic(Message.class)
     abstract static class PyTruffle_Unicode_FromUTF8 extends NativeBuiltin {
 
-        @Specialization(guards = "isByteArray(o)")
+        @Specialization
         @TruffleBoundary
-        Object doBytes(TruffleObject o, Object errorMarker) {
+        Object doBytes(TruffleObject o, Object errorMarker,
+                        @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
             try {
                 CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
-                CharBuffer cbuf = decoder.decode(ByteBuffer.wrap(getByteArray(o)));
+                CharBuffer cbuf = decoder.decode(wrap(getByteArrayNode.execute(o, -1)));
                 return cbuf.toString();
             } catch (CharacterCodingException e) {
                 return raiseNative(errorMarker, PythonErrorType.UnicodeError, e.getMessage());
+            } catch (InteropException e) {
+                return raiseNative(errorMarker, PythonErrorType.TypeError, e.getMessage());
             }
         }
     }
@@ -1291,76 +1256,73 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_DecodeUTF32 extends NativeUnicodeBuiltin {
 
-        @Child private CExtNodes.ToSulongNode toSulongNode;
-
-        @Specialization(guards = {"isByteArray(o)", "isNoValue(errors)"})
-        Object doUnicode(TruffleObject o, long size, @SuppressWarnings("unused") PNone errors, int byteorder, Object errorMarker) {
-            return doUnicode(o, size, "strict", byteorder, errorMarker);
+        @Specialization(guards = "isNoValue(errors)")
+        Object doUnicode(TruffleObject o, long size, @SuppressWarnings("unused") PNone errors, int byteorder, Object errorMarker,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
+            return doUnicode(o, size, "strict", byteorder, errorMarker, toSulongNode, getByteArrayNode);
         }
 
-        @Specialization(guards = "isByteArray(o)")
+        @Specialization
         @TruffleBoundary
-        Object doUnicode(TruffleObject o, long size, String errors, int byteorder, Object errorMarker) {
+        Object doUnicode(TruffleObject o, long size, String errors, int byteorder, Object errorMarker,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
             try {
                 CharsetDecoder decoder = getUTF32Charset(byteorder).newDecoder();
                 CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
-                CharBuffer decode = decoder.onMalformedInput(action).onUnmappableCharacter(action).decode(ByteBuffer.wrap(getByteArray(o, size), 0, (int) size));
-                return getToSulongNode().execute(decode.toString());
+                CharBuffer decode = decoder.onMalformedInput(action).onUnmappableCharacter(action).decode(wrap(getByteArrayNode.execute(o, size), 0, (int) size));
+                return toSulongNode.execute(decode.toString());
             } catch (CharacterCodingException e) {
                 return raiseNative(errorMarker, PythonErrorType.UnicodeEncodeError, e.getMessage());
             } catch (IllegalArgumentException e) {
                 String csName = getUTF32Name(byteorder);
                 return raiseNative(errorMarker, PythonErrorType.LookupError, "unknown encoding: " + csName);
+            } catch (InteropException e) {
+                return raiseNative(errorMarker, PythonErrorType.TypeError, e.getMessage());
             }
-        }
-
-        private CExtNodes.ToSulongNode getToSulongNode() {
-            if (toSulongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(CExtNodes.ToSulongNode.create());
-            }
-            return toSulongNode;
         }
     }
 
     abstract static class GetByteArrayNode extends PNodeWithContext {
 
-        @Child private Node readNode;
-
-        public abstract byte[] execute(TruffleObject o, long size);
+        public abstract byte[] execute(Object obj, long n) throws InteropException;
 
         public static GetByteArrayNode create() {
             return GetByteArrayNodeGen.create();
         }
 
         @Specialization
-        byte[] doCArrayWrapper(CByteArrayWrapper o, @SuppressWarnings("unused") long size) {
+        byte[] doCArrayWrapper(CByteArrayWrapper o, @SuppressWarnings("unused") long n) {
             return o.getByteArray();
         }
 
         @Specialization
-        byte[] doSequenceArrayWrapper(PySequenceArrayWrapper o, @SuppressWarnings("unused") long size,
+        byte[] doSequenceArrayWrapper(PySequenceArrayWrapper obj, @SuppressWarnings("unused") long n,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return toBytesNode.execute(o.getDelegate());
+            return toBytesNode.execute(obj.getDelegate());
         }
 
-        @Fallback
-        byte[] doTruffleObject(TruffleObject o, long size) {
-            try {
-                byte[] bytes = new byte[(int) size];
-                for (long i = 0; i < size; i++) {
-                    if (readNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        readNode = insert(Message.READ.createNode());
-                    }
-                    bytes[(int) i] = (byte) ForeignAccess.sendRead(readNode, o, i);
-                }
-                return bytes;
-            } catch (InteropException e) {
-                throw e.raise();
+        @Specialization(guards = "n < 0")
+        byte[] doForeign(Object obj, @SuppressWarnings("unused") long n,
+                        @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) throws InteropException {
+            return readWithSize(interopLib, obj, interopLib.getArraySize(obj));
+        }
+
+        @Specialization(guards = "n >= 0")
+        byte[] doForeignWithSize(Object obj, long n,
+                        @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) throws InteropException {
+            return readWithSize(interopLib, obj, n);
+        }
+
+        private static byte[] readWithSize(InteropLibrary interopLib, Object o, long size) throws UnsupportedMessageException, InvalidArrayIndexException {
+            byte[] bytes = new byte[(int) size];
+            for (long i = 0; i < size; i++) {
+                Object elem = interopLib.readArrayElement(o, i);
+                bytes[(int) i] = interopLib.asByte(elem);
             }
+            return bytes;
         }
-
     }
 
     @Builtin(name = "PyTruffle_Unicode_AsWideChar", fixedNumOfPositionalArgs = 4)
@@ -2312,13 +2274,18 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyBytes_FromStringAndSize", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "PyBytes_FromStringAndSize", fixedNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class PyBytes_FromStringAndSize extends NativeBuiltin {
 
         @Specialization
-        PBytes doGeneric(PythonNativeObject object) {
-            return factory().createBytes(getByteArray(object.object));
+        Object doGeneric(Object module, PythonNativeObject object,
+                        @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
+            try {
+                return factory().createBytes(getByteArrayNode.execute(object.object, -1));
+            } catch (InteropException e) {
+                return raiseNative(getNativeNull(module), PythonErrorType.TypeError, getMessage(e));
+            }
         }
     }
 
