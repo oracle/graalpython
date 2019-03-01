@@ -199,7 +199,6 @@ import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.regex.tregex.parser.flavors.PythonREMode;
 
 @CoreFunctions(defineModule = "python_cext")
 public class TruffleCextBuiltins extends PythonBuiltins {
@@ -2284,11 +2283,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGeneric(Object module, PythonNativeObject object,
+                        @Exclusive @Cached GetNativeNullNode getNativeNullNode,
                         @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
             try {
                 return factory().createBytes(getByteArrayNode.execute(object.object, -1));
             } catch (InteropException e) {
-                return raiseNative(getNativeNull(module), PythonErrorType.TypeError, getMessage(e));
+                return raiseNative(getNativeNullNode.execute(module), PythonErrorType.TypeError, getMessage(e));
             }
         }
     }
@@ -2371,12 +2371,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doGeneric")
-        Object doGenericErr(Object module, Object object) {
+        Object doGenericErr(Object module, Object object,
+                    @Exclusive @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return doGeneric(module, object);
             } catch (PException e) {
                 transformToNative(e);
-                return getNativeNull(module);
+                return getNativeNullNode.execute(module);
             }
         }
     }

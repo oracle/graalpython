@@ -219,24 +219,20 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    public static abstract class FromNativeSubclassNode<T> extends CExtBaseNode {
+    public static abstract class FromNativeSubclassNode extends CExtBaseNode {
 
-        public final T executeFloat(PythonNativeObject object) {
-            return execute(PythonBuiltinClassType.PFloat, FUN_PY_FLOAT_AS_DOUBLE, object);
-        }
-
-        public abstract T execute(PythonBuiltinClassType expectedType, String conversionFuncName, PythonNativeObject object);
+        public abstract Double execute(PythonNativeObject object);
 
         @Specialization
         @SuppressWarnings("unchecked")
-        public T execute(PythonBuiltinClassType expectedType, String conversionFuncName, PythonNativeObject object,
+        public Double execute(PythonNativeObject object,
                          @Cached GetClassNode getClass,
                          @Cached IsSubtypeNode isSubtype,
                          @Cached ToSulongNode toSulongNode,
                          @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
-            if (isSubtype.execute(getClass.execute(object), getCore().lookupType(expectedType))) {
+            if (isFloatSubtype(object, getClass, isSubtype)) {
                 try {
-                    return (T) interopLibrary.execute(importCAPISymbol(interopLibrary, conversionFuncName), toSulongNode.execute(object));
+                    return (Double) interopLibrary.execute(importCAPISymbol(interopLibrary, FUN_PY_FLOAT_AS_DOUBLE), toSulongNode.execute(object));
                 } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
                     throw new IllegalStateException("C object conversion function failed", e);
                 }
@@ -245,15 +241,11 @@ public abstract class CExtNodes {
         }
 
         public boolean isFloatSubtype(PythonNativeObject object, GetClassNode getClass, IsSubtypeNode isSubtype) {
-            return isSubtype(object, PythonBuiltinClassType.PFloat, getClass, isSubtype);
+            return isSubtype.execute(getClass.execute(object), getCore().lookupType(PythonBuiltinClassType.PFloat));
         }
 
-        public boolean isSubtype(PythonNativeObject object, PythonBuiltinClassType expectedType, GetClassNode getClass, IsSubtypeNode isSubtype) {
-            return isSubtype.execute(getClass.execute(object), getCore().lookupType(expectedType));
-        }
-
-        public static FromNativeSubclassNode<Double> create() {
-            return CExtNodesFactory.FromNativeSubclassNodeGen<Double>.create();
+        public static FromNativeSubclassNode create() {
+            return CExtNodesFactory.FromNativeSubclassNodeGen.create();
         }
     }
 

@@ -1474,8 +1474,8 @@ public class IntBuiltins extends PythonBuiltins {
         boolean doDN(long x, PythonNativeObject y,
                      @Cached GetClassNode getClass,
                      @Cached IsSubtypeNode isSubtype,
-                        @Cached FromNativeSubclassNode<Double> fromNativeNode) {
-            return x < fromNativeNode.executeFloat(y);
+                        @Cached FromNativeSubclassNode fromNativeNode) {
+            return x < fromNativeNode.execute(y);
         }
 
         @Specialization(guards = {
@@ -1484,17 +1484,17 @@ public class IntBuiltins extends PythonBuiltins {
         boolean doDN(PythonNativeObject x, PythonNativeObject y,
                      @Cached GetClassNode getClass,
                      @Cached IsSubtypeNode isSubtype,
-                        @Cached FromNativeSubclassNode<Double> nativeLeft,
-                        @Cached FromNativeSubclassNode<Double> nativeRight) {
-            return nativeLeft.executeFloat(x) < nativeRight.executeFloat(y);
+                        @Cached FromNativeSubclassNode nativeLeft,
+                        @Cached FromNativeSubclassNode nativeRight) {
+            return nativeLeft.execute(x) < nativeRight.execute(y);
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(x, getClass, isSubtype)", limit = "1")
         boolean doDN(PythonNativeObject x, double y,
                      @Cached GetClassNode getClass,
                      @Cached IsSubtypeNode isSubtype,
-                        @Cached FromNativeSubclassNode<Double> fromNativeNode) {
-            return fromNativeNode.executeFloat(x) < y;
+                        @Cached FromNativeSubclassNode fromNativeNode) {
+            return fromNativeNode.execute(x) < y;
         }
 
         @Specialization
