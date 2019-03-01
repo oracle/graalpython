@@ -61,7 +61,7 @@ def make_flags_class():
     names = ["bytes_warning", "debug", "dont_write_bytecode",
              "hash_randomization", "ignore_environment", "inspect",
              "interactive", "isolated", "no_site", "no_user_site", "optimize",
-             "quiet", "verbose"]
+             "quiet", "verbose", "dev_mode", "utf8_mode"]
 
     flags_class = make_named_tuple_class("sys.flags", names)
 
