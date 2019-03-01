@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
@@ -225,6 +226,7 @@ public final class Python3Core implements PythonCore {
                         "termios",
                         "zipimport",
                         "mmap",
+                        "_queue",
                         "_ast"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
@@ -332,6 +334,7 @@ public final class Python3Core implements PythonCore {
                         new MMapModuleBuiltins(),
                         new FcntlModuleBuiltins(),
                         new MMapBuiltins(),
+                        new QueueModuleBuiltins(),
                         new ThreadModuleBuiltins(),
                         new ThreadBuiltins(),
                         new LockBuiltins(),
