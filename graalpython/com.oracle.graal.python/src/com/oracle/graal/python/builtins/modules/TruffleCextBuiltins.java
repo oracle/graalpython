@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
@@ -391,12 +392,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyErrFetchNode extends NativeBuiltin {
         @Specialization
         public Object run(Object module,
-                        @Cached("create()") GetClassNode getClassNode) {
+                        @Exclusive @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached GetNativeNullNode getNativeNullNode) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
             Object result;
             if (currentException == null) {
-                result = getNativeNull(module);
+                result = getNativeNullNode.execute(module);
             } else {
                 PBaseException exception = currentException.getExceptionObject();
                 exception.reifyException();
@@ -689,7 +691,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Type_Slots", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    @ImportStatic(SpecialAttributeNames.class)
     abstract static class PyTruffle_Type_SlotsNode extends NativeBuiltin {
 
         /**
@@ -701,12 +702,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
          */
         @Specialization
         Object slots(Object module, PythonClass pythonClass,
-                        @Cached("create(__SLOTS__)") LookupAttributeInMRONode lookupSlotsNode) {
-            Object execute = lookupSlotsNode.execute(pythonClass);
+                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic lookupSlotsNode,
+                        @Exclusive @Cached GetNativeNullNode getNativeNullNode) {
+            Object execute = lookupSlotsNode.execute(pythonClass, __SLOTS__);
             if (execute != PNone.NO_VALUE) {
                 return execute;
             }
-            return getNativeNull(module);
+            return getNativeNullNode.execute(module);
         }
     }
 
@@ -910,18 +912,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     abstract static class NativeBuiltin extends PythonBuiltinNode {
 
-        @Child private ReadAttributeFromObjectNode readNativeNull;
-
-        protected Object getNativeNull(Object module) {
-            if (readNativeNull == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readNativeNull = insert(ReadAttributeFromObjectNode.create());
-            }
-            Object wrapper = readNativeNull.execute(module, NATIVE_NULL);
-            assert wrapper instanceof PythonNativeNull;
-            return wrapper;
-        }
-
         protected void transformToNative(PException p) {
             NativeBuiltin.transformToNative(getContext(), p);
         }
@@ -1001,6 +991,20 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             }
             return csName;
         }
+    }
+
+    abstract static class GetNativeNullNode extends PNodeWithContext {
+
+        public abstract Object execute(Object module);
+
+        @Specialization
+        protected Object getNativeNull(Object module,
+                        @Exclusive @Cached ReadAttributeFromObjectNode readAttrNode) {
+            Object wrapper = readAttrNode.execute(module, NATIVE_NULL);
+            assert wrapper instanceof PythonNativeNull;
+            return wrapper;
+        }
+
     }
 
     @Builtin(name = "TrufflePInt_AsPrimitive", fixedNumOfPositionalArgs = 3)
