@@ -87,7 +87,7 @@ public class ZipImportModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "zipimporter", constructsClass = PythonBuiltinClassType.PZipImporter, fixedNumOfPositionalArgs = 2, doc = ZIPIMPORTER_DOC)
+    @Builtin(name = "zipimporter", constructsClass = PythonBuiltinClassType.PZipImporter, minNumOfPositionalArgs = 2, doc = ZIPIMPORTER_DOC)
     @GenerateNodeFactory
     public abstract static class ZipImporterNode extends PythonBinaryBuiltinNode {
 

@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -142,7 +141,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "alarm", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "alarm", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AlarmNode extends PythonUnaryBuiltinNode {
@@ -169,7 +168,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getsignal", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "getsignal", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetSignalNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -199,11 +198,9 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     }
 
     @TypeSystemReference(PythonArithmeticTypes.class)
-    @Builtin(name = "signal", fixedNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @Builtin(name = "signal", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
-        @Child CreateArgumentsNode createArgs = CreateArgumentsNode.create();
-
         private int getSignum(long signum) {
             try {
                 return toIntExact(signum);

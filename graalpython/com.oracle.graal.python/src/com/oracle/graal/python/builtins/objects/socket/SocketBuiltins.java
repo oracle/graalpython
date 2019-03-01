@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,7 +67,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // accept()
-    @Builtin(name = "accept", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "accept", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class AcceptNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -77,7 +77,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // bind(address)
-    @Builtin(name = "bind", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "bind", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class BindNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -87,7 +87,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // close()
-    @Builtin(name = "close", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "close", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -97,7 +97,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // connect(address)
-    @Builtin(name = "connect", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "connect", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ConnectNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -107,7 +107,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // getpeername()
-    @Builtin(name = "getpeername", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "getpeername", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetPeerNameNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -117,7 +117,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // getsockname()
-    @Builtin(name = "getsockname", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "getsockname", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetSockNameNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -127,7 +127,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // getblocking()
-    @Builtin(name = "getblocking", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "getblocking", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetBlockingNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -137,7 +137,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // gettimeout
-    @Builtin(name = "gettimeout", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "gettimeout", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetTimeoutNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -147,7 +147,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // listen
-    @Builtin(name = "listen", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "listen", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ListenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -228,7 +228,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // settimeout(value)
-    @Builtin(name = "settimeout", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "settimeout", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SetTimeoutNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -238,7 +238,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // shutdown(how)
-    @Builtin(name = "shutdown", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "shutdown", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class shutdownNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -248,7 +248,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // family
-    @Builtin(name = "family", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "family", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class SocketFamilyNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -258,7 +258,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // type
-    @Builtin(name = "type", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "type", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class SocketTypeNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -268,7 +268,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // proto
-    @Builtin(name = "proto", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "proto", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class SockProtoNode extends PythonUnaryBuiltinNode {
         @Specialization

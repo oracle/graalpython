@@ -42,7 +42,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -446,7 +445,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         Object[] userArgs = PArguments.create(2);
         PArguments.setArgument(userArgs, 0, PNone.NONE);
         PArguments.setArgument(userArgs, 1, value);
-        Object res = InvokeNode.create(reprMethod).execute(null, userArgs, PKeyword.EMPTY_KEYWORDS);
+        Object res = InvokeNode.create(reprMethod).execute(null, userArgs);
         return res.toString();
     }
 

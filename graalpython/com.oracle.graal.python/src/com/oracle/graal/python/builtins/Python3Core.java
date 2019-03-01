@@ -168,6 +168,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleOptions;
@@ -629,7 +630,7 @@ public final class Python3Core implements PythonCore {
 
     private void loadFile(String s, String prefix) {
         Source source = getSource(s, prefix);
-        Supplier<PCode> getCode = () -> factory.createCode((RootNode) getParser().parse(ParserMode.File, this, source, null));
+        Supplier<PCode> getCode = () -> factory.createCode(Truffle.getRuntime().createCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null)));
         RootCallTarget callTarget = getLanguage().cacheCode(source.getName(), getCode).getRootCallTarget();
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {

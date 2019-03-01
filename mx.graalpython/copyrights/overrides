@@ -300,7 +300,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/floats/PFloat.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/foreign/TruffleObjectBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/frame/FrameBuiltins.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/Arity.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/AbstractFunctionBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/BuiltinFunctionBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/FunctionBuiltins.java,zippy.copyright
@@ -309,6 +308,7 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/PFunction.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/PGeneratorFunction.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/PKeyword.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/Signature.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/generator/GeneratorBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/generator/GeneratorControlData.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/generator/PGenerator.java,zippy.copyright
@@ -372,9 +372,7 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/ModuleRoot
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/NodeFactory.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/PNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/PNodeUtil.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/ReadDefaultArgumentNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/ReadIndexedArgumentNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/ReadKeywordNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/ReadVarArgsNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/ReadVarKeywordsNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/keywords/KeywordArgumentsNode.java,zippy.copyright
@@ -450,7 +448,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/literal/Se
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/literal/StringLiteralNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/literal/TupleLiteralNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/statement/AssertNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/statement/DefaultParametersNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/statement/ExceptNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/statement/ImportFromNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/statement/ImportNode.java,zippy.copyright

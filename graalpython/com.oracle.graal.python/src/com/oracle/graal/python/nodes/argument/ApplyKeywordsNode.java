@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,22 +42,26 @@ package com.oracle.graal.python.nodes.argument;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.argument.ApplyKeywordsNodeGen.SearchNamedParameterNodeGen;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public abstract class ApplyKeywordsNode extends PNodeWithContext {
-    private final ConditionProfile expandArgs = ConditionProfile.createBinaryProfile();
-
-    public abstract Object[] execute(Arity calleeArity, Object[] arguments, PKeyword[] keywords);
+/**
+ * This class is *only* used to apply arguments given as keywords by the caller to positional
+ * arguments of the same names. The remaining arguments are left in the PKeywords of the combined
+ * arguments.
+ *
+ * @author tim
+ */
+abstract class ApplyKeywordsNode extends PNodeWithContext {
+    public abstract Object[] execute(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords);
 
     public static ApplyKeywordsNode create() {
         return ApplyKeywordsNodeGen.create();
@@ -71,75 +75,97 @@ public abstract class ApplyKeywordsNode extends PNodeWithContext {
         return SearchNamedParameterNodeGen.create();
     }
 
-    @Specialization(guards = {"kwLen == keywords.length", "argLen == arguments.length", "calleeArity == cachedArity"})
+    @Specialization(guards = {"kwLen == keywords.length", "calleeSignature == cachedSignature"})
     @ExplodeLoop
-    Object[] applyCached(Arity calleeArity, Object[] arguments, PKeyword[] keywords,
+    Object[] applyCached(Object callee, @SuppressWarnings("unused") Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
                     @Cached("keywords.length") int kwLen,
-                    @Cached("arguments.length") int argLen,
-                    @Cached("getUserArgumentLength(arguments)") int userArgLen,
-                    @SuppressWarnings("unused") @Cached("calleeArity") Arity cachedArity,
-                    @Cached(value = "cachedArity.getParameterIds()", dimensions = 1) String[] parameters,
-                    @Cached("parameters.length") int paramLen,
-                    @Cached("createSearchNamedParameterNode()") SearchNamedParameterNode searchParamNode) {
-        Object[] combined = arguments;
-        if (expandArgs.profile(paramLen > userArgLen)) {
-            combined = PArguments.create(paramLen);
-            System.arraycopy(arguments, 0, combined, 0, argLen);
-        }
-
-        PKeyword[] unusedKeywords = new PKeyword[kwLen];
+                    @SuppressWarnings("unused") @Cached("calleeSignature") Signature cachedSignature,
+                    @Cached("cachedSignature.takesVarKeywordArgs()") boolean takesVarKwds,
+                    @Cached(value = "cachedSignature.getParameterIds()", dimensions = 1) String[] parameters,
+                    @Cached("parameters.length") int positionalParamNum,
+                    @Cached(value = "cachedSignature.getKeywordNames()", dimensions = 1) String[] kwNames,
+                    @Cached("createSearchNamedParameterNode()") SearchNamedParameterNode searchParamNode,
+                    @Cached("createSearchNamedParameterNode()") SearchNamedParameterNode searchKwNode) {
+        PKeyword[] unusedKeywords = takesVarKwds ? new PKeyword[kwLen] : null;
+        // same as below
         int k = 0;
+        int additionalKwds = 0;
+        String lastWrongKeyword = null;
         for (int i = 0; i < kwLen; i++) {
             PKeyword kwArg = keywords[i];
-            int kwIdx = searchParamNode.execute(parameters, kwArg.getName());
+            String name = kwArg.getName();
+            int kwIdx = searchParamNode.execute(parameters, name);
+            if (kwIdx == -1) {
+                int kwOnlyIdx = searchKwNode.execute(kwNames, name);
+                if (kwOnlyIdx != -1) {
+                    kwIdx = kwOnlyIdx + positionalParamNum;
+                }
+            }
 
             if (kwIdx != -1) {
-                if (PArguments.getArgument(combined, kwIdx) != null) {
-                    throw raise(PythonErrorType.TypeError, "%s() got multiple values for argument '%s'",
-                                    calleeArity.getFunctionName(),
-                                    kwArg.getName());
+                if (PArguments.getArgument(arguments, kwIdx) != null) {
+                    throw raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
                 }
-                PArguments.setArgument(combined, kwIdx, kwArg.getValue());
-            } else {
+                PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
+            } else if (takesVarKwds) {
                 unusedKeywords[k++] = kwArg;
+            } else {
+                additionalKwds++;
+                lastWrongKeyword = name;
             }
         }
-        PArguments.setKeywordArguments(combined, Arrays.copyOf(unusedKeywords, k));
-        return combined;
+        storeKeywordsOrRaise(arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword);
+        return arguments;
     }
 
     @Specialization(replaces = "applyCached")
-    Object[] applyUncached(Arity calleeArity, Object[] arguments, PKeyword[] keywords) {
-        String[] parameters = calleeArity.getParameterIds();
-        Object[] combined = arguments;
-        if (parameters.length > PArguments.getUserArgumentLength(arguments)) {
-            combined = PArguments.create(parameters.length);
-            System.arraycopy(arguments, 0, combined, 0, arguments.length);
-        }
-
+    Object[] applyUncached(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
+                    @Cached("createSearchNamedParameterNode()") SearchNamedParameterNode searchParamNode,
+                    @Cached("createSearchNamedParameterNode()") SearchNamedParameterNode searchKwNode) {
+        boolean takesVarKwds = calleeSignature.takesVarKeywordArgs();
+        String[] parameters = calleeSignature.getParameterIds();
+        int positionalParamNum = parameters.length;
+        String[] kwNames = calleeSignature.getKeywordNames();
         PKeyword[] unusedKeywords = new PKeyword[keywords.length];
+        // same as above
         int k = 0;
+        int additionalKwds = 0;
+        String lastWrongKeyword = null;
         for (int i = 0; i < keywords.length; i++) {
             PKeyword kwArg = keywords[i];
-            int kwIdx = -1;
-            for (int j = 0; j < parameters.length; j++) {
-                if (parameters[j].equals(kwArg.getName())) {
-                    kwIdx = j;
-                    break;
+            String name = kwArg.getName();
+            int kwIdx = searchParamNode.execute(parameters, name);
+            if (kwIdx == -1) {
+                int kwOnlyIdx = searchKwNode.execute(kwNames, name);
+                if (kwOnlyIdx != -1) {
+                    kwIdx = kwOnlyIdx + positionalParamNum;
                 }
             }
 
             if (kwIdx != -1) {
-                if (PArguments.getArgument(combined, kwIdx) != null) {
-                    throw raise(PythonErrorType.TypeError, "%s() got multiple values for argument '%s'", calleeArity.getFunctionName(), kwArg.getName());
+                if (PArguments.getArgument(arguments, kwIdx) != null) {
+                    throw raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
                 }
-                PArguments.setArgument(combined, kwIdx, kwArg.getValue());
-            } else {
+                PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
+            } else if (takesVarKwds) {
                 unusedKeywords[k++] = kwArg;
+            } else {
+                additionalKwds++;
+                lastWrongKeyword = name;
             }
         }
-        PArguments.setKeywordArguments(combined, Arrays.copyOf(unusedKeywords, k));
-        return combined;
+        storeKeywordsOrRaise(arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword);
+        return arguments;
+    }
+
+    private void storeKeywordsOrRaise(Object[] arguments, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords, String lastWrongKeyword) {
+        if (tooManyKeywords == 1) {
+            throw raise(PythonBuiltinClassType.TypeError, "got an unexpected keyword argument '%s'", lastWrongKeyword);
+        } else if (tooManyKeywords > 1) {
+            throw raise(PythonBuiltinClassType.TypeError, "got %d unexpected keyword arguments", tooManyKeywords);
+        } else if (unusedKeywords != null) {
+            PArguments.setKeywordArguments(arguments, Arrays.copyOf(unusedKeywords, unusedKeywordCount));
+        }
     }
 
     protected abstract static class SearchNamedParameterNode extends Node {

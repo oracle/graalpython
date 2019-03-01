@@ -177,6 +177,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         sys.setAttribute("graal_python_stdlib_home", PythonOptions.getOption(context, PythonOptions.StdLibHome));
         sys.setAttribute("graal_python_opaque_filesystem", PythonOptions.getOption(context, PythonOptions.OpaqueFilesystem));
         sys.setAttribute("graal_python_opaque_filesystem_prefix", PythonOptions.getOption(context, PythonOptions.OpaqueFilesystemPrefixes));
+        sys.setAttribute("graal_python_unbuffered_io", PythonOptions.getOption(context, PythonOptions.UnbufferedIO));
         sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
                         !PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // debug
@@ -263,7 +264,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         return os;
     }
 
-    @Builtin(name = "exc_info", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "exc_info", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class ExcInfoNode extends PythonBuiltinNode {
         @Specialization
@@ -377,7 +378,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "getfilesystemencoding", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getfilesystemencoding", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetFileSystemEncodingNode extends PythonBuiltinNode {
         @Specialization
@@ -386,7 +387,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getfilesystemencodeerrors", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getfilesystemencodeerrors", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
         @Specialization
@@ -395,7 +396,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "intern", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "intern", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InternNode extends PythonBuiltinNode {
         @Specialization
@@ -412,7 +413,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getdefaultencoding", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getdefaultencoding", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetDefaultEncodingNode extends PythonBuiltinNode {
         @Specialization

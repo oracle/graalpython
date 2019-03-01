@@ -111,7 +111,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Child SequenceStorageNodes.CmpNode eqNode;
@@ -144,7 +144,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Child SequenceStorageNodes.CmpNode eqNode;
@@ -190,7 +190,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends CmpNode {
         @Specialization
@@ -205,7 +205,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends CmpNode {
         @Specialization
@@ -220,7 +220,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GtNode extends CmpNode {
         @Specialization
@@ -235,7 +235,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GeNode extends CmpNode {
         @Specialization
@@ -250,7 +250,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ADD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
 
@@ -282,7 +282,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -299,12 +299,12 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -323,7 +323,7 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     // bytes.join(iterable)
-    @Builtin(name = "join", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "join", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         /**
@@ -366,7 +366,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -376,7 +376,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Child private SequenceStorageNodes.LenNode lenNode;
@@ -419,7 +419,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -519,7 +519,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -533,7 +533,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETITEM__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class SetitemNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -543,7 +543,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "replace", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "replace", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class ReplaceNode extends PythonTernaryBuiltinNode {
         @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();

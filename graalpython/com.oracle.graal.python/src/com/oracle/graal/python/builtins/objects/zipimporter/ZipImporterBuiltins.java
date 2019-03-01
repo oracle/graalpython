@@ -85,7 +85,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         return ZipImporterBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryBuiltinNode {
@@ -210,7 +210,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __STR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
 
@@ -235,7 +235,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends StrNode {
 
@@ -264,7 +264,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "get_code", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "get_code", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBinaryBuiltinNode {
@@ -295,7 +295,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_data", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "get_data", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetDataNode extends PythonBinaryBuiltinNode {
@@ -346,7 +346,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "get_filename", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "get_filename", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetFileNameNode extends PythonBinaryBuiltinNode {
@@ -367,7 +367,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "get_source", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "get_source", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetSourceNode extends PythonBinaryBuiltinNode {
@@ -388,7 +388,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "is_package", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "is_package", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class IsPackageNode extends PythonBinaryBuiltinNode {
@@ -409,7 +409,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "load_module", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "load_module", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class LoadModuleNode extends PythonBinaryBuiltinNode {
@@ -442,7 +442,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "archive", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "archive", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ArchiveNode extends PythonUnaryBuiltinNode {
 
@@ -453,7 +453,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "prefix", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "prefix", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class PrefixNode extends PythonUnaryBuiltinNode {
 
@@ -464,7 +464,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "_files", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "_files", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class FilesNode extends PythonUnaryBuiltinNode {
 

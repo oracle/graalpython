@@ -63,7 +63,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         return BuiltinMethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         boolean isBuiltinFunction(PBuiltinMethod self) {
@@ -114,7 +114,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -153,7 +153,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__text_signature__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "__text_signature__", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
         @Child AbstractFunctionBuiltins.TextSignatureNode subNode = AbstractFunctionBuiltins.TextSignatureNode.create();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,7 +64,7 @@ public class RLockBuiltins extends PythonBuiltins {
         return RLockBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "_is_owned", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "_is_owned", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsOwnedRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -73,7 +73,7 @@ public class RLockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_acquire_restore", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "_acquire_restore", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class AcquireRestoreRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -85,7 +85,7 @@ public class RLockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_release_save", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "_release_save", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReleaseSaveRLockNode extends PythonUnaryBuiltinNode {
         @Specialization

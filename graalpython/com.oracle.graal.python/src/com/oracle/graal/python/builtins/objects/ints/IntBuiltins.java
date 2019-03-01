@@ -135,7 +135,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ADD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
@@ -182,12 +182,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RADD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__RADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RAddNode extends AddNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__SUB__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__SUB__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SubNode extends PythonBinaryBuiltinNode {
@@ -239,7 +239,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RSUB__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__RSUB__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RSubNode extends PythonBinaryBuiltinNode {
@@ -291,7 +291,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__TRUEDIV__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__TRUEDIV__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class TrueDivNode extends PythonBinaryBuiltinNode {
@@ -355,7 +355,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RTRUEDIV__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__RTRUEDIV__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RTrueDivNode extends PythonBinaryBuiltinNode {
@@ -414,7 +414,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__FLOORDIV__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__FLOORDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class FloorDivNode extends IntBinaryBuiltinNode {
@@ -499,7 +499,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__RFLOORDIV__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__RFLOORDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RFloorDivNode extends IntBinaryBuiltinNode {
@@ -545,7 +545,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MOD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__MOD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class ModNode extends IntBinaryBuiltinNode {
@@ -609,7 +609,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -665,7 +665,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RMUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__RMUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
@@ -811,7 +811,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ABS__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__ABS__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
@@ -864,7 +864,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__CEIL__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__CEIL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CeilNode extends PythonUnaryBuiltinNode {
@@ -884,7 +884,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__FLOOR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__FLOOR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FloorNode extends PythonUnaryBuiltinNode {
@@ -904,7 +904,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__POS__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__POS__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PosNode extends PythonUnaryBuiltinNode {
@@ -924,7 +924,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NEG__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__NEG__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NegNode extends PythonUnaryBuiltinNode {
@@ -960,7 +960,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__INVERT__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__INVERT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class InvertNode extends PythonUnaryBuiltinNode {
@@ -990,7 +990,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LSHIFT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__LSHIFT__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class LShiftNode extends PythonBinaryBuiltinNode {
@@ -1131,7 +1131,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__RSHIFT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__RSHIFT__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RShiftNode extends PythonBinaryBuiltinNode {
@@ -1239,7 +1239,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__AND__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__AND__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class AndNode extends BinaryBitwiseNode {
@@ -1261,13 +1261,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RAND__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__RAND__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RAndNode extends AndNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__OR__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__OR__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class OrNode extends BinaryBitwiseNode {
@@ -1289,12 +1289,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ROR__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__ROR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ROrNode extends OrNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__XOR__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__XOR__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class XorNode extends BinaryBitwiseNode {
@@ -1315,12 +1315,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RXOR__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__RXOR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RXorNode extends XorNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
@@ -1379,7 +1379,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
@@ -1428,7 +1428,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LtNode extends PythonBinaryBuiltinNode {
@@ -1498,7 +1498,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LeNode extends PythonBinaryBuiltinNode {
@@ -1543,7 +1543,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class GtNode extends PythonBinaryBuiltinNode {
@@ -1589,7 +1589,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class GeNode extends PythonBinaryBuiltinNode {
@@ -1636,7 +1636,7 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     // to_bytes
-    @Builtin(name = "to_bytes", fixedNumOfPositionalArgs = 3, keywordArguments = {"signed"})
+    @Builtin(name = "to_bytes", minNumOfPositionalArgs = 3, parameterNames = {"self", "bytecount", "byteorder", "signed"})
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -1878,9 +1878,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "from_bytes", fixedNumOfPositionalArgs = 3, takesVarArgs = true, keywordArguments = {"signed"}, isClassmethod = true)
+    @Builtin(name = "from_bytes", minNumOfPositionalArgs = 3, parameterNames = {"cls", "bytes", "byteorder"}, varArgsMarker = true, keywordOnlyNames = {"signed"}, isClassmethod = true)
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class FromBytesNode extends PythonBuiltinNode {
 
@@ -1989,80 +1988,80 @@ public class IntBuiltins extends PythonBuiltins {
 
         // from PBytes
         @Specialization
-        public Object fromPBytes(LazyPythonClass cl, PBytes bytes, String byteorder, Object[] args, boolean signed) {
+        public Object fromPBytes(LazyPythonClass cl, PBytes bytes, String byteorder, boolean signed) {
             return compute(cl, getToBytesNode().execute(bytes), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPBytes(LazyPythonClass cl, PBytes bytes, String byteorder, Object[] args, PNone signed) {
-            return fromPBytes(cl, bytes, byteorder, args, false);
+        public Object fromPBytes(LazyPythonClass cl, PBytes bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
+            return fromPBytes(cl, bytes, byteorder, false);
         }
 
         // from PByteArray
         @Specialization
-        public Object fromPByteArray(LazyPythonClass cl, PByteArray bytes, String byteorder, Object[] args, boolean signed) {
+        public Object fromPByteArray(LazyPythonClass cl, PByteArray bytes, String byteorder, boolean signed) {
             return compute(cl, getToBytesNode().execute(bytes), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPByteArray(LazyPythonClass cl, PByteArray bytes, String byteorder, Object[] args, PNone signed) {
-            return fromPByteArray(cl, bytes, byteorder, args, false);
+        public Object fromPByteArray(LazyPythonClass cl, PByteArray bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
+            return fromPByteArray(cl, bytes, byteorder, false);
         }
 
         // from PArray
         @Specialization
-        public Object fromPArray(LazyPythonClass cl, PArray array, String byteorder, Object[] args, boolean signed,
+        public Object fromPArray(LazyPythonClass cl, PArray array, String byteorder, boolean signed,
                         @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
             return compute(cl, fromSequenceStorageNode.execute(array.getSequenceStorage()), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPArray(LazyPythonClass cl, PArray array, String byteorder, Object[] args, PNone signed,
+        public Object fromPArray(LazyPythonClass cl, PArray array, String byteorder, @SuppressWarnings("unused") PNone signed,
                         @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
-            return fromPArray(cl, array, byteorder, args, false, fromSequenceStorageNode);
+            return fromPArray(cl, array, byteorder, false, fromSequenceStorageNode);
         }
 
         // from PMemoryView
         @Specialization
-        public Object fromPMemoryView(LazyPythonClass cl, PMemoryView view, String byteorder, Object[] args, boolean signed) {
+        public Object fromPMemoryView(LazyPythonClass cl, PMemoryView view, String byteorder, boolean signed) {
             return compute(cl, getToBytesNode().execute(view), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPMemoryView(LazyPythonClass cl, PMemoryView view, String byteorder, Object[] args, PNone signed) {
-            return fromPMemoryView(cl, view, byteorder, args, false);
+        public Object fromPMemoryView(LazyPythonClass cl, PMemoryView view, String byteorder, @SuppressWarnings("unused") PNone signed) {
+            return fromPMemoryView(cl, view, byteorder, false);
         }
 
         // from PList, only if it is not extended
         @Specialization(guards = "cannotBeOverridden(getClass(list))")
-        public Object fromPList(LazyPythonClass cl, PList list, String byteorder, Object[] args, boolean signed) {
+        public Object fromPList(LazyPythonClass cl, PList list, String byteorder, boolean signed) {
             return compute(cl, getFromSequenceNode().execute(list), byteorder, signed);
         }
 
         @Specialization(guards = "cannotBeOverridden(getClass(list))")
-        public Object fromPList(LazyPythonClass cl, PList list, String byteorder, Object[] args, PNone signed) {
-            return fromPList(cl, list, byteorder, args, false);
+        public Object fromPList(LazyPythonClass cl, PList list, String byteorder, @SuppressWarnings("unused") PNone signed) {
+            return fromPList(cl, list, byteorder, false);
         }
 
         // from PTuple, only if it is not extended
         @Specialization(guards = "cannotBeOverridden(getClass(tuple))")
-        public Object fromPTuple(LazyPythonClass cl, PTuple tuple, String byteorder, Object[] args, boolean signed) {
+        public Object fromPTuple(LazyPythonClass cl, PTuple tuple, String byteorder, boolean signed) {
             return compute(cl, getFromSequenceNode().execute(tuple), byteorder, signed);
         }
 
         @Specialization(guards = "cannotBeOverridden(getClass(tuple))")
-        public Object fromPTuple(LazyPythonClass cl, PTuple tuple, String byteorder, Object[] args, PNone signed) {
-            return fromPTuple(cl, tuple, byteorder, args, false);
+        public Object fromPTuple(LazyPythonClass cl, PTuple tuple, String byteorder, @SuppressWarnings("unused") PNone signed) {
+            return fromPTuple(cl, tuple, byteorder, false);
         }
 
         // rest objects
         @Specialization
-        public Object fromObject(LazyPythonClass cl, PythonObject object, String byteorder, Object[] args, PNone signed) {
-            return fromObject(cl, object, byteorder, args, false);
+        public Object fromObject(LazyPythonClass cl, PythonObject object, String byteorder, @SuppressWarnings("unused") PNone signed) {
+            return fromObject(cl, object, byteorder, false);
         }
 
         @Specialization
-        public Object fromObject(LazyPythonClass cl, PythonObject object, String byteorder, Object[] args, boolean signed) {
+        public Object fromObject(LazyPythonClass cl, PythonObject object, String byteorder, boolean signed) {
             if (callBytesNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callBytesNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__BYTES__));
@@ -2083,16 +2082,16 @@ public class IntBuiltins extends PythonBuiltins {
                 byte[] bytes = getFromIteratorNode().execute(getGetIteratorNode().executeWith(object));
                 return compute(cl, bytes, byteorder, signed);
             }
-            return general(cl, object, byteorder, args, signed);
+            return general(cl, object, byteorder, signed);
         }
 
         @Fallback
-        public Object general(Object cl, Object object, Object byteorder, Object args, Object signed) {
+        public Object general(@SuppressWarnings("unused") Object cl, Object object, @SuppressWarnings("unused") Object byteorder, @SuppressWarnings("unused") Object signed) {
             throw raise(PythonErrorType.TypeError, "cannot convert '%p' object to bytes", object);
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__BOOL__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonBuiltinNode {
         @Specialization
@@ -2116,7 +2115,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__STR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class StrNode extends PythonBuiltinNode {
@@ -2139,12 +2138,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__HASH__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
@@ -2171,7 +2170,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "bit_length", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "bit_length", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class BitLengthNode extends PythonBuiltinNode {
@@ -2193,13 +2192,13 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "real", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
+    @Builtin(name = "real", minNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
     abstract static class RealNode extends IntNode {
 
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "imag", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the imaginary part of a complex number")
+    @Builtin(name = "imag", minNumOfPositionalArgs = 1, isGetter = true, doc = "the imaginary part of a complex number")
     abstract static class ImagNode extends PythonBuiltinNode {
         @Specialization
         int get(@SuppressWarnings("unused") Object self) {
@@ -2208,19 +2207,19 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "numerator", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the numerator of a rational number in lowest terms")
+    @Builtin(name = "numerator", minNumOfPositionalArgs = 1, isGetter = true, doc = "the numerator of a rational number in lowest terms")
     abstract static class NumeratorNode extends IntNode {
 
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "conjugate", fixedNumOfPositionalArgs = 1, doc = "Returns self, the complex conjugate of any int.")
+    @Builtin(name = "conjugate", minNumOfPositionalArgs = 1, doc = "Returns self, the complex conjugate of any int.")
     abstract static class ConjugateNode extends IntNode {
 
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "denominator", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the denominator of a rational number in lowest terms")
+    @Builtin(name = "denominator", minNumOfPositionalArgs = 1, isGetter = true, doc = "the denominator of a rational number in lowest terms")
     abstract static class DenominatorNode extends PythonBuiltinNode {
         @Specialization
         int get(@SuppressWarnings("unused") Object self) {
@@ -2229,12 +2228,12 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__TRUNC__, fixedNumOfPositionalArgs = 1, doc = "Truncating an Integral returns itself.")
+    @Builtin(name = SpecialMethodNames.__TRUNC__, minNumOfPositionalArgs = 1, doc = "Truncating an Integral returns itself.")
     abstract static class TruncNode extends IntNode {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__INT__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__INT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IntNode extends PythonBuiltinNode {
@@ -2279,12 +2278,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__INDEX__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__INDEX__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IndexNode extends IntNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__FLOAT__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__FLOAT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FloatNode extends PythonBuiltinNode {

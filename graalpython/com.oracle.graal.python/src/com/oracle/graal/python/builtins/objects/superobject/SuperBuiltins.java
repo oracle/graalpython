@@ -380,7 +380,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GET__, fixedNumOfPositionalArgs = 2, keywordArguments = {"type"})
+    @Builtin(name = SpecialMethodNames.__GET__, minNumOfPositionalArgs = 2, parameterNames = {"self", "obj", "type"})
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Child GetObjectNode getObject = GetObjectNodeGen.create();
@@ -406,7 +406,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GETATTRIBUTE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
         @Child private ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.create();
@@ -511,7 +511,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__thisclass__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "__thisclass__", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ThisClassNode extends PythonUnaryBuiltinNode {
         @Child GetTypeNode getType = GetTypeNodeGen.create();
@@ -526,7 +526,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__self__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "__self__", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class SelfNode extends PythonUnaryBuiltinNode {
         @Child GetObjectNode getObject = GetObjectNodeGen.create();
@@ -541,7 +541,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__self_class__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "__self_class__", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class SelfClassNode extends PythonUnaryBuiltinNode {
         @Child GetObjectTypeNode getObjectType = GetObjectTypeNodeGen.create();

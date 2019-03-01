@@ -41,7 +41,8 @@
 package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -56,18 +57,16 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final int numOfActiveFlags;
     private final int numOfGeneratorBlockNode;
     private final int numOfGeneratorForNode;
-    private final PCell[] closure;
     private final ExecutionCellSlots cellSlots;
     private final String name;
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, FrameDescriptor frameDescriptor, PCell[] closure, ExecutionCellSlots executionCellSlots,
+    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots, Signature signature,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-        super(language, frameDescriptor, executionCellSlots);
+        super(language, frameDescriptor, executionCellSlots, signature);
         this.callTarget = callTarget;
         this.name = name;
         this.frameDescriptor = frameDescriptor;
-        this.closure = closure;
         this.cellSlots = executionCellSlots;
         this.numOfActiveFlags = numOfActiveFlags;
         this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
@@ -76,7 +75,8 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        return factory.createGenerator(getName(), callTarget, frameDescriptor, frame.getArguments(), closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+        return factory.createGenerator(getName(), callTarget, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
+                        numOfGeneratorForNode);
     }
 
     public RootNode getFunctionRootNode() {
