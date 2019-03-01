@@ -72,7 +72,7 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
         return OperatorModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "truth", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "truth", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class TruthNode extends PythonUnaryBuiltinNode {
@@ -135,7 +135,7 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
     }
 
     // _compare_digest
-    @Builtin(name = "_compare_digest", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "_compare_digest", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class CompareDigestNode extends PythonBinaryBuiltinNode {

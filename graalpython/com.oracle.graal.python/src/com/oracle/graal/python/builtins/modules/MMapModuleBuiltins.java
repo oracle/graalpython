@@ -87,7 +87,7 @@ public class MMapModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("ACCESS_COPY", ACCESS_COPY);
     }
 
-    @Builtin(name = "mmap", fixedNumOfPositionalArgs = 3, keywordArguments = {"tagname", "access", "offset"}, constructsClass = PMMap)
+    @Builtin(name = "mmap", minNumOfPositionalArgs = 3, parameterNames = {"cls", "fd", "length", "tagname", "access", "offset"}, constructsClass = PMMap)
     @GenerateNodeFactory
     public abstract static class MMapNode extends PythonBuiltinNode {
 

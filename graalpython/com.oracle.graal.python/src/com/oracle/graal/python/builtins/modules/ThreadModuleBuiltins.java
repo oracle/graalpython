@@ -78,7 +78,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         return ThreadModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "__truffle_get_timeout_max__", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "__truffle_get_timeout_max__", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GetTimeoutMaxConstNode extends PythonBuiltinNode {
         @Specialization
@@ -87,7 +87,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "LockType", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PLock)
+    @Builtin(name = "LockType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PLock)
     @GenerateNodeFactory
     abstract static class ConstructLockNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -96,7 +96,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "RLock", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PRLock)
+    @Builtin(name = "RLock", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PRLock)
     @GenerateNodeFactory
     abstract static class ConstructRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -105,7 +105,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_ident", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "get_ident", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GetCurrentThreadIdNode extends PythonBuiltinNode {
         @Specialization
@@ -115,7 +115,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_count", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "_count", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GetThreadCountNode extends PythonBuiltinNode {
         @Specialization

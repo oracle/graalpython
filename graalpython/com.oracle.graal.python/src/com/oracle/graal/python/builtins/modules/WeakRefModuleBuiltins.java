@@ -183,7 +183,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     // getweakrefcount(obj)
-    @Builtin(name = "getweakrefcount", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "getweakrefcount", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class GetWeakRefCountNode extends PythonBuiltinNode {
         @Specialization
@@ -198,7 +198,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     // getweakrefs()
-    @Builtin(name = "getweakrefs", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "getweakrefs", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class GetWeakRefsNode extends PythonBuiltinNode {
         @Specialization
@@ -208,7 +208,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     // _remove_dead_weakref()
-    @Builtin(name = "_remove_dead_weakref", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "_remove_dead_weakref", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RemoveDeadWeakRefsNode extends PythonBuiltinNode {
         @Specialization

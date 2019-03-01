@@ -201,7 +201,7 @@ class TestCase(object):
 
         def __exit__(self, exc_type, exc, traceback):
             if not exc_type:
-                assert False, "expected '%r' to raise '%r'" % (self.function, exc_type)
+                assert False, "expected '%r' to raise '%r'" % (self.function, self.exc_type)
             elif self.exc_type in exc_type.mro():
                 self.exception = exc
                 return True

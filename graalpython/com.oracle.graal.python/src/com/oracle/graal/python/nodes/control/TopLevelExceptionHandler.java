@@ -112,6 +112,9 @@ public class TopLevelExceptionHandler extends RootNode {
                 return run(frame);
             } catch (PException e) {
                 printExc(e);
+                if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
+                    printStackTrace(e);
+                }
                 return null;
             } catch (Exception | StackOverflowError e) {
                 if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
@@ -212,7 +215,10 @@ public class TopLevelExceptionHandler extends RootNode {
     }
 
     private Object run(VirtualFrame frame) {
-        Object[] arguments = createArgs.execute(frame.getArguments());
+        Object[] arguments = PArguments.create(frame.getArguments().length);
+        for (int i = 0; i < frame.getArguments().length; i++) {
+            PArguments.setArgument(arguments, i, frame.getArguments()[i]);
+        }
         PythonContext pythonContext = context.get();
         if (getSourceSection().getSource().isInternal()) {
             // internal sources are not run in the main module

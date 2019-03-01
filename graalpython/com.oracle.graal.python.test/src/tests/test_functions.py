@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -105,6 +105,134 @@ def test_constructor():
     import types
     func_copy = types.FunctionType(f.__code__, f.__globals__, f.__name__, f.__defaults__, f.__closure__)
 
-    assert func_copy(1, 2) == (1, 2, 10, (), {})
-    assert func_copy(1, 2, 3) == (1, 2, 3, (), {})
-    assert func_copy(1, 2, 3, 4, 5, x=2) == (1, 2, 3, (4, 5), {'x': 2})
+    assert func_copy(1, 2) == (1, 2, 10, (), {}), func_copy(1, 2)
+    assert func_copy(1, 2, 3) == (1, 2, 3, (), {}), func_copy(1, 2, 3)
+    assert func_copy(1, 2, 3, 4, 5, x=2) == (1, 2, 3, (4, 5), {'x': 2}), func_copy(1, 2, 3, 4, 5, x=2)
+
+
+def test_inner_function_with_defaults():
+    def make_func(sep):
+        def inner(sep=sep):
+            return sep
+        return inner
+
+    inner_a = make_func(",")
+    inner_b = make_func("\t")
+    assert inner_b() == "\t"
+    assert inner_a() == ","
+
+
+def test_inner_function_with_closure():
+    def make_func(sep):
+        def inner():
+            return sep
+        return inner
+
+    inner_a = make_func(",")
+    inner_b = make_func("\t")
+    assert inner_a() == ","
+    assert inner_b() == "\t"
+
+
+def test_inner_generator_with_defaults():
+    def make_func(sep):
+        def inner(sep=sep):
+            yield sep
+        return inner
+
+    inner_a = make_func(",")()
+    inner_b = make_func("\t")()
+    assert next(inner_b) == "\t"
+    assert next(inner_a) == ","
+
+
+def test_inner_generator_with_closure():
+    def make_func(sep):
+        closure_value = sep
+        def inner():
+            yield closure_value
+        return inner
+
+    inner_a = make_func(",")()
+    inner_b = make_func("\t")()
+    assert next(inner_b) == "\t"
+    assert next(inner_a) == ","
+
+
+def test_function_changes_defaults():
+    def foo(a):
+        return a
+
+    assert foo.__defaults__ is None
+    assert foo.__kwdefaults__ is None
+    assert_raises(TypeError, foo)
+
+    foo.__defaults__ = (1,)
+    assert foo() == 1
+
+    foo.__kwdefaults__ = {"a": 12}
+    assert foo() == 1
+
+    foo.__defaults__ = None
+    assert_raises(TypeError, foo)
+
+
+def test_function_changes_kwdefaults():
+    def foo(*args, x=1):
+        return x
+
+    assert foo.__defaults__ is None
+    assert foo.__kwdefaults__ == {"x": 1}
+    assert foo() == 1
+
+    foo.__kwdefaults__ = {"x": 32}
+    assert foo() == 32
+
+    foo.__kwdefaults__ = None
+    assert_raises(TypeError, foo)
+
+
+def test_code_change():
+    def foo():
+        return "foo"
+
+    def bar(a):
+        return "bar" + str(a)
+
+    assert foo() == "foo"
+    foo.__code__ = bar.__code__
+    assert foo(1) == "bar1"
+    assert_raises(TypeError, foo)
+
+
+def test_code_marshal_with_freevars():
+    import marshal
+    def foo():
+        x,y = 1,2
+        def bar():
+            return x,y
+        return bar
+
+    def baz():
+        x,y = 2,3
+        def bar():
+            return y,x
+        return bar
+
+    foobar_str = marshal.dumps(foo().__code__)
+    foobar_code = marshal.loads(foobar_str)
+    assert_raises(TypeError, exec, foobar_code)
+
+    bazbar = baz()
+    assert bazbar() == (3,2)
+
+    def assign_code(x, y):
+        if isinstance(y, type(assign_code)):
+            x.__code__ = y.__code__
+        else:
+            x.__code__ = y
+
+    assert_raises(ValueError, assign_code, foo, bazbar)
+    assert_raises(ValueError, assign_code, foo, foobar_code)
+    bazbar.__code__ = foobar_code
+    assert bazbar() == (2,3)

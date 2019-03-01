@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -37,7 +37,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
-import com.oracle.truffle.api.nodes.RootNode;
 
 public final class PGenerator extends PythonBuiltinObject {
 
@@ -68,6 +67,8 @@ public final class PGenerator extends PythonBuiltinObject {
             for (int i = 0; i < closure.length; i++) {
                 generatorFrame.setObject(freeVarSlots[i], closure[i]);
             }
+        } else {
+            assert freeVarSlots.length == 0;
         }
         // initialize own cell vars to new cells (these cells will be used by nested functions to
         // create their own closures)
@@ -93,10 +94,6 @@ public final class PGenerator extends PythonBuiltinObject {
 
     public RootCallTarget getCallTarget() {
         return callTarget;
-    }
-
-    public RootNode getGeneratorRootNode() {
-        return callTarget.getRootNode();
     }
 
     public Object[] getArguments() {

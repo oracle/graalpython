@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,7 +67,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         return JavaModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "type", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TypeNode extends PythonUnaryBuiltinNode {
         private Object get(String name) {
@@ -99,7 +99,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_function", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "is_function", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsFunctionNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -109,7 +109,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_object", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "is_object", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsObjectNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -119,7 +119,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_symbol", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "is_symbol", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsSymbolNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -129,7 +129,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "instanceof", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "instanceof", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"!isForeignObject(object)", "isForeignObject(klass)"})

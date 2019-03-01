@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,8 @@
 # Python3Core.INDIRECT_CORE_FILES, because during bootstrap we pre-parse (but do
 # not run!) all core files.
 
+def __gr__(self, name, mode='r', closefd=True, opener=None):
+    pass
 
 def __import__(filename, module_name):
     import sys, posix

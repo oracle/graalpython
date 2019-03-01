@@ -107,7 +107,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         return right ? 1.0 : 0.0;
     }
 
-    @Builtin(name = __STR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class StrNode extends PythonUnaryBuiltinNode {
@@ -130,12 +130,12 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
     }
 
-    @Builtin(name = __FORMAT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FormatNode extends PythonBinaryBuiltinNode {
@@ -199,7 +199,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ABS__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ABS__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
@@ -210,7 +210,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __BOOL__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
@@ -220,7 +220,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __INT__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __INT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -243,7 +243,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __FLOAT__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __FLOAT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FloatNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -268,7 +268,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ADD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
@@ -316,12 +316,12 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RADD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RAddNode extends AddNode {
     }
 
-    @Builtin(name = __SUB__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __SUB__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class SubNode extends PythonBinaryBuiltinNode {
@@ -347,7 +347,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RSUB__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RSubNode extends PythonBinaryBuiltinNode {
@@ -373,7 +373,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -432,7 +432,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
@@ -508,7 +508,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __FLOORDIV__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __FLOORDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class FloorDivNode extends FloatBinaryBuiltinNode {
@@ -537,7 +537,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "fromhex", fixedNumOfPositionalArgs = 2, isClassmethod = true)
+    @Builtin(name = "fromhex", minNumOfPositionalArgs = 2, isClassmethod = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class FromHexNode extends PythonBuiltinNode {
@@ -613,7 +613,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "hex", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "hex", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class HexNode extends PythonBuiltinNode {
@@ -662,7 +662,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RFLOORDIV__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RFLOORDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RFloorDivNode extends FloatBinaryBuiltinNode {
@@ -692,7 +692,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MOD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class ModNode extends FloatBinaryBuiltinNode {
@@ -721,7 +721,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMOD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RMOD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RModNode extends FloatBinaryBuiltinNode {
@@ -750,7 +750,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __TRUEDIV__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __TRUEDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class DivNode extends FloatBinaryBuiltinNode {
@@ -776,7 +776,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RTRUEDIV__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RTRUEDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RDivNode extends PythonBinaryBuiltinNode {
@@ -869,7 +869,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class EqNode extends PythonBinaryBuiltinNode {
@@ -914,7 +914,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
@@ -958,7 +958,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LtNode extends PythonBinaryBuiltinNode {
@@ -1009,7 +1009,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LeNode extends PythonBinaryBuiltinNode {
@@ -1055,7 +1055,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class GtNode extends PythonBinaryBuiltinNode {
@@ -1106,7 +1106,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class GeNode extends PythonBinaryBuiltinNode {
@@ -1127,7 +1127,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __POS__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __POS__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PosNode extends PythonUnaryBuiltinNode {
@@ -1137,7 +1137,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEG__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __NEG__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NegNode extends PythonUnaryBuiltinNode {
@@ -1148,7 +1148,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "real", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
+    @Builtin(name = "real", minNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
     abstract static class RealNode extends PythonBuiltinNode {
 
         @Child private GetLazyClassNode getClassNode;
@@ -1178,7 +1178,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "imag", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the imaginary part of a complex number")
+    @Builtin(name = "imag", minNumOfPositionalArgs = 1, isGetter = true, doc = "the imaginary part of a complex number")
     abstract static class ImagNode extends PythonBuiltinNode {
 
         @Specialization
@@ -1189,12 +1189,12 @@ public final class FloatBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "conjugate", fixedNumOfPositionalArgs = 1, doc = "Returns self, the complex conjugate of any float.")
+    @Builtin(name = "conjugate", minNumOfPositionalArgs = 1, doc = "Returns self, the complex conjugate of any float.")
     abstract static class ConjugateNode extends RealNode {
 
     }
 
-    @Builtin(name = __TRUNC__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __TRUNC__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TruncNode extends PythonUnaryBuiltinNode {
 
@@ -1232,7 +1232,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __GETFORMAT__, fixedNumOfPositionalArgs = 2, isClassmethod = true)
+    @Builtin(name = __GETFORMAT__, minNumOfPositionalArgs = 2, isClassmethod = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class GetFormatNode extends PythonBinaryBuiltinNode {

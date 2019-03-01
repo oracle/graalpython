@@ -102,7 +102,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         builtinConstants.put(INCOMPLETE, core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, pre + INCOMPLETE, incompleteBases));
     }
 
-    @Builtin(name = "a2b_base64", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "a2b_base64", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class A2bBase64Node extends PythonUnaryBuiltinNode {
         @Specialization
@@ -131,7 +131,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "a2b_hex", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "a2b_hex", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class A2bHexNode extends PythonBinaryBuiltinNode {
         private ReadAttributeFromObjectNode getAttrNode;
@@ -175,7 +175,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "b2a_base64", fixedNumOfPositionalArgs = 1, keywordArguments = {"newline"})
+    @Builtin(name = "b2a_base64", minNumOfPositionalArgs = 1, parameterNames = {"data", "newline"})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class B2aBase64Node extends PythonBinaryBuiltinNode {
@@ -296,7 +296,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "b2a_hex", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "b2a_hex", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class B2aHexNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -316,7 +316,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "crc32", fixedNumOfPositionalArgs = 1, keywordArguments = "crc")
+    @Builtin(name = "crc32", minNumOfPositionalArgs = 1, parameterNames = {"data", "crc"})
     @GenerateNodeFactory
     abstract static class Crc32Node extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(crc)")
@@ -330,12 +330,12 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "hexlify", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "hexlify", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class HexlifyNode extends B2aHexNode {
     }
 
-    @Builtin(name = "unhexlify", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "unhexlify", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class UnhexlifyNode extends A2bHexNode {
     }
