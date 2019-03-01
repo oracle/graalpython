@@ -215,6 +215,7 @@ class ReTests(unittest.TestCase):
         self.assertEqual(re.sub('x+', '-', 'abxd'), 'ab-d')
 
     def test_symbolic_groups(self):
+        assert False
         re.compile(r'(?P<a>x)(?P=a)(?(a)y)')
         re.compile(r'(?P<a1>x)(?P=a1)(?(a1)y)')
         re.compile(r'(?P<a1>x)\1(?(1)y)')
@@ -359,6 +360,7 @@ class ReTests(unittest.TestCase):
 #         self.assertTrue(re.match(r'[19\ufb06]', '\ufb05', re.I))
 
     def test_backreference(self):
+        assert False
         compiled = re.compile(r"(.)\1")
         self.assertTrue(compiled.match("11"))
         self.assertTrue(compiled.match("22"))
