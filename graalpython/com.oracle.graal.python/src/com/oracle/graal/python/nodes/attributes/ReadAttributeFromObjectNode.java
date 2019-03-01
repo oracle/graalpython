@@ -169,4 +169,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     protected PNone readUnboxed(Object object, Object key) {
         return PNone.NO_VALUE;
     }
+
+    public static ReadAttributeFromObjectNode getUncached() {
+        // TODO: truffle libraries - implement me
+        return null;
+    }
 }
