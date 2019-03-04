@@ -360,7 +360,6 @@ class ReTests(unittest.TestCase):
 #         self.assertTrue(re.match(r'[19\ufb06]', '\ufb05', re.I))
 
     def test_backreference(self):
-        assert False
         compiled = re.compile(r"(.)\1")
         self.assertTrue(compiled.match("11"))
         self.assertTrue(compiled.match("22"))

@@ -1636,12 +1636,37 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     }
 
     static class MethFastcallRoot extends MethodDescriptorRoot {
+        private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, new String[0]);
+
+        @Child private ReadVarArgsNode readVarargsNode;
+
+        protected MethFastcallRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
+            super(language, factory, callTarget);
+            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            Object self = readSelfNode.execute(frame);
+            Object[] args = readVarargsNode.executeObjectArray(frame);
+            Object[] arguments = PArguments.create();
+            PArguments.setVariableArguments(arguments, self, factory.createTuple(args), args.length);
+            return directCallNode.call(arguments);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static class MethFastcallWithKeywordsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(true, 1, false, new String[]{"self"}, new String[0]);
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 
-        protected MethFastcallRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
+        protected MethFastcallWithKeywordsRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
             super(language, factory, callTarget);
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
             this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
@@ -1715,6 +1740,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         Object call(PBuiltinFunction function) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
                             Truffle.getRuntime().createCallTarget(new MethFastcallRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        }
+    }
+
+    @Builtin(name = "METH_FASTCALL_WITH_KEYWORDS", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class MethFastcallWithKeywordsNode extends PythonUnaryBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        Object call(PBuiltinFunction function) {
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
+                            Truffle.getRuntime().createCallTarget(new MethFastcallWithKeywordsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
     }
 
