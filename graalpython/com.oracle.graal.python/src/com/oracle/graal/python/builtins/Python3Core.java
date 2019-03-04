@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ContextvarsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CtypesModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
@@ -227,7 +228,8 @@ public final class Python3Core implements PythonCore {
                         "zipimport",
                         "mmap",
                         "_queue",
-                        "_ast"));
+                        "_ast",
+                        "_contextvars"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
     }
@@ -338,7 +340,8 @@ public final class Python3Core implements PythonCore {
                         new ThreadModuleBuiltins(),
                         new ThreadBuiltins(),
                         new LockBuiltins(),
-                        new RLockBuiltins()));
+                        new RLockBuiltins(),
+                        new ContextvarsModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
             for (PythonBuiltins builtin : providers) {
