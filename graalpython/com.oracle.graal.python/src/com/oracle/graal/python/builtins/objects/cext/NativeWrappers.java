@@ -1227,7 +1227,8 @@ public abstract class NativeWrappers {
         }
 
         @ExportMessage
-        public Object readMember(String member) {
+        @Override
+        protected boolean isMemberReadable(String member) {
             return member.equals(GP_OBJECT) || NativeMemberNames.isValid(member);
         }
 
