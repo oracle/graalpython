@@ -266,12 +266,12 @@ def _get_path(userbase):
     version = sys.version_info
 
     if os.name == 'nt':
-        return f'{userbase}\\Python{version[0]}{version[1]}\\site-packages'
+        return '%s\\Python%s%s\\site-packages' % (userbase, version[0], version[1])
 
     if sys.platform == 'darwin' and sys._framework:
-        return f'{userbase}/lib/python/site-packages'
+        return '%s/lib/python/site-packages' % version
 
-    return f'{userbase}/lib/python{version[0]}.{version[1]}/site-packages'
+    return '%s/lib/python%s.%s/site-packages'% (userbase, version[0], version[1])
 
 
 def getuserbase():
