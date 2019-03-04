@@ -135,6 +135,7 @@ import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
+import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -293,6 +294,7 @@ public final class Python3Core implements PythonCore {
                         new ArrayModuleBuiltins(),
                         new ArrayBuiltins(),
                         new TimeModuleBuiltins(),
+                        new ModuleBuiltins(),
                         new MathModuleBuiltins(),
                         new MarshalModuleBuiltins(),
                         new RandomModuleBuiltins(),
