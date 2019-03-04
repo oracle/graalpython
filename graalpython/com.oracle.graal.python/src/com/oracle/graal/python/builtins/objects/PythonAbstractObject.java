@@ -60,4 +60,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         assert this.nativeWrapper == null;
         this.nativeWrapper = nativeWrapper;
     }
+
+    @Override
+    public String toString() {
+        return "<an abstract python object>";
+    }
 }

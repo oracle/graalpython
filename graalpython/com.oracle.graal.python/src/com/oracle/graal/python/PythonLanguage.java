@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NodeFactory;
@@ -437,16 +438,36 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected String toString(PythonContext context, Object value) {
         final PythonModule builtins = context.getBuiltins();
-        if (builtins == null) {
-            // true during initialization
-            return value.toString();
+        if (builtins != null) {
+            // may be null during initialization
+            Object reprAttribute = builtins.getAttribute(BuiltinNames.REPR);
+            if (reprAttribute instanceof PBuiltinMethod) {
+                // may be false if e.g. someone accessed our builtins reflectively
+                Object reprFunction = ((PBuiltinMethod) reprAttribute).getFunction();
+                if (reprFunction instanceof PBuiltinFunction) {
+                    // may be false if our builtins were tampered with
+                    Object[] userArgs = PArguments.create(2);
+                    PArguments.setArgument(userArgs, 0, PNone.NONE);
+                    PArguments.setArgument(userArgs, 1, value);
+                    try {
+                        Object result = InvokeNode.invokeUncached((PBuiltinFunction) reprFunction, userArgs);
+                        if (result instanceof String) {
+                            return (String) result;
+                        } else if (result instanceof PString) {
+                            return ((PString) result).getValue();
+                        } else {
+                            // This is illegal for a repr implementation, we ignore the result.
+                            // At this point it's probably difficult to report this properly.
+                        }
+                    } catch (PException e) {
+                        // Fall through to default
+                    }
+                }
+            }
         }
-        PBuiltinFunction reprMethod = (PBuiltinFunction) ((PBuiltinMethod) builtins.getAttribute(BuiltinNames.REPR)).getFunction();
-        Object[] userArgs = PArguments.create(2);
-        PArguments.setArgument(userArgs, 0, PNone.NONE);
-        PArguments.setArgument(userArgs, 1, value);
-        Object res = InvokeNode.create(reprMethod).execute(null, userArgs);
-        return res.toString();
+        // This is not a good place to report inconsistencies in any of the above conditions. Just
+        // return a String
+        return ((PythonAbstractObject) value).toString();
     }
 
     public static TruffleLogger getLogger() {
