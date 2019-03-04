@@ -324,9 +324,10 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "!isEmpty(kwargs)")
-        public HashingStorage doPDictKwargs(PDict iterable, PKeyword[] kwargs) {
+        public HashingStorage doPDictKwargs(PDict iterable, PKeyword[] kwargs,
+                        @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
             HashingStorage dictStorage = iterable.getDictStorage().copy(HashingStorage.DEFAULT_EQIVALENCE);
-            dictStorage.addAll(new KeywordsStorage(kwargs));
+            unionNode.execute(dictStorage, new KeywordsStorage(kwargs));
             return dictStorage;
         }
 
@@ -1352,8 +1353,8 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "!setUnion")
         public HashingStorage doGeneric(HashingStorage left, HashingStorage right) {
             EconomicMapStorage newStorage = EconomicMapStorage.create(setUnion);
-            newStorage.addAll(left);
-            newStorage.addAll(right);
+            newStorage.addAll(left, getEquivalence());
+            newStorage.addAll(right, getEquivalence());
             return newStorage;
         }
 
