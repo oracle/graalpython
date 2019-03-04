@@ -181,6 +181,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.util.Locale;
 
 @CoreFunctions(defineModule = "builtins")
 public final class BuiltinConstructors extends PythonBuiltins {
@@ -758,7 +759,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
             try {
                 // Double.valueOf allows format specifier ("d" or "f") at the end
-                String lowSval = sval.toLowerCase();
+                String lowSval = sval.toLowerCase(Locale.ENGLISH);
                 if (lowSval.equals("nan") || lowSval.equals("+nan") || lowSval.equals("-nan")) {
                     return Double.NaN;
                 } else if (lowSval.equals("inf") || lowSval.equals("+inf") || lowSval.equals("infinity") || lowSval.equals("+infinity")) {
