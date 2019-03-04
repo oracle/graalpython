@@ -79,3 +79,14 @@ void * PyMem_Realloc(void *ptr, size_t new_size) {
 void PyMem_Free(void *ptr) {
     free(ptr);
 }
+
+int PyTraceMalloc_Track(unsigned int domain, uintptr_t ptr, size_t size) {
+	// '-2' means disabled
+    return -2;
+}
+
+
+int PyTraceMalloc_Untrack(unsigned int domain, uintptr_t ptr) {
+	// '-2' means disabled
+    return -2;
+}
