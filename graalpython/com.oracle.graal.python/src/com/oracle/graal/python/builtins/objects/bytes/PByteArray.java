@@ -35,7 +35,6 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import java.util.Objects;
 
 public final class PByteArray extends PSequence implements PIBytesLike {
 

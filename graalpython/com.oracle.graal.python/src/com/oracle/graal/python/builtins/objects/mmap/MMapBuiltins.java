@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;

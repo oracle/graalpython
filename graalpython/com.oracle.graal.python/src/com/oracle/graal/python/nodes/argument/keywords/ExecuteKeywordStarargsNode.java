@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;

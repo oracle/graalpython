@@ -42,7 +42,6 @@ import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 public class TryExceptNode extends StatementNode implements TruffleObject {
     @Child private StatementNode body;

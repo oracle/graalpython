@@ -145,7 +145,7 @@ public class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public SequenceStorage getSliceInBound(int start, int stop, int step, int len) {
+    public SequenceStorage getSliceInBound(int start, int stop, int step, int length) {
         throw new AssertionError("should not reach");
     }
 

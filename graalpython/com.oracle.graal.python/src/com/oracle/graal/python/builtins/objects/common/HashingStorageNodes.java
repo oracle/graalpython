@@ -47,7 +47,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;

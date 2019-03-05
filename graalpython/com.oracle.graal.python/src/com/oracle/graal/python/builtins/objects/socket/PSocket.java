@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.socket;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectableChannel;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
