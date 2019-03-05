@@ -76,8 +76,8 @@ PTRN_MODULE_NOT_FOUND = re.compile(r'.*ModuleNotFound: \'(?P<module>.*)\'\..*', 
 PTRN_IMPORT_ERROR = re.compile(r".*cannot import name \'(?P<module>.*)\'.*", re.DOTALL)
 PTRN_REMOTE_HOST = re.compile(r"(?P<user>\w+)@(?P<host>[\w.]+):(?P<path>.+)")
 PTRN_VALID_CSV_NAME = re.compile(r"unittests-\d{4}-\d{2}-\d{2}.csv")
-PTRN_TEST_STATUS_INDIVIDUAL = re.compile(r"(?P<name>test_[\w_]+ \(.+\)) ... (?P<status>.+)")
-PTRN_TEST_STATUS_ERROR = re.compile(r"(?P<status>.+): (?P<name>test_[\w_]+ \(.+\))")
+PTRN_TEST_STATUS_INDIVIDUAL = re.compile(r"(?P<name>test[\w_]+ \(.+?\)) ... (?P<status>.+)")
+PTRN_TEST_STATUS_ERROR = re.compile(r"(?P<status>.+): (?P<name>test[\w_]+ \(.+?\))")
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -240,10 +240,13 @@ class StatEntry(object):
         # tracked stats
         self._tracked = False
 
-    def all_ok(self):
+    def _reset(self):
         self._num_fails = 0
         self._num_errors = 0
         self._num_skipped = 0
+
+    def all_ok(self):
+        self._reset()
 
     @property
     def num_errors(self):
@@ -270,7 +273,7 @@ class StatEntry(object):
     @num_skipped.setter
     def num_skipped(self, value):
         if not self._tracked:
-            self._num_fails = value
+            self._num_skipped = value
 
     @property
     def num_passes(self):
@@ -279,18 +282,20 @@ class StatEntry(object):
         return -1
 
     def update(self, test_detailed_stats):
-        for test, stats in test_detailed_stats.items():
+        if len(test_detailed_stats) > 0:
             self._tracked = True
-            stats = {s.lower() for s in stats}
-            if TestStatus.ERROR in stats:
-                self._num_errors = 1 if self._num_errors == -1 else self._num_errors + 1
-            elif TestStatus.FAIL in stats:
-                self._num_fails = 1 if self._num_fails == -1 else self._num_fails + 1
-            else:
-                for s in stats:
-                    if s.startswith(TestStatus.SKIPPED):
-                        self._num_skipped = 1 if self._num_skipped == -1 else self._num_skipped + 1
-                        break
+            self._reset()
+            for test, stats in test_detailed_stats.items():
+                stats = {s.lower() for s in stats}
+                if TestStatus.ERROR in stats:
+                    self._num_errors += 1
+                elif TestStatus.FAIL in stats:
+                    self._num_fails += 1
+                else:
+                    for s in stats:
+                        if s.startswith(TestStatus.SKIPPED):
+                            self._num_skipped += 1
+                            break
 
 
 def process_output(output_lines):
@@ -298,6 +303,7 @@ def process_output(output_lines):
         output_lines = output_lines.split("\n")
 
     unittests = []
+    # stats tracked per unittest
     unittest_tests = defaultdict(list)
     error_messages = defaultdict(set)
     java_exceptions = defaultdict(set)
@@ -308,6 +314,7 @@ def process_output(output_lines):
         if match:
             unittest = match.group('unittest')
             unittests.append(unittest)
+            unittest_tests.clear()
             continue
 
         # extract python reported python error messages
@@ -323,15 +330,10 @@ def process_output(output_lines):
             continue
 
         # stats
-        # tracking
+        # tracking stats
         match = re.match(PTRN_TEST_STATUS_INDIVIDUAL, line)
-        if match:
-            name = match.group('name')
-            status = match.group('status')
-            unittest_tests[name].append(status)
-            continue
-
-        match = re.match(PTRN_TEST_STATUS_ERROR, line)
+        if not match:
+            match = re.match(PTRN_TEST_STATUS_ERROR, line)
         if match:
             name = match.group('name')
             status = match.group('status')
