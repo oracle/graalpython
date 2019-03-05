@@ -62,7 +62,6 @@ public class PSocket extends PythonBuiltinObject {
 
     private double timeout;
 
-    @SuppressWarnings("unused") private SelectableChannel channel;
     private InetSocketAddress address = EPHEMERAL_ADDRESS;
 
     public PSocket(LazyPythonClass cls, int family, int type, int proto) {

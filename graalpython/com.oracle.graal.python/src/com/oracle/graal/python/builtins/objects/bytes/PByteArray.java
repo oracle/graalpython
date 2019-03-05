@@ -35,6 +35,7 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import java.util.Objects;
 
 public final class PByteArray extends PSequence implements PIBytesLike {
 
@@ -72,6 +73,19 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         }
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof PByteArray)) {
+            return false;
+        }
+        if (this == obj) {
+            return true;
+        }
+        PByteArray other = (PByteArray)obj;
+        return Arrays.equals(store.getInternalArray(), other.store.getInternalArray());
+    }
+
+    
     @Override
     public final int hashCode() {
         return Arrays.hashCode(store.getInternalArray());

@@ -98,7 +98,7 @@ public abstract class CastToListNode extends UnaryOpNode {
         SequenceStorage s = v.getSequenceStorage();
         Object[] array = new Object[cachedLength];
         for (int i = 0; i < cachedLength; i++) {
-            array[i] = getItemNode().execute(s, i);
+            array[i] = getGetItemNode().execute(s, i);
         }
         return factory().createList(array);
     }
@@ -136,7 +136,7 @@ public abstract class CastToListNode extends UnaryOpNode {
         return lenNode.execute(t.getSequenceStorage());
     }
 
-    protected SequenceStorageNodes.GetItemNode getItemNode() {
+    protected SequenceStorageNodes.GetItemNode getGetItemNode() {
         if (getItemNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             getItemNode = insert(SequenceStorageNodes.GetItemNode.createNotNormalized());

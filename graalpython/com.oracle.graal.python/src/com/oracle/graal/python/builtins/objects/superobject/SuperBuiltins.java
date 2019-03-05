@@ -232,7 +232,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
             Object cls = readClass.execute(frame);
             if (isCellProfile.profile(cls instanceof PCell)) {
-                cls = getRefNode().execute((PCell) cls);
+                cls = getGetRefNode().execute((PCell) cls);
             }
             if (cls == PNone.NONE) {
                 throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
@@ -273,7 +273,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                 try {
                     cls = target.getObject(classSlot);
                     if (cls instanceof PCell) {
-                        cls = getRefNode().execute((PCell) cls);
+                        cls = getGetRefNode().execute((PCell) cls);
                     }
                 } catch (FrameSlotTypeException e) {
                     // fallthrough
@@ -285,7 +285,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             return init(self, cls, obj);
         }
 
-        private CellBuiltins.GetRefNode getRefNode() {
+        private CellBuiltins.GetRefNode getGetRefNode() {
             if (getRefNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getRefNode = CellBuiltins.GetRefNode.create();

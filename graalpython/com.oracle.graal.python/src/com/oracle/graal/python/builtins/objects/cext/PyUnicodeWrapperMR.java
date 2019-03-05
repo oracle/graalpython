@@ -176,8 +176,6 @@ public class PyUnicodeWrapperMR {
     abstract static class PyUnicodeToNativeNode extends CExtBaseNode {
         @CompilationFinal private TruffleObject derefHandleIntrinsic;
         @Child private PCallNativeNode callNativeUnary;
-        @Child private PCallNativeNode callNativeBinary;
-        @Child private CExtNodes.ToSulongNode toSulongNode;
 
         public abstract Object execute(Object value);
 

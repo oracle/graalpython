@@ -283,7 +283,7 @@ public class PySequenceArrayWrapperMR {
 
         @Specialization
         Object doBytes(PIBytesLike s, long idx, byte value) {
-            getSetByteItemNode().executeLong(getSequenceStorage(s), idx, value);
+            getSetByteItemNode().executeLong(getGetSequenceStorage(s), idx, value);
             return value;
         }
 
@@ -291,7 +291,7 @@ public class PySequenceArrayWrapperMR {
         @ExplodeLoop
         Object doBytes(PIBytesLike s, long idx, short value) {
             for (int offset = 0; offset < Short.BYTES; offset++) {
-                getSetByteItemNode().executeLong(getSequenceStorage(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                getSetByteItemNode().executeLong(getGetSequenceStorage(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
             return value;
         }
@@ -300,7 +300,7 @@ public class PySequenceArrayWrapperMR {
         @ExplodeLoop
         Object doBytes(PIBytesLike s, long idx, int value) {
             for (int offset = 0; offset < Integer.BYTES; offset++) {
-                getSetByteItemNode().executeLong(getSequenceStorage(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                getSetByteItemNode().executeLong(getGetSequenceStorage(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
             return value;
         }
@@ -309,7 +309,7 @@ public class PySequenceArrayWrapperMR {
         @ExplodeLoop
         Object doBytes(PIBytesLike s, long idx, long value) {
             for (int offset = 0; offset < Long.BYTES; offset++) {
-                getSetByteItemNode().executeLong(getSequenceStorage(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                getSetByteItemNode().executeLong(getGetSequenceStorage(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
             return value;
         }
@@ -355,7 +355,7 @@ public class PySequenceArrayWrapperMR {
             return toJavaNode;
         }
 
-        private SequenceStorage getSequenceStorage(PIBytesLike seq) {
+        private SequenceStorage getGetSequenceStorage(PIBytesLike seq) {
             if (getSequenceStorageNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getSequenceStorageNode = insert(GetSequenceStorageNode.create());

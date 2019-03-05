@@ -620,20 +620,20 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String makeHexNumber(double value) {
-            String result = Double.toHexString(value);
-            String lresult = result.toLowerCase();
-            if (lresult.equals("nan")) {
-                return lresult;
-            } else if (lresult.equals("infinity")) {
+            
+            if (Double.isNaN(value)) {
+                return "nan";
+            } else if (Double.POSITIVE_INFINITY == value) {
                 return "inf";
-            } else if (lresult.equals("-infinity")) {
+            } else if (Double.NEGATIVE_INFINITY == value) {
                 return "-inf";
-            } else if (lresult.equals("0x0.0p0")) {
+            } else if (Double.compare(value, 0d) == 0) {
                 return "0x0.0p+0";
-            } else if (lresult.equals("-0x0.0p0")) {
+            } else if (Double.compare(value, -0d) == 0) {
                 return "-0x0.0p+0";
             }
 
+            String result = Double.toHexString(value);
             int length = result.length();
             boolean start_exponent = false;
             StringBuilder sb = new StringBuilder(length + 1);
@@ -1239,9 +1239,9 @@ public final class FloatBuiltins extends PythonBuiltins {
         private static String getDetectedEndianess() {
             try {
                 ByteOrder byteOrder = ByteOrder.nativeOrder();
-                if (byteOrder.equals(ByteOrder.BIG_ENDIAN)) {
+                if (byteOrder == ByteOrder.BIG_ENDIAN) {
                     return "IEEE, big-endian";
-                } else if (byteOrder.equals(ByteOrder.LITTLE_ENDIAN)) {
+                } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
                     return "IEEE, little-endian";
                 }
             } catch (Error ignored) {

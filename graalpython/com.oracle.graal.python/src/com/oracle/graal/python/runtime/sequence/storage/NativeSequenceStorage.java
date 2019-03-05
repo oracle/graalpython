@@ -48,7 +48,7 @@ public class NativeSequenceStorage extends SequenceStorage {
     private Object ptr;
 
     /* length of contents */
-    protected int length;
+    protected int len;
 
     /* allocated capacity */
     protected int capacity;
@@ -58,7 +58,7 @@ public class NativeSequenceStorage extends SequenceStorage {
     public NativeSequenceStorage(Object ptr, int length, int capacity, ListStorageType elementType) {
         this.ptr = ptr;
         this.capacity = capacity;
-        this.length = length;
+        this.len = length;
         this.elementType = elementType;
     }
 
@@ -85,19 +85,19 @@ public class NativeSequenceStorage extends SequenceStorage {
 
     @Override
     public final int length() {
-        return length;
+        return len;
     }
 
     @Override
     public void setNewLength(int length) {
         assert length <= capacity;
-        this.length = length;
+        this.len = length;
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return String.format("<NativeSequenceStorage(type=%s, len=%d, cap=%d) at %s>", elementType, length, capacity, ptr);
+        return String.format("<NativeSequenceStorage(type=%s, len=%d, cap=%d) at %s>", elementType, len, capacity, ptr);
     }
 
     /**

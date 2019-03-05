@@ -488,8 +488,6 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
 
-        @CompilationFinal private ValueProfile storeProfile;
-
         @Specialization
         public Object popLast(PList list, @SuppressWarnings("unused") PNone none,
                         @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode) {

@@ -248,18 +248,20 @@ public class SysModuleBuiltins extends PythonBuiltins {
     static String getPythonOSName() {
         String property = System.getProperty("os.name");
         String os = "java";
-        if (property.toLowerCase().contains("cygwin")) {
-            os = "cygwin";
-        } else if (property.toLowerCase().contains("linux")) {
-            os = "linux";
-        } else if (property.toLowerCase().contains("mac")) {
-            os = "darwin";
-        } else if (property.toLowerCase().contains("windows")) {
-            os = "win32";
-        } else if (property.toLowerCase().contains("sunos")) {
-            os = "sunos";
-        } else if (property.toLowerCase().contains("freebsd")) {
-            os = "freebsd";
+        if (property != null) {
+            if (property.toLowerCase().contains("cygwin")) {
+                os = "cygwin";
+            } else if (property.toLowerCase().contains("linux")) {
+                os = "linux";
+            } else if (property.toLowerCase().contains("mac")) {
+                os = "darwin";
+            } else if (property.toLowerCase().contains("windows")) {
+                os = "win32";
+            } else if (property.toLowerCase().contains("sunos")) {
+                os = "sunos";
+            } else if (property.toLowerCase().contains("freebsd")) {
+                os = "freebsd";
+            }
         }
         return os;
     }

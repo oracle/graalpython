@@ -55,7 +55,7 @@ import com.oracle.truffle.api.frame.FrameSlot;
 public class LocalsStorage extends HashingStorage {
 
     private final Frame frame;
-    private int length = -1;
+    private int len = -1;
     private final boolean skipCells;
 
     public LocalsStorage(Frame frame, boolean skipCells) {
@@ -133,16 +133,16 @@ public class LocalsStorage extends HashingStorage {
     @Override
     @TruffleBoundary
     public int length() {
-        if (length == -1) {
-            length = frame.getFrameDescriptor().getSize();
+        if (len == -1) {
+            len = frame.getFrameDescriptor().getSize();
             for (FrameSlot slot : frame.getFrameDescriptor().getSlots()) {
                 Object identifier = slot.getIdentifier();
                 if (identifier.equals(RETURN_SLOT_ID) || isTempLocal(identifier) || frame.getValue(slot) == null) {
-                    length--;
+                    len--;
                 }
             }
         }
-        return length;
+        return len;
     }
 
     @Override
@@ -187,14 +187,14 @@ public class LocalsStorage extends HashingStorage {
     private abstract class LocalsIterator<T> implements Iterator<T> {
 
         private Iterator<? extends FrameSlot> keys;
-        private FrameSlot nextSlot = null;
+        private FrameSlot nextFrameSlot = null;
 
         @Override
         public boolean hasNext() {
             if (frame.getFrameDescriptor().getSize() == 0) {
                 return false;
             }
-            if (nextSlot == null) {
+            if (nextFrameSlot == null) {
                 return loadNext();
             }
             return true;
@@ -203,9 +203,9 @@ public class LocalsStorage extends HashingStorage {
         @TruffleBoundary
         public FrameSlot nextSlot() {
             if (hasNext()) {
-                assert nextSlot != null;
-                FrameSlot value = nextSlot;
-                nextSlot = null;
+                assert nextFrameSlot != null;
+                FrameSlot value = nextFrameSlot;
+                nextFrameSlot = null;
                 return value;
             }
             throw new NoSuchElementException();
@@ -223,7 +223,7 @@ public class LocalsStorage extends HashingStorage {
                             continue;
                         }
                         if (nextValue != null) {
-                            nextSlot = nextCandidate;
+                            nextFrameSlot = nextCandidate;
                             return true;
                         }
                     }

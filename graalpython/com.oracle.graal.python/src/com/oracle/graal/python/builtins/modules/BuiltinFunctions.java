@@ -583,12 +583,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return factory().createTuple(new Object[]{div, mod});
         }
 
-        @TruffleBoundary
-        private static BigInteger[] divideAndRemainder(PInt a, PInt b) {
-            BigInteger[] result = a.getValue().divideAndRemainder(b.getValue());
-            assert result.length == 2;
-            return result;
-        }
     }
 
     // eval(expression, globals=None, locals=None)

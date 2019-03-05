@@ -644,8 +644,6 @@ public class MMapBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class FindNode extends PythonBuiltinNode implements ByteReadingNode {
 
-        @Child private NormalizeIndexNode normalizeIndexNode;
-        @Child private SequenceStorageNodes.GetItemNode getLeftItemNode;
         @Child private SequenceStorageNodes.GetItemNode getRightItemNode;
 
         public abstract long execute(PMMap bytes, Object sub, Object starting, Object ending);

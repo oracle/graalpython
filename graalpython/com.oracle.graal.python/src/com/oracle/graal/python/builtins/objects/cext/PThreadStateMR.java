@@ -140,7 +140,7 @@ public class PThreadStateMR {
             PException currentException = context.getCurrentException();
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
-                return getClassNode().execute(exceptionObject);
+                return getGetClassNode().execute(exceptionObject);
             }
             return null;
         }
@@ -173,7 +173,7 @@ public class PThreadStateMR {
             PException currentException = context.getCaughtException();
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
-                return getClassNode().execute(exceptionObject);
+                return getGetClassNode().execute(exceptionObject);
             }
             return null;
         }
@@ -230,7 +230,7 @@ public class PThreadStateMR {
             return expected.equals(key);
         }
 
-        private GetClassNode getClassNode() {
+        private GetClassNode getGetClassNode() {
             if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getClassNode = insert(GetClassNode.create());

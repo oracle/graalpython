@@ -371,7 +371,7 @@ public final class Python3Core implements PythonCore {
      */
     private boolean initialized;
 
-    private final PythonObjectFactory factory = PythonObjectFactory.create();
+    private final PythonObjectFactory objectFactory = PythonObjectFactory.create();
 
     public Python3Core(PythonParser parser, Env env) {
         this.parser = parser;
@@ -463,9 +463,9 @@ public final class Python3Core implements PythonCore {
     public PException raise(PythonBuiltinClassType type, String format, Object... args) {
         PBaseException instance;
         if (format != null) {
-            instance = factory.createBaseException(type, format, args);
+            instance = objectFactory.createBaseException(type, format, args);
         } else {
-            instance = factory.createBaseException(type);
+            instance = objectFactory.createBaseException(type);
         }
         throw PException.fromObject(instance, null);
     }
@@ -579,7 +579,7 @@ public final class Python3Core implements PythonCore {
             Object value;
             assert obj instanceof PythonModule || obj instanceof PythonBuiltinClass : "unexpected object while adding builtins";
             if (obj instanceof PythonModule) {
-                value = factory.createBuiltinMethod(obj, (PBuiltinFunction) entry.getValue());
+                value = objectFactory.createBuiltinMethod(obj, (PBuiltinFunction) entry.getValue());
             } else {
                 value = entry.getValue().boundToObject(((PythonBuiltinClass) obj).getType(), factory());
             }
@@ -630,7 +630,7 @@ public final class Python3Core implements PythonCore {
 
     private void loadFile(String s, String prefix) {
         Source source = getSource(s, prefix);
-        Supplier<PCode> getCode = () -> factory.createCode(Truffle.getRuntime().createCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null)));
+        Supplier<PCode> getCode = () -> objectFactory.createCode(Truffle.getRuntime().createCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null)));
         RootCallTarget callTarget = getLanguage().cacheCode(source.getName(), getCode).getRootCallTarget();
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
@@ -641,7 +641,7 @@ public final class Python3Core implements PythonCore {
     }
 
     public PythonObjectFactory factory() {
-        return factory;
+        return objectFactory;
     }
 
     public void setContext(PythonContext context) {

@@ -1286,8 +1286,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SystemNode extends PythonBuiltinNode {
-        static final String[] shell = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).startsWith("windows") ? new String[]{"cmd.exe", "/c"}
+        static final String[] shell;
+        static {
+            String osProperty = System.getProperty("os.name");
+            shell = osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).startsWith("windows") ? new String[]{"cmd.exe", "/c"}
                         : new String[]{(System.getenv().getOrDefault("SHELL", "sh")), "-c"};
+        }
+            
 
         static class PipePump extends Thread {
             private static final int MAX_READ = 8192;

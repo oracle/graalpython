@@ -65,7 +65,6 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 @ImportStatic(PythonOptions.class)
 @NodeChild(value = "starargs", type = ExpressionNode.class)
 public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
-    @Child private CastToStringNode castToStringNode;
 
     public abstract PKeyword[] execute(VirtualFrame frame);
 

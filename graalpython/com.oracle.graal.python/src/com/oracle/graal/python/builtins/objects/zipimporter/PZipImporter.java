@@ -43,7 +43,7 @@ import java.util.zip.ZipFile;
 
 public class PZipImporter extends PythonBuiltinObject {
 
-    public static String SEPARATOR = File.separator;
+    public final static String SEPARATOR = File.separator;
 
     /**
      * pathname of the Zip archive

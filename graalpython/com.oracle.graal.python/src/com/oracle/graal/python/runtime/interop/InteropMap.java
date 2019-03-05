@@ -71,11 +71,6 @@ public final class InteropMap implements TruffleObject {
     }
 
     @TruffleBoundary
-    private int size() {
-        return data.size();
-    }
-
-    @TruffleBoundary
     private Object getKey(String name) {
         assert hasKey(name);
         return data.get(name);

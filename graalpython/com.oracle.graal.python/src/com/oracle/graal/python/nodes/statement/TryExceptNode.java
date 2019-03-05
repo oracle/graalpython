@@ -49,7 +49,6 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Children private final ExceptNode[] exceptNodes;
     @Child private StatementNode orelse;
     @CompilationFinal private TryExceptNodeMessageResolution.CatchesFunction catchesFunction;
-    @CompilationFinal private ValueProfile exceptionStateProfile;
 
     @CompilationFinal boolean seenException;
     private final boolean shouldCatchAll;

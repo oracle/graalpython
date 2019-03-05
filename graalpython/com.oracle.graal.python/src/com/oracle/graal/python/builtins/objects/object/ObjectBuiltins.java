@@ -370,7 +370,6 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private LookupAttributeInMRONode lookupDeleteNode;
         @Child private CallTernaryMethodNode dispatchGet;
         @Child private ReadAttributeFromObjectNode attrRead;
-        @Child private LookupAndCallBinaryNode getattrNode;
 
         @Specialization
         protected Object doIt(Object object, Object key) {

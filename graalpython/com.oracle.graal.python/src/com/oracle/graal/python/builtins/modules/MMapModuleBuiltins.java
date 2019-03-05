@@ -155,21 +155,6 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             return fd < -1;
         }
 
-        @SuppressWarnings("unused")
-        private MapMode convertAccessToMapMode(int access) {
-            switch (access) {
-                case 0:
-                    return MapMode.READ_WRITE;
-                case 1:
-                    return MapMode.READ_ONLY;
-                case 2:
-                    return MapMode.READ_WRITE;
-                case 3:
-                    return MapMode.PRIVATE;
-            }
-            throw raise(ValueError, "mmap invalid access parameter.");
-        }
-
         private void checkLength(int length) {
             if (length < 0) {
                 invalidLengthProfile.enter();

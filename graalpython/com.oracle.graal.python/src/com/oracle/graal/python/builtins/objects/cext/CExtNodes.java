@@ -178,7 +178,7 @@ public abstract class CExtNodes {
         @CompilationFinal private TruffleObject conversionFunc;
         @Child private Node executeNode;
         @Child private GetClassNode getClass = GetClassNode.create();
-        @Child private IsSubtypeNode isSubtype = IsSubtypeNode.create();
+        @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
         @Child private ToSulongNode toSulongNode;
 
         private FromNativeSubclassNode(PythonBuiltinClassType expectedType, String conversionFuncName) {
@@ -227,7 +227,7 @@ public abstract class CExtNodes {
         }
 
         public boolean isSubtype(PythonNativeObject object) {
-            return isSubtype.execute(getClass.execute(object), getExpectedClass());
+            return isSubtypeNode.execute(getClass.execute(object), getExpectedClass());
         }
 
         public static <T> FromNativeSubclassNode<T> create(PythonBuiltinClassType expectedType, String conversionFuncName) {
@@ -1519,7 +1519,6 @@ public abstract class CExtNodes {
         @Child private InvokeNode invokeNode;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgumentsNode createArgsNode;
-        @Child private PythonObjectFactory factory;
         private final PFunction func;
         private final Object errorResult;
 

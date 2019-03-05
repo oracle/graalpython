@@ -111,8 +111,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
         @Child private BytesNodes.ToBytesNode toBytesNode;
 
-        @CompilationFinal private Pattern namedCaptGroupPattern;
-
         @Specialization
         Object run(PString str) {
             return run(str.getValue());
