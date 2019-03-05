@@ -31,8 +31,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxEr
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;

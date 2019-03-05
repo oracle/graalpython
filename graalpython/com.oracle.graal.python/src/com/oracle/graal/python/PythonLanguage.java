@@ -26,7 +26,6 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
-import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
