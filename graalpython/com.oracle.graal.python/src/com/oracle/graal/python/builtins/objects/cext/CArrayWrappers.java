@@ -40,10 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID;
+
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -54,6 +58,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Native wrappers for managed objects such that they can be used as a C array by native code. The
@@ -94,7 +99,7 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         public void toNative(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.AsCharPointer asCharPointerNode,
-                             @Cached.Exclusive @Cached(allowUncached = true) InvalidateNativeObjectsAllManagedNode invalidateNode) {
+                        @Cached.Exclusive @Cached(allowUncached = true) InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
             if (!this.isNative()) {
                 this.setNativePointer(asCharPointerNode.execute(this.getDelegate()));
@@ -109,6 +114,7 @@ public abstract class CArrayWrappers {
      * {@code char*}.
      */
     @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
     public static class CStringWrapper extends CArrayWrapper {
 
         public CStringWrapper(String delegate) {
@@ -125,13 +131,14 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
+        @SuppressWarnings("static-method")
         final boolean hasArrayElements() {
             return true;
         }
 
         @ExportMessage
         final Object readArrayElement(long index,
-                                      @Cached.Exclusive  @Cached(allowUncached = true) ReadNode readNode) {
+                        @Cached.Exclusive @Cached(allowUncached = true) ReadNode readNode) {
             return readNode.execute(this, index);
         }
 
@@ -165,6 +172,18 @@ public abstract class CArrayWrappers {
                 }
             }
         }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        final boolean hasNativeType() {
+            return true;
+        }
+
+        @ExportMessage
+        Object getNativeType(
+                        @Exclusive @Cached PCallCapiFunction callByteArrayTypeIdNode) {
+            return callByteArrayTypeIdNode.execute(FUN_GET_BYTE_ARRAY_TYPE_ID, getString().length());
+        }
     }
 
     /**
@@ -194,7 +213,7 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         final Object readArrayElement(long index,
-                                      @Cached.Exclusive  @Cached(allowUncached = true) ReadNode readNode) {
+                        @Cached.Exclusive @Cached(allowUncached = true) ReadNode readNode) {
             return readNode.execute(this, index);
         }
 

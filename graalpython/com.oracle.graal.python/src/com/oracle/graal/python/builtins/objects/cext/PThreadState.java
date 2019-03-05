@@ -1,7 +1,11 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_THREAD_STATE_TYPE_ID;
+
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -13,10 +17,11 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -25,8 +30,10 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
 public class PThreadState extends NativeWrappers.PythonNativeWrapper {
     public static final String CUR_EXC_TYPE = "curexc_type";
     public static final String CUR_EXC_VALUE = "curexc_value";
@@ -43,11 +50,6 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
         return obj instanceof PThreadState;
     }
 
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return PThreadStateMRForeign.ACCESS;
-    }
-
     public PDict getThreadStateDict() {
         return dict;
     }
@@ -55,7 +57,6 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
     public void setThreadStateDict(PDict dict) {
         this.dict = dict;
     }
-
 
     // READ
     @ExportMessage
@@ -90,7 +91,7 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                                @Cached.Exclusive @Cached(allowUncached = true) ReadNode readNode) {
+                    @Cached.Exclusive @Cached(allowUncached = true) ReadNode readNode) {
         return readNode.execute(this, member);
     }
 
@@ -99,8 +100,8 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
 
         @Specialization
         public Object execute(@SuppressWarnings("unused") PThreadState object, String key,
-                              @Cached.Exclusive @Cached ThreadStateReadNode readNode,
-                              @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) {
+                        @Cached.Exclusive @Cached ThreadStateReadNode readNode,
+                        @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) {
             Object result = readNode.execute(key);
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -112,7 +113,7 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
         PythonClass doCurExcType(@SuppressWarnings("unused") String key,
-                                 @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode) {
+                        @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
             if (currentException != null) {
@@ -146,7 +147,7 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, EXC_TYPE)")
         PythonClass doExcType(@SuppressWarnings("unused") String key,
-                      @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode) {
+                        @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode) {
             PythonContext context = getContext();
             PException currentException = context.getCaughtException();
             if (currentException != null) {
@@ -191,7 +192,7 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, PREV)")
         Object doPrev(@SuppressWarnings("unused") String key,
-                      @Cached.Exclusive @Cached ReadAttributeFromObjectNode readNativeNull) {
+                        @Cached.Exclusive @Cached ReadAttributeFromObjectNode readNativeNull) {
             return getNativeNull(readNativeNull);
         }
 
@@ -242,7 +243,7 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
 
     @ExportMessage
     protected void writeMember(String member, Object value,
-                               @Cached.Exclusive @Cached(allowUncached = true) WriteNode writeNode) {
+                    @Cached.Exclusive @Cached(allowUncached = true) WriteNode writeNode) {
         writeNode.execute(this, member, value);
     }
 
@@ -263,9 +264,9 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
 
         @Specialization
         public Object execute(@SuppressWarnings("unused") PThreadState object, String key, Object value,
-                              @Cached.Exclusive @Cached ThreadStateWriteNode writeNode,
-                              @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
-                              @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) {
+                        @Cached.Exclusive @Cached ThreadStateWriteNode writeNode,
+                        @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) {
             Object result = writeNode.execute(key, toJavaNode.execute(value));
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -380,13 +381,43 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
         toNativeNode.execute(this);
     }
 
+    @ExportMessage
+    protected boolean hasNativeType() {
+        return true;
+    }
+
+    @ExportMessage(name = "getNativeType")
+    abstract static class GetTypeIDNode {
+        @Specialization(assumptions = "language.singleContextAssumption")
+        static Object doByteArray(@SuppressWarnings("unused") PThreadState receiver,
+                        @CachedLanguage @SuppressWarnings("unused") PythonLanguage language,
+                        @Exclusive @Cached("callGetThreadStateTypeIDUncached()") Object nativeType) {
+            // TODO(fa): use weak reference ?
+            return nativeType;
+        }
+
+        @Specialization(replaces = "doByteArray")
+        static Object doByteArrayMultiCtx(@SuppressWarnings("unused") PThreadState receiver,
+                        @Exclusive @Cached PCallCapiFunction callUnaryNode) {
+            return callUnaryNode.execute(FUN_GET_THREAD_STATE_TYPE_ID);
+        }
+
+        protected static Object callGetThreadStateTypeIDUncached() {
+            return PCallCapiFunction.getUncached().execute(FUN_GET_THREAD_STATE_TYPE_ID);
+        }
+
+// protected static Assumption singleContextAssumption() {
+// return PythonContext.getSingleNativeContextAssumption();
+// }
+    }
+
     abstract static class ToNativeNode extends Node {
         public abstract Object execute(PThreadState obj);
 
         @Specialization
         Object execute(PThreadState obj,
-                       @Cached.Exclusive @Cached ToPyObjectNode toPyObjectNode,
-                       @Cached.Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+                        @Cached.Exclusive @Cached ToPyObjectNode toPyObjectNode,
+                        @Cached.Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
             if (!obj.isNative()) {
                 obj.setNativePointer(toPyObjectNode.execute(obj));
@@ -400,7 +431,7 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
 
         @Specialization
         boolean access(PThreadState obj,
-                       @Cached.Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
+                        @Cached.Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
             return pIsPointerNode.execute(obj);
         }
     }
