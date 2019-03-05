@@ -620,7 +620,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String makeHexNumber(double value) {
-            
+
             if (Double.isNaN(value)) {
                 return "nan";
             } else if (Double.POSITIVE_INFINITY == value) {

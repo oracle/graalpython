@@ -59,15 +59,15 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
  *
  * When the hash table needs to be constructed, the field {@link #hashArray} becomes a new hash
  * array where an entry of 0 means no hit and otherwise denotes the entry number in the
- * {@link #entriesArr} array. The hash array is interpreted as an actual byte array if the indices fit
- * within 8 bit, or as an array of short values if the indices fit within 16 bit, or as an array of
- * integer values in other cases.
+ * {@link #entriesArr} array. The hash array is interpreted as an actual byte array if the indices
+ * fit within 8 bit, or as an array of short values if the indices fit within 16 bit, or as an array
+ * of integer values in other cases.
  *
  * Hash collisions are handled by chaining a linked list of {@link CollisionLink} objects that take
  * the place of the values in the {@link #entriesArr} array.
  *
- * Removing entries will put {@code null} into the {@link #entriesArr} array. If the occupation of the
- * map falls below a specific threshold, the map will be compressed via the
+ * Removing entries will put {@code null} into the {@link #entriesArr} array. If the occupation of
+ * the map falls below a specific threshold, the map will be compressed via the
  * {@link #maybeCompress(int, Equivalence)} method.
  */
 public class EconomicMapStorage extends HashingStorage implements Iterable<Object> {

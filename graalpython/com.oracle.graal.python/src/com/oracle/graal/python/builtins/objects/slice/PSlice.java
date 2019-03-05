@@ -95,7 +95,7 @@ public class PSlice extends PythonBuiltinObject {
         if (this == obj) {
             return true;
         }
-        PSlice other = (PSlice)obj;
+        PSlice other = (PSlice) obj;
         return (this.start == other.start && this.stop == other.stop && this.step == other.step);
     }
 
@@ -103,7 +103,7 @@ public class PSlice extends PythonBuiltinObject {
     public int hashCode() {
         return Objects.hash(this.start, this.stop, this.step);
     }
-    
+
     @ValueType
     public static final class SliceInfo {
         public final int start;

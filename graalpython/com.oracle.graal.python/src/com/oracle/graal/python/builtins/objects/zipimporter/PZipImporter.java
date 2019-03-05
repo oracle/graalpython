@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -200,7 +200,7 @@ public class PZipImporter extends PythonBuiltinObject {
      */
     @CompilerDirectives.TruffleBoundary
     private String getCode(String filenameAndSuffix) {
-        ZipFile zip = null; 
+        ZipFile zip = null;
         try {
             zip = new ZipFile(archive);
             ZipEntry entry = zip.getEntry(filenameAndSuffix);
@@ -223,10 +223,10 @@ public class PZipImporter extends PythonBuiltinObject {
                 try {
                     zip.close();
                 } catch (IOException e) {
-                    // just ignore it. 
+                    // just ignore it.
                 }
             }
-        } 
+        }
     }
 
     /**

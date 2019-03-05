@@ -81,11 +81,10 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         if (this == obj) {
             return true;
         }
-        PByteArray other = (PByteArray)obj;
+        PByteArray other = (PByteArray) obj;
         return Arrays.equals(store.getInternalArray(), other.store.getInternalArray());
     }
 
-    
     @Override
     public final int hashCode() {
         return Arrays.hashCode(store.getInternalArray());

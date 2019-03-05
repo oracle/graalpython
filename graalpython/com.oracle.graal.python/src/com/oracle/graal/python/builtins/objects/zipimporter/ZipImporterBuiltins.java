@@ -347,10 +347,10 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                     try {
                         zip.close();
                     } catch (IOException e) {
-                        // just ignore it. 
+                        // just ignore it.
                     }
                 }
-            }   
+            }
         }
     }
 
