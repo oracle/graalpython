@@ -520,20 +520,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    public Source newSource(PythonContext ctxt, URL url, String name) throws IOException {
-        try {
-            return cachedSources.computeIfAbsent(url, t -> {
-                try {
-                    return newSource(ctxt, Source.newBuilder(ID, url).name(name));
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        } catch (RuntimeException e) {
-            throw (IOException) e.getCause();
-        }
-    }
-
     private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder) throws IOException {
         boolean coreIsInitialized = ctxt.getCore().isInitialized();
         boolean internal = !coreIsInitialized && !PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources);

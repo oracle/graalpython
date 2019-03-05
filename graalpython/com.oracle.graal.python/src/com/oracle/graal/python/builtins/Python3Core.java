@@ -598,34 +598,19 @@ public final class Python3Core implements PythonCore {
 
     @TruffleBoundary
     private Source getSource(String basename, String prefix) {
-        URL url = null;
-        try {
-            url = new URL(prefix);
-        } catch (MalformedURLException e) {
-            // pass
-        }
         String suffix = FILE_SEPARATOR + basename + ".py";
         PythonContext ctxt = getContext();
-        if (url != null) {
-            // This path is hit when we load the core library e.g. from a Jar file
-            try {
-                return getLanguage().newSource(ctxt, new URL(url + suffix), basename);
-            } catch (IOException e) {
-                throw new RuntimeException("Could not read core library from " + url);
+        Env env = ctxt.getEnv();
+        TruffleFile file = env.getTruffleFile(prefix + suffix);
+        try {
+            if (file.exists()) {
+                return getLanguage().newSource(ctxt, file, basename);
             }
-        } else {
-            Env env = ctxt.getEnv();
-            TruffleFile file = env.getTruffleFile(prefix + suffix);
-            try {
-                if (file.exists()) {
-                    return getLanguage().newSource(ctxt, file, basename);
-                }
-            } catch (SecurityException | IOException t) {
-                // fall through;
-            }
-            PythonLanguage.getLogger().log(Level.SEVERE, "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.");
-            throw new RuntimeException();
+        } catch (SecurityException | IOException t) {
+            // fall through;
         }
+        PythonLanguage.getLogger().log(Level.SEVERE, "Startup failed, could not read core library from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.");
+        throw new RuntimeException();
     }
 
     private void loadFile(String s, String prefix) {
