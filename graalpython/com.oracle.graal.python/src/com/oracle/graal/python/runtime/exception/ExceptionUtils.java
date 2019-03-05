@@ -56,7 +56,7 @@ public final class ExceptionUtils {
 
     @TruffleBoundary
     public static void printPythonLikeStackTrace(PException e) {
-        List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStacktrace(e);
+        List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStackTrace(e);
         ArrayList<String> stack = new ArrayList<>();
         for (TruffleStackTraceElement frame : stackTrace) {
 
