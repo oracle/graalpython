@@ -493,7 +493,7 @@ class groupby(object):
             key = lambda x: x
         self._keyfunc = key
         self._iter = iter(iterable)
-        self._tgtkey = self._currkey = self._currvalue = xrange(0)
+        self._tgtkey = self._currkey = self._currvalue = range(0)
 
     def __iter__(self):
         return self
