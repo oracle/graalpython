@@ -107,7 +107,7 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
         }
     }
 
-    @ImportStatic(PThreadStateMR.class)
+    @ImportStatic(PThreadState.class)
     abstract static class ThreadStateReadNode extends PNodeWithContext {
         public abstract Object execute(Object key);
 
@@ -272,7 +272,7 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
         }
     }
 
-    @ImportStatic(PThreadStateMR.class)
+    @ImportStatic(PThreadState.class)
     abstract static class ThreadStateWriteNode extends PNodeWithContext {
         public abstract Object execute(Object key, Object value);
 
@@ -399,11 +399,11 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
         @Specialization(replaces = "doByteArray")
         static Object doByteArrayMultiCtx(@SuppressWarnings("unused") PThreadState receiver,
                         @Exclusive @Cached PCallCapiFunction callUnaryNode) {
-            return callUnaryNode.execute(FUN_GET_THREAD_STATE_TYPE_ID);
+            return callUnaryNode.call(FUN_GET_THREAD_STATE_TYPE_ID);
         }
 
         protected static Object callGetThreadStateTypeIDUncached() {
-            return PCallCapiFunction.getUncached().execute(FUN_GET_THREAD_STATE_TYPE_ID);
+            return PCallCapiFunction.getUncached().call(FUN_GET_THREAD_STATE_TYPE_ID);
         }
 
 // protected static Assumption singleContextAssumption() {

@@ -1,7 +1,12 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_PTR_ARRAY_TYPE_ID;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_NATIVE_HANDLE_FOR_ARRAY;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -23,9 +28,11 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -40,11 +47,13 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Wraps a sequence object (like a list) such that it behaves like a bare C array.
  */
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
 public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWrapper {
 
     /** Number of bytes that constitute a single element. */
@@ -325,7 +334,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
         Object doGeneric(PySequenceArrayWrapper object,
                         @Exclusive @Cached PCallCapiFunction callNativeHandleForArrayNode) {
             // TODO correct element size
-            return callNativeHandleForArrayNode.execute(FUN_NATIVE_HANDLE_FOR_ARRAY, object, 8L);
+            return callNativeHandleForArrayNode.call(FUN_NATIVE_HANDLE_FOR_ARRAY, object, 8L);
         }
 
         protected boolean isPSequence(Object obj) {
@@ -393,6 +402,64 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
             return (long) nativePointer;
         }
         return interopLibrary.asPointer(nativePointer);
+    }
+
+    @ExportMessage
+    final boolean hasNativeType() {
+        return true;
+    }
+
+    @ExportMessage
+    Object getNativeType(
+                    @Exclusive @Cached GetTypeIDNode getTypeIDNode) {
+        return getTypeIDNode.execute(getDelegate());
+    }
+
+    @GenerateUncached
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class GetTypeIDNode extends Node {
+
+        public abstract Object execute(Object delegate);
+
+        protected static Object callGetByteArrayTypeIDUncached() {
+            return PCallCapiFunction.getUncached().call(FUN_GET_BYTE_ARRAY_TYPE_ID, 0);
+        }
+
+        protected static Object callGetPtrArrayTypeIDUncached() {
+            return PCallCapiFunction.getUncached().call(FUN_GET_PTR_ARRAY_TYPE_ID, 0);
+        }
+
+        @Specialization(assumptions = "lang.singleContextAssumption", guards = "hasByteArrayContent(object)")
+        Object doByteArray(@SuppressWarnings("unused") PSequence object,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang,
+                        @Exclusive @Cached("callGetByteArrayTypeIDUncached()") Object nativeType) {
+            // TODO(fa): use weak reference ?
+            return nativeType;
+        }
+
+        @Specialization(assumptions = "lang.singleContextAssumption", guards = "!hasByteArrayContent(object)")
+        Object doPtrArray(@SuppressWarnings("unused") Object object,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang,
+                        @Exclusive @Cached("callGetPtrArrayTypeIDUncached()") Object nativeType) {
+            // TODO(fa): use weak reference ?
+            return nativeType;
+        }
+
+        @Specialization(guards = "hasByteArrayContent(object)", replaces = "doByteArray")
+        Object doByteArrayMultiCtx(@SuppressWarnings("unused") Object object,
+                        @Shared("callUnaryNode") @Cached PCallCapiFunction callUnaryNode) {
+            return callUnaryNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, 0);
+        }
+
+        @Specialization(guards = "!hasByteArrayContent(object)", replaces = "doPtrArray")
+        Object doPtrArrayMultiCtx(@SuppressWarnings("unused") PSequence object,
+                        @Shared("callUnaryNode") @Cached PCallCapiFunction callUnaryNode) {
+            return callUnaryNode.call(FUN_GET_PTR_ARRAY_TYPE_ID, 0);
+        }
+
+        protected static boolean hasByteArrayContent(Object object) {
+            return object instanceof PBytes || object instanceof PByteArray;
+        }
     }
 
 }

@@ -133,6 +133,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -1137,37 +1138,38 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         NativeSequenceStorage doByte(byte[] arr,
-                        @Cached PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE, wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Byte);
+                        @Exclusive @Cached PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE, wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Byte);
         }
 
         @Specialization
         NativeSequenceStorage doInt(int[] arr,
-                        @Cached PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Int);
+                        @Exclusive @Cached PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Int);
         }
 
         @Specialization
         NativeSequenceStorage doLong(long[] arr,
-                        @Cached PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE, wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Long);
+                        @Exclusive @Cached PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE, wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Long);
         }
 
         @Specialization
         NativeSequenceStorage doDouble(double[] arr,
-                        @Cached PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE, wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Double);
+                        @Exclusive @Cached PCallCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE, wrap(arr), arr.length), arr.length, arr.length, ListStorageType.Double);
         }
 
         @Specialization
         NativeSequenceStorage doObject(Object[] arr,
-                        @Cached PCallCapiFunction callNode,
-                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
+                        @Exclusive @Cached PCallCapiFunction callNode,
+                        @Exclusive @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
             Object[] wrappedValues = new Object[arr.length];
             for (int i = 0; i < wrappedValues.length; i++) {
                 wrappedValues[i] = toSulongNode.execute(arr[i]);
             }
-            return new NativeSequenceStorage(callNode.execute(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE, wrap(wrappedValues), wrappedValues.length), wrappedValues.length, wrappedValues.length, ListStorageType.Generic);
+            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE, wrap(wrappedValues), wrappedValues.length), wrappedValues.length, wrappedValues.length,
+                            ListStorageType.Generic);
         }
 
         private Object wrap(Object arr) {

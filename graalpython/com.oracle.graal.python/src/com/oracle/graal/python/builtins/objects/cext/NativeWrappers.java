@@ -1123,13 +1123,13 @@ public abstract class NativeWrappers {
             @Specialization(guards = "isManagedPythonClass(wrapper)")
             Object doClass(PythonClassNativeWrapper wrapper,
                             @Exclusive @Cached PCallCapiFunction callNativeUnary) {
-                return callNativeUnary.execute(FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE, wrapper);
+                return callNativeUnary.call(FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE, wrapper);
             }
 
             @Specialization(guards = "!isManagedPythonClass(wrapper)")
             Object doObject(PythonNativeWrapper wrapper,
                             @Exclusive @Cached PCallCapiFunction callNativeUnary) {
-                return callNativeUnary.execute(FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT, wrapper);
+                return callNativeUnary.call(FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT, wrapper);
             }
 
             protected static boolean isManagedPythonClass(PythonNativeWrapper wrapper) {

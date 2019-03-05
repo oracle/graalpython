@@ -637,7 +637,7 @@ public abstract class CExtNodes {
                         @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
             // Unfortunately, a long could be a native pointer and therefore a handle. So, we must
             // try resolving it. At least we know that it's not a native type.
-            return toJavaNode.execute(callNativeNode.execute(FUN_NATIVE_LONG_TO_JAVA, l));
+            return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_LONG_TO_JAVA, l));
         }
 
         @Specialization
@@ -649,7 +649,7 @@ public abstract class CExtNodes {
         Object doForeign(Object value,
                         @Exclusive @Cached PCallCapiFunction callNativeNode,
                         @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
-            return toJavaNode.execute(callNativeNode.execute(FUN_NATIVE_TO_JAVA, value));
+            return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_TO_JAVA, value));
         }
 
         public static ToJavaNode create() {
@@ -672,16 +672,17 @@ public abstract class CExtNodes {
 
         @Specialization
         Object doPString(PString str,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
-            return doString(str.getValue(), interopLibrary);
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Shared("importStringToCStringNode") @Cached ImportCAPISymbolNode importStringToCStringNode) {
+            return doString(str.getValue(), interopLibrary, importStringToCStringNode);
         }
 
         @Specialization
         Object doString(String str,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode) {
+                        @Shared("importStringToCStringNode") @Cached ImportCAPISymbolNode importStringToCStringNode) {
             try {
-                return interopLibrary.execute(importCAPISymbolNode.execute(FUN_PY_TRUFFLE_STRING_TO_CSTR), str, str.length());
+                return interopLibrary.execute(importStringToCStringNode.execute(FUN_PY_TRUFFLE_STRING_TO_CSTR), str, str.length());
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 throw e.raise();
             }
@@ -745,7 +746,7 @@ public abstract class CExtNodes {
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached ToJavaNode toJavaNode) {
             // do not convert wrap 'object.object' since that is really the native pointer object
-            return (PythonClass) toJavaNode.execute(callGetObTypeNode.execute(FUN_GET_OB_TYPE, object.object));
+            return (PythonClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.object));
         }
 
         public static GetNativeClassNode create() {
@@ -1242,10 +1243,14 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class PCallCapiFunction extends CExtBaseNode {
 
-        public abstract Object execute(String name, Object... args);
+        public Object call(String name, Object... args) {
+            return execute(name, args);
+        }
+
+        public abstract Object execute(String name, Object[] args);
 
         @Specialization
-        public Object call(String name, Object[] args,
+        Object doIt(String name, Object[] args,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode,
                         @Exclusive @Cached BranchProfile profile) {

@@ -49,7 +49,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -76,11 +75,6 @@ public abstract class CArrayWrappers {
 
         static boolean isInstance(TruffleObject o) {
             return o instanceof CArrayWrapper;
-        }
-
-        @Override
-        public ForeignAccess getForeignAccess() {
-            return CArrayWrapperMRForeign.ACCESS;
         }
 
         @ExportMessage
@@ -182,7 +176,7 @@ public abstract class CArrayWrappers {
         @ExportMessage
         Object getNativeType(
                         @Exclusive @Cached PCallCapiFunction callByteArrayTypeIdNode) {
-            return callByteArrayTypeIdNode.execute(FUN_GET_BYTE_ARRAY_TYPE_ID, getString().length());
+            return callByteArrayTypeIdNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, getString().length());
         }
     }
 
