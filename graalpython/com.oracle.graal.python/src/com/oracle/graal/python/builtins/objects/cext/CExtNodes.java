@@ -55,6 +55,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -73,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerN
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MaterializeDelegateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCompareNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeFactory.ToJavaCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
@@ -136,6 +138,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -591,7 +594,6 @@ public abstract class CExtNodes {
      * Does the same conversion as the native function {@code to_java}. The node tries to avoid
      * calling the native function for resolving native handles.
      */
-    @GenerateUncached
     public abstract static class ToJavaNode extends CExtBaseNode {
         public abstract Object execute(Object value);
 
@@ -605,52 +607,136 @@ public abstract class CExtNodes {
 
         public abstract double executeDouble(double value);
 
-        @Specialization
-        PythonAbstractObject doPythonObject(PythonAbstractObject value) {
-            return value;
+        abstract static class ToJavaCachedNode extends ToJavaNode {
+
+            @Specialization
+            static PythonAbstractObject doPythonObject(PythonAbstractObject value) {
+                return value;
+            }
+
+            @Specialization
+            static Object doWrapper(PythonNativeWrapper value,
+                            @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
+                return toJavaNode.execute(value);
+            }
+
+            @Specialization
+            static String doString(String object) {
+                return object;
+            }
+
+            @Specialization
+            static boolean doBoolean(boolean b) {
+                return b;
+            }
+
+            @Specialization
+            static int doInt(int i) {
+                // Note: Sulong guarantees that an integer won't be a pointer
+                return i;
+            }
+
+            @Specialization
+            static Object doLong(long l,
+                            @Exclusive @Cached PCallCapiFunction callNativeNode,
+                            @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
+                // Unfortunately, a long could be a native pointer and therefore a handle. So, we
+                // must try resolving it. At least we know that it's not a native type.
+                return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_LONG_TO_JAVA, l));
+            }
+
+            @Specialization
+            static byte doByte(byte b) {
+                return b;
+            }
+
+            @Specialization
+            static Object doForeign(Object value,
+                            @Exclusive @Cached PCallCapiFunction callNativeNode,
+                            @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
+                return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_TO_JAVA, value));
+            }
         }
 
-        @Specialization
-        Object doWrapper(PythonNativeWrapper value,
-                        @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
-            return toJavaNode.execute(value);
+        private static final class ToJavaUncachedNode extends ToJavaNode {
+            private static final ToJavaUncachedNode INSTANCE = new ToJavaUncachedNode();
+
+            @Override
+            public Object execute(Object arg0Value) {
+                if (arg0Value instanceof PythonAbstractObject) {
+                    PythonAbstractObject arg0Value_ = (PythonAbstractObject) arg0Value;
+                    return ToJavaCachedNode.doPythonObject(arg0Value_);
+                }
+                if (arg0Value instanceof PythonNativeWrapper) {
+                    PythonNativeWrapper arg0Value_ = (PythonNativeWrapper) arg0Value;
+                    return ToJavaCachedNode.doWrapper(arg0Value_, (CExtNodesFactory.AsPythonObjectNodeGen.getUncached()));
+                }
+                if (arg0Value instanceof String) {
+                    String arg0Value_ = (String) arg0Value;
+                    return ToJavaCachedNode.doString(arg0Value_);
+                }
+                if (arg0Value instanceof Boolean) {
+                    boolean arg0Value_ = (boolean) arg0Value;
+                    return ToJavaCachedNode.doBoolean(arg0Value_);
+                }
+                if (arg0Value instanceof Integer) {
+                    int arg0Value_ = (int) arg0Value;
+                    return ToJavaCachedNode.doInt(arg0Value_);
+                }
+                if (arg0Value instanceof Long) {
+                    long arg0Value_ = (long) arg0Value;
+                    return ToJavaCachedNode.doLong(arg0Value_, (PCallCapiFunction.getUncached()), (CExtNodesFactory.AsPythonObjectNodeGen.getUncached()));
+                }
+                if (arg0Value instanceof Byte) {
+                    byte arg0Value_ = (byte) arg0Value;
+                    return ToJavaCachedNode.doByte(arg0Value_);
+                }
+                return ToJavaCachedNode.doForeign(arg0Value, (PCallCapiFunction.getUncached()), (CExtNodesFactory.AsPythonObjectNodeGen.getUncached()));
+            }
+
+            @Override
+            public boolean executeBool(boolean arg0Value) {
+                return ToJavaCachedNode.doBoolean(arg0Value);
+            }
+
+            @Override
+            public byte executeByte(byte arg0Value) {
+                return ToJavaCachedNode.doByte(arg0Value);
+            }
+
+            @Override
+            public double executeDouble(double arg0Value) {
+                return (double) ToJavaCachedNode.doForeign(arg0Value, (PCallCapiFunction.getUncached()), (CExtNodesFactory.AsPythonObjectNodeGen.getUncached()));
+            }
+
+            @Override
+            public int executeInt(int arg0Value) {
+                return ToJavaCachedNode.doInt(arg0Value);
+            }
+
+            @Override
+            public long executeLong(long arg0Value) {
+                return (long) ToJavaCachedNode.doLong(arg0Value, (PCallCapiFunction.getUncached()), (CExtNodesFactory.AsPythonObjectNodeGen.getUncached()));
+            }
+
+            @Override
+            public NodeCost getCost() {
+                return NodeCost.MEGAMORPHIC;
+            }
+
+            @Override
+            protected boolean isAdoptable() {
+                return false;
+            }
+
         }
 
-        @Specialization
-        String doString(String object) {
-            return object;
+        public static ToJavaNode create() {
+            return ToJavaCachedNodeGen.create();
         }
 
-        @Specialization
-        boolean doBoolean(boolean b) {
-            return b;
-        }
-
-        @Specialization
-        int doInt(int i) {
-            // Note: Sulong guarantees that an integer won't be a pointer
-            return i;
-        }
-
-        @Specialization
-        Object doLong(long l,
-                        @Exclusive @Cached PCallCapiFunction callNativeNode,
-                        @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
-            // Unfortunately, a long could be a native pointer and therefore a handle. So, we must
-            // try resolving it. At least we know that it's not a native type.
-            return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_LONG_TO_JAVA, l));
-        }
-
-        @Specialization
-        byte doLong(byte b) {
-            return b;
-        }
-
-        @Specialization
-        Object doForeign(Object value,
-                        @Exclusive @Cached PCallCapiFunction callNativeNode,
-                        @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
-            return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_TO_JAVA, value));
+        public static ToJavaNode getUncached() {
+            return ToJavaUncachedNode.INSTANCE;
         }
     }
 
