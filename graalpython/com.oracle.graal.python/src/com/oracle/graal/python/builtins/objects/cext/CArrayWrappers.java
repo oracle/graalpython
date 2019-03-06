@@ -168,13 +168,14 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
+        @Override
         @SuppressWarnings("static-method")
-        final boolean hasNativeType() {
+        protected boolean hasNativeType() {
             return true;
         }
 
         @ExportMessage
-        Object getNativeType(
+        protected Object getNativeType(
                         @Exclusive @Cached PCallCapiFunction callByteArrayTypeIdNode) {
             return callByteArrayTypeIdNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, getString().length());
         }

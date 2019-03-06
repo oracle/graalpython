@@ -382,6 +382,7 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
     }
 
     @ExportMessage
+    @Override
     protected boolean hasNativeType() {
         return true;
     }

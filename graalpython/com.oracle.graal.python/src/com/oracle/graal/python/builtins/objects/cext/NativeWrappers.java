@@ -121,7 +121,6 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -132,11 +131,13 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 public abstract class NativeWrappers {
     private static final String GP_OBJECT = "gp_object";
 
     @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
     public abstract static class PythonNativeWrapper implements TruffleObject {
 
         private Object delegate;
@@ -1155,6 +1156,17 @@ public abstract class NativeWrappers {
         @ExportMessage
         protected void toNative(@Cached.Exclusive @Cached(allowUncached = true) ToNativeNode toNativeNode) {
             toNativeNode.execute(this);
+        }
+
+        @ExportMessage
+        protected boolean hasNativeType() {
+            return true;
+        }
+
+        @ExportMessage
+        protected Object getNativeType(
+                        @Cached PGetDynamicTypeNode getDynamicTypeNode) {
+            return getDynamicTypeNode.execute(this);
         }
     }
 

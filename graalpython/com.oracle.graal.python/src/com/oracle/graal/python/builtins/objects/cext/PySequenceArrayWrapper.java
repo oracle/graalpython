@@ -399,8 +399,9 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
     }
 
     @ExportMessage
+    @Override
     @SuppressWarnings("static-method")
-    final boolean hasNativeType() {
+    protected boolean hasNativeType() {
         return true;
     }
 
