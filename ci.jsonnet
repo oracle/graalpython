@@ -133,6 +133,7 @@
     },
     environment +: {
       CI: "true",
+      GRAALVM_CHECK_EXPERIMENTAL_OPTIONS: "true",
       PATH: "$JAVA_HOME/bin:$PATH",
     },
   },
