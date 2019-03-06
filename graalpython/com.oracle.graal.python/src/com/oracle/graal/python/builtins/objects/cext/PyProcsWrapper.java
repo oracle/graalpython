@@ -56,6 +56,7 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 
 @ExportLibrary(InteropLibrary.class)
 public abstract class PyProcsWrapper extends PythonNativeWrapper {
@@ -70,9 +71,17 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         return true;
     }
 
-    @ExportMessage(name = "execute")
+    @ExportMessage
+    protected Object execute(Object[] arguments,
+                    @Exclusive @Cached ExecuteNode executeNode) throws ArityException {
+        return executeNode.execute(this, arguments);
+
+    }
+
     @GenerateUncached
-    abstract static class ExecuteNode {
+    abstract static class ExecuteNode extends Node {
+
+        public abstract Object execute(PyProcsWrapper receiver, Object[] arguments) throws ArityException;
 
         @Specialization
         static Object doGetAttr(GetAttrWrapper object, Object[] arguments,
