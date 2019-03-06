@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.CheckFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.ExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.TrufflePInt_AsPrimitiveFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -176,6 +177,8 @@ import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -184,11 +187,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -328,33 +329,37 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class CreateFunctionNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(cwrapper)")
         @TruffleBoundary
-        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, PythonClass type) {
+        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, PythonClass type,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, null, callable));
             return factory().createBuiltinFunction(name, type, createArity(name), callTarget);
         }
 
         @Specialization(guards = {"isNoValue(cwrapper)", "isNoValue(type)"})
         @TruffleBoundary
-        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, @SuppressWarnings("unused") PNone type) {
+        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, @SuppressWarnings("unused") PNone type,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, null, callable));
             return factory().createBuiltinFunction(name, null, createArity(name), callTarget);
         }
 
         @Specialization(guards = {"!isNoValue(cwrapper)", "isNoValue(type)"})
         @TruffleBoundary
-        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, TruffleObject cwrapper, @SuppressWarnings("unused") PNone type) {
+        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, TruffleObject cwrapper, @SuppressWarnings("unused") PNone type,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, cwrapper, callable));
             return factory().createBuiltinFunction(name, null, createArity(name), callTarget);
         }
 
         @Specialization(guards = "!isNoValue(cwrapper)")
         @TruffleBoundary
-        PBuiltinFunction run(String name, TruffleObject callable, TruffleObject cwrapper, PythonClass type) {
+        PBuiltinFunction run(String name, TruffleObject callable, TruffleObject cwrapper, PythonClass type,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, cwrapper, callable));
             return factory().createBuiltinFunction(name, type, createArity(name), callTarget);
         }
 
@@ -751,8 +756,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isForeignObject(result)", "!isNativeNull(result)"})
         Object doForeign(String name, TruffleObject result,
-                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
-            checkFunctionResult(name, isNullProfile.profile(isNull(result)));
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile isNullProfile,
+                        @Exclusive @CachedLibrary(limit = "1") InteropLibrary lib) {
+            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)));
             return result;
         }
 
@@ -782,14 +788,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             }
         }
 
-        private boolean isNull(TruffleObject result) {
-            if (isNullNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isNullNode = insert(Message.IS_NULL.createNode());
-            }
-            return ForeignAccess.sendIsNull(isNullNode, result);
-        }
-
         protected static boolean isNativeNull(TruffleObject object) {
             return object instanceof PythonNativeNull;
         }
@@ -803,14 +801,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    static class ExternalFunctionNode extends RootNode {
+    static abstract class ExternalFunctionNode extends RootNode {
         private final TruffleObject cwrapper;
         private final TruffleObject callable;
         private final String name;
-        @CompilationFinal ContextReference<PythonContext> ctxt;
-        @Child private Node executeNode;
-        @Child CExtNodes.AllToSulongNode toSulongNode = CExtNodes.AllToSulongNode.create();
-        @Child CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodes.AsPythonObjectNode.create();
+        @CompilationFinal private ContextReference<PythonContext> ctxt;
+        @Child private CExtNodes.AllToSulongNode toSulongNode = CExtNodes.AllToSulongNode.create();
+        @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodes.AsPythonObjectNode.create();
         @Child private CheckFunctionResultNode checkResultNode = CheckFunctionResultNode.create();
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
 
@@ -819,15 +816,16 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             this.name = name;
             this.cwrapper = cwrapper;
             this.callable = callable;
-            this.executeNode = Message.EXECUTE.createNode();
         }
 
         public TruffleObject getCallable() {
             return callable;
         }
 
-        @Override
-        public Object execute(VirtualFrame frame) {
+        @Specialization
+        Object doIt(VirtualFrame frame,
+                        @Exclusive @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Exclusive @CachedContext(PythonLanguage.class) PythonContext context) {
             Object[] frameArgs = frame.getArguments();
             try {
                 TruffleObject fun;
@@ -844,35 +842,30 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                     toSulongNode.executeInto(frameArgs, PArguments.USER_ARGUMENTS_OFFSET, arguments, 0);
                 }
                 // save current exception state
-                PException exceptionState = getContext().getCurrentException();
+                PException exceptionState = context.getCurrentException();
                 // clear current exception such that native code has clean environment
-                getContext().setCurrentException(null);
+                context.setCurrentException(null);
 
-                Object result = fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, ForeignAccess.sendExecute(executeNode, fun, arguments))));
+                Object result;
+                result = fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(fun, arguments))));
 
                 // restore previous exception state
-                getContext().setCurrentException(exceptionState);
+                context.setCurrentException(exceptionState);
                 return result;
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw e.raise();
+            } catch (UnsupportedTypeException | UnsupportedMessageException e) {
+                throw context.getCore().raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %s", name, getMessage(e));
+            } catch (ArityException e) {
+                throw context.getCore().raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
             }
+        }
+
+        @TruffleBoundary
+        private static final String getMessage(Throwable e) {
+            return e.getMessage();
         }
 
         private Object fromNative(Object result) {
             return fromForeign.executeConvert(result);
-        }
-
-        public final PythonCore getCore() {
-            return getContext().getCore();
-        }
-
-        public final PythonContext getContext() {
-            if (ctxt == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                ctxt = PythonLanguage.getContextRef();
-            }
-            return ctxt.get();
         }
 
         @Override
@@ -888,6 +881,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Override
         public boolean isCloningAllowed() {
             return true;
+        }
+
+        public static ExternalFunctionNode create(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable) {
+            return ExternalFunctionNodeGen.create(lang, name, cwrapper, callable);
         }
     }
 
@@ -1746,9 +1743,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public abstract static class MethKeywordsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
+        Object call(PBuiltinFunction function,
+                        @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MethKeywordsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethKeywordsRoot(lang, factory(), function.getCallTarget())));
         }
     }
 
@@ -1757,9 +1755,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public abstract static class MethVarargsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
+        Object call(PBuiltinFunction function,
+                        @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MethVarargsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethVarargsRoot(lang, factory(), function.getCallTarget())));
         }
     }
 
@@ -1768,9 +1767,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public abstract static class MethNoargsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
+        Object call(PBuiltinFunction function,
+                        @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MethNoargsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethNoargsRoot(lang, factory(), function.getCallTarget())));
         }
     }
 
@@ -1779,9 +1779,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public abstract static class MethONode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
+        Object call(PBuiltinFunction function,
+                        @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MethORoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethORoot(lang, factory(), function.getCallTarget())));
         }
     }
 
@@ -1790,9 +1791,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public abstract static class MethFastcallNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
+        Object call(PBuiltinFunction function,
+                        @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MethFastcallRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethFastcallRoot(lang, factory(), function.getCallTarget())));
         }
     }
 
@@ -2009,7 +2011,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object make(PFunction func, Object errorResult) {
+        Object make(PFunction func, Object errorResult,
+                        @Exclusive @CachedLanguage PythonLanguage lang) {
             CompilerDirectives.transferToInterpreter();
             func.getFunctionRootNode().accept(new NodeVisitor() {
                 public boolean visit(Node node) {
@@ -2025,17 +2028,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             if (arity.takesFixedNumOfPositionalArgs()) {
                 switch (arity.getMinNumOfArgs()) {
                     case 1:
-                        rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), unaryBuiltin,
+                        rootNode = new BuiltinFunctionRootNode(lang, unaryBuiltin,
                                         new MayRaiseNodeFactory<PythonUnaryBuiltinNode>(MayRaiseUnaryNodeGen.create(func, errorResult)),
                                         true);
                         break;
                     case 2:
-                        rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), binaryBuiltin,
+                        rootNode = new BuiltinFunctionRootNode(lang, binaryBuiltin,
                                         new MayRaiseNodeFactory<PythonBinaryBuiltinNode>(MayRaiseBinaryNodeGen.create(func, errorResult)),
                                         true);
                         break;
                     case 3:
-                        rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), ternaryBuiltin,
+                        rootNode = new BuiltinFunctionRootNode(lang, ternaryBuiltin,
                                         new MayRaiseNodeFactory<PythonTernaryBuiltinNode>(MayRaiseTernaryNodeGen.create(func, errorResult)),
                                         true);
                         break;
@@ -2044,7 +2047,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 }
             }
             if (rootNode == null) {
-                rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), varargsBuiltin,
+                rootNode = new BuiltinFunctionRootNode(lang, varargsBuiltin,
                                 new MayRaiseNodeFactory<PythonBuiltinNode>(new MayRaiseNode(func, errorResult)),
                                 true);
             }
@@ -2372,7 +2375,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doGeneric")
         Object doGenericErr(Object module, Object object,
-                    @Exclusive @Cached GetNativeNullNode getNativeNullNode) {
+                        @Exclusive @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return doGeneric(module, object);
             } catch (PException e) {
