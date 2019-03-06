@@ -149,9 +149,10 @@ public final class PythonObjectFactory extends Node {
     }
 
     public static PythonObjectFactory getUncached() {
+        // TODO TRUFFLE LIBRARY MIGRATION: this should use a singleton
         return new PythonObjectFactory();
     }
-    
+
     @SuppressWarnings("static-method")
     public final <T> T trace(T allocatedObject) {
         if (reportAllocations()) {
