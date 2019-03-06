@@ -135,6 +135,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ForeignAccess;
@@ -2708,6 +2709,7 @@ public abstract class SequenceStorageNodes {
 
     }
 
+    @GenerateUncached
     public abstract static class LenNode extends SequenceStorageBaseNode {
 
         public abstract int execute(SequenceStorage s);
@@ -2718,8 +2720,17 @@ public abstract class SequenceStorageNodes {
             return cachedClass.cast(s).length();
         }
 
+        @Specialization(replaces = "doSpecial")
+        int doGeneric(SequenceStorage s) {
+            return s.length();
+        }
+
         public static LenNode create() {
             return LenNodeGen.create();
+        }
+
+        public static LenNode getUncached() {
+            return LenNodeGen.getUncached();
         }
     }
 

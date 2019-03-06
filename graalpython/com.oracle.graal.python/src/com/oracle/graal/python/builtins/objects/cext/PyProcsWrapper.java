@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -85,9 +85,9 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
         @Specialization
         static Object doGetAttr(GetAttrWrapper object, Object[] arguments,
-                        @Shared("toSulongNode") @Cached(allowUncached = true) ToSulongNode toSulongNode,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
                         @Shared("executeNode") @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode,
-                        @Shared("toJavaNode") @Cached(allowUncached = true) ToJavaNode toJavaNode,
+                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached IsBuiltinClassProfile errProfile) throws ArityException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
@@ -109,7 +109,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @Specialization
         static Object doSetAttr(SetAttrWrapper object, Object[] arguments,
                         @Shared("executeNode") @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode,
-                        @Shared("toJavaNode") @Cached(allowUncached = true) ToJavaNode toJavaNode) throws ArityException {
+                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode) throws ArityException {
             if (arguments.length != 3) {
                 throw ArityException.create(3, arguments.length);
             }
@@ -127,9 +127,9 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
         @Specialization
         static Object doSsize(SsizeargfuncWrapper object, Object[] arguments,
-                        @Shared("toSulongNode") @Cached(allowUncached = true) ToSulongNode toSulongNode,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
                         @Shared("executeNode") @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode,
-                        @Shared("toJavaNode") @Cached(allowUncached = true) ToJavaNode toJavaNode) throws ArityException {
+                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode) throws ArityException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }

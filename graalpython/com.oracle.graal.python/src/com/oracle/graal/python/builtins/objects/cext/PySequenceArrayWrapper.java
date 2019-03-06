@@ -28,16 +28,15 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -87,7 +86,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
     @ExportMessage
     final Object readArrayElement(long index,
-                    @Exclusive @Cached(allowUncached = true) ReadArrayItemNode readArrayItemNode) {
+                    @Exclusive @Cached ReadArrayItemNode readArrayItemNode) {
         return readArrayItemNode.execute(this.getDelegate(), index);
     }
 
@@ -100,6 +99,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
     @ImportStatic(SpecialMethodNames.class)
     @TypeSystemReference(PythonTypes.class)
+    @GenerateUncached
     abstract static class ReadArrayItemNode extends Node {
 
         public abstract Object execute(Object arrayObject, Object idx);
@@ -113,7 +113,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
         @Specialization
         Object doTuple(PList list, long idx,
-                        @Cached("createListGetItem()") ListBuiltins.GetItemNode getItemNode,
+                        @Cached(value = "createListGetItem()", allowUncached = true) ListBuiltins.GetItemNode getItemNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(getItemNode.execute(list, idx));
         }
@@ -126,9 +126,8 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
         @Specialization
         long doBytesI64(PIBytesLike bytesLike, long byteIdx,
                         @Cached("createClassProfile()") ValueProfile profile,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
-                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                        @Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached(value = "create()", allowUncached = true) SequenceStorageNodes.GetItemNode getItemNode) {
             PIBytesLike profiled = profile.profile(bytesLike);
             int len = lenNode.execute(profiled.getSequenceStorage());
             // simulate sentinel value
@@ -158,7 +157,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
         @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
         Object doGeneric(Object object, long idx,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                        @Cached(value = "create(__GETITEM__)", allowUncached = true) LookupAndCallBinaryNode getItemNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(getItemNode.executeObject(object, idx));
         }
@@ -171,16 +170,12 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
             return TupleBuiltinsFactory.GetItemNodeFactory.create();
         }
 
-        protected boolean isTuple(Object object) {
+        protected static boolean isTuple(Object object) {
             return object instanceof PTuple;
         }
 
-        protected boolean isList(Object object) {
+        protected static boolean isList(Object object) {
             return object instanceof PList;
-        }
-
-        public static ReadArrayItemNode create() {
-            return PySequenceArrayWrapperFactory.ReadArrayItemNodeGen.create();
         }
     }
 
@@ -192,7 +187,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public void removeArrayElement(@SuppressWarnings("unused") long index) throws UnsupportedMessageException, InvalidArrayIndexException {
+    public void removeArrayElement(@SuppressWarnings("unused") long index) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
@@ -287,8 +282,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
         @Fallback
         Object doGeneric(Object sequence, Object idx, Object value) {
             CExtNodes.ToJavaNode toJavaNode = CExtNodes.ToJavaNode.getUncached();
-            LookupAndCallTernaryNode setItemNode = LookupAndCallTernaryNode.getUncached();
-            setItemNode.execute(sequence, idx, toJavaNode.execute(value));
+            LookupAndCallTernaryNode.getUncached().execute(sequence, idx, toJavaNode.execute(value));
             return value;
         }
 
@@ -405,6 +399,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     final boolean hasNativeType() {
         return true;
     }
@@ -431,7 +426,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
         @Specialization(assumptions = "lang.singleContextAssumption", guards = "hasByteArrayContent(object)")
         Object doByteArray(@SuppressWarnings("unused") PSequence object,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang,
+                        @Shared("lang") @CachedLanguage @SuppressWarnings("unused") PythonLanguage lang,
                         @Exclusive @Cached("callGetByteArrayTypeIDUncached()") Object nativeType) {
             // TODO(fa): use weak reference ?
             return nativeType;
@@ -439,7 +434,7 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
 
         @Specialization(assumptions = "lang.singleContextAssumption", guards = "!hasByteArrayContent(object)")
         Object doPtrArray(@SuppressWarnings("unused") Object object,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang,
+                        @Shared("lang") @CachedLanguage @SuppressWarnings("unused") PythonLanguage lang,
                         @Exclusive @Cached("callGetPtrArrayTypeIDUncached()") Object nativeType) {
             // TODO(fa): use weak reference ?
             return nativeType;

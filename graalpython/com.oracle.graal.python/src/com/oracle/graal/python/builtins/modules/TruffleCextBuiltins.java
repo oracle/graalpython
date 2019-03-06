@@ -202,6 +202,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "python_cext")
+@GenerateNodeFactory
 public class TruffleCextBuiltins extends PythonBuiltins {
 
     private static final String ERROR_HANDLER = "error_handler";
@@ -2212,7 +2213,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return isNativeSubtype(a, b);
         }
 
-        @Fallback
+        @Specialization
         int doGeneric(Object a, Object b) {
             if (toJavaNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
