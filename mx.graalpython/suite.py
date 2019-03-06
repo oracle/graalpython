@@ -113,6 +113,18 @@ suite = {
             "source": []
         },
 
+        "python.include": {
+            "type": "python",
+            "path": 'graalpython/include',
+            "source": []
+        },
+
+        "python.site-packages": {
+            "type": "python",
+            "path": 'graalpython/site-packages',
+            "source": []
+        },
+
         "perf.benchmarks": {
             "type": "python",
             "path": 'graalpython/benchmarks',
