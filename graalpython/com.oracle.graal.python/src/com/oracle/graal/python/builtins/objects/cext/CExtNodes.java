@@ -90,6 +90,8 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNodeGen;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
@@ -169,25 +171,32 @@ public abstract class CExtNodes {
         @Specialization(guards = "cachedName.equals(name)", limit = "1")
         Object doReceiverCached(@SuppressWarnings("unused") String name,
                         @Exclusive @Cached("name") @SuppressWarnings("unused") String cachedName,
-                        @Shared("interopLib") @CachedLibrary(limit = "1") @SuppressWarnings("unused") InteropLibrary interopLib,
                         @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
-                        @Exclusive @Cached("importCAPISymbol(interopLib, context, name)") Object sym) {
+                        @Exclusive @Cached("importCAPISymbolUncached(context, name)") Object sym) {
             return sym;
         }
 
         @Specialization(replaces = "doReceiverCached")
         Object doGeneric(String name,
-                        @Shared("interopLib") @CachedLibrary(limit = "1") @SuppressWarnings("unused") InteropLibrary interopLib,
-                        @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context) {
-            return importCAPISymbol(interopLib, context, name);
+                        @CachedLibrary(limit = "1") @SuppressWarnings("unused") InteropLibrary interopLib,
+                        @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
+                        @Cached PRaiseNode raiseNode) {
+            return importCAPISymbol(raiseNode, interopLib, context.getCapiLibrary(), name);
         }
 
-        protected static Object importCAPISymbol(InteropLibrary library, PythonContext context, String name) {
+        protected static Object importCAPISymbolUncached(PythonContext context, String name) {
+            Object capiLibrary = context.getCapiLibrary();
+            InteropLibrary uncached = InteropLibrary.getFactory().getUncached(capiLibrary);
+            return importCAPISymbol(PRaiseNodeGen.getUncached(), uncached, capiLibrary, name);
+        }
+
+        private static Object importCAPISymbol(PRaiseNode raiseNode, InteropLibrary library, Object capiLibrary, String name) {
             try {
-                return library.readMember(context.getCapiLibrary(), name);
-            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw e.raise();
+                return library.readMember(capiLibrary, name);
+            } catch (UnknownIdentifierException e) {
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "invalid C API function: %s", name);
+            } catch (UnsupportedMessageException e) {
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "corrupted C API library object: %s", capiLibrary);
             }
         }
 
@@ -479,8 +488,9 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object run(Object obj) {
-            throw raise(PythonErrorType.SystemError, "invalid object from native: %s", obj);
+        Object run(Object obj,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.SystemError, "invalid object from native: %s", obj);
         }
 
         protected static boolean isNative(IsPointerNode isPointerNode, PythonNativeWrapper object) {
@@ -1226,14 +1236,15 @@ public abstract class CExtNodes {
         // cases
         @Specialization
         double runGeneric(PythonAbstractObject value,
-                        @Exclusive @Cached(value = "create(__FLOAT__)", allowUncached = true) LookupAndCallUnaryNode callFloatFunc) {
+                        @Cached(value = "create(__FLOAT__)", allowUncached = true) LookupAndCallUnaryNode callFloatFunc,
+                        @Cached PRaiseNode raiseNode) {
             Object result = callFloatFunc.executeObject(value);
             if (PGuards.isPFloat(result)) {
                 return ((PFloat) result).getValue();
             } else if (result instanceof Double) {
                 return (double) result;
             } else {
-                throw raise(PythonErrorType.TypeError, "%p.%s returned non-float (type %p)", value, __FLOAT__, result);
+                throw raiseNode.raise(PythonErrorType.TypeError, "%p.%s returned non-float (type %p)", value, __FLOAT__, result);
             }
         }
     }
