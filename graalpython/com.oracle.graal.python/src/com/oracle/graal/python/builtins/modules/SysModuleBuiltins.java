@@ -201,6 +201,13 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         Env env = context.getEnv();
         String option = PythonOptions.getOption(context, PythonOptions.PythonPath);
+
+        LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
+        SulongToolchain toolchain = env.lookup(llvmInfo, SulongToolchain.class);
+        String cextModuleHome = String.join(PythonCore.FILE_SEPARATOR, PythonCore.getNativeModuleHome(env), "modules", toolchain.getIdentifier());
+        String cextHome = String.join(PythonCore.FILE_SEPARATOR, PythonCore.getNativeModuleHome(env), toolchain.getIdentifier());
+        String cextSrc = String.join(PythonCore.FILE_SEPARATOR, PythonCore.getNativeModuleHome(env), "src");
+
         Object[] path;
         int pathIdx = 0;
         if (option.length() > 0) {
@@ -214,11 +221,13 @@ public class SysModuleBuiltins extends PythonBuiltins {
         path[pathIdx] = getScriptPath(env, args);
         path[pathIdx + 1] = PythonCore.getStdlibHome(env);
         path[pathIdx + 2] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
-        LanguageInfo llvmInfo = env.getLanguages().get(LLVM_LANGUAGE);
-        SulongToolchain toolchain = env.lookup(llvmInfo, SulongToolchain.class);
-        path[pathIdx + 3] = String.join(PythonCore.FILE_SEPARATOR, PythonCore.getNativeModuleHome(env), "modules", toolchain.getIdentifier());
+        path[pathIdx + 3] = cextModuleHome;
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
+        sys.setAttribute("graal_python_cext_home", cextHome);
+        sys.setAttribute("graal_python_cext_module_home", cextModuleHome);
+        sys.setAttribute("graal_python_cext_src", cextSrc);
+        sys.setAttribute("graal_python_platform_id", toolchain.getIdentifier());
     }
 
     private static String getScriptPath(Env env, String[] args) {

@@ -14,11 +14,11 @@ __all__ = [
 __cstruct = None
 
 def make_delegate(p):
-    def delegate(self, *args ,**kwargs):
+    def delegate(*args ,**kwargs):
         global __cstruct
         if not __cstruct:
             import _struct as __cstruct
-        return getattr(self.__cstruct, p)(*args, **kwargs)
+        return getattr(__cstruct, p)(*args, **kwargs)
     delegate.__name__ = p
     return delegate
 

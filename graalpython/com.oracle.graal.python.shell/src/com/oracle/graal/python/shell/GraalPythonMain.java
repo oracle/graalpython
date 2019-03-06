@@ -74,6 +74,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private VersionAction versionAction = VersionAction.None;
     private String sulongLibraryPath = null;
     private List<String> givenArguments;
+    private List<String> relaunchArgs;
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
@@ -193,6 +194,12 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         programArgs.add(inputFile);
                         break;
                     } else {
+                        if (arg.startsWith("--llvm.")) {
+                            if (relaunchArgs == null) {
+                                relaunchArgs = new ArrayList<>();
+                            }
+                            relaunchArgs.add(arg);
+                        }
                         unrecognized.add(arg);
                     }
             }
@@ -281,7 +288,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         System.out.println(string);
     }
 
-    private static String[] getExecutableList() {
+    private String[] getExecutableList() {
         if (ImageInfo.inImageCode()) {
             return new String[]{getExecutable()};
         } else {
@@ -298,11 +305,14 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             exec_list.add("-classpath");
             exec_list.add(System.getProperty("java.class.path"));
             exec_list.add(GraalPythonMain.class.getName());
+            if (relaunchArgs != null) {
+                exec_list.addAll(relaunchArgs);
+            }
             return exec_list.toArray(new String[exec_list.size()]);
         }
     }
 
-    private static String getExecutable() {
+    private String getExecutable() {
         if (ImageInfo.inImageRuntimeCode()) {
             return ProcessProperties.getExecutableName();
         } else if (ImageInfo.inImageBuildtimeCode()) {

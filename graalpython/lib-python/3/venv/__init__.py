@@ -4,11 +4,11 @@ Virtual environment (venv) package for Python. Based on PEP 405.
 Copyright (C) 2011-2014 Vinay Sajip.
 Licensed to the PSF under a contributor agreement.
 """
+import sys
 import logging
 import os
 import shutil
 import subprocess
-import sys
 import types
 
 logger = logging.getLogger(__name__)
@@ -161,6 +161,7 @@ class EnvBuilder:
             libpath = os.path.join(env_dir, 'lib',
                                    'python%d.%d' % sys.version_info[:2],
                                    'site-packages')
+        context.lib_path = os.path.dirname(libpath)
         context.inc_path = path = os.path.join(env_dir, incpath)
         create_if_needed(path)
         create_if_needed(libpath)
@@ -272,6 +273,50 @@ class EnvBuilder:
                     dst = os.path.join(tcldir, 'init.tcl')
                     shutil.copyfile(src, dst)
                     break
+
+        # Truffle change: we need to set some extra options for the launcher to work
+        def create_if_needed(d):
+            if not os.path.exists(d):
+                os.makedirs(d)
+            elif os.path.islink(d) or os.path.isfile(d):
+                raise ValueError('Unable to create directory %r' % d)
+
+        create_if_needed(sys.graal_python_cext_module_home)
+        create_if_needed(sys.graal_python_cext_home)
+
+        cext_module_src_path = os.path.join(sys.graal_python_cext_src, "modules")
+        files = [os.path.join(cext_module_src_path, f) for f in os.listdir(cext_module_src_path) if f.endswith(".c")]
+        import _imp
+        # TODO platform-specific extension
+        so_ext = _imp.extension_suffixes()[0]
+        for f in files:
+            f_basename = os.path.splitext(os.path.basename(f))[0]
+            module = os.path.join(sys.graal_python_cext_module_home, f_basename + so_ext)
+            if not os.path.exists(module):
+                self.compile([os.path.abspath(f)], os.path.abspath(module))
+
+        
+        cext_src_path = os.path.join(sys.graal_python_cext_src, "src")
+        files = [os.path.join(cext_src_path, f) for f in os.listdir(cext_src_path) if f.endswith(".c")]
+        f_basename = os.path.splitext(os.path.basename(f))[0]
+        module = os.path.join(sys.graal_python_cext_home, "capi" + so_ext)
+        if not os.path.exists(module):
+            self.compile([os.path.abspath(f) for f in files], os.path.abspath(module))
+        # Truffle change end
+            
+
+    def compile(self, f, module):
+        from distutils import sysconfig
+        ld = sysconfig.get_config_vars()["LDSHARED"]
+        cmd_line = " ".join([ld, "-I" + sysconfig.get_python_inc(), "-o", module] + f)
+        # TOOD logging
+        res = os.system(cmd_line)
+        if res:
+            # TOOD logging
+            print("compilation failed: '%s' returned with %r" % (cmd_line, res))
+            raise BaseException
+            
+    
 
     def _setup_pip(self, context):
         """Installs or upgrades pip in a virtual environment"""
