@@ -75,6 +75,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private VersionAction versionAction = VersionAction.None;
     private String sulongLibraryPath = null;
     private List<String> givenArguments;
+    private boolean wantsExperimental = false;
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
@@ -144,47 +145,68 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     versionAction = VersionAction.PrintAndContinue;
                     break;
                 case "-CC":
-                    if (i != defaultEnvironmentArgs.size()) {
-                        throw new IllegalArgumentException("-CC must be the first given argument");
+                    if (wantsExperimental) {
+                        if (i != defaultEnvironmentArgs.size()) {
+                            throw new IllegalArgumentException("-CC must be the first given argument");
+                        }
+                        GraalPythonCC.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
+                        System.exit(0);
+                        break;
                     }
-                    GraalPythonCC.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
-                    System.exit(0);
-                    break;
                 case "-LD":
-                    if (i != defaultEnvironmentArgs.size()) {
-                        throw new IllegalArgumentException("-LD must be the first given argument");
+                    if (wantsExperimental) {
+                        if (i != defaultEnvironmentArgs.size()) {
+                            throw new IllegalArgumentException("-LD must be the first given argument");
+                        }
+                        GraalPythonLD.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
+                        System.exit(0);
+                        break;
                     }
-                    GraalPythonLD.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
-                    System.exit(0);
-                    break;
                 case "-LLI":
-                    runLLI = true;
-                    break;
-                case "-debug-java":
-                    if (!isAOT()) {
-                        subprocessArgs.add("Xrunjdwp:transport=dt_socket,server=y,address=8000,suspend=y");
-                        inputArgs.remove("-debug-java");
+                    if (wantsExperimental) {
+                        runLLI = true;
+                        break;
                     }
-                    break;
+                case "-debug-java":
+                    if (wantsExperimental) {
+                        if (!isAOT()) {
+                            subprocessArgs.add("Xrunjdwp:transport=dt_socket,server=y,address=8000,suspend=y");
+                            inputArgs.remove("-debug-java");
+                        }
+                        break;
+                    }
                 case "-debug-perf":
-                    subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
-                    subprocessArgs.add("Dgraal.TraceTrufflePerformanceWarnings=true");
-                    subprocessArgs.add("Dgraal.TruffleCompilationExceptionsArePrinted=true");
-                    subprocessArgs.add("Dgraal.TraceTruffleInlining=true");
-                    subprocessArgs.add("Dgraal.TruffleTraceSplittingSummary=true");
-                    inputArgs.remove("-debug-perf");
-                    break;
+                    if (wantsExperimental) {
+                        subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
+                        subprocessArgs.add("Dgraal.TraceTrufflePerformanceWarnings=true");
+                        subprocessArgs.add("Dgraal.TruffleCompilationExceptionsArePrinted=true");
+                        subprocessArgs.add("Dgraal.TraceTruffleInlining=true");
+                        subprocessArgs.add("Dgraal.TruffleTraceSplittingSummary=true");
+                        inputArgs.remove("-debug-perf");
+                        break;
+                    }
                 case "-dump":
-                    subprocessArgs.add("Dgraal.Dump=");
-                    inputArgs.remove("-dump");
-                    break;
+                    if (wantsExperimental) {
+                        subprocessArgs.add("Dgraal.Dump=");
+                        inputArgs.remove("-dump");
+                        break;
+                    }
                 case "-compile-truffle-immediately":
-                    subprocessArgs.add("Dgraal.TruffleCompileImmediately=true");
-                    subprocessArgs.add("Dgraal.TruffleCompilationExceptionsAreThrown=true");
-                    inputArgs.remove("-compile-truffle-immediately");
-                    break;
+                    if (wantsExperimental) {
+                        subprocessArgs.add("Dgraal.TruffleCompileImmediately=true");
+                        subprocessArgs.add("Dgraal.TruffleCompilationExceptionsAreThrown=true");
+                        inputArgs.remove("-compile-truffle-immediately");
+                        break;
+                    }
                 case "-u":
                     unbufferedIO = true;
+                    break;
+                case "--experimental-options":
+                case "--experimental-options=true":
+                    // this is the default Truffle experimental option flag. We also use it for
+                    // our custom launcher options
+                    wantsExperimental = true;
+                    unrecognized.add(arg);
                     break;
                 default:
                     if (!arg.startsWith("-")) {
@@ -536,15 +558,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         // "-3 : warn about Python 3.x incompatibilities that 2to3 cannot trivially
                         // fix\n" +
                         "file   : program read from script file\n" +
-                        // "- : program read from stdin (default; interactive mode if a tty)\n" +
+                        "-      : program read from stdin\n" +
                         "arg ...: arguments passed to program in sys.argv[1:]\n" +
-                        "\n" +
-                        "Arguments specific to GraalPython:\n" +
-                        "--show-version : print the Python version number and continue.\n" +
-                        "-CC            : run the C compiler used for generating GraalPython C extensions.\n" +
-                        "                 All following arguments are passed to the compiler.\n" +
-                        "-LD            : run the linker used for generating GraalPython C extensions.\n" +
-                        "                 All following arguments are passed to the linker.\n" +
                         "\n" +
                         "Other environment variables:\n" +
                         "PYTHONSTARTUP: file executed on interactive startup (no default)\n" +
@@ -558,11 +573,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "   as specifying the -R option: a random value is used to seed the hashes of\n" +
                         "   str, bytes and datetime objects.  It can also be set to an integer\n" +
                         "   in the range [0,4294967295] to get hash values with a predictable seed.\n" +
-                        "SULONG_LIBRARY_PATH: Specifies the library path for Sulong.\n" +
-                        "   This is required when starting subprocesses of python.\n" +
-                        "GRAAL_PYTHON_OPTIONS: This environment variable can include default options that\n" +
-                        "   are always passed to the launcher. These are not shell expanded and given to\n" +
-                        "   the launcher as-is.");
+                        (wantsExperimental ? "\nArguments specific to the Graal Python launcher:\n" +
+                                        "--show-version : print the Python version number and continue.\n" +
+                                        "-CC            : run the C compiler used for generating GraalPython C extensions.\n" +
+                                        "                 All following arguments are passed to the compiler.\n" +
+                                        "-LD            : run the linker used for generating GraalPython C extensions.\n" +
+                                        "                 All following arguments are passed to the linker.\n" +
+                                        "\nEnvironment variables specific to the Graal Python launcher:\n" +
+                                        "SULONG_LIBRARY_PATH: Specifies the library path for Sulong.\n" +
+                                        "   This is required when starting subprocesses of python.\n" +
+                                        "GRAAL_PYTHON_OPTIONS: This environment variable can include default options that\n" +
+                                        "   are always passed to the launcher. These are not shell expanded and given to\n" +
+                                        "   the launcher as-is." : ""));
     }
 
     @Override
