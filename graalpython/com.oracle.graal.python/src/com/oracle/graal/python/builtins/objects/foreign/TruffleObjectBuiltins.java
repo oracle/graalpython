@@ -733,8 +733,6 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends UnboxNode {
 
-        @Child private Node getSizeNode;
-
         @Specialization(guards = "isForeignArray(iterable)")
         Object doForeignArray(TruffleObject iterable,
                         @Cached("GET_SIZE.createNode()") Node sizeNode) {
@@ -987,8 +985,6 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         protected final String method = __STR__;
         @Child private LookupAndCallUnaryNode callStrNode;
         @Child protected PythonUnaryBuiltinNode objectStrNode;
-        @Child private Node getSizeNode;
-        @Child private Node readNode;
 
         @Specialization(guards = {"isBoxed(object)"})
         protected Object doBoxed(TruffleObject object) {

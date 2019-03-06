@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,8 +51,8 @@ public class LazyString implements CharSequence {
     protected static final int MinLazyStringLength;
     protected static final boolean UseLazyStrings;
     static {
-        boolean useLazyStrings = PythonOptions.LazyStrings.getDefaultValue();
-        int minLazyStringLength = PythonOptions.MinLazyStringLength.getDefaultValue();
+        boolean useLazyStrings;
+        int minLazyStringLength;
         try {
             useLazyStrings = PythonOptions.useLazyString();
             minLazyStringLength = PythonOptions.getMinLazyStringLength();
@@ -60,6 +60,8 @@ public class LazyString implements CharSequence {
             // This can happen e.g. when we build a native image without
             // a pre-initialized Python context
             assert e.getMessage().equals("No current context available");
+            useLazyStrings = PythonOptions.LazyStrings.getDefaultValue();
+            minLazyStringLength = PythonOptions.MinLazyStringLength.getDefaultValue();
         }
         MinLazyStringLength = minLazyStringLength;
         UseLazyStrings = useLazyStrings;
@@ -144,22 +146,18 @@ public class LazyString implements CharSequence {
 
     private CharSequence left;
     private CharSequence right;
-    private final int length;
+    private final int len;
 
     private LazyString(CharSequence left, CharSequence right, int length) {
         assert left.length() > 0 && right.length() > 0 && length == left.length() + right.length();
         this.left = left;
         this.right = right;
-        this.length = length;
-    }
-
-    private LazyString(CharSequence left, CharSequence right) {
-        this(left, right, left.length() + right.length());
+        this.len = length;
     }
 
     @Override
     public int length() {
-        return length;
+        return len;
     }
 
     @Override
@@ -176,8 +174,8 @@ public class LazyString implements CharSequence {
 
     @TruffleBoundary
     private void flatten() {
-        char[] dst = new char[length];
-        flatten(this, 0, length, dst, 0);
+        char[] dst = new char[len];
+        flatten(this, 0, len, dst, 0);
         left = new String(dst);
         right = null;
     }
@@ -241,7 +239,7 @@ public class LazyString implements CharSequence {
     }
 
     public boolean isEmpty() {
-        return length == 0;
+        return len == 0;
     }
 
     // accessed via Java Interop, JDK-8062624.js

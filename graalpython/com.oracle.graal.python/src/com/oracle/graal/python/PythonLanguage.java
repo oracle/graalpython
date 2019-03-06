@@ -112,7 +112,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public final ConcurrentHashMap<Class<? extends PythonBuiltinBaseNode>, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
 
     private static final Layout objectLayout = Layout.newLayout().build();
-    private static final Shape freshShape = objectLayout.createShape(new ObjectType());
+    private static final Shape newShape = objectLayout.createShape(new ObjectType());
 
     public PythonLanguage() {
         this.nodeFactory = NodeFactory.create(this);
@@ -556,7 +556,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public static Shape freshShape() {
-        return freshShape;
+        return newShape;
     }
 
     @Override

@@ -248,7 +248,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public Object ceil(PFloat value,
                         @Cached("create(__CEIL__)") LookupAndCallUnaryNode dispatchCeil) {
             Object result = dispatchCeil.executeObject(value);
-            if (PNone.NO_VALUE.equals(result)) {
+            if (PNone.NO_VALUE == result) {
                 if (MathGuards.fitLong(value.getValue())) {
                     return ceilLong(value.getValue());
                 } else {
@@ -582,7 +582,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") CastToDoubleNode castNode,
                         @Cached("create()") FloorNode recursiveNode) {
             Object result = dispatchFloor.executeObject(value);
-            if (PNone.NO_VALUE.equals(result)) {
+            if (PNone.NO_VALUE == result) {
                 return recursiveNode.execute(castNode.execute(value));
             }
             return result;

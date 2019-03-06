@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -42,14 +42,12 @@ import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 public class TryExceptNode extends StatementNode implements TruffleObject {
     @Child private StatementNode body;
     @Children private final ExceptNode[] exceptNodes;
     @Child private StatementNode orelse;
     @CompilationFinal private TryExceptNodeMessageResolution.CatchesFunction catchesFunction;
-    @CompilationFinal private ValueProfile exceptionStateProfile;
 
     @CompilationFinal boolean seenException;
     private final boolean shouldCatchAll;

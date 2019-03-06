@@ -120,16 +120,16 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     }
 
     private static class SignalTriggerAction implements AsyncHandler.AsyncAction {
-        private final Object callable;
+        private final Object callableObject;
         private final int signum;
 
         SignalTriggerAction(Object callable, int signum) {
-            this.callable = callable;
+            this.callableObject = callable;
             this.signum = signum;
         }
 
         public Object callable() {
-            return callable;
+            return callableObject;
         }
 
         public Object[] arguments() {

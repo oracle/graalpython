@@ -135,6 +135,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.sun.security.auth.UnixNumericGroupPrincipal;
 import com.sun.security.auth.UnixNumericUserPrincipal;
+import java.util.Locale;
 
 @CoreFunctions(defineModule = "posix")
 public class PosixModuleBuiltins extends PythonBuiltins {
@@ -1285,8 +1286,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SystemNode extends PythonBuiltinNode {
-        static final String[] shell = System.getProperty("os.name").toLowerCase().startsWith("windows") ? new String[]{"cmd.exe", "/c"}
-                        : new String[]{(System.getenv().getOrDefault("SHELL", "sh")), "-c"};
+        static final String[] shell;
+        static {
+            String osProperty = System.getProperty("os.name");
+            shell = osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).startsWith("windows") ? new String[]{"cmd.exe", "/c"}
+                            : new String[]{(System.getenv().getOrDefault("SHELL", "sh")), "-c"};
+        }
 
         static class PipePump extends Thread {
             private static final int MAX_READ = 8192;

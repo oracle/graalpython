@@ -58,8 +58,6 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     protected final ConditionProfile isGlobalProfile = ConditionProfile.createBinaryProfile();
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
     protected final ConditionProfile isInitializedProfile = ConditionProfile.createBinaryProfile();
-    @Child private HashingStorageNodes.GetItemNode getHashingItemNode;
-    @Child private GetItemNode readFromDictNode;
 
     protected ReadGlobalOrBuiltinNode(String attributeId) {
         this.attributeId = attributeId;

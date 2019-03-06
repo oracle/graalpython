@@ -134,7 +134,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "a2b_hex", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class A2bHexNode extends PythonBinaryBuiltinNode {
-        private ReadAttributeFromObjectNode getAttrNode;
+        private ReadAttributeFromObjectNode readAttrNode;
 
         private PException raise(LazyPythonClass klass, String string) {
             return raise(factory().createBaseException(klass, string, new Object[0]));
@@ -167,11 +167,11 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         private ReadAttributeFromObjectNode getAttrNode() {
-            if (getAttrNode == null) {
+            if (readAttrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getAttrNode = insert(ReadAttributeFromObjectNode.create());
+                readAttrNode = insert(ReadAttributeFromObjectNode.create());
             }
-            return getAttrNode;
+            return readAttrNode;
         }
     }
 

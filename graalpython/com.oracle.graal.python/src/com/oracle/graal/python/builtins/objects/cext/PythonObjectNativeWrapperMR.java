@@ -1285,10 +1285,7 @@ public class PythonObjectNativeWrapperMR {
     abstract static class ToPyObjectNode extends CExtBaseNode {
         @CompilationFinal private TruffleObject PyObjectHandle_FromJavaObject;
         @CompilationFinal private TruffleObject PyObjectHandle_FromJavaType;
-        @CompilationFinal private TruffleObject PyNoneHandle;
         @Child private PCallNativeNode callNativeUnary;
-        @Child private PCallNativeNode callNativeBinary;
-        @Child private CExtNodes.ToSulongNode toSulongNode;
 
         public abstract Object execute(PythonNativeWrapper wrapper);
 
