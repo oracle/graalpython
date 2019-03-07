@@ -26,7 +26,6 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
-import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
@@ -511,20 +510,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             return cachedSources.computeIfAbsent(src, t -> {
                 try {
                     return newSource(ctxt, Source.newBuilder(ID, src).name(name));
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        } catch (RuntimeException e) {
-            throw (IOException) e.getCause();
-        }
-    }
-
-    public Source newSource(PythonContext ctxt, URL url, String name) throws IOException {
-        try {
-            return cachedSources.computeIfAbsent(url, t -> {
-                try {
-                    return newSource(ctxt, Source.newBuilder(ID, url).name(name));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
