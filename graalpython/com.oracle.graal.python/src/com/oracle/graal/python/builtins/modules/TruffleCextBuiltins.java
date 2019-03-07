@@ -101,19 +101,17 @@ import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -148,8 +146,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
@@ -1414,58 +1410,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         PThreadState get() {
             // does not require a 'to_sulong' since it is already a native wrapper type
             return getContext().getCustomThreadState();
-        }
-    }
-
-    @Builtin(name = "PyTruffleSlice_GetIndicesEx", minNumOfPositionalArgs = 4)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    abstract static class PyTruffleSlice_GetIndicesEx extends NativeBuiltin {
-        @Specialization
-        Object doUnpack(int start, int stop, int step, int length) {
-            PSlice tmpSlice = factory().createSlice(start, stop, step);
-            SliceInfo actualIndices = tmpSlice.computeIndices(length);
-            return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        Object doUnpackLong(long start, long stop, long step, long length) {
-            PSlice tmpSlice = factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), PInt.intValueExact(step));
-            SliceInfo actualIndices = tmpSlice.computeIndices(PInt.intValueExact(length));
-            return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
-        }
-
-        @Specialization(replaces = {"doUnpackLong", "doUnpack"})
-        Object doUnpackLongOvf0(long start, long stop, long step, long length) {
-            try {
-                PSlice tmpSlice = factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), PInt.intValueExact(step));
-                SliceInfo actualIndices = tmpSlice.computeIndices(length > Integer.MAX_VALUE ? Integer.MAX_VALUE : PInt.intValueExact(length));
-                return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
-            } catch (ArithmeticException e) {
-                throw raiseIndexError();
-            }
-        }
-
-        @Specialization(replaces = {"doUnpackLongOvf0"})
-        Object doUnpackLongOvf1(Object start, Object stop, Object step, Object lengthObj,
-                        @Cached("createOverflow()") CastToIndexNode castToIndexNode,
-                        @Cached("create()") IsBuiltinClassProfile profile,
-                        @Cached("create()") SliceLiteralNode sliceLiteralNode) {
-
-            int length;
-            try {
-                length = castToIndexNode.execute(lengthObj);
-            } catch (PException e) {
-                e.expect(OverflowError, profile);
-                length = Integer.MAX_VALUE;
-            }
-
-            try {
-                SliceInfo actualIndices = sliceLiteralNode.execute(start, stop, step).computeIndices(length);
-                return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
-            } catch (ArithmeticException e) {
-                throw raiseIndexError();
-            }
         }
     }
 

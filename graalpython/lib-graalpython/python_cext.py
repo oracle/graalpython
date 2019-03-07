@@ -1331,11 +1331,6 @@ def PyThread_release_lock(lock):
 
 
 @may_raise
-def PySlice_GetIndicesEx(start, stop, step, length):
-    return PyTruffleSlice_GetIndicesEx(start, stop, step, length)
-
-
-@may_raise
 def PySlice_New(start, stop, step):
     return slice(start, stop, step)
 
