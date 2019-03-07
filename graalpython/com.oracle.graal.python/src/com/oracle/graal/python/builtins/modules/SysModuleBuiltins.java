@@ -145,6 +145,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         String os = getPythonOSName();
         builtinConstants.put("platform", os);
+        if (os.equals("darwin")) {
+            builtinConstants.put("_framework", PNone.NONE);
+        }
         builtinConstants.put("__gmultiarch", getPythonArch() + "-" + os);
 
         super.initialize(core);
