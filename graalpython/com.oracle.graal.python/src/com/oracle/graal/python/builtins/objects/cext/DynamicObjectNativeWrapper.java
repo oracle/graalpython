@@ -20,8 +20,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -98,6 +96,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
 public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
+    private static final String GP_OBJECT = "gp_object";
     private static final Layout OBJECT_LAYOUT = Layout.newLayout().build();
     private static final Shape SHAPE = OBJECT_LAYOUT.createShape(new ObjectType());
 
@@ -139,7 +138,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
-        return PythonLanguage.getContextRef().get().getEnv().asGuestValue(new String[]{NativeWrappers.GP_OBJECT});
+        return PythonLanguage.getContextRef().get().getEnv().asGuestValue(new String[]{DynamicObjectNativeWrapper.GP_OBJECT});
     }
 
     @ExportMessage
@@ -182,7 +181,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             Object delegate = getDelegate.execute(object);
 
             // special key for the debugger
-            if (key.equals(NativeWrappers.GP_OBJECT)) {
+            if (key.equals(DynamicObjectNativeWrapper.GP_OBJECT)) {
                 return delegate;
             }
             return readNativeMemberNode.execute(delegate, key);
@@ -1061,15 +1060,15 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
      */
     @ExportLibrary(InteropLibrary.class)
     public static class PythonObjectNativeWrapper extends DynamicObjectNativeWrapper {
-    
+
         public PythonObjectNativeWrapper(PythonAbstractObject object) {
             super(object);
         }
-    
+
         public PythonAbstractObject getPythonObject() {
             return (PythonAbstractObject) getDelegate();
         }
-    
+
         public static DynamicObjectNativeWrapper wrap(PythonAbstractObject obj, ConditionProfile noWrapperProfile) {
             // important: native wrappers are cached
             DynamicObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
@@ -1079,19 +1078,19 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
             return nativeWrapper;
         }
-    
+
         @Override
         public String toString() {
             CompilerAsserts.neverPartOfCompilation();
             return String.format("PythonObjectNativeWrapper(%s, isNative=%s)", getDelegate(), isNative());
         }
-    
+
         @ExportMessage
         @Override
         protected boolean isMemberReadable(String member) {
-            return member.equals(NativeWrappers.GP_OBJECT) || NativeMemberNames.isValid(member);
+            return member.equals(DynamicObjectNativeWrapper.GP_OBJECT) || NativeMemberNames.isValid(member);
         }
-    
+
         @ExportMessage
         @Override
         public boolean isMemberModifiable(String member) {
@@ -1100,104 +1099,104 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     public static class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
-    
+
         public static final byte PRIMITIVE_STATE_BOOL = 1 << 0;
         public static final byte PRIMITIVE_STATE_BYTE = 1 << 1;
         public static final byte PRIMITIVE_STATE_INT = 1 << 2;
         public static final byte PRIMITIVE_STATE_LONG = 1 << 3;
         public static final byte PRIMITIVE_STATE_DOUBLE = 1 << 4;
-    
+
         private final byte state;
         private final long value;
         private final double dvalue;
-    
+
         private PrimitiveNativeWrapper(byte state, long value) {
             assert state != PRIMITIVE_STATE_DOUBLE;
             this.state = state;
             this.value = value;
             this.dvalue = 0.0;
         }
-    
+
         private PrimitiveNativeWrapper(double dvalue) {
             this.state = PRIMITIVE_STATE_DOUBLE;
             this.value = 0;
             this.dvalue = dvalue;
         }
-    
+
         public byte getState() {
             return state;
         }
-    
+
         public boolean getBool() {
             return value != 0;
         }
-    
+
         public byte getByte() {
             return (byte) value;
         }
-    
+
         public int getInt() {
             return (int) value;
         }
-    
+
         public long getLong() {
             return value;
         }
-    
+
         public double getDouble() {
             return dvalue;
         }
-    
+
         public boolean isBool() {
             return state == PRIMITIVE_STATE_BOOL;
         }
-    
+
         public boolean isByte() {
             return state == PRIMITIVE_STATE_BYTE;
         }
-    
+
         public boolean isInt() {
             return state == PRIMITIVE_STATE_INT;
         }
-    
+
         public boolean isLong() {
             return state == PRIMITIVE_STATE_LONG;
         }
-    
+
         public boolean isDouble() {
             return state == PRIMITIVE_STATE_DOUBLE;
         }
-    
+
         public boolean isIntLike() {
             return (state & (PRIMITIVE_STATE_BYTE | PRIMITIVE_STATE_INT | PRIMITIVE_STATE_LONG)) != 0;
         }
-    
+
         // this method exists just for readability
         public Object getMaterializedObject() {
             return getDelegate();
         }
-    
+
         // this method exists just for readability
         public void setMaterializedObject(Object materializedPrimitive) {
             setDelegate(materializedPrimitive);
         }
-    
+
         public static PrimitiveNativeWrapper createBool(boolean val) {
             return new PrimitiveNativeWrapper(PRIMITIVE_STATE_BOOL, PInt.intValue(val));
         }
-    
+
         public static PrimitiveNativeWrapper createByte(byte val) {
             return new PrimitiveNativeWrapper(PRIMITIVE_STATE_BYTE, val);
         }
-    
+
         public static PrimitiveNativeWrapper createInt(int val) {
             return new PrimitiveNativeWrapper(PRIMITIVE_STATE_INT, val);
         }
-    
+
         public static PrimitiveNativeWrapper createLong(long val) {
             return new PrimitiveNativeWrapper(PRIMITIVE_STATE_LONG, val);
         }
-    
+
         public static PrimitiveNativeWrapper createDouble(double val) {
             return new PrimitiveNativeWrapper(val);
         }
