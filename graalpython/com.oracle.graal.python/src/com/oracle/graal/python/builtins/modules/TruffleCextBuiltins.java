@@ -582,7 +582,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(Object typestruct, DynamicObjectNativeWrapper.PythonObjectNativeWrapper metaClass, DynamicObjectNativeWrapper.PythonObjectNativeWrapper baseClasses, DynamicObjectNativeWrapper.PythonObjectNativeWrapper nativeMembers,
+        Object run(Object typestruct, DynamicObjectNativeWrapper.PythonObjectNativeWrapper metaClass, DynamicObjectNativeWrapper.PythonObjectNativeWrapper baseClasses,
+                        DynamicObjectNativeWrapper.PythonObjectNativeWrapper nativeMembers,
                         @Cached("create()") CExtNodes.ToJavaNode toJavaNode) {
             // TODO(fa) use recursive node
             return run(typestruct, (PythonClass) toJavaNode.execute(metaClass), (PTuple) toJavaNode.execute(baseClasses), (PDict) toJavaNode.execute(nativeMembers));
@@ -2282,7 +2283,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyBytes_FromStringAndSize", fixedNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Builtin(name = "PyBytes_FromStringAndSize", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class PyBytes_FromStringAndSize extends NativeBuiltin {
 
