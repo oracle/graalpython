@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
+import java.util.function.Supplier;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -79,7 +81,8 @@ abstract class CallSpecialMethodNode extends Node {
     }
 
     protected Assumption singleContextAssumption() {
-        PythonLanguage language = getRootNode().getLanguage(PythonLanguage.class);
+        Supplier<PythonLanguage> languageSupplier = getLanguageSupplier(PythonLanguage.class);
+        PythonLanguage language = languageSupplier.get();
         if (language == null) {
             language = PythonLanguage.getCurrent();
         }

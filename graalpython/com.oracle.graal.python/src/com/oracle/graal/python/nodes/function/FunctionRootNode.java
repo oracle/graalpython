@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.nodes.function;
 
+import java.util.function.Supplier;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -107,7 +109,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
 
     @Override
     public FunctionRootNode copy() {
-        return new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots);
+        Supplier<PythonLanguage> languageSupplier = getLanguageSupplier(PythonLanguage.class);
+        return new FunctionRootNode(languageSupplier.get(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots);
     }
 
     @ExplodeLoop
