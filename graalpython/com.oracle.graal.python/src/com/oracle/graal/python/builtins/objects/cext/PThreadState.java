@@ -34,7 +34,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
-public class PThreadState extends NativeWrappers.PythonNativeWrapper {
+public class PThreadState extends PythonNativeWrapper {
     public static final String CUR_EXC_TYPE = "curexc_type";
     public static final String CUR_EXC_VALUE = "curexc_value";
     public static final String CUR_EXC_TRACEBACK = "curexc_traceback";

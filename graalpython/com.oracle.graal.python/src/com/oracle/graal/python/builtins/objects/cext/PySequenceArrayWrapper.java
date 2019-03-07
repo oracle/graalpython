@@ -53,7 +53,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  */
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
-public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWrapper {
+public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     /** Number of bytes that constitute a single element. */
     private final int elementAccessSize;

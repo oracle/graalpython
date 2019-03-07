@@ -57,7 +57,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 
 public abstract class PyUnicodeWrappers {
     @ExportLibrary(InteropLibrary.class)
-    abstract static class PyUnicodeWrapper extends NativeWrappers.PythonNativeWrapper {
+    abstract static class PyUnicodeWrapper extends PythonNativeWrapper {
 
         public PyUnicodeWrapper(PString delegate) {
             super(delegate);

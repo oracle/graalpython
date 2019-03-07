@@ -1,6 +1,5 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
