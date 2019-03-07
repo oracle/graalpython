@@ -77,7 +77,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNode
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;

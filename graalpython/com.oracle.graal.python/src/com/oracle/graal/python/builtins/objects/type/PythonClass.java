@@ -39,7 +39,7 @@ import java.util.WeakHashMap;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.Assumption;

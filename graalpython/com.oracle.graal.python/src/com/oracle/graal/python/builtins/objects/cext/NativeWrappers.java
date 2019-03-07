@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappersFactory.DynamicObjectNativeWrapperFactory.InvalidateNativeObjectsAllManagedNodeFactory.InvalidateNativeObjectsAllManagedCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -1360,56 +1359,6 @@ public abstract class NativeWrappers {
 
         public static PrimitiveNativeWrapper createDouble(double val) {
             return new PrimitiveNativeWrapper(val);
-        }
-    }
-
-    /**
-     * Used to wrap {@link PythonClass} when used in native code. This wrapper mimics the correct
-     * shape of the corresponding native type {@code struct _typeobject}.
-     */
-    public static class PythonClassNativeWrapper extends PythonObjectNativeWrapper {
-        private final CStringWrapper nameWrapper;
-        private Object getBufferProc;
-        private Object releaseBufferProc;
-
-        public PythonClassNativeWrapper(PythonClass object) {
-            super(object);
-            this.nameWrapper = new CStringWrapper(object.getName());
-        }
-
-        public CStringWrapper getNameWrapper() {
-            return nameWrapper;
-        }
-
-        public Object getGetBufferProc() {
-            return getBufferProc;
-        }
-
-        public void setGetBufferProc(Object getBufferProc) {
-            this.getBufferProc = getBufferProc;
-        }
-
-        public Object getReleaseBufferProc() {
-            return releaseBufferProc;
-        }
-
-        public void setReleaseBufferProc(Object releaseBufferProc) {
-            this.releaseBufferProc = releaseBufferProc;
-        }
-
-        public static PythonClassNativeWrapper wrap(PythonClass obj) {
-            // important: native wrappers are cached
-            PythonClassNativeWrapper nativeWrapper = obj.getNativeWrapper();
-            if (nativeWrapper == null) {
-                nativeWrapper = new PythonClassNativeWrapper(obj);
-                obj.setNativeWrapper(nativeWrapper);
-            }
-            return nativeWrapper;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("PythonClassNativeWrapper(%s, isNative=%s)", getPythonObject(), isNative());
         }
     }
 }
