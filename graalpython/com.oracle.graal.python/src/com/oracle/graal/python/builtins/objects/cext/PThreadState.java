@@ -15,10 +15,11 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.CachedLanguage;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -389,9 +390,8 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
 
     @ExportMessage(name = "getNativeType")
     abstract static class GetTypeIDNode {
-        @Specialization(assumptions = "language.singleContextAssumption")
+        @Specialization(assumptions = "singleNativeContextAssumption()")
         static Object doByteArray(@SuppressWarnings("unused") PThreadState receiver,
-                        @CachedLanguage @SuppressWarnings("unused") PythonLanguage language,
                         @Exclusive @Cached("callGetThreadStateTypeIDUncached()") Object nativeType) {
             // TODO(fa): use weak reference ?
             return nativeType;
@@ -407,9 +407,9 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
             return PCallCapiFunction.getUncached().call(FUN_GET_THREAD_STATE_TYPE_ID);
         }
 
-// protected static Assumption singleContextAssumption() {
-// return PythonContext.getSingleNativeContextAssumption();
-// }
+        protected static Assumption singleNativeContextAssumption() {
+            return PythonContext.getSingleNativeContextAssumption();
+        }
     }
 
     abstract static class ToNativeNode extends Node {

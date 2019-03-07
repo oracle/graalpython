@@ -26,6 +26,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -425,17 +426,17 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
             return PCallCapiFunction.getUncached().call(FUN_GET_PTR_ARRAY_TYPE_ID, 0);
         }
 
-        @Specialization(assumptions = "lang.singleContextAssumption", guards = "hasByteArrayContent(object)")
+        @Specialization(assumptions = "singleContextAssumption", guards = "hasByteArrayContent(object)")
         Object doByteArray(@SuppressWarnings("unused") PSequence object,
-                        @Shared("lang") @CachedLanguage @SuppressWarnings("unused") PythonLanguage lang,
+                        @Shared("singleContextAssumption") @Cached("singleContextAssumption()") @SuppressWarnings("unused") Assumption singleContextAssumption,
                         @Exclusive @Cached("callGetByteArrayTypeIDUncached()") Object nativeType) {
             // TODO(fa): use weak reference ?
             return nativeType;
         }
 
-        @Specialization(assumptions = "lang.singleContextAssumption", guards = "!hasByteArrayContent(object)")
+        @Specialization(assumptions = "singleContextAssumption", guards = "!hasByteArrayContent(object)")
         Object doPtrArray(@SuppressWarnings("unused") Object object,
-                        @Shared("lang") @CachedLanguage @SuppressWarnings("unused") PythonLanguage lang,
+                        @Shared("singleContextAssumption") @Cached("singleContextAssumption()") @SuppressWarnings("unused") Assumption singleContextAssumption,
                         @Exclusive @Cached("callGetPtrArrayTypeIDUncached()") Object nativeType) {
             // TODO(fa): use weak reference ?
             return nativeType;
@@ -451,6 +452,10 @@ public final class PySequenceArrayWrapper extends NativeWrappers.PythonNativeWra
         Object doPtrArrayMultiCtx(@SuppressWarnings("unused") PSequence object,
                         @Shared("callUnaryNode") @Cached PCallCapiFunction callUnaryNode) {
             return callUnaryNode.call(FUN_GET_PTR_ARRAY_TYPE_ID, 0);
+        }
+
+        protected static Assumption singleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
         }
 
         protected static boolean hasByteArrayContent(Object object) {
