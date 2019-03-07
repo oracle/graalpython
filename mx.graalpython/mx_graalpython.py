@@ -653,6 +653,12 @@ def import_python_sources(args):
         "_cpython_unicodedata.c": "unicodedata.c",
         "_bz2.c": "_bz2module.c",
     }
+    extra_pypy_files = [
+        "graalpython/lib-python/3/_md5.py",
+        "graalpython/lib-python/3/_sha1.py",
+        "graalpython/lib-python/3/_sha256.py",
+        "graalpython/lib-python/3/_sha512.py",
+    ]
 
     parser = ArgumentParser(prog='mx python-src-import')
     parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
@@ -722,7 +728,7 @@ def import_python_sources(args):
     SUITE.vc.git_command(SUITE.dir, ["clean", "-fdx"])
     shutil.rmtree("graalpython")
 
-    for inlined_file in pypy_files:
+    for inlined_file in (pypy_files + extra_pypy_files):
         original_file = None
         name = os.path.basename(inlined_file)
         name = mapping.get(name, name)
