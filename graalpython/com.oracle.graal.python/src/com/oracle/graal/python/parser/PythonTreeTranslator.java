@@ -665,21 +665,6 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 if (sb == null) {
                     sb = new StringBuilder();
                 }
-            }
-
-            if (text.endsWith("'''") || text.endsWith("\"\"\"")) {
-                strStartIndex += 2;
-                strEndIndex -= 2;
-            }
-
-            text = text.substring(strStartIndex, strEndIndex);
-            if (isBytes) {
-                if (isRaw) {
-                    bb.append(text.getBytes());
-                } else {
-                    bb.append(BytesUtils.fromString(errors, text));
-                }
-            } else {
                 if (isRaw) {
                     sb.append(text);
                 } else {
