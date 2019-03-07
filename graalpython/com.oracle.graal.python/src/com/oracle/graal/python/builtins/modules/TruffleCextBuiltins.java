@@ -246,7 +246,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(str)")
         Object run(Object str,
-                        @Cached("create()") CExtNodes.AsCharPointer asCharPointerNode) {
+                        @Cached("create()") CExtNodes.AsCharPointerNode asCharPointerNode) {
             return asCharPointerNode.execute(str);
         }
 

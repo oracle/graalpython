@@ -72,13 +72,11 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    @Override
     protected boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
-    @Override
     protected boolean isMemberReadable(String member) {
         switch (member) {
             case BF_GETBUFFER:
@@ -90,14 +88,13 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    @Override
-    protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
     protected Object readMember(String member,
-                      @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.ToSulongNode toSulongNode) {
+                    @Cached CExtNodes.ToSulongNode toSulongNode) throws UnknownIdentifierException {
         // translate key to attribute name
         NativeWrappers.PythonClassNativeWrapper nativeWrapper = this.getPythonClass().getNativeWrapper();
         // TODO handle case if nativeWrapper does not exist yet
@@ -112,7 +109,7 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
                 break;
             default:
                 // TODO extend list
-                throw UnknownIdentifierException.raise(member);
+                throw UnknownIdentifierException.create(member);
         }
         // do not wrap result if exists since this is directly a native object
         // use NO_VALUE for NULL

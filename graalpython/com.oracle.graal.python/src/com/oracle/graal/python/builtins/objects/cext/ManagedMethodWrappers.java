@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper.PAsPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode;
@@ -47,16 +49,12 @@ import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarar
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.PrimitiveValueProfile;
 
 /**
@@ -99,51 +97,36 @@ public abstract class ManagedMethodWrappers {
         }
 
         @ExportMessage
-        @Override
         protected boolean isExecutable() {
             return true;
         }
 
         @ExportMessage
         public Object execute(Object[] arguments,
-                              @Cached.Exclusive @Cached(allowUncached = true) ExecuteNode executeNode) {
-            return executeNode.execute(this, arguments);
-        }
-
-        abstract static class ExecuteNode extends Node {
-            public abstract Object execute(MethKeywords object, Object[] arguments);
-
-            @Specialization
-            public Object execute(MethKeywords object, Object[] arguments,
-                                  @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
-                                  @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
-                                  @Cached.Exclusive @Cached CallNode dispatch,
-                                  @Cached.Exclusive @Cached ExecutePositionalStarargsNode posStarargsNode,
-                                  @Cached.Exclusive @Cached ExecuteKeywordStarargsNode expandKwargsNode,
-                                  @Cached.Exclusive @Cached("createEqualityProfile()") PrimitiveValueProfile starArgsLenProfile) {
-                if (arguments.length != 3) {
-                    throw ArityException.raise(3, arguments.length);
-                }
-
-                // convert args
-
-                Object receiver = toJavaNode.execute(arguments[0]);
-                Object starArgs = toJavaNode.execute(arguments[1]);
-                Object kwArgs = toJavaNode.execute(arguments[2]);
-
-                Object[] starArgsArray = posStarargsNode.executeWith(starArgs);
-                int starArgsLen = starArgsLenProfile.profile(starArgsArray.length);
-                Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray, starArgsLen);
-                PKeyword[] kwArgsArray = expandKwargsNode.executeWith(kwArgs);
-
-                // execute
-
-                if (dispatch == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    dispatch = insert(CallNode.create());
-                }
-                return toSulongNode.execute(dispatch.execute(null, object.getDelegate(), pArgs, kwArgsArray));
+                        @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached.Exclusive @Cached CallNode dispatch,
+                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
+                        @Cached.Exclusive @Cached(allowUncached = true) ExecutePositionalStarargsNode posStarargsNode,
+                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
+                        @Cached.Exclusive @Cached(allowUncached = true) ExecuteKeywordStarargsNode expandKwargsNode,
+                        @Cached.Exclusive @Cached("createEqualityProfile()") PrimitiveValueProfile starArgsLenProfile) throws ArityException {
+            if (arguments.length != 3) {
+                throw ArityException.create(3, arguments.length);
             }
+
+            // convert args
+            Object receiver = toJavaNode.execute(arguments[0]);
+            Object starArgs = toJavaNode.execute(arguments[1]);
+            Object kwArgs = toJavaNode.execute(arguments[2]);
+
+            Object[] starArgsArray = posStarargsNode.executeWith(starArgs);
+            int starArgsLen = starArgsLenProfile.profile(starArgsArray.length);
+            Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray, starArgsLen);
+            PKeyword[] kwArgsArray = expandKwargsNode.executeWith(kwArgs);
+
+            // execute
+            return toSulongNode.execute(dispatch.execute(null, getDelegate(), pArgs, kwArgsArray));
         }
     }
 
@@ -155,42 +138,23 @@ public abstract class ManagedMethodWrappers {
         }
 
         @ExportMessage
-        @Override
         protected boolean isExecutable() {
             return true;
         }
 
         @ExportMessage
         public Object execute(Object[] arguments,
-                              @Cached.Exclusive @Cached(allowUncached = true) ExecuteNode executeNode) {
-            return executeNode.execute(this, arguments);
-        }
-
-        abstract static class ExecuteNode extends Node {
-            public abstract Object execute(MethVarargs object, Object[] arguments);
-
-            @Specialization
-            @ExplodeLoop
-            public Object execute(MethVarargs object, Object[] arguments,
-                                  @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
-                                  @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
-                                  @Cached.Exclusive @Cached PythonMessageResolution.ExecuteNode executeNode) {
-                if (arguments.length != 1) {
-                    throw ArityException.raise(1, arguments.length);
-                }
-
-                // convert args
-
-                Object varArgs = toJavaNode.execute(arguments[0]);
-
-                // execute
-
-                if (executeNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    executeNode = insert(new PythonMessageResolution.ExecuteNode());
-                }
-                return toSulongNode.execute(executeNode.execute(object.getDelegate(), new Object[]{varArgs}));
+                        @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
+                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
+                        @Cached.Exclusive @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode) throws ArityException {
+            if (arguments.length != 1) {
+                throw ArityException.create(1, arguments.length);
             }
+
+            // convert args
+            Object varArgs = toJavaNode.execute(arguments[0]);
+            return toSulongNode.execute(executeNode.execute(getDelegate(), new Object[]{varArgs}));
         }
     }
 
@@ -207,6 +171,5 @@ public abstract class ManagedMethodWrappers {
     public static MethodWrapper createVarargs(Object method) {
         return new MethVarargs(method);
     }
-
 
 }

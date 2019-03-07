@@ -2,10 +2,11 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_THREAD_STATE_TYPE_ID;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper.InvalidateNativeObjectsAllManagedNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -19,7 +20,6 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -61,13 +61,11 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
 
     // READ
     @ExportMessage
-    @Override
     boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
-    @Override
     protected boolean isMemberReadable(String member) {
         switch (member) {
             case CUR_EXC_TYPE:
@@ -85,8 +83,7 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
     }
 
     @ExportMessage
-    @Override
-    protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
@@ -210,7 +207,6 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
 
     // WRITE
     @ExportMessage
-    @Override
     protected boolean isMemberModifiable(String member) {
         switch (member) {
             case CUR_EXC_TYPE:
@@ -226,7 +222,6 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
     }
 
     @ExportMessage
-    @Override
     protected boolean isMemberInsertable(String member) {
         // TODO: cbasca, fangerer is this true ?
         switch (member) {
@@ -249,14 +244,12 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
     }
 
     @ExportMessage
-    @Override
-    protected boolean isMemberRemovable(String member) {
+    protected boolean isMemberRemovable(@SuppressWarnings("unused") String member) {
         return false;
     }
 
     @ExportMessage
-    @Override
-    protected void removeMember(String member) throws UnsupportedMessageException, UnknownIdentifierException {
+    protected void removeMember(@SuppressWarnings("unused") String member) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
@@ -383,7 +376,6 @@ public class PThreadState extends NativeWrappers.PythonNativeWrapper {
     }
 
     @ExportMessage
-    @Override
     protected boolean hasNativeType() {
         return true;
     }

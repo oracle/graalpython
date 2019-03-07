@@ -57,11 +57,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -70,6 +71,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Wraps a PythonObject to provide a native view with a shape like {@code PyNumberMethods}.
@@ -91,13 +93,11 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    @Override
     protected boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
-    @Override
     protected boolean isMemberReadable(String member) {
         switch (member) {
             case NB_ADD:
@@ -114,37 +114,36 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    @Override
-    protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
     protected Object readMember(String member,
-                      @Cached.Exclusive @Cached(allowUncached = true) ReadMethodNode readMethodNode,
-                      @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.ToSulongNode toSulongNode) {
+                    @Exclusive @Cached ReadMethodNode readMethodNode,
+                    @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) throws UnknownIdentifierException {
         // translate key to attribute name
-        PythonClass delegate = this.getPythonClass();
-        return toSulongNode.execute(readMethodNode.execute(delegate, member));
+        return toSulongNode.execute(readMethodNode.execute(getPythonClass(), member));
     }
 
-    abstract static class ReadMethodNode extends PNodeWithContext {
+    @GenerateUncached
+    abstract static class ReadMethodNode extends Node {
 
-        public abstract Object execute(PythonClass clazz, String key);
+        public abstract Object execute(PythonClass clazz, String key) throws UnknownIdentifierException;
 
         @Specialization(limit = "99", guards = {"eq(cachedKey, key)"})
         Object getMethod(PythonClass clazz, @SuppressWarnings("unused") String key,
-                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
-                         @Cached.Exclusive @Cached("createLookupNode(cachedKey)") LookupAttributeInMRONode lookupNode) {
+                        @Cached("key") @SuppressWarnings("unused") String cachedKey,
+                        @Exclusive @Cached("createLookupNode(cachedKey)") LookupAttributeInMRONode lookupNode) throws UnknownIdentifierException {
             if (lookupNode != null) {
                 return lookupNode.execute(clazz);
             }
             // TODO extend list
             CompilerDirectives.transferToInterpreter();
-            throw UnknownIdentifierException.raise(key);
+            throw UnknownIdentifierException.create(key);
         }
 
-        protected LookupAttributeInMRONode createLookupNode(String key) {
+        protected LookupAttributeInMRONode createLookupNode(String key) throws UnknownIdentifierException {
             switch (key) {
                 case NB_ADD:
                     return LookupAttributeInMRONode.create(__ADD__);
@@ -162,7 +161,7 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
                     return LookupAttributeInMRONode.create(__IMUL__);
                 default:
                     // TODO extend list
-                    throw UnknownIdentifierException.raise(key);
+                    throw UnknownIdentifierException.create(key);
             }
         }
 

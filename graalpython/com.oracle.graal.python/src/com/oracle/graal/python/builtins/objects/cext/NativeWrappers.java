@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappersFactory.DynamicObjectNativeWrapperFactory.InvalidateNativeObjectsAllManagedNodeFactory.InvalidateNativeObjectsAllManagedCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -100,6 +101,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
@@ -110,7 +112,9 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -136,8 +140,6 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public abstract class NativeWrappers {
     private static final String GP_OBJECT = "gp_object";
 
-    @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(NativeTypeLibrary.class)
     public abstract static class PythonNativeWrapper implements TruffleObject {
 
         private Object delegate;
@@ -174,6 +176,38 @@ public abstract class NativeWrappers {
 
         static boolean isInstance(TruffleObject o) {
             return o instanceof DynamicObjectNativeWrapper || o instanceof TruffleObjectNativeWrapper;
+        }
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
+    public abstract static class DynamicObjectNativeWrapper extends PythonNativeWrapper {
+        private static final Layout OBJECT_LAYOUT = Layout.newLayout().build();
+        private static final Shape SHAPE = OBJECT_LAYOUT.createShape(new ObjectType());
+
+        private PythonObjectDictStorage nativeMemberStore;
+
+        public DynamicObjectNativeWrapper() {
+        }
+
+        public DynamicObjectNativeWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        public PythonObjectDictStorage createNativeMemberStore() {
+            return createNativeMemberStore(null);
+        }
+
+        public PythonObjectDictStorage createNativeMemberStore(Assumption dictStableAssumption) {
+            if (nativeMemberStore == null) {
+                nativeMemberStore = new PythonObjectDictStorage(SHAPE.newInstance(), dictStableAssumption);
+            }
+            return nativeMemberStore;
+        }
+
+        public PythonObjectDictStorage getNativeMemberStore() {
+            return nativeMemberStore;
         }
 
         // READ
@@ -698,10 +732,6 @@ public abstract class NativeWrappers {
                 return expected.equals(actual);
             }
 
-            public static ReadNativeMemberNode create() {
-                return NativeWrappersFactory.PythonNativeWrapperFactory.ReadNativeMemberNodeGen.create();
-            }
-
             private HashingStorageNodes.GetItemNode getGetItemNode() {
                 if (getItemNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -906,7 +936,7 @@ public abstract class NativeWrappers {
             }
 
             public static WriteNativeMemberNode create() {
-                return NativeWrappersFactory.PythonNativeWrapperFactory.WriteNativeMemberNodeGen.create();
+                return NativeWrappersFactory.DynamicObjectNativeWrapperFactory.WriteNativeMemberNodeGen.create();
             }
         }
 
@@ -1039,21 +1069,39 @@ public abstract class NativeWrappers {
 
             public abstract void execute();
 
-            @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
-            void doValid() {
-                nativeObjectsAllManagedAssumption().invalidate();
+            abstract static class InvalidateNativeObjectsAllManagedCachedNode extends InvalidateNativeObjectsAllManagedNode {
+
+                @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption"})
+                void doValid(
+                                @Cached("nativeObjectsAllManagedAssumption()") Assumption nativeObjectsAllManagedAssumption) {
+                    nativeObjectsAllManagedAssumption.invalidate();
+                }
+
+                @Specialization
+                void doInvalid() {
+                }
             }
 
-            @Specialization
-            void doInvalid() {
+            protected static Assumption nativeObjectsAllManagedAssumption() {
+                return PythonLanguage.getContextRef().get().getNativeObjectsAllManagedAssumption();
             }
 
-            protected Assumption nativeObjectsAllManagedAssumption() {
-                return getContext().getNativeObjectsAllManagedAssumption();
+            static final class InvalidateNativeObjectsAllManagedUncachedNode extends InvalidateNativeObjectsAllManagedNode {
+                private static final InvalidateNativeObjectsAllManagedUncachedNode INSTANCE = new InvalidateNativeObjectsAllManagedUncachedNode();
+
+                @Override
+                public void execute() {
+                    nativeObjectsAllManagedAssumption().invalidate();
+                }
+
             }
 
             public static InvalidateNativeObjectsAllManagedNode create() {
-                return NativeWrappersFactory.PythonNativeWrapperFactory.InvalidateNativeObjectsAllManagedNodeGen.create();
+                return InvalidateNativeObjectsAllManagedCachedNodeGen.create();
+            }
+
+            public static InvalidateNativeObjectsAllManagedNode getUncached() {
+                return InvalidateNativeObjectsAllManagedUncachedNode.INSTANCE;
             }
         }
 
@@ -1114,10 +1162,11 @@ public abstract class NativeWrappers {
             }
 
             public static PAsPointerNode create() {
-                return NativeWrappersFactory.PythonNativeWrapperFactory.PAsPointerNodeGen.create();
+                return NativeWrappersFactory.DynamicObjectNativeWrapperFactory.PAsPointerNodeGen.create();
             }
         }
 
+        @GenerateUncached
         abstract static class ToPyObjectNode extends CExtNodes.CExtBaseNode {
             public abstract Object execute(PythonNativeWrapper wrapper);
 
@@ -1136,10 +1185,6 @@ public abstract class NativeWrappers {
             protected static boolean isManagedPythonClass(PythonNativeWrapper wrapper) {
                 assert !(wrapper instanceof PythonClassNativeWrapper) || wrapper.getDelegate() instanceof PythonClass;
                 return wrapper instanceof PythonClassNativeWrapper && !(wrapper.getDelegate() instanceof PythonNativeClass);
-            }
-
-            public static ToPyObjectNode create() {
-                return NativeWrappersFactory.PythonNativeWrapperFactory.ToPyObjectNodeGen.create();
             }
         }
 
@@ -1167,35 +1212,6 @@ public abstract class NativeWrappers {
         protected Object getNativeType(
                         @Cached PGetDynamicTypeNode getDynamicTypeNode) {
             return getDynamicTypeNode.execute(this);
-        }
-    }
-
-    public abstract static class DynamicObjectNativeWrapper extends PythonNativeWrapper {
-        private static final Layout OBJECT_LAYOUT = Layout.newLayout().build();
-        private static final Shape SHAPE = OBJECT_LAYOUT.createShape(new ObjectType());
-
-        private PythonObjectDictStorage nativeMemberStore;
-
-        public DynamicObjectNativeWrapper() {
-        }
-
-        public DynamicObjectNativeWrapper(Object delegate) {
-            super(delegate);
-        }
-
-        public PythonObjectDictStorage createNativeMemberStore() {
-            return createNativeMemberStore(null);
-        }
-
-        public PythonObjectDictStorage createNativeMemberStore(Assumption dictStableAssumption) {
-            if (nativeMemberStore == null) {
-                nativeMemberStore = new PythonObjectDictStorage(SHAPE.newInstance(), dictStableAssumption);
-            }
-            return nativeMemberStore;
-        }
-
-        public PythonObjectDictStorage getNativeMemberStore() {
-            return nativeMemberStore;
         }
     }
 

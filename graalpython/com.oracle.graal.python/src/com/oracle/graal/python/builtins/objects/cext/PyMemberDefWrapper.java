@@ -46,12 +46,15 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -61,6 +64,7 @@ import com.oracle.truffle.api.nodes.Node;
  * Wraps a PythonObject to provide a native view with a shape like {@code PyMemberDef}.
  */
 @ExportLibrary(InteropLibrary.class)
+@ImportStatic(SpecialMethodNames.class)
 public class PyMemberDefWrapper extends PythonNativeWrapper {
     public static final String NAME = "name";
     public static final String DOC = "doc";
@@ -74,13 +78,11 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    @Override
     boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
-    @Override
     protected boolean isMemberReadable(String member) {
         switch (member) {
             case NAME:
@@ -92,34 +94,32 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    @Override
-    protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
     protected Object readMember(String member,
-                      @Cached.Exclusive @Cached(allowUncached = true) ReadFieldNode readFieldNode) {
+                    @Exclusive @Cached ReadFieldNode readFieldNode) {
         return readFieldNode.execute(this.getDelegate(), member);
     }
 
-    @ImportStatic({SpecialMethodNames.class})
+    @ImportStatic({SpecialMethodNames.class, PyMemberDefWrapper.class})
+    @GenerateUncached
     abstract static class ReadFieldNode extends Node {
-        public static final String NAME = PyMemberDefWrapper.NAME;
-        public static final String DOC = PyMemberDefWrapper.DOC;
 
         public abstract Object execute(Object delegate, String key);
 
-        protected boolean eq(String expected, String actual) {
+        protected static boolean eq(String expected, String actual) {
             return expected.equals(actual);
         }
 
         @Specialization(guards = {"eq(NAME, key)"})
         Object getName(PythonObject object, @SuppressWarnings("unused") String key,
-                       @Cached("key") @SuppressWarnings("unused") String cachedKey,
-                       @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttrNode,
-                       @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                       @Cached.Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointer asCharPointerNode) {
+                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
+                        @Shared("getAttrNode") @Cached(value = "create(__GETATTRIBUTE__)", allowUncached = true) LookupAndCallBinaryNode getAttrNode,
+                        @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached.Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
             Object doc = getAttrNode.executeObject(object, NAME);
             if (doc == PNone.NONE) {
                 return toSulongNode.execute(PNone.NO_VALUE);
@@ -130,10 +130,10 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"eq(DOC, key)"})
         Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
-                      @Cached("key") @SuppressWarnings("unused") String cachedKey,
-                      @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttrNode,
-                      @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                      @Cached.Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointer asCharPointerNode) {
+                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
+                        @Shared("getAttrNode") @Cached(value = "create(__GETATTRIBUTE__)", allowUncached = true) LookupAndCallBinaryNode getAttrNode,
+                        @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached.Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
             Object doc = getAttrNode.executeObject(object, DOC);
             if (doc == PNone.NONE) {
                 return toSulongNode.execute(PNone.NO_VALUE);
@@ -144,51 +144,34 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    @Override
     protected boolean isMemberModifiable(String member) {
         return member.equals(DOC);
     }
 
     @ExportMessage
-    @Override
     protected boolean isMemberInsertable(String member) {
         return member.equals(DOC);
     }
 
     @ExportMessage
     protected void writeMember(String member, Object value,
-                               @Cached.Exclusive @Cached(allowUncached = true) WriteFieldNode writeFieldNode) {
-        writeFieldNode.execute(this.getDelegate(), member, value);
+                    // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
+                    @Cached(value = "create(__SETATTR__)", allowUncached = true) LookupAndCallTernaryNode setAttrNode,
+                    @Exclusive @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException {
+        if (!DOC.equals(member)) {
+            CompilerDirectives.transferToInterpreter();
+            throw UnsupportedMessageException.create();
+        }
+        setAttrNode.execute(getDelegate(), member, fromCharPointerNode.execute(value));
     }
 
     @ExportMessage
-    @Override
-    protected boolean isMemberRemovable(String member) {
+    protected boolean isMemberRemovable(@SuppressWarnings("unused") String member) {
         return false;
     }
 
     @ExportMessage
-    @Override
-    protected void removeMember(String member) throws UnsupportedMessageException, UnknownIdentifierException {
+    protected void removeMember(@SuppressWarnings("unused") String member) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
-    }
-
-    @ImportStatic({SpecialMethodNames.class})
-    abstract static class WriteFieldNode extends Node {
-        public static final String DOC = PyMemberDefWrapper.DOC;
-
-        public abstract void execute(Object delegate, String key, Object value);
-
-        protected boolean eq(String expected, String actual) {
-            return expected.equals(actual);
-        }
-
-        @Specialization(guards = {"eq(DOC, key)"})
-        void getDoc(PythonObject object, @SuppressWarnings("unused") String key, Object value,
-                    @Cached("key") @SuppressWarnings("unused") String cachedKey,
-                    @Cached("create(__SETATTR__)") LookupAndCallTernaryNode setAttrNode,
-                    @Cached.Exclusive @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) {
-            setAttrNode.execute(object, key, fromCharPointerNode.execute(value));
-        }
     }
 }

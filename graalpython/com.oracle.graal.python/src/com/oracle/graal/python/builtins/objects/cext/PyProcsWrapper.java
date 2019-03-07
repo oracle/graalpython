@@ -66,7 +66,6 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    @Override
     protected boolean isExecutable() {
         return true;
     }
@@ -86,6 +85,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @Specialization
         static Object doGetAttr(GetAttrWrapper object, Object[] arguments,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
+                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
                         @Shared("executeNode") @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode,
                         @Shared("toJavaNode") @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached IsBuiltinClassProfile errProfile) throws ArityException {
@@ -108,6 +108,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
         @Specialization
         static Object doSetAttr(SetAttrWrapper object, Object[] arguments,
+                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
                         @Shared("executeNode") @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode,
                         @Shared("toJavaNode") @Cached ToJavaNode toJavaNode) throws ArityException {
             if (arguments.length != 3) {
@@ -128,6 +129,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @Specialization
         static Object doSsize(SsizeargfuncWrapper object, Object[] arguments,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
+                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
                         @Shared("executeNode") @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode,
                         @Shared("toJavaNode") @Cached ToJavaNode toJavaNode) throws ArityException {
             if (arguments.length != 2) {

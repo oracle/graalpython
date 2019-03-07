@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper.InvalidateNativeObjectsAllManagedNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -92,7 +93,7 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        public void toNative(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.AsCharPointer asCharPointerNode,
+        public void toNative(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.AsCharPointerNode asCharPointerNode,
                         @Cached.Exclusive @Cached(allowUncached = true) InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
             if (!this.isNative()) {
@@ -168,7 +169,6 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        @Override
         @SuppressWarnings("static-method")
         protected boolean hasNativeType() {
             return true;

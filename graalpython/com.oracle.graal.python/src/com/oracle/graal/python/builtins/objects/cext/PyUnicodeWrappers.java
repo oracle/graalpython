@@ -43,13 +43,15 @@ package com.oracle.graal.python.builtins.objects.cext;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper.InvalidateNativeObjectsAllManagedNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper.PAsPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -66,10 +68,6 @@ public abstract class PyUnicodeWrappers {
             return (PString) getDelegate();
         }
 
-        static boolean isInstance(TruffleObject o) {
-            return o instanceof PyUnicodeWrapper;
-        }
-
         @ExportMessage
         public boolean isPointer(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.IsPointerNode pIsPointerNode) {
             return pIsPointerNode.execute(this);
@@ -81,8 +79,8 @@ public abstract class PyUnicodeWrappers {
         }
 
         @ExportMessage
-        public void toNative(@Cached.Exclusive @Cached(allowUncached = true) ToPyObjectNode toPyObjectNode,
-                             @Cached.Exclusive @Cached(allowUncached = true) InvalidateNativeObjectsAllManagedNode invalidateNode) {
+        public void toNative(@Cached.Exclusive @Cached ToPyObjectNode toPyObjectNode,
+                        @Cached.Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
             if (!this.isNative()) {
                 this.setNativePointer(toPyObjectNode.execute(this));
@@ -100,13 +98,21 @@ public abstract class PyUnicodeWrappers {
         }
 
         @ExportMessage
-        @Override
         boolean hasMembers() {
             return true;
         }
 
         @ExportMessage
-        @Override
+        String[] getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+            return new String[]{
+                            NativeMemberNames.UNICODE_DATA_ANY,
+                            NativeMemberNames.UNICODE_DATA_LATIN1,
+                            NativeMemberNames.UNICODE_DATA_UCS2,
+                            NativeMemberNames.UNICODE_DATA_UCS4
+            };
+        }
+
+        @ExportMessage
         protected boolean isMemberReadable(String member) {
             switch (member) {
                 case NativeMemberNames.UNICODE_DATA_ANY:
@@ -121,8 +127,8 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         protected Object readMember(String member,
-                    @Cached.Exclusive @Cached(value = "create(0)", allowUncached = true) UnicodeObjectNodes.UnicodeAsWideCharNode asWideCharNode,
-                    @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.SizeofWCharNode sizeofWcharNode) {
+                        @Cached.Exclusive @Cached(value = "create(0)", allowUncached = true) UnicodeObjectNodes.UnicodeAsWideCharNode asWideCharNode,
+                        @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.SizeofWCharNode sizeofWcharNode) throws UnknownIdentifierException {
             switch (member) {
                 case NativeMemberNames.UNICODE_DATA_ANY:
                 case NativeMemberNames.UNICODE_DATA_LATIN1:
@@ -132,7 +138,7 @@ public abstract class PyUnicodeWrappers {
                     PString s = this.getPString();
                     return new PySequenceArrayWrapper(asWideCharNode.execute(s, elementSize, s.len()), elementSize);
             }
-            throw UnknownIdentifierException.raise(member);
+            throw UnknownIdentifierException.create(member);
         }
     }
 
@@ -148,13 +154,21 @@ public abstract class PyUnicodeWrappers {
         }
 
         @ExportMessage
-        @Override
         boolean hasMembers() {
             return true;
         }
 
         @ExportMessage
-        @Override
+        String[] getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+            return new String[]{
+                            NativeMemberNames.UNICODE_DATA_ANY,
+                            NativeMemberNames.UNICODE_DATA_LATIN1,
+                            NativeMemberNames.UNICODE_DATA_UCS2,
+                            NativeMemberNames.UNICODE_DATA_UCS4
+            };
+        }
+
+        @ExportMessage
         protected boolean isMemberReadable(String member) {
             switch (member) {
                 case NativeMemberNames.UNICODE_STATE_INTERNED:
@@ -170,7 +184,7 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         protected Object readMember(String member,
-                                    @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.SizeofWCharNode sizeofWcharNode) {
+                        @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.SizeofWCharNode sizeofWcharNode) throws UnknownIdentifierException {
             // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
             int value = 0b000000000000000000000000_1_0_0_000_00;
             if (onlyAscii(this.getPString().getValue())) {
@@ -186,7 +200,7 @@ public abstract class PyUnicodeWrappers {
                     // it's a bit field; so we need to return the whole 32-bit word
                     return value;
             }
-            throw UnknownIdentifierException.raise(member);
+            throw UnknownIdentifierException.create(member);
         }
 
         private boolean onlyAscii(String value) {
@@ -201,7 +215,6 @@ public abstract class PyUnicodeWrappers {
         private static boolean doCheck(String value, CharsetEncoder asciiEncoder) {
             return asciiEncoder.canEncode(value);
         }
-
 
     }
 }

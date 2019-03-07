@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToSulongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsDoubleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
@@ -750,60 +749,51 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    public abstract static class AsCharPointer extends CExtBaseNode {
+    @GenerateUncached
+    public abstract static class AsCharPointerNode extends CExtBaseNode {
         public abstract Object execute(Object obj);
 
         @Specialization
         Object doPString(PString str,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared("importStringToCStringNode") @Cached ImportCAPISymbolNode importStringToCStringNode) {
-            return doString(str.getValue(), interopLibrary, importStringToCStringNode);
+                        @Shared("callStringToCstrNode") @Cached PCallCapiFunction callStringToCstrNode) {
+            String value = str.getValue();
+            return callStringToCstrNode.call(FUN_PY_TRUFFLE_STRING_TO_CSTR, value, value.length());
         }
 
         @Specialization
         Object doString(String str,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared("importStringToCStringNode") @Cached ImportCAPISymbolNode importStringToCStringNode) {
-            try {
-                return interopLibrary.execute(importStringToCStringNode.execute(FUN_PY_TRUFFLE_STRING_TO_CSTR), str, str.length());
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw e.raise();
-            }
+                        @Shared("callStringToCstrNode") @Cached PCallCapiFunction callStringToCstrNode) {
+            return callStringToCstrNode.call(FUN_PY_TRUFFLE_STRING_TO_CSTR, str, str.length());
         }
 
         @Specialization
         Object doByteArray(byte[] arr,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            try {
-                return interopLibrary.execute(importCAPISymbolNode.execute(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE), getContext().getEnv().asGuestValue(arr), arr.length);
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw e.raise();
-            }
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Exclusive @Cached PCallCapiFunction callByteArrayToNativeNode) {
+            return callByteArrayToNativeNode.call(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE, context.getEnv().asGuestValue(arr), arr.length);
         }
 
-        public static AsCharPointer create() {
-            return AsCharPointerNodeGen.create();
+        // TODO(fa): Workaround for DSL bug: did not import factory at users
+        public static AsCharPointerNode create() {
+            return CExtNodesFactory.AsCharPointerNodeGen.create();
+        }
+
+        // TODO(fa): Workaround for DSL bug: did not import factory at users
+        public static AsCharPointerNode getUncached() {
+            return CExtNodesFactory.AsCharPointerNodeGen.getUncached();
         }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    @GenerateUncached
     public abstract static class FromCharPointerNode extends CExtBaseNode {
         public abstract String execute(Object charPtr);
 
         @Specialization
         public String execute(Object charPtr,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            try {
-                return (String) interopLibrary.execute(importCAPISymbolNode.execute(FUN_PY_TRUFFLE_CSTR_TO_STRING), charPtr);
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw e.raise();
-            }
-        }
+                        @Cached PCallCapiFunction callCstrToStringNode) {
 
-        public static FromCharPointerNode create() {
-            return CExtNodesFactory.FromCharPointerNodeGen.create();
+            return (String) callCstrToStringNode.call(FUN_PY_TRUFFLE_CSTR_TO_STRING, charPtr);
         }
     }
 

@@ -45,9 +45,9 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -64,22 +64,16 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
         super(delegate);
     }
 
-    static boolean isInstance(TruffleObject o) {
-        return o instanceof PySequenceMethodsWrapper;
-    }
-
     public PythonClass getPythonClass() {
         return (PythonClass) getDelegate();
     }
 
     @ExportMessage
-    @Override
     protected boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
-    @Override
     protected boolean isMemberReadable(String member) {
         switch (member) {
             case NativeMemberNames.SQ_REPEAT:
@@ -91,16 +85,15 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    @Override
-    protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
     protected Object readMember(String member,
-             @Cached.Exclusive @Cached(value = "create(__MUL__)", allowUncached = true) LookupAttributeInMRONode getSqItemNode,
-             @Cached.Exclusive @Cached(value = "create(__GETITEM__)", allowUncached = true) LookupAttributeInMRONode getSqRepeatNode,
-             @Cached.Exclusive @Cached(allowUncached = true) CExtNodes.ToSulongNode toSulongNode) {
+                    @Exclusive @Cached("create(__MUL__)") LookupAttributeInMRONode getSqItemNode,
+                    @Exclusive @Cached("create(__GETITEM__)") LookupAttributeInMRONode getSqRepeatNode,
+                    @Exclusive @Cached(allowUncached = true) CExtNodes.ToSulongNode toSulongNode) throws UnknownIdentifierException {
         Object result;
         switch (member) {
             case NativeMemberNames.SQ_REPEAT:
@@ -110,7 +103,7 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
                 return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(this.getPythonClass()));
             default:
                 // TODO extend list
-                throw UnknownIdentifierException.raise(member);
+                throw UnknownIdentifierException.create(member);
         }
         return toSulongNode.execute(result);
     }
