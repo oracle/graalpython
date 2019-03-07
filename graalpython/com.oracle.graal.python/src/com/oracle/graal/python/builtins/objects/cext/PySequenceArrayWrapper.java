@@ -94,7 +94,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     final boolean isArrayElementReadable(long identifier,
                     @Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
-        return 0 <= identifier && identifier < getArraySize(getSequenceStorageNode, lenNode);
+        // also include the implicit null-terminator
+        return 0 <= identifier && identifier <= getArraySize(getSequenceStorageNode, lenNode);
     }
 
     @ImportStatic(SpecialMethodNames.class)
