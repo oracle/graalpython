@@ -54,7 +54,10 @@ class TestPySlice(CPyExtTestCase):
         slicelength = 0
         for i in range(r[0], r[1], r[2]):
             slicelength += 1
-        return (0, *r, slicelength)
+        retval = [0]
+        retval += list(r)
+        retval.append(slicelength)
+        return tuple(retval)
 
 
     test_PySlice_GetIndicesEx = CPyExtFunction(
