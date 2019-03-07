@@ -297,6 +297,7 @@ suite = {
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
+                "sulong:SULONG",
             ],
             "sourcesPath": "graalpython.src.zip",
             "description": "GraalPython engine",

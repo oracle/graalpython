@@ -91,7 +91,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNodeGen;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
@@ -148,8 +147,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
-    @ImportStatic(PGuards.class)
-    abstract static class CExtBaseNode extends PNodeWithContext {
+    @com.oracle.truffle.api.dsl.ImportStatic(PGuards.class)
+    abstract static class CExtBaseNode extends com.oracle.graal.python.nodes.PNodeWithContext {
         protected static boolean isNativeWrapper(Object obj) {
             return obj instanceof PythonNativeWrapper;
         }
@@ -187,7 +186,7 @@ public abstract class CExtNodes {
         protected static Object importCAPISymbolUncached(PythonContext context, String name) {
             Object capiLibrary = context.getCapiLibrary();
             InteropLibrary uncached = InteropLibrary.getFactory().getUncached(capiLibrary);
-            return importCAPISymbol(PRaiseNodeGen.getUncached(), uncached, capiLibrary, name);
+            return importCAPISymbol(PRaiseNode.getUncached(), uncached, capiLibrary, name);
         }
 
         private static Object importCAPISymbol(PRaiseNode raiseNode, InteropLibrary library, Object capiLibrary, String name) {
@@ -735,7 +734,7 @@ public abstract class CExtNodes {
             }
 
             @Override
-            protected boolean isAdoptable() {
+            public boolean isAdoptable() {
                 return false;
             }
 
@@ -1496,7 +1495,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    public abstract static class IsPointerNode extends PNodeWithContext {
+    public abstract static class IsPointerNode extends com.oracle.graal.python.nodes.PNodeWithContext {
 
         public abstract boolean execute(PythonNativeWrapper obj);
 
@@ -1512,8 +1511,8 @@ public abstract class CExtNodes {
                 return obj.isNative();
             }
 
-            protected Assumption nativeObjectsAllManagedAssumption() {
-                return getContext().getNativeObjectsAllManagedAssumption();
+            protected static Assumption nativeObjectsAllManagedAssumption() {
+                return PythonLanguage.getContextRef().get().getNativeObjectsAllManagedAssumption();
             }
         }
 

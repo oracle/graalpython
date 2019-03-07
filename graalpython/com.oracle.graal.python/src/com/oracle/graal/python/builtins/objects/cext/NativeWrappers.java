@@ -1134,7 +1134,7 @@ public abstract class NativeWrappers {
             }
 
             protected static boolean isManagedPythonClass(PythonNativeWrapper wrapper) {
-                assert wrapper.getDelegate() instanceof PythonClass;
+                assert !(wrapper instanceof PythonClassNativeWrapper) || wrapper.getDelegate() instanceof PythonClass;
                 return !(wrapper.getDelegate() instanceof PythonNativeClass);
             }
 

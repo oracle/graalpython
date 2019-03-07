@@ -93,7 +93,11 @@ public abstract class PNodeWithContext extends Node {
     }
 
     public final PException raise(PBaseException exc) {
-        throw PException.fromObject(exc, NodeUtil.getEncapsulatingNode(this));
+        if (isAdoptable()) {
+            throw PException.fromObject(exc, this);
+        } else {
+            throw PException.fromObject(exc, NodeUtil.getCurrentEncapsulatingNode());
+        }
     }
 
     public PException raise(LazyPythonClass exceptionType) {

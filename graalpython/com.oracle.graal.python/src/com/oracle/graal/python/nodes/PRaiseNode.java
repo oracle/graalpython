@@ -48,7 +48,11 @@ public abstract class PRaiseNode extends Node {
     }
 
     public static PException raise(Node raisingNode, PBaseException exc) {
-        throw PException.fromObject(exc, NodeUtil.getEncapsulatingNode(raisingNode));
+        if (raisingNode.isAdoptable()) {
+            throw PException.fromObject(exc, raisingNode);
+        } else {
+            throw PException.fromObject(exc, NodeUtil.getCurrentEncapsulatingNode());
+        }
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0"})
@@ -77,5 +81,9 @@ public abstract class PRaiseNode extends Node {
     @TruffleBoundary
     private static final String getMessage(Exception e) {
         return e.getMessage();
+    }
+
+    public static PRaiseNode getUncached() {
+        return PRaiseNodeGen.getUncached();
     }
 }
