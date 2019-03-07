@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.GetTypeFlagsNode;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
@@ -132,7 +134,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected boolean isMemberReadable(String member) {
-        // TODO: op on the keys from ReadNativeMemberNode - although there are too many in there
         return true;
     }
 
@@ -603,11 +604,16 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         protected boolean isPyDateTimeCAPI(PythonObject object) {
-            return getClass(object).getName().equals("PyDateTime_CAPI");
+            return isPyDateTimeCAPIType(getClass(object));
         }
 
         protected boolean isPyDateTime(PythonObject object) {
             return getClass(object).getName().equals("datetime");
+        }
+
+        protected static boolean isPyDateTimeCAPIType(LazyPythonClass klass) {
+            return "PyDateTime_CAPI".equals(klass.getName());
+
         }
 
         @Specialization(guards = "isPyDateTimeCAPI(object)")
@@ -1086,9 +1092,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        @Override
-        protected boolean isMemberReadable(String member) {
-            return member.equals(DynamicObjectNativeWrapper.GP_OBJECT) || NativeMemberNames.isValid(member);
+        protected boolean isMemberReadable(String member,
+                        @Cached GetLazyClassNode getClassNode) {
+            return member.equals(DynamicObjectNativeWrapper.GP_OBJECT) || NativeMemberNames.isValid(member) || ReadNativeMemberNode.isPyDateTimeCAPIType(getClassNode.execute(getDelegate()));
         }
 
         @ExportMessage
@@ -1199,6 +1205,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         public static PrimitiveNativeWrapper createDouble(double val) {
             return new PrimitiveNativeWrapper(val);
+        }
+
+        @Override
+        @ExportMessage
+        protected boolean isMemberReadable(String member) {
+            return member.equals(DynamicObjectNativeWrapper.GP_OBJECT) || NativeMemberNames.isValid(member);
         }
     }
 
