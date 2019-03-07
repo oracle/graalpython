@@ -1429,16 +1429,4 @@ public abstract class NativeWrappers {
             return String.format("PythonClassNativeInitWrapper(%s, isNative=%s)", getPythonObject(), isNative());
         }
     }
-
-    public static class TruffleObjectNativeWrapper extends PythonNativeWrapper {
-
-        public TruffleObjectNativeWrapper(TruffleObject foreignObject) {
-            super(foreignObject);
-        }
-
-        public static TruffleObjectNativeWrapper wrap(TruffleObject foreignObject) {
-            assert !(foreignObject instanceof PythonNativeWrapper) : "attempting to wrap a native wrapper";
-            return new TruffleObjectNativeWrapper(foreignObject);
-        }
-    }
 }
