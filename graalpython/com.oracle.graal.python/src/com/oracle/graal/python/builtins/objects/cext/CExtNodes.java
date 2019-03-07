@@ -75,8 +75,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpca
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCompareNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeFactory.ToJavaCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -386,8 +384,8 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     /**
-     * Unwraps objects contained in {@link DynamicObjectNativeWrapper.PythonObjectNativeWrapper} instances or wraps objects
-     * allocated in native code for consumption in Java.
+     * Unwraps objects contained in {@link DynamicObjectNativeWrapper.PythonObjectNativeWrapper}
+     * instances or wraps objects allocated in native code for consumption in Java.
      */
     @GenerateUncached
     public abstract static class AsPythonObjectNode extends CExtBaseNode {
@@ -1223,6 +1221,9 @@ public abstract class CExtNodes {
         double runGeneric(PythonAbstractObject value,
                         @Cached(value = "create(__FLOAT__)", allowUncached = true) LookupAndCallUnaryNode callFloatFunc,
                         @Cached PRaiseNode raiseNode) {
+            if (PGuards.isPFloat(value)) {
+                return ((PFloat) value).getValue();
+            }
             Object result = callFloatFunc.executeObject(value);
             if (PGuards.isPFloat(result)) {
                 return ((PFloat) result).getValue();
