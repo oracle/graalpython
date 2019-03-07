@@ -1,6 +1,6 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 /**
@@ -8,7 +8,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
  * in {@code PyType_Ready} and we need to pass the mirroring managed class to native to marry
  * these two objects.
  */
-public class PythonClassInitNativeWrapper extends PythonObjectNativeWrapper {
+public class PythonClassInitNativeWrapper extends DynamicObjectNativeWrapper.PythonObjectNativeWrapper {
 
     public PythonClassInitNativeWrapper(PythonClass object) {
         super(object);

@@ -43,9 +43,8 @@ package com.oracle.graal.python.builtins.objects.cext;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper.InvalidateNativeObjectsAllManagedNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper.PAsPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper.ToPyObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;

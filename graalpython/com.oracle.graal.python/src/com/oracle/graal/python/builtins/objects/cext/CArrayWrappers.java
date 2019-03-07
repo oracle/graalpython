@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper.InvalidateNativeObjectsAllManagedNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -104,7 +103,7 @@ public abstract class CArrayWrappers {
 
     /**
      * Unlike a
-     * {@link com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper}
+     * {@link com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper}
      * object that wraps a Python unicode object, this wrapper let's a Java String look like a
      * {@code char*}.
      */

@@ -1,14 +1,14 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 /**
  * Used to wrap {@link PythonClass} when used in native code. This wrapper mimics the correct
  * shape of the corresponding native type {@code struct _typeobject}.
  */
-public class PythonClassNativeWrapper extends PythonObjectNativeWrapper {
+public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonObjectNativeWrapper {
     private final CStringWrapper nameWrapper;
     private Object getBufferProc;
     private Object releaseBufferProc;

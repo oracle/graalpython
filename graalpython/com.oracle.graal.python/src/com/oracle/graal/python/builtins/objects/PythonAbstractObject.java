@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.nodes.interop.PTypeUnboxNode;
 import com.oracle.graal.python.nodes.interop.PTypeUnboxNodeGen;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolutionForeign;

@@ -2,7 +2,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -20,19 +20,19 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
     public abstract Object execute(PythonNativeWrapper obj);
 
     @Specialization(guards = "obj.isIntLike()")
-    Object doIntLike(@SuppressWarnings("unused") PrimitiveNativeWrapper obj,
+    Object doIntLike(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
                     @Cached(value = "getLongobjectType()", allowUncached = true) Object cachedSulongType) {
         return cachedSulongType;
     }
 
     @Specialization(guards = "obj.isBool()")
-    Object doBool(@SuppressWarnings("unused") PrimitiveNativeWrapper obj,
+    Object doBool(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
                     @Cached(value = "getBoolobjectType()", allowUncached = true) Object cachedSulongType) {
         return cachedSulongType;
     }
 
     @Specialization(guards = "obj.isDouble()")
-    Object doDouble(@SuppressWarnings("unused") PrimitiveNativeWrapper obj,
+    Object doDouble(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
                     @Cached(value = "getFloatobjectType()", allowUncached = true) Object cachedSulongType) {
         return cachedSulongType;
     }

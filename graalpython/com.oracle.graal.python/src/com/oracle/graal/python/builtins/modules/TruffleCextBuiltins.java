@@ -90,10 +90,11 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassInitNativeWrapper;
@@ -581,7 +582,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(Object typestruct, PythonObjectNativeWrapper metaClass, PythonObjectNativeWrapper baseClasses, PythonObjectNativeWrapper nativeMembers,
+        Object run(Object typestruct, DynamicObjectNativeWrapper.PythonObjectNativeWrapper metaClass, DynamicObjectNativeWrapper.PythonObjectNativeWrapper baseClasses, DynamicObjectNativeWrapper.PythonObjectNativeWrapper nativeMembers,
                         @Cached("create()") CExtNodes.ToJavaNode toJavaNode) {
             // TODO(fa) use recursive node
             return run(typestruct, (PythonClass) toJavaNode.execute(metaClass), (PTuple) toJavaNode.execute(baseClasses), (PDict) toJavaNode.execute(nativeMembers));
@@ -726,7 +727,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         public abstract Object execute(String name, Object result);
 
         @Specialization
-        Object doNativeWrapper(String name, PythonObjectNativeWrapper result,
+        Object doNativeWrapper(String name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
                         @Cached("create()") CheckFunctionResultNode recursive) {
             return recursive.execute(name, result.getDelegate());
         }
@@ -794,7 +795,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         protected static boolean isPythonObjectNativeWrapper(PythonNativeWrapper object) {
-            return object instanceof PythonObjectNativeWrapper;
+            return object instanceof DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
         }
 
         public static CheckFunctionResultNode create() {
@@ -2305,12 +2306,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private CExtNodes.AsDouble asDoubleNode;
 
         @Specialization(guards = "!object.isDouble()")
-        double doLongNativeWrapper(PrimitiveNativeWrapper object) {
+        double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object.getLong();
         }
 
         @Specialization(guards = "object.isDouble()")
-        double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
+        double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object.getDouble();
         }
 
@@ -2347,12 +2348,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private BuiltinConstructors.FloatNode floatNode;
 
         @Specialization(guards = "object.isDouble()")
-        Object doDoubleNativeWrapper(@SuppressWarnings("unused") Object module, PrimitiveNativeWrapper object) {
+        Object doDoubleNativeWrapper(@SuppressWarnings("unused") Object module, DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object;
         }
 
         @Specialization(guards = "!object.isDouble()")
-        Object doLongNativeWrapper(@SuppressWarnings("unused") Object module, PrimitiveNativeWrapper object,
+        Object doLongNativeWrapper(@SuppressWarnings("unused") Object module, DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
                         @Cached("create()") CExtNodes.ToSulongNode primitiveToSulongNode) {
             return primitiveToSulongNode.execute((double) object.getLong());
         }
