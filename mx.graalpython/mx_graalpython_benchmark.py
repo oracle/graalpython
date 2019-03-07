@@ -81,6 +81,7 @@ class AbstractPythonVm(Vm):
     __metaclass__ = ABCMeta
 
     def __init__(self, config_name, options=None):
+        super(AbstractPythonVm, self).__init__()
         self._config_name = config_name
         self._options = options
 
@@ -256,6 +257,7 @@ python_vm_registry = mx_benchmark.VmRegistry(PYTHON_VM_REGISTRY_NAME, known_host
 
 class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def __init__(self, name, bench_path, benchmarks, python_path=None):
+        super(PythonBenchmarkSuite, self).__init__()
         self._name = name
         self._python_path = python_path
         self._harness_path = HARNESS_PATH

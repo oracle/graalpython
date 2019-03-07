@@ -596,7 +596,6 @@ public abstract class SequenceStorageNodes {
     abstract static class GetItemSliceNode extends SequenceStorageBaseNode {
 
         @Child private Node readNode;
-        @Child private Node executeNode;
 
         public abstract SequenceStorage execute(SequenceStorage s, int start, int stop, int step, int length);
 
@@ -687,7 +686,6 @@ public abstract class SequenceStorageNodes {
         @Child private SetItemScalarNode setItemScalarNode;
         @Child private SetItemSliceNode setItemSliceNode;
         @Child private GeneralizationNode generalizationNode;
-        @Child private SetItemNode recursive;
 
         private final BranchProfile generalizeProfile = BranchProfile.create();
         private final Supplier<GeneralizationNode> generalizationNodeProvider;
@@ -1128,7 +1126,6 @@ public abstract class SequenceStorageNodes {
 
     @ImportStatic(NativeCAPISymbols.class)
     public abstract static class StorageToNativeNode extends PNodeWithContext {
-        @Child private Node executeNode;
 
         public abstract NativeSequenceStorage execute(Object obj);
 
@@ -2067,7 +2064,6 @@ public abstract class SequenceStorageNodes {
         private static final String ERROR_MSG = "can't multiply sequence by non-int of type '%p'";
 
         @Child private GetItemScalarNode getItemNode;
-        @Child private GetItemScalarNode getRightItemNode;
         @Child private IsIndexNode isIndexNode;
         @Child private CastToIndexNode castToindexNode;
         @Child private RepeatNode recursive;
@@ -2865,7 +2861,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isBoolean(s)")
         int doBoolean(SequenceStorage s, boolean item, int start, int end) {
             for (int i = start; i < getLength(s, end); i++) {
-                if (getItemNode().executeBoolean(s, i) == item) {
+                if (getItemScalarNode().executeBoolean(s, i) == item) {
                     return i;
                 }
             }
@@ -2875,7 +2871,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isByte(s)")
         int doByte(SequenceStorage s, byte item, int start, int end) {
             for (int i = start; i < getLength(s, end); i++) {
-                if (getItemNode().executeByte(s, i) == item) {
+                if (getItemScalarNode().executeByte(s, i) == item) {
                     return i;
                 }
             }
@@ -2885,7 +2881,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isChar(s)")
         int doChar(SequenceStorage s, char item, int start, int end) {
             for (int i = start; i < getLength(s, end); i++) {
-                if (getItemNode().executeChar(s, i) == item) {
+                if (getItemScalarNode().executeChar(s, i) == item) {
                     return i;
                 }
             }
@@ -2895,7 +2891,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isInt(s)")
         int doInt(SequenceStorage s, int item, int start, int end) {
             for (int i = start; i < getLength(s, end); i++) {
-                if (getItemNode().executeInt(s, i) == item) {
+                if (getItemScalarNode().executeInt(s, i) == item) {
                     return i;
                 }
             }
@@ -2905,7 +2901,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isLong(s)")
         int doLong(SequenceStorage s, long item, int start, int end) {
             for (int i = start; i < getLength(s, end); i++) {
-                if (getItemNode().executeLong(s, i) == item) {
+                if (getItemScalarNode().executeLong(s, i) == item) {
                     return i;
                 }
             }
@@ -2915,7 +2911,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isDouble(s)")
         int doDouble(SequenceStorage s, double item, int start, int end) {
             for (int i = start; i < getLength(s, end); i++) {
-                if (getItemNode().executeDouble(s, i) == item) {
+                if (getItemScalarNode().executeDouble(s, i) == item) {
                     return i;
                 }
             }
@@ -2927,7 +2923,7 @@ public abstract class SequenceStorageNodes {
                         @Cached("createIfTrueNode()") CastToBooleanNode castToBooleanNode,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
             for (int i = start; i < getLength(s, end); i++) {
-                Object object = getItemNode().execute(s, i);
+                Object object = getItemScalarNode().execute(s, i);
                 if (castToBooleanNode.executeWith(eqNode.executeWith(object, item))) {
                     return i;
                 }
@@ -2935,7 +2931,7 @@ public abstract class SequenceStorageNodes {
             return -1;
         }
 
-        private GetItemScalarNode getItemNode() {
+        private GetItemScalarNode getItemScalarNode() {
             if (getItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getItemNode = insert(GetItemScalarNode.create());

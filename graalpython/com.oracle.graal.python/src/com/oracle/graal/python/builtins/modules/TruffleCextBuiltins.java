@@ -1351,17 +1351,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         long doPythonObject(PythonNativeWrapper nativeWrapper) {
-            PythonAbstractClass pclass = getClassNode().execute(nativeWrapper.getDelegate());
-            return getTypeFlagsNode().execute(pclass);
+            PythonAbstractClass pclass = getGetClassNode().execute(nativeWrapper.getDelegate());
+            return getGetTypeFlagsNode().execute(pclass);
         }
 
         @Specialization
         long doPythonObject(PythonAbstractObject object) {
-            PythonAbstractClass pclass = getClassNode().execute(object);
-            return getTypeFlagsNode().execute(pclass);
+            PythonAbstractClass pclass = getGetClassNode().execute(object);
+            return getGetTypeFlagsNode().execute(pclass);
         }
 
-        private GetClassNode getClassNode() {
+        private GetClassNode getGetClassNode() {
             if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getClassNode = insert(GetClassNode.create());
@@ -1369,7 +1369,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return getClassNode;
         }
 
-        private GetTypeFlagsNode getTypeFlagsNode() {
+        private GetTypeFlagsNode getGetTypeFlagsNode() {
             if (getTypeFlagsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getTypeFlagsNode = insert(GetTypeFlagsNode.create());

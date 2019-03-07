@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -74,7 +74,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
 
     @Child private LookupInheritedAttributeNode getThrowNode;
     @Child private CallNode callThrowNode;
-    @Child private GetClassNode getExceptionClassNode;
+    @Child private GetClassNode getExcClassNode;
 
     @Child private LookupAndCallBinaryNode getSendNode;
     @Child private CallNode callSendNode;
@@ -216,11 +216,11 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     }
 
     private GetClassNode getExceptionClassNode() {
-        if (getExceptionClassNode == null) {
+        if (getExcClassNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getExceptionClassNode = insert(GetClassNode.create());
+            getExcClassNode = insert(GetClassNode.create());
         }
-        return getExceptionClassNode;
+        return getExcClassNode;
     }
 
     private LookupInheritedAttributeNode getGetCloseNode() {

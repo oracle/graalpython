@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -98,7 +98,7 @@ public abstract class CastToListNode extends UnaryOpNode {
         SequenceStorage s = v.getSequenceStorage();
         Object[] array = new Object[cachedLength];
         for (int i = 0; i < cachedLength; i++) {
-            array[i] = getItemNode().execute(s, i);
+            array[i] = getGetItemNode().execute(s, i);
         }
         return factory().createList(array);
     }
@@ -136,7 +136,7 @@ public abstract class CastToListNode extends UnaryOpNode {
         return lenNode.execute(t.getSequenceStorage());
     }
 
-    protected SequenceStorageNodes.GetItemNode getItemNode() {
+    protected SequenceStorageNodes.GetItemNode getGetItemNode() {
         if (getItemNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             getItemNode = insert(SequenceStorageNodes.GetItemNode.createNotNormalized());

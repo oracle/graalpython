@@ -324,8 +324,9 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             if (fileSize < 0) {
                 throw raise(PythonErrorType.ZipImportError, "negative data size");
             }
+            ZipFile zip = null;
             try {
-                ZipFile zip = new ZipFile(archive);
+                zip = new ZipFile(archive);
                 ZipEntry entry = zip.getEntry(key);
                 InputStream in = zip.getInputStream(entry);
                 int byteSize = (int) fileSize;
@@ -341,9 +342,16 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 return factory().createBytes(bytes);
             } catch (IOException e) {
                 throw raise(PythonErrorType.ZipImportError, "zipimport: can't read data");
+            } finally {
+                if (zip != null) {
+                    try {
+                        zip.close();
+                    } catch (IOException e) {
+                        // just ignore it.
+                    }
+                }
             }
         }
-
     }
 
     @Builtin(name = "get_filename", minNumOfPositionalArgs = 2)

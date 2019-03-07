@@ -165,7 +165,7 @@ public class PythonObject extends PythonAbstractObject {
 
     @Override
     public int compareTo(Object o) {
-        return this.equals(o) ? 0 : 1;
+        return this == o ? 0 : 1;
     }
 
     /**

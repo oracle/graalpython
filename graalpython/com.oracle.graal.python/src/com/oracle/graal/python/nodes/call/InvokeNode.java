@@ -165,6 +165,7 @@ abstract class CallTargetInvokeNode extends AbstractInvokeNode {
 }
 
 public abstract class InvokeNode extends AbstractInvokeNode {
+    private static final GenericInvokeNode UNCACHED = new GenericInvokeNode();
     @Child private DirectCallNode callNode;
     private final PythonObject globals;
     private final PCell[] closure;
@@ -197,6 +198,14 @@ public abstract class InvokeNode extends AbstractInvokeNode {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
         return InvokeNodeGen.create(callTarget, null, null, builtin, false);
+    }
+
+    public static Object invokeUncached(PFunction callee, Object[] arguments) {
+        return UNCACHED.execute(null, callee, arguments);
+    }
+
+    public static Object invokeUncached(PBuiltinFunction callee, Object[] arguments) {
+        return UNCACHED.execute(null, callee, arguments);
     }
 
     @Specialization

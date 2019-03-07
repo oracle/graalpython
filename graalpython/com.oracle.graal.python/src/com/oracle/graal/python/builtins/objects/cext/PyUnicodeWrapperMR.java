@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -176,8 +176,6 @@ public class PyUnicodeWrapperMR {
     abstract static class PyUnicodeToNativeNode extends CExtBaseNode {
         @CompilationFinal private TruffleObject derefHandleIntrinsic;
         @Child private PCallNativeNode callNativeUnary;
-        @Child private PCallNativeNode callNativeBinary;
-        @Child private CExtNodes.ToSulongNode toSulongNode;
 
         public abstract Object execute(Object value);
 

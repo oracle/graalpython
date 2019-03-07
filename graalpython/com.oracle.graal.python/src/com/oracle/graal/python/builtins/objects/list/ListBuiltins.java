@@ -95,7 +95,6 @@ import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -105,7 +104,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PList)
 public class ListBuiltins extends PythonBuiltins {
@@ -487,8 +485,6 @@ public class ListBuiltins extends PythonBuiltins {
         private static final String POP_INDEX_OUT_OF_RANGE = "pop index out of range";
 
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
-
-        @CompilationFinal private ValueProfile storeProfile;
 
         @Specialization
         public Object popLast(PList list, @SuppressWarnings("unused") PNone none,
