@@ -44,18 +44,15 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FU
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -130,40 +127,24 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        final Object readArrayElement(long index,
-                        @Cached.Exclusive @Cached(allowUncached = true) ReadNode readNode) {
-            return readNode.execute(this, index);
-        }
-
-        @ExportMessage
-        final boolean isArrayElementReadable(long identifier) {
-            return 0 <= identifier && identifier < getArraySize();
-        }
-
-        abstract static class ReadNode extends Node {
-            public abstract char execute(CStringWrapper object, Object idx);
-
-            @Specialization
-            public char executeInt(CStringWrapper object, int idx) {
-                String s = object.getString();
+        final Object readArrayElement(long index) throws InvalidArrayIndexException {
+            try {
+                int idx = PInt.intValueExact(index);
+                String s = getString();
                 if (idx >= 0 && idx < s.length()) {
                     return s.charAt(idx);
                 } else if (idx == s.length()) {
                     return '\0';
                 }
-                CompilerDirectives.transferToInterpreter();
-                throw UnknownIdentifierException.raise(Integer.toString(idx));
+            } catch (ArithmeticException e) {
+                // fall through
             }
+            throw InvalidArrayIndexException.create(index);
+        }
 
-            @Specialization
-            public char executeLong(CStringWrapper object, long idx) {
-                try {
-                    return executeInt(object, PInt.intValueExact(idx));
-                } catch (ArithmeticException e) {
-                    CompilerDirectives.transferToInterpreter();
-                    throw UnknownIdentifierException.raise(Long.toString(idx));
-                }
-            }
+        @ExportMessage
+        final boolean isArrayElementReadable(long identifier) {
+            return 0 <= identifier && identifier < getArraySize();
         }
 
         @ExportMessage
@@ -200,45 +181,30 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
+        @SuppressWarnings("static-method")
         final boolean hasArrayElements() {
             return true;
         }
 
         @ExportMessage
-        final Object readArrayElement(long index,
-                        @Cached.Exclusive @Cached(allowUncached = true) ReadNode readNode) {
-            return readNode.execute(this, index);
-        }
-
-        @ExportMessage
-        final boolean isArrayElementReadable(long identifier) {
-            return 0 <= identifier && identifier < getArraySize();
-        }
-
-        abstract static class ReadNode extends Node {
-            public abstract byte execute(CByteArrayWrapper object, Object idx);
-
-            @Specialization
-            public byte executeInt(CByteArrayWrapper object, int idx) {
-                byte[] arr = object.getByteArray();
+        Object readArrayElement(long index) throws InvalidArrayIndexException {
+            try {
+                int idx = PInt.intValueExact(index);
+                byte[] arr = getByteArray();
                 if (idx >= 0 && idx < arr.length) {
                     return arr[idx];
                 } else if (idx == arr.length) {
                     return (byte) 0;
                 }
-                CompilerDirectives.transferToInterpreter();
-                throw UnknownIdentifierException.raise(Integer.toString(idx));
+            } catch (ArithmeticException e) {
+                // fall through
             }
+            throw InvalidArrayIndexException.create(index);
+        }
 
-            @Specialization
-            public byte executeLong(CByteArrayWrapper object, long idx) {
-                try {
-                    return executeInt(object, PInt.intValueExact(idx));
-                } catch (ArithmeticException e) {
-                    CompilerDirectives.transferToInterpreter();
-                    throw UnknownIdentifierException.raise(Long.toString(idx));
-                }
-            }
+        @ExportMessage
+        final boolean isArrayElementReadable(long identifier) {
+            return 0 <= identifier && identifier < getArraySize();
         }
     }
 }
