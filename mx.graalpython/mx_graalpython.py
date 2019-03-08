@@ -264,7 +264,7 @@ def gate_unittests(args=None, subdir=""):
     else:
         pre_args = []
         post_args = args
-    mx.command_function("python")(["--python.CatchAllExceptions=true"] + pre_args + test_args + post_args)
+    mx.command_function("python")(["--experimental-options=true", "--python.CatchAllExceptions=true"] + pre_args + test_args + post_args)
     if platform.system() != 'Darwin':
         # TODO: re-enable when python3 is available on darwin
         mx.log("Running tests with CPython")
@@ -272,7 +272,7 @@ def gate_unittests(args=None, subdir=""):
     if platform.system() != 'Darwin' and not pre_args and not post_args and not subdir:
         mx.log("Running cpyext tests with opaque FS")
         test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/cpyext/"]
-        mx.command_function("python")(["--python.CatchAllExceptions=true", "--python.OpaqueFilesystem"] + pre_args + test_args + post_args)
+        mx.command_function("python")(["--experimental-options=true", "--python.CatchAllExceptions=true", "--python.OpaqueFilesystem"] + pre_args + test_args + post_args)
 
 
 def run_python_unittests(python_binary, args=None, aot_compatible=True, exclude=None):
