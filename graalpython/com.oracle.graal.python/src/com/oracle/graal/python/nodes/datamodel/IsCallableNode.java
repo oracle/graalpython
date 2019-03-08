@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -52,15 +54,12 @@ import com.oracle.truffle.api.dsl.Specialization;
 
 @GenerateUncached
 public abstract class IsCallableNode extends PDataModelEmulationNode {
-    protected static boolean isNoCallable(Object callee) {
-        return !PGuards.isCallable(callee);
-    }
 
-    @Specialization(guards = {"isNoCallable(callable) || isClass(callable)"})
+    @Specialization(guards = {"!PGuards.isCallable(callable) || isClass(callable)"})
     protected static boolean isSpecialCallable(Object callable,
-                    @Cached(value = "create(__CALL__)", allowUncached = true) LookupInheritedAttributeNode callAttrGetterNode) {
-        Object call = callAttrGetterNode.execute(callable);
-        return !isNoCallable(call);
+                    @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode) {
+        Object call = callAttrGetterNode.execute(callable, __CALL__);
+        return PGuards.isCallable(call);
     }
 
     @Specialization
@@ -85,5 +84,9 @@ public abstract class IsCallableNode extends PDataModelEmulationNode {
 
     public static IsCallableNode create() {
         return IsCallableNodeGen.create();
+    }
+
+    public static IsCallableNode getUncached() {
+        return IsCallableNodeGen.getUncached();
     }
 }
