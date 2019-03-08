@@ -114,7 +114,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-@MessageResolution(receiverType = PythonObject.class)
 public class PythonMessageResolution {
     private static final class HasSetItem extends Node {
         @Child private LookupInheritedAttributeNode getSetItemNode = LookupInheritedAttributeNode.create(__SETITEM__);
@@ -439,7 +438,7 @@ public class PythonMessageResolution {
         }
     }
 
-    @Resolve(message = "READ")
+// @Resolve(message = "READ")
     abstract static class PForeignReadNode extends Node {
         @Child private ReadNode readNode = new ReadNode();
 
@@ -452,7 +451,7 @@ public class PythonMessageResolution {
         }
     }
 
-    @Resolve(message = "UNBOX")
+// @Resolve(message = "UNBOX")
     abstract static class UnboxNode extends Node {
         @Child private PTypeUnboxNode unboxNode = PTypeUnboxNode.create();
 
@@ -466,7 +465,7 @@ public class PythonMessageResolution {
         }
     }
 
-    @Resolve(message = "WRITE")
+// @Resolve(message = "WRITE")
     abstract static class WriteNode extends Node {
         @Child private SetItemNode setItemNode = SetItemNode.create();
         @Child private SetAttributeNode.Dynamic writeNode = new SetAttributeNode.Dynamic();
@@ -512,7 +511,7 @@ public class PythonMessageResolution {
         }
     }
 
-    @Resolve(message = "REMOVE")
+// @Resolve(message = "REMOVE")
     abstract static class PRemoveNode extends Node {
         @Child private DeleteItemNode delItemNode = DeleteItemNode.create();
         @Child private DeleteAttributeNode delNode = DeleteAttributeNode.create();
@@ -563,7 +562,7 @@ public class PythonMessageResolution {
         return ((PythonObject) object).getAttributeNames().contains(field);
     }
 
-    @Resolve(message = "EXECUTE")
+// @Resolve(message = "EXECUTE")
     abstract static class PForeignFunctionExecuteNode extends Node {
         @Child private ExecuteNode execNode = new ExecuteNode();
 
@@ -572,7 +571,7 @@ public class PythonMessageResolution {
         }
     }
 
-    @Resolve(message = "IS_EXECUTABLE")
+// @Resolve(message = "IS_EXECUTABLE")
     abstract static class PForeignIsExecutableNode extends Node {
         @Child private IsCallableNode isCallableNode = IsCallableNode.create();
 
@@ -581,14 +580,14 @@ public class PythonMessageResolution {
         }
     }
 
-    @Resolve(message = "IS_INSTANTIABLE")
+// @Resolve(message = "IS_INSTANTIABLE")
     abstract static class IsInstantiableNode extends Node {
         public Object access(Object obj) {
             return obj instanceof PythonClass;
         }
     }
 
-    @Resolve(message = "INVOKE")
+// @Resolve(message = "INVOKE")
     abstract static class PForeignInvokeNode extends Node {
         @Child private LookupAndCallBinaryNode getattr = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
         @Child private ExecuteNode execNode = new ExecuteNode();
@@ -599,7 +598,7 @@ public class PythonMessageResolution {
         }
     }
 
-    @Resolve(message = "NEW")
+// @Resolve(message = "NEW")
     abstract static class NewNode extends Node {
         @Child private ExecuteNode execNode = new ExecuteNode();
 
@@ -612,14 +611,14 @@ public class PythonMessageResolution {
         }
     }
 
-    @Resolve(message = "IS_NULL")
+// @Resolve(message = "IS_NULL")
     abstract static class PForeignIsNullNode extends Node {
         public Object access(Object object) {
             return object == PNone.NONE || object == PNone.NO_VALUE;
         }
     }
 
-    @Resolve(message = "HAS_SIZE")
+// @Resolve(message = "HAS_SIZE")
     abstract static class PForeignHasSizeNode extends Node {
         @Child private IsSequenceNode isSequenceNode;
         @Child private IsIterableNode isIterableNode;
@@ -708,7 +707,7 @@ public class PythonMessageResolution {
         }
     }
 
-    @Resolve(message = "GET_SIZE")
+// @Resolve(message = "GET_SIZE")
     abstract static class PForeignGetSizeNode extends Node {
         @Child IsSequenceNode isSeq = IsSequenceNode.create();
         @Child private BuiltinFunctions.LenNode lenNode = BuiltinFunctionsFactory.LenNodeFactory.create();
@@ -759,14 +758,14 @@ public class PythonMessageResolution {
         }
     }
 
-    @Resolve(message = "IS_BOXED")
+// @Resolve(message = "IS_BOXED")
     abstract static class IsBoxedNode extends Node {
         public Object access(Object object) {
             return PTypeToForeignNode.isBoxed(object);
         }
     }
 
-    @Resolve(message = "KEY_INFO")
+// @Resolve(message = "KEY_INFO")
     abstract static class PKeyInfoNode extends Node {
         @Child private ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.create();
         @Child private IsCallableNode isCallableNode;
@@ -856,14 +855,14 @@ public class PythonMessageResolution {
         }
     }
 
-    @Resolve(message = "HAS_KEYS")
+// @Resolve(message = "HAS_KEYS")
     abstract static class HasKeysNode extends Node {
         public Object access(@SuppressWarnings("unused") Object obj) {
             return true;
         }
     }
 
-    @Resolve(message = "KEYS")
+// @Resolve(message = "KEYS")
     abstract static class PForeignKeysNode extends Node {
         @Child KeysNode keysNode = new KeysNode();
         @Child private PythonObjectFactory factory = PythonObjectFactory.create();
@@ -873,7 +872,7 @@ public class PythonMessageResolution {
         }
     }
 
-    @CanResolve
+// @CanResolve
     abstract static class CheckFunction extends Node {
         protected static boolean test(TruffleObject receiver) {
             return receiver instanceof PythonAbstractObject;
