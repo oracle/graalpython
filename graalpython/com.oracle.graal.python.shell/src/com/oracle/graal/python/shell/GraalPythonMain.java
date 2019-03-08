@@ -152,8 +152,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         }
                         GraalPythonCC.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
                         System.exit(0);
-                        break;
+                    } else {
+                        unrecognized.add(arg);
                     }
+                    break;
                 case "-LD":
                     if (wantsExperimental) {
                         if (i != defaultEnvironmentArgs.size() + 1) {
@@ -162,21 +164,27 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         }
                         GraalPythonLD.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
                         System.exit(0);
-                        break;
+                    } else {
+                        unrecognized.add(arg);
                     }
+                    break;
                 case "-LLI":
                     if (wantsExperimental) {
                         runLLI = true;
-                        break;
+                    } else {
+                        unrecognized.add(arg);
                     }
+                    break;
                 case "-debug-java":
                     if (wantsExperimental) {
                         if (!isAOT()) {
                             subprocessArgs.add("Xrunjdwp:transport=dt_socket,server=y,address=8000,suspend=y");
                             inputArgs.remove("-debug-java");
                         }
-                        break;
+                    } else {
+                        unrecognized.add(arg);
                     }
+                    break;
                 case "-debug-perf":
                     if (wantsExperimental) {
                         subprocessArgs.add("Dgraal.TraceTruffleCompilation=true");
@@ -185,21 +193,27 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         subprocessArgs.add("Dgraal.TraceTruffleInlining=true");
                         subprocessArgs.add("Dgraal.TruffleTraceSplittingSummary=true");
                         inputArgs.remove("-debug-perf");
-                        break;
+                    } else {
+                        unrecognized.add(arg);
                     }
+                    break;
                 case "-dump":
                     if (wantsExperimental) {
                         subprocessArgs.add("Dgraal.Dump=");
                         inputArgs.remove("-dump");
-                        break;
+                    } else {
+                        unrecognized.add(arg);
                     }
+                    break;
                 case "-compile-truffle-immediately":
                     if (wantsExperimental) {
                         subprocessArgs.add("Dgraal.TruffleCompileImmediately=true");
                         subprocessArgs.add("Dgraal.TruffleCompilationExceptionsAreThrown=true");
                         inputArgs.remove("-compile-truffle-immediately");
-                        break;
+                    } else {
+                        unrecognized.add(arg);
                     }
+                    break;
                 case "-u":
                     unbufferedIO = true;
                     break;
