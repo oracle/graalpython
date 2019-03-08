@@ -245,9 +245,4 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
         return PNone.NO_VALUE;
     }
-
-    public static LookupAttributeInMRONode getUncached() {
-        // TODO TRUFFLE LIBRARY MIGRATION: IMPLEMENT UNCACHED
-        return null;
-    }
 }

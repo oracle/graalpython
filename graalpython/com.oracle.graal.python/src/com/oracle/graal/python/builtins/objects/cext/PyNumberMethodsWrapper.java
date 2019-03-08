@@ -55,10 +55,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -93,18 +93,7 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected boolean isMemberReadable(String member) {
-        switch (member) {
-            case NB_ADD:
-            case NB_AND:
-            case NB_INDEX:
-            case NB_POW:
-            case NB_TRUE_DIVIDE:
-            case NB_MULTIPLY:
-            case NB_INPLACE_MULTIPLY:
-                return true;
-            default:
-                return false;
-        }
+        return isValidMember(member);
     }
 
     @ExportMessage
@@ -121,46 +110,59 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
     }
 
     @GenerateUncached
+    @ImportStatic(PyNumberMethodsWrapper.class)
     abstract static class ReadMethodNode extends Node {
 
         public abstract Object execute(PythonClass clazz, String key) throws UnknownIdentifierException;
 
-        @Specialization(limit = "99", guards = {"eq(cachedKey, key)"})
+        @Specialization(limit = "99", guards = {"isValidMember(key)", "eq(cachedKey, key)"})
         Object getMethod(PythonClass clazz, @SuppressWarnings("unused") String key,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
-                        @Exclusive @Cached("createLookupNode(cachedKey)") LookupAttributeInMRONode lookupNode) throws UnknownIdentifierException {
-            if (lookupNode != null) {
-                return lookupNode.execute(clazz);
-            }
-            // TODO extend list
-            CompilerDirectives.transferToInterpreter();
-            throw UnknownIdentifierException.create(key);
+                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic lookupNode) throws UnknownIdentifierException {
+            Object result = lookupNode.execute(clazz, translate(cachedKey));
+            assert result != PNone.NO_VALUE;
+            return result;
         }
 
-        protected LookupAttributeInMRONode createLookupNode(String key) throws UnknownIdentifierException {
+        private static String translate(String key) throws UnknownIdentifierException {
             switch (key) {
                 case NB_ADD:
-                    return LookupAttributeInMRONode.create(__ADD__);
+                    return __ADD__;
                 case NB_AND:
-                    return LookupAttributeInMRONode.create(__AND__);
+                    return __AND__;
                 case NB_INDEX:
-                    return LookupAttributeInMRONode.create(__INDEX__);
+                    return __INDEX__;
                 case NB_POW:
-                    return LookupAttributeInMRONode.create(__POW__);
+                    return __POW__;
                 case NB_TRUE_DIVIDE:
-                    return LookupAttributeInMRONode.create(__TRUEDIV__);
+                    return __TRUEDIV__;
                 case NB_MULTIPLY:
-                    return LookupAttributeInMRONode.create(__MUL__);
+                    return __MUL__;
                 case NB_INPLACE_MULTIPLY:
-                    return LookupAttributeInMRONode.create(__IMUL__);
+                    return __IMUL__;
                 default:
-                    // TODO extend list
+                    // TODO extend list according to 'isValidMember'
                     throw UnknownIdentifierException.create(key);
             }
         }
 
         protected static boolean eq(String expected, String actual) {
             return expected.equals(actual);
+        }
+    }
+
+    protected static boolean isValidMember(String member) {
+        switch (member) {
+            case NB_ADD:
+            case NB_AND:
+            case NB_INDEX:
+            case NB_POW:
+            case NB_TRUE_DIVIDE:
+            case NB_MULTIPLY:
+            case NB_INPLACE_MULTIPLY:
+                return true;
+            default:
+                return false;
         }
     }
 }

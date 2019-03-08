@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -90,16 +93,16 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                    @Exclusive @Cached("create(__MUL__)") LookupAttributeInMRONode getSqItemNode,
-                    @Exclusive @Cached("create(__GETITEM__)") LookupAttributeInMRONode getSqRepeatNode,
-                    @Exclusive @Cached(allowUncached = true) CExtNodes.ToSulongNode toSulongNode) throws UnknownIdentifierException {
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic getSqItemNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic getSqRepeatNode,
+                    @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) throws UnknownIdentifierException {
         Object result;
         switch (member) {
             case NativeMemberNames.SQ_REPEAT:
-                result = getSqRepeatNode.execute(this.getPythonClass());
+                result = getSqRepeatNode.execute(this.getPythonClass(), __GETITEM__);
                 break;
             case NativeMemberNames.SQ_ITEM:
-                return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(this.getPythonClass()));
+                return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(this.getPythonClass(), __MUL__));
             default:
                 // TODO extend list
                 throw UnknownIdentifierException.create(member);
