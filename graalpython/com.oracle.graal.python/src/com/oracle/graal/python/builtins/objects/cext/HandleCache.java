@@ -80,10 +80,6 @@ public final class HandleCache implements TruffleObject {
         return ptrToResolveHandle;
     }
 
-    public static boolean isInstance(TruffleObject obj) {
-        return obj instanceof HandleCache;
-    }
-
     @ExportMessage
     public boolean isExecutable() {
         return true;
@@ -91,8 +87,8 @@ public final class HandleCache implements TruffleObject {
 
     @ExportMessage
     public Object execute(Object[] arguments,
-          @Cached.Exclusive @Cached(allowUncached = true) GetOrInsertNode getOrInsertNode,
-          @Cached.Exclusive @Cached BranchProfile invalidArgCountProfile) {
+                    @Cached.Exclusive @Cached(allowUncached = true) GetOrInsertNode getOrInsertNode,
+                    @Cached.Exclusive @Cached BranchProfile invalidArgCountProfile) {
         if (arguments.length != 1) {
             invalidArgCountProfile.enter();
             throw ArityException.raise(1, arguments.length);
@@ -105,20 +101,19 @@ public final class HandleCache implements TruffleObject {
         public static final InvalidCacheEntryException INSTANCE = new InvalidCacheEntryException();
     }
 
-
     @ImportStatic(HandleCache.class)
     abstract static class GetOrInsertNode extends PNodeWithContext {
         public abstract Object execute(HandleCache cache, long handle);
 
         @Specialization(limit = "CACHE_SIZE", guards = {"cache.len() == cachedLen",
-                "handle == cachedHandle"}, rewriteOn = InvalidCacheEntryException.class, assumptions = "singleContextAssumption()")
+                        "handle == cachedHandle"}, rewriteOn = InvalidCacheEntryException.class, assumptions = "singleContextAssumption()")
         Object doCachedSingleContext(HandleCache cache, @SuppressWarnings("unused") long handle,
-                                     @Cached("handle") long cachedHandle,
-                                     @Cached("cache.len()") @SuppressWarnings("unused") int cachedLen,
-                                     @Cached("cache.getPtrToResolveHandle()") @SuppressWarnings("unused") TruffleObject cachedResolveHandleFunction,
-                                     @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                                     @Cached BranchProfile errorProfile,
-                                     @Cached("lookupPosition(cache, handle, cachedLen, cachedResolveHandleFunction, interopLibrary, errorProfile)") int cachedPosition) throws InvalidCacheEntryException {
+                        @Cached("handle") long cachedHandle,
+                        @Cached("cache.len()") @SuppressWarnings("unused") int cachedLen,
+                        @Cached("cache.getPtrToResolveHandle()") @SuppressWarnings("unused") TruffleObject cachedResolveHandleFunction,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Cached BranchProfile errorProfile,
+                        @Cached("lookupPosition(cache, handle, cachedLen, cachedResolveHandleFunction, interopLibrary, errorProfile)") int cachedPosition) throws InvalidCacheEntryException {
             if (cache.keys[cachedPosition] == cachedHandle) {
                 return cache.values[cachedPosition];
             }
@@ -127,16 +122,16 @@ public final class HandleCache implements TruffleObject {
 
         @Specialization(guards = {"cache.len() == cachedLen"}, replaces = "doCachedSingleContext", assumptions = "singleContextAssumption()")
         Object doFullLookupSingleContext(HandleCache cache, long handle,
-                                         @Cached("cache.len()") int cachedLen,
-                                         @Cached("cache.getPtrToResolveHandle()") TruffleObject resolveHandleFunction,
-                                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                                         @Cached BranchProfile errorProfile) {
+                        @Cached("cache.len()") int cachedLen,
+                        @Cached("cache.getPtrToResolveHandle()") TruffleObject resolveHandleFunction,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Cached BranchProfile errorProfile) {
             int pos = lookupPosition(cache, handle, cachedLen, resolveHandleFunction, interopLibrary, errorProfile);
             return cache.values[pos];
         }
 
         @Specialization(limit = "CACHE_SIZE", guards = {"cache.len() == cachedLen",
-                "handle == cachedHandle", "cache.getPtrToResolveHandle() == cachedResolveHandleFunction"}, rewriteOn = InvalidCacheEntryException.class)
+                        "handle == cachedHandle", "cache.getPtrToResolveHandle() == cachedResolveHandleFunction"}, rewriteOn = InvalidCacheEntryException.class)
         Object doCached(HandleCache cache, @SuppressWarnings("unused") long handle,
                         @Cached("handle") long cachedHandle,
                         @Cached("cache.len()") @SuppressWarnings("unused") int cachedLen,
@@ -152,10 +147,10 @@ public final class HandleCache implements TruffleObject {
 
         @Specialization(guards = {"cache.len() == cachedLen", "cache.getPtrToResolveHandle() == cachedResolveHandleFunction"}, replaces = "doCached")
         Object doFullLookup(HandleCache cache, long handle,
-                            @Cached("cache.len()") int cachedLen,
-                            @Cached("cache.getPtrToResolveHandle()") TruffleObject cachedResolveHandleFunction,
-                            @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                            @Cached BranchProfile errorProfile) {
+                        @Cached("cache.len()") int cachedLen,
+                        @Cached("cache.getPtrToResolveHandle()") TruffleObject cachedResolveHandleFunction,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Cached BranchProfile errorProfile) {
             int pos = lookupPosition(cache, handle, cachedLen, cachedResolveHandleFunction, interopLibrary, errorProfile);
             return cache.values[pos];
         }

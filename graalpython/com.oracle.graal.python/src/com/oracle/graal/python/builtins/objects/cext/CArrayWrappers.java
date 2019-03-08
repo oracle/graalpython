@@ -48,7 +48,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -67,10 +66,6 @@ public abstract class CArrayWrappers {
 
         public CArrayWrapper(Object delegate) {
             super(delegate);
-        }
-
-        static boolean isInstance(TruffleObject o) {
-            return o instanceof CArrayWrapper;
         }
 
         @ExportMessage

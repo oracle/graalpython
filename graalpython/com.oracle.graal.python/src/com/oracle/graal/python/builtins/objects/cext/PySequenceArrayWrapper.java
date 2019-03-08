@@ -37,7 +37,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -65,10 +64,6 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     public int getElementAccessSize() {
         return elementAccessSize;
-    }
-
-    static boolean isInstance(TruffleObject o) {
-        return o instanceof PySequenceArrayWrapper;
     }
 
     @ExportMessage

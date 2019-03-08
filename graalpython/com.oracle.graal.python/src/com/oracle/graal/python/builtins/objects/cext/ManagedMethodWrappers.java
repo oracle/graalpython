@@ -52,7 +52,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.PrimitiveValueProfile;
@@ -67,10 +66,6 @@ public abstract class ManagedMethodWrappers {
 
         public MethodWrapper(Object method) {
             super(method);
-        }
-
-        static boolean isInstance(TruffleObject o) {
-            return o instanceof MethodWrapper;
         }
 
         @ExportMessage

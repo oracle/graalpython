@@ -27,7 +27,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -48,10 +47,6 @@ public class PThreadState extends PythonNativeWrapper {
     public static final String PREV = "prev";
 
     private PDict dict;
-
-    static boolean isInstance(TruffleObject obj) {
-        return obj instanceof PThreadState;
-    }
 
     public PDict getThreadStateDict() {
         return dict;

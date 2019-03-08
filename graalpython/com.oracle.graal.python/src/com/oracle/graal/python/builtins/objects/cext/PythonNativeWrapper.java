@@ -35,9 +35,4 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     public boolean isNative() {
         return nativePointer != null;
     }
-
-    static boolean isInstance(TruffleObject o) {
-        return o instanceof DynamicObjectNativeWrapper || o instanceof TruffleObjectNativeWrapper;
-    }
-
 }
