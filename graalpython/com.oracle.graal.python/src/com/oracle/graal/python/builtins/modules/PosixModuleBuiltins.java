@@ -1633,7 +1633,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         int getAndSetUmask(int umask) {
             if (umask == 0022) {
                 return 0022;
-            } if (umask == 0) {
+            }
+            if (umask == 0) {
                 // TODO: change me, this does not really set the umask, workaround needed for pip
                 // it returns the previous mask (which in our case is always 0022)
                 return 0022;
