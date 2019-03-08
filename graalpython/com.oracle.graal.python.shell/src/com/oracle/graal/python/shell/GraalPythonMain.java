@@ -146,7 +146,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     break;
                 case "-CC":
                     if (wantsExperimental) {
-                        if (i != defaultEnvironmentArgs.size()) {
+                        if (i != defaultEnvironmentArgs.size() + 1) {
+                            // +1 because we need the --experimental-options
                             throw new IllegalArgumentException("-CC must be the first given argument");
                         }
                         GraalPythonCC.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
@@ -155,7 +156,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     }
                 case "-LD":
                     if (wantsExperimental) {
-                        if (i != defaultEnvironmentArgs.size()) {
+                        if (i != defaultEnvironmentArgs.size() + 1) {
+                            // +1 because we need the --experimental-options
                             throw new IllegalArgumentException("-LD must be the first given argument");
                         }
                         GraalPythonLD.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
