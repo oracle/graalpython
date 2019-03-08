@@ -63,6 +63,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private ArrayList<String> programArgs = null;
     private String commandString = null;
     private String inputFile = null;
+    private boolean ignoreScriptDir = false;
     private boolean ignoreEnv = false;
     private boolean inspectFlag = false;
     private boolean verboseFlag = false;
@@ -127,6 +128,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     break;
                 case "-q":
                     quietFlag = true;
+                    break;
+                case "-I":
+                    noUserSite = true;
+                    ignoreEnv = true;
+                    ignoreScriptDir = true;
                     break;
                 case "-s":
                     noUserSite = true;
@@ -557,6 +563,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         // "-Q arg : division options: -Qold (default), -Qwarn, -Qwarnall, -Qnew\n"
                         // +
                         "-q     : don't print version and copyright messages on interactive startup\n" +
+                        "-I     : don't add user site and script directory to sys.path; also PYTHONNOUSERSITE\n" +
                         "-s     : don't add user site directory to sys.path; also PYTHONNOUSERSITE\n" +
                         "-S     : don't imply 'import site' on initialization\n" +
                         // "-t : issue warnings about inconsistent tab usage (-tt: issue errors)\n"
