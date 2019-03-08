@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -73,18 +74,20 @@ public abstract class ManagedMethodWrappers {
         }
 
         @ExportMessage
-        public boolean isPointer(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.IsPointerNode pIsPointerNode) {
+        public boolean isPointer(@Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
             return pIsPointerNode.execute(this);
         }
 
         @ExportMessage
-        public long asPointer(@Cached.Exclusive @Cached(allowUncached = true) PAsPointerNode pAsPointerNode) {
+        public long asPointer(@Exclusive @Cached PAsPointerNode pAsPointerNode) {
             return pAsPointerNode.execute(this);
         }
 
         @ExportMessage
-        public void toNative(@Cached.Exclusive @Cached(allowUncached = true) ToPyObjectNode toPyObjectNode) {
-            toPyObjectNode.execute(this);
+        public void toNative(@Exclusive @Cached ToPyObjectNode toPyObjectNode,
+                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            invalidateNode.execute();
+            setNativePointer(toPyObjectNode.execute(this));
         }
     }
 
@@ -102,14 +105,14 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public Object execute(Object[] arguments,
-                        @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
-                        @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached.Exclusive @Cached CallNode dispatch,
+                        @Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Exclusive @Cached CallNode dispatch,
                         // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                        @Cached.Exclusive @Cached(allowUncached = true) ExecutePositionalStarargsNode posStarargsNode,
+                        @Exclusive @Cached(allowUncached = true) ExecutePositionalStarargsNode posStarargsNode,
                         // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                        @Cached.Exclusive @Cached(allowUncached = true) ExecuteKeywordStarargsNode expandKwargsNode,
-                        @Cached.Exclusive @Cached("createEqualityProfile()") PrimitiveValueProfile starArgsLenProfile) throws ArityException {
+                        @Exclusive @Cached(allowUncached = true) ExecuteKeywordStarargsNode expandKwargsNode,
+                        @Exclusive @Cached("createEqualityProfile()") PrimitiveValueProfile starArgsLenProfile) throws ArityException {
             if (arguments.length != 3) {
                 throw ArityException.create(3, arguments.length);
             }
@@ -143,10 +146,10 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public Object execute(Object[] arguments,
-                        @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
-                        @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
                         // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                        @Cached.Exclusive @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode) throws ArityException {
+                        @Exclusive @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode) throws ArityException {
             if (arguments.length != 1) {
                 throw ArityException.create(1, arguments.length);
             }
