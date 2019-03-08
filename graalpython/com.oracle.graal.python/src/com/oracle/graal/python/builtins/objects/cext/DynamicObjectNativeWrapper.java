@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -71,6 +72,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -79,10 +81,10 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.Message;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -663,7 +665,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         private CExtNodes.ToSulongNode getToSulongNode() {
             if (toSulongNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(CExtNodes.ToSulongNode.create());
+                toSulongNode = insert(CExtNodesFactory.ToSulongNodeGen.create());
             }
             return toSulongNode;
         }
@@ -896,12 +898,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected boolean isMemberRemovable(String member) {
+    protected boolean isMemberRemovable(@SuppressWarnings("unused") String member) {
         return false;
     }
 
     @ExportMessage
-    protected void removeMember(String member) throws UnsupportedMessageException, UnknownIdentifierException {
+    protected void removeMember(@SuppressWarnings("unused") String member) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
@@ -941,10 +943,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     // TO NATIVE, IS POINTER, AS POINTER
+    @GenerateUncached
     abstract static class ToNativeNode extends Node {
         public abstract Object execute(PythonNativeWrapper obj);
 
-        protected boolean isClassInitNativeWrapper(PythonNativeWrapper obj) {
+        protected static boolean isClassInitNativeWrapper(PythonNativeWrapper obj) {
             return obj instanceof PythonClassInitNativeWrapper;
         }
 
@@ -981,54 +984,43 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
     }
 
-    abstract static class AsPointerNode extends Node {
-        public abstract long execute(PythonNativeWrapper obj);
-
-        @Specialization
-        long execute(PythonNativeWrapper obj,
-                        @Cached.Exclusive @Cached DynamicObjectNativeWrapper.PAsPointerNode pAsPointerNode) {
-            return pAsPointerNode.execute(obj);
-        }
-    }
-
+    @GenerateUncached
     abstract static class PAsPointerNode extends PNodeWithContext {
-        @Child private Node asPointerNode;
 
         public abstract long execute(PythonNativeWrapper o);
 
         @Specialization(guards = {"obj.isBool()", "!obj.isNative()"})
         long doBoolNotNative(DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
-                        @Cached("create()") CExtNodes.MaterializeDelegateNode materializeNode) {
+                        @Cached("create()") CExtNodes.MaterializeDelegateNode materializeNode,
+                        @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
             // special case for True and False singletons
             PInt boxed = (PInt) materializeNode.execute(obj);
             assert obj.getNativePointer() == boxed.getNativeWrapper().getNativePointer();
-            return doFast(obj);
+            return doFast(obj, interopLib);
         }
 
         @Specialization(guards = {"obj.isBool()", "obj.isNative()"})
-        long doBoolNative(DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj) {
-            return doFast(obj);
+        long doBoolNative(DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+                        @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+            return doFast(obj, interopLib);
         }
 
         @Specialization(guards = "!isBoolNativeWrapper(obj)")
-        long doFast(PythonNativeWrapper obj) {
+        long doFast(PythonNativeWrapper obj,
+                        @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
             // the native pointer object must either be a TruffleObject or a primitive
-            return ensureLong(obj.getNativePointer());
+            return ensureLong(interopLib, obj.getNativePointer());
         }
 
-        private long ensureLong(Object nativePointer) {
+        private static long ensureLong(InteropLibrary interopLib, Object nativePointer) {
             if (nativePointer instanceof Long) {
                 return (long) nativePointer;
             } else {
-                if (asPointerNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    asPointerNode = insert(Message.AS_POINTER.createNode());
-                }
                 try {
-                    return ForeignAccess.sendAsPointer(asPointerNode, (TruffleObject) nativePointer);
+                    return interopLib.asPointer(nativePointer);
                 } catch (UnsupportedMessageException e) {
                     CompilerDirectives.transferToInterpreter();
-                    throw e.raise();
+                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError, "invalid pointer object: %s", nativePointer);
                 }
             }
         }
@@ -1215,17 +1207,20 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected boolean isPointer(@Cached.Exclusive @Cached(allowUncached = true) DynamicObjectNativeWrapper.IsPointerNode isPointerNode) {
-        return isPointerNode.execute(this);
+    protected boolean isPointer(
+                    @Cached.Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
+        return pIsPointerNode.execute(this);
     }
 
     @ExportMessage
-    protected long asPointer(@Cached.Exclusive @Cached(allowUncached = true) DynamicObjectNativeWrapper.AsPointerNode asPointerNode) {
-        return asPointerNode.execute(this);
+    protected long asPointer(
+                    @Cached.Exclusive @Cached PAsPointerNode pAsPointerNode) {
+        return pAsPointerNode.execute(this);
     }
 
     @ExportMessage
-    protected void toNative(@Cached.Exclusive @Cached(allowUncached = true) DynamicObjectNativeWrapper.ToNativeNode toNativeNode) {
+    protected void toNative(
+                    @Cached.Exclusive @Cached ToNativeNode toNativeNode) {
         toNativeNode.execute(this);
     }
 

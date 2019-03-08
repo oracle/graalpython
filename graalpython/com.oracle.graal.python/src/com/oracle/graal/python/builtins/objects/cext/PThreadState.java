@@ -2,6 +2,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_THREAD_STATE_TYPE_ID;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
@@ -11,15 +12,18 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -29,7 +33,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
@@ -88,23 +91,14 @@ public class PThreadState extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                    @Cached.Exclusive @Cached(allowUncached = true) ReadNode readNode) {
-        return readNode.execute(this, member);
-    }
-
-    abstract static class ReadNode extends Node {
-        public abstract Object execute(PThreadState object, String key);
-
-        @Specialization
-        public Object execute(@SuppressWarnings("unused") PThreadState object, String key,
-                        @Cached.Exclusive @Cached ThreadStateReadNode readNode,
-                        @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) {
-            Object result = readNode.execute(key);
-            return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
-        }
+                    @Exclusive @Cached ThreadStateReadNode readNode,
+                    @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) {
+        Object result = readNode.execute(member);
+        return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
     }
 
     @ImportStatic(PThreadState.class)
+    @GenerateUncached
     abstract static class ThreadStateReadNode extends PNodeWithContext {
         public abstract Object execute(Object key);
 
@@ -238,8 +232,9 @@ public class PThreadState extends PythonNativeWrapper {
 
     @ExportMessage
     protected void writeMember(String member, Object value,
-                    @Cached.Exclusive @Cached(allowUncached = true) WriteNode writeNode) {
-        writeNode.execute(this, member, value);
+                    @Exclusive @Cached ThreadStateWriteNode writeNode,
+                    @Exclusive @Cached CExtNodes.ToJavaNode toJavaNode) throws UnknownIdentifierException {
+        writeNode.execute(member, toJavaNode.execute(value));
     }
 
     @ExportMessage
@@ -252,112 +247,115 @@ public class PThreadState extends PythonNativeWrapper {
         throw UnsupportedMessageException.create();
     }
 
-    abstract static class WriteNode extends Node {
-        public abstract Object execute(PThreadState object, String key, Object value);
-
-        @Specialization
-        public Object execute(@SuppressWarnings("unused") PThreadState object, String key, Object value,
-                        @Cached.Exclusive @Cached ThreadStateWriteNode writeNode,
-                        @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
-                        @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) {
-            Object result = writeNode.execute(key, toJavaNode.execute(value));
-            return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
-        }
-    }
-
     @ImportStatic(PThreadState.class)
+    @GenerateUncached
     abstract static class ThreadStateWriteNode extends PNodeWithContext {
-        public abstract Object execute(Object key, Object value);
+        public abstract Object execute(Object key, Object value) throws UnknownIdentifierException;
 
         @Specialization(guards = "isCurrentExceptionMember(key)")
-        PNone doResetCurException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value) {
-            getContext().setCurrentException(null);
+        PNone doResetCurException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            context.setCurrentException(null);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "isCaughtExceptionMember(key)")
-        PNone doResetCaughtException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value) {
-            getContext().setCaughtException(null);
+        PNone doResetCaughtException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            context.setCaughtException(null);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
-        PythonClass doCurExcType(@SuppressWarnings("unused") String key, PythonClass value) {
-            setCurrentException(factory().createBaseException(value));
+        PythonClass doCurExcType(@SuppressWarnings("unused") String key, PythonClass value,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            setCurrentException(raiseNode, context, factory().createBaseException(value));
             return value;
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_VALUE)")
-        PBaseException doCurExcValue(@SuppressWarnings("unused") String key, PBaseException value) {
-            setCurrentException(value);
+        PBaseException doCurExcValue(@SuppressWarnings("unused") String key, PBaseException value,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            setCurrentException(raiseNode, context, value);
             return value;
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
-        PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key, PTraceback value) {
-            setCurrentException(value.getException());
+        PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            setCurrentException(raiseNode, context, value.getException());
             return value;
         }
 
         @Specialization(guards = "eq(key, EXC_TYPE)")
-        PythonClass doExcType(@SuppressWarnings("unused") String key, PythonClass value) {
-            setCaughtException(factory().createBaseException(value));
+        PythonClass doExcType(@SuppressWarnings("unused") String key, PythonClass value,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            setCaughtException(raiseNode, context, factory().createBaseException(value));
             return value;
         }
 
         @Specialization(guards = "eq(key, EXC_VALUE)")
-        PBaseException doExcValue(@SuppressWarnings("unused") String key, PBaseException value) {
-            setCaughtException(value);
+        PBaseException doExcValue(@SuppressWarnings("unused") String key, PBaseException value,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            setCaughtException(raiseNode, context, value);
             return value;
         }
 
         @Specialization(guards = "eq(key, EXC_TRACEBACK)")
-        PTraceback doExcTraceback(@SuppressWarnings("unused") String key, PTraceback value) {
-            setCaughtException(value.getException());
+        PTraceback doExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            setCaughtException(raiseNode, context, value.getException());
             return value;
         }
 
-        private void setCurrentException(PBaseException exceptionObject) {
+        private static void setCurrentException(PRaiseNode raiseNode, PythonContext context, PBaseException exceptionObject) {
             try {
-                throw raise(exceptionObject);
+                throw raiseNode.raise(exceptionObject);
             } catch (PException e) {
                 exceptionObject.reifyException();
-                getContext().setCurrentException(e);
+                context.setCurrentException(e);
             }
         }
 
-        private void setCaughtException(PBaseException exceptionObject) {
+        private static void setCaughtException(PRaiseNode raiseNode, PythonContext context, PBaseException exceptionObject) {
             try {
-                throw raise(exceptionObject);
+                throw raiseNode.raise(exceptionObject);
             } catch (PException e) {
                 exceptionObject.reifyException();
-                getContext().setCurrentException(e);
+                context.setCurrentException(e);
             }
         }
 
-        @Fallback
-        @CompilerDirectives.TruffleBoundary
-        Object doGeneric(Object key, @SuppressWarnings("unused") Object value) {
-            throw UnknownIdentifierException.raise(key.toString());
+        @Specialization(guards = {"!isCurrentExceptionMember(key)", "!isCaughtExceptionMember(key)"})
+        @TruffleBoundary
+        Object doGeneric(Object key, @SuppressWarnings("unused") Object value) throws UnknownIdentifierException {
+            throw UnknownIdentifierException.create(key.toString());
         }
 
-        protected static boolean eq(String key, String expected) {
+        protected static boolean eq(Object key, String expected) {
             return expected.equals(key);
         }
 
-        protected static boolean isCurrentExceptionMember(String key) {
+        protected static boolean isCurrentExceptionMember(Object key) {
             return eq(key, CUR_EXC_TYPE) || eq(key, CUR_EXC_VALUE) || eq(key, CUR_EXC_TRACEBACK);
         }
 
-        protected static boolean isCaughtExceptionMember(String key) {
+        protected static boolean isCaughtExceptionMember(Object key) {
             return eq(key, EXC_TYPE) || eq(key, EXC_VALUE) || eq(key, EXC_TRACEBACK);
         }
     }
 
     // TO POINTER / AS POINTER / TO NATIVE
     @ExportMessage
-    protected boolean isPointer(@Cached.Exclusive @Cached(allowUncached = true) IsPointerNode isPointerNode) {
-        return isPointerNode.execute(this);
+    protected boolean isPointer(
+                    @Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
+        return pIsPointerNode.execute(this);
     }
 
     @ExportMessage
@@ -370,8 +368,13 @@ public class PThreadState extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected void toNative(@Cached.Exclusive @Cached(allowUncached = true) ToNativeNode toNativeNode) {
-        toNativeNode.execute(this);
+    protected void toNative(
+                    @Exclusive @Cached ToPyObjectNode toPyObjectNode,
+                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+        invalidateNode.execute();
+        if (!isNative()) {
+            setNativePointer(toPyObjectNode.execute(this));
+        }
     }
 
     @ExportMessage
@@ -400,31 +403,6 @@ public class PThreadState extends PythonNativeWrapper {
 
         protected static Assumption singleNativeContextAssumption() {
             return PythonContext.getSingleNativeContextAssumption();
-        }
-    }
-
-    abstract static class ToNativeNode extends Node {
-        public abstract Object execute(PThreadState obj);
-
-        @Specialization
-        Object execute(PThreadState obj,
-                        @Cached.Exclusive @Cached ToPyObjectNode toPyObjectNode,
-                        @Cached.Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-            invalidateNode.execute();
-            if (!obj.isNative()) {
-                obj.setNativePointer(toPyObjectNode.execute(obj));
-            }
-            return obj;
-        }
-    }
-
-    abstract static class IsPointerNode extends Node {
-        public abstract boolean execute(PThreadState obj);
-
-        @Specialization
-        boolean access(PThreadState obj,
-                        @Cached.Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
-            return pIsPointerNode.execute(obj);
         }
     }
 }

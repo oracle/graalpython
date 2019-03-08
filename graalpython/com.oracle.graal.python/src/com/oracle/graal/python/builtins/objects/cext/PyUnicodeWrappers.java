@@ -68,21 +68,24 @@ public abstract class PyUnicodeWrappers {
         }
 
         @ExportMessage
-        public boolean isPointer(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.IsPointerNode pIsPointerNode) {
+        public boolean isPointer(
+                        @Cached CExtNodes.IsPointerNode pIsPointerNode) {
             return pIsPointerNode.execute(this);
         }
 
         @ExportMessage
-        public long asPointer(@Cached.Exclusive @Cached(allowUncached = true) PAsPointerNode pAsPointerNode) {
+        public long asPointer(
+                        @Cached PAsPointerNode pAsPointerNode) {
             return pAsPointerNode.execute(this);
         }
 
         @ExportMessage
-        public void toNative(@Cached.Exclusive @Cached ToPyObjectNode toPyObjectNode,
-                        @Cached.Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+        public void toNative(
+                        @Cached ToPyObjectNode toPyObjectNode,
+                        @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
-            if (!this.isNative()) {
-                this.setNativePointer(toPyObjectNode.execute(this));
+            if (!isNative()) {
+                setNativePointer(toPyObjectNode.execute(this));
             }
         }
     }

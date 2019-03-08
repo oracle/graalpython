@@ -74,12 +74,14 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        public boolean isPointer(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.IsPointerNode pIsPointerNode) {
+        public boolean isPointer(
+                        @Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
             return pIsPointerNode.execute(this);
         }
 
         @ExportMessage
-        public long asPointer(@CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+        public long asPointer(
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
             Object nativePointer = this.getNativePointer();
             if (nativePointer instanceof Long) {
                 return (long) nativePointer;
@@ -88,11 +90,12 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        public void toNative(@Cached.Exclusive @Cached(allowUncached = true) CExtNodes.AsCharPointerNode asCharPointerNode,
-                        @Cached.Exclusive @Cached(allowUncached = true) InvalidateNativeObjectsAllManagedNode invalidateNode) {
+        public void toNative(
+                        @Exclusive @Cached CExtNodes.AsCharPointerNode asCharPointerNode,
+                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
-            if (!this.isNative()) {
-                this.setNativePointer(asCharPointerNode.execute(this.getDelegate()));
+            if (!isNative()) {
+                setNativePointer(asCharPointerNode.execute(getDelegate()));
             }
         }
     }

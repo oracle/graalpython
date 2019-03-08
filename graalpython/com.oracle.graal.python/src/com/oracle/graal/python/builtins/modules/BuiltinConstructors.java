@@ -83,7 +83,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -1383,12 +1383,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toSulongNodes = new CExtNodes.ToSulongNode[4];
                 for (int i = 0; i < toSulongNodes.length; i++) {
-                    toSulongNodes[i] = insert(CExtNodes.ToSulongNode.create());
+                    toSulongNodes[i] = insert(CExtNodesFactory.ToSulongNodeGen.create());
                 }
             }
             if (asPythonObjectNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                asPythonObjectNode = insert(CExtNodes.AsPythonObjectNode.create());
+                asPythonObjectNode = insert(CExtNodesFactory.AsPythonObjectNodeGen.create());
             }
             PKeyword[] kwarr = kwargs.length > 0 ? kwargs : null;
             PTuple targs = factory().createTuple(varargs);

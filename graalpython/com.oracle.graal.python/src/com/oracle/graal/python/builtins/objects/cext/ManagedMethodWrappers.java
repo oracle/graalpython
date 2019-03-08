@@ -74,17 +74,20 @@ public abstract class ManagedMethodWrappers {
         }
 
         @ExportMessage
-        public boolean isPointer(@Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
+        public boolean isPointer(
+                        @Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
             return pIsPointerNode.execute(this);
         }
 
         @ExportMessage
-        public long asPointer(@Exclusive @Cached PAsPointerNode pAsPointerNode) {
+        public long asPointer(
+                        @Exclusive @Cached PAsPointerNode pAsPointerNode) {
             return pAsPointerNode.execute(this);
         }
 
         @ExportMessage
-        public void toNative(@Exclusive @Cached ToPyObjectNode toPyObjectNode,
+        public void toNative(
+                        @Exclusive @Cached ToPyObjectNode toPyObjectNode,
                         @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
             setNativePointer(toPyObjectNode.execute(this));

@@ -301,14 +301,16 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    public void toNative(@Exclusive @Cached(allowUncached = true) ToNativeArrayNode toPyObjectNode,
-                    @Exclusive @Cached(allowUncached = true) InvalidateNativeObjectsAllManagedNode invalidateNode) {
+    public void toNative(
+                    @Exclusive @Cached ToNativeArrayNode toPyObjectNode,
+                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
         invalidateNode.execute();
         if (!this.isNative()) {
             this.setNativePointer(toPyObjectNode.execute(this));
         }
     }
 
+    @GenerateUncached
     abstract static class ToNativeArrayNode extends CExtNodes.CExtBaseNode {
         public abstract Object execute(PySequenceArrayWrapper object);
 
@@ -318,6 +320,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             PSequence sequence = (PSequence) object.getDelegate();
             NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(sequence.getSequenceStorage());
             if (nativeStorage == null) {
+                CompilerDirectives.transferToInterpreter();
                 throw new AssertionError("could not allocate native storage");
             }
             // switch to native storage
@@ -332,23 +335,20 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             return callNativeHandleForArrayNode.call(FUN_NATIVE_HANDLE_FOR_ARRAY, object, 8L);
         }
 
-        protected boolean isPSequence(Object obj) {
+        protected static boolean isPSequence(Object obj) {
             return obj instanceof PSequence;
-        }
-
-        public static ToNativeArrayNode create() {
-            return PySequenceArrayWrapperFactory.ToNativeArrayNodeGen.create();
         }
     }
 
+    @GenerateUncached
     static abstract class ToNativeStorageNode extends PNodeWithContext {
-        @Child private SequenceStorageNodes.StorageToNativeNode storageToNativeNode;
 
         public abstract NativeSequenceStorage execute(SequenceStorage object);
 
         @Specialization(guards = "!isNative(s)")
-        NativeSequenceStorage doManaged(SequenceStorage s) {
-            return getStorageToNativeNode().execute(s.getInternalArrayObject());
+        NativeSequenceStorage doManaged(SequenceStorage s,
+                        @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
+            return storageToNativeNode.execute(s.getInternalArrayObject());
         }
 
         @Specialization
@@ -357,27 +357,14 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         }
 
         @Specialization
-        NativeSequenceStorage doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s) {
+        NativeSequenceStorage doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s,
+                        @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
             // TODO(fa): not sure if that completely reflects semantics
-            return getStorageToNativeNode().execute(new byte[0]);
-        }
-
-        @Fallback
-        NativeSequenceStorage doGeneric(@SuppressWarnings("unused") SequenceStorage s) {
-            CompilerDirectives.transferToInterpreter();
-            throw new UnsupportedOperationException("Unknown storage type: " + s);
+            return storageToNativeNode.execute(new byte[0]);
         }
 
         protected static boolean isNative(SequenceStorage s) {
             return s instanceof NativeSequenceStorage;
-        }
-
-        private SequenceStorageNodes.StorageToNativeNode getStorageToNativeNode() {
-            if (storageToNativeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                storageToNativeNode = insert(SequenceStorageNodes.StorageToNativeNode.create());
-            }
-            return storageToNativeNode;
         }
 
         public static ToNativeStorageNode create() {

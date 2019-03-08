@@ -64,17 +64,14 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToJavaN
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsDoubleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsLongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeClassNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ImportCAPISymbolNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeFactory.IsPointerCachedNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MaterializeDelegateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCompareNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeFactory.ToJavaCachedNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -377,8 +374,14 @@ public abstract class CExtNodes {
             return o instanceof PythonNativeObject;
         }
 
+        // TODO(fa): Workaround for DSL bug: did not import factory at users
         public static ToSulongNode create() {
-            return ToSulongNodeGen.create();
+            return CExtNodesFactory.ToSulongNodeGen.create();
+        }
+
+        // TODO(fa): Workaround for DSL bug: did not import factory at users
+        public static ToSulongNode getUncached() {
+            return CExtNodesFactory.ToSulongNodeGen.getUncached();
         }
     }
 
@@ -507,8 +510,14 @@ public abstract class CExtNodes {
             return object;
         }
 
+        // TODO(fa): Workaround for DSL bug: did not import factory at users
         public static AsPythonObjectNode create() {
-            return AsPythonObjectNodeGen.create();
+            return CExtNodesFactory.AsPythonObjectNodeGen.create();
+        }
+
+        // TODO(fa): Workaround for DSL bug: did not import factory at users
+        public static AsPythonObjectNode getUncached() {
+            return CExtNodesFactory.AsPythonObjectNodeGen.getUncached();
         }
     }
 
@@ -585,10 +594,6 @@ public abstract class CExtNodes {
         protected static boolean isPrimitiveNativeWrapper(PythonNativeWrapper object) {
             return object instanceof DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
         }
-
-        public static MaterializeDelegateNode create() {
-            return MaterializeDelegateNodeGen.create();
-        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -658,6 +663,7 @@ public abstract class CExtNodes {
                             @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
                 return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_TO_JAVA, value));
             }
+
         }
 
         private static final class ToJavaUncachedNode extends ToJavaNode {

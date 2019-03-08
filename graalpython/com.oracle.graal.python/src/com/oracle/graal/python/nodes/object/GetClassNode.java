@@ -78,6 +78,11 @@ public abstract class GetClassNode extends PNodeWithContext {
         return GetClassNodeGen.create();
     }
 
+    public static GetClassNode getUncached() {
+        // TODO TRUFFLE LIBRARY MIGRATION: IMPLEMENT UNCACHED
+        return null;
+    }
+
     public abstract PythonClass execute(boolean object);
 
     public abstract PythonClass execute(int object);
