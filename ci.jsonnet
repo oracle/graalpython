@@ -74,6 +74,8 @@
       "python": "==3.4.1",
       "libffi": ">=3.2.1",
       "bzip2": ">=1.0.6",
+      "make": ">=3.83",
+      "binutils": "==2.23.2",
     },
     downloads +: {
       LIBGMP: utils.download("libgmp", "6.1.0"),
