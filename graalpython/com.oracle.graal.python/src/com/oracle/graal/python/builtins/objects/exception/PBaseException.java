@@ -192,7 +192,7 @@ public final class PBaseException extends PythonObject {
     public void reifyException() {
         if (stackTrace == null && traceback == null) {
             TruffleStackTrace.fillIn(exception);
-            stackTrace = TruffleStackTrace.getStacktrace(exception);
+            stackTrace = TruffleStackTrace.getStackTrace(exception);
             Iterator<TruffleStackTraceElement> iter = stackTrace.iterator();
             while (iter.hasNext()) {
                 TruffleStackTraceElement element = iter.next();

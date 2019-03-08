@@ -123,9 +123,11 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         dists.append('SULONG')
         if mx.suite("sulong-managed", fatalIfMissing=False):
             dists.append('SULONG_MANAGED')
-            vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_MANAGED_LIBS>'))
+            graalpython_args.insert(0, mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_MANAGED_LIBS>'))
         else:
-            vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>'))
+            graalpython_args.insert(0, mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_LIBS>'))
+
+    graalpython_args.insert(0, '--experimental-options=true')
 
     # Try eagerly to include tools on Tim's computer
     if not mx.suite("/tools", fatalIfMissing=False):
@@ -264,7 +266,7 @@ def gate_unittests(args=None, subdir=""):
     else:
         pre_args = []
         post_args = args
-    mx.command_function("python")(["--python.CatchAllExceptions=true"] + pre_args + test_args + post_args)
+    mx.command_function("python")(["--experimental-options=true", "--python.CatchAllExceptions=true"] + pre_args + test_args + post_args)
     if platform.system() != 'Darwin':
         # TODO: re-enable when python3 is available on darwin
         mx.log("Running tests with CPython")
@@ -272,7 +274,7 @@ def gate_unittests(args=None, subdir=""):
     if platform.system() != 'Darwin' and not pre_args and not post_args and not subdir:
         mx.log("Running cpyext tests with opaque FS")
         test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/cpyext/"]
-        mx.command_function("python")(["--python.CatchAllExceptions=true", "--python.OpaqueFilesystem"] + pre_args + test_args + post_args)
+        mx.command_function("python")(["--experimental-options=true", "--python.CatchAllExceptions=true", "--python.OpaqueFilesystem"] + pre_args + test_args + post_args)
 
 
 def run_python_unittests(python_binary, args=None, aot_compatible=True, exclude=None):

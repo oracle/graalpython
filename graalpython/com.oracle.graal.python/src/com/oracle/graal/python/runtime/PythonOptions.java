@@ -25,13 +25,14 @@
  */
 package com.oracle.graal.python.runtime;
 
-import org.graalvm.options.OptionCategory;
-import org.graalvm.options.OptionDescriptors;
-import org.graalvm.options.OptionKey;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Option;
+
+import org.graalvm.options.OptionCategory;
+import org.graalvm.options.OptionDescriptors;
+import org.graalvm.options.OptionKey;
+import org.graalvm.options.OptionStability;
 
 @Option.Group(PythonLanguage.ID)
 public final class PythonOptions {
@@ -41,16 +42,16 @@ public final class PythonOptions {
         // no instances
     }
 
-    @Option(category = OptionCategory.USER, help = "Set the location of sys.prefix. Overrides any environment variables or Java options.") //
+    @Option(category = OptionCategory.USER, help = "Set the location of sys.prefix. Overrides any environment variables or Java options.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> SysPrefix = new OptionKey<>("");
 
-    @Option(category = OptionCategory.EXPERT, help = "Set the location of sys.base_prefix. Overrides any environment variables or Java options.") //
+    @Option(category = OptionCategory.EXPERT, help = "Set the location of sys.base_prefix. Overrides any environment variables or Java options.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> SysBasePrefix = new OptionKey<>("");
 
-    @Option(category = OptionCategory.USER, help = "Set the location of lib-graalpython. Overrides any environment variables or Java options.") //
+    @Option(category = OptionCategory.USER, help = "Set the location of lib-graalpython. Overrides any environment variables or Java options.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> CoreHome = new OptionKey<>("");
 
-    @Option(category = OptionCategory.USER, help = "Set the location of lib-python/3. Overrides any environment variables or Java options.") //
+    @Option(category = OptionCategory.USER, help = "Set the location of lib-python/3. Overrides any environment variables or Java options.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> StdLibHome = new OptionKey<>("");
 
     @Option(category = OptionCategory.USER, help = "This option makes reading from files return opaque objects. Imports can work with such data, " +
@@ -60,31 +61,31 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "List of root paths for the opaque file system (default: '/'); use system-specific path separator.") //
     public static final OptionKey<String> OpaqueFilesystemPrefixes = new OptionKey<>("/");
 
-    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -i flag. Inspect interactively after running a script.") //
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -i flag. Inspect interactively after running a script.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> InspectFlag = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -q flag. Don't  print version and copyright messages on interactive startup.") //
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -q flag. Don't  print version and copyright messages on interactive startup.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> QuietFlag = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -S flag. Don't imply 'import site' on initialization.") //
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -S flag. Don't imply 'import site' on initialization.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> NoSiteFlag = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -s flag. Don't add user site directory to sys.path.") //
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -s flag. Don't add user site directory to sys.path.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> NoUserSiteFlag = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -E flag. Ignore PYTHON* environment variables.") //
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -E flag. Ignore PYTHON* environment variables.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> IgnoreEnvironmentFlag = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONPATH environment variable for the standard launcher. ':'-separated list of directories prefixed to the default module search path.") //
+    @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONPATH environment variable for the standard launcher. ':'-separated list of directories prefixed to the default module search path.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> PythonPath = new OptionKey<>("");
 
-    @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.") //
+    @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> PythonOptimizeFlag = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -v flag. Turn on verbose mode.") //
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -v flag. Turn on verbose mode.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> VerboseFlag = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -u flag. Force stdout and stderr to be unbuffered.") //
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -u flag. Force stdout and stderr to be unbuffered.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> UnbufferedIO = new OptionKey<>(false);
 
     @Option(category = OptionCategory.INTERNAL, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
@@ -141,7 +142,7 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Set by the launcher to the terminal height.") //
     public static final OptionKey<Integer> TerminalHeight = new OptionKey<>(25);
 
-    @Option(category = OptionCategory.EXPERT, help = "The sys.executable path. Set by the launcher, but can may need to be overridden in certain special situations.") //
+    @Option(category = OptionCategory.EXPERT, help = "The sys.executable path. Set by the launcher, but can may need to be overridden in certain special situations.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> Executable = new OptionKey<>("");
 
     @Option(category = OptionCategory.EXPERT, help = "The executed command list as string joined by the executable list separator char. This must always correspond to the real, valid command list used to run GraalPython.") //
