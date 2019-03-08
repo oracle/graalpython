@@ -330,18 +330,6 @@ class EnvBuilder:
         text = text.replace('__VENV_PROMPT__', context.prompt)
         text = text.replace('__VENV_BIN_NAME__', context.bin_name)
         text = text.replace('__VENV_PYTHON__', context.env_exe)
-        # Truffle change: # Truffle change: we need to set some extra options for the launcher to work
-        text = text.replace(
-            '__VENV_GRAAL_PYTHON_OPTIONS__',
-            "--python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s'" % (
-                sys.graal_python_core_home,
-                sys.graal_python_stdlib_home,
-                context.env_dir,
-                sys.base_prefix,
-                context.env_exe,
-            )
-        )
-        # End truffle change
         return text
 
     def install_scripts(self, context, path):
