@@ -51,7 +51,7 @@ int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
 
 static PyObject* mmap_init_bufferprotocol(PyObject* self, PyObject* mmap_type) {
 	assert(PyType_Check(mmap_type));
-    initialize_type_structure(&mmap_object_type, mmap_type, polyglot_mmap_object_typeid());
+        initialize_type_structure(&mmap_object_type, (PyTypeObject*)mmap_type, polyglot_mmap_object_typeid());
 
 	polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java(mmap_type), (getbufferproc) mmap_getbuffer, (releasebufferproc) NULL);
 	return Py_None;

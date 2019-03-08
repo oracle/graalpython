@@ -138,7 +138,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected PythonContext createContext(Env env) {
         ensureHomeInOptions(env);
-        Python3Core newCore = new Python3Core(new PythonParserImpl(), env);
+        Python3Core newCore = new Python3Core(new PythonParserImpl());
         return new PythonContext(this, env, newCore);
     }
 

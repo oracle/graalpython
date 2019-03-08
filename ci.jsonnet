@@ -2,7 +2,7 @@
   overlay: "d20cc2abdeb3cfb022e1a8035e40e350e5cfe5fc",
 
   // ======================================================================================================
-  // 
+  //
   // help:
   //  1) to get the json out of the jsonnet configuration make sure the `jsonnet` executable is in path
   //  2) execute the following command: jsonnet ci.jsonnet > ci.json
@@ -41,13 +41,13 @@
 
   // ------------------------------------------------------------------------------------------------------
   //
-  // utility funcs 
+  // utility funcs
   //
   // ------------------------------------------------------------------------------------------------------
   local utils = {
     download: function(name, version, platformSpecific = true)
       {name: name, version: version, platformspecific: platformSpecific},
-    
+
     getValue: function(object, field)
       if (!std.objectHas(object, field)) then
         error "unknown field: "+field+" in "+object+", valid choices are: "+std.objectFields(object)
@@ -57,7 +57,7 @@
     graalOption: function(name, value)
       ["--Ja", "@-Dgraal."+name+"="+value],
   },
-  
+
   // ------------------------------------------------------------------------------------------------------
   //
   // platform mixins
@@ -249,23 +249,23 @@
   //
   // ------------------------------------------------------------------------------------------------------
   local gates = [
-    // unittests 
+    // unittests
     testGate(type="unittest", platform="linux"),
     testGate(type="unittest", platform="darwin"),
     testGate(type="svm-unittest", platform="linux"),
     testGate(type="svm-unittest", platform="darwin"),
 
-    // junit 
+    // junit
     testGate(type="junit", platform="linux"),
     testGate(type="junit", platform="darwin"),
 
-    // style 
+    // style
     styleGate,
 
     // graalvm gates
     graalVmGate,
 
-    // deploy binaries 
+    // deploy binaries
     deployGate(platform="linux"),
     deployGate(platform="darwin"),
   ],

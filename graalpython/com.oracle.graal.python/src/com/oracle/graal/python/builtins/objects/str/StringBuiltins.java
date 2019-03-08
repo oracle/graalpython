@@ -991,7 +991,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @Builtin(name = "lower", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class LowerNode extends PythonBuiltinNode {
+    public abstract static class LowerNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -2120,6 +2120,20 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         PStringIterator doString(String self) {
             return factory().createStringIterator(self);
+        }
+
+    }
+
+    @Builtin(name = "casefold", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class CasefoldNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        String doString(String self) {
+            // TODO(fa) implement properly using 'unicodedata_db' (see 'unicodeobject.c' function
+            // 'unicode_casefold_impl')
+            return self.toLowerCase();
         }
 
     }

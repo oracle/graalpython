@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ContextvarsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CtypesModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
@@ -71,6 +72,7 @@ import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
@@ -133,6 +135,7 @@ import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
+import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -158,7 +161,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -193,6 +195,7 @@ public final class Python3Core implements PythonCore {
                         "str",
                         "type",
                         "_imp",
+                        "_thread",
                         "function",
                         "_functools",
                         "method",
@@ -220,20 +223,21 @@ public final class Python3Core implements PythonCore {
                         "function",
                         "_sysconfig",
                         "_socket",
-                        "_thread",
                         "ctypes",
                         "zlib",
                         "termios",
                         "zipimport",
                         "mmap",
-                        "_ast"));
+                        "_queue",
+                        "_ast",
+                        "_contextvars"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
     }
 
     private final PythonBuiltins[] builtins;
 
-    private static final PythonBuiltins[] initializeBuiltins(Env env) {
+    private static final PythonBuiltins[] initializeBuiltins() {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
                         new BuiltinConstructors(),
                         new BuiltinFunctions(),
@@ -290,6 +294,7 @@ public final class Python3Core implements PythonCore {
                         new ArrayModuleBuiltins(),
                         new ArrayBuiltins(),
                         new TimeModuleBuiltins(),
+                        new ModuleBuiltins(),
                         new MathModuleBuiltins(),
                         new MarshalModuleBuiltins(),
                         new RandomModuleBuiltins(),
@@ -332,20 +337,18 @@ public final class Python3Core implements PythonCore {
                         new ZLibModuleBuiltins(),
                         new MMapModuleBuiltins(),
                         new FcntlModuleBuiltins(),
-                        new MMapBuiltins()));
+                        new MMapBuiltins(),
+                        new QueueModuleBuiltins(),
+                        new ThreadModuleBuiltins(),
+                        new ThreadBuiltins(),
+                        new LockBuiltins(),
+                        new RLockBuiltins(),
+                        new ContextvarsModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
             for (PythonBuiltins builtin : providers) {
                 builtins.add(builtin);
             }
-        }
-        // threads
-        if (env.getOptions().get(PythonOptions.WithThread)) {
-            builtins.addAll(new ArrayList<>(Arrays.asList(
-                            new ThreadModuleBuiltins(),
-                            new ThreadBuiltins(),
-                            new LockBuiltins(),
-                            new RLockBuiltins())));
         }
         return builtins.toArray(new PythonBuiltins[builtins.size()]);
     }
@@ -371,9 +374,9 @@ public final class Python3Core implements PythonCore {
 
     private final PythonObjectFactory objectFactory = PythonObjectFactory.create();
 
-    public Python3Core(PythonParser parser, Env env) {
+    public Python3Core(PythonParser parser) {
         this.parser = parser;
-        this.builtins = initializeBuiltins(env);
+        this.builtins = initializeBuiltins();
         this.coreFiles = initializeCoreFiles();
     }
 

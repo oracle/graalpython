@@ -145,6 +145,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         String os = getPythonOSName();
         builtinConstants.put("platform", os);
+        if (os.equals("darwin")) {
+            builtinConstants.put("_framework", PNone.NONE);
+        }
         builtinConstants.put("__gmultiarch", getPythonArch() + "-" + os);
 
         super.initialize(core);
@@ -192,6 +195,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // optimize
                         PythonOptions.getFlag(context, PythonOptions.QuietFlag), // quiet
                         PythonOptions.getFlag(context, PythonOptions.VerboseFlag), // verbose
+                        false, // dev_mode
+                        0, // utf8_mode
         }));
 
         Env env = context.getEnv();

@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -465,6 +466,10 @@ public class ObjectBuiltins extends PythonBuiltins {
                 getDataClassNode = insert(GetLazyClassNode.create());
             }
             return getDataClassNode.execute(descr);
+        }
+
+        public static GetAttributeNode create() {
+            return GetAttributeNodeFactory.create();
         }
     }
 
