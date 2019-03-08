@@ -66,7 +66,7 @@ def _init_posix():
 
     g = {}
     g['CC'] = "%s --experimental-options -CC %s" % (sys.executable, "-v" if sys.flags.verbose else "")
-    g['CXX'] = "%s--experimental-options -CC %s" % (sys.executable, "-v" if sys.flags.verbose else "")
+    g['CXX'] = "%s --experimental-options -CC %s" % (sys.executable, "-v" if sys.flags.verbose else "")
     g['OPT'] = "-DNDEBUG -O1"
     g['CFLAGS'] = "-DNDEBUG -O1"
     g['CCSHARED'] = "-fPIC"
