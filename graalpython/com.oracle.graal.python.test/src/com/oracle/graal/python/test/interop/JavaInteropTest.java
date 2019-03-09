@@ -534,7 +534,8 @@ public class JavaInteropTest {
                             new OptionsChecker("PythonOptimizeFlag", "import sys; sys.flags.debug", "true", "false"),
                             new OptionsChecker("PythonOptimizeFlag", "import sys; sys.flags.optimize", "true", "false"),
                             new OptionsChecker("PythonOptimizeFlag", "__debug__", "true", "false"),
-                            new OptionsChecker("Executable", "import sys; sys.executable", "graalpython", "python3")
+                            new OptionsChecker("Executable", "import sys; sys.executable", "graalpython", "python3"),
+                            new OptionsChecker("IsolateFlag", "import sys; sys.flags.isolated", "true", "false")
             };
         }
 

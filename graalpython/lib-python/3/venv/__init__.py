@@ -46,11 +46,6 @@ class EnvBuilder:
         self.symlinks = symlinks
         self.upgrade = upgrade
         self.with_pip = with_pip
-        # Truffle change
-        if with_pip:
-            logger.warning("We cannot install pip on Graal Python, yet")
-        self.with_pip = False
-        # End Truffle change
         self.prompt = prompt
 
     def create(self, env_dir):
@@ -119,9 +114,22 @@ class EnvBuilder:
         context.python_dir = dirname
         context.python_exe = exename
 
+        if sys.platform == 'win32':
+            binname = 'Scripts'
+            incpath = 'Include'
+            libpath = os.path.join(env_dir, 'Lib', 'site-packages')
+        else:
+            binname = 'bin'
+            incpath = 'include'
+            libpath = os.path.join(env_dir, 'lib',
+                                   'python%d.%d' % sys.version_info[:2],
+                                   'site-packages')
+
         # Truffle change: our executable may not just be a file (e.g. we're
         # running through java), we always provide a script for launching in
         # venv
+        exename = context.python_exe = "graalpython"
+
         import atexit, tempfile
         tempdir = tempfile.mkdtemp()
         script = os.path.join(tempdir, "graalpython")
@@ -132,6 +140,13 @@ class EnvBuilder:
             if sys.platform != "win32":
                 f.write("#!/bin/sh\n")
             f.write(sys.executable)
+            f.write(" --python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s'" % (
+                sys.graal_python_core_home,
+                sys.graal_python_stdlib_home,
+                context.env_dir,
+                sys.base_prefix,
+                os.path.join(context.env_dir, binname, exename),
+            ))
             if sys.platform == "win32":
                 f.write(" %*")
             else:
@@ -143,7 +158,6 @@ class EnvBuilder:
         atexit.register(lambda: shutil.rmtree(tempdir, ignore_errors=True))
 
         dirname = context.python_dir = sys.graal_python_home
-        exename = context.python_exe = "graalpython"
         context.executable = script
 
         if self.symlinks:
@@ -151,16 +165,6 @@ class EnvBuilder:
         self.symlinks = False
         # End of Truffle change
 
-        if sys.platform == 'win32':
-            binname = 'Scripts'
-            incpath = 'Include'
-            libpath = os.path.join(env_dir, 'Lib', 'site-packages')
-        else:
-            binname = 'bin'
-            incpath = 'include'
-            libpath = os.path.join(env_dir, 'lib',
-                                   'python%d.%d' % sys.version_info[:2],
-                                   'site-packages')
         context.inc_path = path = os.path.join(env_dir, incpath)
         create_if_needed(path)
         create_if_needed(libpath)
@@ -323,18 +327,6 @@ class EnvBuilder:
         text = text.replace('__VENV_PROMPT__', context.prompt)
         text = text.replace('__VENV_BIN_NAME__', context.bin_name)
         text = text.replace('__VENV_PYTHON__', context.env_exe)
-        # Truffle change: we need to set some extra options for the launcher to work
-        text = text.replace(
-            '__VENV_GRAAL_PYTHON_OPTIONS__',
-            "--python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s'" % (
-                sys.graal_python_core_home,
-                sys.graal_python_stdlib_home,
-                context.env_dir,
-                sys.base_prefix,
-                context.env_exe,
-            )
-        )
-        # End truffle change
         return text
 
     def install_scripts(self, context, path):

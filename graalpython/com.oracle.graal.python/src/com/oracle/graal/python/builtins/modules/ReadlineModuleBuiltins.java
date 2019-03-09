@@ -85,6 +85,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         private final List<String> history = new ArrayList<>();
         protected Object completer = null;
         public boolean autoHistory = true;
+        public String completerDelims = null;
 
         public ForeignAccess getForeignAccess() {
             return null;
@@ -343,6 +344,29 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             data.autoHistory = enabled;
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "set_completer_delims", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class SetCompleterDelimsNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PNone setCompleterDelims(PythonModule self, String completerDelims,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            LocalData data = (LocalData) readNode.execute(self, DATA);
+            data.completerDelims = completerDelims;
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "get_completer_delims", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class GetCompleterDelimsNode extends PythonBuiltinNode {
+        @Specialization
+        Object getCompleterDelims(PythonModule self,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            LocalData data = (LocalData) readNode.execute(self, DATA);
+            return (data.completerDelims != null) ? data.completerDelims : PNone.NONE;
         }
     }
 }
