@@ -237,8 +237,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         break;
                     } else if (!arg.startsWith("--") && arg.length() > 2) {
                         // short arguments can be given together
-                        for (String optionChar : arg.substring(1).split("")) {
-                            arguments.add(i + 1, "-" + optionChar);
+                        String[] split = arg.substring(1).split("");
+                        for (int j = 0; j < split.length; j++) {
+                            String optionChar = split[j];
+                            arguments.add(i + 1 + j, "-" + optionChar);
                         }
                     } else {
                         // possibly a polyglot argument
