@@ -282,10 +282,7 @@ class EnvBuilder:
         # We run ensurepip in isolated mode to avoid side effects from
         # environment vars, the current directory and anything else
         # intended for the global Python environment
-        # Truffle change: the graal python interpreter cannot yet parse grouped flags
-        # cmd = [context.env_exe, '-Im', 'ensurepip', '--upgrade',
-        # End Truffle change
-        cmd = [context.env_exe, '-I', '-m', 'ensurepip', '--upgrade',
+        cmd = [context.env_exe, '-Im', 'ensurepip', '--upgrade',
                                                     '--default-pip']
         subprocess.check_output(cmd, stderr=subprocess.STDOUT)
 
