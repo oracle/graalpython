@@ -156,6 +156,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             return marshaller.execute(toBytesNode.execute(bytes), CURRENT_VERSION);
         }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        Object doit(PMemoryView bytes,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            return marshaller.execute(toBytesNode.execute(bytes), CURRENT_VERSION);
+        }
     }
 
     private static final char TYPE_NULL = '0';
