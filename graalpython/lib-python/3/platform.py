@@ -161,6 +161,9 @@ def libc_ver(executable=sys.executable, lib='', version='',
         The file is read and scanned in chunks of chunksize bytes.
 
     """
+    if sys.implementation.name == "graalpython":
+        if executable == sys.executable and not os.path.exists(executable):
+            return lib, version
     if hasattr(os.path, 'realpath'):
         # Python 2.2 introduced os.path.realpath(); it is used
         # here to work around problems with Cygwin not being

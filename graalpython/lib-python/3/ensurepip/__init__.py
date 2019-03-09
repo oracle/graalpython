@@ -23,14 +23,6 @@ def _run_pip(args, additional_paths=None):
     if additional_paths is not None:
         sys.path = additional_paths + sys.path
 
-    # Truffle patch: begin
-    import platform
-
-    def libc_ver(executable=sys.executable, lib='', version='', chunksize=16384):
-        return lib, None
-    setattr(platform, 'libc_ver', libc_ver)
-    # End Truffle patch
-
     # Install the bundled software
     import pip._internal
     return pip._internal.main(args)
