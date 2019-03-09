@@ -63,7 +63,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private ArrayList<String> programArgs = null;
     private String commandString = null;
     private String inputFile = null;
-    private boolean ignoreScriptDir = false;
+    private boolean isolateFlag = false;
     private boolean ignoreEnv = false;
     private boolean inspectFlag = false;
     private boolean verboseFlag = false;
@@ -132,7 +132,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "-I":
                     noUserSite = true;
                     ignoreEnv = true;
-                    ignoreScriptDir = true;
+                    isolateFlag = true;
                     break;
                 case "-s":
                     noUserSite = true;
@@ -402,6 +402,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.AlwaysRunExcepthook", "true");
         contextBuilder.option("python.InspectFlag", Boolean.toString(inspectFlag));
         contextBuilder.option("python.VerboseFlag", Boolean.toString(verboseFlag));
+        contextBuilder.option("python.IsolateFlag", Boolean.toString(isolateFlag));
         if (verboseFlag) {
             contextBuilder.option("log.python.level", "FINE");
         }

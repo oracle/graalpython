@@ -88,6 +88,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -u flag. Force stdout and stderr to be unbuffered.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> UnbufferedIO = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -I flag. Isolate from the users environment by not adding the cwd to the path", stability = OptionStability.STABLE) //
+    public static final OptionKey<Boolean> IsolateFlag = new OptionKey<>(false);
+
     @Option(category = OptionCategory.INTERNAL, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
     public static final OptionKey<Boolean> ExposeInternalSources = new OptionKey<>(false);
 

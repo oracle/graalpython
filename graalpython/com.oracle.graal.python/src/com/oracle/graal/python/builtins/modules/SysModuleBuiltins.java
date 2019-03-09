@@ -180,7 +180,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         sys.setAttribute("graal_python_stdlib_home", PythonOptions.getOption(context, PythonOptions.StdLibHome));
         sys.setAttribute("graal_python_opaque_filesystem", PythonOptions.getOption(context, PythonOptions.OpaqueFilesystem));
         sys.setAttribute("graal_python_opaque_filesystem_prefix", PythonOptions.getOption(context, PythonOptions.OpaqueFilesystemPrefixes));
-        sys.setAttribute("graal_python_unbuffered_io", PythonOptions.getOption(context, PythonOptions.UnbufferedIO));
         sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
                         !PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // debug
@@ -189,7 +188,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         PythonOptions.getFlag(context, PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
                         PythonOptions.getFlag(context, PythonOptions.InspectFlag), // inspect
                         PythonOptions.getFlag(context, PythonOptions.TerminalIsInteractive), // interactive
-                        !context.isExecutableAccessAllowed(), // isolated
+                        PythonOptions.getFlag(context, PythonOptions.IsolateFlag), // isolated
                         PythonOptions.getFlag(context, PythonOptions.NoSiteFlag), // no_site
                         PythonOptions.getFlag(context, PythonOptions.NoUserSiteFlag), // no_user_site
                         PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // optimize
@@ -203,17 +202,21 @@ public class SysModuleBuiltins extends PythonBuiltins {
         String option = PythonOptions.getOption(context, PythonOptions.PythonPath);
         Object[] path;
         int pathIdx = 0;
+        boolean doIsolate = PythonOptions.getOption(context, PythonOptions.IsolateFlag);
+        int defaultPaths = doIsolate ? 2 : 3;
         if (option.length() > 0) {
             String[] split = option.split(PythonCore.PATH_SEPARATOR);
-            path = new Object[split.length + 3];
+            path = new Object[split.length + defaultPaths];
             System.arraycopy(split, 0, path, 0, split.length);
             pathIdx = split.length;
         } else {
-            path = new Object[3];
+            path = new Object[defaultPaths];
         }
-        path[pathIdx] = getScriptPath(env, args);
-        path[pathIdx + 1] = PythonCore.getStdlibHome(env);
-        path[pathIdx + 2] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
+        if (!doIsolate) {
+            path[pathIdx++] = getScriptPath(env, args);
+        }
+        path[pathIdx++] = PythonCore.getStdlibHome(env);
+        path[pathIdx++] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
     }
