@@ -179,25 +179,23 @@ public abstract class TypeNodes {
         }
     }
 
-    public static class GetMroNode extends Node {
-        @Child private GetMroStorageNode getMroStorageNode;
+    @GenerateUncached
+    public abstract static class GetMroNode extends Node {
 
-        public PythonAbstractClass[] execute(Object obj) {
-            if (getMroStorageNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getMroStorageNode = insert(GetMroStorageNode.create());
-            }
+        public abstract PythonAbstractClass[] execute(Object obj);
+
+        @Specialization
+        PythonAbstractClass[] doIt(Object obj,
+                        @Cached GetMroStorageNode getMroStorageNode) {
             return getMroStorageNode.execute(obj).getInternalClassArray();
         }
 
-        @TruffleBoundary
-        public static PythonAbstractClass[] doSlowPath(Object obj) {
-            MroSequenceStorage mroStorage = GetMroStorageNode.doSlowPath(obj);
-            return mroStorage.getInternalClassArray();
+        public static GetMroNode create() {
+            return TypeNodesFactory.GetMroNodeGen.create();
         }
 
-        public static GetMroNode create() {
-            return new GetMroNode();
+        public static GetMroNode getUncached() {
+            return TypeNodesFactory.GetMroNodeGen.getUncached();
         }
     }
 
@@ -672,7 +670,7 @@ public abstract class TypeNodes {
             if (baseClasses.length == 0) {
                 currentMRO = new PythonAbstractClass[]{cls};
             } else if (baseClasses.length == 1) {
-                PythonAbstractClass[] baseMRO = GetMroNode.doSlowPath(baseClasses[0]);
+                PythonAbstractClass[] baseMRO = GetMroNode.getUncached().execute(baseClasses[0]);
 
                 if (baseMRO == null) {
                     currentMRO = new PythonAbstractClass[]{cls};
@@ -686,7 +684,7 @@ public abstract class TypeNodes {
 
                 for (int i = 0; i < baseClasses.length; i++) {
                     toMerge[i] = new MROMergeState();
-                    toMerge[i].mro = GetMroNode.doSlowPath(baseClasses[i]);
+                    toMerge[i].mro = GetMroNode.getUncached().execute(baseClasses[i]);
                 }
 
                 toMerge[baseClasses.length] = new MROMergeState();

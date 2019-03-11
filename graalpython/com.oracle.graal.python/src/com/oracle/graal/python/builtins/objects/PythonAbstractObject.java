@@ -51,14 +51,18 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -70,6 +74,7 @@ import com.oracle.graal.python.nodes.datamodel.IsIterableNode;
 import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
@@ -88,6 +93,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -138,7 +144,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             if (attrGetattribute == null) {
                 attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
             }
-            return toForeign.executeConvert(callGetattributeNode.execute(null, attrGetattribute, key));
+            return toForeign.executeConvert(callGetattributeNode.execute(null, attrGetattribute, this, key));
         } catch (PException e) {
             // pass
         }
@@ -202,12 +208,10 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public long getArraySize(
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupLenNode,
-                    @Exclusive @Cached CallNode callLenNode) throws UnsupportedMessageException {
+                    @Exclusive @Cached LookupAndCallUnaryDynamicNode callLenNode) throws UnsupportedMessageException {
         // since a call to this method must be preceded by a call to 'hasArrayElements', we just
         // assume that a length exists
-        Object attrLen = lookupLenNode.execute(this, SpecialMethodNames.__LEN__);
-        Object lenObj = callLenNode.execute(null, attrLen);
+        Object lenObj = callLenNode.executeObject(this, SpecialMethodNames.__LEN__);
         if (lenObj instanceof Number) {
             return ((Number) lenObj).longValue();
         } else if (lenObj instanceof PInt) {
@@ -248,6 +252,26 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
         return (keyInfoNode.execute(this, member) & PKeyInfoNode.INSERTABLE) != 0;
+    }
+
+    @ExportMessage
+    public boolean isExecutable(
+                    @Cached IsCallableNode isCallableNode) {
+        return isCallableNode.execute(this);
+    }
+
+    @ExportMessage
+    public Object execute(Object[] arguments,
+                    @Shared("toForeign") @Cached PTypeToForeignNode toForeign,
+                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode,
+                    @Cached ArgumentsFromForeignNode convertArgsNode) throws UnsupportedMessageException {
+        Object isCallable = callAttrGetterNode.execute(this, SpecialMethodNames.__CALL__);
+        if (isCallable == PNone.NO_VALUE) {
+            throw UnsupportedMessageException.create();
+        }
+        Object[] convertedArgs = convertArgsNode.execute(arguments);
+        return toForeign.executeConvert(callNode.execute(null, this, convertedArgs, PKeyword.EMPTY_KEYWORDS));
     }
 
     @ExportLibrary(InteropLibrary.class)
@@ -295,12 +319,16 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Cached GetClassNode getClass,
                     @Cached IsMappingNode isMapping,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
-                    @Cached SequenceNodes.LenNode lenNode) {
+                    @Cached SequenceNodes.LenNode lenNode,
+                    @Cached TypeNodes.GetMroNode getMroNode) {
 
         HashSet<String> keys = new HashSet<>();
-        PythonClass klass = getClass.execute(this);
-        for (PythonObject o : klass.getMethodResolutionOrder()) {
-            addKeysFromObject(keys, o, includeInternal);
+        PythonAbstractClass klass = getClass.execute(this);
+        for (PythonAbstractClass o : getMroNode.execute(klass)) {
+            if (o instanceof PythonManagedClass) {
+                addKeysFromObject(keys, (PythonManagedClass) o, includeInternal);
+            }
+            // TODO handle native class
         }
         if (this instanceof PythonObject) {
             addKeysFromObject(keys, (PythonObject) this, includeInternal);
@@ -538,6 +566,42 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
         public static PInteropSubscriptNode getUncached() {
             return PythonAbstractObjectFactory.PInteropSubscriptNodeGen.getUncached();
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class ArgumentsFromForeignNode extends Node {
+
+        public abstract Object[] execute(Object[] arguments);
+
+        @Specialization(guards = {"arguments.length == cachedLen", "cachedLen < 6"}, limit = "3")
+        @ExplodeLoop
+        static Object[] cached(Object[] arguments,
+                        @Cached PForeignToPTypeNode fromForeign,
+                        @Cached("arguments.length") int cachedLen) {
+            Object[] convertedArgs = new Object[cachedLen];
+            for (int i = 0; i < cachedLen; i++) {
+                convertedArgs[i] = fromForeign.executeConvert(arguments[i]);
+            }
+            return convertedArgs;
+        }
+
+        @Specialization(replaces = "cached")
+        static Object[] generic(Object[] arguments,
+                        @Cached PForeignToPTypeNode fromForeign) {
+            Object[] convertedArgs = new Object[arguments.length];
+            for (int i = 0; i < arguments.length; i++) {
+                convertedArgs[i] = fromForeign.executeConvert(arguments[i]);
+            }
+            return convertedArgs;
+        }
+
+        public static ArgumentsFromForeignNode create() {
+            return PythonAbstractObjectFactory.ArgumentsFromForeignNodeGen.create();
+        }
+
+        public static ArgumentsFromForeignNode getUncached() {
+            return PythonAbstractObjectFactory.ArgumentsFromForeignNodeGen.getUncached();
         }
     }
 

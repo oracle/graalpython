@@ -107,7 +107,7 @@ abstract class GetSulongTypeNode extends PNodeWithContext {
     }
 
     private static Object findBuiltinClass(PythonManagedClass pythonClass) {
-        PythonAbstractClass[] mro = GetMroNode.doSlowPath(pythonClass);
+        PythonAbstractClass[] mro = GetMroNode.getUncached().execute(pythonClass);
         Object sulongType = null;
         for (PythonAbstractClass superClass : mro) {
             if (superClass instanceof PythonManagedClass) {
