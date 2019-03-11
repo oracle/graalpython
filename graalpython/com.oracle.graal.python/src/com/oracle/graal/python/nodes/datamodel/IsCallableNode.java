@@ -50,9 +50,11 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @GenerateUncached
+@ImportStatic(PGuards.class)
 public abstract class IsCallableNode extends PDataModelEmulationNode {
 
     @Specialization(guards = {"!isCallable(callable) || isClass(callable)"})

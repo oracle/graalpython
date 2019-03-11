@@ -42,35 +42,44 @@ package com.oracle.graal.python.builtins.objects;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 
+import java.util.HashSet;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.datamodel.IsIterableNode;
+import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
+import com.oracle.graal.python.nodes.expression.CastToListNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -84,6 +93,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
 public abstract class PythonAbstractObject implements TruffleObject, Comparable<Object> {
+    private static final String PRIVATE_PREFIX = "__";
     private DynamicObjectNativeWrapper nativeWrapper;
 
     public DynamicObjectNativeWrapper getNativeWrapper() {
@@ -96,118 +106,102 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    protected Object readMember(String key,
-                    @Cached ReadNode readNode) throws UnknownIdentifierException {
-        return readNode.execute(this, key);
-    }
-
-    @ImportStatic(SpecialMethodNames.class)
-    @GenerateUncached
-    abstract static class ReadNode extends Node {
-
-        public abstract Object execute(Object object, String key) throws UnknownIdentifierException;
-
-        @Specialization
-        Object doRead(Object object, String key,
-                        @Cached KeyForAttributeAccess getAttributeKey,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
-                        @Cached CallNode callGetattributeNode,
-                        @Cached KeyForItemAccess getItemKey,
-                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe?
-                        @Cached(allowUncached = true) GetItemNode getItemNode,
-                        @Cached PTypeToForeignNode toForeign) throws UnknownIdentifierException {
-            String attrKey = getAttributeKey.execute(key);
-            Object attrGetattribute = null;
-            if (attrKey != null) {
-                try {
-                    attrGetattribute = lookupGetattributeNode.execute(object, __GETATTRIBUTE__);
-                    return toForeign.executeConvert(callGetattributeNode.execute(null, attrGetattribute, attrKey));
-                } catch (PException e) {
-                    // pass, we might be reading an item that starts with "@"
-                }
-            }
-
-            String itemKey = getItemKey.execute(key);
-            if (itemKey != null) {
-                return toForeign.executeConvert(getItemNode.execute(object, itemKey));
-            }
-
-            try {
-                if (attrGetattribute == null) {
-                    attrGetattribute = lookupGetattributeNode.execute(object, __GETATTRIBUTE__);
-                }
-                return toForeign.executeConvert(callGetattributeNode.execute(null, attrGetattribute, key));
-            } catch (PException e) {
-                // pass
-            }
-
-            throw UnknownIdentifierException.create(key);
-        }
-
+    public void writeMember(String key, Object value) {
+        // TODO
     }
 
     @ExportMessage
-    protected boolean hasArrayElements(
+    public Object readMember(String key,
+                    @Cached KeyForAttributeAccess getAttributeKey,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
+                    @Exclusive @Cached CallNode callGetattributeNode,
+                    @Cached KeyForItemAccess getItemKey,
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Shared("toForeign") @Cached PTypeToForeignNode toForeign) throws UnknownIdentifierException {
+        String attrKey = getAttributeKey.execute(key);
+        Object attrGetattribute = null;
+        if (attrKey != null) {
+            try {
+                attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
+                return toForeign.executeConvert(callGetattributeNode.execute(null, attrGetattribute, attrKey));
+            } catch (PException e) {
+                // pass, we might be reading an item that starts with "@"
+            }
+        }
+
+        String itemKey = getItemKey.execute(key);
+        if (itemKey != null) {
+            return toForeign.executeConvert(getItemNode.execute(this, itemKey));
+        }
+
+        try {
+            if (attrGetattribute == null) {
+                attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
+            }
+            return toForeign.executeConvert(callGetattributeNode.execute(null, attrGetattribute, key));
+        } catch (PException e) {
+            // pass
+        }
+
+        throw UnknownIdentifierException.create(key);
+    }
+
+    @ExportMessage
+    public boolean hasArrayElements(
                     @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
                     @Shared("isIterableNode") @Cached IsIterableNode isIterableNode) {
         return isSequenceNode.execute(this) || isIterableNode.execute(this);
     }
 
-    @ExportMessage(name = "readArrayElement")
-    @ImportStatic(SpecialMethodNames.class)
-    abstract static class PReadArrayElementNode {
-
-        @Specialization
-        static Object doRead(PythonAbstractObject object, long key,
-                        @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
-                        @Shared("isIterableNode") @Cached IsIterableNode isIterableNode,
-                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe?
-                        @Cached(allowUncached = true) GetItemNode getItemNode,
-                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIterNode,
-                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupNextNode,
-                        @Exclusive @Cached CallNode callIterNode,
-                        @Exclusive @Cached CallNode callNextNode,
-                        @Cached PTypeToForeignNode toForeign) throws UnsupportedMessageException, InvalidArrayIndexException {
-            if (isSequenceNode.execute(object)) {
-                try {
-                    return toForeign.executeConvert(getItemNode.execute(object, key));
-                } catch (PException e) {
-                    // TODO(fa) refine exception handling
-                    // it's a sequence, so we assume the index is wrong
-                    throw InvalidArrayIndexException.create(key);
-                }
+    @ExportMessage
+    public Object readArrayElement(long key,
+                    @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
+                    @Shared("isIterableNode") @Cached IsIterableNode isIterableNode,
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIterNode,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupNextNode,
+                    @Exclusive @Cached CallNode callIterNode,
+                    @Exclusive @Cached CallNode callNextNode,
+                    @Shared("toForeign") @Cached PTypeToForeignNode toForeign) throws UnsupportedMessageException, InvalidArrayIndexException {
+        if (isSequenceNode.execute(this)) {
+            try {
+                return toForeign.executeConvert(getItemNode.execute(this, key));
+            } catch (PException e) {
+                // TODO(fa) refine exception handling
+                // it's a sequence, so we assume the index is wrong
+                throw InvalidArrayIndexException.create(key);
             }
-
-            if (isIterableNode.execute(object)) {
-                Object attrIter = lookupIterNode.execute(object, SpecialMethodNames.__ITER__);
-                Object iter = callIterNode.execute(null, attrIter);
-                if (iter != object) {
-                    // there is a separate iterator for this object, should be safe to consume
-                    Object result = iterateToKey(lookupNextNode, callNextNode, iter, key);
-                    if (result != PNone.NO_VALUE) {
-                        return result;
-                    }
-                    // TODO(fa) refine exception handling
-                    // it's an iterable, so we assume the index is wrong
-                    throw InvalidArrayIndexException.create(key);
-                }
-            }
-
-            throw UnsupportedMessageException.create();
         }
 
-        private static Object iterateToKey(LookupInheritedAttributeNode.Dynamic lookupNextNode, CallNode callNextNode, Object iter, long key) {
-            Object value = PNone.NO_VALUE;
-            for (long i = 0; i <= key; i++) {
-                Object attrNext = lookupNextNode.execute(iter, SpecialMethodNames.__NEXT__);
-                value = callNextNode.execute(null, attrNext);
+        if (isIterableNode.execute(this)) {
+            Object attrIter = lookupIterNode.execute(this, SpecialMethodNames.__ITER__);
+            Object iter = callIterNode.execute(null, attrIter);
+            if (iter != this) {
+                // there is a separate iterator for this object, should be safe to consume
+                Object result = iterateToKey(lookupNextNode, callNextNode, iter, key);
+                if (result != PNone.NO_VALUE) {
+                    return result;
+                }
+                // TODO(fa) refine exception handling
+                // it's an iterable, so we assume the index is wrong
+                throw InvalidArrayIndexException.create(key);
             }
-            return value;
         }
+
+        throw UnsupportedMessageException.create();
+    }
+
+    private static Object iterateToKey(LookupInheritedAttributeNode.Dynamic lookupNextNode, CallNode callNextNode, Object iter, long key) {
+        Object value = PNone.NO_VALUE;
+        for (long i = 0; i <= key; i++) {
+            Object attrNext = lookupNextNode.execute(iter, SpecialMethodNames.__NEXT__);
+            value = callNextNode.execute(null, attrNext);
+        }
+        return value;
     }
 
     @ExportMessage
-    protected long getArraySize(
+    public long getArraySize(
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupLenNode,
                     @Exclusive @Cached CallNode callLenNode) throws UnsupportedMessageException {
         // since a call to this method must be preceded by a call to 'hasArrayElements', we just
@@ -224,40 +218,130 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    protected boolean isArrayElementReadable(@SuppressWarnings("unused") long idx) {
+    public boolean isArrayElementReadable(@SuppressWarnings("unused") long idx) {
         // We can't actually determine (in general) except of actually reading it which might have
         // side-effects.
         return true;
     }
 
     @ExportMessage
-    protected boolean hasMembers() {
+    public boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
-    protected boolean isMemberReadable(String member,
+    public boolean isMemberReadable(String member,
                     @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
         return (keyInfoNode.execute(this, member) & PKeyInfoNode.READABLE) != 0;
     }
 
     @ExportMessage
-    protected boolean isMemberModifiable(String member,
+    public boolean isMemberModifiable(String member,
                     @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
         return (keyInfoNode.execute(this, member) & PKeyInfoNode.MODIFIABLE) != 0;
     }
 
     @ExportMessage
-    protected boolean isMemberInsertable(String member,
+    public boolean isMemberInsertable(String member,
                     @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
         return (keyInfoNode.execute(this, member) & PKeyInfoNode.INSERTABLE) != 0;
     }
 
+    @ExportLibrary(InteropLibrary.class)
+    public static final class Keys implements TruffleObject {
+
+        private final Object[] keys;
+
+        Keys(Object[] keys) {
+            this.keys = keys;
+        }
+
+        @ExportMessage
+        Object readArrayElement(long index) throws InvalidArrayIndexException {
+            try {
+                return keys[(int) index];
+            } catch (IndexOutOfBoundsException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw InvalidArrayIndexException.create(index);
+            }
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        boolean hasArrayElements() {
+            return true;
+        }
+
+        @ExportMessage
+        long getArraySize() {
+            return keys.length;
+        }
+
+        @ExportMessage
+        boolean isArrayElementReadable(long index) {
+            return index >= 0 && index < keys.length;
+        }
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public Object getMembers(boolean includeInternal,
+                    @Exclusive @Cached LookupAndCallUnaryDynamicNode keysNode,
+                    // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe?
+                    @Cached(allowUncached = true) CastToListNode castToList,
+                    @Cached GetClassNode getClass,
+                    @Cached IsMappingNode isMapping,
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Cached SequenceNodes.LenNode lenNode) {
+
+        HashSet<String> keys = new HashSet<>();
+        PythonClass klass = getClass.execute(this);
+        for (PythonObject o : klass.getMethodResolutionOrder()) {
+            addKeysFromObject(keys, o, includeInternal);
+        }
+        if (this instanceof PythonObject) {
+            addKeysFromObject(keys, (PythonObject) this, includeInternal);
+        }
+        if (includeInternal) {
+            // we use the internal flag to also return dictionary keys for mappings
+            if (isMapping.execute(this)) {
+                PList mapKeys = castToList.executeWith(keysNode.executeObject(this, SpecialMethodNames.KEYS));
+                int len = lenNode.execute(mapKeys);
+                for (int i = 0; i < len; i++) {
+                    Object key = getItemNode.execute(mapKeys, i);
+                    if (key instanceof String) {
+                        keys.add("[" + (String) key);
+                    } else if (key instanceof PString) {
+                        keys.add("[" + ((PString) key).getValue());
+                    }
+                }
+            }
+        }
+
+        return new Keys(keys.toArray(new String[0]));
+    }
+
+    private static void addKeysFromObject(HashSet<String> keys, PythonObject o, boolean includeInternal) {
+        for (Object k : o.getStorage().getShape().getKeys()) {
+            String strKey;
+            if (k instanceof String) {
+                strKey = (String) k;
+            } else if (k instanceof PString) {
+                strKey = ((PString) k).getValue();
+            } else {
+                continue;
+            }
+            if (includeInternal || !strKey.startsWith(PRIVATE_PREFIX)) {
+                keys.add(strKey);
+            }
+        }
+    }
+
     @GenerateUncached
-    abstract static class PKeyInfoNode extends Node {
+    public abstract static class PKeyInfoNode extends Node {
         private static final int NONE = 0;
         private static final int READABLE = 0x1;
         private static final int READ_SIDE_EFFECTS = 0x2;
@@ -343,10 +427,18 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
             return info;
         }
+
+        public static PKeyInfoNode create() {
+            return PythonAbstractObjectFactory.PKeyInfoNodeGen.create();
+        }
+
+        public static PKeyInfoNode getUncached() {
+            return PythonAbstractObjectFactory.PKeyInfoNodeGen.getUncached();
+        }
     }
 
     @GenerateUncached
-    abstract static class IsImmutable extends Node {
+    public abstract static class IsImmutable extends Node {
 
         public abstract boolean execute(Object object);
 
@@ -362,10 +454,18 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 return klass instanceof PythonBuiltinClassType || klass instanceof PythonBuiltinClass || klass instanceof PythonNativeClass;
             }
         }
+
+        public static IsImmutable create() {
+            return PythonAbstractObjectFactory.IsImmutableNodeGen.create();
+        }
+
+        public static IsImmutable getUncached() {
+            return PythonAbstractObjectFactory.IsImmutableNodeGen.getUncached();
+        }
     }
 
     @GenerateUncached
-    abstract static class KeyForAttributeAccess extends Node {
+    public abstract static class KeyForAttributeAccess extends Node {
 
         public abstract String execute(String object);
 
@@ -377,10 +477,18 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
             return null;
         }
+
+        public static KeyForAttributeAccess create() {
+            return PythonAbstractObjectFactory.KeyForAttributeAccessNodeGen.create();
+        }
+
+        public static KeyForAttributeAccess getUncached() {
+            return PythonAbstractObjectFactory.KeyForAttributeAccessNodeGen.getUncached();
+        }
     }
 
     @GenerateUncached
-    abstract static class KeyForItemAccess extends Node {
+    public abstract static class KeyForItemAccess extends Node {
 
         public abstract String execute(String object);
 
@@ -391,6 +499,45 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 return object.substring(1);
             }
             return null;
+        }
+
+        public static KeyForItemAccess create() {
+            return PythonAbstractObjectFactory.KeyForItemAccessNodeGen.create();
+        }
+
+        public static KeyForItemAccess getUncached() {
+            return PythonAbstractObjectFactory.KeyForItemAccessNodeGen.getUncached();
+        }
+    }
+
+    /*
+     * Basically the same as 'com.oracle.graal.python.nodes.subscript.GetItemNode' but with an
+     * uncached version.
+     */
+    @GenerateUncached
+    public abstract static class PInteropSubscriptNode extends Node {
+
+        public abstract Object execute(Object primary, Object index);
+
+        @Specialization
+        Object doSpecialObject(Object primary, Object index,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
+                        @Cached CallNode callGetItemNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+            Object attrGetItem = lookupGetItemNode.execute(primary, SpecialMethodNames.__GETITEM__);
+            if (profile.profile(attrGetItem == PNone.NO_VALUE)) {
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "'%p' object is not subscriptable", primary);
+            }
+            return callGetItemNode.execute(null, attrGetItem, primary, index);
+        }
+
+        public static PInteropSubscriptNode create() {
+            return PythonAbstractObjectFactory.PInteropSubscriptNodeGen.create();
+        }
+
+        public static PInteropSubscriptNode getUncached() {
+            return PythonAbstractObjectFactory.PInteropSubscriptNodeGen.getUncached();
         }
     }
 

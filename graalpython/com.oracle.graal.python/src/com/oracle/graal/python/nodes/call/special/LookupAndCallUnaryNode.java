@@ -220,12 +220,12 @@ public abstract class LookupAndCallUnaryNode extends Node {
     }
 
     @GenerateUncached
-    public abstract static class Dynamic extends Node {
+    public abstract static class LookupAndCallUnaryDynamicNode extends Node {
 
         public abstract Object executeObject(Object receiver, String name);
 
         @Specialization
-        Object callObject(Object receiver, String name,
+        static Object doObject(Object receiver, String name,
                         @Cached LookupInheritedAttributeNode.Dynamic getattr,
                         @Cached CallUnaryMethodNode dispatchNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
@@ -235,6 +235,14 @@ public abstract class LookupAndCallUnaryNode extends Node {
                 return dispatchNode.executeObject(attr, receiver);
             }
             return PNone.NO_VALUE;
+        }
+
+        public static LookupAndCallUnaryDynamicNode create() {
+            return LookupAndCallUnaryNodeGen.LookupAndCallUnaryDynamicNodeGen.create();
+        }
+
+        public static LookupAndCallUnaryDynamicNode getUncached() {
+            return LookupAndCallUnaryNodeGen.LookupAndCallUnaryDynamicNodeGen.getUncached();
         }
     }
 }

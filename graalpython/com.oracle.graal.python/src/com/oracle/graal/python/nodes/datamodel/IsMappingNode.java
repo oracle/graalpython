@@ -67,4 +67,12 @@ public abstract class IsMappingNode extends PDataModelEmulationNode {
         }
         return false;
     }
+
+    public static IsMappingNode create() {
+        return IsMappingNodeGen.create();
+    }
+
+    public static IsMappingNode getUncached() {
+        return IsMappingNodeGen.getUncached();
+    }
 }
