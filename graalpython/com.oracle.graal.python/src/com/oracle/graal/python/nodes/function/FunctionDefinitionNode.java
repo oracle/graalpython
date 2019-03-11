@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.nodes.function;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -60,10 +58,19 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         this.enclosingClassName = enclosingClassName;
         this.doc = doc;
         this.callTarget = callTarget;
-        assert defaults == null || Arrays.stream(defaults).noneMatch(x -> x == null);
+        assert defaults == null || noNullElements(defaults);
         this.defaults = defaults;
-        assert kwDefaults == null || Arrays.stream(kwDefaults).noneMatch(x -> x == null);
+        assert kwDefaults == null || noNullElements(kwDefaults);
         this.kwDefaults = kwDefaults;
+    }
+
+    private static boolean noNullElements(Object[] array) {
+        for (Object element : array) {
+            if (element == null) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
