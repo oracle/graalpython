@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,15 +28,21 @@ package com.oracle.graal.python.builtins.objects.function;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
+import java.util.Arrays;
+
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -46,19 +52,28 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final String name;
     private final LazyPythonClass enclosingType;
     private final RootCallTarget callTarget;
-    private final Arity arity;
     private final boolean isStatic;
+    private final Signature signature;
+    @CompilationFinal(dimensions = 1) private final PNone[] defaults;
+    @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    public PBuiltinFunction(LazyPythonClass clazz, String name, LazyPythonClass enclosingType, Arity arity, RootCallTarget callTarget) {
+    public PBuiltinFunction(LazyPythonClass clazz, String name, LazyPythonClass enclosingType, int numDefaults, RootCallTarget callTarget) {
         super(clazz);
         this.name = name;
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingType = enclosingType;
         this.callTarget = callTarget;
-        this.arity = arity;
+        this.signature = ((PRootNode) callTarget.getRootNode()).getSignature();
+        this.defaults = new PNone[numDefaults];
+        Arrays.fill(getDefaults(), PNone.NO_VALUE);
+        String[] keywordNames = signature.getKeywordNames();
+        this.kwDefaults = new PKeyword[keywordNames.length];
+        for (int i = 0; i < keywordNames.length; i++) {
+            kwDefaults[i] = new PKeyword(keywordNames[i], PNone.NO_VALUE);
+        }
         this.getStorage().define(__NAME__, name);
         if (enclosingType != null) {
-            this.getStorage().define(__QUALNAME__, enclosingType.getName() + "." + name);
+            this.getStorage().define(__QUALNAME__, GetNameNode.doSlowPath(enclosingType) + "." + name);
         } else {
             this.getStorage().define(__QUALNAME__, name);
         }
@@ -81,8 +96,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         }
     }
 
-    public Arity getArity() {
-        return arity;
+    public Signature getSignature() {
+        return signature;
     }
 
     public RootCallTarget getCallTarget() {
@@ -103,7 +118,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         if (enclosingType == null) {
             return String.format("PBuiltinFunction %s at 0x%x", name, hashCode());
         } else {
-            return String.format("PBuiltinFunction %s.%s at 0x%x", enclosingType.getName(), name, hashCode());
+            return String.format("PBuiltinFunction %s.%s at 0x%x", GetNameNode.doSlowPath(enclosingType), name, hashCode());
         }
     }
 
@@ -111,7 +126,15 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         if (klass == enclosingType) {
             return this;
         } else {
-            return factory.createBuiltinFunction(name, klass, arity, callTarget);
+            return factory.createBuiltinFunction(name, klass, defaults.length, callTarget);
         }
+    }
+
+    public PNone[] getDefaults() {
+        return defaults;
+    }
+
+    public PKeyword[] getKwDefaults() {
+        return kwDefaults;
     }
 }

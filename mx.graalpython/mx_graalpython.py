@@ -21,6 +21,8 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
+from __future__ import print_function
+
 import os
 import platform
 import re
@@ -34,11 +36,10 @@ import mx_benchmark
 import mx_gate
 import mx_sdk
 import mx_subst
-import mx_urlrewrites
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, GraalPythonVm, \
-    CONFIGURATION_DEFAULT, CONFIGURATION_EXPERIMENTAL_SPLITTING
+    CONFIGURATION_DEFAULT, CONFIG_EXPERIMENTAL_SPLITTING, CONFIGURATION_SANDBOXED
 from mx_unittest import unittest
 
 SUITE = mx.suite('graalpython')
@@ -122,9 +123,11 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         dists.append('SULONG')
         if mx.suite("sulong-managed", fatalIfMissing=False):
             dists.append('SULONG_MANAGED')
-            vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_MANAGED_LIBS>'))
+            graalpython_args.insert(0, mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_MANAGED_LIBS>'))
         else:
-            vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>'))
+            graalpython_args.insert(0, mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_LIBS>'))
+
+    graalpython_args.insert(0, '--experimental-options=true')
 
     # Try eagerly to include tools on Tim's computer
     if not mx.suite("/tools", fatalIfMissing=False):
@@ -161,7 +164,7 @@ def punittest(args):
     # IMPORTANT! This must not be --suite graalpython, because a
     # --dynamicimports sulong will otherwise not put sulong.jar on the
     # classpath, which means we cannot run our C extension tests!
-    unittest(args + ['--regex', '(graal\.python)|(com\.oracle\.truffle\.tck\.tests)', "-Dgraal.TraceTruffleCompilation=true"])
+    unittest(args + ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)', "-Dgraal.TraceTruffleCompilation=true"])
 
 
 def nativebuild(args):
@@ -247,7 +250,8 @@ def python_svm(args):
     return svm_image
 
 
-def gate_unittests(args=[], subdir=""):
+def gate_unittests(args=None, subdir=""):
+    args = args or []
     _graalpytest_driver = "graalpython/com.oracle.graal.python.test/src/graalpytest.py"
     _test_project = "graalpython/com.oracle.graal.python.test/"
     for idx, arg in enumerate(args):
@@ -262,7 +266,7 @@ def gate_unittests(args=[], subdir=""):
     else:
         pre_args = []
         post_args = args
-    mx.command_function("python")(["--python.CatchAllExceptions=true"] + pre_args + test_args + post_args)
+    mx.command_function("python")(["--experimental-options=true", "--python.CatchAllExceptions=true"] + pre_args + test_args + post_args)
     if platform.system() != 'Darwin':
         # TODO: re-enable when python3 is available on darwin
         mx.log("Running tests with CPython")
@@ -270,10 +274,12 @@ def gate_unittests(args=[], subdir=""):
     if platform.system() != 'Darwin' and not pre_args and not post_args and not subdir:
         mx.log("Running cpyext tests with opaque FS")
         test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/cpyext/"]
-        mx.command_function("python")(["--python.CatchAllExceptions=true", "--python.OpaqueFilesystem"] + pre_args + test_args + post_args)
+        mx.command_function("python")(["--experimental-options=true", "--python.CatchAllExceptions=true", "--python.OpaqueFilesystem"] + pre_args + test_args + post_args)
 
 
-def run_python_unittests(python_binary, args=[], aot_compatible=True, exclude=[]):
+def run_python_unittests(python_binary, args=None, aot_compatible=True, exclude=None):
+    args = args or []
+    exclude = exclude or []
     # tests root directory
     tests_folder = os.path.join(SUITE.dir, "graalpython", "com.oracle.graal.python.test", "src", "tests")
 
@@ -430,9 +436,6 @@ def run_shared_lib_test(args=None):
                 return status;
             }
 
-            poly_destroy_handle(isolate_thread, engine_builder);
-            poly_destroy_handle(isolate_thread, builder);
-
             return poly_ok;
         }
 
@@ -442,17 +445,7 @@ def run_shared_lib_test(args=None):
                 return status;
             }
 
-            status = poly_destroy_handle(isolate_thread, context);
-            if (status != poly_ok) {
-                return status;
-            }
-
             status = poly_engine_close(isolate_thread, engine, true);
-            if (status != poly_ok) {
-                return status;
-            }
-
-            status = poly_destroy_handle(isolate_thread, engine);
             if (status != poly_ok) {
                 return status;
             }
@@ -479,10 +472,7 @@ def run_shared_lib_test(args=None):
             int32_t result_value;
             poly_value_as_int32(isolate_thread, value, &result_value);
 
-            assert_ok("primitive free failed", poly_destroy_handle(isolate_thread, primitive_object) == poly_ok);
-            assert_ok("value free failed", poly_destroy_handle(isolate_thread, value) == poly_ok);
             assert_ok("value computation was incorrect", result_value == 42 * 42);
-            assert_ok("func free failed", poly_destroy_handle(isolate_thread, func) == poly_ok);
             assert_ok("Context tear down failed.", tear_down_context() == poly_ok);
             return 0;
         }
@@ -602,7 +592,7 @@ def update_import(name, rev="origin/master", callback=None):
     suitefile = os.path.join(primary.dir, "mx." + primary.name, "suite.py")
     with open(suitefile, 'r') as f:
         contents = f.read()
-    dep_re = re.compile("['\"]name['\"]:\s+['\"]%s['\"],\s+['\"]version['\"]:\s+['\"]([a-z0-9]+)['\"]" % name, re.MULTILINE)
+    dep_re = re.compile(r"['\"]name['\"]:\s+['\"]%s['\"],\s+['\"]version['\"]:\s+['\"]([a-z0-9]+)['\"]" % name, re.MULTILINE)
     dep_match = dep_re.search(contents)
     if dep_match:
         start = dep_match.start(1)
@@ -620,7 +610,7 @@ def update_import_cmd(args):
         callback = None
         if name == "sulong":
             join = os.path.join
-            callback=lambda: shutil.copy(
+            callback = lambda: shutil.copy(
                 join(SUITE_SULONG.dir, "include", "truffle.h"),
                 join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "truffle.h")
             ) and shutil.copy(
@@ -665,6 +655,12 @@ def import_python_sources(args):
         "_cpython_unicodedata.c": "unicodedata.c",
         "_bz2.c": "_bz2module.c",
     }
+    extra_pypy_files = [
+        "graalpython/lib-python/3/_md5.py",
+        "graalpython/lib-python/3/_sha1.py",
+        "graalpython/lib-python/3/_sha256.py",
+        "graalpython/lib-python/3/_sha512.py",
+    ]
 
     parser = ArgumentParser(prog='mx python-src-import')
     parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
@@ -676,7 +672,7 @@ def import_python_sources(args):
     pypy_sources = args.pypy
     import_version = args.msg
 
-    print """
+    print("""
     So you think you want to update the inlined sources? Here is how it will go:
 
     1. We'll first check the copyrights check overrides file to identify the
@@ -717,7 +713,7 @@ def import_python_sources(args):
        python-import.
 
     7. Run the tests and fix any remaining issues.
-    """.format(mapping)
+    """.format(mapping))
     raw_input("Got it?")
 
     cpy_files = []
@@ -734,7 +730,7 @@ def import_python_sources(args):
     SUITE.vc.git_command(SUITE.dir, ["clean", "-fdx"])
     shutil.rmtree("graalpython")
 
-    for inlined_file in pypy_files:
+    for inlined_file in (pypy_files + extra_pypy_files):
         original_file = None
         name = os.path.basename(inlined_file)
         name = mapping.get(name, name)
@@ -743,7 +739,7 @@ def import_python_sources(args):
             if name.startswith("test_") or name.endswith("_tests.py"):
                 original_file = inlined_file
             else:
-                for root, dirs, files in os.walk(pypy_sources):
+                for root, _, files in os.walk(pypy_sources):
                     if os.path.basename(name) in files:
                         original_file = os.path.join(root, name)
                         try:
@@ -761,7 +757,7 @@ def import_python_sources(args):
         name = os.path.basename(inlined_file)
         name = mapping.get(name, name)
         if inlined_file.endswith(".h") or inlined_file.endswith(".c"):
-            for root, dirs, files in os.walk(python_sources):
+            for root, _, files in os.walk(python_sources):
                 if os.path.basename(name) in files:
                     original_file = os.path.join(root, name)
                     try:
@@ -846,9 +842,12 @@ def _register_vms(namespace):
     python_vm_registry.add_vm(CPythonVm(CONFIGURATION_DEFAULT), SUITE)
     python_vm_registry.add_vm(PyPyVm(CONFIGURATION_DEFAULT), SUITE)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_EXPERIMENTAL_SPLITTING, extra_vm_args=[
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIG_EXPERIMENTAL_SPLITTING, extra_vm_args=[
         '-Dgraal.TruffleExperimentalSplitting=true',
         '-Dgraal.TruffleExperimentalSplittingAllowForcedSplits=false'
+    ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED, extra_polyglot_args=[
+        '--llvm.sandboxed',
     ]), SUITE, 10)
 
 

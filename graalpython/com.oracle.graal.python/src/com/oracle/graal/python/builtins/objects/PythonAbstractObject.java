@@ -393,4 +393,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         }
     }
 
+    @Override
+    public String toString() {
+        return "<an abstract python object>";
+    }
 }

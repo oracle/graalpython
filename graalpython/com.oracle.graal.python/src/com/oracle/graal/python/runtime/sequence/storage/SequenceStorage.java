@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-
 public abstract class SequenceStorage {
 
     public enum ListStorageType {
@@ -41,8 +39,6 @@ public abstract class SequenceStorage {
         Tuple,
         Generic
     }
-
-    @CompilationFinal private static boolean LOG_GENERALIZATION = false;
 
     public abstract int length();
 

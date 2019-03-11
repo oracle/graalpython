@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,17 +41,23 @@
 package com.oracle.graal.python.nodes.classes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class IsSubtypeMRONode extends PNodeWithContext {
+
+    @Child private GetMroNode getMroNode;
 
     private final ConditionProfile equalsProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile innerEqualsProfile = ConditionProfile.createBinaryProfile();
@@ -89,7 +95,7 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
         return isSubtype(derived, clazz.getType());
     }
 
-    protected static boolean isBuiltinClass(PythonClass clazz) {
+    protected static boolean isBuiltinClass(PythonAbstractClass clazz) {
         return clazz instanceof PythonBuiltinClass;
     }
 
@@ -107,7 +113,7 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
     protected boolean isSubtype(PythonClass derived, PythonBuiltinClassType clazz,
                     @Cached("create()") IsBuiltinClassProfile profile) {
 
-        for (PythonClass mro : derived.getMethodResolutionOrder()) {
+        for (PythonAbstractClass mro : getMro(derived)) {
             if (profile.profileClass(mro, clazz)) {
                 return true;
             }
@@ -117,14 +123,22 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
     }
 
     @Specialization
-    protected boolean isSubtype(PythonClass derived, PythonClass clazz) {
-
-        for (PythonClass mro : derived.getMethodResolutionOrder()) {
-            if (mro == clazz) {
+    protected boolean isSubtype(PythonClass derived, PythonClass clazz,
+                    @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode) {
+        for (PythonAbstractClass mro : getMro(derived)) {
+            if (isSameTypeNode.execute(mro, clazz)) {
                 return true;
             }
         }
         falseProfile.enter();
         return false;
+    }
+
+    private PythonAbstractClass[] getMro(PythonAbstractClass clazz) {
+        if (getMroNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getMroNode = insert(GetMroNode.create());
+        }
+        return getMroNode.execute(clazz);
     }
 }

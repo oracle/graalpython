@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2019, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -96,6 +96,8 @@ MICRO_BENCHMARKS = {
     'magic-iter': ITER_10 + ['50000000'],
     'instantiation': ITER_10 + ['50000000'],
     'call-classmethod': ITER_15 + ['50000000'],
+    'mmap-anonymous': ITER_15 + ['1000'],
+    'mmap-file': ITER_15 + ['1000'],
 }
 
 

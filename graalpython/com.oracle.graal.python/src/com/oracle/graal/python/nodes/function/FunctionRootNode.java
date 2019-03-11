@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.cell.CellSupplier;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -65,8 +66,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     private ExpressionNode uninitializedBody;
 
     public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
-                    ExecutionCellSlots executionCellSlots) {
-        super(language, frameDescriptor, executionCellSlots);
+                    ExecutionCellSlots executionCellSlots, Signature signature) {
+        super(language, frameDescriptor, executionCellSlots, signature);
         this.contextRef = language.getContextReference();
         this.executionCellSlots = executionCellSlots;
         this.cells = new PCell[this.cellVarSlots.length];
@@ -75,21 +76,14 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
         assert sourceSection != null;
         this.functionName = functionName;
         this.isGenerator = isGenerator;
-        this.body = NodeUtil.cloneNode(body);
+        this.body = new InnerRootNode(this, NodeUtil.cloneNode(body));
         this.uninitializedBody = NodeUtil.cloneNode(body);
         this.generatorFrameProfile = isGenerator ? ValueProfile.createClassProfile() : null;
     }
 
-    public String getFunctionName() {
-        return functionName;
-    }
-
-    public ExpressionNode getBody() {
-        return body;
-    }
-
-    public ExpressionNode getUninitializedBody() {
-        return uninitializedBody;
+    public FunctionRootNode copyWithNewSignature(Signature newSignature) {
+        Supplier<PythonLanguage> languageSupplier = getLanguageSupplier(PythonLanguage.class);
+        return new FunctionRootNode(languageSupplier.get(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
     }
 
     @Override
@@ -110,7 +104,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     @Override
     public FunctionRootNode copy() {
         Supplier<PythonLanguage> languageSupplier = getLanguageSupplier(PythonLanguage.class);
-        return new FunctionRootNode(languageSupplier.get(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots);
+        return new FunctionRootNode(languageSupplier.get(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, getSignature());
     }
 
     @ExplodeLoop
@@ -148,7 +142,6 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
         if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
             contextRef.get().triggerAsyncActions();
         }
-        initClosureAndCellVars(frame);
         return body.execute(frame);
     }
 
@@ -169,5 +162,10 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
 
     public void setRewritten() {
         this.isRewritten = true;
+    }
+
+    @Override
+    public void initializeFrame(VirtualFrame frame) {
+        initClosureAndCellVars(frame);
     }
 }

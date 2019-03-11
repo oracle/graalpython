@@ -57,6 +57,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -78,12 +79,12 @@ import com.oracle.truffle.api.nodes.Node;
 @ImportStatic(SpecialMethodNames.class)
 public class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
-    public PyNumberMethodsWrapper(PythonClass delegate) {
+    public PyNumberMethodsWrapper(PythonManagedClass delegate) {
         super(delegate);
     }
 
-    public PythonClass getPythonClass() {
-        return (PythonClass) getDelegate();
+    public PythonManagedClass getPythonClass() {
+        return (PythonManagedClass) getDelegate();
     }
 
     @ExportMessage

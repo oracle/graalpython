@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,12 +45,11 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -171,7 +170,12 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         }
 
         @Specialization
-        protected static PythonClass getIt(PythonNativeObject object,
+        protected static LazyPythonClass getIt(@SuppressWarnings("unused") PythonBuiltinClassType object) {
+            return PythonBuiltinClassType.PythonClass;
+        }
+
+        @Specialization
+        protected static LazyPythonClass getIt(PythonAbstractNativeObject object,
                         @Cached("create()") GetNativeClassNode getNativeClassNode) {
             return getNativeClassNode.execute(object);
         }
@@ -233,10 +237,10 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         }
         LazyPythonClass lazyClass = GetLazyClassCachedNode.getItSlowPath(o);
         if (lazyClass != null) {
-            return lazyClass.getName();
+            return lazyClass.toString(); // TODO: (tfel) fix getNameSlowPath
         } else {
             CompilerDirectives.transferToInterpreter();
-            return o.toString();
+            throw new IllegalStateException("unknown type " + o.getClass().getName());
         }
     }
 }

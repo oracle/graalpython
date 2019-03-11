@@ -52,14 +52,13 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
-import com.oracle.graal.python.nodes.classes.ClassDefinitionEpilogNode;
+import com.oracle.graal.python.nodes.classes.ClassDefinitionPrologueNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.control.ForNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -76,6 +75,7 @@ import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
@@ -83,7 +83,6 @@ import com.oracle.graal.python.nodes.literal.LiteralNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
-import com.oracle.graal.python.nodes.statement.DefaultParametersNode;
 import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
@@ -95,6 +94,7 @@ import com.oracle.graal.python.parser.antlr.Python3Parser.Lambdef_bodyContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Lambdef_nocond_bodyContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.VarargslistContext;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -114,33 +114,32 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     protected final Source source;
     protected final String name;
 
-    protected final boolean isInlineMode;
+    protected final ParserMode mode;
 
-    public PythonTreeTranslator(ParserErrorCallback errors, String name, TranslationEnvironment environment, Source source, boolean isInlineMode) {
+    public PythonTreeTranslator(ParserErrorCallback errors, String name, TranslationEnvironment environment, Source source, ParserMode mode) {
         this.errors = errors;
         this.name = name;
         this.environment = environment;
         this.source = source;
-        this.isInlineMode = isInlineMode;
+        this.mode = mode;
         this.factory = errors.getLanguage().getNodeFactory();
         this.loops = new LoopsBookKeeper();
         this.assigns = new AssignmentTranslator(errors, environment, this);
     }
 
-    public static Node translate(ParserErrorCallback errors, String name, ParserRuleContext input, TranslationEnvironment environment, Source source, boolean isInlineMode) {
-        PythonTreeTranslator translator = new PythonTreeTranslator(errors, name, environment, source, isInlineMode);
+    public static Node translate(ParserErrorCallback errors, String name, ParserRuleContext input, TranslationEnvironment environment, Source source, ParserMode mode) {
+        PythonTreeTranslator translator = new PythonTreeTranslator(errors, name, environment, source, mode);
         try {
             Object parseResult = input.accept(translator);
-            if (!isInlineMode && parseResult instanceof RootNode || isInlineMode && parseResult instanceof PNode) {
+            if (mode == ParserMode.InlineEvaluation) {
+                assert parseResult instanceof PNode : "expected PNode result for InlineEvaluation";
                 return (Node) parseResult;
             } else {
-                throw new RuntimeException("Unexpected parse result");
+                assert parseResult instanceof RootNode : "expected RootNode result from parsing";
+                return (Node) parseResult;
             }
         } catch (PException e) {
             throw e;
-        } catch (Exception t) {
-            t.printStackTrace();
-            throw new RuntimeException("Failed in " + translator + " with error " + t, t);
         }
     }
 
@@ -242,7 +241,8 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         deriveSourceSection(ctx, node);
         StatementNode evalReturn = factory.createFrameReturn(factory.createWriteLocal(node, environment.getReturnSlot()));
         ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, factory.createReadLocal(environment.getReturnSlot()));
-        FunctionRootNode functionRoot = factory.createFunctionRoot(node.getSourceSection(), name, false, ctx.scope.getFrameDescriptor(), returnTarget, environment.getExecutionCellSlots());
+        FunctionRootNode functionRoot = factory.createFunctionRoot(node.getSourceSection(), name, false, ctx.scope.getFrameDescriptor(), returnTarget, environment.getExecutionCellSlots(),
+                        Signature.EMPTY);
         environment.popScope();
         return functionRoot;
     }
@@ -253,8 +253,12 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ExpressionNode body = asExpression(super.visitSingle_input(ctx));
         deriveSourceSection(ctx, body);
         environment.popScope();
-        if (isInlineMode) {
+        if (mode == ParserMode.InlineEvaluation) {
             return body;
+        } else if (mode == ParserMode.Statement) {
+            body = factory.createPrintExpression(body);
+            deriveSourceSection(ctx, body);
+            return factory.createModuleRoot("<expression>", getModuleDoc(ctx), body, ctx.scope.getFrameDescriptor());
         } else {
             return factory.createModuleRoot("<expression>", getModuleDoc(ctx), body, ctx.scope.getFrameDescriptor());
         }
@@ -513,7 +517,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     private GeneratorExpressionNode createGeneratorExpressionDefinition(ExpressionNode body, int lineNum) {
         FrameDescriptor fd = environment.getCurrentFrame();
         String generatorName = environment.getCurrentScope().getParent().getScopeId() + ".<locals>.<genexp>:" + source.getName() + ":" + lineNum;
-        FunctionRootNode funcRoot = factory.createFunctionRoot(body.getSourceSection(), generatorName, true, fd, body, environment.getExecutionCellSlots());
+        FunctionRootNode funcRoot = factory.createFunctionRoot(body.getSourceSection(), generatorName, true, fd, body, environment.getExecutionCellSlots(), Signature.EMPTY);
         GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, true);
         RootCallTarget callTarget = gtran.translate();
         ExpressionNode loopIterator = gtran.getGetOuterMostLoopIterator();
@@ -636,12 +640,23 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 }
             }
 
+            if (text.endsWith("'''") || text.endsWith("\"\"\"")) {
+                strStartIndex += 2;
+                strEndIndex -= 2;
+            }
+
+            text = text.substring(strStartIndex, strEndIndex);
             if (isBytes) {
                 if (sb != null) {
                     throw errors.raise(SyntaxError, "cannot mix bytes and nonbytes literals");
                 }
                 if (bb == null) {
                     bb = new BytesBuilder();
+                }
+                if (isRaw) {
+                    bb.append(text.getBytes());
+                } else {
+                    bb.append(BytesUtils.fromString(errors, text));
                 }
             } else {
                 if (bb != null) {
@@ -650,21 +665,6 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 if (sb == null) {
                     sb = new StringBuilder();
                 }
-            }
-
-            if (text.endsWith("'''") || text.endsWith("\"\"\"")) {
-                strStartIndex += 2;
-                strEndIndex -= 2;
-            }
-
-            text = text.substring(strStartIndex, strEndIndex);
-            if (isBytes) {
-                if (isRaw) {
-                    bb.append(text.getBytes());
-                } else {
-                    bb.append(BytesUtils.fromString(errors, text));
-                }
-            } else {
                 if (isRaw) {
                     sb.append(text);
                 } else {
@@ -1456,28 +1456,19 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         String funcName = ctx.NAME().getText();
         String enclosingClassName = environment.isInClassScope() ? environment.getCurrentScopeId() : null;
 
-        /**
-         * translate default arguments in FunctionDef's declaring scope.
-         */
         List<ExpressionNode> defaultArgs = new ArrayList<>();
-        Python3Parser.TypedargslistContext argslist = ctx.parameters().typedargslist();
-        if (argslist != null) {
-            for (Python3Parser.DefparameterContext defc : argslist.defparameter()) {
-                if (defc.test() != null) {
-                    defaultArgs.add((ExpressionNode) defc.test().accept(this));
-                }
-            }
-        }
+        List<KwDefaultExpressionNode> defaultKwArgs = new ArrayList<>();
 
         environment.pushScope(ctx.scope);
         environment.setDefaultArgumentNodes(defaultArgs);
+        environment.setDefaultKwArgumentNodes(defaultKwArgs);
 
         /**
          * Parameters
          */
-        Args args = visitArgs(funcName, ctx.parameters().typedargslist());
+        Args args = visitArgs(ctx.parameters().typedargslist(), defaultArgs, defaultKwArgs);
         StatementNode argumentLoads = args.node;
-        Arity arity = args.arity;
+        Signature signature = args.signature;
 
         /**
          * Function body
@@ -1498,14 +1489,14 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         /**
          * Defaults
          */
-        StatementNode defaults = createDefaultArgumentsNode();
+        ExpressionNode[] defaults = createDefaultArgumentsNode();
+        KwDefaultExpressionNode[] kwDefaults = createDefaultKwArgumentsNode();
 
         /**
          * Function root
          */
         FrameDescriptor fd = environment.getCurrentFrame();
-        FunctionRootNode funcRoot = factory.createFunctionRoot(deriveSourceSection(ctx), funcName, environment.isInGeneratorScope(), fd, returnTarget, environment.getExecutionCellSlots());
-        RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
+        FunctionRootNode funcRoot = factory.createFunctionRoot(deriveSourceSection(ctx), funcName, environment.isInGeneratorScope(), fd, returnTarget, environment.getExecutionCellSlots(), signature);
 
         /**
          * Definition
@@ -1513,12 +1504,13 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ExpressionNode funcDef;
         if (environment.isInGeneratorScope()) {
             GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, false);
-            RootCallTarget callTarget = gtran.translate();
-            funcDef = GeneratorFunctionDefinitionNode.create(funcName, enclosingClassName, doc, arity, defaults, callTarget, fd,
+            RootCallTarget ct = gtran.translate();
+            funcDef = GeneratorFunctionDefinitionNode.create(funcName, enclosingClassName, doc, defaults, kwDefaults, ct, fd,
                             environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                             gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
         } else {
-            funcDef = new FunctionDefinitionNode(funcName, enclosingClassName, doc, arity, defaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
+            RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
+            funcDef = new FunctionDefinitionNode(funcName, enclosingClassName, doc, defaults, kwDefaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         }
         environment.popScope();
 
@@ -1528,34 +1520,30 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
     private final class Args {
         final StatementNode node;
-        final Arity arity;
+        final Signature signature;
 
-        Args(Arity arity) {
+        Args(Signature signature) {
             this.node = BlockNode.create();
-            this.arity = arity;
+            this.signature = signature;
         }
 
-        Args(StatementNode node, Arity arity) {
+        Args(StatementNode node, Signature signature) {
             this.node = node;
-            this.arity = arity;
+            this.signature = signature;
         }
     }
 
-    public Args visitArgs(String functionName, ParserRuleContext ctx) {
+    public Args visitArgs(ParserRuleContext ctx, List<ExpressionNode> defaultArgs, List<KwDefaultExpressionNode> defaultKwArgs) {
         if (ctx == null) {
-            return new Args(new Arity(functionName, 0, 0, false, false, false, new String[0], new Arity.KeywordName[0]));
+            return new Args(new Signature(false, -1, false, new String[0], new String[0]));
         }
-        int minNumPosArgs = 0;
-        int maxNumPosArgs = 0;
         assert ctx instanceof Python3Parser.TypedargslistContext || ctx instanceof Python3Parser.VarargslistContext;
         boolean starArgsMarker = false;
         List<String> parameterIds = new ArrayList<>();
         List<StatementNode> argumentReads = new ArrayList<>();
-        List<ReadDefaultArgumentNode> defaultReads = new ArrayList<>();
         List<String> keywordNames = new ArrayList<>();
-        List<Arity.KeywordName> arityKeywordNames = new ArrayList<>();
         int childCount = ctx.getChildCount();
-        boolean varargsSeen = false;
+        int varargsIdx = -1;
         boolean kwargsSeen = false;
         for (int i = 0; i < childCount; i++) {
             ParserRuleContext child = ctx.getChild(ParserRuleContext.class, i);
@@ -1572,8 +1560,8 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 Python3Parser.SplatparameterContext splat = (Python3Parser.SplatparameterContext) child;
                 argname = splat.tfpdef() == null ? null : splat.tfpdef().NAME().getText();
                 if (argname != null) {
-                    varargsSeen = true;
-                    argumentReadNode = environment.getWriteVarArgsToLocal(argname);
+                    varargsIdx = i;
+                    argumentReadNode = environment.getWriteVarArgsToLocal(argname, i);
                 } else {
                     starArgsMarker = true;
                 }
@@ -1581,8 +1569,8 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 Python3Parser.VsplatparameterContext splat = (Python3Parser.VsplatparameterContext) child;
                 argname = splat.vfpdef() == null ? null : splat.vfpdef().NAME().getText();
                 if (argname != null) {
-                    varargsSeen = true;
-                    argumentReadNode = environment.getWriteVarArgsToLocal(argname);
+                    varargsIdx = i;
+                    argumentReadNode = environment.getWriteVarArgsToLocal(argname, i);
                 } else {
                     starArgsMarker = true;
                 }
@@ -1598,44 +1586,53 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 argumentReadNode = environment.getWriteKwArgsToLocal(argname, keywordNames.toArray(new String[0]));
             }
             if (argumentReadNode == null && argname != null) {
+                ExpressionNode defaultValueNode = null;
                 if (test != null) {
-                    ReadDefaultArgumentNode readDefaultArgumentNode = new ReadDefaultArgumentNode();
-                    defaultReads.add(readDefaultArgumentNode);
-                    if (!varargsSeen && !starArgsMarker) {
-                        argumentReadNode = environment.getWriteKeywordArgumentToLocal(argname, readDefaultArgumentNode);
-                        maxNumPosArgs++;
-                    } else {
-                        argumentReadNode = environment.getWriteRequiredKeywordArgumentToLocal(argname, readDefaultArgumentNode);
+                    /**
+                     * translate default arguments in FunctionDef's declaring scope.
+                     */
+                    ScopeInfo definitionScope = environment.popScope();
+                    defaultValueNode = (ExpressionNode) test.accept(this);
+                    environment.pushScope(definitionScope);
+                }
+                if (varargsIdx == -1 && !starArgsMarker) {
+                    // positional argument, possibly with a default
+                    if (defaultValueNode != null) {
+                        defaultArgs.add(defaultValueNode);
                     }
-                    arityKeywordNames.add(new Arity.KeywordName(argname, false));
-                    keywordNames.add(argname);
-                } else if (varargsSeen || starArgsMarker) {
-                    argumentReadNode = environment.getWriteRequiredKeywordArgumentToLocal(argname);
-                    arityKeywordNames.add(new Arity.KeywordName(argname, true));
-                    keywordNames.add(argname);
-                } else {
-                    minNumPosArgs++;
-                    maxNumPosArgs++;
+                    argumentReadNode = environment.getWriteArgumentToLocal(argname, parameterIds.size());
                     parameterIds.add(argname);
-                    argumentReadNode = environment.getWriteArgumentToLocal(argname);
+                } else {
+                    // keyword-only argument
+                    argumentReadNode = environment.getWriteArgumentToLocal(argname, parameterIds.size() + keywordNames.size());
+                    keywordNames.add(argname);
+                    if (defaultValueNode != null) {
+                        defaultKwArgs.add(KwDefaultExpressionNode.create(argname, defaultValueNode));
+                    }
                 }
             }
             if (argumentReadNode != null) {
                 argumentReads.add(argumentReadNode);
             }
         }
-        environment.setDefaultArgumentReads(defaultReads.toArray(new ReadDefaultArgumentNode[0]));
-        return new Args(factory.createBlock(argumentReads), new Arity(functionName, minNumPosArgs, maxNumPosArgs, kwargsSeen, varargsSeen, starArgsMarker, parameterIds, arityKeywordNames));
+        return new Args(factory.createBlock(argumentReads), new Signature(kwargsSeen, varargsIdx, starArgsMarker, parameterIds, keywordNames));
     }
 
-    private StatementNode createDefaultArgumentsNode() {
+    private ExpressionNode[] createDefaultArgumentsNode() {
         if (environment.hasDefaultArguments()) {
             List<ExpressionNode> defaultParameters = environment.getDefaultArgumentNodes();
-            ReadDefaultArgumentNode[] defaultReads = environment.getDefaultArgumentReads();
-            return new DefaultParametersNode(defaultParameters.toArray(new ExpressionNode[defaultParameters.size()]),
-                            defaultReads);
+            return defaultParameters.toArray(new ExpressionNode[defaultParameters.size()]);
         } else {
-            return factory.createBlock();
+            return null;
+        }
+    }
+
+    private KwDefaultExpressionNode[] createDefaultKwArgumentsNode() {
+        if (environment.hasDefaultKwArguments()) {
+            List<KwDefaultExpressionNode> defaultParameters = environment.getDefaultKwArgumentNodes();
+            return defaultParameters.toArray(new KwDefaultExpressionNode[defaultParameters.size()]);
+        } else {
+            return null;
         }
     }
 
@@ -1644,24 +1641,19 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
          * translate default arguments in FunctionDef's declaring scope.
          */
         List<ExpressionNode> defaultArgs = new ArrayList<>();
-        if (varargslist != null) {
-            for (Python3Parser.VdefparameterContext defc : varargslist.vdefparameter()) {
-                if (defc.test() != null) {
-                    defaultArgs.add((ExpressionNode) defc.test().accept(this));
-                }
-            }
-        }
+        List<KwDefaultExpressionNode> defaultKwArgs = new ArrayList<>();
 
         String funcname = "anonymous";
         environment.pushScope(scope);
         environment.setDefaultArgumentNodes(defaultArgs);
+        environment.setDefaultKwArgumentNodes(defaultKwArgs);
 
         /**
          * Parameters
          */
-        Args args = visitArgs(funcname, varargslist);
+        Args args = visitArgs(varargslist, defaultArgs, defaultKwArgs);
         StatementNode argumentLoads = args.node;
-        Arity arity = args.arity;
+        Signature signature = args.signature;
 
         /**
          * Lambda body
@@ -1674,14 +1666,15 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         /**
          * Defaults
          */
-        StatementNode defaults = createDefaultArgumentsNode();
+        ExpressionNode[] defaults = createDefaultArgumentsNode();
+        KwDefaultExpressionNode[] kwDefaults = createDefaultKwArgumentsNode();
 
         /**
          * Lambda function root
          */
         FrameDescriptor fd = environment.getCurrentFrame();
-        FunctionRootNode funcRoot = factory.createFunctionRoot(deriveSourceSection(ctx), funcname, environment.isInGeneratorScope(), fd, returnTargetNode, environment.getExecutionCellSlots());
-        RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
+        FunctionRootNode funcRoot = factory.createFunctionRoot(deriveSourceSection(ctx), funcname, environment.isInGeneratorScope(), fd, returnTargetNode, environment.getExecutionCellSlots(),
+                        signature);
 
         /**
          * Definition
@@ -1689,12 +1682,13 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         PNode funcDef;
         if (environment.isInGeneratorScope()) {
             GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, false);
-            RootCallTarget callTarget = gtran.translate();
-            funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, arity, defaults, callTarget, fd,
+            RootCallTarget ct = gtran.translate();
+            funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, defaults, kwDefaults, ct, fd,
                             environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                             gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
         } else {
-            funcDef = new FunctionDefinitionNode(funcname, null, null, arity, defaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
+            RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
+            funcDef = new FunctionDefinitionNode(funcname, null, null, defaults, kwDefaults, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         }
         environment.popScope();
 
@@ -1764,8 +1758,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ExpressionNode body = asClassBody(ctx.suite().accept(this), qualName);
         ClassBodyRootNode classBodyRoot = factory.createClassBodyRoot(deriveSourceSection(ctx), className, environment.getCurrentFrame(), body, environment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
-        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(className, null, null, Arity.createOneArgumentWithVarKwArgs(className),
-                        factory.createBlock(), ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
+        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(className, null, null, null, null, ct, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         environment.popScope();
 
         argumentNodes.add(0, factory.createStringLiteral(className));
@@ -1855,7 +1848,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             environment.createLocal(__DOC__);
             body.set(0, environment.findVariable(__DOC__).makeWriteNode((ExpressionNode) body.get(0)));
         }
-        body.add(new ClassDefinitionEpilogNode(qualName));
+        body.add(0, new ClassDefinitionPrologueNode(qualName));
         return new ReturnTargetNode(asBlock(body), factory.createNullLiteral());
     }
 

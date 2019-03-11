@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,20 +41,19 @@
 package com.oracle.graal.python.builtins.objects.socket;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectableChannel;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public class PSocket extends PythonBuiltinObject {
-    public final static int AF_UNSPEC = 0;
-    public final static int AF_INET = 2;
-    public final static int AF_INET6 = 23;
+    public static final int AF_UNSPEC = 0;
+    public static final int AF_INET = 2;
+    public static final int AF_INET6 = 23;
 
-    public final static int SOCK_DGRAM = 1;
-    public final static int SOCK_STREAM = 2;
+    public static final int SOCK_DGRAM = 1;
+    public static final int SOCK_STREAM = 2;
 
-    private final static InetSocketAddress EPHEMERAL_ADDRESS = new InetSocketAddress(0);
+    private static final InetSocketAddress EPHEMERAL_ADDRESS = new InetSocketAddress(0);
 
     private final int family;
     private final int type;
@@ -62,7 +61,6 @@ public class PSocket extends PythonBuiltinObject {
 
     private double timeout;
 
-    @SuppressWarnings("unused") private SelectableChannel channel;
     private InetSocketAddress address = EPHEMERAL_ADDRESS;
 
     public PSocket(LazyPythonClass cls, int family, int type, int proto) {

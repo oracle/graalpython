@@ -117,7 +117,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         return TruffleObjectBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __BOOL__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends UnboxNode {
 
@@ -170,7 +170,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ADD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends UnboxNode {
         @Child private LookupAndCallBinaryNode addNode = BinaryArithmetic.Add.create();
@@ -231,12 +231,12 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RADD__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RAddNode extends AddNode {
     }
 
-    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         protected Node createHasSizeNode() {
@@ -270,7 +270,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends UnboxNode {
         @Child private LookupAndCallBinaryNode mulNode = BinaryArithmetic.Mul.create();
@@ -383,12 +383,12 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = __SUB__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __SUB__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SubNode extends UnboxNode {
         @Child private LookupAndCallBinaryNode subNode = BinaryArithmetic.Sub.create();
@@ -418,7 +418,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RSUB__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RSubNode extends UnboxNode {
         @Child private LookupAndCallBinaryNode subNode = BinaryArithmetic.Sub.create();
@@ -549,7 +549,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    private static abstract class ForeignBinaryDelegate extends UnboxNode {
+    private abstract static class ForeignBinaryDelegate extends UnboxNode {
         @Child private LookupAndCallBinaryNode divNode;
 
         protected LookupAndCallBinaryNode getDelegate() {
@@ -563,7 +563,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         protected abstract BinaryArithmetic getArithmetic();
     }
 
-    @Builtin(name = __TRUEDIV__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __TRUEDIV__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class TrueDivNode extends ForeignBinaryDelegate {
 
@@ -598,7 +598,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RTRUEDIV__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RTRUEDIV__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RTrueDivNode extends ForeignBinaryDelegate {
 
@@ -633,7 +633,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __FLOORDIV__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __FLOORDIV__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class FloorDivNode extends TrueDivNode {
         @Override
@@ -643,7 +643,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __RFLOORDIV__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __RFLOORDIV__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RFloorDivNode extends RTrueDivNode {
         @Override
@@ -691,7 +691,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class LtNode extends ForeignBinaryComparisonNode {
         protected LtNode() {
@@ -699,7 +699,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class LeNode extends ForeignBinaryComparisonNode {
         protected LeNode() {
@@ -707,7 +707,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GT__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GtNode extends ForeignBinaryComparisonNode {
         protected GtNode() {
@@ -715,7 +715,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GeNode extends ForeignBinaryComparisonNode {
         protected GeNode() {
@@ -723,7 +723,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends ForeignBinaryComparisonNode {
         protected EqNode() {
@@ -731,11 +731,9 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends UnboxNode {
-
-        @Child private Node getSizeNode;
 
         @Specialization(guards = "isForeignArray(iterable)")
         Object doForeignArray(TruffleObject iterable,
@@ -867,7 +865,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
         @Child AccessForeignItemNodes.GetForeignItemNode getForeignItemNode = AccessForeignItemNodes.GetForeignItemNode.create();
@@ -878,7 +876,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETATTR__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __GETATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetattrNode extends PythonBinaryBuiltinNode {
         @Child PForeignToPTypeNode toPythonNode = PForeignToPTypeNode.create();
@@ -896,7 +894,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETATTR__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class SetattrNode extends UnboxNode {
         @Specialization(guards = "isForeignObject(object)")
@@ -911,7 +909,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETITEM__, fixedNumOfPositionalArgs = 3)
+    @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class SetitemNode extends PythonTernaryBuiltinNode {
         AccessForeignItemNodes.SetForeignItemNode setForeignItemNode = AccessForeignItemNodes.SetForeignItemNode.create();
@@ -923,7 +921,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DELATTR__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __DELATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DelattrNode extends UnboxNode {
         @Specialization(guards = "isForeignObject(object)")
@@ -938,7 +936,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DELITEM__, fixedNumOfPositionalArgs = 2)
+    @Builtin(name = __DELITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DelitemNode extends PythonBinaryBuiltinNode {
         AccessForeignItemNodes.RemoveForeignItemNode delForeignItemNode = AccessForeignItemNodes.RemoveForeignItemNode.create();
@@ -950,7 +948,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DIR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __DIR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class DirNode extends UnboxNode {
         @Specialization(guards = "isForeignObject(object)")
@@ -969,7 +967,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __INDEX__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __INDEX__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IndexNode extends UnboxNode {
         @Specialization(guards = "isForeignObject(object)")
@@ -985,14 +983,12 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __STR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class StrNode extends UnboxNode {
         protected final String method = __STR__;
         @Child private LookupAndCallUnaryNode callStrNode;
         @Child protected PythonUnaryBuiltinNode objectStrNode;
-        @Child private Node getSizeNode;
-        @Child private Node readNode;
 
         @Specialization(guards = {"isBoxed(object)"})
         protected Object doBoxed(TruffleObject object) {
@@ -1041,7 +1037,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
         protected final String method = __REPR__;

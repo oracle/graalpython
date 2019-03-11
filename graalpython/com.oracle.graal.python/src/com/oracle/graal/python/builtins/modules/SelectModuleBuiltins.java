@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,9 +62,9 @@ public class SelectModuleBuiltins extends PythonBuiltins {
         return SelectModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "select", fixedNumOfPositionalArgs = 3, parameterNames = {"rlist", "wlist", "xlist"}, keywordArguments = {"timeout"})
+    @Builtin(name = "select", minNumOfPositionalArgs = 3, parameterNames = {"rlist", "wlist", "xlist", "timeout"})
     @GenerateNodeFactory
-    static abstract class SelectNode extends PythonBuiltinNode {
+    abstract static class SelectNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
         PTuple select(Object rlist, Object wlist, Object xlist, @SuppressWarnings("unused") Object timeout) {

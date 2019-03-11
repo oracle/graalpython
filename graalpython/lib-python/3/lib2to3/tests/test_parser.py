@@ -612,9 +612,20 @@ class TestLiterals(GrammarTest):
         self.validate(s)
 
 
+class TestGeneratorExpressions(GrammarTest):
+
+    def test_trailing_comma_after_generator_expression_argument_works(self):
+        # BPO issue 27494
+        self.validate("set(x for x in [],)")
+
+
 def diff_texts(a, b, filename):
     a = a.splitlines()
     b = b.splitlines()
     return difflib.unified_diff(a, b, filename, filename,
                                 "(original)", "(reserialized)",
                                 lineterm="")
+
+
+if __name__ == '__main__':
+    unittest.main()

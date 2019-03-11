@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -150,9 +150,9 @@ public class PyExpatModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("errors", errors);
     }
 
-    @Builtin(name = "ParserCreate", keywordArguments = {"encoding", "namespace_separator", "intern"}, doc = "Return a new XML parser object.")
+    @Builtin(name = "ParserCreate", parameterNames = {"encoding", "namespace_separator", "intern"}, doc = "Return a new XML parser object.")
     @GenerateNodeFactory
-    static abstract class ParserCreateNode extends PythonTernaryBuiltinNode {
+    abstract static class ParserCreateNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         Object fail(Object encoding, Object namespace_separator, Object intern) {

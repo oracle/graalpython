@@ -42,9 +42,10 @@ package com.oracle.graal.python.builtins.modules;
 
 import static java.lang.StrictMath.toIntExact;
 
-import java.util.Hashtable;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.Semaphore;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -53,7 +54,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -73,10 +73,12 @@ import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = "_signal")
 public class SignalModuleBuiltins extends PythonBuiltins {
-    private static Hashtable<Integer, Object> signalHandlers = new Hashtable<>();
+    private static ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
 
-    private final static HiddenKey signalQueueKey = new HiddenKey("signalQueue");
+    private static final HiddenKey signalQueueKey = new HiddenKey("signalQueue");
     private final ConcurrentLinkedDeque<SignalTriggerAction> signalQueue = new ConcurrentLinkedDeque<>();
+    private static final HiddenKey signalSemaKey = new HiddenKey("signalQueue");
+    private final Semaphore signalSema = new Semaphore(0);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -102,29 +104,32 @@ public class SignalModuleBuiltins extends PythonBuiltins {
 
         PythonModule signalModule = core.lookupBuiltinModule("_signal");
         signalModule.setAttribute(signalQueueKey, signalQueue);
+        signalModule.setAttribute(signalSemaKey, signalSema);
 
         core.getContext().registerAsyncAction(() -> {
-            synchronized (signalQueue) {
-                try {
-                    signalQueue.wait();
-                } catch (InterruptedException e) {
+            SignalTriggerAction poll = signalQueue.poll();
+            try {
+                while (poll == null) {
+                    signalSema.acquire();
+                    poll = signalQueue.poll();
                 }
+            } catch (InterruptedException e) {
             }
-            return signalQueue.poll();
+            return poll;
         });
     }
 
     private static class SignalTriggerAction implements AsyncHandler.AsyncAction {
-        private final Object callable;
+        private final Object callableObject;
         private final int signum;
 
         SignalTriggerAction(Object callable, int signum) {
-            this.callable = callable;
+            this.callableObject = callable;
             this.signum = signum;
         }
 
         public Object callable() {
-            return callable;
+            return callableObject;
         }
 
         public Object[] arguments() {
@@ -136,7 +141,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "alarm", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "alarm", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AlarmNode extends PythonUnaryBuiltinNode {
@@ -163,7 +168,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getsignal", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "getsignal", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetSignalNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -193,11 +198,9 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     }
 
     @TypeSystemReference(PythonArithmeticTypes.class)
-    @Builtin(name = "signal", fixedNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @Builtin(name = "signal", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
-        @Child CreateArgumentsNode createArgs = CreateArgumentsNode.create();
-
         private int getSignum(long signum) {
             try {
                 return toIntExact(signum);
@@ -230,17 +233,17 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object signal(PythonModule self, long signalNumber, Object handler,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+                        @Cached("create()") ReadAttributeFromObjectNode readQueueNode,
+                        @Cached("create()") ReadAttributeFromObjectNode readSemaNode) {
             int signum = getSignum(signalNumber);
-            ConcurrentLinkedDeque<SignalTriggerAction> queue = getQueue(self, readNode);
+            ConcurrentLinkedDeque<SignalTriggerAction> queue = getQueue(self, readQueueNode);
+            Semaphore semaphore = getSemaphore(self, readSemaNode);
             Object retval;
             SignalTriggerAction signalTrigger = new SignalTriggerAction(handler, signum);
             try {
                 retval = Signals.setSignalHandler(signum, () -> {
                     queue.add(signalTrigger);
-                    synchronized (queue) {
-                        queue.notify();
-                    }
+                    semaphore.release();
                 });
             } catch (IllegalArgumentException e) {
                 throw raise(PythonErrorType.ValueError, e);
@@ -264,6 +267,15 @@ public class SignalModuleBuiltins extends PythonBuiltins {
                 return queue;
             } else {
                 throw new IllegalStateException("the signal trigger queue was modified!");
+            }
+        }
+
+        private static Semaphore getSemaphore(PythonModule self, ReadAttributeFromObjectNode readNode) {
+            Object semaphore = readNode.execute(self, signalSemaKey);
+            if (semaphore instanceof Semaphore) {
+                return (Semaphore) semaphore;
+            } else {
+                throw new IllegalStateException("the signal trigger semaphore was modified!");
             }
         }
     }

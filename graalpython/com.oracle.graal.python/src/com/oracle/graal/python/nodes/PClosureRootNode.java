@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class PClosureRootNode extends PRootNode {
@@ -89,11 +90,16 @@ public abstract class PClosureRootNode extends PRootNode {
         return freeVarSlots != null && freeVarSlots.length > 0;
     }
 
+    public abstract void initializeFrame(VirtualFrame frame);
+
     public String[] getFreeVars() {
-        String[] freeVars = new String[freeVarSlots.length];
-        for (int i = 0; i < freeVarSlots.length; i++) {
-            freeVars[i] = (String) freeVarSlots[i].getIdentifier();
+        if (freeVarSlots != null) {
+            String[] freeVars = new String[freeVarSlots.length];
+            for (int i = 0; i < freeVarSlots.length; i++) {
+                freeVars[i] = (String) freeVarSlots[i].getIdentifier();
+            }
+            return freeVars;
         }
-        return freeVars;
+        return new String[0];
     }
 }

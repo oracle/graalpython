@@ -137,6 +137,10 @@ def _oserror_use_init(subtype):
 
 def _oserror_init(self, *arg):
     narg = len(arg)
+    self.errno = None
+    self.strerror = None
+    self.filename = None
+    self.filename2 = None
     if (2 <= narg and narg <= 5):
         self.errno = arg[0]
         self.strerror = arg[1]
@@ -161,7 +165,7 @@ def OSError__new__(subtype, *args, **kwds):
 def OSError__init__(self, *args, **kwds):
     if (not _oserror_use_init(type(self))):
         return None
-    _oserror_init(self, *arg)
+    _oserror_init(self, *args)
 
 def OSError__str__(self):
     if (self.filename):
@@ -171,7 +175,7 @@ def OSError__str__(self):
             return "[Errno %i] %s: %s" % (self.errno, self.strerror, self.filename)
     if(self.errno and self.strerror):
         return "[Errno %i] %s" % (self.errno, self.strerror)
-    return BaseException.str(self)
+    return BaseException.__str__(self)
 
 OSError.__new__ = OSError__new__
 OSError.__init__ = OSError__init__

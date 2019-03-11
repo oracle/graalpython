@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,11 @@ class TestSRE:
     def test_sre_import(self):
         if GRAALPYTHON:
             import _cpython_sre
-            assert set(_cpython_sre.__dict__.keys()) == {'__name__', '__doc__', '__package__', '__loader__', '__spec__', '__file__', 'compile', 'getcodesize', 'getlower', 'MAGIC', 'CODESIZE', 'MAXREPEAT', 'MAXGROUPS', 'copyright'}, "was: %s" % set(_cpython_sre.__dict__.keys())
+            # just ensure that we are providing all symbols
+            expected = {'CODESIZE', 'MAGIC', 'MAXGROUPS', 'MAXREPEAT', '__doc__', '__loader__', '__name__', '__package__', '__spec__', 'ascii_iscased', 'ascii_tolower', 'compile', 'copyright', 'getcodesize', 'unicode_iscased', 'unicode_tolower'}
+            actual = set(_cpython_sre.__dict__.keys())
+            for expected_item in expected:
+                assert expected_item in actual, "_cpython_sre module is missing symbol '%s'" % expected_item
 
     def test_backreference(self):
         import re

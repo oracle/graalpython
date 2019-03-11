@@ -37,11 +37,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
-import org.graalvm.options.OptionValues;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -55,6 +54,9 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.utilities.CyclicAssumption;
+
+import org.graalvm.options.OptionValues;
 
 public final class PythonContext {
 
@@ -62,6 +64,7 @@ public final class PythonContext {
     private PythonModule mainModule;
     private final PythonCore core;
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
+    private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
 
@@ -87,8 +90,8 @@ public final class PythonContext {
     private OutputStream err;
     private InputStream in;
     @CompilationFinal private Object capiLibrary = null;
-    private final static Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
-    private final static Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
+    private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
+    private static final Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
 
@@ -288,6 +291,7 @@ public final class PythonContext {
 
     @TruffleBoundary
     public void runShutdownHooks() {
+        handler.shutdown();
         for (CallTarget f : atExitHooks.values()) {
             f.call();
         }
@@ -338,5 +342,15 @@ public final class PythonContext {
 
     public void registerAsyncAction(Supplier<AsyncAction> actionSupplier) {
         handler.registerAction(actionSupplier);
+    }
+
+    @TruffleBoundary
+    public CyclicAssumption getNativeClassStableAssumption(PythonNativeClass cls, boolean createOnDemand) {
+        CyclicAssumption assumption = nativeClassStableAssumptions.get(cls);
+        if (assumption == null && createOnDemand) {
+            assumption = new CyclicAssumption("Native class " + cls + " stable");
+            nativeClassStableAssumptions.put(cls, assumption);
+        }
+        return assumption;
     }
 }

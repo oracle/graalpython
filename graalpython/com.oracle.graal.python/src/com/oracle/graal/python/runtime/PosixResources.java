@@ -54,6 +54,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import java.util.Locale;
 
 /**
  * This class manages the set of file descriptors and child PIDs of a context. File descriptors are
@@ -74,7 +75,8 @@ public class PosixResources {
         files = Collections.synchronizedList(new ArrayList<>());
         filePaths = Collections.synchronizedList(new ArrayList<>());
         children = Collections.synchronizedList(new ArrayList<>());
-        if (System.getProperty("os.name").contains("win")) {
+        String osProperty = System.getProperty("os.name");
+        if (osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).contains("win")) {
             filePaths.add("STDIN");
             filePaths.add("STDOUT");
             filePaths.add("STDERR");
@@ -105,7 +107,7 @@ public class PosixResources {
         return null;
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public String getFilePath(int fd) {
         if (filePaths.size() > fd) {
             return filePaths.get(fd);

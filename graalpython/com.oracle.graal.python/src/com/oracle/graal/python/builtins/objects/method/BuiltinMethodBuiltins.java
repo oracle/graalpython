@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -62,7 +63,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         return BuiltinMethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         boolean isBuiltinFunction(PBuiltinMethod self) {
@@ -92,16 +93,20 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object reprBuiltinMethod(PBuiltinMethod self,
                         @Cached("create()") GetLazyClassNode getClassNode,
-                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode) {
-            return String.format("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(self.getFunction()), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
+                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
+                        @Cached("create()") GetNameNode getTypeNameNode) {
+            String typeName = getTypeNameNode.execute(getClassNode.execute(self.getSelf()));
+            return String.format("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(self.getFunction()), typeName, self.hashCode());
         }
 
         @Specialization(guards = "!isBuiltinFunction(self)")
         @TruffleBoundary
         Object reprBuiltinMethod(PMethod self,
                         @Cached("create()") GetLazyClassNode getClassNode,
-                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode) {
-            return String.format("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(self.getFunction()), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
+                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
+                        @Cached("create()") GetNameNode getTypeNameNode) {
+            String typeName = getTypeNameNode.execute(getClassNode.execute(self.getSelf()));
+            return String.format("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(self.getFunction()), typeName, self.hashCode());
         }
 
         protected static GetAttributeNode createGetAttributeNode() {
@@ -109,7 +114,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -148,7 +153,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__text_signature__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "__text_signature__", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
         @Child AbstractFunctionBuiltins.TextSignatureNode subNode = AbstractFunctionBuiltins.TextSignatureNode.create();

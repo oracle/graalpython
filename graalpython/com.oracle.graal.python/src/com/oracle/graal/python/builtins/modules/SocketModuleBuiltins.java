@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -67,31 +67,31 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     }
 
     // socket(family=AF_INET, type=SOCK_STREAM, proto=0, fileno=None)
-    @Builtin(name = "socket", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 5, keywordArguments = {"family", "type", "proto", "fileno"}, constructsClass = PythonBuiltinClassType.PSocket)
+    @Builtin(name = "socket", minNumOfPositionalArgs = 1, parameterNames = {"cls", "family", "type", "proto", "fileno"}, constructsClass = PythonBuiltinClassType.PSocket)
     @GenerateNodeFactory
     public abstract static class SocketNode extends PythonBuiltinNode {
         @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(PythonClass cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto,
+        Object socket(LazyPythonClass cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto,
                         @SuppressWarnings("unused") PNone fileno) {
             return createSocketInternal(cls, PSocket.AF_INET, PSocket.SOCK_STREAM, 0);
         }
 
         @Specialization(guards = {"isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(PythonClass cls, int family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno) {
+        Object socket(LazyPythonClass cls, int family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno) {
             return createSocketInternal(cls, family, PSocket.SOCK_STREAM, 0);
         }
 
         @Specialization(guards = {"isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(PythonClass cls, int family, int type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno) {
+        Object socket(LazyPythonClass cls, int family, int type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno) {
             return createSocketInternal(cls, family, type, 0);
         }
 
         @Specialization(guards = {"isNoValue(fileno)"})
-        Object socket(PythonClass cls, int family, int type, int proto, @SuppressWarnings("unused") PNone fileno) {
+        Object socket(LazyPythonClass cls, int family, int type, int proto, @SuppressWarnings("unused") PNone fileno) {
             return createSocketInternal(cls, family, type, proto);
         }
 
-        private Object createSocketInternal(PythonClass cls, int family, int type, int proto) {
+        private Object createSocketInternal(LazyPythonClass cls, int family, int type, int proto) {
             if (getContext().getEnv().isNativeAccessAllowed()) {
                 return factory().createSocket(cls, family, type, proto);
             } else {
@@ -100,7 +100,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "gethostname", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "gethostname", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetHostnameNode extends PythonBuiltinNode {
         @Specialization

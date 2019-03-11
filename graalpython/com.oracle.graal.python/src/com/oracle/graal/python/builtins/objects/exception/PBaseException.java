@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -50,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
@@ -60,6 +60,7 @@ import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -155,19 +156,20 @@ public final class PBaseException extends PythonObject {
     }
 
     public String getFormattedMessage(GetLazyClassNode getClassNode) {
+        String typeName = GetNameNode.doSlowPath(getLazyPythonClass());
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return getLazyPythonClass().getName() + ": " + FORMATTER.format(getClassNode, messageFormat, getMessageArgs());
+                return typeName + ": " + FORMATTER.format(getClassNode, messageFormat, getMessageArgs());
             }
-            return getLazyPythonClass().getName() + ": " + messageFormat;
+            return typeName + ": " + messageFormat;
         } else if (args.getSequenceStorage().length() == 0) {
-            return getLazyPythonClass().getName();
+            return typeName;
         } else if (args.getSequenceStorage().length() == 1) {
             SequenceStorage store = args.getSequenceStorage();
             Object item = store instanceof BasicSequenceStorage ? store.getItemNormalized(0) : "<unknown>";
-            return getLazyPythonClass().getName() + ": " + item.toString();
+            return typeName + ": " + item.toString();
         } else {
-            return getLazyPythonClass().getName() + ": " + args.toString();
+            return typeName + ": " + args.toString();
         }
     }
 
@@ -189,8 +191,8 @@ public final class PBaseException extends PythonObject {
     @TruffleBoundary
     public void reifyException() {
         if (stackTrace == null && traceback == null) {
-            TruffleStackTraceElement.fillIn(exception);
-            stackTrace = new ArrayList<>(TruffleStackTraceElement.getStackTrace(exception));
+            TruffleStackTrace.fillIn(exception);
+            stackTrace = TruffleStackTrace.getStackTrace(exception);
             Iterator<TruffleStackTraceElement> iter = stackTrace.iterator();
             while (iter.hasNext()) {
                 TruffleStackTraceElement element = iter.next();

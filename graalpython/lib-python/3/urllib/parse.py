@@ -409,7 +409,6 @@ def urlsplit(url, scheme='', allow_fragments=True):
     i = url.find(':')
     if i > 0:
         if url[:i] == 'http': # optimize the common case
-            scheme = url[:i].lower()
             url = url[i+1:]
             if url[:2] == '//':
                 netloc, url = _splitnetloc(url, 2)
@@ -420,7 +419,7 @@ def urlsplit(url, scheme='', allow_fragments=True):
                 url, fragment = url.split('#', 1)
             if '?' in url:
                 url, query = url.split('?', 1)
-            v = SplitResult(scheme, netloc, url, query, fragment)
+            v = SplitResult('http', netloc, url, query, fragment)
             _parse_cache[key] = v
             return _coerce_result(v)
         for c in url[:i]:
@@ -584,7 +583,7 @@ def unquote_to_bytes(string):
     # if the function is never called
     global _hextobyte
     if _hextobyte is None:
-        _hextobyte = {(a + b).encode(): bytes([int(a + b, 16)])
+        _hextobyte = {(a + b).encode(): bytes.fromhex(a + b)
                       for a in _hexdig for b in _hexdig}
     for item in bits[1:]:
         try:
@@ -718,7 +717,7 @@ def unquote_plus(string, encoding='utf-8', errors='replace'):
 _ALWAYS_SAFE = frozenset(b'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
                          b'abcdefghijklmnopqrstuvwxyz'
                          b'0123456789'
-                         b'_.-')
+                         b'_.-~')
 _ALWAYS_SAFE_BYTES = bytes(_ALWAYS_SAFE)
 _safe_quoters = {}
 
@@ -750,14 +749,17 @@ def quote(string, safe='/', encoding=None, errors=None):
     Each part of a URL, e.g. the path info, the query, etc., has a
     different set of reserved characters that must be quoted.
 
-    RFC 2396 Uniform Resource Identifiers (URI): Generic Syntax lists
+    RFC 3986 Uniform Resource Identifiers (URI): Generic Syntax lists
     the following reserved characters.
 
     reserved    = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" |
-                  "$" | ","
+                  "$" | "," | "~"
 
     Each of these characters is reserved in some component of a URL,
     but not necessarily in all of them.
+
+    Python 3.7 updates from using RFC 2396 to RFC 3986 to quote URL strings.
+    Now, "~" is included in the set of reserved characters.
 
     By default, the quote function is intended for quoting the path
     section of a URL.  Thus, it will not encode '/'.  This character

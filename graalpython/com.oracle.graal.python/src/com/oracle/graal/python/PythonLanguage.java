@@ -26,7 +26,6 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
-import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,20 +36,21 @@ import org.graalvm.options.OptionDescriptors;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NodeFactory;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -111,7 +111,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public final ConcurrentHashMap<Class<? extends PythonBuiltinBaseNode>, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
 
     private static final Layout objectLayout = Layout.newLayout().build();
-    private static final Shape freshShape = objectLayout.createShape(new ObjectType());
+    private static final Shape newShape = objectLayout.createShape(new ObjectType());
 
     public PythonLanguage() {
         this.nodeFactory = NodeFactory.create(this);
@@ -138,21 +138,23 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected PythonContext createContext(Env env) {
         ensureHomeInOptions(env);
-        Python3Core newCore = new Python3Core(new PythonParserImpl(), env);
+        Python3Core newCore = new Python3Core(new PythonParserImpl());
         return new PythonContext(this, env, newCore);
     }
 
     private void ensureHomeInOptions(Env env) {
         String languageHome = getLanguageHome();
         String sysPrefix = env.getOptions().get(PythonOptions.SysPrefix);
+        String basePrefix = env.getOptions().get(PythonOptions.SysBasePrefix);
         String coreHome = env.getOptions().get(PythonOptions.CoreHome);
         String stdLibHome = env.getOptions().get(PythonOptions.StdLibHome);
 
         PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
-                        "\n\tCoreHome: {2}" +
-                        "\n\tStdLibHome: {3}", languageHome, sysPrefix, coreHome, stdLibHome)));
+                        "\n\tBaseSysPrefix: {2}" +
+                        "\n\tCoreHome: {3}" +
+                        "\n\tStdLibHome: {4}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome)));
 
         TruffleFile home = null;
         if (languageHome != null) {
@@ -172,7 +174,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         if (home != null) {
             if (sysPrefix.isEmpty()) {
-                env.getOptions().set(PythonOptions.SysPrefix, home.getAbsoluteFile().getPath());
+                sysPrefix = home.getAbsoluteFile().getPath();
+                env.getOptions().set(PythonOptions.SysPrefix, sysPrefix);
+            }
+
+            if (basePrefix.isEmpty()) {
+                basePrefix = home.getAbsoluteFile().getPath();
+                env.getOptions().set(PythonOptions.SysBasePrefix, basePrefix);
             }
 
             if (coreHome.isEmpty()) {
@@ -208,8 +216,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
                             "\n\tLanguage home: {0}" +
                             "\n\tSysPrefix: {1}" +
-                            "\n\tCoreHome: {2}" +
-                            "\n\tStdLibHome: {3}", home.getPath(), sysPrefix, coreHome, stdLibHome)));
+                            "\n\tSysBasePrefix: {2}" +
+                            "\n\tCoreHome: {3}" +
+                            "\n\tStdLibHome: {4}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome)));
         }
     }
 
@@ -232,7 +241,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (core.isInitialized()) {
             context.initializeMainModule(source.getPath());
         }
-        RootNode root = doParse(core, source);
+        RootNode root = doParse(context, source);
         if (core.isInitialized()) {
             return Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, root));
         } else {
@@ -240,9 +249,25 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private RootNode doParse(PythonCore pythonCore, Source source) {
+    private RootNode doParse(PythonContext context, Source source) {
+        ParserMode mode = null;
+        if (source.isInteractive()) {
+            if (PythonOptions.getOption(context, PythonOptions.TerminalIsInteractive)) {
+                // if we run through our own launcher, the sys.__displayhook__ would provide the
+                // printing
+                mode = ParserMode.Statement;
+            } else {
+                // if we're not run through our own launcher, the embedder will expect the normal
+                // Truffle printing
+                mode = ParserMode.InteractiveStatement;
+            }
+        } else {
+            // by default we assume a module
+            mode = ParserMode.File;
+        }
+        PythonCore pythonCore = context.getCore();
         try {
-            return (RootNode) pythonCore.getParser().parse(source.isInteractive() ? ParserMode.InteractiveStatement : ParserMode.File, pythonCore, source, null);
+            return (RootNode) pythonCore.getParser().parse(mode, pythonCore, source, null);
         } catch (PException e) {
             // handle PException during parsing (PIncompleteSourceException will propagate through)
             Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, e)).call();
@@ -311,7 +336,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (value != null) {
             if (value instanceof PythonObject) {
                 return ((PythonObject) value).asPythonClass();
-            } else if (value instanceof PythonNativeObject) {
+            } else if (PGuards.isNativeObject(value)) {
+                // TODO(fa): we could also use 'GetClassNode.getItSlowPath(value)' here
                 return null;
             } else if (value instanceof PythonAbstractObject ||
                             value instanceof Number ||
@@ -396,9 +422,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             return callable.getCallTarget().getRootNode().getSourceSection();
         } else if (value instanceof PCode) {
             return ((PCode) value).getRootNode().getSourceSection();
-        } else if (value instanceof PythonClass) {
-            for (String k : ((PythonClass) value).getAttributeNames()) {
-                SourceSection attrSourceLocation = findSourceLocation(context, ((PythonClass) value).getAttribute(k));
+        } else if (value instanceof PythonManagedClass) {
+            for (String k : ((PythonManagedClass) value).getAttributeNames()) {
+                Object attrValue = ReadAttributeFromDynamicObjectNode.doSlowPath(((PythonManagedClass) value).getStorage(), k);
+                SourceSection attrSourceLocation = findSourceLocation(context, attrValue);
                 if (attrSourceLocation != null) {
                     return attrSourceLocation;
                 }
@@ -410,16 +437,36 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected String toString(PythonContext context, Object value) {
         final PythonModule builtins = context.getBuiltins();
-        if (builtins == null) {
-            // true during initialization
-            return value.toString();
+        if (builtins != null) {
+            // may be null during initialization
+            Object reprAttribute = builtins.getAttribute(BuiltinNames.REPR);
+            if (reprAttribute instanceof PBuiltinMethod) {
+                // may be false if e.g. someone accessed our builtins reflectively
+                Object reprFunction = ((PBuiltinMethod) reprAttribute).getFunction();
+                if (reprFunction instanceof PBuiltinFunction) {
+                    // may be false if our builtins were tampered with
+                    Object[] userArgs = PArguments.create(2);
+                    PArguments.setArgument(userArgs, 0, PNone.NONE);
+                    PArguments.setArgument(userArgs, 1, value);
+                    try {
+                        Object result = InvokeNode.invokeUncached((PBuiltinFunction) reprFunction, userArgs);
+                        if (result instanceof String) {
+                            return (String) result;
+                        } else if (result instanceof PString) {
+                            return ((PString) result).getValue();
+                        } else {
+                            // This is illegal for a repr implementation, we ignore the result.
+                            // At this point it's probably difficult to report this properly.
+                        }
+                    } catch (PException e) {
+                        // Fall through to default
+                    }
+                }
+            }
         }
-        PBuiltinFunction reprMethod = (PBuiltinFunction) ((PBuiltinMethod) builtins.getAttribute(BuiltinNames.REPR)).getFunction();
-        Object[] userArgs = PArguments.create(2);
-        PArguments.setArgument(userArgs, 0, PNone.NONE);
-        PArguments.setArgument(userArgs, 1, value);
-        Object res = InvokeNode.create(reprMethod).execute(null, userArgs, PKeyword.EMPTY_KEYWORDS);
-        return res.toString();
+        // This is not a good place to report inconsistencies in any of the above conditions. Just
+        // return a String
+        return ((PythonAbstractObject) value).toString();
     }
 
     public static TruffleLogger getLogger() {
@@ -472,20 +519,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    public Source newSource(PythonContext ctxt, URL url, String name) throws IOException {
-        try {
-            return cachedSources.computeIfAbsent(url, t -> {
-                try {
-                    return newSource(ctxt, Source.newBuilder(ID, url).name(name));
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        } catch (RuntimeException e) {
-            throw (IOException) e.getCause();
-        }
-    }
-
     private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder) throws IOException {
         boolean coreIsInitialized = ctxt.getCore().isInitialized();
         boolean internal = !coreIsInitialized && !PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources);
@@ -508,7 +541,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public static Shape freshShape() {
-        return freshShape;
+        return newShape;
     }
 
     @Override

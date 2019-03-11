@@ -30,6 +30,7 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -101,6 +102,7 @@ import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.ImportFromNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.statement.ImportStarNode;
+import com.oracle.graal.python.nodes.statement.PrintExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
@@ -133,18 +135,15 @@ public class NodeFactory {
     }
 
     public ModuleRootNode createModuleRoot(String name, String doc, ExpressionNode file, FrameDescriptor fd) {
-        file.markAsRoot();
         return new ModuleRootNode(language, name, doc, file, fd, null);
     }
 
     public FunctionRootNode createFunctionRoot(SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
-                    ExecutionCellSlots cellSlots) {
-        body.markAsRoot();
-        return new FunctionRootNode(language, sourceSection, functionName, isGenerator, frameDescriptor, body, cellSlots);
+                    ExecutionCellSlots cellSlots, Signature signature) {
+        return new FunctionRootNode(language, sourceSection, functionName, isGenerator, frameDescriptor, body, cellSlots, signature);
     }
 
     public ClassBodyRootNode createClassBodyRoot(SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots cellSlots) {
-        body.markAsRoot();
         return new ClassBodyRootNode(language, sourceSection, functionName, frameDescriptor, body, cellSlots);
     }
 
@@ -564,5 +563,9 @@ public class NodeFactory {
 
     public PDataModelEmulationNode createIsIterable() {
         return IsIterableNode.create();
+    }
+
+    public PrintExpressionNode createPrintExpression(ExpressionNode body) {
+        return PrintExpressionNode.create(body);
     }
 }

@@ -189,6 +189,10 @@ static void initialize_globals() {
     // error marker
     void *jerrormarker = UPCALL_CEXT_PTR(polyglot_from_string("Py_ErrorHandler", SRC_CS));
     truffle_assign_managed(&marker_struct, jerrormarker);
+
+    // long zero, long one
+    _PyLong_Zero = (PyObject *)&_Py_FalseStruct;
+    _PyLong_One = (PyObject *)&_Py_TrueStruct;
 }
 
 static void initialize_bufferprocs() {
@@ -233,15 +237,8 @@ void* native_long_to_java(uint64_t val) {
         return Py_None;
     } else if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
-    } else {
-        void* refcnt = obj->ob_refcnt;
-        if (!truffle_cannot_be_handle(refcnt)) {
-            return resolve_handle(cache, refcnt);
-        } else if (IS_POINTER(refcnt)) {
-            return refcnt;
-        }
-        return obj;
     }
+    return obj;
 }
 
 __attribute__((always_inline))
@@ -259,25 +256,51 @@ PyObject* to_sulong(void *o) {
 
 /** to be used from Java code only; reads native 'ob_type' field */
 void* get_ob_type(PyObject* obj) {
-    PyTypeObject*  type = obj->ob_type;
+    PyTypeObject* type = obj->ob_type;
     if (!truffle_cannot_be_handle(type)) {
         return resolve_handle(cache, (uint64_t)type);
-    } else {
-        PyObject* cast_type = ((PyObject*)type);
-        if (!polyglot_is_value(cast_type)) {
-            // we have stored a handle to the Java class in ob_refcnt
-            void* handle = (void*)(cast_type->ob_refcnt);
-            if (!truffle_cannot_be_handle(handle)) {
-                return resolve_handle(cache, (uint64_t)handle);
-            } else {
-                // assume handle is a TruffleObject
-                return handle;
-            }
-        } else {
-            // the type is already the right value (e.g. on sandboxed it's a managed pointer)
-            return cast_type;
-        }
     }
+    return (void *)type;
+}
+
+/** to be used from Java code only; reads native 'tp_dict' field */
+PyObject* get_tp_dict(PyTypeObject* obj) {
+	return native_to_java(obj->tp_dict);
+}
+
+/** to be used from Java code only; reads native 'tp_bases' field */
+PyObject* get_tp_bases(PyTypeObject* obj) {
+	return native_to_java(obj->tp_bases);
+}
+
+/** to be used from Java code only; reads native 'tp_name' field */
+PyObject* get_tp_name(PyTypeObject* obj) {
+	return polyglot_from_string(obj->tp_name, SRC_CS);
+}
+
+/** to be used from Java code only; reads native 'tp_mro' field */
+PyObject* get_tp_mro(PyTypeObject* obj) {
+	return native_to_java(obj->tp_mro);
+}
+
+/** to be used from Java code only; reads native 'tp_subclasses' field */
+PyObject* get_tp_subclasses(PyTypeObject* obj) {
+	return native_to_java(obj->tp_subclasses);
+}
+
+/** to be used from Java code only; reads native 'tp_dictoffset' field */
+Py_ssize_t get_tp_dictoffset(PyTypeObject* obj) {
+	return obj->tp_dictoffset;
+}
+
+/** to be used from Java code only; reads native 'tp_itemsize' field */
+Py_ssize_t get_tp_itemsize(PyTypeObject* obj) {
+	return obj->tp_itemsize;
+}
+
+/** to be used from Java code only; reads native 'tp_basicsize' field */
+Py_ssize_t get_tp_basicsize(PyTypeObject* obj) {
+	return obj->tp_basicsize;
 }
 
 /** to be used from Java code only; returns the type ID for a byte array */
@@ -688,7 +711,11 @@ void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone) {
     return native_to_java(fun(module, pnone));
 }
 
-void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObject *nargs, PyObject *kwnames) {
+void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObject *nargs) {
+    return native_to_java(fun(self, PySequence_Fast_ITEMS((PyObject*)args), PyLong_AsSsize_t(nargs)));
+}
+
+void* wrap_fastcall_with_keywords(_PyCFunctionFastWithKeywords fun, PyObject *self, PyObject **args, PyObject *nargs, PyObject *kwnames) {
     return native_to_java(fun(self, PySequence_Fast_ITEMS((PyObject*)args), PyLong_AsSsize_t(nargs), kwnames));
 }
 

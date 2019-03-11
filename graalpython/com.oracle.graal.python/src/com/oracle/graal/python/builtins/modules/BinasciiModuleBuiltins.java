@@ -59,7 +59,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -95,13 +96,15 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     public void initialize(PythonCore core) {
         super.initialize(core);
         String pre = "binascii.";
-        builtinConstants.put(ERROR, core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, pre + ERROR, new PythonClass[]{core.lookupType(PythonBuiltinClassType.ValueError)}));
-        builtinConstants.put(INCOMPLETE, core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, pre + INCOMPLETE, new PythonClass[]{core.lookupType(PythonBuiltinClassType.Exception)}));
+        PythonAbstractClass[] errorBases = new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.ValueError)};
+        builtinConstants.put(ERROR, core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, pre + ERROR, errorBases));
+        PythonAbstractClass[] incompleteBases = new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.Exception)};
+        builtinConstants.put(INCOMPLETE, core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, pre + INCOMPLETE, incompleteBases));
     }
 
-    @Builtin(name = "a2b_base64", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "a2b_base64", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    static abstract class A2bBase64Node extends PythonUnaryBuiltinNode {
+    abstract static class A2bBase64Node extends PythonUnaryBuiltinNode {
         @Specialization
         PBytes doString(String data) {
             return factory().createBytes(b64decode(data));
@@ -128,12 +131,12 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "a2b_hex", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "a2b_hex", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    static abstract class A2bHexNode extends PythonBinaryBuiltinNode {
-        private ReadAttributeFromObjectNode getAttrNode;
+    abstract static class A2bHexNode extends PythonBinaryBuiltinNode {
+        private ReadAttributeFromObjectNode readAttrNode;
 
-        private PException raise(PythonClass klass, String string) {
+        private PException raise(LazyPythonClass klass, String string) {
             return raise(factory().createBaseException(klass, string, new Object[0]));
         }
 
@@ -156,26 +159,26 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         private PException oddLengthError(PythonModule self) {
-            return raise((PythonClass) getAttrNode().execute(self, ERROR), "Odd-length string");
+            return raise((LazyPythonClass) getAttrNode().execute(self, ERROR), "Odd-length string");
         }
 
         private PException nonHexError(PythonModule self) {
-            return raise((PythonClass) getAttrNode().execute(self, ERROR), "Non-hexadecimal digit found");
+            return raise((LazyPythonClass) getAttrNode().execute(self, ERROR), "Non-hexadecimal digit found");
         }
 
         private ReadAttributeFromObjectNode getAttrNode() {
-            if (getAttrNode == null) {
+            if (readAttrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getAttrNode = insert(ReadAttributeFromObjectNode.create());
+                readAttrNode = insert(ReadAttributeFromObjectNode.create());
             }
-            return getAttrNode;
+            return readAttrNode;
         }
     }
 
-    @Builtin(name = "b2a_base64", fixedNumOfPositionalArgs = 1, keywordArguments = {"newline"})
+    @Builtin(name = "b2a_base64", minNumOfPositionalArgs = 1, parameterNames = {"data", "newline"})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    static abstract class B2aBase64Node extends PythonBinaryBuiltinNode {
+    abstract static class B2aBase64Node extends PythonBinaryBuiltinNode {
 
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArray;
         @Child private CastToIntegerFromIntNode castToIntNode;
@@ -293,9 +296,9 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "b2a_hex", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "b2a_hex", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    static abstract class B2aHexNode extends PythonUnaryBuiltinNode {
+    abstract static class B2aHexNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         String b2a(PBytes data,
@@ -313,9 +316,9 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "crc32", fixedNumOfPositionalArgs = 1, keywordArguments = "crc")
+    @Builtin(name = "crc32", minNumOfPositionalArgs = 1, parameterNames = {"data", "crc"})
     @GenerateNodeFactory
-    static abstract class Crc32Node extends PythonBinaryBuiltinNode {
+    abstract static class Crc32Node extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(crc)")
         @TruffleBoundary
         long b2a(PBytes data, @SuppressWarnings("unused") PNone crc,
@@ -327,13 +330,13 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "hexlify", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "hexlify", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    static abstract class HexlifyNode extends B2aHexNode {
+    abstract static class HexlifyNode extends B2aHexNode {
     }
 
-    @Builtin(name = "unhexlify", fixedNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "unhexlify", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    static abstract class UnhexlifyNode extends A2bHexNode {
+    abstract static class UnhexlifyNode extends A2bHexNode {
     }
 }

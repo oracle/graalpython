@@ -27,6 +27,7 @@ package com.oracle.graal.python.runtime.object;
 
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.util.Map;
 import java.util.Optional;
@@ -37,6 +38,7 @@ import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -57,7 +59,7 @@ import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.Arity;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PGeneratorFunction;
@@ -86,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
@@ -108,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
@@ -132,7 +136,6 @@ import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
@@ -191,12 +194,12 @@ public final class PythonObjectFactory extends Node {
 
     @CompilationFinal private Optional<Shape> cachedInstanceShape = Optional.empty();
 
-    public PythonObject createPythonObject(PythonClass cls) {
+    public PythonObject createPythonObject(LazyPythonClass cls, Shape instanceShape) {
         assert cls != null;
         Optional<Shape> cached = cachedInstanceShape;
         if (cached != null) {
             if (cached.isPresent()) {
-                if (cached.get() == cls.getInstanceShape()) {
+                if (cached.get() == instanceShape) {
                     return trace(new PythonObject(cls, cached.get()));
                 } else {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -204,21 +207,21 @@ public final class PythonObjectFactory extends Node {
                 }
             } else {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                cachedInstanceShape = Optional.of(cls.getInstanceShape());
+                cachedInstanceShape = Optional.of(instanceShape);
             }
         }
-        return trace(new PythonObject(cls, cls.getInstanceShape()));
+        return trace(new PythonObject(cls, instanceShape));
     }
 
     public PythonNativeObject createNativeObjectWrapper(TruffleObject obj) {
-        return trace(new PythonNativeObject(obj));
+        return trace(new PythonAbstractNativeObject(obj));
     }
 
     public PythonNativeVoidPtr createNativeVoidPtr(TruffleObject obj) {
         return trace(new PythonNativeVoidPtr(obj));
     }
 
-    public SuperObject createSuperObject(PythonClass self) {
+    public SuperObject createSuperObject(LazyPythonClass self) {
         return trace(new SuperObject(self));
     }
 
@@ -342,7 +345,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PSlice(PythonBuiltinClassType.PSlice, start, stop, step));
     }
 
-    public PRandom createRandom(PythonClass cls) {
+    public PRandom createRandom(LazyPythonClass cls) {
         return trace(new PRandom(cls));
     }
 
@@ -354,16 +357,16 @@ public final class PythonObjectFactory extends Node {
         return trace(new PythonModule(PythonBuiltinClassType.PythonModule, name));
     }
 
-    public PythonModule createPythonModule(PythonClass cls, String name) {
+    public PythonModule createPythonModule(LazyPythonClass cls, String name) {
         return trace(new PythonModule(cls, name));
     }
 
-    public PythonClass createPythonClass(LazyPythonClass metaclass, String name, PythonClass[] bases) {
+    public PythonClass createPythonClass(LazyPythonClass metaclass, String name, PythonAbstractClass[] bases) {
         return trace(new PythonClass(metaclass, name, PythonLanguage.freshShape(), bases));
     }
 
-    public PythonNativeClass createNativeClassWrapper(Object object, PythonClass metaClass, String name, PythonClass[] pythonClasses) {
-        return trace(new PythonNativeClass(object, metaClass, name, pythonClasses));
+    public PythonNativeClass createNativeClassWrapper(TruffleObject ptr) {
+        return trace(new PythonAbstractNativeObject(ptr));
     }
 
     public PMemoryView createMemoryView(LazyPythonClass metaclass, Object value) {
@@ -390,17 +393,17 @@ public final class PythonObjectFactory extends Node {
         return createBuiltinMethod(PythonBuiltinClassType.PBuiltinMethod, self, function);
     }
 
-    public PFunction createFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
-        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, globals, closure));
+    public PFunction createFunction(String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
+        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, callTarget, globals, closure));
     }
 
-    public PFunction createFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, Object[] defaults,
+    public PFunction createFunction(String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
-        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, globals, defaults, closure));
+        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, callTarget, globals, defaultValues, kwDefaultValues, closure));
     }
 
-    public PBuiltinFunction createBuiltinFunction(String name, LazyPythonClass type, Arity arity, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, name, type, arity, callTarget));
+    public PBuiltinFunction createBuiltinFunction(String name, LazyPythonClass type, int numDefaults, RootCallTarget callTarget) {
+        return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, name, type, numDefaults, callTarget));
     }
 
     public GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, LazyPythonClass type) {
@@ -477,7 +480,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PSet(PythonBuiltinClassType.PSet, storage));
     }
 
-    public PFrozenSet createFrozenSet(PythonClass cls) {
+    public PFrozenSet createFrozenSet(LazyPythonClass cls) {
         return trace(new PFrozenSet(cls));
     }
 
@@ -497,7 +500,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PDict(PythonBuiltinClassType.PDict, keywords));
     }
 
-    public PDict createDict(PythonClass cls) {
+    public PDict createDict(LazyPythonClass cls) {
         return trace(new PDict(cls));
     }
 
@@ -543,8 +546,9 @@ public final class PythonObjectFactory extends Node {
                         numOfGeneratorForNode));
     }
 
-    public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
-        return trace(PGeneratorFunction.create(PythonBuiltinClassType.PFunction, name, enclosingClassName, arity, callTarget, globals, closure));
+    public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure, Object[] defaultValues,
+                    PKeyword[] kwDefaultValues) {
+        return trace(PGeneratorFunction.create(PythonBuiltinClassType.PFunction, name, enclosingClassName, callTarget, globals, closure, defaultValues, kwDefaultValues));
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {
@@ -565,6 +569,10 @@ public final class PythonObjectFactory extends Node {
 
     public PReferenceType createReferenceType(LazyPythonClass cls, Object object, Object callback, ReferenceQueue<Object> queue) {
         return trace(new PReferenceType(cls, object, callback, queue));
+    }
+
+    public PReferenceType createReferenceType(Object object, Object callback, ReferenceQueue<Object> queue) {
+        return createReferenceType(PythonBuiltinClassType.PReferenceType, object, callback, queue);
     }
 
     /*
@@ -616,27 +624,27 @@ public final class PythonObjectFactory extends Node {
      * Arrays
      */
 
-    public PArray createArray(PythonClass cls, byte[] array) {
+    public PArray createArray(LazyPythonClass cls, byte[] array) {
         return trace(new PArray(cls, new ByteSequenceStorage(array)));
     }
 
-    public PArray createArray(PythonClass cls, int[] array) {
+    public PArray createArray(LazyPythonClass cls, int[] array) {
         return trace(new PArray(cls, new IntSequenceStorage(array)));
     }
 
-    public PArray createArray(PythonClass cls, double[] array) {
+    public PArray createArray(LazyPythonClass cls, double[] array) {
         return trace(new PArray(cls, new DoubleSequenceStorage(array)));
     }
 
-    public PArray createArray(PythonClass cls, char[] array) {
+    public PArray createArray(LazyPythonClass cls, char[] array) {
         return trace(new PArray(cls, new CharSequenceStorage(array)));
     }
 
-    public PArray createArray(PythonClass cls, long[] array) {
+    public PArray createArray(LazyPythonClass cls, long[] array) {
         return trace(new PArray(cls, new LongSequenceStorage(array)));
     }
 
-    public PArray createArray(PythonClass cls, SequenceStorage store) {
+    public PArray createArray(LazyPythonClass cls, SequenceStorage store) {
         return trace(new PArray(cls, store));
     }
 
@@ -688,7 +696,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PStringIterator(PythonBuiltinClassType.PIterator, str));
     }
 
-    public PStringReverseIterator createStringReverseIterator(PythonClass cls, String str) {
+    public PStringReverseIterator createStringReverseIterator(LazyPythonClass cls, String str) {
         return trace(new PStringReverseIterator(cls, str));
     }
 
@@ -708,7 +716,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PSequenceIterator(PythonBuiltinClassType.PIterator, sequence));
     }
 
-    public PSequenceReverseIterator createSequenceReverseIterator(PythonClass cls, Object sequence, int lengthHint) {
+    public PSequenceReverseIterator createSequenceReverseIterator(LazyPythonClass cls, Object sequence, int lengthHint) {
         return trace(new PSequenceReverseIterator(cls, sequence, lengthHint));
     }
 
@@ -746,11 +754,11 @@ public final class PythonObjectFactory extends Node {
         return trace(new PSentinelIterator(PythonBuiltinClassType.PSentinelIterator, callable, sentinel));
     }
 
-    public PEnumerate createEnumerate(PythonClass cls, Object iterator, long start) {
+    public PEnumerate createEnumerate(LazyPythonClass cls, Object iterator, long start) {
         return trace(new PEnumerate(cls, iterator, start));
     }
 
-    public PZip createZip(PythonClass cls, Object[] iterables) {
+    public PZip createZip(LazyPythonClass cls, Object[] iterables) {
         return trace(new PZip(cls, iterables));
     }
 
@@ -758,7 +766,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PForeignArrayIterator(PythonBuiltinClassType.PForeignArrayIterator, iterable, size));
     }
 
-    public PBuffer createBuffer(PythonClass cls, Object iterable, boolean readonly) {
+    public PBuffer createBuffer(LazyPythonClass cls, Object iterable, boolean readonly) {
         return trace(new PBuffer(cls, iterable, readonly));
     }
 
@@ -766,17 +774,17 @@ public final class PythonObjectFactory extends Node {
         return trace(new PBuffer(PythonBuiltinClassType.PBuffer, iterable, readonly));
     }
 
-    public PCode createCode(RootNode result) {
-        return trace(new PCode(PythonBuiltinClassType.PCode, result, getCore()));
+    public PCode createCode(RootCallTarget ct) {
+        return trace(new PCode(PythonBuiltinClassType.PCode, ct));
     }
 
-    public PCode createCode(LazyPythonClass cls, int argcount, int kwonlyargcount,
+    public PCode createCode(LazyPythonClass cls, RootCallTarget callTarget, Signature signature,
                     int nlocals, int stacksize, int flags,
                     byte[] codestring, Object[] constants, Object[] names,
                     Object[] varnames, Object[] freevars, Object[] cellvars,
                     String filename, String name, int firstlineno,
                     byte[] lnotab) {
-        return trace(new PCode(cls, argcount, kwonlyargcount,
+        return trace(new PCode(cls, callTarget, signature,
                         nlocals, stacksize, flags,
                         codestring, constants, names,
                         varnames, freevars, cellvars,
@@ -795,7 +803,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PSocket(PythonBuiltinClassType.PSocket, family, type, proto));
     }
 
-    public PSocket createSocket(PythonClass cls, int family, int type, int proto) {
+    public PSocket createSocket(LazyPythonClass cls, int family, int type, int proto) {
         return trace(new PSocket(cls, family, type, proto));
     }
 
@@ -807,7 +815,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PLock(PythonBuiltinClassType.PLock));
     }
 
-    public PLock createLock(PythonClass cls) {
+    public PLock createLock(LazyPythonClass cls) {
         return trace(new PLock(cls));
     }
 
@@ -815,7 +823,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PRLock(PythonBuiltinClassType.PRLock));
     }
 
-    public PRLock createRLock(PythonClass cls) {
+    public PRLock createRLock(LazyPythonClass cls) {
         return trace(new PRLock(cls));
     }
 
@@ -823,11 +831,11 @@ public final class PythonObjectFactory extends Node {
         return trace(new PThread(PythonBuiltinClassType.PThread, thread));
     }
 
-    public PThread createPythonThread(PythonClass cls, Thread thread) {
+    public PThread createPythonThread(LazyPythonClass cls, Thread thread) {
         return trace(new PThread(cls, thread));
     }
 
-    public PScandirIterator createScandirIterator(PythonClass cls, String path, DirectoryStream<TruffleFile> next) {
+    public PScandirIterator createScandirIterator(LazyPythonClass cls, String path, DirectoryStream<TruffleFile> next) {
         return trace(new PScandirIterator(cls, path, next));
     }
 
@@ -835,7 +843,15 @@ public final class PythonObjectFactory extends Node {
         return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, name, file));
     }
 
-    public Object createDirEntry(PythonClass cls, String name, TruffleFile file) {
+    public Object createDirEntry(LazyPythonClass cls, String name, TruffleFile file) {
         return trace(new PDirEntry(cls, name, file));
+    }
+
+    public PMMap createMMap(SeekableByteChannel channel, long length, long offset) {
+        return trace(new PMMap(PythonBuiltinClassType.PMMap, channel, length, offset));
+    }
+
+    public PMMap createMMap(LazyPythonClass clazz, SeekableByteChannel channel, long length, long offset) {
+        return trace(new PMMap(clazz, channel, length, offset));
     }
 }

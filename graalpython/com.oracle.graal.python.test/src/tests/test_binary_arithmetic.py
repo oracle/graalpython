@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -131,6 +131,21 @@ def test_floor_div():
     assert_exception(lambda: 3.0 // False, ZeroDivisionError)
     assert_exception(lambda: 5.4 // 0, ZeroDivisionError)
     assert_exception(lambda: 5.4 // 0.0, ZeroDivisionError)
+
+
+def test_divmod():
+    class Floatable:
+        def __init__(self, val):
+            self.val = val
+        def __float__(self):
+            return self.val
+
+    def doDivmod(a, b):
+        return divmod(a, b)
+
+    argList = [(Floatable(3), Floatable(4)), (complex(1,2), complex(3,4))]
+    for args in argList:
+        assert_exception(lambda: doDivmod(*args), TypeError)
 
 
 def test_subclass_ordered_binop():

@@ -40,7 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
  * A simple wrapper around types objects created through the Python C API that can be cast to
@@ -48,11 +49,16 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
  * types are assumed to be mutated afterwards, so accessing the struct in native mode would work,
  * but our copy should just never become stale.
  */
-public class PythonNativeClass extends PythonClass {
-    public final Object object;
+public interface PythonNativeClass extends PythonAbstractClass {
 
-    public PythonNativeClass(Object obj, PythonClass type, String name, PythonClass... bases) {
-        super(type, name, type.getInstanceShape(), bases);
-        object = obj;
+    TruffleObject getPtr();
+
+    static boolean isInstance(Object object) {
+        return object instanceof PythonAbstractNativeObject;
+    }
+
+    static PythonNativeClass cast(Object object) {
+        assert isInstance(object);
+        return (PythonAbstractNativeObject) object;
     }
 }

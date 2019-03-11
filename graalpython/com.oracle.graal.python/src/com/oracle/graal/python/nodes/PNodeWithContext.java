@@ -47,7 +47,8 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -67,21 +68,21 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class PNodeWithContext extends Node {
-    @Child private PythonObjectFactory factory;
+    @Child private PythonObjectFactory objectFactory;
     @Child private WriteAttributeToDynamicObjectNode writeCause;
     @Child private CallVarargsMethodNode callNode;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected final PythonObjectFactory factory() {
-        if (factory == null) {
+        if (objectFactory == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             if (isAdoptable()) {
-                factory = insert(PythonObjectFactory.create());
+                objectFactory = insert(PythonObjectFactory.create());
             } else {
-                factory = getCore().factory();
+                objectFactory = getCore().factory();
             }
         }
-        return factory;
+        return objectFactory;
     }
 
     public final PythonCore getCore() {
@@ -129,7 +130,7 @@ public abstract class PNodeWithContext extends Node {
     }
 
     @TruffleBoundary
-    private static final String getMessage(Exception e) {
+    protected static final String getMessage(Exception e) {
         return e.getMessage();
     }
 
@@ -168,15 +169,15 @@ public abstract class PNodeWithContext extends Node {
         return raise(error);
     }
 
-    public final PythonClass getPythonClass(LazyPythonClass lazyClass, ConditionProfile profile) {
-        if (profile.profile(lazyClass instanceof PythonClass)) {
-            return (PythonClass) lazyClass;
-        } else {
+    public final PythonAbstractClass getPythonClass(LazyPythonClass lazyClass, ConditionProfile profile) {
+        if (profile.profile(lazyClass instanceof PythonBuiltinClassType)) {
             return getCore().lookupType((PythonBuiltinClassType) lazyClass);
+        } else {
+            return (PythonAbstractClass) lazyClass;
         }
     }
 
-    public final PythonClass getBuiltinPythonClass(PythonBuiltinClassType type) {
+    public final PythonBuiltinClass getBuiltinPythonClass(PythonBuiltinClassType type) {
         return getCore().lookupType(type);
     }
 

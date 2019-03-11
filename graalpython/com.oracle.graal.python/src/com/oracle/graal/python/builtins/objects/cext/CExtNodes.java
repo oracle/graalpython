@@ -78,6 +78,8 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -101,13 +103,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -118,8 +121,10 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -129,6 +134,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.Node.Child;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -310,13 +316,8 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doNativeClass(PythonNativeClass nativeClass) {
-            return nativeClass.object;
-        }
-
-        @Specialization
-        Object doNativeObject(PythonNativeObject nativeObject) {
-            return nativeObject.object;
+        Object doNativeClass(PythonAbstractNativeObject nativeClass) {
+            return nativeClass.getPtr();
         }
 
         @Specialization
@@ -324,19 +325,20 @@ public abstract class CExtNodes {
             return object.getPtr();
         }
 
-        @Specialization(guards = {"!isNativeClass(object)", "object == cachedObject"}, limit = "3")
-        Object doPythonClass(@SuppressWarnings("unused") PythonClass object,
-                        @SuppressWarnings("unused") @Cached("object") PythonClass cachedObject,
-                        @Cached("wrap(object)") PythonClassNativeWrapper wrapper) {
+        @Specialization(guards = "object == cachedObject", limit = "3")
+        Object doPythonClass(@SuppressWarnings("unused") PythonManagedClass object,
+                        @SuppressWarnings("unused") @Cached("object") PythonManagedClass cachedObject,
+                        @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
             return wrapper;
         }
 
-        @Specialization(replaces = "doPythonClass", guards = {"!isNativeClass(object)"})
-        Object doPythonClassUncached(PythonClass object) {
-            return PythonClassNativeWrapper.wrap(object);
+        @Specialization(replaces = "doPythonClass")
+        Object doPythonClassUncached(PythonManagedClass object,
+                        @Cached("create()") TypeNodes.GetNameNode getNameNode) {
+            return PythonClassNativeWrapper.wrap(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = {"cachedClass == object.getClass()", "!isPythonClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, limit = "3")
+        @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, limit = "3")
         Object runAbstractObjectCached(PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
                         @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass) {
@@ -344,7 +346,7 @@ public abstract class CExtNodes {
             return DynamicObjectNativeWrapper.PythonObjectNativeWrapper.wrap(CompilerDirectives.castExact(object, cachedClass), noWrapperProfile);
         }
 
-        @Specialization(guards = {"!isPythonClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, replaces = "runAbstractObjectCached")
+        @Specialization(guards = {"!isClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, replaces = "runAbstractObjectCached")
         Object runAbstractObject(PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
             assert object != PNone.NO_VALUE;
@@ -362,16 +364,8 @@ public abstract class CExtNodes {
             return obj;
         }
 
-        protected static boolean isNativeClass(PythonAbstractObject o) {
-            return o instanceof PythonNativeClass;
-        }
-
-        protected static boolean isPythonClass(PythonAbstractObject o) {
-            return o instanceof PythonClass;
-        }
-
-        protected static boolean isNativeObject(PythonAbstractObject o) {
-            return o instanceof PythonNativeObject;
+        protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
+            return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
         // TODO(fa): Workaround for DSL bug: did not import factory at users
@@ -382,6 +376,34 @@ public abstract class CExtNodes {
         // TODO(fa): Workaround for DSL bug: did not import factory at users
         public static ToSulongNode getUncached() {
             return CExtNodesFactory.ToSulongNodeGen.getUncached();
+        }
+
+        @TruffleBoundary
+        public static Object doSlowPath(Object o) {
+            if (o instanceof String) {
+                PythonObjectNativeWrapper.wrapSlowPath(PythonLanguage.getCore().factory().createString((String) o));
+            } else if (o instanceof Integer) {
+                return PrimitiveNativeWrapper.createInt((Integer) o);
+            } else if (o instanceof Long) {
+                return PrimitiveNativeWrapper.createLong((Long) o);
+            } else if (o instanceof Double) {
+                return PrimitiveNativeWrapper.createDouble((Double) o);
+            } else if (PythonNativeClass.isInstance(o)) {
+                return ((PythonNativeClass) o).getPtr();
+            } else if (PythonNativeObject.isInstance(o)) {
+                return PythonNativeObject.cast(o).getPtr();
+            } else if (o instanceof PythonNativeNull) {
+                return ((PythonNativeNull) o).getPtr();
+            } else if (o instanceof PythonManagedClass) {
+                return wrapNativeClass((PythonManagedClass) o);
+            } else if (o instanceof PythonAbstractObject) {
+                assert !PGuards.isClass(o);
+                return PythonObjectNativeWrapper.wrapSlowPath((PythonAbstractObject) o);
+            } else if (PGuards.isForeignObject(o)) {
+                return TruffleObjectNativeWrapper.wrap((TruffleObject) o);
+            }
+            assert o != null : "Java 'null' cannot be a Sulong value";
+            return o;
         }
     }
 
@@ -436,7 +458,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
-        PythonAbstractObject doNativeObject(TruffleObject object,
+        Object doNativeObject(TruffleObject object,
                         @SuppressWarnings("unused") @Cached("create()") GetLazyClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached("create()") IsBuiltinClassProfile isForeignClassProfile) {
             return factory().createNativeObjectWrapper(object);
@@ -501,13 +523,18 @@ public abstract class CExtNodes {
         }
 
         @TruffleBoundary
-        public static Object doSlowPath(Object object) {
+        public static Object doSlowPath(Object object, boolean forceNativeClass) {
             if (object instanceof PythonNativeWrapper) {
                 return ((PythonNativeWrapper) object).getDelegate();
             } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getItSlowPath(object), PythonBuiltinClassType.TruffleObject)) {
-                throw new AssertionError("Unsupported slow path operation: converting 'to_java(" + object + ")");
+                if (forceNativeClass) {
+                    return PythonLanguage.getCore().factory().createNativeClassWrapper((TruffleObject) object);
+                }
+                return PythonLanguage.getCore().factory().createNativeObjectWrapper((TruffleObject) object);
+            } else if (object instanceof String || object instanceof Number || object instanceof Boolean || object instanceof PythonNativeNull || object instanceof PythonAbstractObject) {
+                return object;
             }
-            return object;
+            throw PythonLanguage.getCore().raise(PythonErrorType.SystemError, "invalid object from native: %s", object);
         }
 
         // TODO(fa): Workaround for DSL bug: did not import factory at users
@@ -518,6 +545,10 @@ public abstract class CExtNodes {
         // TODO(fa): Workaround for DSL bug: did not import factory at users
         public static AsPythonObjectNode getUncached() {
             return CExtNodesFactory.AsPythonObjectNodeGen.getUncached();
+        }
+
+        public static AsPythonObjectNode createForceClass() {
+            return AsPythonObjectNodeGen.create();
         }
     }
 
@@ -1375,14 +1406,16 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    @Builtin(fixedNumOfPositionalArgs = 1)
-    public static abstract class MayRaiseUnaryNode extends PythonUnaryBuiltinNode {
+    @Builtin(minNumOfPositionalArgs = 1)
+    public abstract static class MayRaiseUnaryNode extends PythonUnaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
+        private final PFunction func;
         private final Object errorResult;
 
         public MayRaiseUnaryNode(PFunction func, Object errorResult) {
             this.createArgsNode = CreateArgumentsNode.create();
+            this.func = func;
             this.invokeNode = InvokeNode.create(func);
             this.errorResult = errorResult;
         }
@@ -1390,25 +1423,28 @@ public abstract class CExtNodes {
         @Specialization
         Object doit(Object argument) {
             try {
-                Object[] arguments = createArgsNode.execute(argument);
-                return invokeNode.execute(null, arguments, new PKeyword[0]);
+                Object[] arguments = createArgsNode.execute(func, new Object[]{argument});
+                return invokeNode.execute(null, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
+                e.getExceptionObject().reifyException();
                 return errorResult;
             }
         }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    @Builtin(fixedNumOfPositionalArgs = 2)
-    public static abstract class MayRaiseBinaryNode extends PythonBinaryBuiltinNode {
+    @Builtin(minNumOfPositionalArgs = 2)
+    public abstract static class MayRaiseBinaryNode extends PythonBinaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
+        private final PFunction func;
         private final Object errorResult;
 
         public MayRaiseBinaryNode(PFunction func, Object errorResult) {
             this.createArgsNode = CreateArgumentsNode.create();
+            this.func = func;
             this.invokeNode = InvokeNode.create(func);
             this.errorResult = errorResult;
         }
@@ -1416,25 +1452,28 @@ public abstract class CExtNodes {
         @Specialization
         Object doit(Object arg1, Object arg2) {
             try {
-                Object[] arguments = createArgsNode.execute(arg1, arg2);
-                return invokeNode.execute(null, arguments, new PKeyword[0]);
+                Object[] arguments = createArgsNode.execute(func, new Object[]{arg1, arg2});
+                return invokeNode.execute(null, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
+                e.getExceptionObject().reifyException();
                 return errorResult;
             }
         }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    @Builtin(fixedNumOfPositionalArgs = 3)
-    public static abstract class MayRaiseTernaryNode extends PythonTernaryBuiltinNode {
+    @Builtin(minNumOfPositionalArgs = 3)
+    public abstract static class MayRaiseTernaryNode extends PythonTernaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
+        private final PFunction func;
         private final Object errorResult;
 
         public MayRaiseTernaryNode(PFunction func, Object errorResult) {
             this.createArgsNode = CreateArgumentsNode.create();
+            this.func = func;
             this.invokeNode = InvokeNode.create(func);
             this.errorResult = errorResult;
         }
@@ -1442,11 +1481,12 @@ public abstract class CExtNodes {
         @Specialization
         Object doit(Object arg1, Object arg2, Object arg3) {
             try {
-                Object[] arguments = createArgsNode.execute(arg1, arg2, arg3);
-                return invokeNode.execute(null, arguments, new PKeyword[0]);
+                Object[] arguments = createArgsNode.execute(func, new Object[]{arg1, arg2, arg3});
+                return invokeNode.execute(null, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
+                e.getExceptionObject().reifyException();
                 return errorResult;
             }
         }
@@ -1458,12 +1498,13 @@ public abstract class CExtNodes {
         @Child private InvokeNode invokeNode;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgumentsNode createArgsNode;
-        @Child private PythonObjectFactory factory;
+        private final PFunction func;
         private final Object errorResult;
 
         public MayRaiseNode(PFunction callable, Object errorResult) {
             this.readVarargsNode = ReadVarArgsNode.create(0, true);
             this.createArgsNode = CreateArgumentsNode.create();
+            this.func = callable;
             this.invokeNode = InvokeNode.create(callable);
             this.errorResult = errorResult;
         }
@@ -1472,11 +1513,12 @@ public abstract class CExtNodes {
         public final Object execute(VirtualFrame frame) {
             Object[] args = readVarargsNode.executeObjectArray(frame);
             try {
-                Object[] arguments = createArgsNode.execute(args);
-                return invokeNode.execute(null, arguments, new PKeyword[0]);
+                Object[] arguments = createArgsNode.execute(func, args);
+                return invokeNode.execute(null, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
+                e.getExceptionObject().reifyException();
                 return errorResult;
             }
         }
@@ -1546,8 +1588,81 @@ public abstract class CExtNodes {
             }
         }
 
+        @TruffleBoundary
+        public static Object doSlowPath(Object self) {
+            try {
+                TruffleObject func = importCAPISymbolSlowPath(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT);
+                return ToJavaNode.doSlowPath(ForeignAccess.sendExecute(Message.EXECUTE.createNode(), func, ToSulongNode.doSlowPath(self)), true);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw e.raise();
+            }
+        }
+
         public static GetObjectDictNode create() {
             return CExtNodesFactory.GetObjectDictNodeGen.create();
+        }
+    }
+
+    @TypeSystemReference(PythonTypes.class)
+    public abstract static class GetTypeMemberNode extends GetNativeDictNode {
+        @Child private ToSulongNode toSulong;
+        @Child private AsPythonObjectNode toJava;
+        @Child private PCallCapiFunction callGetTpDictNode;
+        @Child private GetLazyClassNode getNativeClassNode;
+
+        @CompilationFinal private IsBuiltinClassProfile isTypeProfile;
+
+        protected GetTypeMemberNode(String memberName) {
+            String getterFuncName = "get_" + memberName;
+            if (!NativeCAPISymbols.isValid(getterFuncName)) {
+                throw new IllegalArgumentException("invalid native member getter function " + getterFuncName);
+            }
+            callGetTpDictNode = PCallCapiFunction.create(getterFuncName);
+        }
+
+        @Specialization(guards = "cachedObj.equals(obj)", limit = "1", assumptions = "getNativeClassStableAssumption(cachedObj)")
+        public Object doCached(@SuppressWarnings("unused") PythonNativeClass obj,
+                        @Cached("obj") @SuppressWarnings("unused") PythonNativeClass cachedObj,
+                        @Cached("doUncached(obj)") Object result) {
+            return result;
+        }
+
+        @Specialization
+        public Object doUncached(Object self) {
+            if (toSulong == null || toJava == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulong = insert(ToSulongNode.create());
+                toJava = insert(AsPythonObjectNode.create());
+            }
+            assert isNativeTypeObject(self);
+            return toJava.execute(callGetTpDictNode.call(toSulong.execute(self)));
+        }
+
+        protected Assumption getNativeClassStableAssumption(PythonNativeClass clazz) {
+            return getContext().getNativeClassStableAssumption(clazz, true).getAssumption();
+        }
+
+        private boolean isNativeTypeObject(Object self) {
+            if (getNativeClassNode == null || isTypeProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getNativeClassNode = insert(GetLazyClassNode.create());
+                isTypeProfile = IsBuiltinClassProfile.create();
+            }
+            return isTypeProfile.profileClass(getNativeClassNode.execute(self), PythonBuiltinClassType.PythonClass);
+        }
+
+        @TruffleBoundary
+        public static Object doSlowPath(Object self, String memberName) {
+            String getterFuncName = "get_" + memberName;
+            if (!NativeCAPISymbols.isValid(getterFuncName)) {
+                throw new IllegalArgumentException("invalid native member getter function " + getterFuncName);
+            }
+            return AsPythonObjectNode.doSlowPath(PCallCapiFunction.doSlowPath(getterFuncName, ToSulongNode.doSlowPath(self)), false);
+        }
+
+        public static GetTypeMemberNode create(String typeMember) {
+            return GetTypeMemberNodeGen.create(typeMember);
         }
     }
 }

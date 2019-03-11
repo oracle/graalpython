@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltinsFactory.AcquireLockNodeFactory;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -79,7 +80,7 @@ public class LockBuiltins extends PythonBuiltins {
         return LockBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "acquire", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"blocking", "timeout"})
+    @Builtin(name = "acquire", minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
     abstract static class AcquireLockNode extends PythonTernaryBuiltinNode {
         private @Child CastToDoubleNode castToDoubleNode;
@@ -139,7 +140,7 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "acquire_lock", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"blocking", "timeout"})
+    @Builtin(name = "acquire_lock", minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
     abstract static class AcquireLockLockNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -149,7 +150,7 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"blocking", "timeout"})
+    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
     abstract static class EnterLockNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -159,7 +160,7 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "release", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "release", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReleaseLockNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -170,7 +171,7 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EXIT__, fixedNumOfPositionalArgs = 4)
+    @Builtin(name = __EXIT__, minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class ExitLockNode extends PythonBuiltinNode {
         @Specialization
@@ -181,7 +182,7 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "locked", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "locked", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsLockedLockNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -190,7 +191,7 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprLockNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -198,7 +199,7 @@ public class LockBuiltins extends PythonBuiltins {
         String repr(PLock self) {
             return String.format("<%s %s object at %s>",
                             (self.locked()) ? "locked" : "unlocked",
-                            self.getPythonClass().getName(),
+                            GetNameNode.doSlowPath(self.getPythonClass()),
                             self.hashCode());
         }
 
@@ -207,7 +208,7 @@ public class LockBuiltins extends PythonBuiltins {
         String repr(PRLock self) {
             return String.format("<%s %s object owner=%d count=%d at %s>",
                             (self.locked()) ? "locked" : "unlocked",
-                            self.getPythonClass().getName(),
+                            GetNameNode.doSlowPath(self.getPythonClass()),
                             self.getOwnerId(),
                             self.getCount(),
                             self.hashCode());

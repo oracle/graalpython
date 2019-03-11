@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,13 +26,13 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public final class PZip extends PythonBuiltinObject {
 
     private final Object[] iterators;
 
-    public PZip(PythonClass clazz, Object[] iterators) {
+    public PZip(LazyPythonClass clazz, Object[] iterators) {
         super(clazz);
         this.iterators = iterators;
     }

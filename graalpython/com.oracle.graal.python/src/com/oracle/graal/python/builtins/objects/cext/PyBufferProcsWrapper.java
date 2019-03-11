@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -57,12 +57,12 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
     private static final String BF_GETBUFFER = "bf_getbuffer";
     private static final String BF_RELEASEBUFFER = "bf_releasebuffer";
 
-    public PyBufferProcsWrapper(PythonClass delegate) {
+    public PyBufferProcsWrapper(PythonAbstractClass delegate) {
         super(delegate);
     }
 
-    public PythonClass getPythonClass() {
-        return (PythonClass) getDelegate();
+    public PythonAbstractClass getPythonClass() {
+        return (PythonAbstractClass) getDelegate();
     }
 
     @ExportMessage

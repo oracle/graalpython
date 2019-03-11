@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -62,12 +62,12 @@ import com.oracle.truffle.api.library.ExportMessage;
 @ImportStatic(SpecialMethodNames.class)
 public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
-    public PySequenceMethodsWrapper(PythonClass delegate) {
+    public PySequenceMethodsWrapper(PythonManagedClass delegate) {
         super(delegate);
     }
 
-    public PythonClass getPythonClass() {
-        return (PythonClass) getDelegate();
+    public PythonManagedClass getPythonClass() {
+        return (PythonManagedClass) getDelegate();
     }
 
     @ExportMessage

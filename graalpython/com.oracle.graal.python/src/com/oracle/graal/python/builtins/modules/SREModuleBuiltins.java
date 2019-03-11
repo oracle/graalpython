@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.io.UnsupportedEncodingException;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -64,7 +63,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -89,7 +87,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         return SREModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "_build_regex_engine", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "_build_regex_engine", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class BuildRegexEngine extends PythonUnaryBuiltinNode {
         @Specialization
@@ -103,14 +101,12 @@ public class SREModuleBuiltins extends PythonBuiltins {
      * Replaces any <it>quoted</it> escape sequence like {@code "\\n"} (two characters; backslash +
      * 'n') by its single character like {@code "\n"} (one character; newline).
      */
-    @Builtin(name = "_process_escape_sequences", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "_process_escape_sequences", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ProcessEscapeSequences extends PythonUnaryBuiltinNode {
 
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
         @Child private BytesNodes.ToBytesNode toBytesNode;
-
-        @CompilationFinal private Pattern namedCaptGroupPattern;
 
         @Specialization
         Object run(PString str) {
@@ -187,7 +183,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tregex_call_compile", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "tregex_call_compile", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class TRegexCallCompile extends PythonBuiltinNode {
@@ -219,7 +215,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tregex_call_exec", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "tregex_call_exec", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class TRegexCallExec extends PythonBuiltinNode {

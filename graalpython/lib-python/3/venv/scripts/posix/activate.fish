@@ -7,11 +7,6 @@ function deactivate  -d "Exit virtualenv and return to normal shell environment"
         set -gx PATH $_OLD_VIRTUAL_PATH
         set -e _OLD_VIRTUAL_PATH
     end
-    set -e GRAAL_PYTHON_OPTIONS
-    if test -n "$_OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS"
-        set -gx GRAAL_PYTHON_OPTIONS $_OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS
-        set -e _OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS
-    end
     if test -n "$_OLD_VIRTUAL_PYTHONHOME"
         set -gx PYTHONHOME $_OLD_VIRTUAL_PYTHONHOME
         set -e _OLD_VIRTUAL_PYTHONHOME
@@ -39,9 +34,6 @@ set -gx VIRTUAL_ENV "__VENV_DIR__"
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/__VENV_BIN_NAME__" $PATH
 
-set -gx _OLD_VIRTUAL_GRAAL_PYTHON_OPTIONS $GRAAL_PYTHON_OPTIONS
-set -gx GRAAL_PYTHON_OPTIONS "__VENV_GRAAL_PYTHON_OPTIONS__ " $GRAAL_PYTHON_OPTIONS
-
 # unset PYTHONHOME if set
 if set -q PYTHONHOME
     set -gx _OLD_VIRTUAL_PYTHONHOME $PYTHONHOME
@@ -60,7 +52,7 @@ if test -z "$VIRTUAL_ENV_DISABLE_PROMPT"
         set -l old_status $status
 
         # Prompt override?
-        if test -n "__VENV_PROMPT__"            
+        if test -n "__VENV_PROMPT__"
             printf "%s%s" "__VENV_PROMPT__" (set_color normal)
         else
             # ...Otherwise, prepend env

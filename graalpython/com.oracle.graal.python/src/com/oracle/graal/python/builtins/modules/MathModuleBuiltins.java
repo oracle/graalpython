@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -138,7 +138,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
     }
 
     // math.sqrt
-    @Builtin(name = "sqrt", fixedNumOfPositionalArgs = 1, doc = "Return the square root of x.")
+    @Builtin(name = "sqrt", minNumOfPositionalArgs = 1, doc = "Return the square root of x.")
     @GenerateNodeFactory
     public abstract static class SqrtNode extends MathDoubleUnaryBuiltinNode {
 
@@ -186,7 +186,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "exp", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "exp", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ExpNode extends MathDoubleUnaryBuiltinNode {
 
@@ -199,7 +199,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "expm1", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "expm1", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class Expm1Node extends MathDoubleUnaryBuiltinNode {
 
@@ -212,7 +212,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "ceil", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "ceil", minNumOfPositionalArgs = 1)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class CeilNode extends MathUnaryBuiltinNode {
@@ -248,7 +248,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public Object ceil(PFloat value,
                         @Cached("create(__CEIL__)") LookupAndCallUnaryNode dispatchCeil) {
             Object result = dispatchCeil.executeObject(value);
-            if (PNone.NO_VALUE.equals(result)) {
+            if (PNone.NO_VALUE == result) {
                 if (MathGuards.fitLong(value.getValue())) {
                     return ceilLong(value.getValue());
                 } else {
@@ -277,7 +277,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "copysign", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "copysign", minNumOfPositionalArgs = 2)
     @ImportStatic(MathGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -336,12 +336,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "factorial", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "factorial", minNumOfPositionalArgs = 1)
     @ImportStatic({Double.class, MathGuards.class})
     @GenerateNodeFactory
     public abstract static class FactorialNode extends PythonUnaryBuiltinNode {
 
-        @CompilationFinal(dimensions = 1) protected final static long[] SMALL_FACTORIALS = new long[]{
+        @CompilationFinal(dimensions = 1) protected static final long[] SMALL_FACTORIALS = new long[]{
                         1, 1, 2, 6, 24, 120, 720, 5040, 40320,
                         362880, 3628800, 39916800, 479001600,
                         6227020800L, 87178291200L, 1307674368000L,
@@ -521,7 +521,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "floor", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "floor", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
     public abstract static class FloorNode extends PythonUnaryBuiltinNode {
@@ -582,7 +582,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") CastToDoubleNode castNode,
                         @Cached("create()") FloorNode recursiveNode) {
             Object result = dispatchFloor.executeObject(value);
-            if (PNone.NO_VALUE.equals(result)) {
+            if (PNone.NO_VALUE == result) {
                 return recursiveNode.execute(castNode.execute(value));
             }
             return result;
@@ -593,7 +593,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "fmod", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "fmod", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -689,7 +689,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "frexp", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "frexp", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -763,7 +763,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isnan", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "isnan", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -790,13 +790,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isclose", minNumOfPositionalArgs = 2, keywordArguments = {"rel_tol", "abs_tol"})
+    @Builtin(name = "isclose", minNumOfPositionalArgs = 2, parameterNames = {"a", "b", "rel_tol", "abs_tol"})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class IsCloseNode extends PythonBuiltinNode {
-        private static double DEFAULT_REL = 1e-09;
-        private static double DEFAULT_ABS = 0.0;
+        private static final double DEFAULT_REL = 1e-09;
+        private static final double DEFAULT_ABS = 0.0;
 
         @Child private CastToDoubleNode castANode;
         @Child private CastToDoubleNode castBNode;
@@ -887,7 +887,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "ldexp", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "ldexp", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class LdexpNode extends PythonBinaryBuiltinNode {
@@ -999,7 +999,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "modf", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "modf", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -1036,7 +1036,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "fsum", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "fsum", minNumOfPositionalArgs = 1)
     @ImportStatic(PGuards.class)
     @GenerateNodeFactory
     public abstract static class FsumNode extends PythonUnaryBuiltinNode {
@@ -1134,8 +1134,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
                     hi = x + y;
                     yr = hi - x;
                     lo = y - yr;
-                    if (lo != 0.0)
+                    if (lo != 0.0) {
                         break;
+                    }
                 }
                 /*
                  * Make half-even rounding work across multiple partials. Needed so that sum([1e-16,
@@ -1157,7 +1158,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "gcd", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "gcd", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
@@ -1230,7 +1231,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "acos", fixedNumOfPositionalArgs = 1, doc = "Return the arc cosine (measured in radians) of x.")
+    @Builtin(name = "acos", minNumOfPositionalArgs = 1, doc = "Return the arc cosine (measured in radians) of x.")
     @GenerateNodeFactory
     public abstract static class AcosNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1242,7 +1243,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "acosh", fixedNumOfPositionalArgs = 1, doc = "Return the inverse hyperbolic cosine of x.")
+    @Builtin(name = "acosh", minNumOfPositionalArgs = 1, doc = "Return the inverse hyperbolic cosine of x.")
     @GenerateNodeFactory
     public abstract static class AcoshNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1266,7 +1267,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "asin", fixedNumOfPositionalArgs = 1, doc = "Return the arc sine (measured in radians) of x.")
+    @Builtin(name = "asin", minNumOfPositionalArgs = 1, doc = "Return the arc sine (measured in radians) of x.")
     @GenerateNodeFactory
     public abstract static class AsinNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1278,7 +1279,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cos", fixedNumOfPositionalArgs = 1, doc = "Return the cosine of x (measured in radians).")
+    @Builtin(name = "cos", minNumOfPositionalArgs = 1, doc = "Return the cosine of x (measured in radians).")
     @GenerateNodeFactory
     public abstract static class CosNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1289,7 +1290,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cosh", fixedNumOfPositionalArgs = 1, doc = "Return the hyperbolic cosine of x.")
+    @Builtin(name = "cosh", minNumOfPositionalArgs = 1, doc = "Return the hyperbolic cosine of x.")
     @GenerateNodeFactory
     public abstract static class CoshNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1302,7 +1303,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "sin", fixedNumOfPositionalArgs = 1, doc = "Return the sine of x (measured in radians).")
+    @Builtin(name = "sin", minNumOfPositionalArgs = 1, doc = "Return the sine of x (measured in radians).")
     @GenerateNodeFactory
     public abstract static class SinNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1313,7 +1314,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "sinh", fixedNumOfPositionalArgs = 1, doc = "Return the hyperbolic sine of x.")
+    @Builtin(name = "sinh", minNumOfPositionalArgs = 1, doc = "Return the hyperbolic sine of x.")
     @GenerateNodeFactory
     public abstract static class SinhNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1326,7 +1327,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tan", fixedNumOfPositionalArgs = 1, doc = "Return the tangent of x (measured in radians).")
+    @Builtin(name = "tan", minNumOfPositionalArgs = 1, doc = "Return the tangent of x (measured in radians).")
     @GenerateNodeFactory
     public abstract static class TanNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1337,7 +1338,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tanh", fixedNumOfPositionalArgs = 1, doc = "Return the hyperbolic tangent of x.")
+    @Builtin(name = "tanh", minNumOfPositionalArgs = 1, doc = "Return the hyperbolic tangent of x.")
     @GenerateNodeFactory
     public abstract static class TanhNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1348,7 +1349,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "atan", fixedNumOfPositionalArgs = 1, doc = "Return the arc tangent (measured in radians) of x.")
+    @Builtin(name = "atan", minNumOfPositionalArgs = 1, doc = "Return the arc tangent (measured in radians) of x.")
     @GenerateNodeFactory
     public abstract static class AtanNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1359,7 +1360,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "atanh", fixedNumOfPositionalArgs = 1, doc = "Return the inverse hyperbolic tangent of x.")
+    @Builtin(name = "atanh", minNumOfPositionalArgs = 1, doc = "Return the inverse hyperbolic tangent of x.")
     @GenerateNodeFactory
     public abstract static class AtanhNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1374,7 +1375,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "asinh", fixedNumOfPositionalArgs = 1, doc = "Return the inverse hyperbolic sine of x.")
+    @Builtin(name = "asinh", minNumOfPositionalArgs = 1, doc = "Return the inverse hyperbolic sine of x.")
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -1390,7 +1391,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isfinite", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "isfinite", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -1418,7 +1419,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isinf", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "isinf", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -1647,7 +1648,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "log1p", fixedNumOfPositionalArgs = 1, doc = "Return the natural logarithm of 1+x (base e).\n\nThe result is computed in a way which is accurate for x near zero.")
+    @Builtin(name = "log1p", minNumOfPositionalArgs = 1, doc = "Return the natural logarithm of 1+x (base e).\n\nThe result is computed in a way which is accurate for x near zero.")
     @GenerateNodeFactory
     public abstract static class Log1pNode extends MathDoubleUnaryBuiltinNode {
 
@@ -1663,7 +1664,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "log2", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "log2", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class Log2Node extends MathDoubleUnaryBuiltinNode {
 
@@ -1709,7 +1710,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "log10", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "log10", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class Log10Node extends MathDoubleUnaryBuiltinNode {
 
@@ -1745,7 +1746,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "fabs", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "fabs", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -1775,7 +1776,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "pow", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "pow", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -1878,7 +1879,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "trunc", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "trunc", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class TruncNode extends PythonUnaryBuiltinNode {
 
@@ -1893,7 +1894,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "atan2", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "atan2", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -1952,7 +1953,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "degrees", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "degrees", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DegreesNode extends MathDoubleUnaryBuiltinNode {
         private static final double RAD_TO_DEG = 180.0 / Math.PI;
@@ -1964,7 +1965,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "radians", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "radians", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RadiansNode extends MathDoubleUnaryBuiltinNode {
         private static final double DEG_TO_RAD = Math.PI / 180.0;
@@ -1976,7 +1977,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "hypot", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "hypot", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
@@ -2040,7 +2041,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "erf", fixedNumOfPositionalArgs = 1, doc = "Error function at x.")
+    @Builtin(name = "erf", minNumOfPositionalArgs = 1, doc = "Error function at x.")
     @GenerateNodeFactory
     public abstract static class ErfNode extends MathDoubleUnaryBuiltinNode {
         // Adapted implementation from CPython
@@ -2105,16 +2106,16 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 return x;
             }
             absx = Math.abs(x);
-            if (absx < ERF_SERIES_CUTOFF)
+            if (absx < ERF_SERIES_CUTOFF) {
                 return m_erf_series(x);
-            else {
+            } else {
                 cf = m_erfc_contfrac(absx);
                 return x > 0.0 ? 1.0 - cf : cf - 1.0;
             }
         }
     }
 
-    @Builtin(name = "erfc", fixedNumOfPositionalArgs = 1, doc = "Error function at x.")
+    @Builtin(name = "erfc", minNumOfPositionalArgs = 1, doc = "Error function at x.")
     @GenerateNodeFactory
     public abstract static class ErfcNode extends ErfNode {
         // Adapted implementation from CPython
@@ -2127,16 +2128,16 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 return x;
             }
             absx = Math.abs(x);
-            if (absx < ErfNode.ERF_SERIES_CUTOFF)
+            if (absx < ErfNode.ERF_SERIES_CUTOFF) {
                 return 1.0 - m_erf_series(x);
-            else {
+            } else {
                 cf = m_erfc_contfrac(absx);
                 return x > 0.0 ? cf : 2.0 - cf;
             }
         }
     }
 
-    @Builtin(name = "gamma", fixedNumOfPositionalArgs = 1, doc = "Gamma function at x")
+    @Builtin(name = "gamma", minNumOfPositionalArgs = 1, doc = "Gamma function at x")
     @GenerateNodeFactory
     public abstract static class GammaNode extends MathDoubleUnaryBuiltinNode {
         // Adapted implementation from CPython
@@ -2144,7 +2145,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         private static final int LANCZOS_N = 13;
         protected static final double LANCZOS_G = 6.024680040776729583740234375;
         private static final double LANZOS_G_MINUS_HALF = 5.524680040776729583740234375;
-        @CompilationFinal(dimensions = 1) protected final static double[] LANCZOS_NUM_COEFFS = new double[]{
+        @CompilationFinal(dimensions = 1) protected static final double[] LANCZOS_NUM_COEFFS = new double[]{
                         23531376880.410759688572007674451636754734846804940,
                         42919803642.649098768957899047001988850926355848959,
                         35711959237.355668049440185451547166705960488635843,
@@ -2160,11 +2161,11 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         2.5066282746310002701649081771338373386264310793408
         };
 
-        @CompilationFinal(dimensions = 1) protected final static double[] LANCZOS_DEN_COEFFS = new double[]{
+        @CompilationFinal(dimensions = 1) protected static final double[] LANCZOS_DEN_COEFFS = new double[]{
                         0.0, 39916800.0, 120543840.0, 150917976.0, 105258076.0, 45995730.0,
                         13339535.0, 2637558.0, 357423.0, 32670.0, 1925.0, 66.0, 1.0};
 
-        @CompilationFinal(dimensions = 1) protected final static double[] GAMMA_INTEGRAL = new double[]{
+        @CompilationFinal(dimensions = 1) protected static final double[] GAMMA_INTEGRAL = new double[]{
                         1.0, 1.0, 2.0, 6.0, 24.0, 120.0, 720.0, 5040.0, 40320.0, 362880.0,
                         3628800.0, 39916800.0, 479001600.0, 6227020800.0, 87178291200.0,
                         1307674368000.0, 20922789888000.0, 355687428096000.0,
@@ -2239,9 +2240,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
             /* special cases */
             if (!Double.isFinite(x)) {
-                if (Double.isNaN(x) || x > 0.0)
+                if (Double.isNaN(x) || x > 0.0) {
                     return x; /* tgamma(nan) = nan, tgamma(inf) = inf */
-                else {
+                } else {
                     checkMathDomainError(false);
                 }
             }
@@ -2250,8 +2251,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
             /* integer arguments */
             if (x == Math.floor(x)) {
                 checkMathDomainError(x < 0.0);
-                if (x <= NGAMMA_INTEGRAL)
+                if (x <= NGAMMA_INTEGRAL) {
                     return GAMMA_INTEGRAL[(int) x - 1];
+                }
             }
             absx = Math.abs(x);
 
@@ -2313,7 +2315,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "lgamma", fixedNumOfPositionalArgs = 1, doc = "Natural logarithm of absolute value of Gamma function at x.")
+    @Builtin(name = "lgamma", minNumOfPositionalArgs = 1, doc = "Natural logarithm of absolute value of Gamma function at x.")
     @GenerateNodeFactory
     public abstract static class LgammaNode extends GammaNode {
         // Adapted implementation from CPython

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -158,7 +158,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         public abstract long execute(PIBytesLike data, Object value);
 
         // we can't use jdk Crc32 class, if there is done init value of crc
-        private final static int[] CRC32_TABLE = {
+        private static final int[] CRC32_TABLE = {
                         0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419,
                         0x706af48f, 0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4,
                         0xe0d5e91e, 0x97d2d988, 0x09b64c2b, 0x7eb17cbd, 0xe7b82d07,
@@ -292,7 +292,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         public abstract long execute(PIBytesLike data, Object value);
 
-        private final static int DEFER = 3850;
+        private static final int DEFER = 3850;
         private static final int BASE = 65521;
 
         private static int computeAdler32(byte[] bytes, int value) {
@@ -372,7 +372,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "zlib_deflateInit", fixedNumOfPositionalArgs = 6)
+    @Builtin(name = "zlib_deflateInit", minNumOfPositionalArgs = 6)
     @GenerateNodeFactory
     abstract static class DeflateInitNode extends PythonBuiltinNode {
         /**
@@ -415,7 +415,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "zlib_deflateCompress", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "zlib_deflateCompress", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class DeflateCompress extends PythonTernaryBuiltinNode {
         @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
@@ -448,7 +448,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "zlib_inflateInit", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "zlib_inflateInit", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InflateInitNode extends PythonBinaryBuiltinNode {
         @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
@@ -481,7 +481,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "zlib_inflateDecompress", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "zlib_inflateDecompress", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class InflaterDecompress extends PythonTernaryBuiltinNode {
         @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
@@ -515,7 +515,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     }
 
     // zlib.compress(data, level=-1)
-    @Builtin(name = "compress", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"level"})
+    @Builtin(name = "compress", minNumOfPositionalArgs = 1, parameterNames = {"", "level"})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class CompressNode extends PythonBinaryBuiltinNode {
@@ -564,7 +564,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     }
 
     // zlib.decompress(data, wbits=MAX_WBITS, bufsize=DEF_BUF_SIZE)
-    @Builtin(name = "decompress", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"wbits", "bufsize"})
+    @Builtin(name = "decompress", minNumOfPositionalArgs = 1, parameterNames = {"data", "wbits", "bufsize"})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class DecompressNode extends PythonTernaryBuiltinNode {

@@ -175,25 +175,16 @@ inline void* native_to_java(PyObject* obj) {
         return obj;
     } else if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
-    } else {
-        void* refcnt = obj->ob_refcnt;
-        if (!truffle_cannot_be_handle(refcnt)) {
-            return resolve_handle(cache, refcnt);
-        } else if (IS_POINTER(refcnt)) {
-            return refcnt;
-        }
-        return obj;
     }
+    return obj;
 }
 
 __attribute__((always_inline))
 inline void* native_type_to_java(PyTypeObject* type) {
-	if (IS_POINTER(((PyObject*)type)->ob_refcnt)) {
-		return (void*)((PyObject*)type)->ob_refcnt;
-	} else if (!truffle_cannot_be_handle(((PyObject*)type)->ob_refcnt)) {
-		return resolve_handle(cache, ((PyObject*)type)->ob_refcnt);
-	}
-	return (void*)type;
+	if (!truffle_cannot_be_handle(type)) {
+        return (void *)resolve_handle(cache, (uint64_t)type);
+    }
+    return (void *)type;
 }
 
 extern void* to_java(PyObject* obj);
@@ -211,39 +202,44 @@ int wrap_setter(PyCFunction fun, PyObject *self, PyObject *value, void *closure)
 void* wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
 void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
 void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
-void* wrap_fastcall(_PyCFunctionFast        fun, PyObject *  self, PyObject   **args, PyObject  *nargs, PyObject *kwnames);
+void* wrap_fastcall(_PyCFunctionFast fun, PyObject *  self, PyObject   **args, PyObject  *nargs);
+void* wrap_fastcall_with_keywords(_PyCFunctionFastWithKeywords fun, PyObject *  self, PyObject   **args, PyObject  *nargs, PyObject *kwnames);
 void* wrap_unsupported(void *fun, ...);
 
 #define TDEBUG __builtin_debugtrap()
-#define get_method_flags_wrapper(flags)                                 \
-    (((flags) < 0) ?                                                    \
-     polyglot_get_member(PY_TRUFFLE_CEXT, "METH_DIRECT") :              \
-     (((flags) & METH_FASTCALL) ?                                       \
-      polyglot_get_member(PY_TRUFFLE_CEXT, "METH_FASTCALL") :           \
-      (((flags) & METH_KEYWORDS) ?                                      \
-       polyglot_get_member(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :          \
-       (((flags) & METH_VARARGS) ?                                      \
-        polyglot_get_member(PY_TRUFFLE_CEXT, "METH_VARARGS") :          \
-        (((flags) & METH_NOARGS) ?                                      \
-         polyglot_get_member(PY_TRUFFLE_CEXT, "METH_NOARGS") :          \
-         (((flags) & METH_O) ?                                          \
-          polyglot_get_member(PY_TRUFFLE_CEXT, "METH_O") :              \
-          polyglot_get_member(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
+#define get_method_flags_wrapper(flags)                                                  \
+    (((flags) < 0) ?                                                                     \
+     polyglot_get_member(PY_TRUFFLE_CEXT, "METH_DIRECT") :                               \
+     ((((flags) & (METH_FASTCALL | METH_KEYWORDS)) == (METH_FASTCALL | METH_KEYWORDS)) ? \
+      polyglot_get_member(PY_TRUFFLE_CEXT, "METH_FASTCALL_WITH_KEYWORDS") :              \
+     (((flags) & METH_FASTCALL) ?                                                        \
+      polyglot_get_member(PY_TRUFFLE_CEXT, "METH_FASTCALL") :                            \
+      (((flags) & METH_KEYWORDS) ?                                                       \
+       polyglot_get_member(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :                           \
+       (((flags) & METH_VARARGS) ?                                                       \
+        polyglot_get_member(PY_TRUFFLE_CEXT, "METH_VARARGS") :                           \
+        (((flags) & METH_NOARGS) ?                                                       \
+         polyglot_get_member(PY_TRUFFLE_CEXT, "METH_NOARGS") :                           \
+         (((flags) & METH_O) ?                                                           \
+          polyglot_get_member(PY_TRUFFLE_CEXT, "METH_O") :                               \
+          polyglot_get_member(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED"))))))))
 
-#define get_method_flags_cwrapper(flags)                                \
-    (void*)((((flags) < 0) ?                                            \
-     wrap_direct :                                                      \
-     (((flags) & METH_FASTCALL) ?                                       \
-      wrap_fastcall :                                                   \
-      (((flags) & METH_KEYWORDS) ?                                      \
-       wrap_keywords :                                                   \
-       (((flags) & METH_VARARGS) ?                                       \
-        wrap_varargs :                                                   \
-        (((flags) & METH_NOARGS) ?                                           \
-         wrap_noargs :                                                  \
-         (((flags) & METH_O) ?                                   \
-          wrap_direct :                                               \
-          wrap_unsupported)))))))
+#define get_method_flags_cwrapper(flags)                                                 \
+    (void*)((((flags) < 0) ?                                                             \
+     wrap_direct :                                                                       \
+     ((((flags) & (METH_FASTCALL | METH_KEYWORDS)) == (METH_FASTCALL | METH_KEYWORDS)) ? \
+      wrap_fastcall_with_keywords :                                                      \
+      (((flags) & METH_FASTCALL) ?                                                       \
+       wrap_fastcall :                                                                   \
+       (((flags) & METH_KEYWORDS) ?                                                      \
+        wrap_keywords :                                                                  \
+        (((flags) & METH_VARARGS) ?                                                      \
+         wrap_varargs :                                                                  \
+         (((flags) & METH_NOARGS) ?                                                      \
+          wrap_noargs :                                                                  \
+          (((flags) & METH_O) ?                                                          \
+           wrap_direct :                                                                 \
+           wrap_unsupported))))))))
 
 #define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\

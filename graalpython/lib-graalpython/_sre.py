@@ -39,6 +39,8 @@
 
 import polyglot as _interop
 
+from mmap import mmap
+
 def default(value, default):
     return default if not value else value
 
@@ -116,7 +118,7 @@ def setup(sre_compiler, error_class, flags_table):
 
 CODESIZE = 4
 
-MAGIC = 20140917
+MAGIC = 20171005
 MAXREPEAT = 4294967295
 MAXGROUPS = 2147483647
 FLAG_NAMES = ["re.TEMPLATE", "re.IGNORECASE", "re.LOCALE", "re.MULTILINE",
@@ -168,10 +170,11 @@ class SRE_Match():
 
     def groupdict(self, default=None):
         d = {}
-        assert _interop.__has_keys__(self.compiled_regex.groups)
-        for k in _interop.__keys__(self.compiled_regex.groups):
-            idx = self.compiled_regex.groups[k]
-            d[k] = self.__group__(idx)
+        if self.compiled_regex.groups:
+            assert _interop.__has_keys__(self.compiled_regex.groups)
+            for k in _interop.__keys__(self.compiled_regex.groups):
+                idx = self.compiled_regex.groups[k]
+                d[k] = self.__group__(idx)
         return d
 
     def span(self, groupnum=0):
@@ -204,7 +207,7 @@ def _append_end_assert(pattern):
         return pattern if pattern.endswith(rb"\Z") else pattern + rb"\Z"
 
 def _is_bytes_like(object):
-    return isinstance(object, (bytes, bytearray, memoryview))
+    return isinstance(object, (bytes, bytearray, memoryview, mmap))
 
 class SRE_Pattern():
     def __init__(self, pattern, flags):

@@ -44,6 +44,7 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -91,7 +92,13 @@ public class AsyncHandler {
         }
     }
 
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
+    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2, new ThreadFactory() {
+        public Thread newThread(Runnable r) {
+            Thread t = Executors.defaultThreadFactory().newThread(r);
+            t.setDaemon(true);
+            return t;
+        }
+    });
     private final ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
     private boolean hasScheduledAction = false;
     private final Lock executingScheduledActions = new ReentrantLock();
@@ -223,5 +230,9 @@ public class AsyncHandler {
                 executingScheduledActions.unlock();
             }
         }
+    }
+
+    public void shutdown() {
+        executorService.shutdownNow();
     }
 }

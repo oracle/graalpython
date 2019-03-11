@@ -41,6 +41,11 @@
 
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -49,7 +54,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -68,10 +73,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PBytes})
 public class AbstractBytesBuiltins extends PythonBuiltins {
@@ -81,7 +82,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         return AbstractBytesBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "lower", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "lower", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LowerNode extends PythonUnaryBuiltinNode {
         @Node.Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
@@ -108,7 +109,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "upper", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "upper", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class UpperNode extends PythonUnaryBuiltinNode {
         @Node.Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
@@ -220,7 +221,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "lstrip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"bytes"})
+    @Builtin(name = "lstrip", minNumOfPositionalArgs = 1, parameterNames = {"self", "bytes"})
     @GenerateNodeFactory
     abstract static class LStripNode extends AStripNode {
 
@@ -262,7 +263,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "rstrip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"bytes"})
+    @Builtin(name = "rstrip", minNumOfPositionalArgs = 1, parameterNames = {"self", "bytes"})
     @GenerateNodeFactory
     abstract static class RStripNode extends AStripNode {
 
@@ -574,7 +575,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "split", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"sep", "maxsplit"})
+    @Builtin(name = "split", minNumOfPositionalArgs = 1, parameterNames = {"self", "sep", "maxsplit"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SplitNode extends AbstractSplitNode {
@@ -670,7 +671,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "rsplit", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"sep", "maxsplit"})
+    @Builtin(name = "rsplit", minNumOfPositionalArgs = 1, parameterNames = {"self", "sep", "maxsplit"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RSplitNode extends AbstractSplitNode {
@@ -779,12 +780,12 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
 
     // static bytes.maketrans()
     // static bytearray.maketrans()
-    @Builtin(name = "maketrans", fixedNumOfPositionalArgs = 3, isClassmethod = true)
+    @Builtin(name = "maketrans", minNumOfPositionalArgs = 3, isClassmethod = true)
     @GenerateNodeFactory
     public abstract static class MakeTransNode extends PythonBuiltinNode {
 
         @Specialization
-        public PBytes maketrans(@SuppressWarnings("unused") PythonClass cls, Object from, Object to,
+        public PBytes maketrans(@SuppressWarnings("unused") LazyPythonClass cls, Object from, Object to,
                         @Cached("create()") BytesNodes.ToBytesNode toByteNode) {
             byte[] fromB = toByteNode.execute(from);
             byte[] toB = toByteNode.execute(to);
@@ -809,7 +810,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
 
     // bytes.translate(table, delete=b'')
     // bytearray.translate(table, delete=b'')
-    @Builtin(name = "translate", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, keywordArguments = {"delete"})
+    @Builtin(name = "translate", minNumOfPositionalArgs = 2, parameterNames = {"self", "table", "delete"})
     @GenerateNodeFactory
     public abstract static class TranslateNode extends PythonBuiltinNode {
 

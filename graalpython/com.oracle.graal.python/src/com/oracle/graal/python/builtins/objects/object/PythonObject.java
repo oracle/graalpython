@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,9 +33,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -57,7 +60,7 @@ public class PythonObject extends PythonAbstractObject {
     public PythonObject(LazyPythonClass pythonClass) {
         assert pythonClass != null : getClass().getSimpleName();
         this.pythonClass = pythonClass;
-        storage = pythonClass.getInstanceShape().newInstance();
+        storage = TypeNodes.GetInstanceShape.doSlowPath(pythonClass).newInstance();
     }
 
     public PythonObject(LazyPythonClass pythonClass, Shape instanceShape) {
@@ -65,24 +68,24 @@ public class PythonObject extends PythonAbstractObject {
             CompilerDirectives.transferToInterpreter();
             // special case for base type class
             assert this instanceof PythonBuiltinClass;
-            this.pythonClass = (PythonClass) this;
+            this.pythonClass = (PythonBuiltinClass) this;
         } else {
             this.pythonClass = pythonClass;
         }
         storage = instanceShape.newInstance();
     }
 
-    public final PythonClass getPythonClass() {
+    public final PythonAbstractClass getPythonClass() {
         CompilerAsserts.neverPartOfCompilation();
         assert pythonClass != null;
-        if (pythonClass instanceof PythonClass) {
-            return (PythonClass) pythonClass;
+        if (pythonClass instanceof PythonAbstractClass) {
+            return (PythonAbstractClass) pythonClass;
         } else {
             return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) pythonClass);
         }
     }
 
-    public final void setLazyPythonClass(PythonClass cls) {
+    public final void setLazyPythonClass(PythonAbstractClass cls) {
         pythonClass = cls;
         classStable.invalidate();
     }
@@ -153,17 +156,16 @@ public class PythonObject extends PythonAbstractObject {
         return keyList;
     }
 
-    public final PythonClass asPythonClass() {
-        if (this instanceof PythonClass) {
-            return (PythonClass) this;
+    public final PythonAbstractClass asPythonClass() {
+        if (this instanceof PythonManagedClass) {
+            return (PythonManagedClass) this;
         }
-
         return getPythonClass();
     }
 
     @Override
     public int compareTo(Object o) {
-        return this.equals(o) ? 0 : 1;
+        return this == o ? 0 : 1;
     }
 
     /**
@@ -176,7 +178,7 @@ public class PythonObject extends PythonAbstractObject {
      */
     @Override
     public String toString() {
-        return "<" + getLazyPythonClass().getName() + " object at 0x" + Integer.toHexString(hashCode()) + ">";
+        return "<" + GetNameNode.doSlowPath(getLazyPythonClass()) + " object at 0x" + Integer.toHexString(hashCode()) + ">";
     }
 
     /**

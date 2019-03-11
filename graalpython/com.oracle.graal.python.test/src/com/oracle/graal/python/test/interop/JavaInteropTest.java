@@ -41,8 +41,10 @@
 package com.oracle.graal.python.test.interop;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -50,9 +52,19 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.runtime.interop.InteropArray;
+import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.junit.After;
@@ -64,18 +76,10 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.oracle.graal.python.runtime.interop.InteropArray;
-import com.oracle.graal.python.test.PythonTests;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-
 @RunWith(Enclosed.class)
 public class JavaInteropTest {
     public static class GeneralInterop extends PythonTests {
+        private static final String INCOMPLETE_SOURCE = "class A:";
         private ByteArrayOutputStream out;
         private Context context;
         private ByteArrayOutputStream err;
@@ -105,6 +109,55 @@ public class JavaInteropTest {
                 didFail = true;
             }
             assertTrue(didFail);
+        }
+
+        @Test
+        public void evalNonInteractiveThrowsSyntaxError() throws IOException {
+            try (Context c = Context.newBuilder().allowAllAccess(true).option("python.TerminalIsInteractive", "false").build()) {
+                c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(false).build());
+            } catch (PolyglotException t) {
+                assertTrue(t.isSyntaxError());
+                assertFalse(t.isIncompleteSource());
+                return;
+            }
+            fail();
+        }
+
+        @Test
+        public void evalNonInteractiveInInteractiveTerminalThrowsSyntaxError() throws IOException {
+            try (Context c = Context.newBuilder().allowAllAccess(true).option("python.TerminalIsInteractive", "true").build()) {
+                c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(false).build());
+            } catch (PolyglotException t) {
+                assertTrue(t.isSyntaxError());
+                assertFalse(t.isIncompleteSource());
+                return;
+            }
+            fail();
+        }
+
+        @Test
+        public void evalInteractiveInNonInteractiveTerminalThrowsSyntaxError() throws IOException {
+            try (Context c = Context.newBuilder().allowAllAccess(true).option("python.TerminalIsInteractive", "false").build()) {
+                c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(true).build());
+            } catch (PolyglotException t) {
+                assertTrue(t.isSyntaxError());
+                assertTrue(t.isIncompleteSource());
+                return;
+            }
+            fail();
+        }
+
+        @Test
+        public void evalInteractiveInInteractiveTerminalThrowsSyntaxError() throws IOException {
+            try (Context c = Context.newBuilder().allowAllAccess(true).option("python.TerminalIsInteractive", "true").build()) {
+                c.eval(Source.newBuilder("python", INCOMPLETE_SOURCE, "eval").interactive(true).build());
+            } catch (PolyglotException t) {
+                assertTrue(t.isSyntaxError());
+                assertTrue(t.isIncompleteSource());
+                return;
+            }
+
+            fail();
         }
 
         @Test
@@ -486,7 +539,8 @@ public class JavaInteropTest {
                             new OptionsChecker("PythonOptimizeFlag", "import sys; sys.flags.debug", "true", "false"),
                             new OptionsChecker("PythonOptimizeFlag", "import sys; sys.flags.optimize", "true", "false"),
                             new OptionsChecker("PythonOptimizeFlag", "__debug__", "true", "false"),
-                            new OptionsChecker("Executable", "import sys; sys.executable", "graalpython", "python3")
+                            new OptionsChecker("Executable", "import sys; sys.executable", "graalpython", "python3"),
+                            new OptionsChecker("IsolateFlag", "import sys; sys.flags.isolated", "true", "false")
             };
         }
 
