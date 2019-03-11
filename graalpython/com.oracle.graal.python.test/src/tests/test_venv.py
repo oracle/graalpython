@@ -37,22 +37,31 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import tempfile
-import sys
-import shutil
 import os
+import re
+import shutil
 import subprocess
+import sys
+import tempfile
 
 
 class VenvTest():
     def setUp(self):
         self.env_dir = os.path.realpath(tempfile.mkdtemp())
+        self.env_dir2 = os.path.realpath(tempfile.mkdtemp())
 
     def tearDown(self):
         shutil.rmtree(self.env_dir)
+        shutil.rmtree(self.env_dir2)
 
     def test_create_and_use_basic_venv(self):
         subprocess.check_output([sys.executable, "-m", "venv", self.env_dir, "--without-pip"])
         run = subprocess.getoutput(". %s/bin/activate; python -m site" % self.env_dir)
         assert "ENABLE_USER_SITE: False" in run, run
         assert self.env_dir in run, run
+
+    def test_create_and_use_venv_with_pip(self):
+        subprocess.check_output([sys.executable, "-m", "venv", self.env_dir2])
+        run = subprocess.getoutput("%s/bin/python -m pip list" % self.env_dir2)
+        assert "\npip" in run, run
+        assert "\nsetuptools" in run, run
