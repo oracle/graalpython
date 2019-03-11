@@ -51,9 +51,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class LookupAndCallUnaryNode extends Node {
 
@@ -217,8 +219,22 @@ public abstract class LookupAndCallUnaryNode extends Node {
         }
     }
 
-    public static LookupAndCallUnaryNode getUncached() {
-        // TODO: TRUFFLE LIBRARY GETUNCACHED MIGRATION IMPLEMENT ME
-        return null;
+    @GenerateUncached
+    public abstract static class Dynamic extends Node {
+
+        public abstract Object executeObject(Object receiver, String name);
+
+        @Specialization
+        Object callObject(Object receiver, String name,
+                        @Cached LookupInheritedAttributeNode.Dynamic getattr,
+                        @Cached CallUnaryMethodNode dispatchNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+
+            Object attr = getattr.execute(receiver, name);
+            if (profile.profile(attr == PNone.NO_VALUE)) {
+                return dispatchNode.executeObject(attr, receiver);
+            }
+            return PNone.NO_VALUE;
+        }
     }
 }
