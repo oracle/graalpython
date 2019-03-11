@@ -63,5 +63,5 @@ class VenvTest():
     def test_create_and_use_venv_with_pip(self):
         subprocess.check_output([sys.executable, "-m", "venv", self.env_dir2])
         run = subprocess.getoutput("%s/bin/python -m pip list" % self.env_dir2)
-        assert "\npip" in run, run
-        assert "\nsetuptools" in run, run
+        assert "pip" in run, run
+        assert "setuptools" in run, run
