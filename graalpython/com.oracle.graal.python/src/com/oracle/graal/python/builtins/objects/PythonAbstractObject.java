@@ -129,7 +129,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         if (attrKey != null) {
             try {
                 attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
-                return toForeign.executeConvert(callGetattributeNode.execute(null, attrGetattribute, attrKey));
+                return toForeign.executeConvert(callGetattributeNode.execute(null, attrGetattribute, this, attrKey));
             } catch (PException e) {
                 // pass, we might be reading an item that starts with "@"
             }
@@ -255,6 +255,30 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
+    public boolean isMemberInvocable(String member,
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+        // TODO write specialized nodes for the appropriate property
+        return (keyInfoNode.execute(this, member) & PKeyInfoNode.INVOCABLE) != 0;
+    }
+
+    @ExportMessage
+    public Object invokeMember(String member, Object[] arguments,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
+                    @Exclusive @Cached CallNode callGetattributeNode,
+                    @Exclusive @Cached PExecuteNode executeNode,
+                    @Cached("createBinaryProfile()") ConditionProfile profileGetattribute,
+                    @Cached("createBinaryProfile()") ConditionProfile profileMember) throws UnknownIdentifierException, UnsupportedMessageException {
+        Object attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
+        if (profileGetattribute.profile(attrGetattribute != PNone.NO_VALUE)) {
+            Object memberObj = callGetattributeNode.execute(null, attrGetattribute, this, member);
+            if (profileMember.profile(memberObj != PNone.NO_VALUE)) {
+                return executeNode.execute(memberObj, arguments);
+            }
+        }
+        throw UnknownIdentifierException.create(member);
+    }
+
+    @ExportMessage
     public boolean isExecutable(
                     @Cached IsCallableNode isCallableNode) {
         return isCallableNode.execute(this);
@@ -262,52 +286,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public Object execute(Object[] arguments,
-                    @Shared("toForeign") @Cached PTypeToForeignNode toForeign,
-                    @Exclusive @Cached CallNode callNode,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode,
-                    @Cached ArgumentsFromForeignNode convertArgsNode) throws UnsupportedMessageException {
-        Object isCallable = callAttrGetterNode.execute(this, SpecialMethodNames.__CALL__);
-        if (isCallable == PNone.NO_VALUE) {
-            throw UnsupportedMessageException.create();
-        }
-        Object[] convertedArgs = convertArgsNode.execute(arguments);
-        return toForeign.executeConvert(callNode.execute(null, this, convertedArgs, PKeyword.EMPTY_KEYWORDS));
-    }
-
-    @ExportLibrary(InteropLibrary.class)
-    public static final class Keys implements TruffleObject {
-
-        private final Object[] keys;
-
-        Keys(Object[] keys) {
-            this.keys = keys;
-        }
-
-        @ExportMessage
-        Object readArrayElement(long index) throws InvalidArrayIndexException {
-            try {
-                return keys[(int) index];
-            } catch (IndexOutOfBoundsException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw InvalidArrayIndexException.create(index);
-            }
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        boolean hasArrayElements() {
-            return true;
-        }
-
-        @ExportMessage
-        long getArraySize() {
-            return keys.length;
-        }
-
-        @ExportMessage
-        boolean isArrayElementReadable(long index) {
-            return index >= 0 && index < keys.length;
-        }
+                    @Exclusive @Cached PExecuteNode executeNode) throws UnsupportedMessageException {
+        return executeNode.execute(this, arguments);
     }
 
     @ExportMessage
@@ -570,6 +550,33 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @GenerateUncached
+    public abstract static class PExecuteNode extends Node {
+        public abstract Object execute(Object receiver, Object[] arguments) throws UnsupportedMessageException;
+
+        @Specialization
+        Object doExecute(Object receiver, Object[] arguments,
+                        @Cached PTypeToForeignNode toForeign,
+                        @Exclusive @Cached CallNode callNode,
+                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode,
+                        @Cached ArgumentsFromForeignNode convertArgsNode) throws UnsupportedMessageException {
+            Object isCallable = callAttrGetterNode.execute(receiver, SpecialMethodNames.__CALL__);
+            if (isCallable == PNone.NO_VALUE) {
+                throw UnsupportedMessageException.create();
+            }
+            Object[] convertedArgs = convertArgsNode.execute(arguments);
+            return toForeign.executeConvert(callNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS));
+        }
+
+        public static PExecuteNode create() {
+            return PythonAbstractObjectFactory.PExecuteNodeGen.create();
+        }
+
+        public static PExecuteNode getUncached() {
+            return PythonAbstractObjectFactory.PExecuteNodeGen.getUncached();
+        }
+    }
+
+    @GenerateUncached
     public abstract static class ArgumentsFromForeignNode extends Node {
 
         public abstract Object[] execute(Object[] arguments);
@@ -608,5 +615,41 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @Override
     public String toString() {
         return "<an abstract python object>";
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class Keys implements TruffleObject {
+
+        private final Object[] keys;
+
+        Keys(Object[] keys) {
+            this.keys = keys;
+        }
+
+        @ExportMessage
+        Object readArrayElement(long index) throws InvalidArrayIndexException {
+            try {
+                return keys[(int) index];
+            } catch (IndexOutOfBoundsException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw InvalidArrayIndexException.create(index);
+            }
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        boolean hasArrayElements() {
+            return true;
+        }
+
+        @ExportMessage
+        long getArraySize() {
+            return keys.length;
+        }
+
+        @ExportMessage
+        boolean isArrayElementReadable(long index) {
+            return index >= 0 && index < keys.length;
+        }
     }
 }

@@ -231,7 +231,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
 
             Object attr = getattr.execute(receiver, name);
-            if (profile.profile(attr == PNone.NO_VALUE)) {
+            if (profile.profile(attr != PNone.NO_VALUE)) {
                 return dispatchNode.executeObject(attr, receiver);
             }
             return PNone.NO_VALUE;
