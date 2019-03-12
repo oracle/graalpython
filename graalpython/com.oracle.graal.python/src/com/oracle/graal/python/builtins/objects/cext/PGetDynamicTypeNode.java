@@ -2,16 +2,19 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 abstract class PGetDynamicTypeNode extends PNodeWithContext {
@@ -65,14 +68,13 @@ abstract class GetSulongTypeNode extends PNodeWithContext {
     @Specialization(guards = "clazz == cachedClass", limit = "10")
     Object doBuiltinCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
                     @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass,
-                    @Cached("getSulongTypeForBuiltinClassUncached(clazz)") Object sulongType) {
+                    @Cached("getSulongTypeForBuiltinClass(clazz)") Object sulongType) {
         return sulongType;
     }
 
     @Specialization(replaces = "doBuiltinCached")
-    Object doBuiltinGeneric(PythonBuiltinClassType clazz,
-                    @Cached("createBinaryProfile()") ConditionProfile profile) {
-        return getSulongTypeForBuiltinClass(clazz, profile);
+    Object doBuiltinGeneric(PythonBuiltinClassType clazz) {
+        return getSulongTypeForBuiltinClass(clazz);
     }
 
     @Specialization(assumptions = "singleContextAssumption()", guards = "clazz == cachedClass")
@@ -87,35 +89,33 @@ abstract class GetSulongTypeNode extends PNodeWithContext {
         return getSulongTypeForClass(clazz);
     }
 
-    protected Object getSulongTypeForBuiltinClassUncached(PythonBuiltinClassType clazz) {
-        return getSulongTypeForBuiltinClass(clazz, ConditionProfile.getUncached());
-    }
-
-    protected Object getSulongTypeForBuiltinClass(PythonBuiltinClassType clazz, ConditionProfile profile) {
-        PythonClass pythonClass = getPythonClass(clazz, profile);
+    protected Object getSulongTypeForBuiltinClass(PythonBuiltinClassType clazz) {
+        PythonBuiltinClass pythonClass = getCore().lookupType(clazz);
         return getSulongTypeForClass(pythonClass);
     }
 
-    private static Object getSulongTypeForClass(PythonClass klass) {
-        Object sulongType = klass.getSulongType();
+    private static Object getSulongTypeForClass(PythonManagedClass pythonClass) {
+        Object sulongType = pythonClass.getSulongType();
         if (sulongType == null) {
             CompilerDirectives.transferToInterpreter();
-            sulongType = findBuiltinClass(klass);
+            sulongType = findBuiltinClass(pythonClass);
             if (sulongType == null) {
-                throw new IllegalStateException("sulong type for " + klass.getName() + " was not registered");
+                throw new IllegalStateException("sulong type for " + GetNameNode.getUncached().execute(pythonClass) + " was not registered");
             }
         }
         return sulongType;
     }
 
-    private static Object findBuiltinClass(PythonClass klass) {
-        PythonClass[] mro = klass.getMethodResolutionOrder();
+    private static Object findBuiltinClass(PythonManagedClass pythonClass) {
+        PythonAbstractClass[] mro = GetMroNode.doSlowPath(pythonClass);
         Object sulongType = null;
-        for (PythonClass superClass : mro) {
-            sulongType = superClass.getSulongType();
-            if (sulongType != null) {
-                klass.setSulongType(sulongType);
-                break;
+        for (PythonAbstractClass superClass : mro) {
+            if (superClass instanceof PythonManagedClass) {
+                sulongType = ((PythonManagedClass) superClass).getSulongType();
+                if (sulongType != null) {
+                    pythonClass.setSulongType(sulongType);
+                    break;
+                }
             }
         }
         return sulongType;
