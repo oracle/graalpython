@@ -54,11 +54,13 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Wraps a PythonObject to provide a native view with a shape like {@code PySequenceMethods}.
  */
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
 @ImportStatic(SpecialMethodNames.class)
 public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
@@ -109,4 +111,19 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
         }
         return toSulongNode.execute(result);
     }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    protected boolean hasNativeType() {
+        // TODO implement native type
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getNativeType() {
+        // TODO implement native type
+        return null;
+    }
+
 }

@@ -5,8 +5,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 
 /**
- * Used to wrap {@link PythonClass} when used in native code. This wrapper mimics the correct
- * shape of the corresponding native type {@code struct _typeobject}.
+ * Used to wrap {@link PythonClass} when used in native code. This wrapper mimics the correct shape
+ * of the corresponding native type {@code struct _typeobject}.
  */
 public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonObjectNativeWrapper {
     private final CStringWrapper nameWrapper;

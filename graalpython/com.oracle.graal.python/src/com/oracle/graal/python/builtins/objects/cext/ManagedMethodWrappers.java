@@ -55,6 +55,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.PrimitiveValueProfile;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Wrappers for methods used by native code.
@@ -62,6 +63,7 @@ import com.oracle.truffle.api.profiles.PrimitiveValueProfile;
 public abstract class ManagedMethodWrappers {
 
     @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
     public abstract static class MethodWrapper extends PythonNativeWrapper {
 
         public MethodWrapper(Object method) {
@@ -87,9 +89,24 @@ public abstract class ManagedMethodWrappers {
             invalidateNode.execute();
             setNativePointer(toPyObjectNode.execute(this));
         }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        public boolean hasNativeType() {
+            // TODO implement native type
+            return false;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        public Object getNativeType() {
+            // TODO implement native type
+            return null;
+        }
     }
 
     @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
     static class MethKeywords extends MethodWrapper {
 
         public MethKeywords(Object method) {
@@ -131,6 +148,7 @@ public abstract class ManagedMethodWrappers {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
     static class MethVarargs extends MethodWrapper {
 
         public MethVarargs(Object method) {

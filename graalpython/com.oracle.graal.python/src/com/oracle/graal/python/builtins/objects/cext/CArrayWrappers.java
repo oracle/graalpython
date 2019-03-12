@@ -163,6 +163,7 @@ public abstract class CArrayWrappers {
      * used like a {@code char*} pointer.
      */
     @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
     public static class CByteArrayWrapper extends CArrayWrapper {
 
         public CByteArrayWrapper(byte[] delegate) {
@@ -203,6 +204,20 @@ public abstract class CArrayWrappers {
         @ExportMessage
         final boolean isArrayElementReadable(long identifier) {
             return 0 <= identifier && identifier < getArraySize();
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        protected boolean hasNativeType() {
+            // TODO implement native type
+            return false;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        protected Object getNativeType() {
+            // TODO implement native type
+            return null;
         }
     }
 }

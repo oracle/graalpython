@@ -46,11 +46,13 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * A simple wrapper around native {@code NULL}.
  */
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
 public class PythonNativeNull implements TruffleObject {
     private Object ptr;
 
@@ -76,5 +78,18 @@ public class PythonNativeNull implements TruffleObject {
     @ExportMessage
     boolean isNull() {
         return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    protected boolean hasNativeType() {
+        // this is '((void*)0x0)', so no type
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getNativeType() {
+        return null;
     }
 }

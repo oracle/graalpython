@@ -61,11 +61,13 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Wraps a PythonObject to provide a native view with a shape like {@code PyMethodDescr}.
  */
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
 public class PyMethodDescrWrapper extends PythonNativeWrapper {
     public static final String NAME = "ml_name";
     public static final String DOC = "ml_doc";
@@ -191,5 +193,19 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
             CompilerDirectives.transferToInterpreter();
             object.getStorage().define(SpecialAttributeNames.__DOC__, fromCharPointerNode.execute(value));
         }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    protected boolean hasNativeType() {
+        // TODO implement native type
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getNativeType() {
+        // TODO implement native type
+        return null;
     }
 }

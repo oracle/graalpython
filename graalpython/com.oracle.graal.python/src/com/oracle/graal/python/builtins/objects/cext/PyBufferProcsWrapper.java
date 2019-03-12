@@ -51,8 +51,10 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
 @ImportStatic(SpecialMethodNames.class)
 public class PyBufferProcsWrapper extends PythonNativeWrapper {
     private static final String BF_GETBUFFER = "bf_getbuffer";
@@ -109,5 +111,19 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
         // do not wrap result if exists since this is directly a native object
         // use NO_VALUE for NULL
         return result == null ? toSulongNode.execute(PNone.NO_VALUE) : result;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    protected boolean hasNativeType() {
+        // TODO implement native type
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getNativeType() {
+        // TODO implement native type
+        return null;
     }
 }

@@ -71,11 +71,13 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Wraps a PythonObject to provide a native view with a shape like {@code PyNumberMethods}.
  */
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
 @ImportStatic(SpecialMethodNames.class)
 public class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
@@ -108,6 +110,20 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
                     @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) throws UnknownIdentifierException {
         // translate key to attribute name
         return toSulongNode.execute(readMethodNode.execute(getPythonClass(), member));
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    protected boolean hasNativeType() {
+        // TODO implement native type
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getNativeType() {
+        // TODO implement native type
+        return null;
     }
 
     @GenerateUncached

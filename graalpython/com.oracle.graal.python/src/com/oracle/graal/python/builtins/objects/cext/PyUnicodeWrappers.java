@@ -54,9 +54,11 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 public abstract class PyUnicodeWrappers {
     @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
     abstract static class PyUnicodeWrapper extends PythonNativeWrapper {
 
         public PyUnicodeWrapper(PString delegate) {
@@ -88,12 +90,27 @@ public abstract class PyUnicodeWrappers {
                 setNativePointer(toPyObjectNode.execute(this));
             }
         }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        protected boolean hasNativeType() {
+            // TODO implement native type
+            return false;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        public Object getNativeType() {
+            // TODO implement native type
+            return null;
+        }
     }
 
     /**
      * A native wrapper for the {@code data} member of {@code PyUnicodeObject}.
      */
     @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
     public static class PyUnicodeData extends PyUnicodeWrapper {
         public PyUnicodeData(PString delegate) {
             super(delegate);
@@ -148,6 +165,7 @@ public abstract class PyUnicodeWrappers {
      * A native wrapper for the {@code state} member of {@code PyASCIIObject}.
      */
     @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(NativeTypeLibrary.class)
     public static class PyUnicodeState extends PyUnicodeWrapper {
         @CompilationFinal private CharsetEncoder asciiEncoder;
 

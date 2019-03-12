@@ -56,8 +56,10 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
 public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
     public PyProcsWrapper(Object delegate) {
@@ -74,6 +76,20 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                     @Exclusive @Cached ExecuteNode executeNode) throws ArityException {
         return executeNode.execute(this, arguments);
 
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    protected boolean hasNativeType() {
+        // TODO implement native type
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object getNativeType() {
+        // TODO implement native type
+        return null;
     }
 
     @GenerateUncached
