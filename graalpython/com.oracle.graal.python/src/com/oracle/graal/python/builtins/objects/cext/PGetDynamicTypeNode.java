@@ -78,14 +78,14 @@ abstract class GetSulongTypeNode extends PNodeWithContext {
     }
 
     @Specialization(assumptions = "singleContextAssumption()", guards = "clazz == cachedClass")
-    Object doGeneric(@SuppressWarnings("unused") PythonClass clazz,
-                    @Cached("clazz") @SuppressWarnings("unused") PythonClass cachedClass,
+    Object doGeneric(@SuppressWarnings("unused") PythonManagedClass clazz,
+                    @Cached("clazz") @SuppressWarnings("unused") PythonManagedClass cachedClass,
                     @Cached(value = "doGeneric(clazz)", allowUncached = true) Object sulongType) {
         return sulongType;
     }
 
     @Specialization
-    Object doGeneric(PythonClass clazz) {
+    Object doGeneric(PythonManagedClass clazz) {
         return getSulongTypeForClass(clazz);
     }
 
