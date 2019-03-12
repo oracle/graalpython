@@ -63,6 +63,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -370,7 +372,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         @Cached LookupInheritedAttributeNode.Dynamic getDeleteNode,
                         @Cached GetClassNode getClassNode,
                         @Cached IsImmutable isImmutable,
-                        @Cached KeyForItemAccess itemKey) {
+                        @Cached KeyForItemAccess itemKey,
+                        @Cached GetMroNode getMroNode) {
 
             String itemFieldName = itemKey.execute(fieldName);
             if (itemFieldName != null) {
@@ -381,9 +384,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             int info = NONE;
             Object attr = PNone.NO_VALUE;
 
-            PythonClass klass = (PythonClass) getClassNode.execute(object);
+            PythonAbstractClass klass = getClassNode.execute(object);
 
-            for (Object c : klass.getMethodResolutionOrder().getInternalArray()) {
+            for (PythonAbstractClass c : getMroNode.execute(klass)) {
                 attr = readNode.execute(c, fieldName);
                 if (attr != PNone.NO_VALUE) {
                     owner = c;
@@ -453,13 +456,15 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         @Specialization
         public boolean isImmutable(Object object,
                         @Exclusive @Cached GetLazyClassNode getClass) {
-            if (object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject || object instanceof PythonNativeClass || object instanceof PythonNativeObject) {
+            // TODO(fa) The first condition is too general; we should check if the object's type is
+            // 'type'
+            if (object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject || PGuards.isNativeClass(object) || PGuards.isNativeObject(object)) {
                 return true;
             } else if (object instanceof PythonClass) {
                 return false;
             } else {
                 LazyPythonClass klass = getClass.execute(object);
-                return klass instanceof PythonBuiltinClassType || klass instanceof PythonBuiltinClass || klass instanceof PythonNativeClass;
+                return klass instanceof PythonBuiltinClassType || klass instanceof PythonBuiltinClass || PGuards.isNativeClass(object);
             }
         }
 

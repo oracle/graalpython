@@ -1181,8 +1181,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         protected static boolean isManagedPythonClass(PythonNativeWrapper wrapper) {
-            assert !(wrapper instanceof PythonClassNativeWrapper) || wrapper.getDelegate() instanceof PythonClass;
-            return wrapper instanceof PythonClassNativeWrapper && !(wrapper.getDelegate() instanceof PythonNativeClass);
+            assert !(wrapper instanceof PythonClassNativeWrapper) || PGuards.isManagedClass(wrapper.getDelegate());
+            return wrapper instanceof PythonClassNativeWrapper && !(PGuards.isNativeClass(wrapper.getDelegate()));
         }
     }
 

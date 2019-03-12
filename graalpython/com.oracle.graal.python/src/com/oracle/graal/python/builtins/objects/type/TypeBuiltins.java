@@ -519,7 +519,7 @@ public class TypeBuiltins extends PythonBuiltins {
             }
 
             Object instanceClass = getAttributeNode.executeObject(instance, __CLASS__);
-            return instanceClass instanceof PythonClass && isSubtypeNode.execute(instanceClass, cls);
+            return PGuards.isManagedClass(instanceClass) && isSubtypeNode.execute(instanceClass, cls);
         }
 
         @Fallback

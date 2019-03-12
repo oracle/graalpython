@@ -44,9 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -111,8 +109,8 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         public Object execute(LazyPythonClass klass, Object key) {
             if (klass instanceof PythonBuiltinClassType) {
                 return LookupAttributeInMRONode.findAttr(getCore(), (PythonBuiltinClassType) klass, key);
-            } else if (klass instanceof PythonClass) {
-                return LookupAttributeInMRONode.lookupSlow((PythonClass) klass, key, getMroNode, readAttrNode);
+            } else if (klass instanceof PythonAbstractClass) {
+                return LookupAttributeInMRONode.lookupSlow((PythonAbstractClass) klass, key, getMroNode, readAttrNode);
             } else {
                 CompilerDirectives.transferToInterpreter();
                 throw new RuntimeException("not implemented: lookup inherited attribute from non-PythonClass");
