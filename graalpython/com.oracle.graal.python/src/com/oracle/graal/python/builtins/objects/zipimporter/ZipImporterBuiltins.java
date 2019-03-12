@@ -60,6 +60,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -99,35 +100,27 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 throw raise(PythonErrorType.ZipImportError, "archive path is empty");
             }
 
-            File file = new File(path);
+            TruffleFile tfile = getContext().getEnv().getTruffleFile(path);
             String prefix = "";
             String archive = "";
             while (true) {
-                File fullPathFile = new File(file.getPath());
-                try {
-                    if (fullPathFile.isFile()) {
-                        archive = file.getPath();
-                        break;
-                    }
-                } catch (SecurityException se) {
-                    // continue
+                if (tfile.isRegularFile()) {
+                    archive = tfile.getPath();
+                    break;
                 }
-
-                // back up one path element
-                File parentFile = file.getParentFile();
+                TruffleFile parentFile = tfile.getParent();
                 if (parentFile == null) {
                     break;
                 }
-
-                prefix = file.getName() + PZipImporter.SEPARATOR + prefix;
-                file = parentFile;
+                prefix = tfile.getName() + PZipImporter.SEPARATOR + prefix;
+                tfile = parentFile;
             }
             ZipFile zipFile = null;
 
-            if (file.exists() && file.isFile()) {
+            if (tfile.exists() && tfile.isRegularFile()) {
                 try {
-                    zipFile = new ZipFile(file);
-                } catch (IOException e) {
+                    zipFile = new ZipFile(tfile.getPath());
+                } catch (IOException ex) {
                     throw raise(PythonErrorType.ZipImportError, "not a Zip file");
                 }
             }
