@@ -343,7 +343,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                             value instanceof Number ||
                             value instanceof String ||
                             value instanceof Boolean) {
-                return GetClassNode.getItSlowPath(value);
+                return GetClassNode.getUncached().execute(value);
             }
         }
         return null;

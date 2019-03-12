@@ -115,7 +115,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -529,7 +528,7 @@ public abstract class CExtNodes {
         public static Object doSlowPath(Object object, boolean forceNativeClass) {
             if (object instanceof PythonNativeWrapper) {
                 return ((PythonNativeWrapper) object).getDelegate();
-            } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getItSlowPath(object), PythonBuiltinClassType.TruffleObject)) {
+            } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(object), PythonBuiltinClassType.TruffleObject)) {
                 if (forceNativeClass) {
                     return PythonLanguage.getCore().factory().createNativeClassWrapper((TruffleObject) object);
                 }
@@ -1660,7 +1659,7 @@ public abstract class CExtNodes {
         }
 
         private static boolean isNativeTypeObject(Object self) {
-            return IsBuiltinClassProfile.getUncached().profileClass(GetLazyClassNode.getUncached().execute(self), PythonBuiltinClassType.PythonClass);
+            return IsBuiltinClassProfile.profileClassSlowPath(GetLazyClassNode.getUncached().execute(self), PythonBuiltinClassType.PythonClass);
         }
 
         public static GetTypeMemberNode create() {

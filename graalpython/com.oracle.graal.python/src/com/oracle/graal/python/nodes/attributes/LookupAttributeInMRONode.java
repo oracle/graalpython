@@ -90,14 +90,14 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
         @Specialization(replaces = "lookupConstantMRO")
         protected Object lookup(PythonBuiltinClassType klass, Object key) {
-            return LookupAttributeInMRONode.findAttr(getCore(), klass, key);
+            return findAttr(getCore(), klass, key);
         }
 
         @Specialization(replaces = "lookupConstantMRO")
         protected Object lookup(PythonAbstractClass klass, Object key,
                         @Cached("create()") GetMroStorageNode getMroNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
-            return LookupAttributeInMRONode.lookupSlow(klass, key, getMroNode, readAttrNode);
+            return lookupSlow(klass, key, getMroNode, readAttrNode);
         }
     }
 
@@ -108,7 +108,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         @Override
         public Object execute(LazyPythonClass klass, Object key) {
             if (klass instanceof PythonBuiltinClassType) {
-                return LookupAttributeInMRONode.findAttr(getCore(), (PythonBuiltinClassType) klass, key);
+                return findAttr(getCore(), (PythonBuiltinClassType) klass, key);
             } else if (klass instanceof PythonAbstractClass) {
                 return lookupSlow((PythonAbstractClass) klass, key, getMroNode, readAttrNode);
             } else {

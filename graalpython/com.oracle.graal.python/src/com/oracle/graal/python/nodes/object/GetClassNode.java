@@ -57,7 +57,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -271,8 +270,7 @@ public abstract class GetClassNode extends PNodeWithContext {
         }
     }
 
-    @TruffleBoundary
-    public static PythonAbstractClass getItSlowPath(Object o) {
+    private static PythonAbstractClass getItSlowPath(Object o) {
         PythonCore core = PythonLanguage.getContextRef().get().getCore();
         if (PGuards.isForeignObject(o)) {
             return core.lookupType(PythonBuiltinClassType.TruffleObject);
