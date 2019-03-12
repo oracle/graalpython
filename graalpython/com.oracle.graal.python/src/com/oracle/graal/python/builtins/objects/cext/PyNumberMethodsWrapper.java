@@ -55,8 +55,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -70,6 +68,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
@@ -80,6 +79,27 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(NativeTypeLibrary.class)
 @ImportStatic(SpecialMethodNames.class)
 public class PyNumberMethodsWrapper extends PythonNativeWrapper {
+
+    // TODO extend list according to 'isValidMember'
+    private static final String[] NUMBER_METHODS = new String[]{
+                    NB_ADD,
+                    NB_AND,
+                    NB_INDEX,
+                    NB_POW,
+                    NB_TRUE_DIVIDE,
+                    NB_MULTIPLY,
+                    NB_INPLACE_MULTIPLY
+    };
+
+    private static final String[] NUMBER_METHODS_MAPPING = new String[]{
+                    __ADD__,
+                    __AND__,
+                    __INDEX__,
+                    __POW__,
+                    __TRUEDIV__,
+                    __MUL__,
+                    __IMUL__
+    };
 
     public PyNumberMethodsWrapper(PythonManagedClass delegate) {
         super(delegate);
@@ -132,35 +152,21 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
         public abstract Object execute(PythonManagedClass clazz, String key) throws UnknownIdentifierException;
 
-        @Specialization(limit = "99", guards = {"isValidMember(key)", "eq(cachedKey, key)"})
-        Object getMethod(PythonManagedClass clazz, @SuppressWarnings("unused") String key,
+        @Specialization(guards = {"isValidMember(key)", "eq(cachedKey, key)"})
+        static Object getMethodCached(PythonManagedClass clazz, @SuppressWarnings("unused") String key,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Exclusive @Cached LookupAttributeInMRONode.Dynamic lookupNode) throws UnknownIdentifierException {
-            Object result = lookupNode.execute(clazz, translate(cachedKey));
-            assert result != PNone.NO_VALUE;
-            return result;
+            return getMethod(clazz, cachedKey, lookupNode);
         }
 
-        private static String translate(String key) throws UnknownIdentifierException {
-            switch (key) {
-                case NB_ADD:
-                    return __ADD__;
-                case NB_AND:
-                    return __AND__;
-                case NB_INDEX:
-                    return __INDEX__;
-                case NB_POW:
-                    return __POW__;
-                case NB_TRUE_DIVIDE:
-                    return __TRUEDIV__;
-                case NB_MULTIPLY:
-                    return __MUL__;
-                case NB_INPLACE_MULTIPLY:
-                    return __IMUL__;
-                default:
-                    // TODO extend list according to 'isValidMember'
-                    throw UnknownIdentifierException.create(key);
+        @Specialization(replaces = "getMethodCached")
+        static Object getMethod(PythonManagedClass clazz, @SuppressWarnings("unused") String key,
+                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic lookupNode) throws UnknownIdentifierException {
+            String translate = translate(key);
+            if (translate != null) {
+                return lookupNode.execute(clazz, translate);
             }
+            throw UnknownIdentifierException.create(key);
         }
 
         protected static boolean eq(String expected, String actual) {
@@ -168,18 +174,17 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
         }
     }
 
-    protected static boolean isValidMember(String member) {
-        switch (member) {
-            case NB_ADD:
-            case NB_AND:
-            case NB_INDEX:
-            case NB_POW:
-            case NB_TRUE_DIVIDE:
-            case NB_MULTIPLY:
-            case NB_INPLACE_MULTIPLY:
-                return true;
-            default:
-                return false;
+    @ExplodeLoop
+    private static String translate(String key) {
+        for (int i = 0; i < NUMBER_METHODS.length; i++) {
+            if (NUMBER_METHODS[i].equals(key)) {
+                return NUMBER_METHODS_MAPPING[i];
+            }
         }
+        return null;
+    }
+
+    protected static boolean isValidMember(String member) {
+        return translate(member) != null;
     }
 }
