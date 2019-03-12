@@ -58,7 +58,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.R
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -188,7 +187,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
         @Fallback
         protected Object fallback(Object object, Object key) {
-            return doSlowPath(object, key, false);
+            return readAttributeUncached(object, key, false);
         }
     }
 
@@ -204,7 +203,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
         @Fallback
         protected Object fallback(Object object, Object key) {
-            return doSlowPath(object, key, true);
+            return readAttributeUncached(object, key, true);
         }
     }
 
@@ -216,8 +215,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         }
     }
 
-    @TruffleBoundary
-    private static Object doSlowPath(Object object, Object key, boolean forceType) {
+    private static Object readAttributeUncached(Object object, Object key, boolean forceType) {
         if (object instanceof PythonObject) {
             PythonObject po = (PythonObject) object;
             if (ObjectAttributeNode.isDictUnsetOrSameAsStorage(po)) {
