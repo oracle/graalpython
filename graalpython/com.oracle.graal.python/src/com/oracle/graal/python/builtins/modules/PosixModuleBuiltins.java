@@ -135,6 +135,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.sun.security.auth.UnixNumericGroupPrincipal;
 import com.sun.security.auth.UnixNumericUserPrincipal;
+import java.util.Locale;
 
 @CoreFunctions(defineModule = "posix")
 public class PosixModuleBuiltins extends PythonBuiltins {
@@ -264,7 +265,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
     }
 
-    @Builtin(name = "getcwd", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getcwd", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class CwdNode extends PythonBuiltinNode {
         @Specialization
@@ -278,7 +279,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "chdir", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "chdir", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ChdirNode extends PythonBuiltinNode {
         @Specialization
@@ -294,7 +295,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getpid", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getpid", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetPidNode extends PythonBuiltinNode {
         @Specialization
@@ -305,7 +306,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "fstat", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "fstat", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class FstatNode extends PythonFileNode {
         @Child StatNode statNode;
@@ -377,7 +378,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "set_inheritable", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "set_inheritable", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetInheritableNode extends PythonFileNode {
         @Specialization(guards = {"fd >= 0", "fd <= 2"})
@@ -398,7 +399,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "stat", minNumOfPositionalArgs = 1, keywordArguments = {"follow_symlinks"})
+    @Builtin(name = "stat", minNumOfPositionalArgs = 1, parameterNames = {"path", "follow_symlinks"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StatNode extends PythonBinaryBuiltinNode {
@@ -602,7 +603,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "listdir", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "listdir", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ListdirNode extends PythonBuiltinNode {
@@ -635,7 +636,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "ScandirIterator", fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PScandirIterator, isPublic = true)
+    @Builtin(name = "ScandirIterator", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PScandirIterator, isPublic = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ScandirIterNode extends PythonBinaryBuiltinNode {
@@ -653,7 +654,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "DirEntry", fixedNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PDirEntry, isPublic = true)
+    @Builtin(name = "DirEntry", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PDirEntry, isPublic = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class DirEntryNode extends PythonTernaryBuiltinNode {
@@ -672,7 +673,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dup", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "dup", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class DupNode extends PythonFileNode {
@@ -696,7 +697,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "open", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, keywordArguments = {"mode", "dir_fd"})
+    @Builtin(name = "open", minNumOfPositionalArgs = 2, parameterNames = {"pathname", "flags", "mode", "dir_fd"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class OpenNode extends PythonFileNode {
@@ -806,7 +807,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "lseek", fixedNumOfPositionalArgs = 3)
+    @Builtin(name = "lseek", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LseekNode extends PythonFileNode {
@@ -847,7 +848,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "close", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "close", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CloseNode extends PythonFileNode {
         private final BranchProfile gotException = BranchProfile.create();
@@ -878,7 +879,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "unlink", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "unlink", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class UnlinkNode extends PythonFileNode {
@@ -896,17 +897,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "remove", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "remove", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RemoveNode extends UnlinkNode {
     }
 
-    @Builtin(name = "rmdir", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "rmdir", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RmdirNode extends UnlinkNode {
     }
 
-    @Builtin(name = "mkdir", fixedNumOfPositionalArgs = 1, keywordArguments = {"mode", "dir_fd"})
+    @Builtin(name = "mkdir", minNumOfPositionalArgs = 1, parameterNames = {"path", "mode", "dir_fd"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class MkdirNode extends PythonFileNode {
@@ -932,7 +933,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "write", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "write", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class WriteNode extends PythonFileNode {
@@ -1007,7 +1008,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "read", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "read", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ReadNode extends PythonFileNode {
@@ -1050,7 +1051,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isatty", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "isatty", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class IsATTYNode extends PythonBuiltinNode {
@@ -1067,7 +1068,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_exit", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "_exit", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ExitNode extends PythonBuiltinNode {
@@ -1077,7 +1078,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "chmod", minNumOfPositionalArgs = 2, keywordArguments = {"dir_fd", "follow_symlinks"})
+    @Builtin(name = "chmod", minNumOfPositionalArgs = 2, parameterNames = {"path", "mode", "dir_fd", "follow_symlinks"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ChmodNode extends PythonBuiltinNode {
@@ -1115,7 +1116,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "utime", minNumOfPositionalArgs = 1, keywordArguments = {"times", "ns", "dir_fd", "follow_symlinks"})
+    @Builtin(name = "utime", minNumOfPositionalArgs = 1, parameterNames = {"path", "times", "ns", "dir_fd", "follow_symlinks"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class UtimeNode extends PythonBuiltinNode {
@@ -1259,7 +1260,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "waitpid", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "waitpid", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class WaitpidNode extends PythonFileNode {
         @SuppressWarnings("unused")
@@ -1281,12 +1282,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "system", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "system", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SystemNode extends PythonBuiltinNode {
-        static final String[] shell = System.getProperty("os.name").toLowerCase().startsWith("windows") ? new String[]{"cmd.exe", "/c"}
-                        : new String[]{(System.getenv().getOrDefault("SHELL", "sh")), "-c"};
+        static final String[] shell;
+        static {
+            String osProperty = System.getProperty("os.name");
+            shell = osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).startsWith("windows") ? new String[]{"cmd.exe", "/c"}
+                            : new String[]{(System.getenv().getOrDefault("SHELL", "sh")), "-c"};
+        }
 
         static class PipePump extends Thread {
             private static final int MAX_READ = 8192;
@@ -1368,7 +1373,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "pipe", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "pipe", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PipeNode extends PythonFileNode {
@@ -1483,7 +1488,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class ReplaceNode extends RenameNode {
     }
 
-    @Builtin(name = "urandom", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "urandom", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class URandomNode extends PythonBuiltinNode {
@@ -1498,7 +1503,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "uname", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "uname", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class UnameNode extends PythonBuiltinNode {
@@ -1520,7 +1525,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "access", fixedNumOfPositionalArgs = 2, takesVarArgs = true, keywordArguments = {"dir_fd", "effective_ids", "follow_symlinks"})
+    @Builtin(name = "access", minNumOfPositionalArgs = 2, varArgsMarker = true, keywordOnlyNames = {"dir_fd", "effective_ids", "follow_symlinks"})
     @GenerateNodeFactory
     public abstract static class AccessNode extends PythonBuiltinNode {
 
@@ -1529,26 +1534,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         private final BranchProfile notImplementedBranch = BranchProfile.create();
 
-        @Specialization(guards = "isNoValue(kwargs)")
-        boolean doGeneric(Object path, Object mode, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PNone kwargs) {
-            return access(castToPath(path), castToInt(mode), PNone.NONE, false, true);
-        }
-
         @Specialization
-        boolean doGeneric(Object path, Object mode, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs) {
-            boolean effectiveIds = false;
-            boolean followSymlinks = true;
-            Object dirFd = PNone.NONE;
-            for (int i = 0; i < kwargs.length; i++) {
-                if ("dir_fd".equals(kwargs[i].getName())) {
-                    dirFd = kwargs[i].getValue();
-                } else if ("effective_ids".equals(kwargs[i].getName())) {
-                    effectiveIds = (boolean) kwargs[i].getValue();
-                } else if ("follow_symlinks".equals(kwargs[i].getName())) {
-                    followSymlinks = (boolean) kwargs[i].getValue();
-                }
-            }
-            return access(castToPath(path), castToInt(mode), dirFd, effectiveIds, followSymlinks);
+        boolean doGeneric(Object path, Object mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone effective_ids, @SuppressWarnings("unused") PNone follow_symlinks) {
+            return access(castToPath(path), castToInt(mode), PNone.NONE, false, true);
         }
 
         private String castToPath(Object path) {
@@ -1567,7 +1555,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return castToIntNode.execute(mode);
         }
 
-        private boolean access(String path, int mode, Object dirFd, boolean effectiveIds, boolean followSymlinks) {
+        @Specialization
+        boolean access(String path, int mode, Object dirFd, boolean effectiveIds, boolean followSymlinks) {
             if (dirFd != PNone.NONE || effectiveIds) {
                 // TODO implement
                 notImplementedBranch.enter();
@@ -1628,7 +1617,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cpu_count", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "cpu_count", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class CpuCountNode extends PythonBuiltinNode {
         @Specialization
@@ -1637,12 +1626,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "umask", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "umask", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class UmaskNode extends PythonBuiltinNode {
         @Specialization
         int getAndSetUmask(int umask) {
             if (umask == 0022) {
+                return 0022;
+            }
+            if (umask == 0) {
+                // TODO: change me, this does not really set the umask, workaround needed for pip
+                // it returns the previous mask (which in our case is always 0022)
                 return 0022;
             } else {
                 throw raise(NotImplementedError, "setting the umask to anything other than the default");
@@ -1744,7 +1738,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "readlink", fixedNumOfPositionalArgs = 1, keywordArguments = {"dirFd"}, doc = "readlink(path, *, dir_fd=None) -> path\n" +
+    @Builtin(name = "readlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dirFd"}, doc = "readlink(path, *, dir_fd=None) -> path\n" +
                     "\nReturn a string representing the path to which the symbolic link points.\n")
     @GenerateNodeFactory
     abstract static class ReadlinkNode extends PythonBinaryBuiltinNode {
@@ -1763,7 +1757,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "strerror", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "strerror", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class StrErrorNode extends PythonBuiltinNode {
 
@@ -1784,7 +1778,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "ctermid", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "ctermid", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class CtermId extends PythonBuiltinNode {
         @Specialization

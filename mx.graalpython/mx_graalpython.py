@@ -123,9 +123,11 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         dists.append('SULONG')
         if mx.suite("sulong-managed", fatalIfMissing=False):
             dists.append('SULONG_MANAGED')
-            vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_MANAGED_LIBS>'))
+            graalpython_args.insert(0, mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_MANAGED_LIBS>'))
         else:
-            vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>'))
+            graalpython_args.insert(0, mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_LIBS>'))
+
+    graalpython_args.insert(0, '--experimental-options=true')
 
     # Try eagerly to include tools on Tim's computer
     if not mx.suite("/tools", fatalIfMissing=False):
@@ -264,7 +266,7 @@ def gate_unittests(args=None, subdir=""):
     else:
         pre_args = []
         post_args = args
-    mx.command_function("python")(["--python.CatchAllExceptions=true"] + pre_args + test_args + post_args)
+    mx.command_function("python")(["--experimental-options=true", "--python.CatchAllExceptions=true"] + pre_args + test_args + post_args)
     if platform.system() != 'Darwin':
         # TODO: re-enable when python3 is available on darwin
         mx.log("Running tests with CPython")
@@ -272,7 +274,7 @@ def gate_unittests(args=None, subdir=""):
     if platform.system() != 'Darwin' and not pre_args and not post_args and not subdir:
         mx.log("Running cpyext tests with opaque FS")
         test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/cpyext/"]
-        mx.command_function("python")(["--python.CatchAllExceptions=true", "--python.OpaqueFilesystem"] + pre_args + test_args + post_args)
+        mx.command_function("python")(["--experimental-options=true", "--python.CatchAllExceptions=true", "--python.OpaqueFilesystem"] + pre_args + test_args + post_args)
 
 
 def run_python_unittests(python_binary, args=None, aot_compatible=True, exclude=None):
@@ -434,9 +436,6 @@ def run_shared_lib_test(args=None):
                 return status;
             }
 
-            poly_destroy_handle(isolate_thread, engine_builder);
-            poly_destroy_handle(isolate_thread, builder);
-
             return poly_ok;
         }
 
@@ -446,17 +445,7 @@ def run_shared_lib_test(args=None):
                 return status;
             }
 
-            status = poly_destroy_handle(isolate_thread, context);
-            if (status != poly_ok) {
-                return status;
-            }
-
             status = poly_engine_close(isolate_thread, engine, true);
-            if (status != poly_ok) {
-                return status;
-            }
-
-            status = poly_destroy_handle(isolate_thread, engine);
             if (status != poly_ok) {
                 return status;
             }
@@ -483,10 +472,7 @@ def run_shared_lib_test(args=None):
             int32_t result_value;
             poly_value_as_int32(isolate_thread, value, &result_value);
 
-            assert_ok("primitive free failed", poly_destroy_handle(isolate_thread, primitive_object) == poly_ok);
-            assert_ok("value free failed", poly_destroy_handle(isolate_thread, value) == poly_ok);
             assert_ok("value computation was incorrect", result_value == 42 * 42);
-            assert_ok("func free failed", poly_destroy_handle(isolate_thread, func) == poly_ok);
             assert_ok("Context tear down failed.", tear_down_context() == poly_ok);
             return 0;
         }
@@ -669,6 +655,12 @@ def import_python_sources(args):
         "_cpython_unicodedata.c": "unicodedata.c",
         "_bz2.c": "_bz2module.c",
     }
+    extra_pypy_files = [
+        "graalpython/lib-python/3/_md5.py",
+        "graalpython/lib-python/3/_sha1.py",
+        "graalpython/lib-python/3/_sha256.py",
+        "graalpython/lib-python/3/_sha512.py",
+    ]
 
     parser = ArgumentParser(prog='mx python-src-import')
     parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
@@ -738,7 +730,7 @@ def import_python_sources(args):
     SUITE.vc.git_command(SUITE.dir, ["clean", "-fdx"])
     shutil.rmtree("graalpython")
 
-    for inlined_file in pypy_files:
+    for inlined_file in (pypy_files + extra_pypy_files):
         original_file = None
         name = os.path.basename(inlined_file)
         name = mapping.get(name, name)

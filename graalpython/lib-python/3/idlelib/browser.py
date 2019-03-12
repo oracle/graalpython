@@ -10,7 +10,7 @@ XXX TO DO:
 """
 
 import os
-from idlelib import _pyclbr as pyclbr
+import pyclbr
 import sys
 
 from idlelib.config import idleConf

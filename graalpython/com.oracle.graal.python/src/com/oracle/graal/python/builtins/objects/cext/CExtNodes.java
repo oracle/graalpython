@@ -105,7 +105,6 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -178,7 +177,7 @@ public abstract class CExtNodes {
         @CompilationFinal private TruffleObject conversionFunc;
         @Child private Node executeNode;
         @Child private GetClassNode getClass = GetClassNode.create();
-        @Child private IsSubtypeNode isSubtype = IsSubtypeNode.create();
+        @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
         @Child private ToSulongNode toSulongNode;
 
         private FromNativeSubclassNode(PythonBuiltinClassType expectedType, String conversionFuncName) {
@@ -227,7 +226,7 @@ public abstract class CExtNodes {
         }
 
         public boolean isSubtype(PythonNativeObject object) {
-            return isSubtype.execute(getClass.execute(object), getExpectedClass());
+            return isSubtypeNode.execute(getClass.execute(object), getExpectedClass());
         }
 
         public static <T> FromNativeSubclassNode<T> create(PythonBuiltinClassType expectedType, String conversionFuncName) {
@@ -1430,14 +1429,16 @@ public abstract class CExtNodes {
         }
     }
 
-    @Builtin(fixedNumOfPositionalArgs = 1)
+    @Builtin(minNumOfPositionalArgs = 1)
     public abstract static class MayRaiseUnaryNode extends PythonUnaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
+        private final PFunction func;
         private final Object errorResult;
 
         public MayRaiseUnaryNode(PFunction func, Object errorResult) {
             this.createArgsNode = CreateArgumentsNode.create();
+            this.func = func;
             this.invokeNode = InvokeNode.create(func);
             this.errorResult = errorResult;
         }
@@ -1445,8 +1446,8 @@ public abstract class CExtNodes {
         @Specialization
         Object doit(Object argument) {
             try {
-                Object[] arguments = createArgsNode.execute(argument);
-                return invokeNode.execute(null, arguments, new PKeyword[0]);
+                Object[] arguments = createArgsNode.execute(func, new Object[]{argument});
+                return invokeNode.execute(null, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
@@ -1456,14 +1457,16 @@ public abstract class CExtNodes {
         }
     }
 
-    @Builtin(fixedNumOfPositionalArgs = 2)
+    @Builtin(minNumOfPositionalArgs = 2)
     public abstract static class MayRaiseBinaryNode extends PythonBinaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
+        private final PFunction func;
         private final Object errorResult;
 
         public MayRaiseBinaryNode(PFunction func, Object errorResult) {
             this.createArgsNode = CreateArgumentsNode.create();
+            this.func = func;
             this.invokeNode = InvokeNode.create(func);
             this.errorResult = errorResult;
         }
@@ -1471,8 +1474,8 @@ public abstract class CExtNodes {
         @Specialization
         Object doit(Object arg1, Object arg2) {
             try {
-                Object[] arguments = createArgsNode.execute(arg1, arg2);
-                return invokeNode.execute(null, arguments, new PKeyword[0]);
+                Object[] arguments = createArgsNode.execute(func, new Object[]{arg1, arg2});
+                return invokeNode.execute(null, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
@@ -1482,14 +1485,16 @@ public abstract class CExtNodes {
         }
     }
 
-    @Builtin(fixedNumOfPositionalArgs = 3)
+    @Builtin(minNumOfPositionalArgs = 3)
     public abstract static class MayRaiseTernaryNode extends PythonTernaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
+        private final PFunction func;
         private final Object errorResult;
 
         public MayRaiseTernaryNode(PFunction func, Object errorResult) {
             this.createArgsNode = CreateArgumentsNode.create();
+            this.func = func;
             this.invokeNode = InvokeNode.create(func);
             this.errorResult = errorResult;
         }
@@ -1497,8 +1502,8 @@ public abstract class CExtNodes {
         @Specialization
         Object doit(Object arg1, Object arg2, Object arg3) {
             try {
-                Object[] arguments = createArgsNode.execute(arg1, arg2, arg3);
-                return invokeNode.execute(null, arguments, new PKeyword[0]);
+                Object[] arguments = createArgsNode.execute(func, new Object[]{arg1, arg2, arg3});
+                return invokeNode.execute(null, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
@@ -1513,12 +1518,13 @@ public abstract class CExtNodes {
         @Child private InvokeNode invokeNode;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgumentsNode createArgsNode;
-        @Child private PythonObjectFactory factory;
+        private final PFunction func;
         private final Object errorResult;
 
         public MayRaiseNode(PFunction callable, Object errorResult) {
             this.readVarargsNode = ReadVarArgsNode.create(0, true);
             this.createArgsNode = CreateArgumentsNode.create();
+            this.func = callable;
             this.invokeNode = InvokeNode.create(callable);
             this.errorResult = errorResult;
         }
@@ -1527,8 +1533,8 @@ public abstract class CExtNodes {
         public final Object execute(VirtualFrame frame) {
             Object[] args = readVarargsNode.executeObjectArray(frame);
             try {
-                Object[] arguments = createArgsNode.execute(args);
-                return invokeNode.execute(null, arguments, new PKeyword[0]);
+                Object[] arguments = createArgsNode.execute(func, args);
+                return invokeNode.execute(null, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 getContext().setCurrentException(e);

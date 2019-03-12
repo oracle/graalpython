@@ -76,6 +76,8 @@ PTRN_MODULE_NOT_FOUND = re.compile(r'.*ModuleNotFound: \'(?P<module>.*)\'\..*', 
 PTRN_IMPORT_ERROR = re.compile(r".*cannot import name \'(?P<module>.*)\'.*", re.DOTALL)
 PTRN_REMOTE_HOST = re.compile(r"(?P<user>\w+)@(?P<host>[\w.]+):(?P<path>.+)")
 PTRN_VALID_CSV_NAME = re.compile(r"unittests-\d{4}-\d{2}-\d{2}.csv")
+PTRN_TEST_STATUS_INDIVIDUAL = re.compile(r"(?P<name>test[\w_]+ \(.+?\)) ... (?P<status>.+)")
+PTRN_TEST_STATUS_ERROR = re.compile(r"(?P<status>.+): (?P<name>test[\w_]+ \(.+?\))")
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -216,6 +218,13 @@ def read_csv(path):
     return rows
 
 
+class TestStatus(object):
+    ERROR = 'error'
+    FAIL = 'fail'
+    SKIPPED = 'skipped'
+    OK = 'ok'
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # result (output processing)
@@ -224,20 +233,69 @@ def read_csv(path):
 class StatEntry(object):
     def __init__(self):
         self.num_tests = -1
-        self.num_errors = -1
-        self.num_fails = -1
-        self.num_skipped = -1
+        # reported stats
+        self._num_errors = -1
+        self._num_fails = -1
+        self._num_skipped = -1
+        # tracked stats
+        self._tracked = False
+
+    def _reset(self):
+        self._num_fails = 0
+        self._num_errors = 0
+        self._num_skipped = 0
 
     def all_ok(self):
-        self.num_fails = 0
-        self.num_errors = 0
-        self.num_skipped = 0
+        self._reset()
+
+    @property
+    def num_errors(self):
+        return self._num_errors
+
+    @num_errors.setter
+    def num_errors(self, value):
+        if not self._tracked:
+            self._num_errors = value
+
+    @property
+    def num_fails(self):
+        return self._num_fails
+
+    @num_fails.setter
+    def num_fails(self, value):
+        if not self._tracked:
+            self._num_fails = value
+
+    @property
+    def num_skipped(self):
+        return self._num_skipped
+
+    @num_skipped.setter
+    def num_skipped(self, value):
+        if not self._tracked:
+            self._num_skipped = value
 
     @property
     def num_passes(self):
         if self.num_tests > 0:
-            return self.num_tests - (self.num_fails + self.num_errors + self.num_skipped)
+            return self.num_tests - (self._num_fails + self._num_errors + self._num_skipped)
         return -1
+
+    def update(self, test_detailed_stats):
+        if len(test_detailed_stats) > 0:
+            self._tracked = True
+            self._reset()
+            for test, stats in test_detailed_stats.items():
+                stats = {s.lower() for s in stats}
+                if TestStatus.ERROR in stats:
+                    self._num_errors += 1
+                elif TestStatus.FAIL in stats:
+                    self._num_fails += 1
+                else:
+                    for s in stats:
+                        if s.startswith(TestStatus.SKIPPED):
+                            self._num_skipped += 1
+                            break
 
 
 def process_output(output_lines):
@@ -245,6 +303,8 @@ def process_output(output_lines):
         output_lines = output_lines.split("\n")
 
     unittests = []
+    # stats tracked per unittest
+    unittest_tests = defaultdict(list)
     error_messages = defaultdict(set)
     java_exceptions = defaultdict(set)
     stats = defaultdict(StatEntry)
@@ -252,7 +312,9 @@ def process_output(output_lines):
     for line in output_lines:
         match = re.match(PTRN_UNITTEST, line)
         if match:
-            unittests.append(match.group('unittest'))
+            unittest = match.group('unittest')
+            unittests.append(unittest)
+            unittest_tests.clear()
             continue
 
         # extract python reported python error messages
@@ -268,6 +330,16 @@ def process_output(output_lines):
             continue
 
         # stats
+        # tracking stats
+        match = re.match(PTRN_TEST_STATUS_INDIVIDUAL, line)
+        if not match:
+            match = re.match(PTRN_TEST_STATUS_ERROR, line)
+        if match:
+            name = match.group('name')
+            status = match.group('status')
+            unittest_tests[name].append(status)
+            continue
+
         if line.strip() == 'OK':
             stats[unittests[-1]].all_ok()
             continue
@@ -286,6 +358,8 @@ def process_output(output_lines):
         match = re.match(PTRN_NUM_TESTS, line)
         if match:
             stats[unittests[-1]].num_tests = int(match.group('num_tests'))
+            stats[unittests[-1]].update(unittest_tests)
+            unittest_tests.clear()
             continue
 
         match = re.match(PTRN_FAILED, line)
@@ -299,6 +373,7 @@ def process_output(output_lines):
             stats[unittests[-1]].num_fails = int(fails) if fails else 0
             stats[unittests[-1]].num_errors = int(errs) if errs else 0
             stats[unittests[-1]].num_skipped = int(skipped) if skipped else 0
+            continue
 
     return unittests, error_messages, java_exceptions, stats
 
@@ -712,6 +787,8 @@ def main(prog, args):
     parser = argparse.ArgumentParser(prog=prog,
                                      description="Run the standard python unittests.")
     parser.add_argument("-v", "--verbose", help="Verbose output.", action="store_true")
+    parser.add_argument("-n", "--no_cpython", help="Do not run the tests with cpython (for comparison).",
+                        action="store_true")
     parser.add_argument("-l", "--limit", help="Limit the number of unittests to run.", default=None, type=int)
     parser.add_argument("-t", "--tests_path", help="Unittests path.", default=PATH_UNITTESTS)
     parser.add_argument("-T", "--timeout", help="Timeout per unittest run.", default=TIMEOUT, type=int)
@@ -754,7 +831,7 @@ def main(prog, args):
         unittests = get_unittests(flags.tests_path, limit=flags.limit, skip_tests=skip_tests)
 
     # get cpython stats
-    if not flags.gate:
+    if not flags.gate and not flags.no_cpython:
         log(HR)
         log("[INFO] get cpython stats")
         cpy_results = run_unittests(unittests, 60 * 5, with_cpython=True)

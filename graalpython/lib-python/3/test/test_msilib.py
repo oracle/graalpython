@@ -32,6 +32,7 @@ class MsiDatabaseTestCase(unittest.TestCase):
                 break
             properties.append(record.GetString(1))
         view.Close()
+        db.Close()
         self.assertEqual(
             properties,
             [
@@ -56,7 +57,7 @@ class MsiDatabaseTestCase(unittest.TestCase):
         db, db_path = init_database()
         summary = db.GetSummaryInformation(0)
         self.assertIsNone(summary.GetProperty(msilib.PID_SECURITY))
-        del db
+        db.Close()
         self.addCleanup(unlink, db_path)
 
 

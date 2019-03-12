@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
@@ -116,16 +117,15 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -133,7 +133,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -181,6 +181,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.util.Locale;
 
 @CoreFunctions(defineModule = "builtins")
 public final class BuiltinConstructors extends PythonBuiltins {
@@ -558,7 +559,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // enumerate(iterable, start=0)
-    @Builtin(name = ENUMERATE, fixedNumOfPositionalArgs = 2, keywordArguments = {"start"}, constructsClass = PythonBuiltinClassType.PEnumerate)
+    @Builtin(name = ENUMERATE, minNumOfPositionalArgs = 2, parameterNames = {"cls", "iterable", "start"}, constructsClass = PythonBuiltinClassType.PEnumerate)
     @GenerateNodeFactory
     public abstract static class EnumerateNode extends PythonBuiltinNode {
 
@@ -587,7 +588,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // reversed(seq)
-    @Builtin(name = REVERSED, fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PReverseIterator)
+    @Builtin(name = REVERSED, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PReverseIterator)
     @GenerateNodeFactory
     public abstract static class ReversedNode extends PythonBuiltinNode {
 
@@ -758,7 +759,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
             try {
                 // Double.valueOf allows format specifier ("d" or "f") at the end
-                String lowSval = sval.toLowerCase();
+                String lowSval = sval.toLowerCase(Locale.ENGLISH);
                 if (lowSval.equals("nan") || lowSval.equals("+nan") || lowSval.equals("-nan")) {
                     return Double.NaN;
                 } else if (lowSval.equals("inf") || lowSval.equals("+inf") || lowSval.equals("infinity") || lowSval.equals("+infinity")) {
@@ -905,7 +906,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // int(x=0)
     // int(x, base=10)
-    @Builtin(name = INT, fixedNumOfPositionalArgs = 1, keywordArguments = {"x", "base"}, constructsClass = PythonBuiltinClassType.PInt)
+    @Builtin(name = INT, minNumOfPositionalArgs = 1, parameterNames = {"cls", "x", "base"}, constructsClass = PythonBuiltinClassType.PInt)
     @GenerateNodeFactory
     public abstract static class IntNode extends PythonBuiltinNode {
 
@@ -1343,7 +1344,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = OBJECT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonObject)
     @GenerateNodeFactory
     public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
-        @Child private PCallCapiFunction callNativeGenericNewNode;
+        @Child private PCallCapiFunction callCapiFunction;
         @Children private CExtNodes.ToSulongNode[] toSulongNodes;
         @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode;
         @Child private TypeNodes.GetInstanceShape getInstanceShapeNode;
@@ -1402,9 +1403,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private Object callNativeGenericNewNode(PythonNativeClass self, Object[] varargs, PKeyword[] kwargs) {
-            if (callNativeGenericNewNode == null) {
+            if (callCapiFunction == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNativeGenericNewNode = insert(PCallCapiFunction.create(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_NEW));
+                callCapiFunction = insert(PCallCapiFunction.create(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_NEW));
             }
             if (toSulongNodes == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1421,7 +1422,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PTuple targs = factory().createTuple(varargs);
             PDict dkwargs = factory().createDict(kwarr);
             return asPythonObjectNode.execute(
-                            callNativeGenericNewNode.call(toSulongNodes[0].execute(self), toSulongNodes[1].execute(self), toSulongNodes[2].execute(targs), toSulongNodes[3].execute(dkwargs)));
+                            callCapiFunction.call(toSulongNodes[0].execute(self), toSulongNodes[1].execute(self), toSulongNodes[2].execute(targs), toSulongNodes[3].execute(dkwargs)));
         }
 
         private Shape getInstanceShape(LazyPythonClass clazz) {
@@ -1588,7 +1589,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // str(object='')
     // str(object=b'', encoding='utf-8', errors='strict')
-    @Builtin(name = STR, minNumOfPositionalArgs = 1, keywordArguments = {"object", "encoding", "errors"}, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PString)
+    @Builtin(name = STR, minNumOfPositionalArgs = 1, parameterNames = {"cls", "object", "encoding", "errors"}, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PString)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonBuiltinNode {
         @Child private LookupAndCallTernaryNode callDecodeNode;
@@ -1722,22 +1723,24 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, @SuppressWarnings("unused") PNone closure) {
-            return factory().createFunction(name, getTypeName(cls), code.getArity(), code.getRootCallTarget(), globals, null);
+            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, null);
         }
 
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure) {
-            return factory().createFunction(name, getTypeName(cls), code.getArity(), code.getRootCallTarget(), globals, (PCell[]) closure.getArray());
+            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, (PCell[]) closure.getArray());
         }
 
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure) {
-            return factory().createFunction(name, getTypeName(cls), code.getArity(), code.getRootCallTarget(), globals, defaultArgs.getArray(), null);
+            // TODO split defaults of positional args from kwDefaults
+            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, defaultArgs.getArray(), null, null);
         }
 
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure) {
-            return factory().createFunction(name, getTypeName(cls), code.getArity(), code.getRootCallTarget(), globals, defaultArgs.getArray(), (PCell[]) closure.getArray());
+            // TODO split defaults of positional args from kwDefaults
+            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, defaultArgs.getArray(), null, (PCell[]) closure.getArray());
         }
 
         @Fallback
@@ -1780,8 +1783,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private CastToListNode castToList;
         @Child private CastToStringNode castToStringNode;
         @Child private SequenceStorageNodes.LenNode slotLenNode;
-        @Child private SequenceStorageNodes.GetItemNode getSlotItemNode;
-        @Child private SequenceStorageNodes.AppendNode setSlotItemNode;
+        @Child private SequenceStorageNodes.GetItemNode getItemNode;
+        @Child private SequenceStorageNodes.AppendNode appendNode;
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
         @Child private HashingStorageNodes.GetItemNode getDictItemNode;
         @Child private CExtNodes.PCallCapiFunction callAddNativeSlotsNode;
@@ -1801,8 +1804,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public Object type(VirtualFrame frame, PythonAbstractClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @Cached("create()") GetClassNode getMetaclassNode,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
-                        @Cached("create()") CallDispatchNode callNewFuncNode,
-                        @Cached("create()") CreateArgumentsNode createArgs) {
+                        @Cached("create()") CallNode callNewFuncNode) {
             // Determine the proper metatype to deal with this
             PythonAbstractClass metaclass = calculate_metaclass(cls, bases, getMetaclassNode);
             if (metaclass != cls) {
@@ -1811,7 +1813,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // the new metaclass has the same __new__ function as we are in, continue
                 } else {
                     // Pass it to the winner
-                    return callNewFuncNode.executeCall(frame, newFunc, createArgs.execute(metaclass, name, bases, namespace), kwds);
+                    callNewFuncNode.execute(frame, newFunc, new Object[]{metaclass, name, bases, namespace}, kwds);
                 }
             }
 
@@ -1970,7 +1972,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
 
                 setSlotItemNode().execute(newSlots, slotName);
-                if (containsKeyNode().execute(namespace.getDictStorage(), slotName)) {
+                if (getContainsKeyNode().execute(namespace.getDictStorage(), slotName)) {
                     throw raise(PythonBuiltinClassType.ValueError, "%s in __slots__ conflicts with class variable", slotName);
                 }
                 j++;
@@ -2019,7 +2021,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return "_" + privateobj.substring(ipriv) + ident;
         }
 
-        private HashingStorageNodes.ContainsKeyNode containsKeyNode() {
+        private HashingStorageNodes.ContainsKeyNode getContainsKeyNode() {
             if (containsKeyNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 containsKeyNode = insert(HashingStorageNodes.ContainsKeyNode.create());
@@ -2028,19 +2030,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private SequenceStorageNodes.GetItemNode getSlotItemNode() {
-            if (getSlotItemNode == null) {
+            if (getItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getSlotItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+                getItemNode = insert(SequenceStorageNodes.GetItemNode.create());
             }
-            return getSlotItemNode;
+            return getItemNode;
         }
 
         private SequenceStorageNodes.AppendNode setSlotItemNode() {
-            if (setSlotItemNode == null) {
+            if (appendNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                setSlotItemNode = insert(SequenceStorageNodes.AppendNode.create(() -> NoGeneralizationNode.create("")));
+                appendNode = insert(SequenceStorageNodes.AppendNode.create(() -> NoGeneralizationNode.create("")));
             }
-            return setSlotItemNode;
+            return appendNode;
         }
 
         private SequenceStorageNodes.LenNode getListLenNode() {
@@ -2228,7 +2230,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "NotImplementedType", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNotImplemented, isPublic = false)
+    @Builtin(name = "NotImplementedType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNotImplemented, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
         protected PythonBuiltinClass getNotImplementedClass() {
@@ -2255,7 +2257,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "NoneType", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNone, isPublic = false)
+    @Builtin(name = "NoneType", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PNone, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NoneTypeNode extends PythonBuiltinNode {
         protected PythonBuiltinClass getNoneClass() {
@@ -2372,7 +2374,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "method", fixedNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PMethod, isPublic = false)
+    @Builtin(name = "method", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PMethod, isPublic = false)
     @GenerateNodeFactory
     public abstract static class MethodTypeNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -2386,7 +2388,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "builtin_function_or_method", fixedNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PBuiltinMethod, isPublic = false)
+    @Builtin(name = "builtin_function_or_method", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PBuiltinMethod, isPublic = false)
     @GenerateNodeFactory
     public abstract static class BuiltinMethodTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -2422,8 +2424,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         String codestring, PTuple constants, PTuple names,
                         PTuple varnames, Object filename, Object name,
                         int firstlineno, String lnotab,
-                        PTuple freevars, PTuple cellvars) {
-            return factory().createCode(cls, argcount, kwonlyargcount,
+                        PTuple freevars, PTuple cellvars,
+                        @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
+            return createCodeNode.execute(cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
                             toBytes(codestring), constants.getArray(), names.getArray(),
                             varnames.getArray(), freevars.getArray(), cellvars.getArray(),
@@ -2438,11 +2441,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PTuple varnames, Object filename, Object name,
                         int firstlineno, PBytes lnotab,
                         PTuple freevars, PTuple cellvars,
-                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
+                        @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
             byte[] codeBytes = toByteArrayNode.execute(codestring.getSequenceStorage());
             byte[] lnotabBytes = toByteArrayNode.execute(lnotab.getSequenceStorage());
 
-            return factory().createCode(cls, argcount, kwonlyargcount,
+            return createCodeNode.execute(cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
                             codeBytes, constants.getArray(), names.getArray(),
                             varnames.getArray(), freevars.getArray(), cellvars.getArray(),
@@ -2536,7 +2540,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getset_descriptor", constructsClass = PythonBuiltinClassType.GetSetDescriptor, isPublic = false, fixedNumOfPositionalArgs = 1, keywordArguments = {"fget", "fset", "name",
+    @Builtin(name = "getset_descriptor", constructsClass = PythonBuiltinClassType.GetSetDescriptor, isPublic = false, minNumOfPositionalArgs = 1, parameterNames = {"cls", "fget", "fset", "name",
                     "owner"})
     @GenerateNodeFactory
     public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
@@ -2641,7 +2645,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // memoryview(obj)
-    @Builtin(name = MEMORYVIEW, fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PMemoryView)
+    @Builtin(name = MEMORYVIEW, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PMemoryView)
     @GenerateNodeFactory
     public abstract static class MemoryViewNode extends PythonBuiltinNode {
         @Specialization
@@ -2660,7 +2664,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = CLASSMETHOD, fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PClassmethod, doc = "classmethod(function) -> method\n" +
+    @Builtin(name = CLASSMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PClassmethod, doc = "classmethod(function) -> method\n" +
                     "\n" +
                     "Convert a function to be a class method.\n" +
                     "\n" +
@@ -2688,7 +2692,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = STATICMETHOD, fixedNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PStaticmethod)
+    @Builtin(name = STATICMETHOD, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PStaticmethod)
     @GenerateNodeFactory
     public abstract static class StaticmethodNode extends PythonBinaryBuiltinNode {
         @Specialization

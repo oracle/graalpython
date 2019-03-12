@@ -28,6 +28,12 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -40,6 +46,8 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes.CreateCodeNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -67,12 +75,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.HashMap;
 
 @CoreFunctions(defineModule = "marshal")
 public final class MarshalModuleBuiltins extends PythonBuiltins {
@@ -81,7 +83,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         return MarshalModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "dump", minNumOfPositionalArgs = 2, keywordArguments = {"version"})
+    @Builtin(name = "dump", minNumOfPositionalArgs = 2, parameterNames = {"self", "file", "version"})
     @GenerateNodeFactory
     abstract static class DumpNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -91,7 +93,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dumps", minNumOfPositionalArgs = 1, keywordArguments = {"version"})
+    @Builtin(name = "dumps", minNumOfPositionalArgs = 1, parameterNames = {"self", "version"})
     @GenerateNodeFactory
     abstract static class DumpsNode extends PythonBuiltinNode {
 
@@ -125,7 +127,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "load", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "load", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LoadNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -135,7 +137,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "loads", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "loads", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LoadsNode extends PythonBuiltinNode {
 
@@ -151,6 +153,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object doit(PByteArray bytes,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            return marshaller.execute(toBytesNode.execute(bytes), CURRENT_VERSION);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        Object doit(PMemoryView bytes,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             return marshaller.execute(toBytesNode.execute(bytes), CURRENT_VERSION);
         }
@@ -460,6 +469,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         public abstract Object execute(byte[] dataBytes, int version);
 
         @Child private HashingStorageNodes.SetItemNode setItemNode;
+        @Child private CodeNodes.CreateCodeNode createCodeNode;
 
         private int index;
         private byte[] data;
@@ -533,7 +543,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int firstlineno = readInt();
             byte[] lnotab = readBytes();
 
-            return factory().createCode(PythonBuiltinClassType.PCode, argcount, kwonlyargcount,
+            return ensureCreateCodeNode().execute(PythonBuiltinClassType.PCode, argcount, kwonlyargcount,
                             nlocals, stacksize, flags, codestring, constants, names,
                             varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
         }
@@ -665,6 +675,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 default:
                     throw raise(ValueError, "bad marshal data");
             }
+        }
+
+        private CreateCodeNode ensureCreateCodeNode() {
+            if (createCodeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                createCodeNode = insert(CodeNodes.CreateCodeNode.create());
+            }
+            return createCodeNode;
         }
 
         @Specialization

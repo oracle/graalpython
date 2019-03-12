@@ -50,6 +50,7 @@ import static org.graalvm.polyglot.tck.TypeDescriptor.NULL;
 import static org.graalvm.polyglot.tck.TypeDescriptor.NUMBER;
 import static org.graalvm.polyglot.tck.TypeDescriptor.OBJECT;
 import static org.graalvm.polyglot.tck.TypeDescriptor.STRING;
+import static org.graalvm.polyglot.tck.TypeDescriptor.INSTANTIABLE;
 import static org.graalvm.polyglot.tck.TypeDescriptor.array;
 import static org.graalvm.polyglot.tck.TypeDescriptor.executable;
 import static org.graalvm.polyglot.tck.TypeDescriptor.intersection;
@@ -80,6 +81,9 @@ public class PythonProvider implements LanguageProvider {
     private static final TypeDescriptor PNUMBER = TypeDescriptor.union(NUMBER, BOOLEAN);
     private static final TypeDescriptor NUMBER_OBJECT = TypeDescriptor.union(NUMBER, BOOLEAN, OBJECT, array(ANY));
     private static final TypeDescriptor PSEQUENCE_OBJECT = TypeDescriptor.union(array(ANY), STRING);
+
+    // Python types are just objects
+    private static final TypeDescriptor PYTHON_TYPE = TypeDescriptor.union(OBJECT, INSTANTIABLE);
 
     public String getId() {
         return ID;
@@ -268,7 +272,7 @@ public class PythonProvider implements LanguageProvider {
         addStatementSnippet(context, snippets, "class", "class Custom0:\n" +
                                                       "    def __init__(self, val):\n" +
                                                       "        self.val = val\n" +
-                                                      "Custom0", OBJECT, ANY);
+                                                      "Custom0", PYTHON_TYPE, ANY);
         addStatementSnippet(context, snippets, "class", "class Custom1:\n" +
                                                       "    def __call__(self, val):\n" +
                                                       "        return val\n" +

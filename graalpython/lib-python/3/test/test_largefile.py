@@ -9,12 +9,12 @@ from test.support import TESTFN, requires, unlink
 import io  # C implementation of io
 import _pyio as pyio # Python implementation of io
 
-# size of file to create (>2GB; 2GB == 2147483648 bytes)
+# size of file to create (>2 GiB; 2 GiB == 2,147,483,648 bytes)
 size = 2500000000
 
 class LargeFileTest:
     """Test that each file function works as expected for large
-    (i.e. > 2GB) files.
+    (i.e. > 2 GiB) files.
     """
 
     def setUp(self):

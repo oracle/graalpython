@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -52,7 +52,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         return TracebackBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __DIR__, fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __DIR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
         @Specialization
@@ -61,7 +61,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_FRAME, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = TB_FRAME, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackFrameNode extends PythonBuiltinNode {
         @Specialization
@@ -70,7 +70,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_NEXT, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = TB_NEXT, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackNextNode extends PythonBuiltinNode {
         @Specialization
@@ -80,7 +80,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_LASTI, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = TB_LASTI, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackLastINode extends PythonBuiltinNode {
         @Specialization
@@ -89,7 +89,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_LINENO, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = TB_LINENO, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackLinenoNode extends PythonBuiltinNode {
         @Specialization

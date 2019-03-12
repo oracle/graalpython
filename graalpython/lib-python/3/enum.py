@@ -1,7 +1,5 @@
 import sys
 from types import MappingProxyType, DynamicClassAttribute
-from functools import reduce
-from operator import or_ as _or_
 
 # try _collections first to reduce startup cost
 try:
@@ -66,6 +64,7 @@ class _EnumDict(dict):
         super().__init__()
         self._member_names = []
         self._last_values = []
+        self._ignore = []
 
     def __setitem__(self, key, value):
         """Changes anything not dundered or not a descriptor.
@@ -79,17 +78,28 @@ class _EnumDict(dict):
         if _is_sunder(key):
             if key not in (
                     '_order_', '_create_pseudo_member_',
-                    '_generate_next_value_', '_missing_',
+                    '_generate_next_value_', '_missing_', '_ignore_',
                     ):
                 raise ValueError('_names_ are reserved for future Enum use')
             if key == '_generate_next_value_':
                 setattr(self, '_generate_next_value', value)
+            elif key == '_ignore_':
+                if isinstance(value, str):
+                    value = value.replace(',',' ').split()
+                else:
+                    value = list(value)
+                self._ignore = value
+                already = set(value) & set(self._member_names)
+                if already:
+                    raise ValueError('_ignore_ cannot specify already set names: %r' % (already, ))
         elif _is_dunder(key):
             if key == '__order__':
                 key = '_order_'
         elif key in self._member_names:
             # descriptor overwriting an enum?
             raise TypeError('Attempted to reuse key: %r' % key)
+        elif key in self._ignore:
+            pass
         elif not _is_descriptor(value):
             if key in self:
                 # enum overwriting a descriptor?
@@ -126,6 +136,12 @@ class EnumMeta(type):
         # cannot be mixed with other types (int, float, etc.) if it has an
         # inherited __new__ unless a new __new__ is defined (or the resulting
         # class will fail).
+        #
+        # remove any keys listed in _ignore_
+        classdict.setdefault('_ignore_', []).append('_ignore_')
+        ignore = classdict['_ignore_']
+        for key in ignore:
+            classdict.pop(key, None)
         member_type, first_enum = metacls._get_mixins_(bases)
         __new__, save_new, use_args = metacls._find_new_(classdict, member_type,
                                                         first_enum)
@@ -293,6 +309,12 @@ class EnumMeta(type):
         return cls._create_(value, names, module=module, qualname=qualname, type=type, start=start)
 
     def __contains__(cls, member):
+        if not isinstance(member, Enum):
+            import warnings
+            warnings.warn(
+                    "using non-Enums in containment checks will raise "
+                    "TypeError in Python 3.8",
+                    DeprecationWarning, 2)
         return isinstance(member, cls) and member._name_ in cls._member_map_
 
     def __delattr__(cls, attr):
@@ -361,7 +383,7 @@ class EnumMeta(type):
             raise AttributeError('Cannot reassign members.')
         super().__setattr__(name, value)
 
-    def _create_(cls, class_name, names=None, *, module=None, qualname=None, type=None, start=1):
+    def _create_(cls, class_name, names, *, module=None, qualname=None, type=None, start=1):
         """Convenience method to create a new Enum class.
 
         `names` can be:
@@ -697,7 +719,12 @@ class Flag(Enum):
 
     def __contains__(self, other):
         if not isinstance(other, self.__class__):
-            return NotImplemented
+            import warnings
+            warnings.warn(
+                    "using non-Flags in containment checks will raise "
+                    "TypeError in Python 3.8",
+                    DeprecationWarning, 2)
+            return False
         return other._value_ & self._value_ == other._value_
 
     def __repr__(self):
@@ -744,11 +771,10 @@ class Flag(Enum):
 
     def __invert__(self):
         members, uncovered = _decompose(self.__class__, self._value_)
-        inverted_members = [
-                m for m in self.__class__
-                if m not in members and not m._value_ & self._value_
-                ]
-        inverted = reduce(_or_, inverted_members, self.__class__(0))
+        inverted = self.__class__(0)
+        for m in self.__class__:
+            if m not in members and not (m._value_ & self._value_):
+                inverted = inverted | m
         return self.__class__(inverted)
 
 
@@ -840,7 +866,7 @@ def _decompose(flag, value):
     not_covered = value
     negative = value < 0
     # issue29167: wrap accesses to _value2member_map_ in a list to avoid race
-    #             conditions between iterating over it and having more psuedo-
+    #             conditions between iterating over it and having more pseudo-
     #             members added to it
     if negative:
         # only check for named flags

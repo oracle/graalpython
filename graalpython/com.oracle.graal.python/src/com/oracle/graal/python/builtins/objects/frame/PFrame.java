@@ -51,11 +51,12 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PFrame extends PythonBuiltinObject {
@@ -67,6 +68,7 @@ public final class PFrame extends PythonBuiltinObject {
     private final boolean inClassScope;
     private final Frame frame;
     private final Node location;
+    private RootCallTarget callTarget;
     private int line = -2;
 
     public PFrame(LazyPythonClass cls, Frame frame) {
@@ -200,14 +202,17 @@ public final class PFrame extends PythonBuiltinObject {
         return inClassScope;
     }
 
-    @TruffleBoundary
-    public RootNode getTarget() {
-        if (location != null) {
-            return location.getRootNode();
-        } else if (exception != null) {
-            return exception.getStackTrace().get(index).getTarget().getRootNode();
-        } else {
-            return null;
+    public RootCallTarget getTarget() {
+        if (callTarget == null) {
+            CompilerDirectives.transferToInterpreter();
+            if (location != null) {
+                callTarget = Truffle.getRuntime().createCallTarget(location.getRootNode());
+            } else if (exception != null) {
+                callTarget = exception.getStackTrace().get(index).getTarget();
+            } else {
+                return null;
+            }
         }
+        return callTarget;
     }
 }

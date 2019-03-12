@@ -145,14 +145,14 @@ class PlatformTest(unittest.TestCase):
                 ("PyPy", "2.5.2", "trunk", "63378", ('63378', 'Mar 26 2009'),
                  "")
             }
-        for (version_tag, subversion, sys_platform), info in \
+        for (version_tag, scm, sys_platform), info in \
                 sys_versions.items():
             sys.version = version_tag
-            if subversion is None:
+            if scm is None:
                 if hasattr(sys, "_git"):
                     del sys._git
             else:
-                sys._git = subversion
+                sys._git = scm
             if sys_platform is not None:
                 sys.platform = sys_platform
             self.assertEqual(platform.python_implementation(), info[0])
@@ -353,14 +353,14 @@ class PlatformTest(unittest.TestCase):
 class DeprecationTest(unittest.TestCase):
 
     def test_dist_deprecation(self):
-        with self.assertWarns(PendingDeprecationWarning) as cm:
+        with self.assertWarns(DeprecationWarning) as cm:
             platform.dist()
         self.assertEqual(str(cm.warning),
                          'dist() and linux_distribution() functions are '
                          'deprecated in Python 3.5')
 
     def test_linux_distribution_deprecation(self):
-        with self.assertWarns(PendingDeprecationWarning) as cm:
+        with self.assertWarns(DeprecationWarning) as cm:
             platform.linux_distribution()
         self.assertEqual(str(cm.warning),
                          'dist() and linux_distribution() functions are '

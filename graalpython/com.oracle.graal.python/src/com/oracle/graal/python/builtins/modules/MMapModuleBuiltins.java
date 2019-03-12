@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel.MapMode;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
@@ -87,7 +86,7 @@ public class MMapModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("ACCESS_COPY", ACCESS_COPY);
     }
 
-    @Builtin(name = "mmap", fixedNumOfPositionalArgs = 3, keywordArguments = {"tagname", "access", "offset"}, constructsClass = PMMap)
+    @Builtin(name = "mmap", minNumOfPositionalArgs = 3, parameterNames = {"cls", "fd", "length", "tagname", "access", "offset"}, constructsClass = PMMap)
     @GenerateNodeFactory
     public abstract static class MMapNode extends PythonBuiltinNode {
 
@@ -153,21 +152,6 @@ public class MMapModuleBuiltins extends PythonBuiltins {
 
         protected static boolean isIllegal(int fd) {
             return fd < -1;
-        }
-
-        @SuppressWarnings("unused")
-        private MapMode convertAccessToMapMode(int access) {
-            switch (access) {
-                case 0:
-                    return MapMode.READ_WRITE;
-                case 1:
-                    return MapMode.READ_ONLY;
-                case 2:
-                    return MapMode.READ_WRITE;
-                case 3:
-                    return MapMode.PRIVATE;
-            }
-            throw raise(ValueError, "mmap invalid access parameter.");
         }
 
         private void checkLength(int length) {

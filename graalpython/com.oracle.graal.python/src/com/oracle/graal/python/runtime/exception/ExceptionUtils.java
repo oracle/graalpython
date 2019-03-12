@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,8 +44,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
-import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleStackTrace;
+import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -55,7 +56,7 @@ public final class ExceptionUtils {
 
     @TruffleBoundary
     public static void printPythonLikeStackTrace(PException e) {
-        List<TruffleStackTraceElement> stackTrace = TruffleStackTraceElement.getStackTrace(e);
+        List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStackTrace(e);
         ArrayList<String> stack = new ArrayList<>();
         for (TruffleStackTraceElement frame : stackTrace) {
 

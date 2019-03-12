@@ -5,12 +5,12 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "5.210.4",
+    "mxversion": "5.211.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "1.0.0-rc13",
-    "release": True,
+    "version": "1.0.0-rc14",
+    "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
 
@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "175738c97f96974ba44251e913a597aa64a7d3c2",
+                "version": "e9873eb1423154f09a5a60a89bc9321ffef93f91",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "175738c97f96974ba44251e913a597aa64a7d3c2",
+                "version": "e9873eb1423154f09a5a60a89bc9321ffef93f91",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -110,6 +110,18 @@ suite = {
         "lib.graalpython": {
             "type": "python",
             "path": 'graalpython/lib-graalpython',
+            "source": []
+        },
+
+        "python.include": {
+            "type": "python",
+            "path": 'graalpython/include',
+            "source": []
+        },
+
+        "python.site-packages": {
+            "type": "python",
+            "path": 'graalpython/site-packages',
             "source": []
         },
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -43,7 +43,7 @@ import java.util.zip.ZipFile;
 
 public class PZipImporter extends PythonBuiltinObject {
 
-    public static String SEPARATOR = File.separator;
+    public static final String SEPARATOR = File.separator;
 
     /**
      * pathname of the Zip archive
@@ -200,8 +200,9 @@ public class PZipImporter extends PythonBuiltinObject {
      */
     @CompilerDirectives.TruffleBoundary
     private String getCode(String filenameAndSuffix) {
+        ZipFile zip = null;
         try {
-            ZipFile zip = new ZipFile(archive);
+            zip = new ZipFile(archive);
             ZipEntry entry = zip.getEntry(filenameAndSuffix);
             InputStream in = zip.getInputStream(entry);
 
@@ -217,6 +218,14 @@ public class PZipImporter extends PythonBuiltinObject {
             return code.toString();
         } catch (IOException e) {
             throw new RuntimeException("Can not read code from " + makePackagePath(filenameAndSuffix), e);
+        } finally {
+            if (zip != null) {
+                try {
+                    zip.close();
+                } catch (IOException e) {
+                    // just ignore it.
+                }
+            }
         }
     }
 

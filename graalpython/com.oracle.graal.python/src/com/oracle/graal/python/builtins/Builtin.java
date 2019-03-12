@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -39,11 +39,9 @@ public @interface Builtin {
 
     PythonBuiltinClassType[] base() default {};
 
-    int fixedNumOfPositionalArgs() default 0;
-
     int minNumOfPositionalArgs() default 0;
 
-    int maxNumOfPositionalArgs() default 0;
+    int maxNumOfPositionalArgs() default -1;
 
     boolean isGetter() default false;
 
@@ -51,11 +49,13 @@ public @interface Builtin {
 
     boolean takesVarArgs() default false;
 
+    boolean varArgsMarker() default false;
+
     boolean takesVarKeywordArgs() default false;
 
     String[] parameterNames() default {};
 
-    String[] keywordArguments() default {};
+    String[] keywordOnlyNames() default {};
 
     boolean isPublic() default true;
 

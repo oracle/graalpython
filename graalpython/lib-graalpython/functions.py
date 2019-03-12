@@ -39,11 +39,8 @@
 
 @__builtin__
 def hasattr(obj, key):
-    try:
-        getattr(obj, key)
-        return True
-    except AttributeError:
-        return False
+    default = object()
+    return getattr(obj, key, default) is not default
 
 
 @__builtin__

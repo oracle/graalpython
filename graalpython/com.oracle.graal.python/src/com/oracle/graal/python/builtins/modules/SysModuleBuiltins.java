@@ -145,6 +145,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         String os = getPythonOSName();
         builtinConstants.put("platform", os);
+        if (os.equals("darwin")) {
+            builtinConstants.put("_framework", PNone.NONE);
+        }
         builtinConstants.put("__gmultiarch", getPythonArch() + "-" + os);
 
         super.initialize(core);
@@ -185,29 +188,35 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         PythonOptions.getFlag(context, PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
                         PythonOptions.getFlag(context, PythonOptions.InspectFlag), // inspect
                         PythonOptions.getFlag(context, PythonOptions.TerminalIsInteractive), // interactive
-                        !context.isExecutableAccessAllowed(), // isolated
+                        PythonOptions.getFlag(context, PythonOptions.IsolateFlag), // isolated
                         PythonOptions.getFlag(context, PythonOptions.NoSiteFlag), // no_site
                         PythonOptions.getFlag(context, PythonOptions.NoUserSiteFlag), // no_user_site
                         PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // optimize
                         PythonOptions.getFlag(context, PythonOptions.QuietFlag), // quiet
                         PythonOptions.getFlag(context, PythonOptions.VerboseFlag), // verbose
+                        false, // dev_mode
+                        0, // utf8_mode
         }));
 
         Env env = context.getEnv();
         String option = PythonOptions.getOption(context, PythonOptions.PythonPath);
         Object[] path;
         int pathIdx = 0;
+        boolean doIsolate = PythonOptions.getOption(context, PythonOptions.IsolateFlag);
+        int defaultPaths = doIsolate ? 2 : 3;
         if (option.length() > 0) {
             String[] split = option.split(PythonCore.PATH_SEPARATOR);
-            path = new Object[split.length + 3];
+            path = new Object[split.length + defaultPaths];
             System.arraycopy(split, 0, path, 0, split.length);
             pathIdx = split.length;
         } else {
-            path = new Object[3];
+            path = new Object[defaultPaths];
         }
-        path[pathIdx] = getScriptPath(env, args);
-        path[pathIdx + 1] = PythonCore.getStdlibHome(env);
-        path[pathIdx + 2] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
+        if (!doIsolate) {
+            path[pathIdx++] = getScriptPath(env, args);
+        }
+        path[pathIdx++] = PythonCore.getStdlibHome(env);
+        path[pathIdx++] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
     }
@@ -247,23 +256,25 @@ public class SysModuleBuiltins extends PythonBuiltins {
     static String getPythonOSName() {
         String property = System.getProperty("os.name");
         String os = "java";
-        if (property.toLowerCase().contains("cygwin")) {
-            os = "cygwin";
-        } else if (property.toLowerCase().contains("linux")) {
-            os = "linux";
-        } else if (property.toLowerCase().contains("mac")) {
-            os = "darwin";
-        } else if (property.toLowerCase().contains("windows")) {
-            os = "win32";
-        } else if (property.toLowerCase().contains("sunos")) {
-            os = "sunos";
-        } else if (property.toLowerCase().contains("freebsd")) {
-            os = "freebsd";
+        if (property != null) {
+            if (property.toLowerCase().contains("cygwin")) {
+                os = "cygwin";
+            } else if (property.toLowerCase().contains("linux")) {
+                os = "linux";
+            } else if (property.toLowerCase().contains("mac")) {
+                os = "darwin";
+            } else if (property.toLowerCase().contains("windows")) {
+                os = "win32";
+            } else if (property.toLowerCase().contains("sunos")) {
+                os = "sunos";
+            } else if (property.toLowerCase().contains("freebsd")) {
+                os = "freebsd";
+            }
         }
         return os;
     }
 
-    @Builtin(name = "exc_info", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "exc_info", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class ExcInfoNode extends PythonBuiltinNode {
         @Specialization
@@ -377,7 +388,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "getfilesystemencoding", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getfilesystemencoding", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetFileSystemEncodingNode extends PythonBuiltinNode {
         @Specialization
@@ -386,7 +397,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getfilesystemencodeerrors", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getfilesystemencodeerrors", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
         @Specialization
@@ -395,7 +406,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "intern", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "intern", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InternNode extends PythonBuiltinNode {
         @Specialization
@@ -412,7 +423,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getdefaultencoding", fixedNumOfPositionalArgs = 0)
+    @Builtin(name = "getdefaultencoding", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetDefaultEncodingNode extends PythonBuiltinNode {
         @Specialization

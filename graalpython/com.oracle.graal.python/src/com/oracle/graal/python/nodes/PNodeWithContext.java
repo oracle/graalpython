@@ -68,17 +68,17 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class PNodeWithContext extends Node {
-    @Child private PythonObjectFactory factory;
+    @Child private PythonObjectFactory objectFactory;
     @Child private WriteAttributeToObjectNode writeCause;
     @Child private CallVarargsMethodNode callNode;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected final PythonObjectFactory factory() {
-        if (factory == null) {
+        if (objectFactory == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            factory = insert(PythonObjectFactory.create());
+            objectFactory = insert(PythonObjectFactory.create());
         }
-        return factory;
+        return objectFactory;
     }
 
     public final PythonCore getCore() {

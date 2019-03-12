@@ -35,7 +35,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class StringFormatter {
     int index;
-    String format;
+    String formatText;
     StringBuilder buffer;
     int argIndex;
     Object args;
@@ -43,14 +43,14 @@ public class StringFormatter {
 
     final char pop() {
         try {
-            return format.charAt(index++);
+            return formatText.charAt(index++);
         } catch (StringIndexOutOfBoundsException e) {
             throw core.raise(ValueError, "incomplete format");
         }
     }
 
     final char peek() {
-        return format.charAt(index);
+        return formatText.charAt(index);
     }
 
     final void push() {
@@ -60,7 +60,7 @@ public class StringFormatter {
     public StringFormatter(PythonCore core, String format) {
         this.core = core;
         index = 0;
-        this.format = format;
+        this.formatText = format;
         buffer = new StringBuilder(format.length() + 100);
     }
 
@@ -107,7 +107,7 @@ public class StringFormatter {
                     // empty
                 }
                 index -= 1;
-                Integer i = Integer.valueOf(format.substring(numStart, index));
+                Integer i = Integer.valueOf(formatText.substring(numStart, index));
                 return i.intValue();
             }
             index -= 1;
@@ -182,7 +182,7 @@ public class StringFormatter {
             }
         }
 
-        while (index < format.length()) {
+        while (index < formatText.length()) {
             // Read one character from the format string
             char c = pop();
             if (c != '%') {
@@ -227,7 +227,7 @@ public class StringFormatter {
                     }
                 }
                 // Last c=pop() is the closing ')' while indexKey is just after the opening '('
-                String tmp = format.substring(keyStart, index - 1);
+                String tmp = formatText.substring(keyStart, index - 1);
                 // Look it up using this extent as the (right type of) key.
                 this.args = dict.getItem(tmp);
             } else {

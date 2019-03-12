@@ -47,7 +47,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -325,9 +324,10 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "!isEmpty(kwargs)")
-        public HashingStorage doPDictKwargs(PDict iterable, PKeyword[] kwargs) {
+        public HashingStorage doPDictKwargs(PDict iterable, PKeyword[] kwargs,
+                        @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
             HashingStorage dictStorage = iterable.getDictStorage().copy(HashingStorage.DEFAULT_EQIVALENCE);
-            dictStorage.addAll(new KeywordsStorage(kwargs));
+            unionNode.execute(dictStorage, new KeywordsStorage(kwargs));
             return dictStorage;
         }
 
@@ -427,11 +427,6 @@ public abstract class HashingStorageNodes {
                 storage.addAll(new KeywordsStorage(kwargs));
             }
             return storage;
-        }
-
-        @TruffleBoundary
-        private static PSequence[] enlarge(PSequence[] elements, int newCapacity) {
-            return Arrays.copyOf(elements, newCapacity);
         }
 
         public static InitNode create() {
@@ -1033,25 +1028,25 @@ public abstract class HashingStorageNodes {
 
     public abstract static class EqualsNode extends DictStorageBaseNode {
 
-        @Child private GetItemNode getLeftItemNode;
-        @Child private GetItemNode getRightItemNode;
+        @Child private GetItemNode leftItemNode;
+        @Child private GetItemNode rightItemNode;
 
         public abstract boolean execute(HashingStorage selfStorage, HashingStorage other);
 
         private GetItemNode getLeftItemNode() {
-            if (getLeftItemNode == null) {
+            if (leftItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getLeftItemNode = insert(GetItemNode.create());
+                leftItemNode = insert(GetItemNode.create());
             }
-            return getLeftItemNode;
+            return leftItemNode;
         }
 
         private GetItemNode getRightItemNode() {
-            if (getRightItemNode == null) {
+            if (rightItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getRightItemNode = insert(GetItemNode.create());
+                rightItemNode = insert(GetItemNode.create());
             }
-            return getRightItemNode;
+            return rightItemNode;
         }
 
         @Specialization(guards = "selfStorage.length() == other.length()")
@@ -1358,8 +1353,8 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "!setUnion")
         public HashingStorage doGeneric(HashingStorage left, HashingStorage right) {
             EconomicMapStorage newStorage = EconomicMapStorage.create(setUnion);
-            newStorage.addAll(left);
-            newStorage.addAll(right);
+            newStorage.addAll(left, getEquivalence());
+            newStorage.addAll(right, getEquivalence());
             return newStorage;
         }
 
