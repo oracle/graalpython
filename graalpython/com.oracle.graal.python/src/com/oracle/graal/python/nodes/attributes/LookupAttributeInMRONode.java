@@ -110,7 +110,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
             if (klass instanceof PythonBuiltinClassType) {
                 return LookupAttributeInMRONode.findAttr(getCore(), (PythonBuiltinClassType) klass, key);
             } else if (klass instanceof PythonAbstractClass) {
-                return LookupAttributeInMRONode.lookupSlow((PythonAbstractClass) klass, key, getMroNode, readAttrNode);
+                return lookupSlow((PythonAbstractClass) klass, key, getMroNode, readAttrNode);
             } else {
                 CompilerDirectives.transferToInterpreter();
                 throw new RuntimeException("not implemented: lookup inherited attribute from non-PythonClass");
@@ -244,7 +244,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return ensureGetMroNode().execute(clazz);
     }
 
-    protected static Object lookupSlow(PythonAbstractClass klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode) {
+    private static Object lookupSlow(PythonAbstractClass klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode) {
         MroSequenceStorage mro = getMroNode.execute(klass);
         for (int i = 0; i < mro.length(); i++) {
             PythonAbstractClass kls = mro.getItemNormalized(i);
