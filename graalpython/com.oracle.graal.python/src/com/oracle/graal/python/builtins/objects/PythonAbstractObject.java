@@ -289,8 +289,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             int info = NONE;
             Object attr = PNone.NO_VALUE;
 
-            PythonClass klass = getClassNode.execute(object);
-            for (PythonClass c : klass.getMethodResolutionOrder()) {
+            PythonClass klass = (PythonClass) getClassNode.execute(object);
+
+            for (Object c : klass.getMethodResolutionOrder().getInternalArray()) {
                 attr = readNode.execute(c, fieldName);
                 if (attr != PNone.NO_VALUE) {
                     owner = c;

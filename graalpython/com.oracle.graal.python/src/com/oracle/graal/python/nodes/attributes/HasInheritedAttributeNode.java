@@ -84,5 +84,13 @@ public class HasInheritedAttributeNode extends Node {
             // super-simple wrapper node
             return NodeCost.NONE;
         }
+
+        public static Dynamic create() {
+            return HasInheritedAttributeNodeFactory.DynamicNodeGen.create();
+        }
+
+        public static Dynamic getUncached() {
+            return HasInheritedAttributeNodeFactory.DynamicNodeGen.getUncached();
+        }
     }
 }

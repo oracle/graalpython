@@ -90,5 +90,13 @@ public final class LookupInheritedAttributeNode extends PNodeWithContext {
 
             return lookupAttrInMroNode.execute(getClassNode.execute(object), key);
         }
+
+        public static Dynamic create() {
+            return LookupInheritedAttributeNodeFactory.DynamicNodeGen.create();
+        }
+
+        public static Dynamic getUncached() {
+            return LookupInheritedAttributeNodeFactory.DynamicNodeGen.getUncached();
+        }
     }
 }

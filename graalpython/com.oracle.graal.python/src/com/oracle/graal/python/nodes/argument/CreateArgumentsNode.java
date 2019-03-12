@@ -54,6 +54,8 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyKeywordsNodeGen;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyKeywordsNodeGen.SearchNamedParameterNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyPositionalArgumentsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.CreateAndCheckArgumentsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillDefaultsNodeGen;
@@ -64,6 +66,9 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -71,9 +76,14 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic({PythonOptions.class, PGuards.class})
+@GenerateUncached
 public abstract class CreateArgumentsNode extends PNodeWithContext {
     public static CreateArgumentsNode create() {
         return CreateArgumentsNodeGen.create();
+    }
+
+    public static CreateArgumentsNode getUncached() {
+        return CreateArgumentsNodeGen.getUncached();
     }
 
     @Specialization(guards = {"isMethod(method)", "method == cachedMethod"}, limit = "getVariableArgumentInlineCacheLimit()")
@@ -149,48 +159,63 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, self, defaults, kwdefaults, methodcall);
     }
 
+    @GenerateUncached
     protected abstract static class CreateAndCheckArgumentsNode extends PNodeWithContext {
-
-        @Child private ApplyKeywordsNode applyKeywords;
-        @Child private HandleTooManyArgumentsNode handleTooManyArgumentsNode;
-        @Child private ApplyPositionalArguments applyPositional = ApplyPositionalArguments.create();
-        @Child private FillDefaultsNode fillDefaultsNode;
-        @Child private FillKwDefaultsNode fillKwDefaultsNode;
-
         public static CreateAndCheckArgumentsNode create() {
             return CreateAndCheckArgumentsNodeGen.create();
+        }
+
+        public static CreateAndCheckArgumentsNode getUncached() {
+            return CreateAndCheckArgumentsNodeGen.getUncached();
         }
 
         public abstract Object[] execute(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults,
                         boolean methodcall);
 
-        @Specialization(guards = {"userArguments.length == cachedLength", "signature.getMaxNumOfPositionalArgs() == cachedMaxPos", "signature.getNumOfRequiredKeywords() == cachedNumKwds"})
-        Object[] doCached0(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults,
-                        boolean methodcall,
+        @Specialization(guards = {"userArguments.length == cachedLength", "signature.getMaxNumOfPositionalArgs() == cachedMaxPos",
+                        "signature.getNumOfRequiredKeywords() == cachedNumKwds"}, limit = "1")
+        Object[] doCached0(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults, boolean methodcall,
+                        @Shared("applyKeywords") @Cached ApplyKeywordsNode applyKeywords,
+                        @Shared("handleTooManyArgumentsNode") @Cached HandleTooManyArgumentsNode handleTooManyArgumentsNode,
+                        @Shared("applyPositional") @Cached ApplyPositionalArguments applyPositional,
+                        @Shared("fillDefaultsNode") @Cached FillDefaultsNode fillDefaultsNode,
+                        @Shared("fillKwDefaultsNode") @Cached FillKwDefaultsNode fillKwDefaultsNode,
                         @Cached("userArguments.length") int cachedLength,
                         @Cached("signature.getMaxNumOfPositionalArgs()") int cachedMaxPos,
                         @Cached("signature.getNumOfRequiredKeywords()") int cachedNumKwds) {
 
-            return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, defaults, kwdefaults, methodcall, cachedMaxPos, cachedNumKwds);
+            return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, defaults, kwdefaults, methodcall, cachedMaxPos, cachedNumKwds, applyPositional,
+                            applyKeywords, handleTooManyArgumentsNode, fillDefaultsNode, fillKwDefaultsNode);
         }
 
-        @Specialization(guards = "userArguments.length == cachedLength", replaces = "doCached0")
-        Object[] doCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults,
-                        boolean methodcall,
+        @Specialization(guards = "userArguments.length == cachedLength", replaces = "doCached0", limit = "1")
+        Object[] doCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults, boolean methodcall,
+                        @Shared("applyKeywords") @Cached ApplyKeywordsNode applyKeywords,
+                        @Shared("handleTooManyArgumentsNode") @Cached HandleTooManyArgumentsNode handleTooManyArgumentsNode,
+                        @Shared("applyPositional") @Cached ApplyPositionalArguments applyPositional,
+                        @Shared("fillDefaultsNode") @Cached FillDefaultsNode fillDefaultsNode,
+                        @Shared("fillKwDefaultsNode") @Cached FillKwDefaultsNode fillKwDefaultsNode,
                         @Cached("userArguments.length") int cachedLength) {
 
             return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, defaults, kwdefaults, methodcall, signature.getMaxNumOfPositionalArgs(),
-                            signature.getNumOfRequiredKeywords());
+                            signature.getNumOfRequiredKeywords(), applyPositional, applyKeywords, handleTooManyArgumentsNode, fillDefaultsNode, fillKwDefaultsNode);
         }
 
         @Specialization(replaces = "doCached")
-        Object[] doUncached(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults, boolean methodcall) {
+        Object[] doUncached(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults, boolean methodcall,
+                        @Shared("applyKeywords") @Cached ApplyKeywordsNode applyKeywords,
+                        @Shared("handleTooManyArgumentsNode") @Cached HandleTooManyArgumentsNode handleTooManyArgumentsNode,
+                        @Shared("applyPositional") @Cached ApplyPositionalArguments applyPositional,
+                        @Shared("fillDefaultsNode") @Cached FillDefaultsNode fillDefaultsNode,
+                        @Shared("fillKwDefaultsNode") @Cached FillKwDefaultsNode fillKwDefaultsNode) {
             return createAndCheckArguments(callable, userArguments, userArguments.length, keywords, signature, self, defaults, kwdefaults, methodcall, signature.getMaxNumOfPositionalArgs(),
-                            signature.getNumOfRequiredKeywords());
+                            signature.getNumOfRequiredKeywords(), applyPositional, applyKeywords, handleTooManyArgumentsNode, fillDefaultsNode, fillKwDefaultsNode);
         }
 
-        private Object[] createAndCheckArguments(PythonObject callable, Object[] args_w, int num_args, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults,
-                        boolean methodcall, int co_argcount, int co_kwonlyargcount) {
+        private static Object[] createAndCheckArguments(PythonObject callable, Object[] args_w, int num_args, PKeyword[] keywords, Signature signature, Object self, Object[] defaults,
+                        PKeyword[] kwdefaults,
+                        boolean methodcall, int co_argcount, int co_kwonlyargcount, ApplyPositionalArguments applyPositional, ApplyKeywordsNode applyKeywords, HandleTooManyArgumentsNode handleTooMany,
+                        FillDefaultsNode fillDefaults, FillKwDefaultsNode fillKwDefaults) {
             assert args_w.length == num_args;
 
             // see PyPy's Argument#_match_signature method
@@ -239,61 +264,47 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             // the called node takes and collect the rest in the keywords.
             if (keywords.length > 0) {
                 // the node acts as a profile
-                applyKeywords(callable, signature, scope_w, keywords);
+                applyKeywords(callable, signature, scope_w, keywords, applyKeywords);
             }
 
             if (too_many_args) {
                 // the node acts as a profile
-                throw handleTooManyArguments(scope_w, callable, signature, co_argcount, co_kwonlyargcount, defaults.length, avail, methodcall);
+                throw handleTooManyArguments(scope_w, callable, signature, co_argcount, co_kwonlyargcount, defaults.length, avail, methodcall, handleTooMany);
             }
 
             boolean more_filling = input_argcount < co_argcount + co_kwonlyargcount;
             if (more_filling) {
 
                 // then, fill the normal arguments with defaults_w (if needed)
-                fillDefaults(callable, signature, scope_w, defaults, input_argcount, co_argcount);
+                fillDefaults(callable, signature, scope_w, defaults, input_argcount, co_argcount, fillDefaults);
 
                 // finally, fill kwonly arguments with w_kw_defs (if needed)
-                fillKwDefaults(callable, scope_w, signature, kwdefaults, co_argcount, co_kwonlyargcount);
+                fillKwDefaults(callable, scope_w, signature, kwdefaults, co_argcount, co_kwonlyargcount, fillKwDefaults);
             }
 
             return scope_w;
         }
 
-        private void applyKeywords(Object callable, Signature signature, Object[] scope_w, PKeyword[] keywords) {
-            if (applyKeywords == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                applyKeywords = insert(ApplyKeywordsNode.create());
-            }
-            applyKeywords.execute(callable, signature, scope_w, keywords);
+        private static void applyKeywords(Object callable, Signature signature, Object[] scope_w, PKeyword[] keywords, ApplyKeywordsNode node) {
+            node.execute(callable, signature, scope_w, keywords);
         }
 
-        private PException handleTooManyArguments(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall) {
-            if (handleTooManyArgumentsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                handleTooManyArgumentsNode = insert(HandleTooManyArgumentsNode.create());
-            }
-            return handleTooManyArgumentsNode.execute(scope_w, callable, signature, co_argcount, co_kwonlyargcount, ndefaults, avail, methodcall);
+        private static PException handleTooManyArguments(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall,
+                        HandleTooManyArgumentsNode node) {
+            return node.execute(scope_w, callable, signature, co_argcount, co_kwonlyargcount, ndefaults, avail, methodcall);
         }
 
-        private void fillDefaults(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount) {
-            if (fillDefaultsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                fillDefaultsNode = insert(FillDefaultsNode.create());
-            }
-            fillDefaultsNode.execute(callable, signature, scope_w, defaults, input_argcount, co_argcount);
+        private static void fillDefaults(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount, FillDefaultsNode node) {
+            node.execute(callable, signature, scope_w, defaults, input_argcount, co_argcount);
         }
 
-        private void fillKwDefaults(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount) {
-            if (fillKwDefaultsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                fillKwDefaultsNode = insert(FillKwDefaultsNode.create());
-            }
-            fillKwDefaultsNode.execute(callable, scope_w, signature, kwdefaults, co_argcount, co_kwonlyargcount);
+        private static void fillKwDefaults(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount, FillKwDefaultsNode node) {
+            node.execute(callable, scope_w, signature, kwdefaults, co_argcount, co_kwonlyargcount);
         }
 
     }
 
+    @GenerateUncached
     protected abstract static class HandleTooManyArgumentsNode extends PNodeWithContext {
 
         public abstract PException execute(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall);
@@ -374,11 +385,16 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             }
         }
 
-        public static HandleTooManyArgumentsNode create() {
+        protected static HandleTooManyArgumentsNode create() {
             return HandleTooManyArgumentsNodeGen.create();
+        }
+
+        protected static HandleTooManyArgumentsNode getUncached() {
+            return HandleTooManyArgumentsNodeGen.getUncached();
         }
     }
 
+    @GenerateUncached
     protected abstract static class ApplyPositionalArguments extends Node {
 
         public abstract int execute(Object[] args_w, Object[] scope_w, int upfront, int co_argcount, int num_args);
@@ -396,8 +412,162 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return upfront;
         }
 
-        public static ApplyPositionalArguments create() {
+        protected static ApplyPositionalArguments create() {
             return ApplyPositionalArgumentsNodeGen.create();
+        }
+
+        protected static ApplyPositionalArguments getUncached() {
+            return ApplyPositionalArgumentsNodeGen.getUncached();
+        }
+    }
+
+    /**
+     * This class is *only* used to apply arguments given as keywords by the caller to positional
+     * arguments of the same names. The remaining arguments are left in the PKeywords of the
+     * combined arguments.
+     *
+     * @author tim
+     */
+    @GenerateUncached
+    protected static abstract class ApplyKeywordsNode extends PNodeWithContext {
+        public abstract Object[] execute(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords);
+
+        public static ApplyKeywordsNode create() {
+            return ApplyKeywordsNodeGen.create();
+        }
+
+        int getUserArgumentLength(Object[] arguments) {
+            return PArguments.getUserArgumentLength(arguments);
+        }
+
+        @Specialization(guards = {"kwLen == keywords.length", "calleeSignature == cachedSignature"})
+        @ExplodeLoop
+        Object[] applyCached(Object callee, @SuppressWarnings("unused") Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
+                        @Cached("keywords.length") int kwLen,
+                        @SuppressWarnings("unused") @Cached("calleeSignature") Signature cachedSignature,
+                        @Cached("cachedSignature.takesVarKeywordArgs()") boolean takesVarKwds,
+                        @Cached(value = "cachedSignature.getParameterIds()", dimensions = 1) String[] parameters,
+                        @Cached("parameters.length") int positionalParamNum,
+                        @Cached(value = "cachedSignature.getKeywordNames()", dimensions = 1) String[] kwNames,
+                        @Exclusive @Cached SearchNamedParameterNode searchParamNode,
+                        @Exclusive @Cached SearchNamedParameterNode searchKwNode) {
+            PKeyword[] unusedKeywords = takesVarKwds ? new PKeyword[kwLen] : null;
+            // same as below
+            int k = 0;
+            int additionalKwds = 0;
+            String lastWrongKeyword = null;
+            for (int i = 0; i < kwLen; i++) {
+                PKeyword kwArg = keywords[i];
+                String name = kwArg.getName();
+                int kwIdx = searchParamNode.execute(parameters, name);
+                if (kwIdx == -1) {
+                    int kwOnlyIdx = searchKwNode.execute(kwNames, name);
+                    if (kwOnlyIdx != -1) {
+                        kwIdx = kwOnlyIdx + positionalParamNum;
+                    }
+                }
+
+                if (kwIdx != -1) {
+                    if (PArguments.getArgument(arguments, kwIdx) != null) {
+                        throw raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
+                    }
+                    PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
+                } else if (takesVarKwds) {
+                    unusedKeywords[k++] = kwArg;
+                } else {
+                    additionalKwds++;
+                    lastWrongKeyword = name;
+                }
+            }
+            storeKeywordsOrRaise(arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword);
+            return arguments;
+        }
+
+        @Specialization(replaces = "applyCached")
+        Object[] applyUncached(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
+                        @Exclusive @Cached SearchNamedParameterNode searchParamNode,
+                        @Exclusive @Cached SearchNamedParameterNode searchKwNode) {
+            boolean takesVarKwds = calleeSignature.takesVarKeywordArgs();
+            String[] parameters = calleeSignature.getParameterIds();
+            int positionalParamNum = parameters.length;
+            String[] kwNames = calleeSignature.getKeywordNames();
+            PKeyword[] unusedKeywords = new PKeyword[keywords.length];
+            // same as above
+            int k = 0;
+            int additionalKwds = 0;
+            String lastWrongKeyword = null;
+            for (int i = 0; i < keywords.length; i++) {
+                PKeyword kwArg = keywords[i];
+                String name = kwArg.getName();
+                int kwIdx = searchParamNode.execute(parameters, name);
+                if (kwIdx == -1) {
+                    int kwOnlyIdx = searchKwNode.execute(kwNames, name);
+                    if (kwOnlyIdx != -1) {
+                        kwIdx = kwOnlyIdx + positionalParamNum;
+                    }
+                }
+
+                if (kwIdx != -1) {
+                    if (PArguments.getArgument(arguments, kwIdx) != null) {
+                        throw raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
+                    }
+                    PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
+                } else if (takesVarKwds) {
+                    unusedKeywords[k++] = kwArg;
+                } else {
+                    additionalKwds++;
+                    lastWrongKeyword = name;
+                }
+            }
+            storeKeywordsOrRaise(arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword);
+            return arguments;
+        }
+
+        private void storeKeywordsOrRaise(Object[] arguments, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords, String lastWrongKeyword) {
+            if (tooManyKeywords == 1) {
+                throw raise(PythonBuiltinClassType.TypeError, "got an unexpected keyword argument '%s'", lastWrongKeyword);
+            } else if (tooManyKeywords > 1) {
+                throw raise(PythonBuiltinClassType.TypeError, "got %d unexpected keyword arguments", tooManyKeywords);
+            } else if (unusedKeywords != null) {
+                PArguments.setKeywordArguments(arguments, Arrays.copyOf(unusedKeywords, unusedKeywordCount));
+            }
+        }
+
+        @GenerateUncached
+        protected abstract static class SearchNamedParameterNode extends Node {
+            public abstract int execute(String[] parameters, String name);
+
+            @Specialization(guards = "cachedLen == parameters.length")
+            @ExplodeLoop
+            int cached(String[] parameters, String name,
+                            @Cached("parameters.length") int cachedLen) {
+                int idx = -1;
+                for (int i = 0; i < cachedLen; i++) {
+                    if (parameters[i].equals(name)) {
+                        idx = i;
+                    }
+                }
+                return idx;
+            }
+
+            @Specialization(replaces = "cached")
+            @ExplodeLoop
+            int uncached(String[] parameters, String name) {
+                for (int i = 0; i < parameters.length; i++) {
+                    if (parameters[i].equals(name)) {
+                        return i;
+                    }
+                }
+                return -1;
+            }
+
+            protected static SearchNamedParameterNode create() {
+                return SearchNamedParameterNodeGen.create();
+            }
+
+            protected static SearchNamedParameterNode getUncached() {
+                return SearchNamedParameterNodeGen.getUncached();
+            }
         }
     }
 
@@ -416,6 +586,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
     }
 
+    @GenerateUncached
     protected abstract static class FillDefaultsNode extends FillBaseNode {
 
         public abstract void execute(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount);
@@ -467,20 +638,23 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             }
         }
 
-        public static FillDefaultsNode create() {
+        protected static FillDefaultsNode create() {
             return FillDefaultsNodeGen.create();
+        }
+
+        protected static FillDefaultsNode getUncached() {
+            return FillDefaultsNodeGen.getUncached();
         }
     }
 
+    @GenerateUncached
     protected abstract static class FillKwDefaultsNode extends FillBaseNode {
-
-        @Child private FindKwDefaultNode findKwDefaultNode;
-
         public abstract void execute(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount);
 
-        @Specialization(guards = {"co_argcount == cachedArgcount", "co_kwonlyargcount == cachedKwOnlyArgcount", "checkIterations(co_argcount, co_kwonlyargcount)"})
+        @Specialization(guards = {"co_argcount == cachedArgcount", "co_kwonlyargcount == cachedKwOnlyArgcount", "checkIterations(co_argcount, co_kwonlyargcount)"}, limit = "2")
         @ExplodeLoop
         void doCached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, @SuppressWarnings("unused") int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount,
+                        @Cached FindKwDefaultNode findKwDefaultNode,
                         @Cached("co_argcount") int cachedArgcount,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgcount,
                         @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
@@ -492,7 +666,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
 
                 String kwname = signature.getKeywordNames()[i - cachedArgcount];
-                PKeyword kwdefault = findKwDefault(kwdefaults, kwname);
+                PKeyword kwdefault = findKwDefaultNode.execute(kwdefaults, kwname);
                 if (kwdefault != null) {
                     PArguments.setArgument(scope_w, i, kwdefault.getValue());
                 } else {
@@ -506,6 +680,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Specialization(replaces = "doCached")
         void doUncached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount,
+                        @Cached FindKwDefaultNode findKwDefaultNode,
                         @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
             String[] missingNames = new String[co_kwonlyargcount];
             int missingCnt = 0;
@@ -515,7 +690,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
 
                 String kwname = signature.getKeywordNames()[i - co_argcount];
-                PKeyword kwdefault = findKwDefault(kwdefaults, kwname);
+                PKeyword kwdefault = findKwDefaultNode.execute(kwdefaults, kwname);
                 if (kwdefault != null) {
                     PArguments.setArgument(scope_w, i, kwdefault.getValue());
                 } else {
@@ -527,20 +702,17 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             }
         }
 
-        private PKeyword findKwDefault(PKeyword[] kwdefaults, String kwname) {
-            if (findKwDefaultNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                findKwDefaultNode = insert(FindKwDefaultNode.create());
-            }
-            return findKwDefaultNode.execute(kwdefaults, kwname);
+        protected static FillKwDefaultsNode create() {
+            return FillKwDefaultsNodeGen.create();
         }
 
-        public static FillKwDefaultsNode create() {
-            return FillKwDefaultsNodeGen.create();
+        protected static FillKwDefaultsNode getUncached() {
+            return FillKwDefaultsNodeGen.getUncached();
         }
     }
 
     /** finds a keyword-default value by a given name */
+    @GenerateUncached
     protected abstract static class FindKwDefaultNode extends Node {
 
         public abstract PKeyword execute(PKeyword[] kwdefaults, String kwname);
@@ -567,8 +739,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return null;
         }
 
-        public static FindKwDefaultNode create() {
+        protected static FindKwDefaultNode create() {
             return FindKwDefaultNodeGen.create();
+        }
+
+        protected static FindKwDefaultNode getUncached() {
+            return FindKwDefaultNodeGen.getUncached();
         }
     }
 

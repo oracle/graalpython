@@ -74,6 +74,12 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseBinaryNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNodeFactory;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
@@ -753,8 +759,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return signature;
         }
 
-        public static ExternalFunctionNode create(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable) {
-            return ExternalFunctionNodeGen.create(lang, name, cwrapper, callable);
+        public static ExternalFunctionNode create(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable, Signature signature) {
+            return ExternalFunctionNodeGen.create(lang, name, cwrapper, callable, signature);
         }
     }
 
@@ -1654,9 +1660,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public abstract static class MethFastcallWithKeywordsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
+        Object call(PBuiltinFunction function,
+                        @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethFastcallWithKeywordsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethFastcallWithKeywordsRoot(lang, factory(), function.getCallTarget())));
         }
     }
 

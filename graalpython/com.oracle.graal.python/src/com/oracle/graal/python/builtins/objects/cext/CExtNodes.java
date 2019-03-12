@@ -64,14 +64,18 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToJavaN
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsDoubleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsLongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeClassNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ImportCAPISymbolNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeFactory.IsPointerCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCompareNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeFactory.ToJavaCachedNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -80,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -124,7 +129,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -134,7 +138,6 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.Node.Child;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -381,7 +384,7 @@ public abstract class CExtNodes {
         @TruffleBoundary
         public static Object doSlowPath(Object o) {
             if (o instanceof String) {
-                PythonObjectNativeWrapper.wrapSlowPath(PythonLanguage.getCore().factory().createString((String) o));
+                return PythonObjectNativeWrapper.wrapSlowPath(PythonLanguage.getCore().factory().createString((String) o));
             } else if (o instanceof Integer) {
                 return PrimitiveNativeWrapper.createInt((Integer) o);
             } else if (o instanceof Long) {
@@ -829,6 +832,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    @GenerateUncached
     public abstract static class GetNativeClassNode extends CExtBaseNode {
         public abstract PythonClass execute(PythonNativeObject object);
 
@@ -845,16 +849,20 @@ public abstract class CExtNodes {
             return cachedClass;
         }
 
-        @Specialization
+        @Specialization(replaces = "getNativeClassCached")
         PythonClass getNativeClass(PythonNativeObject object,
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached ToJavaNode toJavaNode) {
             // do not convert wrap 'object.object' since that is really the native pointer object
-            return (PythonClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.object));
+            return (PythonClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr()));
         }
 
         public static GetNativeClassNode create() {
             return GetNativeClassNodeGen.create();
+        }
+
+        public static GetNativeClassNode getUncached() {
+            return GetNativeClassNodeGen.getUncached();
         }
     }
 
@@ -877,7 +885,7 @@ public abstract class CExtNodes {
                 assert wcharSize >= 0L;
                 return wcharSize;
             } catch (InteropException e) {
-                throw e.raise();
+                throw new IllegalStateException("Cannot get wchar size", e);
             }
         }
 
@@ -887,6 +895,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    @GenerateUncached
     public abstract static class PointerCompareNode extends CExtBaseNode {
         public abstract boolean execute(String opName, Object a, Object b);
 
@@ -905,7 +914,7 @@ public abstract class CExtNodes {
                         @Shared("op") @Cached(value = "findOp(opName)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            return executeCFunction(op, a.object, b.object, interopLibrary, importCAPISymbolNode);
+            return executeCFunction(op, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
@@ -914,7 +923,7 @@ public abstract class CExtNodes {
                         @Shared("op") @Cached(value = "findOp(opName)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            return executeCFunction(op, a.object, b, interopLibrary, importCAPISymbolNode);
+            return executeCFunction(op, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
@@ -937,6 +946,10 @@ public abstract class CExtNodes {
 
         public static PointerCompareNode create() {
             return PointerCompareNodeGen.create();
+        }
+
+        public static PointerCompareNode getUncached() {
+            return PointerCompareNodeGen.getUncached();
         }
     }
 
@@ -1570,6 +1583,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    @GenerateUncached
     public static abstract class GetObjectDictNode extends CExtBaseNode {
         public abstract Object execute(Object self);
 
@@ -1584,85 +1598,77 @@ public abstract class CExtNodes {
                 return toJava.execute(interopLibrary.execute(func, toSulong.execute(self)));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();
-                throw e.raise();
-            }
-        }
-
-        @TruffleBoundary
-        public static Object doSlowPath(Object self) {
-            try {
-                TruffleObject func = importCAPISymbolSlowPath(NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT);
-                return ToJavaNode.doSlowPath(ForeignAccess.sendExecute(Message.EXECUTE.createNode(), func, ToSulongNode.doSlowPath(self)), true);
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw e.raise();
+                throw new IllegalStateException("could not run our core function to get the dict of a native object", e);
             }
         }
 
         public static GetObjectDictNode create() {
             return CExtNodesFactory.GetObjectDictNodeGen.create();
         }
+
+        public static GetObjectDictNode getUncached() {
+            return CExtNodesFactory.GetObjectDictNodeGen.getUncached();
+        }
     }
 
+    @GenerateUncached
     @TypeSystemReference(PythonTypes.class)
-    public abstract static class GetTypeMemberNode extends GetNativeDictNode {
-        @Child private ToSulongNode toSulong;
-        @Child private AsPythonObjectNode toJava;
-        @Child private PCallCapiFunction callGetTpDictNode;
-        @Child private GetLazyClassNode getNativeClassNode;
+    public abstract static class GetTypeMemberNode extends CExtBaseNode {
+        public abstract Object execute(Object obj, String getterFuncName);
 
-        @CompilationFinal private IsBuiltinClassProfile isTypeProfile;
-
-        protected GetTypeMemberNode(String memberName) {
-            String getterFuncName = "get_" + memberName;
-            if (!NativeCAPISymbols.isValid(getterFuncName)) {
-                throw new IllegalArgumentException("invalid native member getter function " + getterFuncName);
-            }
-            callGetTpDictNode = PCallCapiFunction.create(getterFuncName);
-        }
-
-        @Specialization(guards = "cachedObj.equals(obj)", limit = "1", assumptions = "getNativeClassStableAssumption(cachedObj)")
-        public Object doCached(@SuppressWarnings("unused") PythonNativeClass obj,
+        @Specialization(guards = {"cachedObj.equals(obj)", "memberName == cachedMemberName"}, limit = "1", assumptions = "getNativeClassStableAssumption(cachedObj)")
+        public Object doCachedObj(@SuppressWarnings("unused") PythonNativeClass obj, @SuppressWarnings("unused") String memberName,
+                        @SuppressWarnings("unused") @Cached("memberName") String cachedMemberName,
+                        @SuppressWarnings("unused") @Cached("getterFuncName(memberName)") String getterFuncName,
                         @Cached("obj") @SuppressWarnings("unused") PythonNativeClass cachedObj,
-                        @Cached("doUncached(obj)") Object result) {
+                        @Cached("doSlowPath(obj, getterFuncName)") Object result) {
             return result;
         }
 
-        @Specialization
-        public Object doUncached(Object self) {
-            if (toSulong == null || toJava == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulong = insert(ToSulongNode.create());
-                toJava = insert(AsPythonObjectNode.create());
-            }
+        @Specialization(guards = "memberName == cachedMemberName", limit = "1", replaces = "doCachedObj")
+        public Object doCachedMember(Object self, @SuppressWarnings("unused") String memberName,
+                        @SuppressWarnings("unused") @Cached("memberName") String cachedMemberName,
+                        @Cached("getterFuncName(memberName)") String getterName,
+                        @Shared("toSulong") @Cached ToSulongNode toSulong,
+                        @Shared("toJava") @Cached AsPythonObjectNode toJava,
+                        @Shared("callCapi") @Cached PCallCapiFunction callGetTpDictNode) {
             assert isNativeTypeObject(self);
-            return toJava.execute(callGetTpDictNode.call(toSulong.execute(self)));
+            return toJava.execute(callGetTpDictNode.call(getterName, toSulong.execute(self)));
+        }
+
+        @Specialization(replaces = "doCachedMember")
+        public Object doUncached(Object self, String memberName,
+                        @Shared("toSulong") @Cached ToSulongNode toSulong,
+                        @Shared("toJava") @Cached AsPythonObjectNode toJava,
+                        @Shared("callCapi") @Cached PCallCapiFunction callGetTpDictNode) {
+            assert isNativeTypeObject(self);
+            return toJava.execute(callGetTpDictNode.call(getterFuncName(memberName), toSulong.execute(self)));
+        }
+
+        protected Object doSlowPath(Object obj, String getterFuncName) {
+            return ToJavaNode.getUncached().execute(PCallCapiFunction.getUncached().call(getterFuncName, ToSulongNode.getUncached().execute(obj)));
+        }
+
+        protected String getterFuncName(String memberName) {
+            String name = "get_" + memberName;
+            assert NativeCAPISymbols.isValid(name) : "invalid native member getter function " + name;
+            return name;
         }
 
         protected Assumption getNativeClassStableAssumption(PythonNativeClass clazz) {
             return getContext().getNativeClassStableAssumption(clazz, true).getAssumption();
         }
 
-        private boolean isNativeTypeObject(Object self) {
-            if (getNativeClassNode == null || isTypeProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getNativeClassNode = insert(GetLazyClassNode.create());
-                isTypeProfile = IsBuiltinClassProfile.create();
-            }
-            return isTypeProfile.profileClass(getNativeClassNode.execute(self), PythonBuiltinClassType.PythonClass);
+        private static boolean isNativeTypeObject(Object self) {
+            return IsBuiltinClassProfile.getUncached().profileClass(GetLazyClassNode.getUncached().execute(self), PythonBuiltinClassType.PythonClass);
         }
 
-        @TruffleBoundary
-        public static Object doSlowPath(Object self, String memberName) {
-            String getterFuncName = "get_" + memberName;
-            if (!NativeCAPISymbols.isValid(getterFuncName)) {
-                throw new IllegalArgumentException("invalid native member getter function " + getterFuncName);
-            }
-            return AsPythonObjectNode.doSlowPath(PCallCapiFunction.doSlowPath(getterFuncName, ToSulongNode.doSlowPath(self)), false);
+        public static GetTypeMemberNode create() {
+            return GetTypeMemberNodeGen.create();
         }
 
-        public static GetTypeMemberNode create(String typeMember) {
-            return GetTypeMemberNodeGen.create(typeMember);
+        public static GetTypeMemberNode getUncached() {
+            return GetTypeMemberNodeGen.getUncached();
         }
     }
 }

@@ -41,18 +41,20 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeDictNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.ReadAttributeFromObjectNotTypeNodeGen;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.ReadAttributeFromObjectTpDictNodeGen;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
@@ -120,11 +122,12 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     "singleContextAssumption"
     })
     protected Object readFromDictCached(PythonObject object, Object key,
+                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
                     @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
-        Object value = getItemNode.execute(getDictStorage(object.getDict()), key);
+        Object value = getItemNode.execute(getDictStorage.execute(object.getDict()), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -137,8 +140,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     "!isDictUnsetOrSameAsStorage(object)"
     }, replaces = "readFromDictCached")
     protected Object readFromDict(PythonObject object, Object key,
+                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
-        Object value = getItemNode.execute(getDictStorage(object.getDict()), key);
+        Object value = getItemNode.execute(getDictStorage.execute(object.getDict()), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -156,7 +160,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
             if (read.isMemberReadable(object, member)) {
                 return fromForeign.executeConvert(read.readMember(object, member));
             }
-        } catch (UnknownIdentifierException | UnsupportedMessageException ignored) {}
+        } catch (UnknownIdentifierException | UnsupportedMessageException ignored) {
+        }
         return PNone.NO_VALUE;
     }
 
@@ -172,14 +177,15 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // the boolean flag forceType for the fallback in their type
 
     @GenerateUncached
-    protected abstract class ReadAttributeFromObjectNotTypeNode extends ReadAttributeFromObjectNode {
+    protected static abstract class ReadAttributeFromObjectNotTypeNode extends ReadAttributeFromObjectNode {
         @Specialization(guards = {"!isHiddenKey(key)"})
         protected Object readNativeObject(PythonNativeObject object, Object key,
-                                          @Cached("create()") GetObjectDictNode getNativeDict,
-                                          @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
-            return readNative(object, key, getNativeDict, getItemNode);
+                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
+                        @Cached("create()") GetObjectDictNode getNativeDict,
+                        @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+            return readNative(key, getNativeDict.execute(object), getItemNode, getDictStorage);
         }
-        
+
         @Fallback
         protected Object fallback(Object object, Object key) {
             return doSlowPath(object, key, false);
@@ -187,12 +193,13 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     @GenerateUncached
-    protected abstract class ReadAttributeFromObjectTpDictNode extends ReadAttributeFromObjectNode {
+    protected static abstract class ReadAttributeFromObjectTpDictNode extends ReadAttributeFromObjectNode {
         @Specialization(guards = {"!isHiddenKey(key)"})
         protected Object readNativeClass(PythonNativeClass object, Object key,
-                                         @Cached("create(TP_DICT)") GetTypeMemberNode getNativeDict,
-                                         @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
-            return readNative(object, key, getNativeDict, getItemNode);
+                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
+                        @Cached GetTypeMemberNode getNativeDict,
+                        @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+            return readNative(key, getNativeDict.execute(object, NativeMemberNames.TP_DICT), getItemNode, getDictStorage);
         }
 
         @Fallback
@@ -201,21 +208,16 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         }
     }
 
-    protected  Object readNative(Object object, Object key, GetNativeDictNode getNativeDict, HashingStorageNodes.GetItemNode getItemNode) {
-        Object d = getNativeDict.execute(object);
-        Object value = null;
-        if (d instanceof PHashingCollection) {
-            value = getItemNode.execute(getDictStorage((PHashingCollection) d), key);
-        }
-        if (value == null) {
-            return PNone.NO_VALUE;
+    private static Object readNative(Object key, Object dict, HashingStorageNodes.GetItemNode getItemNode, HashingCollectionNodes.GetDictStorageNode getDictStorage) {
+        if (dict instanceof PHashingCollection) {
+            return getItemNode.execute(getDictStorage.execute((PHashingCollection) dict), key);
         } else {
-            return value;
+            return PNone.NO_VALUE;
         }
     }
 
     @TruffleBoundary
-    protected static Object doSlowPath(Object object, Object key, boolean forceType) {
+    private static Object doSlowPath(Object object, Object key, boolean forceType) {
         if (object instanceof PythonObject) {
             PythonObject po = (PythonObject) object;
             if (ObjectAttributeNode.isDictUnsetOrSameAsStorage(po)) {
@@ -230,7 +232,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                 }
             }
         } else if (object instanceof PythonAbstractNativeObject) {
-            Object d = forceType ? GetTypeMemberNode.doSlowPath(object, NativeMemberNames.TP_DICT) : GetObjectDictNode.doSlowPath(object);
+            Object d = forceType ? GetTypeMemberNode.getUncached().execute(object, NativeMemberNames.TP_DICT) : GetObjectDictNode.getUncached().execute(object);
             Object value = null;
             if (d instanceof PHashingCollection) {
                 HashingStorage dictStorage = ((PHashingCollection) d).getDictStorage();

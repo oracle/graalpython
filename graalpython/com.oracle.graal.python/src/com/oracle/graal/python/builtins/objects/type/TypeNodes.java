@@ -86,6 +86,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -201,6 +202,7 @@ public abstract class TypeNodes {
     }
 
     @ImportStatic(NativeMemberNames.class)
+    @GenerateUncached
     public abstract static class GetMroStorageNode extends PNodeWithContext {
 
         public abstract MroSequenceStorage execute(Object obj);
@@ -211,16 +213,16 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        MroSequenceStorage doPythonClass(PythonBuiltinClassType obj) {
+        MroSequenceStorage doBuiltinClass(PythonBuiltinClassType obj) {
             return getBuiltinPythonClass(obj).getMethodResolutionOrder();
         }
 
         @Specialization
         MroSequenceStorage doNativeClass(PythonNativeClass obj,
-                        @Cached("create(TP_MRO)") GetTypeMemberNode getTpMroNode,
+                        @Cached GetTypeMemberNode getTpMroNode,
                         @Cached("createClassProfile()") ValueProfile tpMroProfile,
                         @Cached("createClassProfile()") ValueProfile storageProfile) {
-            Object tupleObj = tpMroProfile.profile(getTpMroNode.execute(obj));
+            Object tupleObj = tpMroProfile.profile(getTpMroNode.execute(obj, NativeMemberNames.TP_MRO));
             if (tupleObj instanceof PTuple) {
                 SequenceStorage sequenceStorage = storageProfile.profile(((PTuple) tupleObj).getSequenceStorage());
                 if (sequenceStorage instanceof MroSequenceStorage) {
@@ -230,14 +232,15 @@ public abstract class TypeNodes {
             throw raise(PythonBuiltinClassType.SystemError, "invalid mro object");
         }
 
+        @Specialization(replaces = {"doPythonClass", "doBuiltinClass", "doNativeClass"})
         @TruffleBoundary
-        public static MroSequenceStorage doSlowPath(Object obj) {
+        static MroSequenceStorage doSlowPath(Object obj) {
             if (obj instanceof PythonManagedClass) {
                 return ((PythonManagedClass) obj).getMethodResolutionOrder();
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
             } else if (PGuards.isNativeClass(obj)) {
-                Object tupleObj = GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_MRO);
+                Object tupleObj = GetTypeMemberNode.getUncached().execute(obj, NativeMemberNames.TP_MRO);
                 if (tupleObj instanceof PTuple) {
                     SequenceStorage sequenceStorage = ((PTuple) tupleObj).getSequenceStorage();
                     if (sequenceStorage instanceof MroSequenceStorage) {
@@ -252,9 +255,14 @@ public abstract class TypeNodes {
         public static GetMroStorageNode create() {
             return GetMroStorageNodeGen.create();
         }
+
+        public static GetMroStorageNode getUncached() {
+            return GetMroStorageNodeGen.getUncached();
+        }
     }
 
     @ImportStatic(NativeMemberNames.class)
+    @GenerateUncached
     public abstract static class GetNameNode extends PNodeWithContext {
 
         public abstract String execute(Object obj);
@@ -271,10 +279,11 @@ public abstract class TypeNodes {
 
         @Specialization
         String doNativeClass(PythonNativeClass obj,
-                        @Cached("create(TP_NAME)") CExtNodes.GetTypeMemberNode getTpNameNode) {
-            return (String) getTpNameNode.execute(obj);
+                        @Cached CExtNodes.GetTypeMemberNode getTpNameNode) {
+            return (String) getTpNameNode.execute(obj, NativeMemberNames.TP_NAME);
         }
 
+        @Specialization(replaces = {"doManagedClass", "doBuiltinClassType", "doNativeClass"})
         @TruffleBoundary
         public static String doSlowPath(Object obj) {
             if (obj instanceof PythonManagedClass) {
@@ -282,7 +291,7 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return ((PythonBuiltinClassType) obj).getName();
             } else if (PGuards.isNativeClass(obj)) {
-                return (String) CExtNodes.GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_NAME);
+                return (String) CExtNodes.GetTypeMemberNode.getUncached().execute(obj, NativeMemberNames.TP_NAME);
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -291,6 +300,9 @@ public abstract class TypeNodes {
             return GetNameNodeGen.create();
         }
 
+        public static GetNameNode getUncached() {
+            return GetNameNodeGen.create();
+        }
     }
 
     @TypeSystemReference(PythonTypes.class)
@@ -311,9 +323,9 @@ public abstract class TypeNodes {
 
         @Specialization
         LazyPythonClass doNative(PythonNativeClass obj,
-                        @Cached("create(TP_BASE)") GetTypeMemberNode getTpBaseNode,
+                        @Cached GetTypeMemberNode getTpBaseNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
-            Object tpBaseObj = getTpBaseNode.execute(obj);
+            Object tpBaseObj = getTpBaseNode.execute(obj, NativeMemberNames.TP_BASE);
             if (profile.profile(PGuards.isClass(tpBaseObj))) {
                 return (PythonAbstractClass) tpBaseObj;
             }
@@ -328,7 +340,7 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return ((PythonBuiltinClassType) obj).getBase();
             } else if (PGuards.isNativeClass(obj)) {
-                Object tpBaseObj = GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_BASE);
+                Object tpBaseObj = GetTypeMemberNode.getUncached().execute(obj, NativeMemberNames.TP_BASE);
                 if (PGuards.isClass(tpBaseObj)) {
                     return (PythonAbstractClass) tpBaseObj;
                 }
@@ -362,9 +374,9 @@ public abstract class TypeNodes {
         @Specialization
         @TruffleBoundary
         Set<PythonAbstractClass> doNativeClass(PythonNativeClass obj,
-                        @Cached("create(TP_SUBCLASSES)") GetTypeMemberNode getTpSubclassesNode,
+                        @Cached GetTypeMemberNode getTpSubclassesNode,
                         @Cached("createClassProfile()") ValueProfile profile) {
-            Object tpSubclasses = getTpSubclassesNode.execute(obj);
+            Object tpSubclasses = getTpSubclassesNode.execute(obj, NativeMemberNames.TP_SUBCLASSES);
 
             Object profiled = profile.profile(tpSubclasses);
             if (profiled instanceof PDict) {
@@ -381,7 +393,7 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getSubClasses();
             } else if (PGuards.isNativeClass(obj)) {
-                Object tpSubclasses = GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_SUBCLASSES);
+                Object tpSubclasses = GetTypeMemberNode.getUncached().execute(obj, NativeMemberNames.TP_SUBCLASSES);
                 if (tpSubclasses instanceof PDict) {
                     return wrapDict(tpSubclasses);
                 }
@@ -485,10 +497,10 @@ public abstract class TypeNodes {
 
         @Specialization
         PythonAbstractClass[] doNative(PythonNativeClass obj,
-                        @Cached("create(TP_BASES)") GetTypeMemberNode getTpBasesNode,
+                        @Cached GetTypeMemberNode getTpBasesNode,
                         @Cached("createClassProfile()") ValueProfile resultTypeProfile,
                         @Cached("createToArray()") SequenceStorageNodes.ToArrayNode toArrayNode) {
-            Object result = resultTypeProfile.profile(getTpBasesNode.execute(obj));
+            Object result = resultTypeProfile.profile(getTpBasesNode.execute(obj, NativeMemberNames.TP_BASES));
             if (result instanceof PTuple) {
                 Object[] values = toArrayNode.execute(((PTuple) result).getSequenceStorage());
                 try {
@@ -507,7 +519,7 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getBaseClasses();
             } else if (PGuards.isNativeClass(obj)) {
-                Object basesObj = GetTypeMemberNode.doSlowPath(obj, NativeMemberNames.TP_BASES);
+                Object basesObj = GetTypeMemberNode.getUncached().execute(obj, NativeMemberNames.TP_BASES);
                 if (!(basesObj instanceof PTuple)) {
                     throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, "invalid type of tp_bases (was %p)", basesObj);
                 }
@@ -567,9 +579,9 @@ public abstract class TypeNodes {
             }
             if (pointerCompareNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                pointerCompareNode = insert(CExtNodes.PointerCompareNode.create(SpecialMethodNames.__EQ__));
+                pointerCompareNode = insert(CExtNodes.PointerCompareNode.create());
             }
-            return pointerCompareNode.execute(left, right);
+            return pointerCompareNode.execute(__EQ__, left, right);
         }
 
         @Fallback
@@ -589,7 +601,7 @@ public abstract class TypeNodes {
             if (left instanceof PythonManagedClass && right instanceof PythonManagedClass) {
                 return left == right;
             } else if (left instanceof PythonAbstractNativeObject && right instanceof PythonAbstractNativeObject) {
-                return CExtNodes.PointerCompareNode.create(__EQ__).execute((PythonAbstractNativeObject) left, (PythonAbstractNativeObject) right);
+                return CExtNodes.PointerCompareNode.getUncached().execute(__EQ__, left, right);
             }
             return false;
         }

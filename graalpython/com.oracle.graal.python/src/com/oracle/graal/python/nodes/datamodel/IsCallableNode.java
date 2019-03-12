@@ -55,7 +55,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 @GenerateUncached
 public abstract class IsCallableNode extends PDataModelEmulationNode {
 
-    @Specialization(guards = {"!PGuards.isCallable(callable) || isClass(callable)"})
+    @Specialization(guards = {"!isCallable(callable) || isClass(callable)"})
     protected static boolean isSpecialCallable(Object callable,
                     @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode) {
         Object call = callAttrGetterNode.execute(callable, __CALL__);

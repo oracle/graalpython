@@ -1,8 +1,8 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 
 /**
  * Used to wrap {@link PythonClass} when used in native code. This wrapper mimics the correct
@@ -13,9 +13,9 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
     private Object getBufferProc;
     private Object releaseBufferProc;
 
-    public PythonClassNativeWrapper(PythonClass object) {
+    private PythonClassNativeWrapper(PythonManagedClass object, String name) {
         super(object);
-        this.nameWrapper = new CStringWrapper(object.getName());
+        this.nameWrapper = new CStringWrapper(name);
     }
 
     public CStringWrapper getNameWrapper() {
@@ -38,11 +38,11 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
         this.releaseBufferProc = releaseBufferProc;
     }
 
-    public static PythonClassNativeWrapper wrap(PythonClass obj) {
+    public static PythonClassNativeWrapper wrap(PythonManagedClass obj, String name) {
         // important: native wrappers are cached
         PythonClassNativeWrapper nativeWrapper = obj.getNativeWrapper();
         if (nativeWrapper == null) {
-            nativeWrapper = new PythonClassNativeWrapper(obj);
+            nativeWrapper = new PythonClassNativeWrapper(obj, name);
             obj.setNativeWrapper(nativeWrapper);
         }
         return nativeWrapper;

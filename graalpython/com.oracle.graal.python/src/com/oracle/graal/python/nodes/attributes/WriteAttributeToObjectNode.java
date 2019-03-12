@@ -142,10 +142,11 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
                     @Cached("create()") BranchProfile updateStorage,
+                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
         handlePythonClass(object, key);
         PHashingCollection dict = object.getDict();
-        HashingStorage dictStorage = getDictStorage(dict);
+        HashingStorage dictStorage = getDictStorage.execute(dict);
         HashingStorage hashingStorage = setItemNode.execute(dictStorage, key, value);
         if (dictStorage != hashingStorage) {
             updateStorage.enter();
@@ -160,10 +161,11 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }, replaces = "writeToDictCached")
     protected boolean writeToDict(PythonObject object, Object key, Object value,
                     @Cached("create()") BranchProfile updateStorage,
+                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
         handlePythonClass(object, key);
         PHashingCollection dict = object.getDict();
-        HashingStorage dictStorage = getDictStorage(dict);
+        HashingStorage dictStorage = getDictStorage.execute(dict);
         HashingStorage hashingStorage = setItemNode.execute(dictStorage, key, value);
         if (dictStorage != hashingStorage) {
             updateStorage.enter();
@@ -181,9 +183,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     @Specialization(guards = {"forceType", "!isHiddenKey(key)"})
     protected boolean writeNativeClass(PythonAbstractNativeObject object, Object key, Object value,
-                    @Cached("create(TP_DICT)") GetTypeMemberNode getNativeDict,
+                    @Cached GetTypeMemberNode getNativeDict,
                     @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
-        return writeNativeGeneric(object, key, value, getNativeDict.execute(object), setItemNode);
+        return writeNativeGeneric(object, key, value, getNativeDict.execute(object, NativeMemberNames.TP_DICT), setItemNode);
     }
 
     private boolean writeNativeGeneric(PythonAbstractNativeObject object, Object key, Object value, Object d, HashingCollectionNodes.SetItemNode setItemNode) {

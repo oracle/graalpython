@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -53,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.ArityCheckNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -171,36 +169,54 @@ public abstract class CallNode extends PNodeWithContext {
 
         @Specialization
         protected Object builtinFunctionCall(VirtualFrame frame, PBuiltinFunction callable, Object[] arguments, PKeyword[] keywords) {
-            return ensureDispatch().executeCall(frame, callable, ensureCreateArguments().execute(callable, arguments, keywords);
+            return ensureDispatch().executeCall(frame, callable, ensureCreateArguments().execute(callable, arguments, keywords));
         }
     }
 
     private static final class UncachedCallNode extends CallNode {
         private final CreateArgumentsNode createArgs = CreateArgumentsNode.getUncached();
-        private final ArityCheckNode arityCheck = ArityCheckNode.getUncached();
         private final IndirectCallNode callNode = IndirectCallNode.getUncached();
 
         @Override
         public Object execute(VirtualFrame frame, Object callableObject, Object[] args, PKeyword[] keywords) {
-            RootCallTarget ct;
-            Arity arity;
-            Object[] arguments = createArgs.execute(args);
-            PArguments.setCallerFrame(arguments, frame == null ? null : frame.materialize());
+            RootCallTarget ct = null;
+            Object[] arguments = null;
+
             if (callableObject instanceof PFunction) {
+                arguments = createArgs.execute((PFunction) callableObject, args, keywords);
                 ct = ((PFunction) callableObject).getCallTarget();
-                arity = ((PFunction) callableObject).getArity();
             } else if (callableObject instanceof PBuiltinFunction) {
+                arguments = createArgs.execute((PBuiltinFunction) callableObject, args, keywords);
                 ct = ((PBuiltinFunction) callableObject).getCallTarget();
-                arity = ((PBuiltinFunction) callableObject).getArity();
-            } else {
+            } else if (callableObject instanceof PMethod) {
+                Object func = ((PMethod) callableObject).getFunction();
+                if (func instanceof PFunction) {
+                    arguments = createArgs.execute((PFunction) callableObject, args, keywords);
+                    ct = ((PFunction) func).getCallTarget();
+                } else {
+                    arguments = createArgs.execute((PBuiltinFunction) callableObject, args, keywords);
+                    ct = ((PBuiltinFunction) func).getCallTarget();
+                }
+            } else if (callableObject instanceof PBuiltinMethod) {
+                Object func = ((PBuiltinMethod) callableObject).getFunction();
+                if (func instanceof PFunction) {
+                    arguments = createArgs.execute((PFunction) callableObject, args, keywords);
+                    ct = ((PFunction) func).getCallTarget();
+                } else {
+                    arguments = createArgs.execute((PBuiltinFunction) callableObject, args, keywords);
+                    ct = ((PBuiltinFunction) func).getCallTarget();
+                }
+            }
+
+            if (ct == null || arguments == null) {
                 throw new IllegalArgumentException("Cannot call non-functions on the slow path");
+            } else {
+                PArguments.setCallerFrame(arguments, frame == null ? null : frame.materialize());
+                if (ct.getRootNode() instanceof ClassBodyRootNode) {
+                    PArguments.setSpecialArgument(arguments, ct.getRootNode());
+                }
+                return callNode.call(ct, arguments);
             }
-            if (ct.getRootNode() instanceof ClassBodyRootNode) {
-                PArguments.setSpecialArgument(arguments, ct.getRootNode());
-            }
-            PArguments.setKeywordArguments(arguments, keywords);
-            arityCheck.execute(arity, arguments, keywords);
-            return callNode.call(ct, arguments);
         }
     }
 }

@@ -104,7 +104,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
 
     protected PythonUnaryBuiltinNode getBuiltin(Object receiver) {
         assert receiver instanceof Boolean || receiver instanceof Integer || receiver instanceof Long || receiver instanceof Double || receiver instanceof String || receiver instanceof PNone;
-        Object attribute = LookupAttributeInMRONode.lookupSlow(GetClassNode.getItSlowPath(receiver), name);
+        Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getItSlowPath(receiver), name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
             if (PythonUnaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {

@@ -155,9 +155,9 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             if (PGuards.isNativeClass(clazz)) {
                 if (getTpWeaklistoffsetNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getTpWeaklistoffsetNode = insert(GetTypeMemberNode.create(NativeMemberNames.TP_WEAKLISTOFFSET));
+                    getTpWeaklistoffsetNode = insert(GetTypeMemberNode.create());
                 }
-                Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(clazz);
+                Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(clazz, NativeMemberNames.TP_WEAKLISTOFFSET);
                 if (tpWeaklistoffset != PNone.NO_VALUE) {
                     return factory().createReferenceType(cls, pythonObject, callback, getWeakReferenceQueue());
                 }

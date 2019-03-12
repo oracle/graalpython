@@ -257,7 +257,7 @@ public abstract class GetClassNode extends PNodeWithContext {
         } else if (o instanceof PythonObject) {
             return ((PythonObject) o).getPythonClass();
         } else if (o instanceof PythonAbstractNativeObject) {
-            return GetNativeClassNode.doSlowPath((PythonAbstractNativeObject) o);
+            return GetNativeClassNode.getUncached().execute((PythonAbstractNativeObject) o);
         } else if (o instanceof PEllipsis) {
             return core.lookupType(PythonBuiltinClassType.PEllipsis);
         } else if (o instanceof PNotImplemented) {

@@ -109,7 +109,7 @@ public class ErrorMessageFormatter {
         if (getClassNode != null) {
             return GetNameNode.doSlowPath(getClassNode.execute(obj));
         }
-        return GetNameNode.doSlowPath(GetLazyClassNode.getItSlowPath(obj));
+        return GetNameNode.doSlowPath(GetLazyClassNode.getUncached().execute(obj));
     }
 
     private static Object[] compact(Object[] args, int removedCnt) {

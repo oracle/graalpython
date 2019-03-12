@@ -64,6 +64,8 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 @ImportStatic(PythonOptions.class)
 public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     public abstract static class Dynamic extends PNodeWithContext {
+        private static final DynamicUncached UNCACHED = new DynamicUncached();
+
         public abstract Object execute(LazyPythonClass klass, Object key);
 
         public static LookupAttributeInMRONode.Dynamic create() {
@@ -71,7 +73,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
 
         public static LookupAttributeInMRONode.Dynamic getUncached() {
-            return new DynamicUncached();
+            return UNCACHED;
         }
     }
 
@@ -103,13 +105,14 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
     static class DynamicUncached extends Dynamic {
         private final ReadAttributeFromObjectNode readAttrNode = ReadAttributeFromObjectNode.getUncached();
+        private final GetMroStorageNode getMroNode = GetMroStorageNode.getUncached();
 
         @Override
         public Object execute(LazyPythonClass klass, Object key) {
             if (klass instanceof PythonBuiltinClassType) {
                 return LookupAttributeInMRONode.findAttr(getCore(), (PythonBuiltinClassType) klass, key);
             } else if (klass instanceof PythonClass) {
-                return LookupAttributeInMRONode.lookupSlow((PythonClass) klass, key, readAttrNode);
+                return LookupAttributeInMRONode.lookupSlow((PythonClass) klass, key, getMroNode, readAttrNode);
             } else {
                 CompilerDirectives.transferToInterpreter();
                 throw new RuntimeException("not implemented: lookup inherited attribute from non-PythonClass");
@@ -141,13 +144,13 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     protected static Object findAttr(PythonCore core, PythonBuiltinClassType klass, Object key) {
         PythonBuiltinClassType current = klass;
         while (current != PythonBuiltinClassType.PythonObject) {
-            Object value = ReadAttributeFromDynamicObjectNode.doSlowPath(core.lookupType(current).getStorage(), key);
+            Object value = ReadAttributeFromDynamicObjectNode.getUncached().execute(core.lookupType(current).getStorage(), key);
             if (value != PNone.NO_VALUE) {
                 return value;
             }
             current = current.getBase();
         }
-        return ReadAttributeFromDynamicObjectNode.doSlowPath(core.lookupType(current).getStorage(), key);
+        return ReadAttributeFromDynamicObjectNode.getUncached().execute(core.lookupType(current).getStorage(), key);
     }
 
     @Specialization(guards = {"klass == cachedKlass"}, limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)")
@@ -183,7 +186,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                 getMro(clsObj).addAttributeInMROFinalAssumption(key, attrAssumption);
             }
 
-            Object value = ReadAttributeFromObjectNode.doSlowPath(clsObj, key, true);
+            Object value = ReadAttributeFromObjectNode.getUncachedForceType().execute(clsObj, key);
             if (value != PNone.NO_VALUE) {
                 return new PythonClassAssumptionPair(attrAssumption, value);
             }
@@ -248,18 +251,6 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         for (int i = 0; i < mro.length(); i++) {
             PythonAbstractClass kls = mro.getItemNormalized(i);
             Object value = readAttrNode.execute(kls, key);
-            if (value != PNone.NO_VALUE) {
-                return value;
-            }
-        }
-        return PNone.NO_VALUE;
-    }
-
-    public static Object lookupSlow(LazyPythonClass klass, String key) {
-        PythonAbstractClass[] mro = GetMroNode.doSlowPath(klass);
-        for (int i = 0; i < mro.length; i++) {
-            PythonAbstractClass kls = mro[i];
-            Object value = ReadAttributeFromObjectNode.doSlowPath(kls, key, true);
             if (value != PNone.NO_VALUE) {
                 return value;
             }

@@ -61,12 +61,9 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadNativeMemberDispatchNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadTypeNativeMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapperFactory.ReadNativeMemberDispatchNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapperFactory.ReadObjectNativeMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapperFactory.ReadTypeNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -306,7 +303,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         protected HashingStorageNodes.GetItemNode getGetItemNode() {
             if (getItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(GetItemNode.create());
+                getItemNode = insert(HashingStorageNodes.GetItemNode.create());
             }
             return getItemNode;
         }
@@ -546,6 +543,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     abstract static class ReadObjectNativeMemberNode extends ReadNativeMemberNode {
+        static ReadObjectNativeMemberNode create() {
+            return ReadObjectNativeMemberNodeGen.create();
+        }
 
         @Specialization(guards = "eq(D_COMMON, key)")
         Object doDCommon(Object o, @SuppressWarnings("unused") String key) {
@@ -768,14 +768,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization
         Object doMemoryview(PMemoryView object, String key,
                         @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
-                        @Cached("createReadNode()") Node readNode,
+                        @CachedLibrary(limit = "1") InteropLibrary read,
                         @Cached("createBinaryProfile()") ConditionProfile isNativeObject) {
             Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
             if (isNativeObject.profile(PythonNativeObject.isInstance(delegateObj))) {
                 try {
-                    return ForeignAccess.sendRead(readNode, PythonNativeObject.cast(delegateObj).getPtr(), key);
+                    return read.readMember(PythonNativeObject.cast(delegateObj).getPtr(), key);
                 } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                    throw e.raise();
+                    throw raise(PythonBuiltinClassType.TypeError, e);
                 }
             }
             throw new IllegalStateException("delegate of memoryview object is not native");
@@ -795,7 +795,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         protected static boolean isPyDateTimeCAPIType(LazyPythonClass klass) {
-            return "PyDateTime_CAPI".equals(klass.getName());
+            return "PyDateTime_CAPI".equals(GetNameNode.getUncached().execute(klass));
 
         }
 
@@ -829,53 +829,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @TruffleBoundary(allowInlining = true)
         private static void logGeneric(String key) {
             PythonLanguage.getLogger().log(Level.FINE, "read of Python struct native member " + key);
-        }
-
-        protected boolean eq(String expected, String actual) {
-            return expected.equals(actual);
-        }
-
-        private HashingStorageNodes.GetItemNode getGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(HashingStorageNodes.GetItemNode.create());
-            }
-            return getItemNode;
-        }
-
-        private CExtNodes.ToSulongNode getToSulongNode() {
-            if (toSulongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(CExtNodesFactory.ToSulongNodeGen.create());
-            }
-            return toSulongNode;
-        }
-
-        private int sizeofWchar() {
-            if (sizeofWcharNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                sizeofWcharNode = insert(CExtNodes.SizeofWCharNode.create());
-            }
-            return (int) sizeofWcharNode.execute();
-        }
-
-        private PythonClass getClass(Object obj) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            return getClassNode.execute(obj);
-        }
-
-        private static Object getSliceComponent(int sliceComponent) {
-            if (sliceComponent == PSlice.MISSING_INDEX) {
-                return PNone.NONE;
-            }
-            return sliceComponent;
-        }
-
-        protected Node createReadNode() {
-            return Message.READ.createNode();
         }
     }
 
@@ -1258,6 +1211,16 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return nativeWrapper;
         }
 
+        public static DynamicObjectNativeWrapper wrapSlowPath(PythonAbstractObject obj) {
+            // important: native wrappers are cached
+            DynamicObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
+            if (nativeWrapper == null) {
+                nativeWrapper = new PythonObjectNativeWrapper(obj);
+                obj.setNativeWrapper(nativeWrapper);
+            }
+            return nativeWrapper;
+        }
+
         @Override
         public String toString() {
             CompilerAsserts.neverPartOfCompilation();
@@ -1267,7 +1230,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @ExportMessage
         protected boolean isMemberReadable(String member,
                         @Cached GetLazyClassNode getClassNode) {
-            return member.equals(DynamicObjectNativeWrapper.GP_OBJECT) || NativeMemberNames.isValid(member) || ReadNativeMemberNode.isPyDateTimeCAPIType(getClassNode.execute(getDelegate()));
+            return member.equals(DynamicObjectNativeWrapper.GP_OBJECT) || NativeMemberNames.isValid(member) || ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getClassNode.execute(getDelegate()));
         }
 
         @ExportMessage

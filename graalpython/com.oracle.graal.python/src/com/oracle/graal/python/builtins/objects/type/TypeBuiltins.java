@@ -482,8 +482,8 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doNative(PythonNativeClass self,
-                        @Cached("create(TP_DICT)") CExtNodes.GetTypeMemberNode getTpDictNode) {
-            return getTpDictNode.execute(self);
+                        @Cached CExtNodes.GetTypeMemberNode getTpDictNode) {
+            return getTpDictNode.execute(self, NativeMemberNames.TP_DICT);
         }
     }
 
@@ -644,9 +644,9 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object getModule(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create(TP_NAME)") GetTypeMemberNode getTpNameNode) {
+                        @Cached GetTypeMemberNode getTpNameNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String tpName = (String) getTpNameNode.execute(cls);
+            String tpName = (String) getTpNameNode.execute(cls, NativeMemberNames.TP_NAME);
             return getQualName(tpName);
         }
 
@@ -694,9 +694,9 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object getModule(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create(TP_NAME)") GetTypeMemberNode getTpNameNode) {
+                        @Cached GetTypeMemberNode getTpNameNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String tpName = (String) getTpNameNode.execute(cls);
+            String tpName = (String) getTpNameNode.execute(cls, NativeMemberNames.TP_NAME);
             return getModuleName(tpName);
         }
 
@@ -745,9 +745,9 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         String getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create(TP_NAME)") GetTypeMemberNode getTpNameNode) {
+                        @Cached GetTypeMemberNode getTpNameNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String tpName = (String) getTpNameNode.execute(cls);
+            String tpName = (String) getTpNameNode.execute(cls, NativeMemberNames.TP_NAME);
             return getQualName(tpName);
         }
 
@@ -793,8 +793,8 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create(TP_DICTOFFSET)") GetTypeMemberNode getTpDictoffsetNode) {
-            return getTpDictoffsetNode.execute(cls);
+                        @Cached GetTypeMemberNode getTpDictoffsetNode) {
+            return getTpDictoffsetNode.execute(cls, NativeMemberNames.TP_DICTOFFSET);
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -830,8 +830,8 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create(TP_ITEMSIZE)") GetTypeMemberNode getTpDictoffsetNode) {
-            return getTpDictoffsetNode.execute(cls);
+                        @Cached GetTypeMemberNode getTpDictoffsetNode) {
+            return getTpDictoffsetNode.execute(cls, NativeMemberNames.TP_ITEMSIZE);
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -867,8 +867,8 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create(TP_BASICSIZE)") GetTypeMemberNode getTpDictoffsetNode) {
-            return getTpDictoffsetNode.execute(cls);
+                        @Cached("create()") GetTypeMemberNode getTpDictoffsetNode) {
+            return getTpDictoffsetNode.execute(cls, NativeMemberNames.TP_BASICSIZE);
         }
 
         @Specialization(guards = "!isNoValue(value)")

@@ -10,6 +10,7 @@ import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -98,7 +99,7 @@ public class PThreadState extends PythonNativeWrapper {
         public abstract Object execute(Object key);
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
-        PythonClass doCurExcType(@SuppressWarnings("unused") String key,
+        PythonAbstractClass doCurExcType(@SuppressWarnings("unused") String key,
                         @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
@@ -132,7 +133,7 @@ public class PThreadState extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(key, EXC_TYPE)")
-        PythonClass doExcType(@SuppressWarnings("unused") String key,
+        PythonAbstractClass doExcType(@SuppressWarnings("unused") String key,
                         @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode) {
             PythonContext context = getContext();
             PException currentException = context.getCaughtException();
