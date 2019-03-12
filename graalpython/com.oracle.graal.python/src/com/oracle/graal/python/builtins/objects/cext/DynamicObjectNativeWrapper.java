@@ -61,8 +61,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapperFactory.ReadNativeMemberDispatchNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapperFactory.ReadObjectNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapperFactory.ReadTypeNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
@@ -115,6 +113,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -125,14 +124,13 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -187,52 +185,31 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected boolean isMemberReadable(String member) {
+    protected boolean isMemberReadable(@SuppressWarnings("unused") String member) {
+        // TODO(fa) should that be refined?
         return true;
     }
 
     @ExportMessage
-    protected Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
-        return PythonLanguage.getContextRef().get().getEnv().asGuestValue(new String[]{DynamicObjectNativeWrapper.GP_OBJECT});
+    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        // TODO(fa) use class 'PythonAbstractObject.Keys'
+        return context.getEnv().asGuestValue(new String[]{DynamicObjectNativeWrapper.GP_OBJECT});
     }
 
-    @ExportMessage
-    protected Object readMember(String member,
-                    @Cached.Exclusive @Cached(allowUncached = true) DynamicObjectNativeWrapper.ReadNode readNode) {
-        return readNode.execute(this, member);
-    }
+    @ExportMessage(name = "readMember")
+    abstract static class ReadNode {
 
-    abstract static class ReadNode extends Node {
-        public abstract Object execute(PythonNativeWrapper object, String key);
-
-        protected boolean isObBase(String key) {
-            return key.equals(NativeMemberNames.OB_BASE);
-        }
-
-        @Specialization(guards = {"key == cachedObBase", "isObBase(key)"})
-        public Object execute(PythonNativeWrapper object, String key,
-                        @Cached("key") String cachedObBase) {
-            // TODO: TRUFFLELIB REFACTORING REVISIT
-            // -------------------------------------------------------
-            // original code:
-            // if (key == cachedObBase) {
-            // return object;
-            // } else if (cachedObBase == null && key.equals(NativeMemberNames.OB_BASE)) {
-            // CompilerDirectives.transferToInterpreterAndInvalidate();
-            // cachedObBase = key;
-            // return object;
-            // }
-            // -------------------------------------------------------
-            // The very common case: directly return native wrapper.
-            // This is in particular important for PrimitiveNativeWrappers, since they are not
-            // cached.
+        @Specialization(guards = {"key == cachedObBase", "isObBase(cachedObBase)"}, limit = "1")
+        static Object doObBaseCached(DynamicObjectNativeWrapper object, @SuppressWarnings("unused") String key,
+                        @Cached("key") @SuppressWarnings("unused") String cachedObBase) {
             return object;
         }
 
         @Specialization
-        public Object execute(PythonNativeWrapper object, String key,
-                        @Cached.Exclusive @Cached DynamicObjectNativeWrapper.ReadNativeMemberNode readNativeMemberNode,
-                        @Cached.Exclusive @Cached CExtNodes.AsPythonObjectNode getDelegate) {
+        static Object execute(DynamicObjectNativeWrapper object, String key,
+                        @Exclusive @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
+                        @Exclusive @Cached CExtNodes.AsPythonObjectNode getDelegate) throws UnsupportedMessageException {
             Object delegate = getDelegate.execute(object);
 
             // special key for the debugger
@@ -241,36 +218,29 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
             return readNativeMemberNode.execute(delegate, key);
         }
+
+        protected static boolean isObBase(String key) {
+            return NativeMemberNames.OB_BASE.equals(key);
+        }
     }
 
+    @GenerateUncached
     @ImportStatic(PGuards.class)
     @TypeSystemReference(PythonTypes.class)
     abstract static class ReadNativeMemberDispatchNode extends Node {
-        @Child private ReadTypeNativeMemberNode readTypeMemberNode;
-        @Child private ReadObjectNativeMemberNode readObjectMemberNode;
 
-        abstract Object execute(Object receiver, String key);
+        abstract Object execute(Object receiver, String key) throws UnsupportedMessageException;
 
         @Specialization
-        Object doClass(PythonManagedClass clazz, String key) {
-            if (readTypeMemberNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readTypeMemberNode = insert(ReadTypeNativeMemberNode.create());
-            }
+        Object doClass(PythonManagedClass clazz, String key,
+                        @Cached(allowUncached = true) ReadTypeNativeMemberNode readTypeMemberNode) throws UnsupportedMessageException {
             return readTypeMemberNode.execute(clazz, key);
         }
 
         @Specialization(guards = "!isManagedClass(clazz)")
-        Object doObject(Object clazz, String key) {
-            if (readObjectMemberNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readObjectMemberNode = insert(ReadObjectNativeMemberNode.create());
-            }
+        Object doObject(Object clazz, String key,
+                        @Cached(allowUncached = true) ReadObjectNativeMemberNode readObjectMemberNode) throws UnsupportedMessageException {
             return readObjectMemberNode.execute(clazz, key);
-        }
-
-        public static ReadNativeMemberDispatchNode create() {
-            return ReadNativeMemberDispatchNodeGen.create();
         }
     }
 
@@ -283,7 +253,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Child private CExtNodes.SizeofWCharNode sizeofWcharNode;
         @Child private GetNameNode getNameNode;
 
-        abstract Object execute(Object receiver, String key);
+        abstract Object execute(Object receiver, String key) throws UnsupportedMessageException;
 
         @Specialization(guards = "eq(OB_BASE, key)")
         Object doObBase(Object o, @SuppressWarnings("unused") String key) {
@@ -340,7 +310,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return getNameNode.execute(getClass(obj));
         }
 
-        protected boolean eq(String expected, String actual) {
+        protected static boolean eq(String expected, String actual) {
             return expected.equals(actual);
         }
 
@@ -543,9 +513,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     abstract static class ReadObjectNativeMemberNode extends ReadNativeMemberNode {
-        static ReadObjectNativeMemberNode create() {
-            return ReadObjectNativeMemberNodeGen.create();
-        }
 
         @Specialization(guards = "eq(D_COMMON, key)")
         Object doDCommon(Object o, @SuppressWarnings("unused") String key) {
@@ -589,14 +556,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(OB_FVAL, key)")
         Object doObFval(Object object, @SuppressWarnings("unused") String key,
-                        @Cached("createClassProfile()") ValueProfile profile) {
+                        @Cached("createClassProfile()") ValueProfile profile) throws UnsupportedMessageException {
             Object profiled = profile.profile(object);
             if (profiled instanceof PFloat) {
                 return ((PFloat) profiled).getValue();
             } else if (profiled instanceof Double) {
                 return object;
             }
-            throw UnsupportedMessageException.raise(Message.READ);
+            throw UnsupportedMessageException.create();
         }
 
         @Specialization(guards = "eq(OB_ITEM, key)")
@@ -833,21 +800,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     // WRITE
-    abstract static class WriteNode extends Node {
-        public abstract Object execute(PythonNativeWrapper object, String key, Object value);
-
-        @Specialization
-        public Object execute(PythonNativeWrapper object, String key, Object value,
-                        @Cached.Exclusive @Cached DynamicObjectNativeWrapper.WriteNativeMemberNode writeNativeMemberNode) {
-            return writeNativeMemberNode.execute(object.getDelegate(), key, value);
-        }
-    }
-
+    @GenerateUncached
     @ImportStatic({NativeMemberNames.class, PGuards.class, SpecialMethodNames.class, SpecialAttributeNames.class})
     abstract static class WriteNativeMemberNode extends PNodeWithContext {
-        @Child private HashingStorageNodes.SetItemNode setItemNode;
 
-        abstract Object execute(Object receiver, String key, Object value);
+        abstract Object execute(Object receiver, String key, Object value) throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException;
 
         @Specialization(guards = "eq(OB_TYPE, key)")
         Object doObType(PythonObject object, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PythonManagedClass value,
@@ -893,10 +850,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(MD_DEF, key)")
-        Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key, Object value) {
+        Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key, Object value,
+                        // TODO TRUFFLE LIBRARY MIGRATION: remove 'allowUncached = true'
+                        @Shared("setItemNode") @Cached(allowUncached = true) HashingStorageNodes.SetItemNode setItemNode) {
             DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
             assert nativeWrapper != null;
-            getSetItemNode().execute(nativeWrapper.createNativeMemberStore(object.getDictUnsetOrSameAsStorageAssumption()), MD_DEF, value);
+            setItemNode.execute(nativeWrapper.createNativeMemberStore(object.getDictUnsetOrSameAsStorageAssumption()), MD_DEF, value);
             return value;
         }
 
@@ -928,7 +887,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
         Object doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") String key, Object value,
-                        @Cached("create()") CastToIntegerFromIntNode castToIntNode,
+                        @Cached("create()") CastToIntegerFromIntNode.Dynamic castToIntNode,
                         @Cached("create(__SETATTR__)") LookupAndCallTernaryNode call) {
             // TODO properly implement 'tp_dictoffset' for builtin classes
             if (object instanceof PythonBuiltinClass) {
@@ -941,21 +900,19 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization
         Object doMemoryview(PMemoryView object, String key, Object value,
                         @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
-                        @Cached("createWriteNode()") Node writeNode,
-                        @Cached("createBinaryProfile()") ConditionProfile isNativeObject) {
+                        @Cached("createBinaryProfile()") ConditionProfile isNativeObject,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLib) throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException {
             Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
             if (isNativeObject.profile(PythonNativeObject.isInstance(delegateObj))) {
-                try {
-                    return ForeignAccess.sendWrite(writeNode, PythonNativeObject.cast(delegateObj).getPtr(), key, value);
-                } catch (UnsupportedMessageException | UnknownIdentifierException | UnsupportedTypeException e) {
-                    throw e.raise();
-                }
+                interopLib.writeMember(PythonNativeObject.cast(delegateObj).getPtr(), key, value);
             }
             throw new IllegalStateException("delegate of memoryview object is not native");
         }
 
-        @Fallback
-        Object doGeneric(Object object, String key, Object value) {
+        @Specialization
+        Object doGeneric(Object object, String key, Object value,
+                        // TODO TRUFFLE LIBRARY MIGRATION: remove 'allowUncached = true'
+                        @Shared("setItemNode") @Cached(allowUncached = true) HashingStorageNodes.SetItemNode setItemNode) throws UnknownIdentifierException {
             // This is the preliminary generic case: There are native members we know that they
             // exist but we do currently not represent them. So, store them into a dynamic
             // object
@@ -964,10 +921,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
                 logGeneric(key);
-                getSetItemNode().execute(nativeWrapper.createNativeMemberStore(), key, value);
+                setItemNode.execute(nativeWrapper.createNativeMemberStore(), key, value);
                 return value;
             }
-            throw UnknownIdentifierException.raise(key);
+            throw UnknownIdentifierException.create(key);
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -975,20 +932,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             PythonLanguage.getLogger().log(Level.FINE, "write of Python struct native member " + key);
         }
 
-        protected boolean eq(String expected, String actual) {
+        protected static boolean eq(String expected, String actual) {
             return expected.equals(actual);
-        }
-
-        private HashingStorageNodes.SetItemNode getSetItemNode() {
-            if (setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
-            }
-            return setItemNode;
-        }
-
-        protected Node createWriteNode() {
-            return Message.WRITE.createNode();
         }
     }
 
@@ -1027,8 +972,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected void writeMember(String member, Object value,
-                    @Cached.Exclusive @Cached(allowUncached = true) DynamicObjectNativeWrapper.WriteNode writeNode) {
-        writeNode.execute(this, member, value);
+                    // TODO TRUFFLE LIBRARY MIGRATION: remove 'allowUncached = true'
+                    @Cached(allowUncached = true) WriteNativeMemberNode writeNativeMemberNode) throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException {
+        writeNativeMemberNode.execute(getDelegate(), member, value);
     }
 
     @ExportMessage
