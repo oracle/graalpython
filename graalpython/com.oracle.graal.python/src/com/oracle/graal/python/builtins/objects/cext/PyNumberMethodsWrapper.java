@@ -114,10 +114,10 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
     @ImportStatic(PyNumberMethodsWrapper.class)
     abstract static class ReadMethodNode extends Node {
 
-        public abstract Object execute(PythonClass clazz, String key) throws UnknownIdentifierException;
+        public abstract Object execute(PythonManagedClass clazz, String key) throws UnknownIdentifierException;
 
         @Specialization(limit = "99", guards = {"isValidMember(key)", "eq(cachedKey, key)"})
-        Object getMethod(PythonClass clazz, @SuppressWarnings("unused") String key,
+        Object getMethod(PythonManagedClass clazz, @SuppressWarnings("unused") String key,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Exclusive @Cached LookupAttributeInMRONode.Dynamic lookupNode) throws UnknownIdentifierException {
             Object result = lookupNode.execute(clazz, translate(cachedKey));
