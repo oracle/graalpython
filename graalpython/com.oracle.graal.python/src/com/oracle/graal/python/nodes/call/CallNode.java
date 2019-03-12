@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.call;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -186,6 +185,8 @@ public abstract class CallNode extends PNodeWithContext {
             if (callableObject instanceof PFunction) {
                 arguments = createArgs.execute((PFunction) callableObject, args, keywords);
                 ct = ((PFunction) callableObject).getCallTarget();
+                PArguments.setClosure(arguments, ((PFunction) callableObject).getClosure());
+                PArguments.setGlobals(arguments, ((PFunction) callableObject).getGlobals());
             } else if (callableObject instanceof PBuiltinFunction) {
                 arguments = createArgs.execute((PBuiltinFunction) callableObject, args, keywords);
                 ct = ((PBuiltinFunction) callableObject).getCallTarget();
