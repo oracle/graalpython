@@ -50,8 +50,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 public abstract class GetFunctionCodeNode extends PNodeWithContext {
     public abstract PCode execute(PFunction function);
 
-    @Specialization(guards = {"self.getCode() == cachedCode"}, assumptions = {"codeStableAssumption"})
+    @Specialization(guards = {"self == cachedSelf"}, assumptions = {"codeStableAssumption"})
     PCode getCodeCached(@SuppressWarnings("unused") PFunction self,
+                    @SuppressWarnings("unused") @Cached("self") PFunction cachedSelf,
                     @Cached("self.getCode()") PCode cachedCode,
                     @SuppressWarnings("unused") @Cached("self.getCodeStableAssumption()") Assumption codeStableAssumption) {
         return cachedCode;

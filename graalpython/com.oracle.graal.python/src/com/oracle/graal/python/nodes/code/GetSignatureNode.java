@@ -46,27 +46,17 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class GetSignatureNode extends PNodeWithContext {
-    @Child private GetFunctionCodeNode getCodeNode;
-
-    private GetFunctionCodeNode getGetCodeNode() {
-        if (getCodeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getCodeNode = GetFunctionCodeNode.create();
-        }
-        return getCodeNode;
+    private Signature doFunctionInternal(GetFunctionCodeNode getFunctionCodeNode, PFunction function) {
+        return getFunctionCodeNode.execute(function).getSignature();
     }
 
-    private Signature doFunctionInternal(PFunction function) {
-        return getGetCodeNode().execute(function).getSignature();
-    }
-
-    private Signature doMethodInternal(Object function) {
+    private Signature doMethodInternal(GetFunctionCodeNode getFunctionCodeNode, Object function) {
         if (function instanceof PFunction) {
-            return doFunctionInternal((PFunction) function);
+            return doFunctionInternal(getFunctionCodeNode, (PFunction) function);
         } else if (function instanceof PBuiltinFunction) {
             return ((PBuiltinFunction) function).getSignature();
         }
@@ -76,8 +66,9 @@ public abstract class GetSignatureNode extends PNodeWithContext {
     public abstract Signature execute(Object function);
 
     @Specialization
-    Signature doFunction(PFunction function) {
-        return doFunctionInternal(function);
+    Signature doFunction(PFunction function,
+                    @Cached("create()") GetFunctionCodeNode getFunctionCodeNode) {
+        return doFunctionInternal(getFunctionCodeNode, function);
     }
 
     @Specialization
@@ -86,13 +77,15 @@ public abstract class GetSignatureNode extends PNodeWithContext {
     }
 
     @Specialization
-    Signature doMethod(PMethod method) {
-        return doMethodInternal(method.getFunction());
+    Signature doMethod(PMethod method,
+                    @Cached("create()") GetFunctionCodeNode getFunctionCodeNode) {
+        return doMethodInternal(getFunctionCodeNode, method.getFunction());
     }
 
     @Specialization
-    Signature doBuiltinMethod(PBuiltinMethod builtinMethod) {
-        return doMethodInternal(builtinMethod.getFunction());
+    Signature doBuiltinMethod(PBuiltinMethod builtinMethod,
+                    @Cached("create()") GetFunctionCodeNode getFunctionCodeNode) {
+        return doMethodInternal(getFunctionCodeNode, builtinMethod.getFunction());
     }
 
     public static GetSignatureNode create() {
