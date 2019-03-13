@@ -50,11 +50,11 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class GetSignatureNode extends PNodeWithContext {
-    private Signature doFunctionInternal(GetFunctionCodeNode getFunctionCodeNode, PFunction function) {
+    private static Signature doFunctionInternal(GetFunctionCodeNode getFunctionCodeNode, PFunction function) {
         return getFunctionCodeNode.execute(function).getSignature();
     }
 
-    private Signature doMethodInternal(GetFunctionCodeNode getFunctionCodeNode, Object function) {
+    private static Signature doMethodInternal(GetFunctionCodeNode getFunctionCodeNode, Object function) {
         if (function instanceof PFunction) {
             return doFunctionInternal(getFunctionCodeNode, (PFunction) function);
         } else if (function instanceof PBuiltinFunction) {
