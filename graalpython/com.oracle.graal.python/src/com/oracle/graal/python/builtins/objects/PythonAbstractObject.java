@@ -46,8 +46,6 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -114,16 +112,43 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public void writeMember(String key, Object value) {
-        // TODO
+    public void writeMember(String key, Object value,
+                    @Cached PInteropSubscriptAssignNode setItemNode,
+                    @Shared("isMapping") @Cached IsMappingNode isMapping,
+                    @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
+                    @Exclusive @Cached KeyForItemAccess getItemKey,
+                    @Cached PInteropSetAttributeNode writeNode) {
+        String attrKey = getAttributeKey.execute(key);
+        if (attrKey != null) {
+            writeNode.execute(this, attrKey, value);
+            return;
+        }
+
+        String itemKey = getItemKey.execute(key);
+        if (itemKey != null) {
+            setItemNode.execute(this, itemKey, value);
+            return;
+        }
+
+        if (this instanceof PythonObject) {
+            if (objectHasAttribute(this, key)) {
+                writeNode.execute(this, key, value);
+                return;
+            }
+        }
+        if (isMapping.execute(this)) {
+            setItemNode.execute(this, key, value);
+        } else {
+            writeNode.execute(this, key, value);
+        }
     }
 
     @ExportMessage
     public Object readMember(String key,
-                    @Cached KeyForAttributeAccess getAttributeKey,
+                    @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Exclusive @Cached CallNode callGetattributeNode,
-                    @Cached KeyForItemAccess getItemKey,
+                    @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Shared("toForeign") @Cached PTypeToForeignNode toForeign) throws UnknownIdentifierException {
         String attrKey = getAttributeKey.execute(key);
@@ -299,7 +324,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe?
                     @Cached(allowUncached = true) CastToListNode castToList,
                     @Cached GetClassNode getClass,
-                    @Cached IsMappingNode isMapping,
+                    @Shared("isMapping") @Cached IsMappingNode isMapping,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
                     @Cached TypeNodes.GetMroNode getMroNode) {
@@ -657,4 +682,64 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             return index >= 0 && index < keys.length;
         }
     }
+
+    /*
+     * Basically the same as 'com.oracle.graal.python.nodes.subscript.SetItemNode' but with an
+     * uncached version.
+     */
+    @GenerateUncached
+    public abstract static class PInteropSubscriptAssignNode extends Node {
+
+        public abstract void execute(Object primary, Object index, Object value);
+
+        @Specialization
+        public void doSpecialObject(PythonAbstractObject primary, Object index, Object value,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
+                        @Cached CallNode callGetattributeNode,
+                        @Cached CallNode callSetItemNode) {
+            Object attrGetattribute = lookupGetattributeNode.execute(primary, SpecialMethodNames.__GETATTRIBUTE__);
+            Object attrSetItem = callGetattributeNode.execute(null, attrGetattribute, primary, index, value);
+            callSetItemNode.execute(null, attrSetItem, primary, index, value);
+        }
+
+        public static PInteropSubscriptAssignNode create() {
+            return PythonAbstractObjectFactory.PInteropSubscriptAssignNodeGen.create();
+        }
+
+        public static PInteropSubscriptAssignNode getUncached() {
+            return PythonAbstractObjectFactory.PInteropSubscriptAssignNodeGen.getUncached();
+        }
+    }
+
+    /*
+     * Basically the same as 'com.oracle.graal.python.nodes.attributes.SetAttributeNode' but with an
+     * uncached version.
+     */
+    @GenerateUncached
+    public abstract static class PInteropSetAttributeNode extends Node {
+
+        public abstract void execute(Object primary, Object index, Object value);
+
+        @Specialization
+        public void doSpecialObject(PythonAbstractObject primary, Object index, Object value,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
+                        @Cached CallNode callSetAttrNode) {
+            Object attrGetattribute = lookupSetAttrNode.execute(primary, SpecialMethodNames.__SETATTR__);
+            callSetAttrNode.execute(null, attrGetattribute, primary, index, value);
+        }
+
+        public static PInteropSetAttributeNode create() {
+            return PythonAbstractObjectFactory.PInteropSetAttributeNodeGen.create();
+        }
+
+        public static PInteropSetAttributeNode getUncached() {
+            return PythonAbstractObjectFactory.PInteropSetAttributeNodeGen.getUncached();
+        }
+    }
+
+    @TruffleBoundary
+    private static boolean objectHasAttribute(Object object, Object field) {
+        return ((PythonObject) object).getAttributeNames().contains(field);
+    }
+
 }
