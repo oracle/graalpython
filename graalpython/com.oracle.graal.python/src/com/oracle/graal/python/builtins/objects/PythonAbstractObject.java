@@ -398,6 +398,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         @Cached GetClassNode getClassNode,
                         @Cached IsImmutable isImmutable,
                         @Cached KeyForItemAccess itemKey,
+                        @Cached KeyForAttributeAccess attrKey,
                         @Cached GetMroNode getMroNode) {
 
             String itemFieldName = itemKey.execute(fieldName);
@@ -411,8 +412,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
             PythonAbstractClass klass = getClassNode.execute(object);
 
+            String attrKeyName = attrKey.execute(fieldName);
+            if (attrKeyName == null) {
+                attrKeyName = fieldName;
+            }
+
             for (PythonAbstractClass c : getMroNode.execute(klass)) {
-                attr = readNode.execute(c, fieldName);
+                attr = readNode.execute(c, attrKeyName);
                 if (attr != PNone.NO_VALUE) {
                     owner = c;
                     break;
@@ -420,7 +426,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
 
             if (attr == PNone.NO_VALUE) {
-                attr = readNode.execute(owner, fieldName);
+                attr = readNode.execute(owner, attrKeyName);
             }
 
             if (attr != PNone.NO_VALUE) {
