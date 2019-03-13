@@ -161,6 +161,7 @@ import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -1350,17 +1351,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Children private CExtNodes.ToSulongNode[] toSulongNodes;
         @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode;
         @Child private TypeNodes.GetInstanceShape getInstanceShapeNode;
+        @Child private SplitArgsNode splitArgsNode;
 
         @Override
         public final Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            return execute(frame, PNone.NO_VALUE, arguments, keywords);
-        }
-
-        @Specialization
-        Object doDirectConstruct(@SuppressWarnings("unused") PNone ignored, Object[] arguments, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            assert arguments[0] != null;
-            LazyPythonClass first = (LazyPythonClass) first(arguments);
-            return factory().createPythonObject(first, getInstanceShape(first));
+            if (splitArgsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                splitArgsNode = insert(SplitArgsNode.create());
+            }
+            return execute(frame, arguments[0], splitArgsNode.execute(arguments), keywords);
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf", "!self.needsNativeAllocation()"})
@@ -1434,10 +1433,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 getInstanceShapeNode = insert(TypeNodes.GetInstanceShape.create());
             }
             return getInstanceShapeNode.execute(clazz);
-        }
-
-        protected static Object first(Object[] arguments) {
-            return arguments[0];
         }
 
         protected static Class<? extends LazyPythonClass> getJavaClass(Object arg) {
