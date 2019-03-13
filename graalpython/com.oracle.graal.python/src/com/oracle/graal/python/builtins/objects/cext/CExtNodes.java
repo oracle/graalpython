@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -833,10 +834,10 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
     public abstract static class GetNativeClassNode extends CExtBaseNode {
-        public abstract PythonClass execute(PythonNativeObject object);
+        public abstract PythonAbstractClass execute(PythonNativeObject object);
 
         @Specialization(guards = "object == cachedObject", limit = "1")
-        PythonClass getNativeClassCached(@SuppressWarnings("unused") PythonNativeObject object,
+        PythonAbstractClass getNativeClassCached(@SuppressWarnings("unused") PythonNativeObject object,
                         @Exclusive @Cached("object") @SuppressWarnings("unused") PythonNativeObject cachedObject,
                         @Exclusive @Cached @SuppressWarnings("unused") PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached @SuppressWarnings("unused") ToJavaNode toJavaNode,
@@ -849,11 +850,11 @@ public abstract class CExtNodes {
         }
 
         @Specialization(replaces = "getNativeClassCached")
-        PythonClass getNativeClass(PythonNativeObject object,
+        PythonAbstractClass getNativeClass(PythonNativeObject object,
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached ToJavaNode toJavaNode) {
             // do not convert wrap 'object.object' since that is really the native pointer object
-            return (PythonClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr()));
+            return (PythonAbstractClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr()));
         }
 
         public static GetNativeClassNode create() {
