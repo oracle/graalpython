@@ -299,8 +299,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         private int getIntValue(Object oValue, int min, int max, String errorMessage) {
             Object iValue = getCastIntNode().execute(oValue);
             long value = IMPOSSIBLE;
-            if (iValue instanceof Integer || iValue instanceof Long) {
+            if (iValue instanceof Long) {
                 value = (long) iValue;
+            } else if (iValue instanceof Integer) {
+                value = (int) iValue;
             } else if (iValue instanceof PInt) {
                 value = ((PInt) iValue).longValueExact();
             }
