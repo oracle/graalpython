@@ -255,7 +255,7 @@ public class MMapBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPSlice(idxObj)")
         int doSingle(VirtualFrame frame, PMMap self, Object idxObj,
                         @Cached("createIndexError()") ReadByteFromChannelNode readByteNode,
-                        @Cached("createExact()") CastToJavaLongNode castToLongNode,
+                        @Cached("create()") CastToJavaLongNode castToLongNode,
                         @Cached("create()") InternalLenNode lenNode) {
 
             try {
@@ -316,7 +316,7 @@ public class MMapBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPSlice(idxObj)")
         PNone doSingle(VirtualFrame frame, PMMap self, Object idxObj, Object val,
                         @Cached("createIndexError()") WriteByteToChannelNode writeByteNode,
-                        @Cached("createExact()") CastToJavaLongNode castToLongNode,
+                        @Cached("create()") CastToJavaLongNode castToLongNode,
                         @Cached("createCoerce()") CastToByteNode castToByteNode,
                         @Cached("create()") InternalLenNode lenNode,
                         @Cached("createBinaryProfile()") ConditionProfile outOfRangeProfile) {

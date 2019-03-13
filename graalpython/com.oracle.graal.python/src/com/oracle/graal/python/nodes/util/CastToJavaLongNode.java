@@ -47,32 +47,42 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNodeGen.CastToJavaLongExactNodeGen;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNodeGen.CastToJavaLongLossyNodeGen;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
 public abstract class CastToJavaLongNode extends PNodeWithContext {
-    private final boolean lossy;
-    @Node.Child private LookupAndCallUnaryNode callIntNode;
-
-    protected CastToJavaLongNode(boolean lossy) {
-        this.lossy = lossy;
-    }
 
     public abstract long execute(Object x);
 
-    public static CastToJavaLongNode createExact() {
-        return CastToJavaLongNodeGen.create(false);
+    protected long toLongInternal(@SuppressWarnings("unused") PInt x) {
+        throw new IllegalStateException("should not be reached");
+    }
+
+    public static CastToJavaLongNode create() {
+        return CastToJavaLongExactNodeGen.create();
     }
 
     public static CastToJavaLongNode createLossy() {
-        return CastToJavaLongNodeGen.create(true);
+        return CastToJavaLongLossyNodeGen.create();
+    }
+
+    public static CastToJavaLongNode getUncached() {
+        return CastToJavaLongExactNodeGen.getUncached();
+    }
+
+    public static CastToJavaLongNode createLossyUncached() {
+        return CastToJavaLongLossyNodeGen.getUncached();
     }
 
     @Specialization
@@ -85,21 +95,10 @@ public abstract class CastToJavaLongNode extends PNodeWithContext {
         return toLongInternal(x);
     }
 
-    private long toLongInternal(PInt x) {
-        if (lossy) {
-            return x.longValue();
-        }
-        return x.longValueExact();
-    }
-
     @Specialization(guards = "!isNumber(x)")
-    public long toLong(Object x) {
-        if (callIntNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            callIntNode = insert(LookupAndCallUnaryNode.create(__INT__));
-        }
-
-        Object result = callIntNode.executeObject(x);
+    public long toLong(Object x,
+                    @Cached LookupAndCallUnaryDynamicNode callIntNode) {
+        Object result = callIntNode.executeObject(x, __INT__);
         if (result == PNone.NO_VALUE) {
             throw raise(TypeError, "must be numeric, not %p", x);
         }
@@ -113,5 +112,26 @@ public abstract class CastToJavaLongNode extends PNodeWithContext {
             return (long) result;
         }
         throw raise(TypeError, "%p.__int__ returned a non long (type %p)", x, result);
+    }
+
+    @GenerateUncached
+    abstract static class CastToJavaLongLossyNode extends CastToJavaLongNode {
+        @Override
+        protected long toLongInternal(PInt x) {
+            return x.longValue();
+        }
+    }
+
+    @GenerateUncached
+    abstract static class CastToJavaLongExactNode extends CastToJavaLongNode {
+        @Override
+        protected long toLongInternal(PInt x) {
+            try {
+                return x.longValueExact();
+            } catch (ArithmeticException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw PRaiseNode.getUncached().raise(TypeError, "%s cannot be interpreted as long (type %p)", x);
+            }
+        }
     }
 }
