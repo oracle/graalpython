@@ -14,6 +14,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
@@ -21,7 +22,9 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -68,9 +71,9 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     final long getArraySize(
-                    @Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
-        return lenNode.execute(getSequenceStorageNode.execute(this.getDelegate()));
+                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
+                    @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
+        return castToLongNode.execute(callLenNode.executeObject(getDelegate(), SpecialMethodNames.__LEN__));
     }
 
     @ExportMessage
@@ -87,10 +90,10 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     final boolean isArrayElementReadable(long identifier,
-                    @Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
+                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
+                    @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
         // also include the implicit null-terminator
-        return 0 <= identifier && identifier <= getArraySize(getSequenceStorageNode, lenNode);
+        return 0 <= identifier && identifier <= getArraySize(callLenNode, castToLongNode);
     }
 
     @ImportStatic(SpecialMethodNames.class)
@@ -189,23 +192,23 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public boolean isArrayElementModifiable(long index,
-                    @Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
-        return 0 <= index && index < getArraySize(getSequenceStorageNode, lenNode);
+                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
+                    @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
+        return 0 <= index && index <= getArraySize(callLenNode, castToLongNode);
     }
 
     @ExportMessage
     public boolean isArrayElementInsertable(long index,
-                    @Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
-        return 0 <= index && index <= getArraySize(getSequenceStorageNode, lenNode);
+                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
+                    @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
+        return 0 <= index && index <= getArraySize(callLenNode, castToLongNode);
     }
 
     @ExportMessage
     public boolean isArrayElementRemovable(long index,
-                    @Shared("getSequenceStorageNode") @Cached(allowUncached = true) SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Shared("lenNode") @Cached(allowUncached = true) SequenceStorageNodes.LenNode lenNode) {
-        return 0 <= index && index < getArraySize(getSequenceStorageNode, lenNode);
+                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
+                    @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
+        return 0 <= index && index <= getArraySize(callLenNode, castToLongNode);
     }
 
     @ImportStatic(SpecialMethodNames.class)
@@ -408,7 +411,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(assumptions = "singleContextAssumption", guards = "hasByteArrayContent(object)")
-        Object doByteArray(@SuppressWarnings("unused") PSequence object,
+        Object doByteArray(@SuppressWarnings("unused") Object object,
                         @Shared("singleContextAssumption") @Cached("singleContextAssumption()") @SuppressWarnings("unused") Assumption singleContextAssumption,
                         @Exclusive @Cached("callGetByteArrayTypeIDUncached()") Object nativeType) {
             // TODO(fa): use weak reference ?
@@ -440,7 +443,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         }
 
         protected static boolean hasByteArrayContent(Object object) {
-            return object instanceof PBytes || object instanceof PByteArray;
+            return object instanceof PBytes || object instanceof PByteArray || object instanceof PMMap;
         }
     }
 
