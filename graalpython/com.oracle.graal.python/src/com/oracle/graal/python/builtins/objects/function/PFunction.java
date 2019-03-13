@@ -56,7 +56,6 @@ public class PFunction extends PythonObject {
     private final PCell[] closure;
     private final boolean isStatic;
     @CompilationFinal private PCode code;
-    private PCode uncachedCode;
     @CompilationFinal(dimensions = 1) private Object[] defaultValues;
     private Object[] uncachedDefaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
@@ -70,7 +69,7 @@ public class PFunction extends PythonObject {
                     PCell[] closure) {
         super(clazz);
         this.name = name;
-        this.code = this.uncachedCode = new PCode(PythonBuiltinClassType.PCode, callTarget);
+        this.code = new PCode(PythonBuiltinClassType.PCode, callTarget);
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingClassName = enclosingClassName;
         this.globals = globals;
@@ -145,22 +144,12 @@ public class PFunction extends PythonObject {
     }
 
     public PCode getCode() {
-        Assumption assumption = this.codeStableAssumption;
-        if (CompilerDirectives.isCompilationConstant(this) && CompilerDirectives.isCompilationConstant(assumption)) {
-            if (assumption.isValid()) {
-                return code;
-            }
-        }
-        return uncachedCode;
-    }
-
-    public PCode getUncachedCode() {
-        return uncachedCode;
+        return code;
     }
 
     public void setCode(PCode code) {
         codeStableAssumption.invalidate("code changed for function " + getName());
-        this.code = this.uncachedCode = code;
+        this.code = code;
     }
 
     public String getEnclosingClassName() {
