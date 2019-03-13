@@ -166,7 +166,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     // not a Python or Foreign Object
     @SuppressWarnings("unused")
-    @Specialization(guards = {"!isPythonObject(object)", "!isForeignObject(object)"})
+    @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)", "!isForeignObject(object)"})
     protected PNone readUnboxed(Object object, Object key) {
         return PNone.NO_VALUE;
     }
@@ -209,10 +209,12 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     private static Object readNative(Object key, Object dict, HashingStorageNodes.GetItemNode getItemNode, HashingCollectionNodes.GetDictStorageNode getDictStorage) {
         if (dict instanceof PHashingCollection) {
-            return getItemNode.execute(getDictStorage.execute((PHashingCollection) dict), key);
-        } else {
-            return PNone.NO_VALUE;
+            Object result = getItemNode.execute(getDictStorage.execute((PHashingCollection) dict), key);
+            if (result != null) {
+                return result;
+            }
         }
+        return PNone.NO_VALUE;
     }
 
     private static Object readAttributeUncached(Object object, Object key, boolean forceType) {
