@@ -1186,6 +1186,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
     }
 
+    @ExportLibrary(InteropLibrary.class)
     public static class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
 
         public static final byte PRIMITIVE_STATE_BOOL = 1 << 0;
@@ -1219,14 +1220,17 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return value != 0;
         }
 
+        @ExportMessage(name = "asByte")
         public byte getByte() {
             return (byte) value;
         }
 
+        @ExportMessage(name = "asInt")
         public int getInt() {
             return (int) value;
         }
 
+        @ExportMessage(name = "asLong")
         public long getLong() {
             return value;
         }
@@ -1293,6 +1297,72 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @ExportMessage
         protected boolean isMemberReadable(String member) {
             return member.equals(DynamicObjectNativeWrapper.GP_OBJECT) || NativeMemberNames.isValid(member);
+        }
+
+        @ExportMessage
+        protected boolean isNumber() {
+            return true;
+        }
+
+        @ExportMessage
+        protected boolean fitsInByte() {
+            return isIntLike() && Byte.MIN_VALUE <= value && value <= Byte.MAX_VALUE;
+        }
+
+        @ExportMessage
+        protected boolean fitsInShort() {
+            return isIntLike() && Short.MIN_VALUE <= value && value <= Short.MAX_VALUE;
+        }
+
+        @ExportMessage
+        protected boolean fitsInInt() {
+            return isIntLike() && Integer.MIN_VALUE <= value && value <= Integer.MAX_VALUE;
+        }
+
+        @ExportMessage
+        protected boolean fitsInLong() {
+            return isIntLike();
+        }
+
+        @ExportMessage
+        protected boolean fitsInFloat() {
+            return false;
+        }
+
+        @ExportMessage
+        protected boolean fitsInDouble() {
+            return isDouble();
+        }
+
+        @ExportMessage
+        protected short asShort() {
+            return getByte();
+        }
+
+        @ExportMessage
+        protected float asFloat(
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+            if (profile.profile(isDouble())) {
+                return (float) dvalue;
+            } else {
+                return value;
+            }
+        }
+
+        @ExportMessage
+        protected double asDouble(
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+            if (profile.profile(isDouble())) {
+                return dvalue;
+            } else {
+                return value;
+            }
+        }
+
+        @ExportMessage
+        @Override
+        protected boolean isExecutable() {
+            return false;
         }
     }
 
