@@ -247,8 +247,7 @@
   local coverageGate = commonBuilder + {
       targets: TARGET.weekly,
       run +: [
-        ["mx", "--strict-compliance", "--dynamicimports", super.dynamicImports, "--primary", "gate", "--tags", "python-junit", "-B=--force-deprecation-as-warning-for-dependencies"],
-        ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--jacoco-exclude-annotation', '@GeneratedBy', '--strict-compliance', "--dynamicimports", super.dynamicImports, "--primary", 'gate', '-B=--force-deprecation-as-warning', '--strict-mode', '--tags', "python-junit", '--jacocout', 'html'],
+        ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--jacoco-exclude-annotation', '@GeneratedBy', '--strict-compliance', "--dynamicimports", super.dynamicImports, "--primary", 'gate', '-B=--force-deprecation-as-warning-for-dependencies', '--strict-mode', '--tags', "python-junit", '--jacocout', 'html'],
         ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--jacoco-exclude-annotation', '@GeneratedBy', 'sonarqube-upload', "-Dsonar.host.url=$SONAR_HOST_URL", "-Dsonar.projectKey=com.oracle.graalvm.python", "-Dsonar.projectName=GraalVM - Python", '--exclude-generated']
       ],
       name: "python-coverage"
