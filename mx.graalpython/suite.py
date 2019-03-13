@@ -165,6 +165,7 @@ suite = {
             "dependencies": [
                 "truffle:ANTLR4_COMPLETE",
             ],
+            "jacoco": "include",
             "native": True,
             "vpath": True,
         },
@@ -176,6 +177,7 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
             ],
+            "jacoco": "include",
             "javaCompliance": "8+",
             "checkstyle": "com.oracle.graal.python",
         },
@@ -191,6 +193,7 @@ suite = {
                 "regex:TREGEX",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
+            "jacoco": "include",
             "javaCompliance" : "8+",
             "checkstyleVersion" : "8.8",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
@@ -208,6 +211,7 @@ suite = {
                 "truffle:TRUFFLE_TCK",
                 "mx:JUNIT"
             ],
+            "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "8+",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
@@ -222,6 +226,7 @@ suite = {
                 "sdk:POLYGLOT_TCK",
                 "mx:JUNIT"
             ],
+            "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "8+",
             "workingSets": "Truffle,Python",
