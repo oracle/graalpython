@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -224,6 +225,8 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
                 return PythonBuiltinClassType.PNotImplemented;
             } else if (o instanceof PNone) {
                 return PythonBuiltinClassType.PNone;
+            } else if (PythonNativeObject.isInstance(o)) {
+                return GetNativeClassNode.getUncached().execute(PythonNativeObject.cast(o));
             } else {
                 return null;
             }
