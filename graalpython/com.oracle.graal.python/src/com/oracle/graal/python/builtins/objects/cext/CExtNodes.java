@@ -82,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -841,7 +840,7 @@ public abstract class CExtNodes {
                         @Exclusive @Cached("object") @SuppressWarnings("unused") PythonNativeObject cachedObject,
                         @Exclusive @Cached @SuppressWarnings("unused") PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached @SuppressWarnings("unused") ToJavaNode toJavaNode,
-                        @Exclusive @Cached("getNativeClass(cachedObject, callGetObTypeNode, toJavaNode)") PythonClass cachedClass) {
+                        @Exclusive @Cached("getNativeClass(cachedObject, callGetObTypeNode, toJavaNode)") PythonAbstractClass cachedClass) {
             // TODO: (tfel) is this really something we can do? It's so rare for this class to
             // change that it shouldn't be worth the effort, but in native code, anything can
             // happen. OTOH, CPython also has caches that can become invalid when someone just goes
