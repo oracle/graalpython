@@ -211,7 +211,6 @@ suite = {
                 "truffle:TRUFFLE_TCK",
                 "mx:JUNIT"
             ],
-            "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "8+",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
@@ -226,7 +225,6 @@ suite = {
                 "sdk:POLYGLOT_TCK",
                 "mx:JUNIT"
             ],
-            "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "8+",
             "workingSets": "Truffle,Python",
