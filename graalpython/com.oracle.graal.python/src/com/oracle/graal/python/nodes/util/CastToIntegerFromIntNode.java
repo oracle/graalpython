@@ -92,6 +92,7 @@ public class CastToIntegerFromIntNode extends Node {
 
     @GenerateUncached
     @ImportStatic(MathGuards.class)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class Dynamic extends Node {
 
         public abstract Object execute(Object x, Function<Object, Byte> typeErrorHandler);
