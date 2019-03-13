@@ -92,7 +92,6 @@ public class CastToIntegerFromIntNode extends Node {
 
     @GenerateUncached
     @ImportStatic(MathGuards.class)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class Dynamic extends Node {
 
         public abstract Object execute(Object x, Function<Object, Byte> typeErrorHandler);
@@ -102,17 +101,22 @@ public class CastToIntegerFromIntNode extends Node {
         }
 
         @Specialization
-        public long toInt(long x, @SuppressWarnings("unused") Function<Object, Byte> typeErrorHandler) {
+        int fromInt(int x, @SuppressWarnings("unused") Function<Object, Byte> typeErrorHandler) {
             return x;
         }
 
         @Specialization
-        public PInt toInt(PInt x, @SuppressWarnings("unused") Function<Object, Byte> typeErrorHandler) {
+        long fromLong(long x, @SuppressWarnings("unused") Function<Object, Byte> typeErrorHandler) {
             return x;
         }
 
         @Specialization
-        public long toInt(double x, Function<Object, Byte> typeErrorHandler,
+        PInt fromPInt(PInt x, @SuppressWarnings("unused") Function<Object, Byte> typeErrorHandler) {
+            return x;
+        }
+
+        @Specialization
+        long fromDouble(double x, Function<Object, Byte> typeErrorHandler,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             if (typeErrorHandler != null) {
                 return typeErrorHandler.apply(x);
@@ -122,7 +126,7 @@ public class CastToIntegerFromIntNode extends Node {
         }
 
         @Specialization(guards = "!isNumber(x)")
-        public Object toInt(Object x, Function<Object, Byte> typeErrorHandler,
+        Object fromObject(Object x, Function<Object, Byte> typeErrorHandler,
                         @Cached LookupAndCallUnaryDynamicNode callIndexNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             Object result = callIndexNode.executeObject(x, SpecialMethodNames.__INT__);
