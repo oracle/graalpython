@@ -71,10 +71,10 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Enumeration;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PZipImporter)
 public class ZipImporterBuiltins extends PythonBuiltins {
@@ -105,6 +105,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             String archive = "";
             while (true) {
                 if (tfile.isRegularFile()) {
+                    // we don't have to store absolute path
                     archive = tfile.getPath();
                     break;
                 }
@@ -115,42 +116,50 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 prefix = tfile.getName() + PZipImporter.SEPARATOR + prefix;
                 tfile = parentFile;
             }
-            ZipFile zipFile = null;
-
+            ZipInputStream zis = null;
             if (tfile.exists() && tfile.isRegularFile()) {
                 try {
-                    zipFile = new ZipFile(tfile.getPath());
+                    zis = new ZipInputStream(tfile.newInputStream(StandardOpenOption.READ));
+                    Object files = self.getZipDirectoryCache().getItem(path);
+                    if (files == null) {
+                        // fill the cache
+                        PDict filesDict = factory().createDict();
+                        ZipEntry entry;
+
+                        while ((entry = zis.getNextEntry()) != null) {
+                            PTuple tuple = factory().createTuple(new Object[]{
+                                            tfile.getPath() + PZipImporter.SEPARATOR + entry.getName(),
+                                            // for our implementation currently we don't need these
+                                            // these properties to store there. Keeping them for
+                                            // compatibility.
+                                            entry.getMethod(),
+                                            entry.getCompressedSize(),
+                                            entry.getSize(),
+                                            entry.getLastModifiedTime().toMillis(),
+                                            entry.getCrc()});
+                            filesDict.setItem(entry.getName(), tuple);
+                        }
+                        files = filesDict;
+                        self.getZipDirectoryCache().setItem(path, files);
+                    }
+                    self.setArchive(archive);
+                    self.setPrefix(prefix);
+                    self.setFiles((PDict) files);
                 } catch (IOException ex) {
                     throw raise(PythonErrorType.ZipImportError, "not a Zip file");
+                } finally {
+                    if (zis != null) {
+                        try {
+                            zis.close();
+                        } catch (IOException e) {
+                            // just ignore it.
+                        }
+                    }
                 }
-            }
-            if (zipFile == null) {
+            } else {
                 throw raise(PythonErrorType.ZipImportError, "not a Zip file");
             }
-            Object files = self.getZipDirectoryCache().getItem(path);
-            if (files == null) {
-                PDict filesDict = factory().createDict();
-                Enumeration<? extends ZipEntry> entries = zipFile.entries();
-                while (entries.hasMoreElements()) {
-                    ZipEntry entry = entries.nextElement();
-                    PTuple tuple = factory().createTuple(new Object[]{
-                                    zipFile.getName() + PZipImporter.SEPARATOR + entry.getName(),
-                                    // for our implementation currently we don't need these
-                                    // these properties to store there. Keeping them for
-                                    // compatibility.
-                                    entry.getMethod(),
-                                    entry.getCompressedSize(),
-                                    entry.getSize(),
-                                    entry.getLastModifiedTime().toMillis(),
-                                    entry.getCrc()});
-                    filesDict.setItem(entry.getName(), tuple);
-                }
-                files = filesDict;
-                self.getZipDirectoryCache().setItem(path, files);
-            }
-            self.setArchive(archive);
-            self.setPrefix(prefix);
-            self.setFiles((PDict) files);
+
         }
 
         @Specialization
@@ -293,6 +302,16 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetDataNode extends PythonBinaryBuiltinNode {
 
+        private static ZipInputStream getEntryIS(InputStream fileStream, String entryName) throws IOException {
+            ZipInputStream zis = new ZipInputStream(fileStream);
+            for (ZipEntry entry; (entry = zis.getNextEntry()) != null;) {
+                if (entry.getName().equals(entryName)) {
+                    return zis;
+                }
+            }
+            throw new IOException("Cannot find " + entryName);
+        }
+
         @Specialization
         @CompilerDirectives.TruffleBoundary
         public PBytes doit(PZipImporter self, String pathname) {
@@ -317,11 +336,10 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             if (fileSize < 0) {
                 throw raise(PythonErrorType.ZipImportError, "negative data size");
             }
-            ZipFile zip = null;
+            ZipInputStream zis = null;
+            TruffleFile tfile = getContext().getEnv().getTruffleFile(archive);
             try {
-                zip = new ZipFile(archive);
-                ZipEntry entry = zip.getEntry(key);
-                InputStream in = zip.getInputStream(entry);
+                zis = getEntryIS(tfile.newInputStream(StandardOpenOption.READ), key);
                 int byteSize = (int) fileSize;
                 if (byteSize != fileSize) {
                     throw raise(PythonErrorType.ZipImportError, "zipimport: cannot read archive members large than 2GB");
@@ -329,16 +347,16 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 byte[] bytes = new byte[byteSize];
                 int bytesRead = 0;
                 while (bytesRead < byteSize) {
-                    bytesRead += in.read(bytes, bytesRead, byteSize - bytesRead);
+                    bytesRead += zis.read(bytes, bytesRead, byteSize - bytesRead);
                 }
-                in.close();
+                zis.close();
                 return factory().createBytes(bytes);
             } catch (IOException e) {
                 throw raise(PythonErrorType.ZipImportError, "zipimport: can't read data");
             } finally {
-                if (zip != null) {
+                if (zis != null) {
                     try {
-                        zip.close();
+                        zis.close();
                     } catch (IOException e) {
                         // just ignore it.
                     }
