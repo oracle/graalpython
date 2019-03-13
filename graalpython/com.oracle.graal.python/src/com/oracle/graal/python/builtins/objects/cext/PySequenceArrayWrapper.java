@@ -20,10 +20,13 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -96,7 +99,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         return 0 <= identifier && identifier <= getArraySize(callLenNode, castToLongNode);
     }
 
-    @ImportStatic(SpecialMethodNames.class)
+    @ImportStatic({SpecialMethodNames.class, PySequenceArrayWrapper.class})
     @TypeSystemReference(PythonTypes.class)
     @GenerateUncached
     abstract static class ReadArrayItemNode extends Node {
@@ -154,7 +157,36 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             return result;
         }
 
-        @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
+        @Specialization
+        long doPMmapI64(PMMap mmap, long byteIdx,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
+                        @Cached CallNode callGetItemNode,
+                        @Cached(allowUncached = true) CastToByteNode castToByteNode) {
+
+            long len = mmap.getLength();
+            Object attrGetItem = lookupGetItemNode.execute(mmap, SpecialMethodNames.__GETITEM__);
+
+            int i = (int) byteIdx;
+            long result = 0;
+            result |= castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx));
+            if (i + 1 < len)
+                result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 8L) & 0xFF00L;
+            if (i + 2 < len)
+                result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 16L) & 0xFF0000L;
+            if (i + 3 < len)
+                result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 24L) & 0xFF000000L;
+            if (i + 4 < len)
+                result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 32L) & 0xFF00000000L;
+            if (i + 5 < len)
+                result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 40L) & 0xFF0000000000L;
+            if (i + 6 < len)
+                result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 48L) & 0xFF000000000000L;
+            if (i + 7 < len)
+                result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 56L) & 0xFF00000000000000L;
+            return result;
+        }
+
+        @Specialization(guards = {"!isTuple(object)", "!isList(object)", "!hasByteArrayContent(object)"})
         Object doGeneric(Object object, long idx,
                         @Cached(value = "create(__GETITEM__)", allowUncached = true) LookupAndCallBinaryNode getItemNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
@@ -397,7 +429,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     }
 
     @GenerateUncached
-    @ImportStatic(SpecialMethodNames.class)
+    @ImportStatic({SpecialMethodNames.class, PySequenceArrayWrapper.class})
     abstract static class GetTypeIDNode extends Node {
 
         public abstract Object execute(Object delegate);
@@ -441,10 +473,10 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         protected static Assumption singleContextAssumption() {
             return PythonLanguage.getCurrent().singleContextAssumption;
         }
+    }
 
-        protected static boolean hasByteArrayContent(Object object) {
-            return object instanceof PBytes || object instanceof PByteArray || object instanceof PMMap;
-        }
+    protected static boolean hasByteArrayContent(Object object) {
+        return object instanceof PBytes || object instanceof PByteArray || object instanceof PMMap;
     }
 
 }
