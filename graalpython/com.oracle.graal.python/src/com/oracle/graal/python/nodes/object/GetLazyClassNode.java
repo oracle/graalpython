@@ -51,13 +51,11 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetLazyClassNodeFactory.GetLazyClassCachedNodeGen;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -206,7 +204,7 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
         }
 
         @TruffleBoundary
-        public static LazyPythonClass getItSlowPath(Object o) {
+        private static LazyPythonClass getItSlowPath(Object o) {
             if (PGuards.isForeignObject(o)) {
                 return PythonBuiltinClassType.TruffleObject;
             } else if (o instanceof String) {
@@ -230,20 +228,6 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
             } else {
                 return null;
             }
-        }
-    }
-
-    @TruffleBoundary
-    public static String getNameSlowPath(Object o) {
-        if (PGuards.isForeignObject(o)) {
-            return BuiltinNames.FOREIGN;
-        }
-        LazyPythonClass lazyClass = GetLazyClassCachedNode.getItSlowPath(o);
-        if (lazyClass != null) {
-            return lazyClass.toString(); // TODO: (tfel) fix getNameSlowPath
-        } else {
-            CompilerDirectives.transferToInterpreter();
-            throw new IllegalStateException("unknown type " + o.getClass().getName());
         }
     }
 }
