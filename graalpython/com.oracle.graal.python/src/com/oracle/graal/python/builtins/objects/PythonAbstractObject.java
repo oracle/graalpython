@@ -163,7 +163,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
-                    @Shared("toForeign") @Cached PTypeToForeignNode toForeign) throws UnknownIdentifierException {
+                    @Shared("toForeign") @Cached PTypeToForeignNode toForeign,
+                    @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode) throws UnknownIdentifierException {
         String attrKey = getAttributeKey.execute(key);
         Object attrGetattribute = null;
         if (attrKey != null) {
@@ -187,6 +188,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             return toForeign.executeConvert(callGetattributeNode.execute(null, attrGetattribute, this, key));
         } catch (PException e) {
             // pass
+        }
+        if (isSequenceNode.execute(this)) {
+            try {
+                return toForeign.executeConvert(getItemNode.execute(this, key));
+            } catch (PException e) {
+                // pass
+            }
         }
 
         throw UnknownIdentifierException.create(key);
@@ -221,7 +229,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
         if (isIterableNode.execute(this)) {
             Object attrIter = lookupIterNode.execute(this, SpecialMethodNames.__ITER__);
-            Object iter = callIterNode.execute(null, attrIter);
+            Object iter = callIterNode.execute(null, attrIter, this);
             if (iter != this) {
                 // there is a separate iterator for this object, should be safe to consume
                 Object result = iterateToKey(lookupNextNode, callNextNode, iter, key);
@@ -275,7 +283,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         Object value = PNone.NO_VALUE;
         for (long i = 0; i <= key; i++) {
             Object attrNext = lookupNextNode.execute(iter, SpecialMethodNames.__NEXT__);
-            value = callNextNode.execute(null, attrNext);
+            value = callNextNode.execute(null, attrNext, iter);
         }
         return value;
     }
