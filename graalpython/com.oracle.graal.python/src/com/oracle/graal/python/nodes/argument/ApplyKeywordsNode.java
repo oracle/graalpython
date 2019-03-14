@@ -107,7 +107,7 @@ abstract class ApplyKeywordsNode extends PNodeWithContext {
                     throw raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
                 }
                 PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
-            } else if (takesVarKwds) {
+            } else if (unusedKeywords != null) {
                 unusedKeywords[k++] = kwArg;
             } else {
                 additionalKwds++;
