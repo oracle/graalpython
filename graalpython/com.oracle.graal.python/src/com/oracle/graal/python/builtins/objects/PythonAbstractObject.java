@@ -445,10 +445,11 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         @Cached IsImmutable isImmutable,
                         @Cached KeyForItemAccess itemKey,
                         @Cached KeyForAttributeAccess attrKey,
-                        @Cached GetMroNode getMroNode) {
+                        @Cached GetMroNode getMroNode,
+                        @Cached IsMappingNode isMapping) {
 
             String itemFieldName = itemKey.execute(fieldName);
-            if (itemFieldName != null) {
+            if (itemFieldName != null || isMapping.execute(object)) {
                 return READABLE | MODIFIABLE | REMOVABLE;
             }
 
@@ -494,22 +495,22 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         }
                     }
                 }
+            }
 
-                if (attr != PNone.NO_VALUE) {
-                    if (!isImmutable.execute(owner)) {
-                        info |= REMOVABLE;
-                        info |= MODIFIABLE;
-                    }
-                } else if (!isImmutable.execute(object)) {
-                    info |= INSERTABLE;
+            if (attr != PNone.NO_VALUE) {
+                if (!isImmutable.execute(owner)) {
+                    info |= REMOVABLE;
+                    info |= MODIFIABLE;
                 }
+            } else if (!isImmutable.execute(object)) {
+                info |= INSERTABLE;
+            }
 
-                if ((info & READ_SIDE_EFFECTS) == 0 && (info & INVOCABLE) == 0) {
-                    // if this is not a getter, we check if the value inherits a __call__ attr
-                    // if it is a getter, we just cannot really tell if the attr is invocable
-                    if (isCallableNode.execute(attr)) {
-                        info |= INVOCABLE;
-                    }
+            if ((info & READ_SIDE_EFFECTS) == 0 && (info & INVOCABLE) == 0) {
+                // if this is not a getter, we check if the value inherits a __call__ attr
+                // if it is a getter, we just cannot really tell if the attr is invocable
+                if (isCallableNode.execute(attr)) {
+                    info |= INVOCABLE;
                 }
             }
 
