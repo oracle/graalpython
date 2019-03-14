@@ -162,7 +162,6 @@ public class CodeBuiltins extends PythonBuiltins {
         protected Object get(PCode self) {
             byte[] codestring = self.getCodestring();
             if (codestring == null) {
-                // TODO: this is for the moment undefined
                 codestring = new byte[0];
             }
             return factory().createBytes(codestring);
