@@ -37,7 +37,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -57,9 +56,7 @@ public class PFunction extends PythonObject {
     private final boolean isStatic;
     @CompilationFinal private PCode code;
     @CompilationFinal(dimensions = 1) private Object[] defaultValues;
-    private Object[] uncachedDefaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
-    private PKeyword[] uncachedKwDefaultValues;
 
     public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
         this(clazz, name, enclosingClassName, callTarget, globals, EMPTY_DEFAULTS, PKeyword.EMPTY_KEYWORDS, closure);
@@ -73,8 +70,8 @@ public class PFunction extends PythonObject {
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingClassName = enclosingClassName;
         this.globals = globals;
-        this.defaultValues = this.uncachedDefaultValues = defaultValues == null ? EMPTY_DEFAULTS : defaultValues;
-        this.kwDefaultValues = this.uncachedKwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
+        this.defaultValues = defaultValues == null ? EMPTY_DEFAULTS : defaultValues;
+        this.kwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
         this.closure = closure;
         addDefaultConstants(this.getStorage(), name, enclosingClassName);
     }
@@ -157,41 +154,21 @@ public class PFunction extends PythonObject {
     }
 
     public Object[] getDefaults() {
-        Assumption assumption = this.defaultsStableAssumption;
-        if (CompilerDirectives.isCompilationConstant(this) && CompilerDirectives.isCompilationConstant(assumption)) {
-            if (assumption.isValid()) {
-                return defaultValues;
-            }
-        }
-        return uncachedDefaultValues;
-    }
-
-    public Object[] getUncachedDefaultValues() {
-        return uncachedDefaultValues;
+        return defaultValues;
     }
 
     public void setDefaults(Object[] defaults) {
         this.defaultsStableAssumption.invalidate("defaults changed for function " + getName());
-        this.defaultValues = this.uncachedDefaultValues = defaults;
+        this.defaultValues = defaults;
     }
 
     public PKeyword[] getKwDefaults() {
-        Assumption assumption = this.defaultsStableAssumption;
-        if (CompilerDirectives.isCompilationConstant(this) && CompilerDirectives.isCompilationConstant(assumption)) {
-            if (assumption.isValid()) {
-                return kwDefaultValues;
-            }
-        }
-        return uncachedKwDefaultValues;
-    }
-
-    public PKeyword[] getUncachedKwDefaults() {
-        return uncachedKwDefaultValues;
+        return kwDefaultValues;
     }
 
     public void setKwDefaults(PKeyword[] defaults) {
         this.defaultsStableAssumption.invalidate("kw defaults changed for function " + getName());
-        this.kwDefaultValues = this.uncachedKwDefaultValues = defaults;
+        this.kwDefaultValues = defaults;
     }
 
     @TruffleBoundary

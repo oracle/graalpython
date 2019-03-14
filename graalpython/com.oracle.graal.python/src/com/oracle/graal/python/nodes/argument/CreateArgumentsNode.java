@@ -60,7 +60,9 @@ import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillDefault
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillKwDefaultsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FindKwDefaultNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.HandleTooManyArgumentsNodeGen;
-import com.oracle.graal.python.nodes.code.GetSignatureNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -81,13 +83,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     Object[] doMethodCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
                     @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached("create()") GetSignatureNode getSignatureNode,
+                    @Cached("create()") GetDefaultsNode getDefaultsNode,
+                    @Cached("create()") GetKeywordDefaultsNode getKwDefaultsNode,
                     @Cached("method") @SuppressWarnings("unused") PythonObject cachedMethod) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
         // getter check the appropriate assumptions.
         Signature signature = getSignatureNode.execute(cachedMethod);
-        Object[] defaults = getDefaults(cachedMethod);
-        PKeyword[] kwdefaults = getKwDefaults(cachedMethod);
+        Object[] defaults = getDefaultsNode.execute(cachedMethod);
+        PKeyword[] kwdefaults = getKwDefaultsNode.execute(cachedMethod);
         Object self = getSelf(cachedMethod);
         return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, self, defaults, kwdefaults, isMethodCall(self));
     }
@@ -98,13 +102,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached("getFunction(method)") @SuppressWarnings("unused") Object cachedFunction,
                     @Cached("create()") GetSignatureNode getSignatureNode,
+                    @Cached("create()") GetDefaultsNode getDefaultsNode,
+                    @Cached("create()") GetKeywordDefaultsNode getKwDefaultsNode,
                     @Cached("getSelf(method)") Object cachedSelf) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
         // getter check the appropriate assumptions.
         Signature signature = getSignatureNode.execute(cachedFunction);
-        Object[] defaults = getDefaults(cachedFunction);
-        PKeyword[] kwdefaults = getKwDefaults(cachedFunction);
+        Object[] defaults = getDefaultsNode.execute(cachedFunction);
+        PKeyword[] kwdefaults = getKwDefaultsNode.execute(cachedFunction);
         return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, cachedSelf, defaults, kwdefaults, isMethodCall(cachedSelf));
     }
 
@@ -112,13 +118,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     Object[] doMethodFunctionCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
                     @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached("create()") GetSignatureNode getSignatureNode,
+                    @Cached("create()") GetDefaultsNode getDefaultsNode,
+                    @Cached("create()") GetKeywordDefaultsNode getKwDefaultsNode,
                     @Cached("getFunction(method)") @SuppressWarnings("unused") Object cachedFunction) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
         // getter check the appropriate assumptions.
         Signature signature = getSignatureNode.execute(cachedFunction);
-        Object[] defaults = getDefaults(cachedFunction);
-        PKeyword[] kwdefaults = getKwDefaults(cachedFunction);
+        Object[] defaults = getDefaultsNode.execute(cachedFunction);
+        PKeyword[] kwdefaults = getKwDefaultsNode.execute(cachedFunction);
         Object self = getSelf(method);
         return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, self, defaults, kwdefaults, isMethodCall(self));
     }
@@ -127,13 +135,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     Object[] doFunctionCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
                     @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached("create()") GetSignatureNode getSignatureNode,
+                    @Cached("create()") GetDefaultsNode getDefaultsNode,
+                    @Cached("create()") GetKeywordDefaultsNode getKwDefaultsNode,
                     @Cached("callable") @SuppressWarnings("unused") PythonObject cachedCallable) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
         // getter check the appropriate assumptions.
         Signature signature = getSignatureNode.execute(cachedCallable);
-        Object[] defaults = getDefaults(cachedCallable);
-        PKeyword[] kwdefaults = getKwDefaults(cachedCallable);
+        Object[] defaults = getDefaultsNode.execute(cachedCallable);
+        PKeyword[] kwdefaults = getKwDefaultsNode.execute(cachedCallable);
         return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, null, defaults, kwdefaults, false);
     }
 
@@ -589,14 +599,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return getProperty(callable, UncachedKwDefaultsGetter.INSTANCE);
     }
 
-    protected static Object[] getDefaults(Object callable) {
-        return getProperty(callable, DefaultsGetter.INSTANCE);
-    }
-
-    protected static PKeyword[] getKwDefaults(Object callable) {
-        return getProperty(callable, KwDefaultsGetter.INSTANCE);
-    }
-
     protected static String getName(Object callable) {
         return getProperty(callable, NameGetter.INSTANCE);
     }
@@ -653,34 +655,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         public abstract T fromPBuiltinFunction(PBuiltinFunction fun);
     }
 
-    private static final class DefaultsGetter extends Getter<Object[]> {
-        private static final DefaultsGetter INSTANCE = new DefaultsGetter();
-
-        @Override
-        public Object[] fromPFunction(PFunction fun) {
-            return fun.getDefaults();
-        }
-
-        @Override
-        public Object[] fromPBuiltinFunction(PBuiltinFunction fun) {
-            return fun.getDefaults();
-        }
-    }
-
-    private static final class KwDefaultsGetter extends Getter<PKeyword[]> {
-        private static final KwDefaultsGetter INSTANCE = new KwDefaultsGetter();
-
-        @Override
-        public PKeyword[] fromPFunction(PFunction fun) {
-            return fun.getKwDefaults();
-        }
-
-        @Override
-        public PKeyword[] fromPBuiltinFunction(PBuiltinFunction fun) {
-            return fun.getKwDefaults();
-        }
-    }
-
     private static final class UncachedSignatureGetter extends Getter<Signature> {
         private static final UncachedSignatureGetter INSTANCE = new UncachedSignatureGetter();
 
@@ -700,7 +674,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Override
         public Object[] fromPFunction(PFunction fun) {
-            return fun.getUncachedDefaultValues();
+            return fun.getDefaults();
         }
 
         @Override
@@ -714,7 +688,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Override
         public PKeyword[] fromPFunction(PFunction fun) {
-            return fun.getUncachedKwDefaults();
+            return fun.getKwDefaults();
         }
 
         @Override
