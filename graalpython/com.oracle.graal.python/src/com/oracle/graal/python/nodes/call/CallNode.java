@@ -183,29 +183,33 @@ public abstract class CallNode extends PNodeWithContext {
             Object[] arguments = null;
 
             if (callableObject instanceof PFunction) {
-                arguments = createArgs.execute((PFunction) callableObject, args, keywords);
-                ct = ((PFunction) callableObject).getCallTarget();
-                PArguments.setClosure(arguments, ((PFunction) callableObject).getClosure());
-                PArguments.setGlobals(arguments, ((PFunction) callableObject).getGlobals());
+                PFunction function = (PFunction) callableObject;
+                arguments = createArgs.execute(function, args, keywords);
+                ct = function.getCallTarget();
+                PArguments.setClosure(arguments, function.getClosure());
+                PArguments.setGlobals(arguments, function.getGlobals());
             } else if (callableObject instanceof PBuiltinFunction) {
-                arguments = createArgs.execute((PBuiltinFunction) callableObject, args, keywords);
-                ct = ((PBuiltinFunction) callableObject).getCallTarget();
+                PBuiltinFunction builtinFunction = (PBuiltinFunction) callableObject;
+                arguments = createArgs.execute(builtinFunction, args, keywords);
+                ct = builtinFunction.getCallTarget();
             } else if (callableObject instanceof PMethod) {
-                Object func = ((PMethod) callableObject).getFunction();
+                PMethod method = (PMethod) callableObject;
+                Object func = method.getFunction();
                 if (func instanceof PFunction) {
-                    arguments = createArgs.execute((PFunction) func, args, keywords);
+                    arguments = createArgs.execute(method, args, keywords);
                     ct = ((PFunction) func).getCallTarget();
                 } else {
-                    arguments = createArgs.execute((PBuiltinFunction) func, args, keywords);
+                    arguments = createArgs.execute(method, args, keywords);
                     ct = ((PBuiltinFunction) func).getCallTarget();
                 }
             } else if (callableObject instanceof PBuiltinMethod) {
-                Object func = ((PBuiltinMethod) callableObject).getFunction();
+                PBuiltinMethod builtinMethod = (PBuiltinMethod) callableObject;
+                Object func = builtinMethod.getFunction();
                 if (func instanceof PFunction) {
-                    arguments = createArgs.execute((PFunction) func, args, keywords);
+                    arguments = createArgs.execute(builtinMethod, args, keywords);
                     ct = ((PFunction) func).getCallTarget();
                 } else {
-                    arguments = createArgs.execute((PBuiltinFunction) func, args, keywords);
+                    arguments = createArgs.execute(builtinMethod, args, keywords);
                     ct = ((PBuiltinFunction) func).getCallTarget();
                 }
             }
