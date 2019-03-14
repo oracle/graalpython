@@ -83,6 +83,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -613,6 +614,7 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
+        @CompilationFinal private ConditionProfile isBigIntPowerOfTwo = ConditionProfile.createBinaryProfile();
 
         @Specialization(rewriteOn = ArithmeticException.class)
         int doII(int x, int y) throws ArithmeticException {
@@ -637,7 +639,7 @@ public class IntBuiltins extends PythonBuiltins {
             if (((ax | ay) >>> 31 != 0)) {
                 int leadingZeros = Long.numberOfLeadingZeros(ax) + Long.numberOfLeadingZeros(ay);
                 if (leadingZeros < 66) {
-                    return factory().createInt(op(BigInteger.valueOf(x), BigInteger.valueOf(y)));
+                    return factory().createInt(mul(BigInteger.valueOf(x), BigInteger.valueOf(y)));
                 }
             }
             return factory().createInt(r);
@@ -645,17 +647,30 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt doPIntLong(PInt left, long right) {
-            return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
+            return factory().createInt(mul(left.getValue(), BigInteger.valueOf(right)));
         }
 
         @Specialization
         PInt doPIntPInt(PInt left, PInt right) {
-            return factory().createInt(op(left.getValue(), right.getValue()));
+            return factory().createInt(mul(left.getValue(), right.getValue()));
+        }
+
+        BigInteger mul(BigInteger a, BigInteger b) {
+            if (isBigIntPowerOfTwo.profile(b.and(b.subtract(BigInteger.ONE)).equals(BigInteger.ZERO))) {
+                return bigIntegerShift(a, b.getLowestSetBit());
+            } else {
+                return bigIntegerMul(a, b);
+            }
         }
 
         @TruffleBoundary
-        BigInteger op(BigInteger a, BigInteger b) {
+        BigInteger bigIntegerMul(BigInteger a, BigInteger b) {
             return a.multiply(b);
+        }
+
+        @TruffleBoundary
+        BigInteger bigIntegerShift(BigInteger a, int n) {
+            return a.shiftLeft(n);
         }
 
         @SuppressWarnings("unused")
