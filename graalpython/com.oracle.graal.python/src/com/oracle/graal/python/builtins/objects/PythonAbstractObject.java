@@ -795,8 +795,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     // TODO(fa) not accurate; distinguish between read-only and non-existing
                     throw UnknownIdentifierException.create(member);
                 }
+            } else {
+                throw UnsupportedMessageException.create();
             }
-            throw UnsupportedMessageException.create();
         }
 
         public static PInteropSubscriptAssignNode create() {
@@ -832,8 +833,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     // TODO(fa) not accurate; distinguish between read-only and non-existing
                     throw UnknownIdentifierException.create(attrName);
                 }
+            } else {
+                throw UnsupportedMessageException.create();
             }
-            throw UnsupportedMessageException.create();
         }
 
         public static PInteropSetAttributeNode create() {
@@ -869,8 +871,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     // TODO(fa) not accurate; distinguish between read-only and non-existing
                     throw UnknownIdentifierException.create(member);
                 }
+            } else {
+                throw UnsupportedMessageException.create();
             }
-            throw UnsupportedMessageException.create();
         }
 
         public static PInteropDeleteItemNode create() {
@@ -906,8 +909,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     // TODO(fa) not accurate; distinguish between read-only and non-existing
                     throw UnknownIdentifierException.create(attrName);
                 }
+            } else {
+                throw UnsupportedMessageException.create();
             }
-            throw UnsupportedMessageException.create();
         }
 
         public static PInteropDeleteAttributeNode create() {
