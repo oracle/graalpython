@@ -49,6 +49,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -77,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.SpliceNodeGen;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.StringLenNodeFactory;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -107,7 +109,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.math.BigInteger;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
 public final class StringBuiltins extends PythonBuiltins {
@@ -1406,15 +1408,29 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class LenNode extends PythonUnaryBuiltinNode {
+    public abstract static class StringLenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public int len(String self) {
             return self.length();
         }
 
         @Specialization
-        public int len(PString self) {
-            return self.len();
+        public int len(PString self,
+                        @Cached("createClassProfile()") ValueProfile classProfile,
+                        @Cached("create()") BranchProfile uncommonStringTypeProfile) {
+            Object profiled = classProfile.profile(self.getCharSequence());
+            if (profiled instanceof String) {
+                return ((String) profiled).length();
+            } else if (profiled instanceof LazyString) {
+                return ((LazyString) profiled).length();
+            } else {
+                uncommonStringTypeProfile.enter();
+                return ((CharSequence) profiled).length();
+            }
+        }
+
+        public static StringLenNode create() {
+            return StringLenNodeFactory.create();
         }
     }
 
