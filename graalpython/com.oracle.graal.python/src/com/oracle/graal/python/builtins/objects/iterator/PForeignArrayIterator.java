@@ -42,21 +42,20 @@ package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.interop.TruffleObject;
 
 public class PForeignArrayIterator extends PythonBuiltinObject {
 
-    private final TruffleObject foreignArray;
+    private final Object foreignArray;
     private int size;
     private int cursor;
 
-    public PForeignArrayIterator(LazyPythonClass cls, TruffleObject foreignArray, int size) {
+    public PForeignArrayIterator(LazyPythonClass cls, Object foreignArray, int size) {
         super(cls);
         this.foreignArray = foreignArray;
         this.size = size;
     }
 
-    public TruffleObject getForeignArray() {
+    public Object getForeignArray() {
         return foreignArray;
     }
 

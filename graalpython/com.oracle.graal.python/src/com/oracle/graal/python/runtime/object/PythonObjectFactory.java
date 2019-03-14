@@ -762,7 +762,7 @@ public final class PythonObjectFactory extends Node {
         return trace(new PZip(cls, iterables));
     }
 
-    public PForeignArrayIterator createForeignArrayIterator(TruffleObject iterable, int size) {
+    public PForeignArrayIterator createForeignArrayIterator(Object iterable, int size) {
         return trace(new PForeignArrayIterator(PythonBuiltinClassType.PForeignArrayIterator, iterable, size));
     }
 
