@@ -193,19 +193,19 @@ public abstract class CallNode extends PNodeWithContext {
             } else if (callableObject instanceof PMethod) {
                 Object func = ((PMethod) callableObject).getFunction();
                 if (func instanceof PFunction) {
-                    arguments = createArgs.execute((PFunction) callableObject, args, keywords);
+                    arguments = createArgs.execute((PFunction) func, args, keywords);
                     ct = ((PFunction) func).getCallTarget();
                 } else {
-                    arguments = createArgs.execute((PBuiltinFunction) callableObject, args, keywords);
+                    arguments = createArgs.execute((PBuiltinFunction) func, args, keywords);
                     ct = ((PBuiltinFunction) func).getCallTarget();
                 }
             } else if (callableObject instanceof PBuiltinMethod) {
                 Object func = ((PBuiltinMethod) callableObject).getFunction();
                 if (func instanceof PFunction) {
-                    arguments = createArgs.execute((PFunction) callableObject, args, keywords);
+                    arguments = createArgs.execute((PFunction) func, args, keywords);
                     ct = ((PFunction) func).getCallTarget();
                 } else {
-                    arguments = createArgs.execute((PBuiltinFunction) callableObject, args, keywords);
+                    arguments = createArgs.execute((PBuiltinFunction) func, args, keywords);
                     ct = ((PBuiltinFunction) func).getCallTarget();
                 }
             }
