@@ -40,7 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
 import java.util.HashSet;
 
@@ -78,6 +81,7 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -117,7 +121,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Shared("isMapping") @Cached IsMappingNode isMapping,
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
-                    @Cached PInteropSetAttributeNode writeNode) {
+                    @Cached PInteropSetAttributeNode writeNode) throws UnsupportedMessageException, UnknownIdentifierException {
         String attrKey = getAttributeKey.execute(key);
         if (attrKey != null) {
             writeNode.execute(this, attrKey, value);
@@ -145,10 +149,10 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public Object readMember(String key,
-                    @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Exclusive @Cached CallNode callGetattributeNode,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
+                    @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Shared("toForeign") @Cached PTypeToForeignNode toForeign) throws UnknownIdentifierException {
         String attrKey = getAttributeKey.execute(key);
@@ -289,6 +293,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
+    public boolean isMemberRemovable(String member,
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+        // TODO write specialized nodes for the appropriate property
+        return (keyInfoNode.execute(this, member) & PKeyInfoNode.REMOVABLE) != 0;
+    }
+
+    @ExportMessage
     public Object invokeMember(String member, Object[] arguments,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Exclusive @Cached CallNode callGetattributeNode,
@@ -357,6 +368,41 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         }
 
         return new Keys(keys.toArray(new String[0]));
+    }
+
+    @ExportMessage
+    public void removeMember(String field,
+// @Child private DeleteItemNode delItemNode = DeleteItemNode.create();
+// @Child private DeleteAttributeNode delNode = DeleteAttributeNode.create();
+                    @Exclusive @Cached KeyForItemAccess getItemKey,
+                    @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
+                    @Shared("isMapping") @Cached IsMappingNode isMapping,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getDelItemNode,
+                    @Cached PInteropDeleteAttributeNode deleteAttributeNode,
+                    @Cached PInteropDeleteItemNode delItemNode) throws UnsupportedMessageException, UnknownIdentifierException {
+        String attrKey = getAttributeKey.execute(field);
+        if (attrKey != null) {
+            deleteAttributeNode.execute(this, attrKey);
+            return;
+        }
+
+        String itemKey = getItemKey.execute(field);
+        if (itemKey != null) {
+            delItemNode.execute(this, itemKey);
+            return;
+        }
+
+        if (this instanceof PythonObject) {
+            if (objectHasAttribute(this, field)) {
+                deleteAttributeNode.execute(this, field);
+                return;
+            }
+        }
+        if (isMapping.execute(this) && getDelItemNode.execute(this, SpecialMethodNames.__DELITEM__) != PNone.NO_VALUE) {
+            delItemNode.execute(this, field);
+        } else {
+            deleteAttributeNode.execute(this, field);
+        }
     }
 
     private static void addKeysFromObject(HashSet<String> keys, PythonObject o, boolean includeInternal) {
@@ -690,22 +736,67 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     /*
+     * Basically the same as 'com.oracle.graal.python.nodes.attributes.GetAttributeNode' but with an
+     * uncached version.
+     */
+    @GenerateUncached
+    public abstract static class PInteropGetAttributeNode extends Node {
+
+        public abstract Object execute(Object object, String attrName);
+
+        @Specialization
+        Object doIt(Object object, String attrName,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
+                        @Cached CallNode callGetattributeNode,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetattrNode,
+                        @Cached CallNode callGetattrNode,
+                        @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
+            try {
+                Object attrGetattribute = lookupGetattributeNode.execute(object, __GETATTRIBUTE__);
+                return callGetattributeNode.execute(null, attrGetattribute, object, attrName);
+            } catch (PException pe) {
+                pe.expect(AttributeError, isBuiltinClassProfile);
+                Object attrGetattr = lookupGetattrNode.execute(object, __GETATTR__);
+                return callGetattrNode.execute(null, attrGetattr, object, attrName);
+            }
+        }
+
+        public static PInteropGetAttributeNode create() {
+            return PythonAbstractObjectFactory.PInteropGetAttributeNodeGen.create();
+        }
+
+        public static PInteropGetAttributeNode getUncached() {
+            return PythonAbstractObjectFactory.PInteropGetAttributeNodeGen.getUncached();
+        }
+    }
+
+    /*
      * Basically the same as 'com.oracle.graal.python.nodes.subscript.SetItemNode' but with an
      * uncached version.
      */
     @GenerateUncached
     public abstract static class PInteropSubscriptAssignNode extends Node {
 
-        public abstract void execute(Object primary, Object index, Object value);
+        public abstract void execute(PythonAbstractObject primary, String member, Object value) throws UnsupportedMessageException, UnknownIdentifierException;
 
         @Specialization
-        public void doSpecialObject(PythonAbstractObject primary, Object index, Object value,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
-                        @Cached CallNode callGetattributeNode,
-                        @Cached CallNode callSetItemNode) {
-            Object attrGetattribute = lookupGetattributeNode.execute(primary, SpecialMethodNames.__GETATTRIBUTE__);
-            Object attrSetItem = callGetattributeNode.execute(null, attrGetattribute, primary, index, value);
-            callSetItemNode.execute(null, attrSetItem, primary, index, value);
+        public void doSpecialObject(PythonAbstractObject primary, String member, Object value,
+                        @Cached PInteropGetAttributeNode getAttributeNode,
+                        @Cached CallNode callSetItemNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+
+            Object attrSetitem = getAttributeNode.execute(primary, __SETITEM__);
+            if (profile.profile(attrSetitem != PNone.NO_VALUE)) {
+                try {
+                    callSetItemNode.execute(null, attrSetitem, primary, member, value);
+                } catch (PException e) {
+                    e.expectAttributeError(attrErrorProfile);
+                    // TODO(fa) not accurate; distinguish between read-only and non-existing
+                    throw UnknownIdentifierException.create(member);
+                }
+            }
+            throw UnsupportedMessageException.create();
         }
 
         public static PInteropSubscriptAssignNode create() {
@@ -724,14 +815,25 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @GenerateUncached
     public abstract static class PInteropSetAttributeNode extends Node {
 
-        public abstract void execute(Object primary, Object index, Object value);
+        public abstract void execute(Object primary, String attrName, Object value) throws UnsupportedMessageException, UnknownIdentifierException;
 
         @Specialization
-        public void doSpecialObject(PythonAbstractObject primary, Object index, Object value,
+        public void doSpecialObject(PythonAbstractObject primary, String attrName, Object value,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
-                        @Cached CallNode callSetAttrNode) {
+                        @Cached CallNode callSetAttrNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
             Object attrGetattribute = lookupSetAttrNode.execute(primary, SpecialMethodNames.__SETATTR__);
-            callSetAttrNode.execute(null, attrGetattribute, primary, index, value);
+            if (profile.profile(attrGetattribute != PNone.NO_VALUE)) {
+                try {
+                    callSetAttrNode.execute(null, attrGetattribute, primary, attrName, value);
+                } catch (PException e) {
+                    e.expectAttributeError(attrErrorProfile);
+                    // TODO(fa) not accurate; distinguish between read-only and non-existing
+                    throw UnknownIdentifierException.create(attrName);
+                }
+            }
+            throw UnsupportedMessageException.create();
         }
 
         public static PInteropSetAttributeNode create() {
@@ -740,6 +842,80 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
         public static PInteropSetAttributeNode getUncached() {
             return PythonAbstractObjectFactory.PInteropSetAttributeNodeGen.getUncached();
+        }
+    }
+
+    /*
+     * Basically the same as 'com.oracle.graal.python.nodes.subscript.DelItemNode' but with an
+     * uncached version.
+     */
+    @GenerateUncached
+    public abstract static class PInteropDeleteItemNode extends Node {
+
+        public abstract void execute(Object primary, String member) throws UnsupportedMessageException, UnknownIdentifierException;
+
+        @Specialization
+        public void doSpecialObject(PythonAbstractObject primary, String member,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
+                        @Cached CallNode callSetAttrNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+            Object attrDelattr = lookupSetAttrNode.execute(primary, SpecialMethodNames.__DELITEM__);
+            if (profile.profile(attrDelattr != PNone.NO_VALUE)) {
+                try {
+                    callSetAttrNode.execute(null, attrDelattr, primary, member);
+                } catch (PException e) {
+                    e.expectAttributeError(attrErrorProfile);
+                    // TODO(fa) not accurate; distinguish between read-only and non-existing
+                    throw UnknownIdentifierException.create(member);
+                }
+            }
+            throw UnsupportedMessageException.create();
+        }
+
+        public static PInteropDeleteItemNode create() {
+            return PythonAbstractObjectFactory.PInteropDeleteItemNodeGen.create();
+        }
+
+        public static PInteropDeleteItemNode getUncached() {
+            return PythonAbstractObjectFactory.PInteropDeleteItemNodeGen.getUncached();
+        }
+    }
+
+    /*
+     * Basically the same as 'com.oracle.graal.python.nodes.attributes.DeleteAttributeNode' but with
+     * an uncached version.
+     */
+    @GenerateUncached
+    public abstract static class PInteropDeleteAttributeNode extends Node {
+
+        public abstract void execute(Object primary, String attrName) throws UnsupportedMessageException, UnknownIdentifierException;
+
+        @Specialization
+        public void doSpecialObject(PythonAbstractObject primary, String attrName,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
+                        @Cached CallNode callSetAttrNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+            Object attrDelattr = lookupSetAttrNode.execute(primary, SpecialMethodNames.__DELATTR__);
+            if (profile.profile(attrDelattr != PNone.NO_VALUE)) {
+                try {
+                    callSetAttrNode.execute(null, attrDelattr, primary, attrName);
+                } catch (PException e) {
+                    e.expectAttributeError(attrErrorProfile);
+                    // TODO(fa) not accurate; distinguish between read-only and non-existing
+                    throw UnknownIdentifierException.create(attrName);
+                }
+            }
+            throw UnsupportedMessageException.create();
+        }
+
+        public static PInteropDeleteAttributeNode create() {
+            return PythonAbstractObjectFactory.PInteropDeleteAttributeNodeGen.create();
+        }
+
+        public static PInteropDeleteAttributeNode getUncached() {
+            return PythonAbstractObjectFactory.PInteropDeleteAttributeNodeGen.getUncached();
         }
     }
 
