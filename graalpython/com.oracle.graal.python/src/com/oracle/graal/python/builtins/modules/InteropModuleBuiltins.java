@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -74,6 +75,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -472,4 +474,29 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             }
         }
     }
+
+    @Builtin(name = "__element_info__", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class ArrayElementInfoNode extends PythonBuiltinNode {
+        @Specialization
+        boolean keyInfo(Object receiver, long member, String info) {
+            if (info.equals("exists")) {
+                return getInterop().isArrayElementExisting(receiver, member);
+            } else if (info.equals("readable")) {
+                return getInterop().isArrayElementReadable(receiver, member);
+            } else if (info.equals("writable")) {
+                return getInterop().isArrayElementWritable(receiver, member);
+            } else if (info.equals("insertable")) {
+                return getInterop().isArrayElementInsertable(receiver, member);
+            } else if (info.equals("removable")) {
+                return getInterop().isArrayElementRemovable(receiver, member);
+            } else if (info.equals("modifiable")) {
+                return getInterop().isArrayElementModifiable(receiver, member);
+            } else {
+                return false;
+            }
+        }
+    }
+
 }

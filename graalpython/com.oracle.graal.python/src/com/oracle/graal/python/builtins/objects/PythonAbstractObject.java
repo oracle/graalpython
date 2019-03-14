@@ -48,6 +48,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import java.util.HashSet;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -58,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -117,33 +119,40 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public void writeMember(String key, Object value,
-                    @Cached PInteropSubscriptAssignNode setItemNode,
+                    @Exclusive @Cached PInteropSubscriptAssignNode setItemNode,
                     @Shared("isMapping") @Cached IsMappingNode isMapping,
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
-                    @Cached PInteropSetAttributeNode writeNode) throws UnsupportedMessageException, UnknownIdentifierException {
-        String attrKey = getAttributeKey.execute(key);
-        if (attrKey != null) {
-            writeNode.execute(this, attrKey, value);
-            return;
-        }
-
-        String itemKey = getItemKey.execute(key);
-        if (itemKey != null) {
-            setItemNode.execute(this, itemKey, value);
-            return;
-        }
-
-        if (this instanceof PythonObject) {
-            if (objectHasAttribute(this, key)) {
-                writeNode.execute(this, key, value);
+                    @Cached PInteropSetAttributeNode writeNode,
+                    @Exclusive @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+        try {
+            String attrKey = getAttributeKey.execute(key);
+            if (attrKey != null) {
+                writeNode.execute(this, attrKey, value);
                 return;
             }
-        }
-        if (isMapping.execute(this)) {
-            setItemNode.execute(this, key, value);
-        } else {
-            writeNode.execute(this, key, value);
+
+            String itemKey = getItemKey.execute(key);
+            if (itemKey != null) {
+                setItemNode.execute(this, itemKey, value);
+                return;
+            }
+
+            if (this instanceof PythonObject) {
+                if (objectHasAttribute(this, key)) {
+                    writeNode.execute(this, key, value);
+                    return;
+                }
+            }
+            if (isMapping.execute(this)) {
+                setItemNode.execute(this, key, value);
+            } else {
+                writeNode.execute(this, key, value);
+            }
+        } catch (PException e) {
+            e.expectAttributeError(attrErrorProfile);
+            // TODO(fa) not accurate; distinguish between read-only and non-existing
+            throw UnknownIdentifierException.create(key);
         }
     }
 
@@ -228,6 +237,40 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         throw UnsupportedMessageException.create();
     }
 
+    @ExportMessage
+    public void writeArrayElement(long key, Object value,
+                    @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
+                    @Exclusive @Cached PInteropSubscriptAssignNode setItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
+        if (isSequenceNode.execute(this)) {
+            try {
+                setItemNode.execute(this, key, value);
+            } catch (PException e) {
+                // TODO(fa) refine exception handling
+                // it's a sequence, so we assume the index is wrong
+                throw InvalidArrayIndexException.create(key);
+            }
+        }
+
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    public void removeArrayElement(long key,
+                    @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
+                    @Exclusive @Cached PInteropDeleteItemNode deleteItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
+        if (isSequenceNode.execute(this)) {
+            try {
+                deleteItemNode.execute(this, key);
+            } catch (PException e) {
+                // TODO(fa) refine exception handling
+                // it's a sequence, so we assume the index is wrong
+                throw InvalidArrayIndexException.create(key);
+            }
+        }
+
+        throw UnsupportedMessageException.create();
+    }
+
     private static Object iterateToKey(LookupInheritedAttributeNode.Dynamic lookupNextNode, CallNode callNextNode, Object iter, long key) {
         Object value = PNone.NO_VALUE;
         for (long i = 0; i <= key; i++) {
@@ -239,24 +282,54 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public long getArraySize(
-                    @Exclusive @Cached LookupAndCallUnaryDynamicNode callLenNode) throws UnsupportedMessageException {
+                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode) throws UnsupportedMessageException {
         // since a call to this method must be preceded by a call to 'hasArrayElements', we just
         // assume that a length exists
-        Object lenObj = callLenNode.executeObject(this, SpecialMethodNames.__LEN__);
-        if (lenObj instanceof Number) {
-            return ((Number) lenObj).longValue();
-        } else if (lenObj instanceof PInt) {
-            return ((PInt) lenObj).longValueExact();
+        long len = getArraySizeSafe(callLenNode);
+        if (len >= 0) {
+            return len;
         }
         CompilerDirectives.transferToInterpreter();
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
-    public boolean isArrayElementReadable(@SuppressWarnings("unused") long idx) {
-        // We can't actually determine (in general) except of actually reading it which might have
-        // side-effects.
-        return true;
+    public boolean isArrayElementReadable(@SuppressWarnings("unused") long idx,
+                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode) {
+        return isInBounds(callLenNode, idx);
+    }
+
+    @ExportMessage
+    public boolean isArrayElementModifiable(@SuppressWarnings("unused") long idx,
+                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode) {
+        return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(callLenNode, idx);
+    }
+
+    @ExportMessage
+    public boolean isArrayElementInsertable(@SuppressWarnings("unused") long idx,
+                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode) {
+        return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(callLenNode, idx);
+    }
+
+    @ExportMessage
+    public boolean isArrayElementRemovable(@SuppressWarnings("unused") long idx,
+                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode) {
+        return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(callLenNode, idx);
+    }
+
+    private boolean isInBounds(LookupAndCallUnaryDynamicNode callLenNode, long idx) {
+        long len = getArraySizeSafe(callLenNode);
+        return 0 <= idx && idx < len;
+    }
+
+    private long getArraySizeSafe(LookupAndCallUnaryDynamicNode callLenNode) {
+        Object lenObj = callLenNode.executeObject(this, SpecialMethodNames.__LEN__);
+        if (lenObj instanceof Number) {
+            return ((Number) lenObj).longValue();
+        } else if (lenObj instanceof PInt) {
+            return ((PInt) lenObj).longValueExact();
+        }
+        return -1;
     }
 
     @ExportMessage
@@ -371,35 +444,42 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public void removeMember(String field,
+    public void removeMember(String member,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Shared("isMapping") @Cached IsMappingNode isMapping,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getDelItemNode,
                     @Cached PInteropDeleteAttributeNode deleteAttributeNode,
-                    @Cached PInteropDeleteItemNode delItemNode) throws UnsupportedMessageException, UnknownIdentifierException {
-        String attrKey = getAttributeKey.execute(field);
-        if (attrKey != null) {
-            deleteAttributeNode.execute(this, attrKey);
-            return;
-        }
-
-        String itemKey = getItemKey.execute(field);
-        if (itemKey != null) {
-            delItemNode.execute(this, itemKey);
-            return;
-        }
-
-        if (this instanceof PythonObject) {
-            if (objectHasAttribute(this, field)) {
-                deleteAttributeNode.execute(this, field);
+                    @Exclusive @Cached PInteropDeleteItemNode delItemNode,
+                    @Exclusive @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+        try {
+            String attrKey = getAttributeKey.execute(member);
+            if (attrKey != null) {
+                deleteAttributeNode.execute(this, attrKey);
                 return;
             }
-        }
-        if (isMapping.execute(this) && getDelItemNode.execute(this, SpecialMethodNames.__DELITEM__) != PNone.NO_VALUE) {
-            delItemNode.execute(this, field);
-        } else {
-            deleteAttributeNode.execute(this, field);
+
+            String itemKey = getItemKey.execute(member);
+            if (itemKey != null) {
+                delItemNode.execute(this, itemKey);
+                return;
+            }
+
+            if (this instanceof PythonObject) {
+                if (objectHasAttribute(this, member)) {
+                    deleteAttributeNode.execute(this, member);
+                    return;
+                }
+            }
+            if (isMapping.execute(this) && getDelItemNode.execute(this, SpecialMethodNames.__DELITEM__) != PNone.NO_VALUE) {
+                delItemNode.execute(this, member);
+            } else {
+                deleteAttributeNode.execute(this, member);
+            }
+        } catch (PException e) {
+            e.expectAttributeError(attrErrorProfile);
+            // TODO(fa) not accurate; distinguish between read-only and non-existing
+            throw UnknownIdentifierException.create(member);
         }
     }
 
@@ -794,24 +874,17 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @GenerateUncached
     public abstract static class PInteropSubscriptAssignNode extends Node {
 
-        public abstract void execute(PythonAbstractObject primary, String member, Object value) throws UnsupportedMessageException, UnknownIdentifierException;
+        public abstract void execute(PythonAbstractObject primary, Object key, Object value) throws UnsupportedMessageException;
 
         @Specialization
-        public void doSpecialObject(PythonAbstractObject primary, String member, Object value,
+        public void doSpecialObject(PythonAbstractObject primary, Object key, Object value,
                         @Cached PInteropGetAttributeNode getAttributeNode,
                         @Cached CallNode callSetItemNode,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
-                        @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+                        @Cached("createBinaryProfile()") ConditionProfile profile) throws UnsupportedMessageException {
 
             Object attrSetitem = getAttributeNode.execute(primary, __SETITEM__);
             if (profile.profile(attrSetitem != PNone.NO_VALUE)) {
-                try {
-                    callSetItemNode.execute(null, attrSetitem, member, value);
-                } catch (PException e) {
-                    e.expectAttributeError(attrErrorProfile);
-                    // TODO(fa) not accurate; distinguish between read-only and non-existing
-                    throw UnknownIdentifierException.create(member);
-                }
+                callSetItemNode.execute(null, attrSetitem, key, value);
             } else {
                 throw UnsupportedMessageException.create();
             }
@@ -871,23 +944,16 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @GenerateUncached
     public abstract static class PInteropDeleteItemNode extends Node {
 
-        public abstract void execute(Object primary, String member) throws UnsupportedMessageException, UnknownIdentifierException;
+        public abstract void execute(Object primary, Object key) throws UnsupportedMessageException;
 
         @Specialization
-        public void doSpecialObject(PythonAbstractObject primary, String member,
+        public void doSpecialObject(PythonAbstractObject primary, Object key,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
                         @Cached CallNode callSetAttrNode,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
-                        @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+                        @Cached("createBinaryProfile()") ConditionProfile profile) throws UnsupportedMessageException {
             Object attrDelattr = lookupSetAttrNode.execute(primary, SpecialMethodNames.__DELITEM__);
             if (profile.profile(attrDelattr != PNone.NO_VALUE)) {
-                try {
-                    callSetAttrNode.execute(null, attrDelattr, primary, member);
-                } catch (PException e) {
-                    e.expectAttributeError(attrErrorProfile);
-                    // TODO(fa) not accurate; distinguish between read-only and non-existing
-                    throw UnknownIdentifierException.create(member);
-                }
+                callSetAttrNode.execute(null, attrDelattr, primary, key);
             } else {
                 throw UnsupportedMessageException.create();
             }
