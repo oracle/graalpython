@@ -731,6 +731,8 @@ public abstract class TypeNodes {
 
     }
 
+    @GenerateUncached
+    @ImportStatic(PGuards.class)
     public abstract static class IsTypeNode extends Node {
 
         public abstract boolean execute(Object obj);
@@ -746,9 +748,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        boolean doManagedClass(PythonAbstractNativeObject obj,
-                        @Cached("create()") IsBuiltinClassProfile profile,
-                        @Cached("create()") GetLazyClassNode getClassNode) {
+        boolean doNativeClass(PythonAbstractNativeObject obj,
+                        @Cached IsBuiltinClassProfile profile,
+                        @Cached GetLazyClassNode getClassNode) {
             // TODO(fa): this check may not be enough since a type object may indirectly inherit
             // from 'type'
             // CPython has two different checks if some object is a type:
@@ -757,13 +759,17 @@ public abstract class TypeNodes {
             return profile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.PythonClass);
         }
 
-        @Fallback
-        boolean doGeneric(@SuppressWarnings("unused") Object obj) {
+        @Specialization(guards = "!isClass(obj)")
+        boolean doOther(@SuppressWarnings("unused") Object obj) {
             return false;
         }
 
         public static IsTypeNode create() {
             return IsTypeNodeGen.create();
+        }
+
+        public static IsTypeNode getUncached() {
+            return IsTypeNodeGen.getUncached();
         }
     }
 

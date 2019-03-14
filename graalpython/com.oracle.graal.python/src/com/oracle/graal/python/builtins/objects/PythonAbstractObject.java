@@ -372,8 +372,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public void removeMember(String field,
-// @Child private DeleteItemNode delItemNode = DeleteItemNode.create();
-// @Child private DeleteAttributeNode delNode = DeleteAttributeNode.create();
                     @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Shared("isMapping") @Cached IsMappingNode isMapping,
@@ -403,6 +401,18 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         } else {
             deleteAttributeNode.execute(this, field);
         }
+    }
+
+    @ExportMessage
+    public boolean isInstantiable(
+                    @Cached TypeNodes.IsTypeNode isTypeNode) {
+        return isTypeNode.execute(this);
+    }
+
+    @ExportMessage
+    public Object instantiate(Object[] arguments,
+                    @Exclusive @Cached PExecuteNode executeNode) throws UnsupportedMessageException {
+        return executeNode.execute(this, arguments);
     }
 
     private static void addKeysFromObject(HashSet<String> keys, PythonObject o, boolean includeInternal) {
@@ -449,7 +459,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         @Cached IsMappingNode isMapping) {
 
             String itemFieldName = itemKey.execute(fieldName);
-            if (itemFieldName != null || isMapping.execute(object)) {
+            if (itemFieldName != null) {
                 return READABLE | MODIFIABLE | REMOVABLE;
             }
 
@@ -501,8 +511,14 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 if (!isImmutable.execute(owner)) {
                     info |= REMOVABLE;
                     info |= MODIFIABLE;
+                } else if (isMapping.execute(object)) {
+                    // Even if the attribute's owner is immutable, if the object is a mapping, it
+                    // may be inserted.
+                    info |= INSERTABLE;
                 }
-            } else if (!isImmutable.execute(object)) {
+            } else if (!isImmutable.execute(object) || isMapping.execute(object)) {
+                // If the member does not exist yet, it is insertable if this object is mutable,
+                // i.e., it's not a builtin object or it is a mapping.
                 info |= INSERTABLE;
             }
 
@@ -790,7 +806,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             Object attrSetitem = getAttributeNode.execute(primary, __SETITEM__);
             if (profile.profile(attrSetitem != PNone.NO_VALUE)) {
                 try {
-                    callSetItemNode.execute(null, attrSetitem, primary, member, value);
+                    callSetItemNode.execute(null, attrSetitem, member, value);
                 } catch (PException e) {
                     e.expectAttributeError(attrErrorProfile);
                     // TODO(fa) not accurate; distinguish between read-only and non-existing

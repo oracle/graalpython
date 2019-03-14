@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
@@ -215,7 +216,12 @@ public abstract class CallNode extends PNodeWithContext {
             }
 
             if (ct == null || arguments == null) {
-                throw new IllegalArgumentException("Cannot call non-functions on the slow path");
+                Object attrCall = LookupInheritedAttributeNode.Dynamic.getUncached().execute(callableObject, SpecialMethodNames.__CALL__);
+                if (attrCall == PNone.NO_VALUE) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "'%p' object is not callable", callableObject);
+                }
+                return CallVarargsMethodNode.getUncached().execute(frame, attrCall, PositionalArgumentsNode.prependArgument(callableObject, args, args.length), keywords);
             } else {
                 PArguments.setCallerFrame(arguments, frame == null ? null : frame.materialize());
                 if (ct.getRootNode() instanceof ClassBodyRootNode) {
