@@ -599,7 +599,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         break;
                 }
                 lastc = i + 1;
-                i++;
             }
             return s;
         }

@@ -1896,7 +1896,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             boolean addDict = false;
             if (slots == null) {
                 // takes care of checking if we may_add_dict and adds it if needed
-                addDict = addDictIfNative(pythonClass);
+                addDictIfNative(pythonClass);
                 // TODO: tfel - also deal with weaklistoffset
             } else {
                 // have slots

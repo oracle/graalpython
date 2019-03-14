@@ -138,7 +138,6 @@ public final class ListLiteralNode extends LiteralNode {
                     }
                     case Generic: {
                         Object[] elements = new Object[values.length];
-                        array = elements;
                         for (; i < values.length; i++) {
                             elements[i] = values[i].execute(frame);
                         }

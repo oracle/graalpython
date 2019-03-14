@@ -241,7 +241,6 @@ public abstract class ListNodes {
                         }
                         case Generic: {
                             Object[] elements = new Object[START_SIZE];
-                            array = elements;
                             while (true) {
                                 try {
                                     Object value = next.execute(iterator);

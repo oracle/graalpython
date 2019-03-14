@@ -203,26 +203,6 @@ public final class PCode extends PythonBuiltinObject {
         return name;
     }
 
-    @TruffleBoundary
-    private static Set<String> getKeywordArgumentNames(List<ReadIndexedArgumentNode> readKeywordNodes) {
-        return extractArgumentNames(readKeywordNodes);
-    }
-
-    @TruffleBoundary
-    private static Set<String> extractArgumentNames(List<? extends ReadIndexedArgumentNode> readIndexedArgumentNodes) {
-        Set<String> argNames = new HashSet<>();
-        for (ReadIndexedArgumentNode node : readIndexedArgumentNodes) {
-            Node parent = node.getParent();
-            if (parent instanceof WriteIdentifierNode) {
-                Object identifier = ((WriteIdentifierNode) parent).getIdentifier();
-                if (identifier instanceof String) {
-                    argNames.add((String) identifier);
-                }
-            }
-        }
-        return argNames;
-    }
-
     private static int extractStackSize(RootNode rootNode) {
         return rootNode.getFrameDescriptor().getSize();
     }

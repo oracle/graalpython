@@ -244,7 +244,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             // the called node takes and collect the rest in the keywords.
             if (keywords.length > 0) {
                 // the node acts as a profile
-                applyKeywords(callable, signature, scope_w, keywords);
+                getApplyKeywordsNode(callable, signature, scope_w, keywords);
             }
 
             if (too_many_args) {
@@ -265,7 +265,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return scope_w;
         }
 
-        private void applyKeywords(Object callable, Signature signature, Object[] scope_w, PKeyword[] keywords) {
+        private void getApplyKeywordsNode(Object callable, Signature signature, Object[] scope_w, PKeyword[] keywords) {
             if (applyKeywords == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 applyKeywords = insert(ApplyKeywordsNode.create());
