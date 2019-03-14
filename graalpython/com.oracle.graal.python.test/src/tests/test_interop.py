@@ -91,6 +91,9 @@ if sys.implementation.name == "graalpython":
         def __delitem__(self, key):
             del self._items[key]
 
+    class PyString(str):
+        pass
+
     def test_read():
         o = CustomObject()
         assert polyglot.__read__(o, "field") == o.field
@@ -124,12 +127,13 @@ if sys.implementation.name == "graalpython":
         polyglot.__write__(o2, "grrrr", 42)
         assert o2.grrrr == 42
 
-        non_string = bytearray(b"a fine non-string object we have here")
-        polyglot.__write__(o, non_string, 12)
-        assert not hasattr(o, non_string)
-        assert o[non_string] == 12
-        polyglot.__write__(o2, non_string, 12)
-        assert getattr(o2, non_string) == 12
+        try:
+            non_string = bytearray(b"a fine non-string object we have here")
+            polyglot.__write__(o, non_string, 12)
+        except AttributeError:
+            assert True
+        else:
+            assert False
 
     def test_remove():
         o = CustomMutable()
@@ -174,11 +178,10 @@ if sys.implementation.name == "graalpython":
         assert polyglot.__has_size__(array.array('b'))
         assert polyglot.__has_size__(bytearray(b""))
         assert polyglot.__has_size__(b"")
-        assert polyglot.__has_size__("")
+        assert polyglot.__has_size__(PyString(""))
         assert polyglot.__has_size__(range(10))
         assert polyglot.__has_size__(CustomObject())
 
-        assert not polyglot.__has_size__({})
         assert not polyglot.__has_size__(object())
 
     def test_get_size():
@@ -218,21 +221,37 @@ if sys.implementation.name == "graalpython":
         o = CustomObject()
         o.my_field = 1
         o.test_exec = lambda: False
-        readable_invokable_insertable = polyglot.__key_info__(o, "__init__")
 
-        readable_invokable_modifiable_insertable = polyglot.__key_info__(o, "__len__")
-        assert readable_invokable_modifiable_insertable == polyglot.__key_info__(o, "test_exec")
+        assert polyglot.__key_info__(o, "__len__", "readable")
+        assert polyglot.__key_info__(o, "__len__", "invokable")
+        assert polyglot.__key_info__(o, "__len__", "modifiable")
+        assert polyglot.__key_info__(o, "__len__", "removable")
+        assert not polyglot.__key_info__(o, "__len__", "insertable")
 
-        readable_modifiable_insertable = polyglot.__key_info__(o, "field")
-        assert readable_modifiable_insertable == polyglot.__key_info__(o, "my_field")
+        assert polyglot.__key_info__(o, "test_exec", "readable")
+        assert polyglot.__key_info__(o, "test_exec", "invokable")
+        assert polyglot.__key_info__(o, "test_exec", "modifiable")
+        assert polyglot.__key_info__(o, "test_exec", "removable")
+        assert not polyglot.__key_info__(o, "test_exec", "insertable")
 
-        assert readable_invokable_insertable != readable_modifiable_insertable
-        assert readable_invokable_insertable != readable_invokable_modifiable_insertable
-        assert readable_modifiable_insertable != readable_invokable_modifiable_insertable
-
-        sideeffects_get = polyglot.__key_info__(o, "getter")
-        sideeffects_get_set = polyglot.__key_info__(o, "setter")
-        assert sideeffects_get != sideeffects_get_set
+        assert polyglot.__key_info__(o, "my_field", "readable")
+        assert not polyglot.__key_info__(o, "my_field", "invokable")
+        assert polyglot.__key_info__(o, "my_field", "modifiable")
+        assert polyglot.__key_info__(o, "my_field", "removable")
+        assert not polyglot.__key_info__(o, "my_field", "insertable")
+        
+        assert polyglot.__key_info__(o, "__getattribute__", "readable")
+        assert polyglot.__key_info__(o, "__getattribute__", "invokable")
+        assert not polyglot.__key_info__(o, "__getattribute__", "modifiable")
+        assert not polyglot.__key_info__(o, "__getattribute__", "removable")
+        assert not polyglot.__key_info__(o, "__getattribute__", "insertable")
+        
+        builtinObj = (1,2,3)
+        assert polyglot.__key_info__(builtinObj, "__len__", "readable")
+        assert polyglot.__key_info__(builtinObj, "__len__", "invokable")
+        assert not polyglot.__key_info__(builtinObj, "__len__", "modifiable")
+        assert not polyglot.__key_info__(builtinObj, "__len__", "removable")
+        assert not polyglot.__key_info__(builtinObj, "__len__", "insertable")
 
     def test_host_lookup():
         import java
@@ -278,3 +297,22 @@ if sys.implementation.name == "graalpython":
             assert False, "calling the python equivalents for well-known functions directly should work"
         except NotImplementedError as e:
             assert "host lookup is not allowed" in str(e)
+            
+    def test_array_element_info():
+        immutableObj = (1,2,3,4)
+        assert polyglot.__element_info__(immutableObj, 0, "exists")
+        assert polyglot.__element_info__(immutableObj, 0, "readable")
+        assert not polyglot.__element_info__(immutableObj, 0, "removable")
+        assert not polyglot.__element_info__(immutableObj, 0, "writable")
+        assert not polyglot.__element_info__(immutableObj, 0, "insertable")
+        assert not polyglot.__element_info__(immutableObj, 0, "modifiable")
+        assert not polyglot.__element_info__(immutableObj, 4, "insertable")
+
+        mutableObj = [1,2,3,4]
+        assert polyglot.__element_info__(mutableObj, 0, "exists")
+        assert polyglot.__element_info__(mutableObj, 0, "readable")
+        assert polyglot.__element_info__(mutableObj, 0, "removable")
+        assert polyglot.__element_info__(mutableObj, 0, "writable")
+        assert not polyglot.__element_info__(mutableObj, 0, "insertable")
+        assert polyglot.__element_info__(mutableObj, 0, "modifiable")
+        assert polyglot.__element_info__(mutableObj, 4, "insertable")
