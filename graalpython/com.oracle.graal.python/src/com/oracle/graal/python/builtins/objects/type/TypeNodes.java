@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 
@@ -70,11 +71,12 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNod
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeFactory.GetTypeFlagsCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -85,16 +87,17 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -107,27 +110,53 @@ public abstract class TypeNodes {
 
         public abstract long execute(PythonAbstractClass clazz);
 
-        @Specialization(guards = "isInitialized(clazz)")
-        long doInitialized(PythonManagedClass clazz) {
-            return clazz.getFlagsContainer().flags;
-        }
-
-        @Specialization
-        long doGeneric(PythonManagedClass clazz) {
-            if (!isInitialized(clazz)) {
-                return getValue(clazz, clazz.getFlagsContainer());
+        abstract static class GetTypeFlagsCachedNode extends GetTypeFlagsNode {
+            @Specialization(guards = "isInitialized(clazz)")
+            long doInitialized(PythonManagedClass clazz) {
+                return clazz.getFlagsContainer().flags;
             }
-            return clazz.getFlagsContainer().flags;
+
+            @Specialization
+            long doGeneric(PythonManagedClass clazz,
+                            @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                if (!isInitialized(clazz)) {
+                    try {
+                        return getValue(clazz, clazz.getFlagsContainer());
+                    } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                        throw raiseNode.raise(AttributeError, "object '%p' has no attribute %s", clazz, NativeMemberNames.TP_FLAGS);
+                    }
+                }
+                return clazz.getFlagsContainer().flags;
+            }
+
+            @Specialization(limit = "1")
+            long doNative(PythonNativeClass clazz,
+                            @CachedLibrary("clazz.getPtr()") InteropLibrary lib,
+                            @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                try {
+                    return (long) lib.readMember(clazz.getPtr(), NativeMemberNames.TP_FLAGS);
+                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                    throw raiseNode.raise(AttributeError, "object '%p' has no attribute %s", clazz, NativeMemberNames.TP_FLAGS);
+                }
+            }
         }
 
-        @Specialization
-        long doNative(PythonNativeClass clazz,
-                        @Cached("createReadNode()") Node readNode) {
-            return doNativeGeneric(clazz, readNode);
+        private static final class GetTypeFlagsUncachedNode extends GetTypeFlagsNode {
+            private static final GetTypeFlagsUncachedNode INSTANCE = new GetTypeFlagsUncachedNode();
+
+            @Override
+            public long execute(PythonAbstractClass clazz) {
+                try {
+                    return doSlowPath(clazz);
+                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                    throw PRaiseNode.getUncached().raise(AttributeError, "object '%p' has no attribute %s", clazz, NativeMemberNames.TP_FLAGS);
+                }
+            }
+
         }
 
         @TruffleBoundary
-        private static long getValue(PythonManagedClass clazz, FlagsContainer fc) {
+        private static long getValue(PythonManagedClass clazz, FlagsContainer fc) throws UnsupportedMessageException, UnknownIdentifierException {
             // This method is only called from C code, i.e., the flags of the initial super class
             // must be available.
             if (fc.initialDominantBase != null) {
@@ -142,8 +171,8 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        public static long doSlowPath(PythonAbstractClass clazz) {
-            if (clazz instanceof PythonManagedClass) {
+        private static long doSlowPath(PythonAbstractClass clazz) throws UnsupportedMessageException, UnknownIdentifierException {
+            if (PGuards.isManagedClass(clazz)) {
                 PythonManagedClass mclazz = (PythonManagedClass) clazz;
                 if (isInitialized(mclazz)) {
                     return mclazz.getFlagsContainer().flags;
@@ -151,31 +180,26 @@ public abstract class TypeNodes {
                     return getValue(mclazz, mclazz.getFlagsContainer());
                 }
             } else if (PGuards.isNativeClass(clazz)) {
-                return doNativeGeneric((PythonNativeClass) clazz, createReadNode());
+                return doNativeGeneric((PythonNativeClass) clazz, InteropLibrary.getFactory().getUncached(((PythonNativeClass) clazz).getPtr()));
             }
             throw new IllegalStateException("unknown type");
 
         }
 
-        static long doNativeGeneric(PythonNativeClass clazz, Node readNode) {
-            try {
-                return (long) ForeignAccess.sendRead(readNode, clazz.getPtr(), NativeMemberNames.TP_FLAGS);
-            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw e.raise();
-            }
+        static long doNativeGeneric(PythonNativeClass clazz, InteropLibrary lib) throws UnsupportedMessageException, UnknownIdentifierException {
+            return (long) lib.readMember(clazz.getPtr(), NativeMemberNames.TP_FLAGS);
         }
 
         protected static boolean isInitialized(PythonManagedClass clazz) {
             return clazz.getFlagsContainer().initialDominantBase == null;
         }
 
-        protected static Node createReadNode() {
-            return Message.READ.createNode();
+        public static GetTypeFlagsNode create() {
+            return GetTypeFlagsCachedNodeGen.create();
         }
 
-        public static GetTypeFlagsNode create() {
-            return GetTypeFlagsNodeGen.create();
+        public static GetTypeFlagsNode getUncached() {
+            return GetTypeFlagsUncachedNode.INSTANCE;
         }
     }
 
