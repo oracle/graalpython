@@ -80,12 +80,13 @@ public final class PString extends PImmutableSequence {
     public boolean isNative() {
         return getNativeWrapper() != null && getNativeWrapper().isNative();
     }
-    
+
     @ExportMessage
+    @SuppressWarnings("static-method")
     public boolean isString() {
         return true;
     }
-    
+
     @ExportMessage
     String asString() {
         return getValue();

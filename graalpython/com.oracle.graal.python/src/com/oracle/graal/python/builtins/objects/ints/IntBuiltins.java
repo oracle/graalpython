@@ -1471,8 +1471,8 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(y, getClass, isSubtype)", limit = "1")
         boolean doDN(long x, PythonNativeObject y,
-                     @Cached GetClassNode getClass,
-                     @Cached IsSubtypeNode isSubtype,
+                     @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                     @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode fromNativeNode) {
             return x < fromNativeNode.execute(y);
         }
@@ -1481,8 +1481,8 @@ public class IntBuiltins extends PythonBuiltins {
                 "nativeLeft.isFloatSubtype(x, getClass, isSubtype)",
                 "nativeRight.isFloatSubtype(y, getClass, isSubtype)"}, limit = "1")
         boolean doDN(PythonNativeObject x, PythonNativeObject y,
-                     @Cached GetClassNode getClass,
-                     @Cached IsSubtypeNode isSubtype,
+                     @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                     @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode nativeLeft,
                         @Cached FromNativeSubclassNode nativeRight) {
             return nativeLeft.execute(x) < nativeRight.execute(y);
@@ -1490,8 +1490,8 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(x, getClass, isSubtype)", limit = "1")
         boolean doDN(PythonNativeObject x, double y,
-                     @Cached GetClassNode getClass,
-                     @Cached IsSubtypeNode isSubtype,
+                     @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                     @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode fromNativeNode) {
             return fromNativeNode.execute(x) < y;
         }

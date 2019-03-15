@@ -60,21 +60,19 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public boolean isNumber() {
         return true;
     }
     
     @ExportMessage
     public boolean fitsInByte() {
-        if (this instanceof PInt) {
-            try {
-                byteValueExact();
-                return true;
-            } catch (ArithmeticException e) {
-                return false;
-            }
+        try {
+            byteValueExact();
+            return true;
+        } catch (ArithmeticException e) {
+            return false;
         }
-        return false;
     }
     
     @ExportMessage
@@ -117,15 +115,12 @@ public final class PInt extends PythonBuiltinObject {
     
     @ExportMessage
     public boolean fitsInLong() {
-        if (this instanceof PInt) {
-            try {
-                this.longValueExact();
-                return true;
-            } catch (ArithmeticException e) {
-                return false;
-            }
+        try {
+            this.longValueExact();
+            return true;
+        } catch (ArithmeticException e) {
+            return false;
         }
-        return false;
     }
     
     @ExportMessage
