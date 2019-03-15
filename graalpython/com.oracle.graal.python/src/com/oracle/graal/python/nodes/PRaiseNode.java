@@ -21,6 +21,51 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 @GenerateUncached
 public abstract class PRaiseNode extends Node {
 
+    public static PException raise(Node raisingNode, PythonBuiltinClassType type, String format, Object... arguments) {
+        Node prev = NodeUtil.pushEncapsulatingNode(raisingNode);
+        try {
+            throw PRaiseNode.getUncached().execute(type, PNone.NO_VALUE, format, arguments);
+        } finally {
+            NodeUtil.popEncapsulatingNode(prev);
+        }
+    }
+
+    public static PException raise(Node raisingNode, PythonBuiltinClassType type, Exception e) {
+        Node prev = NodeUtil.pushEncapsulatingNode(raisingNode);
+        try {
+            throw PRaiseNode.getUncached().execute(type, PNone.NO_VALUE, getMessage(e), new Object[0]);
+        } finally {
+            NodeUtil.popEncapsulatingNode(prev);
+        }
+    }
+
+    public static PException raiseIndexError(Node raisingNode) {
+        Node prev = NodeUtil.pushEncapsulatingNode(raisingNode);
+        try {
+            return PRaiseNode.getUncached().raise(PythonErrorType.IndexError, "cannot fit 'int' into an index-sized integer");
+        } finally {
+            NodeUtil.popEncapsulatingNode(prev);
+        }
+    }
+
+    public static PException raise(Node raisingNode, LazyPythonClass exceptionType) {
+        Node prev = NodeUtil.pushEncapsulatingNode(raisingNode);
+        try {
+            throw PRaiseNode.getUncached().execute(exceptionType, PNone.NO_VALUE, PNone.NO_VALUE, new Object[0]);
+        } finally {
+            NodeUtil.popEncapsulatingNode(prev);
+        }
+    }
+
+    public static PException raise(Node raisingNode, PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
+        Node prev = NodeUtil.pushEncapsulatingNode(raisingNode);
+        try {
+            throw PRaiseNode.getUncached().execute(type, cause, format, arguments);
+        } finally {
+            NodeUtil.popEncapsulatingNode(prev);
+        }
+    }
+
     public abstract PException execute(Object type, Object cause, Object format, Object[] arguments);
 
     public final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
