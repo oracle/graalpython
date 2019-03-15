@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -51,11 +51,13 @@ import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFa
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.SetForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -63,18 +65,25 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 abstract class AccessForeignItemNodes {
 
+    @TypeSystemReference(PythonArithmeticTypes.class)
     protected abstract static class AccessForeignItemBaseNode extends PNodeWithContext {
 
         protected static boolean isSlice(Object o) {
             return o instanceof PSlice;
+        }
+
+        protected static boolean isString(Object o) {
+            return o instanceof String || o instanceof PString;
         }
 
         protected int getForeignSize(Object object, InteropLibrary lib) throws UnsupportedMessageException {
@@ -104,8 +113,7 @@ abstract class AccessForeignItemNodes {
             try {
                 mslice = materializeSlice(idxSlice, object, lib);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw raise(RuntimeError, e);
+                throw raise(AttributeError, "%s instance has no attribute '__getitem__'", object);
             }
             Object[] values = new Object[mslice.length];
             for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
@@ -114,7 +122,23 @@ abstract class AccessForeignItemNodes {
             return factory.createList(values);
         }
 
-        @Specialization(guards = {"!isSlice(idx)"})
+        @Specialization
+        public Object doForeignKey(Object object, String key,
+                                      @CachedLibrary(limit = "3") InteropLibrary lib) {
+            try {
+                return lib.readMember(object, key);
+            } catch (UnsupportedMessageException e) {
+                if (lib.hasArrayElements(object)) {
+                    throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
+                } else {
+                    throw raise(AttributeError, "%s instance has no attribute '__getitem__'", object);
+                }
+            } catch (UnknownIdentifierException e) {
+                throw raise(KeyError, key);
+            }
+        }
+
+        @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"})
         public Object doForeignObject(Object object, Object idx,
                                       @Cached CastToIndexNode castIndex,
                                       @CachedLibrary(limit = "3") InteropLibrary lib) {
@@ -167,7 +191,26 @@ abstract class AccessForeignItemNodes {
             }
         }
 
-        @Specialization(guards = "!isSlice(idx)")
+        @Specialization
+        public Object doForeignKey(Object object, String key, Object value,
+                                      @CachedLibrary(limit = "3") InteropLibrary lib) {
+            try {
+                lib.writeMember(object, key, value);
+                return PNone.NONE;
+            } catch (UnsupportedMessageException e) {
+                if (lib.hasArrayElements(object)) {
+                    throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
+                } else {
+                    throw raise(AttributeError, "attribute %s is read-only", key);
+                }
+            } catch (UnknownIdentifierException e) {
+                throw raise(AttributeError, "foreign object has no attribute '%s'", key);
+            } catch (UnsupportedTypeException e) {
+                throw raise(AttributeError, "attribute %s is read-only", key);
+            }
+        }
+
+        @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"})
         public Object doForeignObject(Object object, Object idx, Object value,
                                       @CachedLibrary(limit = "3") InteropLibrary lib,
                                       @Cached CastToIndexNode castIndex,
@@ -214,6 +257,23 @@ abstract class AccessForeignItemNodes {
                 return PNone.NONE;
             } catch (UnsupportedMessageException e) {
                 throw raise(AttributeError, "%s instance has no attribute '__delitem__'", object);
+            }
+        }
+
+        @Specialization
+        public Object doForeignKey(Object object, String key,
+                                      @CachedLibrary(limit = "3") InteropLibrary lib) {
+            try {
+                lib.removeMember(object, key);
+                return PNone.NONE;
+            } catch (UnsupportedMessageException e) {
+                if (lib.hasArrayElements(object)) {
+                    throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
+                } else {
+                    throw raise(AttributeError, "attribute %s is read-only", key);
+                }
+            } catch (UnknownIdentifierException e) {
+                throw raise(AttributeError, "foreign object has no attribute '%s'", key);
             }
         }
 
