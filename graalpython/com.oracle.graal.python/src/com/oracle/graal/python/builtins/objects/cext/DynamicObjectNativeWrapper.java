@@ -779,7 +779,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Fallback
-        Object doGeneric(Object object, String key) {
+        Object doGeneric(Object object, String key) throws UnknownIdentifierException {
             // This is the preliminary generic case: There are native members we know that they
             // exist but we do currently not represent them. So, store them into a dynamic
             // object
@@ -790,7 +790,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 logGeneric(key);
                 return getGetItemNode().execute(nativeWrapper.getNativeMemberStore(), key);
             }
-            throw UnknownIdentifierException.raise(key);
+            throw UnknownIdentifierException.create(key);
         }
 
         @TruffleBoundary(allowInlining = true)
