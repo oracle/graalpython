@@ -161,19 +161,27 @@ public abstract class CExtNodes {
     }
 
     @GenerateUncached
-    abstract static class ImportCAPISymbolNode extends Node {
+    abstract static class ImportCAPISymbolNode extends PNodeWithContext {
 
         public abstract Object execute(String name);
 
-        @Specialization(guards = "cachedName.equals(name)", limit = "1")
-        Object doReceiverCached(@SuppressWarnings("unused") String name,
-                        @Exclusive @Cached("name") @SuppressWarnings("unused") String cachedName,
+        @Specialization(guards = "cachedName == name", limit = "1", assumptions = "singleContextAssumption()")
+        Object doReceiverCachedIdentity(@SuppressWarnings("unused") String name,
+                        @Cached("name") @SuppressWarnings("unused") String cachedName,
                         @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
-                        @Exclusive @Cached("importCAPISymbolUncached(context, name)") Object sym) {
+                        @Cached("importCAPISymbolUncached(context, name)") Object sym) {
             return sym;
         }
 
-        @Specialization(replaces = "doReceiverCached")
+        @Specialization(guards = "cachedName.equals(name)", limit = "1", assumptions = "singleContextAssumption()", replaces = "doReceiverCachedIdentity")
+        Object doReceiverCached(@SuppressWarnings("unused") String name,
+                        @Cached("name") @SuppressWarnings("unused") String cachedName,
+                        @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
+                        @Cached("importCAPISymbolUncached(context, name)") Object sym) {
+            return sym;
+        }
+
+        @Specialization(replaces = {"doReceiverCached", "doReceiverCachedIdentity"})
         Object doGeneric(String name,
                         @CachedLibrary(limit = "1") @SuppressWarnings("unused") InteropLibrary interopLib,
                         @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
