@@ -146,15 +146,11 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.Message;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -485,7 +481,6 @@ public abstract class SequenceStorageNodes {
 
     abstract static class GetItemScalarNode extends SequenceStorageBaseNode {
 
-        @Child private Node readNode;
         @Child private VerifyNativeItemNode verifyNativeItemNode;
 
         @CompilationFinal private BranchProfile invalidTypeProfile;
@@ -618,8 +613,6 @@ public abstract class SequenceStorageNodes {
     @ImportStatic(ListStorageType.class)
     abstract static class GetItemSliceNode extends SequenceStorageBaseNode {
 
-        @Child private Node readNode;
-
         public abstract SequenceStorage execute(SequenceStorage s, int start, int stop, int step, int length);
 
         @Specialization
@@ -636,68 +629,65 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "storage.getElementType() == Byte")
         protected NativeSequenceStorage doNativeByte(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode) {
+                        @Cached("create()") StorageToNativeNode storageToNativeNode,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             byte[] newArray = new byte[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = (byte) readNativeElement((TruffleObject) storage.getPtr(), i);
+                newArray[j] = (byte) readNativeElement(lib, storage.getPtr(), i);
             }
             return storageToNativeNode.execute(newArray);
         }
 
         @Specialization(guards = "storage.getElementType() == Int")
         protected NativeSequenceStorage doNativeInt(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode) {
+                        @Cached("create()") StorageToNativeNode storageToNativeNode,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             int[] newArray = new int[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = (int) readNativeElement((TruffleObject) storage.getPtr(), i);
+                newArray[j] = (int) readNativeElement(lib, storage.getPtr(), i);
             }
             return storageToNativeNode.execute(newArray);
         }
 
         @Specialization(guards = "storage.getElementType() == Long")
         protected NativeSequenceStorage doNativeLong(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode) {
+                        @Cached("create()") StorageToNativeNode storageToNativeNode,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             long[] newArray = new long[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = (long) readNativeElement((TruffleObject) storage.getPtr(), i);
+                newArray[j] = (long) readNativeElement(lib, storage.getPtr(), i);
             }
             return storageToNativeNode.execute(newArray);
         }
 
         @Specialization(guards = "storage.getElementType() == Double")
         protected NativeSequenceStorage doNativeDouble(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode) {
+                        @Cached("create()") StorageToNativeNode storageToNativeNode,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             double[] newArray = new double[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = (double) readNativeElement((TruffleObject) storage.getPtr(), i);
+                newArray[j] = (double) readNativeElement(lib, storage.getPtr(), i);
             }
             return storageToNativeNode.execute(newArray);
         }
 
         @Specialization(guards = "storage.getElementType() == Generic")
         protected NativeSequenceStorage doNativeObject(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode) {
+                        @Cached("create()") StorageToNativeNode storageToNativeNode,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             Object[] newArray = new Object[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = readNativeElement((TruffleObject) storage.getPtr(), i);
+                newArray[j] = readNativeElement(lib, storage.getPtr(), i);
             }
             return storageToNativeNode.execute(newArray);
         }
 
-        private Object readNativeElement(TruffleObject ptr, int idx) {
+        private Object readNativeElement(InteropLibrary lib, Object ptr, int idx) {
             try {
-                return ForeignAccess.sendRead(getReadNode(), ptr, idx);
-            } catch (InteropException e) {
-                throw e.raise();
+                return lib.readArrayElement(ptr, idx);
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw PRaiseNode.raise(this, PythonBuiltinClassType.SystemError, e);
             }
-        }
-
-        private Node getReadNode() {
-            if (readNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readNode = insert(Message.READ.createNode());
-            }
-            return readNode;
         }
 
         public static GetItemSliceNode create() {
@@ -839,7 +829,6 @@ public abstract class SequenceStorageNodes {
 
     abstract static class SetItemScalarNode extends SequenceStorageBaseNode {
 
-        @Child private Node writeNode;
         @Child private VerifyNativeItemNode verifyNativeItemNode;
         @Child private CastToByteNode castToByteNode;
 
@@ -916,20 +905,24 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = "isByteStorage(storage)")
-        protected void doNativeByte(NativeSequenceStorage storage, int idx, Object value) {
+        protected void doNativeByte(NativeSequenceStorage storage, int idx, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             try {
-                ForeignAccess.sendWrite(getWriteNode(), (TruffleObject) storage.getPtr(), idx, getCastToByteNode().execute(value));
-            } catch (InteropException e) {
-                throw e.raise();
+                lib.writeArrayElement(storage.getPtr(), idx, getCastToByteNode().execute(value));
+            } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
+                CompilerDirectives.transferToInterpreter();
+                PRaiseNode.raise(this, SystemError, e);
             }
         }
 
         @Specialization
-        protected void doNative(NativeSequenceStorage storage, int idx, Object value) {
+        protected void doNative(NativeSequenceStorage storage, int idx, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             try {
-                ForeignAccess.sendWrite(getWriteNode(), (TruffleObject) storage.getPtr(), idx, verifyValue(storage, value));
-            } catch (InteropException e) {
-                throw e.raise();
+                lib.writeArrayElement(storage.getPtr(), idx, verifyValue(storage, value));
+            } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
+                CompilerDirectives.transferToInterpreter();
+                PRaiseNode.raise(this, SystemError, e);
             }
         }
 
@@ -937,14 +930,6 @@ public abstract class SequenceStorageNodes {
         @SuppressWarnings("unused")
         void doError(SequenceStorage s, int idx, Object item) {
             throw new SequenceStoreException(item);
-        }
-
-        private Node getWriteNode() {
-            if (writeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeNode = insert(Message.WRITE.createNode());
-            }
-            return writeNode;
         }
 
         private CastToByteNode getCastToByteNode() {
