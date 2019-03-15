@@ -32,7 +32,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary (InteropLibrary.class)
+@ExportLibrary(InteropLibrary.class)
 public final class PString extends PImmutableSequence {
 
     private final CharSequence value;

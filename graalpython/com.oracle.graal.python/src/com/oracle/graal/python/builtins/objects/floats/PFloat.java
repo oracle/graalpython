@@ -35,7 +35,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary (InteropLibrary.class)
+@ExportLibrary(InteropLibrary.class)
 public class PFloat extends PythonBuiltinObject {
 
     protected final double value;
@@ -108,12 +108,12 @@ public class PFloat extends PythonBuiltinObject {
         return true;
     }
 
-    @ExportMessage(limit="1")
+    @ExportMessage(limit = "1")
     boolean fitsInFloat(@CachedLibrary("this.value") InteropLibrary interop) {
         return interop.fitsInFloat(value);
     }
 
-    @ExportMessage(limit="1")
+    @ExportMessage(limit = "1")
     float asFloat(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
         return interop.asFloat(value);
     }
@@ -129,42 +129,42 @@ public class PFloat extends PythonBuiltinObject {
         return this.getValue();
     }
 
-    @ExportMessage(limit="1")
+    @ExportMessage(limit = "1")
     boolean fitsInByte(@CachedLibrary("this.value") InteropLibrary interop) {
         return interop.fitsInByte(value);
     }
 
-    @ExportMessage(limit="1")
+    @ExportMessage(limit = "1")
     byte asByte(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
         return interop.asByte(value);
     }
 
-    @ExportMessage(limit="1")
+    @ExportMessage(limit = "1")
     boolean fitsInShort(@CachedLibrary("this.value") InteropLibrary interop) {
         return interop.fitsInShort(value);
     }
 
-    @ExportMessage(limit="1")
+    @ExportMessage(limit = "1")
     short asShort(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
         return interop.asShort(value);
     }
 
-    @ExportMessage(limit="1")
+    @ExportMessage(limit = "1")
     boolean fitsInInt(@CachedLibrary("this.value") InteropLibrary interop) {
         return interop.fitsInInt(value);
     }
 
-    @ExportMessage(limit="1")
+    @ExportMessage(limit = "1")
     int asInt(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
         return interop.asInt(value);
     }
 
-    @ExportMessage(limit="1")
+    @ExportMessage(limit = "1")
     boolean fitsInLong(@CachedLibrary("this.value") InteropLibrary interop) {
         return interop.fitsInLong(value);
     }
 
-    @ExportMessage(limit="1")
+    @ExportMessage(limit = "1")
     long asLong(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
         return interop.asLong(value);
     }

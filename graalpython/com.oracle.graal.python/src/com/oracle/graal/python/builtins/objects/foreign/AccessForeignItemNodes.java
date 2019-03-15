@@ -107,8 +107,8 @@ abstract class AccessForeignItemNodes {
 
         @Specialization
         public Object doForeignObjectSlice(Object object, PSlice idxSlice,
-                                           @CachedLibrary(limit = "3") InteropLibrary lib,
-                                           @Cached("create()") PythonObjectFactory factory) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached("create()") PythonObjectFactory factory) {
             SliceInfo mslice;
             try {
                 mslice = materializeSlice(idxSlice, object, lib);
@@ -124,7 +124,7 @@ abstract class AccessForeignItemNodes {
 
         @Specialization
         public Object doForeignKey(Object object, String key,
-                                      @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return lib.readMember(object, key);
             } catch (UnsupportedMessageException e) {
@@ -140,8 +140,8 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"})
         public Object doForeignObject(Object object, Object idx,
-                                      @Cached CastToIndexNode castIndex,
-                                      @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @Cached CastToIndexNode castIndex,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             return readForeignValue(object, castIndex.execute(idx), lib);
         }
 
@@ -176,9 +176,9 @@ abstract class AccessForeignItemNodes {
 
         @Specialization
         public Object doForeignObjectSlice(Object object, PSlice idxSlice, PSequence pvalues,
-                                           @CachedLibrary(limit = "3") InteropLibrary lib,
-                                           @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
-                                           @Cached("create()") PTypeToForeignNode valueToForeignNode) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                        @Cached("create()") PTypeToForeignNode valueToForeignNode) {
             try {
                 SliceInfo mslice = materializeSlice(idxSlice, object, lib);
                 for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
@@ -193,7 +193,7 @@ abstract class AccessForeignItemNodes {
 
         @Specialization
         public Object doForeignKey(Object object, String key, Object value,
-                                      @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 lib.writeMember(object, key, value);
                 return PNone.NONE;
@@ -212,9 +212,9 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"})
         public Object doForeignObject(Object object, Object idx, Object value,
-                                      @CachedLibrary(limit = "3") InteropLibrary lib,
-                                      @Cached CastToIndexNode castIndex,
-                                      @Cached("create()") PTypeToForeignNode valueToForeignNode) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached CastToIndexNode castIndex,
+                        @Cached("create()") PTypeToForeignNode valueToForeignNode) {
             try {
                 int convertedIdx = castIndex.execute(idx);
                 Object convertedValue = valueToForeignNode.executeConvert(value);
@@ -247,7 +247,7 @@ abstract class AccessForeignItemNodes {
 
         @Specialization
         public Object doForeignObjectSlice(Object object, PSlice idxSlice,
-                                           @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
 
             try {
                 SliceInfo mslice = materializeSlice(idxSlice, object, lib);
@@ -262,7 +262,7 @@ abstract class AccessForeignItemNodes {
 
         @Specialization
         public Object doForeignKey(Object object, String key,
-                                      @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 lib.removeMember(object, key);
                 return PNone.NONE;
@@ -279,8 +279,8 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(guards = "!isSlice(idx)")
         public Object doForeignObject(Object object, Object idx,
-                                      @Cached CastToIndexNode castIndex,
-                                      @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @Cached CastToIndexNode castIndex,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 int convertedIdx = castIndex.execute(idx);
                 return removeForeignValue(object, convertedIdx, lib);

@@ -116,8 +116,8 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doForeignObject(Object self,
-                                @CachedLibrary(limit = "3") InteropLibrary lib,
-                                @Cached("createIfTrueNode()") CastToBooleanNode cast) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached("createIfTrueNode()") CastToBooleanNode cast) {
             try {
                 if (lib.isBoolean(self)) {
                     return lib.asBoolean(self);
@@ -161,7 +161,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public long len(Object self,
-                          @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
 
             try {
                 if (lib.hasArrayElements(self)) {
@@ -185,7 +185,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!reverse", "lib.isBoolean(left)"})
         Object doComparisonBool(Object left, Object right,
-                            @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return op.executeObject(lib.asBoolean(left), right);
             } catch (UnsupportedMessageException e) {
@@ -195,7 +195,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!reverse", "lib.fitsInLong(left)"})
         Object doComparisonLong(Object left, Object right,
-                            @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return op.executeObject(lib.asLong(left), right);
             } catch (UnsupportedMessageException e) {
@@ -205,7 +205,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!reverse", "lib.fitsInDouble(left)"})
         Object doComparisonDouble(Object left, Object right,
-                            @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return op.executeObject(lib.asDouble(left), right);
             } catch (UnsupportedMessageException e) {
@@ -215,7 +215,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"reverse", "lib.isBoolean(right)"})
         Object doComparisonBoolR(Object left, Object right,
-                            @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return op.executeObject(left, lib.asBoolean(right));
             } catch (UnsupportedMessageException e) {
@@ -225,7 +225,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"reverse", "lib.fitsInLong(right)"})
         Object doComparisonLongR(Object left, Object right,
-                            @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return op.executeObject(left, lib.asLong(right));
             } catch (UnsupportedMessageException e) {
@@ -235,7 +235,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"reverse", "lib.fitsInDouble(right)"})
         Object doComparisonDoubleR(Object left, Object right,
-                            @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return op.executeObject(left, lib.asDouble(right));
             } catch (UnsupportedMessageException e) {
@@ -246,7 +246,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!lib.fitsInDouble(left)", "!lib.fitsInLong(left)", "!lib.isBoolean(left)"})
         public PNotImplemented doGeneric(Object left, Object right,
-                                         @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -264,9 +264,9 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(insertBefore = "doGeneric", guards = {"lib.hasArrayElements(left)", "lib.hasArrayElements(right)"})
         static Object doForeignArray(Object left, Object right,
-                                     @Cached PythonObjectFactory factory,
-                                     @CachedLibrary(limit = "3") InteropLibrary lib,
-                                     @Cached PForeignToPTypeNode convert) {
+                        @Cached PythonObjectFactory factory,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached PForeignToPTypeNode convert) {
             Object[] unpackedLeft = unpackForeignArray(left, lib, convert);
             Object[] unpackedRight = unpackForeignArray(right, lib, convert);
             if (unpackedLeft != null && unpackedRight != null) {
@@ -299,10 +299,10 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(insertBefore = "doGeneric", guards = {"lib.hasArrayElements(left)", "lib.fitsInInt(right)"})
         static Object doForeignArray(Object left, Object right,
-                                     @Cached PRaiseNode raise,
-                                     @Cached PythonObjectFactory factory,
-                                     @Cached PForeignToPTypeNode convert,
-                                     @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @Cached PRaiseNode raise,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PForeignToPTypeNode convert,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 int rightInt = 0;
                 try {
@@ -329,10 +329,10 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(insertBefore = "doGeneric", guards = {"lib.hasArrayElements(left)", "lib.isBoolean(right)"})
         static Object doForeignArrayForeignBoolean(Object left, Object right,
-                                                   @Cached PRaiseNode raise,
-                                                   @Cached PythonObjectFactory factory,
-                                                   @Cached PForeignToPTypeNode convert,
-                                                   @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @Cached PRaiseNode raise,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PForeignToPTypeNode convert,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return doForeignArray(left, lib.asBoolean(right) ? 1 : 0, raise, factory, convert, lib);
             } catch (UnsupportedMessageException e) {
@@ -350,19 +350,19 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.hasArrayElements(right)", "lib.fitsInInt(left)"})
         Object doForeignArray(Object left, Object right,
-                              @Cached PRaiseNode raise,
-                              @Cached PythonObjectFactory factory,
-                              @Cached PForeignToPTypeNode convert,
-                              @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Cached PRaiseNode raise,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PForeignToPTypeNode convert,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
             return MulNode.doForeignArray(right, left, raise, factory, convert, lib);
         }
 
         @Specialization(guards = {"lib.hasArrayElements(right)", "lib.isBoolean(left)"})
         Object doForeignArrayForeignBoolean(Object left, Object right,
-                                            @Cached PRaiseNode raise,
-                                            @Cached PythonObjectFactory factory,
-                                            @Cached PForeignToPTypeNode convert,
-                                            @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Cached PRaiseNode raise,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PForeignToPTypeNode convert,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
             try {
                 return MulNode.doForeignArray(right, lib.asBoolean(left) ? 1 : 0, raise, factory, convert, lib);
             } catch (UnsupportedMessageException e) {
@@ -428,7 +428,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.isBoolean(left)"})
         Object doComparisonBool(Object left, Object right,
-                            @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return comparisonNode.executeBool(lib.asBoolean(left), right);
             } catch (UnsupportedMessageException e) {
@@ -438,7 +438,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.fitsInLong(left)"})
         Object doComparisonLong(Object left, Object right,
-                            @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return comparisonNode.executeWith(lib.asLong(left), right);
             } catch (UnsupportedMessageException e) {
@@ -448,7 +448,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.fitsInDouble(left)"})
         Object doComparisonDouble(Object left, Object right,
-                            @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return comparisonNode.executeWith(lib.asDouble(left), right);
             } catch (UnsupportedMessageException e) {
@@ -458,7 +458,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "lib.isNull(left)", limit = "1")
         Object doComparison(@SuppressWarnings("unused") Object left, Object right,
-                            @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             return comparisonNode.executeWith(PNone.NONE, right);
         }
 
@@ -515,7 +515,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "lib.hasArrayElements(iterable)")
         Object doForeignArray(Object iterable,
-                              @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 long size = lib.getArraySize(iterable);
                 if (size < Integer.MAX_VALUE) {
@@ -529,7 +529,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "lib.isString(iterable)")
         Object doBoxedString(Object iterable,
-                              @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return factory().createStringIterator(lib.asString(iterable));
             } catch (UnsupportedMessageException e) {
@@ -540,7 +540,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "lib.hasMembers(mapping)")
         Object doForeignMapping(Object mapping,
-                                @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 Object keysObj = lib.getMembers(mapping);
                 return doForeignArray(keysObj, lib);
@@ -565,9 +565,9 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"})
         protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                                       @CachedLibrary(limit = "3") InteropLibrary lib,
-                                       @Cached("create()") PTypeToForeignNode toForeignNode,
-                                       @Cached("create()") PForeignToPTypeNode toPTypeNode) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached("create()") PTypeToForeignNode toForeignNode,
+                        @Cached("create()") PForeignToPTypeNode toPTypeNode) {
             try {
                 Object[] convertedArgs = new Object[arguments.length];
                 for (int i = 0; i < arguments.length; i++) {
@@ -601,9 +601,9 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"})
         protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                                       @CachedLibrary(limit = "3") InteropLibrary lib,
-                                       @Cached("create()") PTypeToForeignNode toForeignNode,
-                                       @Cached("create()") PForeignToPTypeNode toPTypeNode) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached("create()") PTypeToForeignNode toForeignNode,
+                        @Cached("create()") PForeignToPTypeNode toPTypeNode) {
             try {
                 Object[] convertedArgs = new Object[arguments.length];
                 for (int i = 0; i < arguments.length; i++) {
@@ -649,13 +649,14 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(Object object, Object key,
-                  @CachedLibrary(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)") InteropLibrary read) {
+                        @CachedLibrary(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)") InteropLibrary read) {
             try {
                 String member = (String) key;
                 if (read.isMemberReadable(object, member)) {
                     return toPythonNode.executeConvert(read.readMember(object, member));
                 }
-            } catch (UnknownIdentifierException | UnsupportedMessageException ignore) {}
+            } catch (UnknownIdentifierException | UnsupportedMessageException ignore) {
+            }
             throw raise(PythonErrorType.AttributeError, "foreign object %s has no attribute %s", object, key);
         }
     }
@@ -665,7 +666,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization
         protected PNone doIt(Object object, String key, Object value,
-                             @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 lib.writeMember(object, key, value);
             } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException e) {
@@ -692,7 +693,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization
         protected PNone doIt(Object object, String key,
-                             @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 lib.removeMember(object, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
@@ -719,7 +720,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     abstract static class DirNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object doIt(Object object,
-                              @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             if (lib.hasMembers(object)) {
                 try {
                     return lib.getMembers(object);
@@ -737,7 +738,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object doIt(Object object,
-                              @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             if (lib.fitsInInt(object)) {
                 try {
                     return lib.asInt(object);
@@ -758,13 +759,13 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.isNull(object)"})
         protected Object doNull(@SuppressWarnings("unused") Object object,
-                                @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             return getCallStrNode().executeObject(PNone.NONE);
         }
 
         @Specialization(guards = {"lib.isBoolean(object)"})
         protected Object doBool(Object object,
-                                 @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return getCallStrNode().executeObject(lib.asBoolean(object));
             } catch (UnsupportedMessageException e) {
@@ -774,7 +775,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.isString(object)"})
         protected Object doStr(Object object,
-                                 @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return getCallStrNode().executeObject(lib.asString(object));
             } catch (UnsupportedMessageException e) {
@@ -784,7 +785,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.fitsInLong(object)"})
         protected Object doLong(Object object,
-                                 @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return getCallStrNode().executeObject(lib.asLong(object));
             } catch (UnsupportedMessageException e) {
@@ -794,7 +795,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.fitsInDouble(object)"})
         protected Object doDouble(Object object,
-                                 @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return getCallStrNode().executeObject(lib.asDouble(object));
             } catch (UnsupportedMessageException e) {
@@ -804,8 +805,8 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.hasArrayElements(object)"})
         protected Object doArray(Object object,
-                                 @Cached("create()") CastToListNode asList,
-                                 @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @Cached("create()") CastToListNode asList,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 long size = lib.getArraySize(object);
                 if (size <= Integer.MAX_VALUE && size >= 0) {

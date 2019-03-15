@@ -52,7 +52,7 @@ public class InteropLibraryTest extends PythonTests {
                         "class X(float):\n" +
                         "    pass\n" +
                         "X(123.0)");
-        //assertTrue(somePStr.fitsInFloat());
+        // assertTrue(somePStr.fitsInFloat());
         assertTrue(somePStr.fitsInDouble());
         assertEquals(somePStr.asDouble(), 123.0, 0);
     }

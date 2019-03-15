@@ -64,7 +64,7 @@ public final class PInt extends PythonBuiltinObject {
     public boolean isNumber() {
         return true;
     }
-    
+
     @ExportMessage
     public boolean fitsInByte() {
         try {
@@ -74,13 +74,13 @@ public final class PInt extends PythonBuiltinObject {
             return false;
         }
     }
-    
+
     @ExportMessage
     public byte asByte() {
         return byteValueExact();
     }
-    
-    @ExportMessage(limit="1")
+
+    @ExportMessage(limit = "1")
     boolean fitsInShort(@CachedLibrary("this.intValue()") InteropLibrary interop) {
         try {
             return interop.fitsInShort(intValueExact());
@@ -88,8 +88,8 @@ public final class PInt extends PythonBuiltinObject {
             return false;
         }
     }
-    
-    @ExportMessage(limit="1")
+
+    @ExportMessage(limit = "1")
     short asShort(@CachedLibrary("this.intValue()") InteropLibrary interop) throws UnsupportedMessageException {
         try {
             return interop.asShort(intValueExact());
@@ -97,7 +97,7 @@ public final class PInt extends PythonBuiltinObject {
             throw UnsupportedMessageException.create();
         }
     }
-    
+
     @ExportMessage
     public boolean fitsInInt() {
         try {
@@ -107,12 +107,12 @@ public final class PInt extends PythonBuiltinObject {
             return false;
         }
     }
-    
+
     @ExportMessage
     public int asInt() {
         return this.intValueExact();
     }
-    
+
     @ExportMessage
     public boolean fitsInLong() {
         try {
@@ -122,13 +122,13 @@ public final class PInt extends PythonBuiltinObject {
             return false;
         }
     }
-    
+
     @ExportMessage
     public long asLong() {
         return this.longValueExact();
     }
-    
-    @ExportMessage(limit="1")
+
+    @ExportMessage(limit = "1")
     boolean fitsInFloat(@CachedLibrary("this.longValue()") InteropLibrary interop) {
         try {
             return interop.fitsInFloat(longValueExact());
@@ -136,8 +136,8 @@ public final class PInt extends PythonBuiltinObject {
             return false;
         }
     }
-    
-    @ExportMessage(limit="1")
+
+    @ExportMessage(limit = "1")
     float asFloat(@CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
         try {
             return interop.asFloat(longValueExact());
@@ -145,8 +145,8 @@ public final class PInt extends PythonBuiltinObject {
             throw UnsupportedMessageException.create();
         }
     }
-    
-    @ExportMessage(limit="1")
+
+    @ExportMessage(limit = "1")
     boolean fitsInDouble(@CachedLibrary("this.longValue()") InteropLibrary interop) {
         try {
             return interop.fitsInDouble(longValueExact());
@@ -154,8 +154,8 @@ public final class PInt extends PythonBuiltinObject {
             return false;
         }
     }
-    
-    @ExportMessage(limit="1")
+
+    @ExportMessage(limit = "1")
     double asDouble(@CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
         try {
             return interop.asDouble(longValueExact());
@@ -163,7 +163,7 @@ public final class PInt extends PythonBuiltinObject {
             throw UnsupportedMessageException.create();
         }
     }
-    
+
     @Override
     public int hashCode() {
         return value.hashCode();
