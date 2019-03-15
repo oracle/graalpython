@@ -40,13 +40,11 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.nodes.NodeFactory;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 
 public interface ReadLocalNode extends ReadNode {
-    NodeFactory getNodeFactory();
-
     default StatementNode makeDeleteNode() {
-        return makeWriteNode(getNodeFactory().createNullLiteral());
+        return makeWriteNode(PythonLanguage.getCurrent().getNodeFactory().createNullLiteral());
     }
 }
