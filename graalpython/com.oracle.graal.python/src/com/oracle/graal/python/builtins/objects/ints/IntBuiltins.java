@@ -83,7 +83,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -614,7 +613,6 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
-        @CompilationFinal private ConditionProfile isBigIntPowerOfTwo = ConditionProfile.createBinaryProfile();
 
         @Specialization(rewriteOn = ArithmeticException.class)
         int doII(int x, int y) throws ArithmeticException {
@@ -655,8 +653,9 @@ public class IntBuiltins extends PythonBuiltins {
             return factory().createInt(mul(left.getValue(), right.getValue()));
         }
 
+        @TruffleBoundary
         BigInteger mul(BigInteger a, BigInteger b) {
-            if (isBigIntPowerOfTwo.profile(b.and(b.subtract(BigInteger.ONE)).equals(BigInteger.ZERO))) {
+            if (b.and(b.subtract(BigInteger.ONE)).equals(BigInteger.ZERO)) {
                 return bigIntegerShift(a, b.getLowestSetBit());
             } else {
                 return bigIntegerMul(a, b);
