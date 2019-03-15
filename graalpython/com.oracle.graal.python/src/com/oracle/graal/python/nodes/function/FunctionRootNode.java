@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.nodes.function;
 
-import java.util.function.Supplier;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -39,6 +37,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -82,8 +81,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     }
 
     public FunctionRootNode copyWithNewSignature(Signature newSignature) {
-        Supplier<PythonLanguage> languageSupplier = getLanguageSupplier(PythonLanguage.class);
-        return new FunctionRootNode(languageSupplier.get(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
+        LanguageReference<PythonLanguage> languageRef = lookupLanguageReference(PythonLanguage.class);
+        return new FunctionRootNode(languageRef.get(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
     }
 
     @Override
@@ -103,8 +102,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
 
     @Override
     public FunctionRootNode copy() {
-        Supplier<PythonLanguage> languageSupplier = getLanguageSupplier(PythonLanguage.class);
-        return new FunctionRootNode(languageSupplier.get(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, getSignature());
+        LanguageReference<PythonLanguage> languageRef = lookupLanguageReference(PythonLanguage.class);
+        return new FunctionRootNode(languageRef.get(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, getSignature());
     }
 
     @ExplodeLoop

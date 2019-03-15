@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import java.util.function.Supplier;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -57,6 +55,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -82,7 +81,7 @@ abstract class CallSpecialMethodNode extends Node {
     }
 
     protected Assumption singleContextAssumption() {
-        Supplier<PythonLanguage> languageSupplier = getLanguageSupplier(PythonLanguage.class);
+        LanguageReference<PythonLanguage> languageSupplier = lookupLanguageReference(PythonLanguage.class);
         PythonLanguage language = languageSupplier.get();
         if (language == null) {
             language = PythonLanguage.getCurrent();

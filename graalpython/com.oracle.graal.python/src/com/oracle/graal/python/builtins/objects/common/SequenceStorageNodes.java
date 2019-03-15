@@ -56,6 +56,7 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
@@ -100,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -146,8 +148,12 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -552,28 +558,43 @@ public abstract class SequenceStorageNodes {
             return storage.getItemNormalized(idx);
         }
 
-        @Specialization(guards = "isObject(storage)")
+        @Specialization(guards = "isObject(storage)", limit = "1")
         protected Object doNativeObject(NativeSequenceStorage storage, int idx,
-                        @Cached("create()") CExtNodes.ToJavaNode toJavaNode) {
+                        @CachedLibrary("storage.getPtr()") InteropLibrary lib,
+                        @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Cached BranchProfile errorProfile,
+                        @Cached PRaiseNode raiseNode) {
             try {
-                return verifyResult(storage, toJavaNode.execute(ForeignAccess.sendRead(getReadNode(), (TruffleObject) storage.getPtr(), idx)));
-            } catch (InteropException e) {
-                throw e.raise();
+                return verifyResult(storage, toJavaNode.execute(lib.readArrayElement(storage.getPtr(), idx)));
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                // The 'InvalidArrayIndexExceptione' should really not happen since we did a bounds
+                // check before.
+                errorProfile.enter();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, e);
             }
         }
 
-        @Specialization(guards = "isByteStorage(storage)")
-        protected int doNativeByte(NativeSequenceStorage storage, int idx) {
-            Object result = doNative(storage, idx);
+        @Specialization(guards = "isByteStorage(storage)", limit = "1")
+        protected int doNativeByte(NativeSequenceStorage storage, int idx,
+                        @CachedLibrary("storage.getPtr()") InteropLibrary lib,
+                        @Cached BranchProfile errorProfile,
+                        @Cached PRaiseNode raiseNode) {
+            Object result = doNative(storage, idx, lib, errorProfile, raiseNode);
             return (byte) result & 0xFF;
         }
 
-        @Specialization(guards = {"!isByteStorage(storage)", "!isObject(storage)"})
-        protected Object doNative(NativeSequenceStorage storage, int idx) {
+        @Specialization(guards = {"!isByteStorage(storage)", "!isObject(storage)"}, limit = "1")
+        protected Object doNative(NativeSequenceStorage storage, int idx,
+                        @CachedLibrary("storage.getPtr()") InteropLibrary lib,
+                        @Cached BranchProfile errorProfile,
+                        @Cached PRaiseNode raiseNode) {
             try {
-                return verifyResult(storage, ForeignAccess.sendRead(getReadNode(), (TruffleObject) storage.getPtr(), idx));
-            } catch (InteropException e) {
-                throw e.raise();
+                return verifyResult(storage, lib.readArrayElement(storage.getPtr(), idx));
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                // The 'InvalidArrayIndexExceptione' should really not happen since we did a bounds
+                // check before.
+                errorProfile.enter();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, e);
             }
         }
 
@@ -592,15 +613,6 @@ public abstract class SequenceStorageNodes {
             }
             return item;
         }
-
-        private Node getReadNode() {
-            if (readNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readNode = insert(Message.READ.createNode());
-            }
-            return readNode;
-        }
-
     }
 
     @ImportStatic(ListStorageType.class)
