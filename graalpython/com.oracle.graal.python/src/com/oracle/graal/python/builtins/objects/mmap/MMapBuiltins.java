@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsFactory.Interna
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -461,13 +462,13 @@ public class MMapBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TellNode extends PythonBuiltinNode implements ByteReadingNode {
         @Specialization
-        long readline(VirtualFrame frame, PMMap self) {
-
+        long readline(VirtualFrame frame, PMMap self,
+                      @Cached PRaiseNode raise) {
             try {
                 SeekableByteChannel channel = self.getChannel();
                 return position(channel) - self.getOffset();
             } catch (IOException e) {
-                throw raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
+                throw raise.raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
             }
         }
     }
@@ -592,7 +593,8 @@ public class MMapBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object seek(VirtualFrame frame, PMMap self, long dist, Object how) {
+        Object seek(VirtualFrame frame, PMMap self, long dist, Object how,
+                    @Cached PRaiseNode raise) {
             try {
                 SeekableByteChannel channel = self.getChannel();
                 long size;
@@ -625,7 +627,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } catch (IOException e) {
                 errorProfile.enter();
-                throw raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
+                throw raise.raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
             }
         }
 
@@ -744,12 +746,13 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getLength() == 0")
         long doFull(VirtualFrame frame, PMMap self,
+                    @Cached PRaiseNode raise,
                         @Cached("create()") BranchProfile profile) {
             try {
                 return size(self.getChannel()) - self.getOffset();
             } catch (IOException e) {
                 profile.enter();
-                throw raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
+                throw raise.raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
             }
         }
 
@@ -759,12 +762,13 @@ public class MMapBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        long doGeneric(VirtualFrame frame, PMMap self) {
+        long doGeneric(VirtualFrame frame, PMMap self,
+                       @Cached PRaiseNode raise) {
             if (self.getLength() == 0) {
                 try {
                     return size(self.getChannel()) - self.getOffset();
                 } catch (IOException e) {
-                    throw raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
+                    throw raise.raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
                 }
             }
             return self.getLength();

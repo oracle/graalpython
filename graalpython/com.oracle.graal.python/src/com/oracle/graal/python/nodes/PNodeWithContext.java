@@ -42,10 +42,7 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -61,7 +58,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -127,37 +123,6 @@ public abstract class PNodeWithContext extends Node {
     @TruffleBoundary
     protected static final String getMessage(Exception e) {
         return e.getMessage();
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, int errno) {
-        return raiseOSError(frame, new Object[]{errno});
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror) {
-        return raiseOSError(frame, new Object[]{oserror.getNumber(), oserror.getMessage()});
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename) {
-        Object[] args = new Object[]{oserror.getNumber(), oserror.getMessage(), filename};
-        return raiseOSError(frame, args);
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename, String filename2) {
-        Object[] args = new Object[]{oserror.getNumber(), oserror.getMessage(), filename, PNone.NONE, filename2};
-        return raiseOSError(frame, args);
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, Object[] args) {
-        if (callNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            if (isAdoptable()) {
-                callNode = insert(CallVarargsMethodNode.create());
-            } else {
-                callNode = CallVarargsMethodNode.getUncached();
-            }
-        }
-        PBaseException error = (PBaseException) callNode.execute(frame, getBuiltinPythonClass(PythonBuiltinClassType.OSError), args, PKeyword.EMPTY_KEYWORDS);
-        return raise(error);
     }
 
     public final PythonAbstractClass getPythonClass(LazyPythonClass lazyClass, ConditionProfile profile) {

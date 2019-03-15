@@ -66,6 +66,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -100,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -135,7 +137,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.sun.security.auth.UnixNumericGroupPrincipal;
 import com.sun.security.auth.UnixNumericUserPrincipal;
-import java.util.Locale;
 
 @CoreFunctions(defineModule = "posix")
 public class PosixModuleBuiltins extends PythonBuiltins {
@@ -610,17 +611,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final BranchProfile gotException = BranchProfile.create();
 
         @Specialization
-        Object listdir(VirtualFrame frame, String path) {
+        Object listdir(VirtualFrame frame, String path,
+                       @Cached PRaiseNode raise) {
             try {
                 TruffleFile file = getContext().getEnv().getTruffleFile(path);
                 Collection<TruffleFile> listFiles = file.list();
                 Object[] filenames = listToArray(listFiles);
                 return factory().createList(filenames);
             } catch (NoSuchFileException e) {
-                throw raiseOSError(frame, OSErrorEnum.ENOENT, path);
+                throw raise.raiseOSError(frame, OSErrorEnum.ENOENT, path);
             } catch (SecurityException | IOException e) {
                 gotException.enter();
-                throw raise(OSError, path);
+                throw raise.raise(OSError, path);
             }
         }
 
@@ -711,7 +713,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(dir_fd)"})
-        Object open(VirtualFrame frame, String pathname, int flags, int fileMode, @SuppressWarnings("unused") PNone dir_fd) {
+        Object open(VirtualFrame frame, String pathname, int flags, int fileMode, @SuppressWarnings("unused") PNone dir_fd,
+                    @Cached PRaiseNode raise) {
             Set<StandardOpenOption> options = flagsToOptions(flags);
             FileAttribute<Set<PosixFilePermission>>[] attributes = modeToAttributes(fileMode);
             TruffleFile truffleFile = getContext().getEnv().getTruffleFile(pathname);
@@ -720,19 +723,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 return getResources().open(truffleFile, fc);
             } catch (NoSuchFileException e) {
                 gotException.enter();
-                throw raiseOSError(frame, OSErrorEnum.ENOENT, e.getFile());
+                throw raise.raiseOSError(frame, OSErrorEnum.ENOENT, e.getFile());
             } catch (AccessDeniedException e) {
                 gotException.enter();
-                throw raiseOSError(frame, OSErrorEnum.EACCES, e.getFile());
+                throw raise.raiseOSError(frame, OSErrorEnum.EACCES, e.getFile());
             } catch (FileSystemException e) {
                 gotException.enter();
                 // TODO FileSystemException can have more reasons, not only is a directory -> should
                 // be handled more accurate
-                throw raiseOSError(frame, OSErrorEnum.EISDIR, e.getFile());
+                throw raise.raiseOSError(frame, OSErrorEnum.EISDIR, e.getFile());
             } catch (IOException e) {
                 gotException.enter();
                 // if this happen, we should raise OSError with appropriate errno
-                throw raiseOSError(frame, -1);
+                throw raise.raiseOSError(frame, -1);
             }
         }
 
@@ -816,10 +819,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object lseek(VirtualFrame frame, int fd, long pos, int how,
+                     @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
             if (noFile.profile(channel == null || !(channel instanceof SeekableByteChannel))) {
-                throw raiseOSError(frame, OSErrorEnum.ESPIPE);
+                throw raise.raiseOSError(frame, OSErrorEnum.ESPIPE);
             }
             SeekableByteChannel fc = (SeekableByteChannel) channel;
             try {
@@ -827,7 +831,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 gotException.enter();
                 // if this happen, we should raise OSError with appropriate errno
-                throw raiseOSError(frame, -1);
+                throw raise.raiseOSError(frame, -1);
             }
         }
 
@@ -919,15 +923,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object mkdir(VirtualFrame frame, String path, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") PNone dirFd) {
+        Object mkdir(VirtualFrame frame, String path, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") PNone dirFd,
+                     @Cached PRaiseNode raise) {
             try {
                 getContext().getEnv().getTruffleFile(path).createDirectory();
             } catch (FileAlreadyExistsException e) {
-                throw raiseOSError(frame, OSErrorEnum.EEXIST, path);
+                throw raise.raiseOSError(frame, OSErrorEnum.EEXIST, path);
             } catch (RuntimeException | IOException e) {
                 gotException.enter();
                 // if this happen, we should raise OSError with appropriate errno
-                throw raiseOSError(frame, -1);
+                throw raise.raiseOSError(frame, -1);
             }
             return PNone.NONE;
         }
