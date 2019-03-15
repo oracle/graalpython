@@ -237,8 +237,9 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class ReadHistoryFileNode extends PythonBinaryBuiltinNode {
         @Specialization
         PNone setCompleter(PythonModule self, PString path,
+                     @Cached PRaiseNode raise,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
-            return setCompleter(self, path.getValue(), readNode);
+            return setCompleter(self, path.getValue(), raise, readNode);
         }
 
         @Specialization
@@ -266,8 +267,9 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class WriteHistoryFileNode extends PythonBinaryBuiltinNode {
         @Specialization
         PNone setCompleter(PythonModule self, PString path,
+                     @Cached PRaiseNode raise,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
-            return setCompleter(self, path.getValue(), readNode);
+            return setCompleter(self, path.getValue(), raise, readNode);
         }
 
         @Specialization

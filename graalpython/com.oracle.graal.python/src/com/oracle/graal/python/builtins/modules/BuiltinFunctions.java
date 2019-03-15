@@ -1851,15 +1851,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        String inputPrompt(PString prompt) {
-            return inputPrompt(prompt.getValue());
+        String inputPrompt(PString prompt,
+                     @Cached PRaiseNode raise) {
+            return inputPrompt(prompt.getValue(), raise);
         }
 
         @Specialization
         @TruffleBoundary
-        String inputPrompt(String prompt) {
+        String inputPrompt(String prompt,
+                     @Cached PRaiseNode raise) {
             new PrintStream(getContext().getStandardOut()).println(prompt);
-            return input(null);
+            return input(null, raise);
         }
     }
 

@@ -588,8 +588,9 @@ public class MMapBuiltins extends PythonBuiltins {
         private final BranchProfile errorProfile = BranchProfile.create();
 
         @Specialization(guards = "isNoValue(how)")
-        Object seek(VirtualFrame frame, PMMap self, long dist, @SuppressWarnings("unused") PNone how) {
-            return seek(frame, self, dist, 0);
+        Object seek(VirtualFrame frame, PMMap self, long dist, @SuppressWarnings("unused") PNone how,
+                    @Cached PRaiseNode raise) {
+            return seek(frame, self, dist, 0, raise);
         }
 
         @Specialization

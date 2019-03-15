@@ -923,7 +923,7 @@ public abstract class SequenceStorageNodes {
             try {
                 lib.writeArrayElement(storage.getPtr(), idx, verifyValue(storage, value));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
-                raise.raise(this, SystemError, e);
+                raise.raise(SystemError, e);
             }
         }
 

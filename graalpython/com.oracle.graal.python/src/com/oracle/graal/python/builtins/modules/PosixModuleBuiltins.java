@@ -708,8 +708,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final BranchProfile gotException = BranchProfile.create();
 
         @Specialization(guards = {"isNoValue(mode)", "isNoValue(dir_fd)"})
-        Object open(VirtualFrame frame, String pathname, int flags, @SuppressWarnings("unused") PNone mode, PNone dir_fd) {
-            return open(frame, pathname, flags, 0777, dir_fd);
+        Object open(VirtualFrame frame, String pathname, int flags, @SuppressWarnings("unused") PNone mode, PNone dir_fd,
+                    @Cached PRaiseNode raise) {
+            return open(frame, pathname, flags, 0777, dir_fd, raise);
         }
 
         @Specialization(guards = {"isNoValue(dir_fd)"})
@@ -740,8 +741,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(dir_fd)"})
-        Object open(VirtualFrame frame, PBytes pathname, int flags, int fileMode, PNone dir_fd) {
-            return open(frame, decode(getByteArray(pathname)), flags, fileMode, dir_fd);
+        Object open(VirtualFrame frame, PBytes pathname, int flags, int fileMode, PNone dir_fd,
+                    @Cached PRaiseNode raise) {
+            return open(frame, decode(getByteArray(pathname), raise), flags, fileMode, dir_fd, raise);
         }
 
         private byte[] getByteArray(PIBytesLike pByteArray) {
@@ -753,11 +755,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private String decode(byte[] raw) {
+        private static String decode(byte[] raw, PRaiseNode raise) {
             try {
                 return new String(raw, "ascii");
             } catch (UnsupportedEncodingException e) {
-                throw raise(PythonBuiltinClassType.UnicodeDecodeError, e.getMessage());
+                throw raise.raise(PythonBuiltinClassType.UnicodeDecodeError, e.getMessage());
             }
         }
 
