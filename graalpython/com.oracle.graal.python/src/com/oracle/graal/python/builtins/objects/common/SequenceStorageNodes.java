@@ -1651,11 +1651,12 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(replaces = "doLong")
-        int doLongOvf(long index, int length) {
+        int doLongOvf(long index, int length,
+                      @Cached PRaiseNode raise) {
             try {
                 return doLong(index, length);
             } catch (ArithmeticException e) {
-                throw raiseIndexError();
+                throw raise.raiseIndexError();
             }
         }
 
@@ -1666,11 +1667,12 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(replaces = "doPInt")
-        int doPIntOvf(PInt index, int length) {
+        int doPIntOvf(PInt index, int length,
+                      @Cached PRaiseNode raise) {
             try {
                 return doPInt(index, length);
             } catch (ArithmeticException e) {
-                throw raiseIndexError();
+                throw raise.raiseIndexError();
             }
         }
 

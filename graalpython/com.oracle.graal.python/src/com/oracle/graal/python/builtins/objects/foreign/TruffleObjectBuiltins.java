@@ -738,7 +738,8 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object doIt(Object object,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                              @CachedLibrary(limit = "3") InteropLibrary lib,
+                              @Cached PRaiseNode raise) {
             if (lib.fitsInInt(object)) {
                 try {
                     return lib.asInt(object);
@@ -746,7 +747,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                     throw raise(TypeError, "foreign value '%s' claims it fits into index-sized int, but doesn't", object);
                 }
             }
-            throw raiseIndexError();
+            throw raise.raiseIndexError();
         }
     }
 

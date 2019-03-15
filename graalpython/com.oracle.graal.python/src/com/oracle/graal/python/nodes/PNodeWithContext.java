@@ -54,7 +54,6 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -128,10 +127,6 @@ public abstract class PNodeWithContext extends Node {
     @TruffleBoundary
     protected static final String getMessage(Exception e) {
         return e.getMessage();
-    }
-
-    public final PException raiseIndexError() {
-        return raise(PythonErrorType.IndexError, "cannot fit 'int' into an index-sized integer");
     }
 
     public final PException raiseOSError(VirtualFrame frame, int errno) {
