@@ -733,6 +733,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization
         Object doMemoryview(PMemoryView object, String key,
+                     @Cached PRaiseNode raise,
                         @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
                         @CachedLibrary(limit = "1") InteropLibrary read,
                         @Cached("createBinaryProfile()") ConditionProfile isNativeObject) {
@@ -741,7 +742,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 try {
                     return read.readMember(PythonNativeObject.cast(delegateObj).getPtr(), key);
                 } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                    throw raise(PythonBuiltinClassType.TypeError, e);
+                    throw raise.raise(PythonBuiltinClassType.TypeError, e);
                 }
             }
             throw new IllegalStateException("delegate of memoryview object is not native");

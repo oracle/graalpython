@@ -52,6 +52,7 @@ import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.ChannelNodesFactory.ReadByteFromChannelNodeGen;
 import com.oracle.graal.python.nodes.util.ChannelNodesFactory.ReadFromChannelNodeGen;
 import com.oracle.graal.python.nodes.util.ChannelNodesFactory.WriteByteToChannelNodeGen;
@@ -99,12 +100,12 @@ public abstract class ChannelNodes {
             return dst.array();
         }
 
-        protected int readIntoBuffer(ReadableByteChannel readableChannel, ByteBuffer dst) {
+        protected int readIntoBuffer(ReadableByteChannel readableChannel, ByteBuffer dst, PRaiseNode raise) {
             try {
                 return read(readableChannel, dst);
             } catch (IOException e) {
                 gotException.enter();
-                throw raise(OSError, e);
+                throw raise.raise(OSError, e);
             }
         }
 
@@ -123,12 +124,12 @@ public abstract class ChannelNodes {
             return dst.array();
         }
 
-        protected int writeFromBuffer(WritableByteChannel writableChannel, ByteBuffer src) {
+        protected int writeFromBuffer(WritableByteChannel writableChannel, ByteBuffer src, PRaiseNode raise) {
             try {
                 return write(writableChannel, src);
             } catch (IOException e) {
                 gotException.enter();
-                throw raise(OSError, e);
+                throw raise.raise(OSError, e);
             }
         }
 
@@ -145,26 +146,28 @@ public abstract class ChannelNodes {
         public abstract ByteSequenceStorage execute(Channel channel, int size);
 
         @Specialization
-        ByteSequenceStorage readSeekable(SeekableByteChannel channel, int size) {
+        ByteSequenceStorage readSeekable(SeekableByteChannel channel, int size,
+                     @Cached PRaiseNode raise) {
             long availableSize;
             try {
                 availableSize = availableSize(channel);
             } catch (IOException e) {
                 gotException.enter();
-                throw raise(OSError, e);
+                throw raise.raise(OSError, e);
             }
             if (availableSize > MAX_READ) {
                 availableSize = MAX_READ;
             }
             int sz = (int) Math.min(availableSize, size);
-            return readReadable(channel, sz);
+            return readReadable(channel, sz, raise);
         }
 
         @Specialization
-        ByteSequenceStorage readReadable(ReadableByteChannel channel, int size) {
+        ByteSequenceStorage readReadable(ReadableByteChannel channel, int size,
+                     @Cached PRaiseNode raise) {
             int sz = Math.min(size, MAX_READ);
             ByteBuffer dst = allocateBuffer(sz);
-            int readSize = readIntoBuffer(channel, dst);
+            int readSize = readIntoBuffer(channel, dst, raise);
             byte[] array;
             if (readSize <= 0) {
                 array = new byte[0];
@@ -178,11 +181,12 @@ public abstract class ChannelNodes {
         }
 
         @Specialization
-        ByteSequenceStorage readGeneric(Channel channel, int size) {
+        ByteSequenceStorage readGeneric(Channel channel, int size,
+                     @Cached PRaiseNode raise) {
             if (channel instanceof SeekableByteChannel) {
-                return readSeekable((SeekableByteChannel) channel, size);
+                return readSeekable((SeekableByteChannel) channel, size, raise);
             } else if (channel instanceof ReadableByteChannel) {
-                return readReadable((ReadableByteChannel) channel, size);
+                return readReadable((ReadableByteChannel) channel, size, raise);
             } else {
                 throw raise(OSError, "file not opened for reading");
             }
@@ -212,9 +216,10 @@ public abstract class ChannelNodes {
 
         @Specialization
         int readByte(ReadableByteChannel channel,
+                     @Cached PRaiseNode raise,
                         @Cached("createBinaryProfile()") ConditionProfile readProfile) {
             ByteBuffer buf = allocate(1);
-            int read = readIntoBuffer(channel, buf);
+            int read = readIntoBuffer(channel, buf, raise);
             if (readProfile.profile(read != 1)) {
                 return handleError(channel);
             }
@@ -254,10 +259,11 @@ public abstract class ChannelNodes {
 
         @Specialization
         void readByte(WritableByteChannel channel, byte b,
+                     @Cached PRaiseNode raise,
                         @Cached("createBinaryProfile()") ConditionProfile readProfile) {
             ByteBuffer buf = allocate(1);
             put(b, buf);
-            int read = writeFromBuffer(channel, buf);
+            int read = writeFromBuffer(channel, buf, raise);
             if (readProfile.profile(read != 1)) {
                 handleError(channel, b);
             }
@@ -291,37 +297,40 @@ public abstract class ChannelNodes {
         public abstract int execute(Channel channel, SequenceStorage s, int len);
 
         @Specialization
-        int writeSeekable(SeekableByteChannel channel, SequenceStorage s, int len) {
+        int writeSeekable(SeekableByteChannel channel, SequenceStorage s, int len,
+                     @Cached PRaiseNode raise) {
             long availableSize;
             try {
                 availableSize = availableSize(channel);
             } catch (IOException e) {
                 gotException.enter();
-                throw raise(OSError, e);
+                throw raise.raise(OSError, e);
             }
             if (availableSize > MAX_WRITE) {
                 availableSize = MAX_WRITE;
             }
             int sz = (int) Math.min(availableSize, len);
-            return writeWritable(channel, s, sz);
+            return writeWritable(channel, s, sz, raise);
 
         }
 
         @Specialization
-        int writeWritable(WritableByteChannel channel, SequenceStorage s, int len) {
+        int writeWritable(WritableByteChannel channel, SequenceStorage s, int len,
+                     @Cached PRaiseNode raise) {
             ByteBuffer src = allocateBuffer(getBytes(s));
             if (src.remaining() > len) {
                 src.limit(len);
             }
-            return writeFromBuffer(channel, src);
+            return writeFromBuffer(channel, src, raise);
         }
 
         @Specialization
-        int writeGeneric(Channel channel, SequenceStorage s, int len) {
+        int writeGeneric(Channel channel, SequenceStorage s, int len,
+                     @Cached PRaiseNode raise) {
             if (channel instanceof SeekableByteChannel) {
-                return writeSeekable((SeekableByteChannel) channel, s, len);
+                return writeSeekable((SeekableByteChannel) channel, s, len, raise);
             } else if (channel instanceof ReadableByteChannel) {
-                return writeWritable((WritableByteChannel) channel, s, len);
+                return writeWritable((WritableByteChannel) channel, s, len, raise);
             } else {
                 throw raise(OSError, "file not opened for reading");
             }

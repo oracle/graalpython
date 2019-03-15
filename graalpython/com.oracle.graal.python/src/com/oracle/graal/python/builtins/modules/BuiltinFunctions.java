@@ -87,7 +87,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.NextNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -101,10 +100,10 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -120,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -1827,7 +1827,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     abstract static class InputNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        String input(@SuppressWarnings("unused") PNone prompt) {
+        String input(@SuppressWarnings("unused") PNone prompt,
+                     @Cached PRaiseNode raise) {
             CharBuffer buf = CharBuffer.allocate(1000);
             try {
                 InputStream stdin = getContext().getStandardIn();
@@ -1845,7 +1846,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 buf.rewind();
                 return buf.toString();
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.EOFError, e);
+                throw raise.raise(PythonBuiltinClassType.EOFError, e);
             }
         }
 

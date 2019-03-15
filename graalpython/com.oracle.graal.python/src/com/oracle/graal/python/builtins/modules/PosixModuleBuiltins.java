@@ -860,6 +860,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object close(int fd,
+                     @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             PosixResources resources = getResources();
             Channel channel = resources.getFileChannel(fd, channelClassProfile);
@@ -871,7 +872,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     closeChannel(channel);
                 } catch (IOException e) {
                     gotException.enter();
-                    throw raise(OSError, e);
+                    throw raise.raise(OSError, e);
                 }
             }
             return PNone.NONE;
@@ -890,12 +891,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final BranchProfile gotException = BranchProfile.create();
 
         @Specialization
-        Object unlink(String path) {
+        Object unlink(String path,
+                     @Cached PRaiseNode raise) {
             try {
                 getContext().getEnv().getTruffleFile(path).delete();
             } catch (RuntimeException | IOException e) {
                 gotException.enter();
-                throw raise(OSError, e);
+                throw raise.raise(OSError, e);
             }
             return PNone.NONE;
         }
@@ -950,6 +952,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object write(int fd, byte[] data,
+                     @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
             if (channel instanceof WritableByteChannel) {
@@ -957,11 +960,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     return doWriteOp(data, (WritableByteChannel) channel);
                 } catch (NonWritableChannelException | IOException e) {
                     gotException.enter();
-                    throw raise(OSError, e);
+                    throw raise.raise(OSError, e);
                 }
             } else {
                 notWritable.enter();
-                throw raise(OSError, "file not opened for writing");
+                throw raise.raise(OSError, "file not opened for writing");
             }
         }
 
@@ -1095,7 +1098,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object chmod(String path, long mode, @SuppressWarnings("unused") PNone dir_fd, boolean follow_symlinks) {
+        Object chmod(String path, long mode, @SuppressWarnings("unused") PNone dir_fd, boolean follow_symlinks,
+                     @Cached PRaiseNode raise) {
             Set<PosixFilePermission> permissions = modeToPermissions(mode);
             try {
                 TruffleFile truffleFile = getContext().getEnv().getTruffleFile(path);
@@ -1107,7 +1111,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 truffleFile.setPosixPermissions(permissions);
             } catch (IOException e) {
                 gotException.enter();
-                throw raise(OSError, e);
+                throw raise.raise(OSError, e);
             }
             return PNone.NONE;
         }
@@ -1385,13 +1389,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final BranchProfile gotException = BranchProfile.create();
 
         @Specialization
-        PTuple pipe() {
+        PTuple pipe(@Cached PRaiseNode raise) {
             int[] pipe;
             try {
                 pipe = getResources().pipe();
             } catch (IOException e) {
                 gotException.enter();
-                throw raise(OSError, e);
+                throw raise.raise(OSError, e);
             }
             return factory().createTuple(new Object[]{pipe[0], pipe[1]});
         }

@@ -28,6 +28,7 @@ package com.oracle.graal.python.nodes.call;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.KeywordArgumentsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -225,6 +226,7 @@ public abstract class PythonCallNode extends ExpressionNode {
 
     @Specialization
     Object call(VirtualFrame frame, ForeignInvoke callable,
+                    @Cached PRaiseNode raise,
                     @Cached("create()") PForeignToPTypeNode fromForeign,
                     @Cached("create()") BranchProfile keywordsError,
                     @Cached("create()") BranchProfile typeError,
@@ -235,13 +237,13 @@ public abstract class PythonCallNode extends ExpressionNode {
         PKeyword[] keywords = evaluateKeywords(frame);
         if (keywords.length != 0) {
             keywordsError.enter();
-            throw raise(PythonErrorType.TypeError, "foreign invocation does not support keyword arguments");
+            throw raise.raise(PythonErrorType.TypeError, "foreign invocation does not support keyword arguments");
         }
         try {
             return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.identifier, arguments));
         } catch (ArityException | UnsupportedTypeException e) {
             typeError.enter();
-            throw raise(PythonErrorType.TypeError, e);
+            throw raise.raise(PythonErrorType.TypeError, e);
         } catch (UnknownIdentifierException | UnsupportedMessageException e) {
             invokeError.enter();
             // the interop contract is to revert to readMember and then execute
