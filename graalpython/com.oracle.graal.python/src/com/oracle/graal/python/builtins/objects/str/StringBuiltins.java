@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.SpliceNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.StringLenNodeFactory;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -1364,7 +1365,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isNoValue(chars)")
+        @Specialization
         String strip(String self, PNone chars) {
             return self.trim();
         }
@@ -1381,10 +1382,9 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isNoValue(chars)")
-        @TruffleBoundary
+        @Specialization
         String rstrip(String self, PNone chars) {
-            return self.replaceAll("\\s+$", "");
+            return StringUtils.strip(self, StripKind.RIGHT);
         }
     }
 
@@ -1399,10 +1399,9 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isNoValue(chars)")
-        @TruffleBoundary
+        @Specialization
         String rstrip(String self, PNone chars) {
-            return self.replaceAll("^\\s+", "");
+            return StringUtils.strip(self, StripKind.LEFT);
         }
     }
 

@@ -13,6 +13,7 @@ class MyIndexable(object):
     def __index__(self):
         return self.value
 
+
 def test_find():
     assert "teststring".find("test") == 0
     assert "teststring".find("string") == 4
@@ -79,6 +80,7 @@ def test_rfind():
     assert s.rfind('ahoj', 16) == 16
     assert s.rfind('ahoj', 16, 20) == 16
     assert s.rfind('ahoj', 16, 19) == -1
+
 
 def test_format():
     assert "{}.{}".format("part1", "part2") == "part1.part2"
@@ -1023,29 +1025,35 @@ def test_translate():
     else:
         assert False, "should raise"
 
+
 def test_translate_from_byte_table():
     table = bytes.maketrans(bytes(string.ascii_lowercase, 'ascii'), bytes(string.ascii_uppercase, 'ascii'))
     assert "ahoj".translate(table) == "AHOJ"
     assert "ahoj".translate(bytearray(table)) == "AHOJ"
     assert "ahoj".translate(memoryview(table)) == "AHOJ"
 
+
 def test_tranlslate_from_short_table():
     table = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`ABCDEFGH'
     assert "ahoj".translate(table) == "AHoj"
 
+
 def test_translate_nonascii_from_byte_table():
     table = bytes.maketrans(bytes(string.ascii_lowercase, 'ascii'), bytes(string.ascii_uppercase, 'ascii'))
     assert "ačhřožj".translate(table) == "AčHřOžJ"
+
 
 def test_translate_from_long_byte_table():
     table = bytes.maketrans(bytes(string.ascii_lowercase, 'ascii'), bytes(string.ascii_uppercase, 'ascii'))
     table *= 30
     assert 'ahoj453875287ščřžýáí'.translate(table) == 'AHOJ453875287A\rY~ýáí'
 
+
 def test_splitlines():
     assert len(str.splitlines("\n\n")) == 2
     assert len(str.splitlines("\n")) == 1
     assert len(str.splitlines("a\nb")) == 2
+
 
 def test_literals():
     s = "hello\[world\]"
@@ -1054,3 +1062,21 @@ def test_literals():
     assert "hello\[world\]"[6] == "["
     assert "hello\[world\]"[12] == "\\"
     assert "hello\[world\]"[13] == "]"
+
+
+def test_strip_whitespace():
+    assert 'hello' == '   hello   '.strip()
+    assert 'hello   ' == '   hello   '.lstrip()
+    assert '   hello' == '   hello   '.rstrip()
+    assert 'hello' == 'hello'.strip()
+
+    b = ' \t\n\r\f\vabc \t\n\r\f\v'
+    assert 'abc' == b.strip()
+    assert 'abc \t\n\r\f\v' == b.lstrip()
+    assert ' \t\n\r\f\vabc' == b.rstrip()
+
+    # strip/lstrip/rstrip with None arg
+    assert 'hello' == '   hello   '.strip(None)
+    assert 'hello   ' == '   hello   '.lstrip(None)
+    assert '   hello' == '   hello   '.rstrip(None)
+    assert 'hello' == 'hello'.strip(None)
