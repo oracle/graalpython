@@ -1371,7 +1371,7 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class PCallCapiFunction extends CExtBaseNode {
 
-        public Object call(String name, Object... args) {
+        public final Object call(String name, Object... args) {
             return execute(name, args);
         }
 
@@ -1380,13 +1380,17 @@ public abstract class CExtNodes {
         @Specialization
         Object doIt(String name, Object[] args,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode,
-                        @Exclusive @Cached BranchProfile profile) {
+                        @Cached ImportCAPISymbolNode importCAPISymbolNode,
+                        @Cached BranchProfile profile,
+                        @Cached PRaiseNode raiseNode) {
             try {
                 return interopLibrary.execute(importCAPISymbolNode.execute(name), args);
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            } catch (UnsupportedTypeException | ArityException e) {
                 profile.enter();
-                throw e.raise();
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
+            } catch (UnsupportedMessageException e) {
+                profile.enter();
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "C API symbol %s is not callable", name);
             }
         }
 
