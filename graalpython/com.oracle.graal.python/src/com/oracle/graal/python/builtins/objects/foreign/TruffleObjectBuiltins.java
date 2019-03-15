@@ -456,7 +456,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "lib.isNull(left)", limit = "1")
+        @Specialization(guards = "lib.isNull(left)")
         Object doComparison(@SuppressWarnings("unused") Object left, Object right,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             return comparisonNode.executeWith(PNone.NONE, right);
