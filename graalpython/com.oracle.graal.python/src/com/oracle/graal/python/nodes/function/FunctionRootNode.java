@@ -37,7 +37,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -81,8 +80,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     }
 
     public FunctionRootNode copyWithNewSignature(Signature newSignature) {
-        LanguageReference<PythonLanguage> languageRef = lookupLanguageReference(PythonLanguage.class);
-        return new FunctionRootNode(languageRef.get(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
+        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
     }
 
     @Override
@@ -102,8 +100,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
 
     @Override
     public FunctionRootNode copy() {
-        LanguageReference<PythonLanguage> languageRef = lookupLanguageReference(PythonLanguage.class);
-        return new FunctionRootNode(languageRef.get(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, getSignature());
+        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, getSignature());
     }
 
     @ExplodeLoop

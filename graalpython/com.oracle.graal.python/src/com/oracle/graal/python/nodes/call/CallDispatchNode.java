@@ -32,7 +32,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -65,12 +64,7 @@ public abstract class CallDispatchNode extends Node {
     }
 
     protected Assumption singleContextAssumption() {
-        LanguageReference<PythonLanguage> languageSupplier = lookupLanguageReference(PythonLanguage.class);
-        PythonLanguage language = languageSupplier.get();
-        if (language == null) {
-            language = PythonLanguage.getCurrent();
-        }
-        return language.singleContextAssumption;
+        return PythonLanguage.getCurrent().singleContextAssumption;
     }
 
     public abstract Object executeCall(VirtualFrame frame, PFunction callee, Object[] arguments);

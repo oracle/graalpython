@@ -55,7 +55,6 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -81,12 +80,7 @@ abstract class CallSpecialMethodNode extends Node {
     }
 
     protected Assumption singleContextAssumption() {
-        LanguageReference<PythonLanguage> languageSupplier = lookupLanguageReference(PythonLanguage.class);
-        PythonLanguage language = languageSupplier.get();
-        if (language == null) {
-            language = PythonLanguage.getCurrent();
-        }
-        return language.singleContextAssumption;
+        return PythonLanguage.getCurrent().singleContextAssumption;
     }
 
     protected static PythonUnaryBuiltinNode getUnary(Object func) {
