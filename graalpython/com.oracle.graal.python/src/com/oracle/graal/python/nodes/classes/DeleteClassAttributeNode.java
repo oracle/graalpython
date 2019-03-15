@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
@@ -59,11 +59,8 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
 
     DeleteClassAttributeNode(String identifier) {
         this.identifier = identifier;
-
-        NodeFactory factory = getNodeFactory();
         ReadIndexedArgumentNode namespace = ReadIndexedArgumentNode.create(0);
-
-        this.deleteNsItem = factory.createDeleteItem(namespace.asExpression(), this.identifier);
+        this.deleteNsItem = PythonLanguage.getCurrent().getNodeFactory().createDeleteItem(namespace.asExpression(), this.identifier);
     }
 
     public static DeleteClassAttributeNode create(String name) {

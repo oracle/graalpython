@@ -89,10 +89,6 @@ public abstract class PNodeWithContext extends Node {
         return getContext().getCore();
     }
 
-    public final NodeFactory getNodeFactory() {
-        return getContext().getLanguage().getNodeFactory();
-    }
-
     public final PException raise(PBaseException exc) {
         if (isAdoptable()) {
             throw PException.fromObject(exc, this);

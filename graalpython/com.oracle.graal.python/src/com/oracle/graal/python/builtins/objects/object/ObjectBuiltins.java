@@ -51,6 +51,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -620,7 +621,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         protected static final int NO_SLOW_PATH = Integer.MAX_VALUE;
 
         protected BinaryComparisonNode createOp(String op) {
-            return (BinaryComparisonNode) getContext().getLanguage().getNodeFactory().createComparisonOperation(op, null, null);
+            return (BinaryComparisonNode) PythonLanguage.getCurrent().getNodeFactory().createComparisonOperation(op, null, null);
         }
 
         @Specialization(guards = "op.equals(cachedOp)", limit = "NO_SLOW_PATH")
