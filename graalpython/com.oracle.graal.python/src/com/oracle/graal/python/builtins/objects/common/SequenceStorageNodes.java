@@ -906,23 +906,24 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "isByteStorage(storage)")
         protected void doNativeByte(NativeSequenceStorage storage, int idx, Object value,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+                                    @Cached PRaiseNode raise,
+                                    @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             try {
                 lib.writeArrayElement(storage.getPtr(), idx, getCastToByteNode().execute(value));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
                 CompilerDirectives.transferToInterpreter();
-                PRaiseNode.raise(this, SystemError, e);
+                raise.raise(SystemError, e);
             }
         }
 
         @Specialization
         protected void doNative(NativeSequenceStorage storage, int idx, Object value,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+                                @Cached PRaiseNode raise,
+                                @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             try {
                 lib.writeArrayElement(storage.getPtr(), idx, verifyValue(storage, value));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
-                CompilerDirectives.transferToInterpreter();
-                PRaiseNode.raise(this, SystemError, e);
+                raise.raise(this, SystemError, e);
             }
         }
 
