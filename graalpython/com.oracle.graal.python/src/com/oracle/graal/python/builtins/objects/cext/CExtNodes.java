@@ -67,7 +67,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsLongNode
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeClassNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeClassNodeFactory.GetNativeClassCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ImportCAPISymbolNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeFactory.IsPointerCachedNodeGen;
@@ -839,48 +839,73 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    @GenerateUncached
     public abstract static class GetNativeClassNode extends CExtBaseNode {
         public abstract PythonAbstractClass execute(PythonNativeObject object);
 
-        @Specialization(guards = "object == cachedObject", limit = "1")
-        static PythonAbstractClass getNativeClassCachedIdentity(@SuppressWarnings("unused") PythonNativeObject object,
-                        @Exclusive @Cached("object") @SuppressWarnings("unused") PythonNativeObject cachedObject,
-                        @Exclusive @Cached(value = "getNativeClassUncached(cachedObject)", allowUncached = true) PythonAbstractClass cachedClass) {
-            // TODO: (tfel) is this really something we can do? It's so rare for this class to
-            // change that it shouldn't be worth the effort, but in native code, anything can
-            // happen. OTOH, CPython also has caches that can become invalid when someone just goes
-            // and changes the ob_type of an object.
-            return cachedClass;
+        abstract static class GetNativeClassCachedNode extends GetNativeClassNode {
+            @Specialization(guards = "object == cachedObject", limit = "1")
+            static PythonAbstractClass getNativeClassCachedIdentity(@SuppressWarnings("unused") PythonNativeObject object,
+                            @Exclusive @Cached("object") @SuppressWarnings("unused") PythonNativeObject cachedObject,
+                            @Exclusive @Cached(value = "getNativeClassUncached(cachedObject)", allowUncached = true) PythonAbstractClass cachedClass) {
+                // TODO: (tfel) is this really something we can do? It's so rare for this class to
+                // change that it shouldn't be worth the effort, but in native code, anything can
+                // happen. OTOH, CPython also has caches that can become invalid when someone just
+                // goes
+                // and changes the ob_type of an object.
+                return cachedClass;
+            }
+
+            @Specialization(guards = "cachedObject.equals(object)", limit = "1", assumptions = "singleContextAssumption()")
+            static PythonAbstractClass getNativeClassCached(@SuppressWarnings("unused") PythonNativeObject object,
+                            @Exclusive @Cached("object") @SuppressWarnings("unused") PythonNativeObject cachedObject,
+                            @Exclusive @Cached(value = "getNativeClassUncached(cachedObject)", allowUncached = true) PythonAbstractClass cachedClass) {
+                // TODO same as for 'getNativeClassCachedIdentity'
+                return cachedClass;
+            }
+
+            @Specialization(replaces = "getNativeClassCached")
+            static PythonAbstractClass getNativeClass(PythonNativeObject object,
+                            @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
+                            @Exclusive @Cached ToJavaNode toJavaNode) {
+                // do not convert wrap 'object.object' since that is really the native pointer
+                // object
+                return (PythonAbstractClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr()));
+            }
+
+            protected static PythonAbstractClass getNativeClassUncached(PythonNativeObject object) {
+                // do not convert wrap 'object.object' since that is really the native pointer
+                // object
+                return getNativeClass(object, PCallCapiFunction.getUncached(), ToJavaNode.getUncached());
+            }
         }
 
-        @Specialization(guards = "cachedObject.equals(object)", limit = "1", assumptions = "singleContextAssumption()")
-        static PythonAbstractClass getNativeClassCached(@SuppressWarnings("unused") PythonNativeObject object,
-                        @Exclusive @Cached("object") @SuppressWarnings("unused") PythonNativeObject cachedObject,
-                        @Exclusive @Cached(value = "getNativeClassUncached(cachedObject)", allowUncached = true) PythonAbstractClass cachedClass) {
-            // TODO same as for 'getNativeClassCachedIdentity'
-            return cachedClass;
-        }
+        private static final class Uncached extends GetNativeClassNode {
+            private static final Uncached INSTANCE = new Uncached();
 
-        @Specialization(replaces = "getNativeClassCached")
-        static PythonAbstractClass getNativeClass(PythonNativeObject object,
-                        @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
-                        @Exclusive @Cached ToJavaNode toJavaNode) {
-            // do not convert wrap 'object.object' since that is really the native pointer object
-            return (PythonAbstractClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr()));
-        }
+            @TruffleBoundary
+            @Override
+            public PythonAbstractClass execute(PythonNativeObject object) {
+                return GetNativeClassCachedNode.getNativeClassUncached(object);
+            }
 
-        protected static PythonAbstractClass getNativeClassUncached(PythonNativeObject object) {
-            // do not convert wrap 'object.object' since that is really the native pointer object
-            return getNativeClass(object, PCallCapiFunction.getUncached(), ToJavaNode.getUncached());
+            @Override
+            public NodeCost getCost() {
+                return NodeCost.MEGAMORPHIC;
+            }
+
+            @Override
+            public boolean isAdoptable() {
+                return false;
+            }
+
         }
 
         public static GetNativeClassNode create() {
-            return GetNativeClassNodeGen.create();
+            return GetNativeClassCachedNodeGen.create();
         }
 
         public static GetNativeClassNode getUncached() {
-            return GetNativeClassNodeGen.getUncached();
+            return Uncached.INSTANCE;
         }
     }
 
