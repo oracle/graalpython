@@ -41,11 +41,11 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -53,6 +53,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -73,7 +74,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object execute(Object[] arguments,
-                    @Exclusive @Cached ExecuteNode executeNode) throws ArityException {
+                    @Exclusive @Cached ExecuteNode executeNode) throws ArityException, UnsupportedMessageException {
         return executeNode.execute(this, arguments);
 
     }
@@ -95,15 +96,14 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     @GenerateUncached
     abstract static class ExecuteNode extends Node {
 
-        public abstract Object execute(PyProcsWrapper receiver, Object[] arguments) throws ArityException;
+        public abstract Object execute(PyProcsWrapper receiver, Object[] arguments) throws ArityException, UnsupportedMessageException;
 
         @Specialization
         static Object doGetAttr(GetAttrWrapper object, Object[] arguments,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                        @Shared("executeNode") @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode,
+                        @Shared("executeNode") @Cached PythonAbstractObject.PExecuteNode executeNode,
                         @Shared("toJavaNode") @Cached ToJavaNode toJavaNode,
-                        @Exclusive @Cached IsBuiltinClassProfile errProfile) throws ArityException {
+                        @Exclusive @Cached IsBuiltinClassProfile errProfile) throws ArityException, UnsupportedMessageException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }
@@ -123,9 +123,8 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
         @Specialization
         static Object doSetAttr(SetAttrWrapper object, Object[] arguments,
-                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                        @Shared("executeNode") @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode,
-                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode) throws ArityException {
+                        @Shared("executeNode") @Cached PythonAbstractObject.PExecuteNode executeNode,
+                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode) throws ArityException, UnsupportedMessageException {
             if (arguments.length != 3) {
                 throw ArityException.create(3, arguments.length);
             }
@@ -144,9 +143,8 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @Specialization
         static Object doSsize(SsizeargfuncWrapper object, Object[] arguments,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                        @Shared("executeNode") @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode,
-                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode) throws ArityException {
+                        @Shared("executeNode") @Cached PythonAbstractObject.PExecuteNode executeNode,
+                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode) throws ArityException, UnsupportedMessageException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }

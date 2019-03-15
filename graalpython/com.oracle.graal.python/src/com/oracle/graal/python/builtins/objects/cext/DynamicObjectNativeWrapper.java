@@ -115,7 +115,6 @@ import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -209,7 +208,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization
         static Object execute(DynamicObjectNativeWrapper object, String key,
                         @Exclusive @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
-                        @Exclusive @Cached CExtNodes.AsPythonObjectNode getDelegate) throws UnsupportedMessageException {
+                        @Exclusive @Cached CExtNodes.AsPythonObjectNode getDelegate) throws UnsupportedMessageException, UnknownIdentifierException {
             Object delegate = getDelegate.execute(object);
 
             // special key for the debugger
@@ -229,17 +228,17 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     @TypeSystemReference(PythonTypes.class)
     abstract static class ReadNativeMemberDispatchNode extends Node {
 
-        abstract Object execute(Object receiver, String key) throws UnsupportedMessageException;
+        abstract Object execute(Object receiver, String key) throws UnsupportedMessageException, UnknownIdentifierException;
 
         @Specialization
         Object doClass(PythonManagedClass clazz, String key,
-                        @Cached(allowUncached = true) ReadTypeNativeMemberNode readTypeMemberNode) throws UnsupportedMessageException {
+                        @Cached(allowUncached = true) ReadTypeNativeMemberNode readTypeMemberNode) throws UnsupportedMessageException, UnknownIdentifierException {
             return readTypeMemberNode.execute(clazz, key);
         }
 
         @Specialization(guards = "!isManagedClass(clazz)")
         Object doObject(Object clazz, String key,
-                        @Cached(allowUncached = true) ReadObjectNativeMemberNode readObjectMemberNode) throws UnsupportedMessageException {
+                        @Cached(allowUncached = true) ReadObjectNativeMemberNode readObjectMemberNode) throws UnsupportedMessageException, UnknownIdentifierException {
             return readObjectMemberNode.execute(clazz, key);
         }
     }
@@ -253,7 +252,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Child private CExtNodes.SizeofWCharNode sizeofWcharNode;
         @Child private GetNameNode getNameNode;
 
-        abstract Object execute(Object receiver, String key) throws UnsupportedMessageException;
+        abstract Object execute(Object receiver, String key) throws UnsupportedMessageException, UnknownIdentifierException;
 
         @Specialization(guards = "eq(OB_BASE, key)")
         Object doObBase(Object o, @SuppressWarnings("unused") String key) {
@@ -987,30 +986,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         throw UnsupportedMessageException.create();
     }
 
-    // EXECUTE
-    abstract static class ExecuteNode extends Node {
-        public abstract Object execute(PythonNativeWrapper object, Object[] arguments);
-
-        @Specialization
-        public Object execute(PythonNativeWrapper object, Object[] arguments,
-                        @Cached.Exclusive @Cached PythonMessageResolution.ExecuteNode executeNode,
-                        @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
-                        @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) {
-            // convert args
-            Object[] converted = new Object[arguments.length];
-            for (int i = 0; i < arguments.length; i++) {
-                converted[i] = toJavaNode.execute(arguments[i]);
-            }
-            Object result;
-            try {
-                result = executeNode.execute(object.getDelegate(), converted);
-            } catch (PException e) {
-                result = PNone.NO_VALUE;
-            }
-            return toSulongNode.execute(result);
-        }
-    }
-
     @ExportMessage
     protected boolean isExecutable() {
         return true;
@@ -1018,8 +993,21 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object execute(Object[] arguments,
-                    @Cached.Exclusive @Cached(allowUncached = true) DynamicObjectNativeWrapper.ExecuteNode executeNode) {
-        return executeNode.execute(this, arguments);
+                    @Cached.Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode,
+                    @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
+                    @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) throws UnsupportedMessageException {
+        // convert args
+        Object[] converted = new Object[arguments.length];
+        for (int i = 0; i < arguments.length; i++) {
+            converted[i] = toJavaNode.execute(arguments[i]);
+        }
+        Object result;
+        try {
+            result = executeNode.execute(getDelegate(), converted);
+        } catch (PException e) {
+            result = PNone.NO_VALUE;
+        }
+        return toSulongNode.execute(result);
     }
 
     // TO NATIVE, IS POINTER, AS POINTER

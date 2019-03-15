@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -47,11 +48,11 @@ import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNod
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.PrimitiveValueProfile;
@@ -164,8 +165,7 @@ public abstract class ManagedMethodWrappers {
         public Object execute(Object[] arguments,
                         @Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
                         @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
-                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                        @Exclusive @Cached(allowUncached = true) PythonMessageResolution.ExecuteNode executeNode) throws ArityException {
+                        @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode) throws ArityException, UnsupportedMessageException {
             if (arguments.length != 1) {
                 throw ArityException.create(1, arguments.length);
             }
