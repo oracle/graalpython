@@ -629,64 +629,69 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "storage.getElementType() == Byte")
         protected NativeSequenceStorage doNativeByte(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
+                                                       @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             byte[] newArray = new byte[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = (byte) readNativeElement(lib, storage.getPtr(), i);
+                newArray[j] = (byte) readNativeElement(lib, storage.getPtr(), i, raise);
             }
             return storageToNativeNode.execute(newArray);
         }
 
         @Specialization(guards = "storage.getElementType() == Int")
         protected NativeSequenceStorage doNativeInt(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
+                                                       @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             int[] newArray = new int[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = (int) readNativeElement(lib, storage.getPtr(), i);
+                newArray[j] = (int) readNativeElement(lib, storage.getPtr(), i, raise);
             }
             return storageToNativeNode.execute(newArray);
         }
 
         @Specialization(guards = "storage.getElementType() == Long")
         protected NativeSequenceStorage doNativeLong(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
+                                                       @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             long[] newArray = new long[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = (long) readNativeElement(lib, storage.getPtr(), i);
+                newArray[j] = (long) readNativeElement(lib, storage.getPtr(), i, raise);
             }
             return storageToNativeNode.execute(newArray);
         }
 
         @Specialization(guards = "storage.getElementType() == Double")
         protected NativeSequenceStorage doNativeDouble(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
+                                                       @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             double[] newArray = new double[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = (double) readNativeElement(lib, storage.getPtr(), i);
+                newArray[j] = (double) readNativeElement(lib, storage.getPtr(), i, raise);
             }
             return storageToNativeNode.execute(newArray);
         }
 
         @Specialization(guards = "storage.getElementType() == Generic")
         protected NativeSequenceStorage doNativeObject(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
+                                                       @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             Object[] newArray = new Object[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = readNativeElement(lib, storage.getPtr(), i);
+                newArray[j] = readNativeElement(lib, storage.getPtr(), i, raise);
             }
             return storageToNativeNode.execute(newArray);
         }
 
-        private Object readNativeElement(InteropLibrary lib, Object ptr, int idx) {
+        private static Object readNativeElement(InteropLibrary lib, Object ptr, int idx, PRaiseNode raise) {
             try {
                 return lib.readArrayElement(ptr, idx);
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw PRaiseNode.raise(this, PythonBuiltinClassType.SystemError, e);
+                throw raise.raise(PythonBuiltinClassType.SystemError, e);
             }
         }
 

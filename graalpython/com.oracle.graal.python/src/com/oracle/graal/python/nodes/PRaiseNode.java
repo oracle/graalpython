@@ -28,27 +28,14 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 @GenerateUncached
 public abstract class PRaiseNode extends Node {
 
-    public static PException raise(Node raisingNode, PythonBuiltinClassType type, Exception e) {
-        Node prev = NodeUtil.pushEncapsulatingNode(raisingNode);
-        try {
-            throw PRaiseNode.getUncached().execute(type, PNone.NO_VALUE, getMessage(e), new Object[0]);
-        } finally {
-            NodeUtil.popEncapsulatingNode(prev);
-        }
-    }
-
     public abstract PException execute(VirtualFrame frame, Object type, Object cause, Object format, Object[] arguments);
 
-    public final PException execute(Object type, Object cause, Object format, Object[] arguments) {
-        return execute(null, type, cause, format, arguments);
-    }
-
     public final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
-        throw execute(type, PNone.NO_VALUE, format, arguments);
+        throw execute(null, type, PNone.NO_VALUE, format, arguments);
     }
 
     public final PException raise(PythonBuiltinClassType type, Exception e) {
-        throw execute(type, PNone.NO_VALUE, getMessage(e), new Object[0]);
+        throw execute(null, type, PNone.NO_VALUE, getMessage(e), new Object[0]);
     }
 
     public final PException raiseIndexError() {
@@ -78,11 +65,11 @@ public abstract class PRaiseNode extends Node {
     }
 
     public final PException raise(LazyPythonClass exceptionType) {
-        throw execute(exceptionType, PNone.NO_VALUE, PNone.NO_VALUE, new Object[0]);
+        throw execute(null, exceptionType, PNone.NO_VALUE, PNone.NO_VALUE, new Object[0]);
     }
 
     public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
-        throw execute(type, cause, format, arguments);
+        throw execute(null, type, cause, format, arguments);
     }
 
     public final PException raise(PBaseException exc) {
