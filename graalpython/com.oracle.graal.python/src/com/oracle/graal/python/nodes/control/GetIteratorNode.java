@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -42,6 +43,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -87,6 +89,8 @@ public abstract class GetIteratorNode extends UnaryOpNode {
 
     @Specialization(guards = {"!isNoValue(value)"})
     public Object doGeneric(Object value,
+                    @Cached PRaiseNode raise,
+                    @Cached PythonObjectFactory factory,
                     @Cached("createIdentityProfile()") ValueProfile getattributeProfile,
                     @Cached("create(__ITER__)") LookupAttributeInMRONode lookupAttrMroNode,
                     @Cached("create(__GETITEM__)") LookupAttributeInMRONode lookupGetitemAttrMroNode,
@@ -99,28 +103,29 @@ public abstract class GetIteratorNode extends UnaryOpNode {
             if (isIteratorObjectNode.execute(iterObj)) {
                 return iterObj;
             } else {
-                throw nonIterator(iterObj);
+                throw nonIterator(iterObj, raise);
             }
         } else {
             Object getItemAttrObj = lookupGetitemAttrMroNode.execute(clazz);
             if (getItemAttrObj != PNone.NO_VALUE) {
-                return factory().createSequenceIterator(value);
+                return factory.createSequenceIterator(value);
             }
         }
-        throw notIterable(value);
+        throw notIterable(value, raise);
     }
 
     @Specialization
-    public PythonObject doNone(PNone none) {
-        throw notIterable(none);
+    public PythonObject doNone(PNone none,
+                               @Cached PRaiseNode raise) {
+        throw notIterable(none, raise);
     }
 
-    private PException notIterable(Object value) {
-        return raise(TypeError, "'%p' object is not iterable", value);
+    private static PException notIterable(Object value, PRaiseNode raise) {
+        return raise.raise(TypeError, "'%p' object is not iterable", value);
     }
 
-    private PException nonIterator(Object value) {
-        return raise(TypeError, "iter() returned non-iterator of type '%p'", value);
+    private static PException nonIterator(Object value, PRaiseNode raise) {
+        return raise.raise(TypeError, "iter() returned non-iterator of type '%p'", value);
     }
 
     @ImportStatic(SpecialMethodNames.class)

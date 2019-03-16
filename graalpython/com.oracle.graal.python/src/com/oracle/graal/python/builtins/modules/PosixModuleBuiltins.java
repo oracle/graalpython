@@ -713,8 +713,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(dir_fd)"})
-        Object open(VirtualFrame frame, String pathname, int flags, int fileMode, @SuppressWarnings("unused") PNone dir_fd,
-                    @Cached PRaiseNode raise) {
+        Object open(VirtualFrame frame, String pathname, int flags, int fileMode, @SuppressWarnings("unused") PNone dir_fd) {
             Set<StandardOpenOption> options = flagsToOptions(flags);
             FileAttribute<Set<PosixFilePermission>>[] attributes = modeToAttributes(fileMode);
             TruffleFile truffleFile = getContext().getEnv().getTruffleFile(pathname);
@@ -723,19 +722,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 return getResources().open(truffleFile, fc);
             } catch (NoSuchFileException e) {
                 gotException.enter();
-                throw raise.raiseOSError(frame, OSErrorEnum.ENOENT, e.getFile());
+                throw raiseOSError(frame, OSErrorEnum.ENOENT, e.getFile());
             } catch (AccessDeniedException e) {
                 gotException.enter();
-                throw raise.raiseOSError(frame, OSErrorEnum.EACCES, e.getFile());
+                throw raiseOSError(frame, OSErrorEnum.EACCES, e.getFile());
             } catch (FileSystemException e) {
                 gotException.enter();
                 // TODO FileSystemException can have more reasons, not only is a directory -> should
                 // be handled more accurate
-                throw raise.raiseOSError(frame, OSErrorEnum.EISDIR, e.getFile());
+                throw raiseOSError(frame, OSErrorEnum.EISDIR, e.getFile());
             } catch (IOException e) {
                 gotException.enter();
                 // if this happen, we should raise OSError with appropriate errno
-                throw raise.raiseOSError(frame, -1);
+                throw raiseOSError(frame, -1);
             }
         }
 
@@ -923,16 +922,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object mkdir(VirtualFrame frame, String path, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") PNone dirFd,
-                     @Cached PRaiseNode raise) {
+        Object mkdir(VirtualFrame frame, String path, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") PNone dirFd) {
             try {
                 getContext().getEnv().getTruffleFile(path).createDirectory();
             } catch (FileAlreadyExistsException e) {
-                throw raise.raiseOSError(frame, OSErrorEnum.EEXIST, path);
+                throw raiseOSError(frame, OSErrorEnum.EEXIST, path);
             } catch (RuntimeException | IOException e) {
                 gotException.enter();
                 // if this happen, we should raise OSError with appropriate errno
-                throw raise.raiseOSError(frame, -1);
+                throw raiseOSError(frame, -1);
             }
             return PNone.NONE;
         }
@@ -1398,6 +1396,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     public abstract static class ConvertPathlikeObjectNode extends PNodeWithContext {
+        @Child private PRaiseNode raise;
         @Child private LookupAndCallUnaryNode callFspathNode;
         @CompilationFinal private ValueProfile resultTypeProfile;
 
@@ -1429,7 +1428,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } else if (profiled instanceof PString) {
                 return doPString((PString) profiled);
             }
-            throw raise(TypeError, "invalid type %p return from path-like object", profiled);
+            if (raise == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raise = insert(PRaiseNode.create());
+            }
+            throw raise.raise(TypeError, "invalid type %p return from path-like object", profiled);
         }
 
         public static ConvertPathlikeObjectNode create() {
@@ -1757,7 +1760,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 return getContext().getEnv().getTruffleFile(str).getCanonicalFile().getPath();
             } catch (IOException e) {
-                throw raise(OSError, getMessage(e));
+                throw raise(OSError, e);
             }
         }
     }
