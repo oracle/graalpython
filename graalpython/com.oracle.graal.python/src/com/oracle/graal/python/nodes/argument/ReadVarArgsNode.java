@@ -26,18 +26,19 @@
 package com.oracle.graal.python.nodes.argument;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class ReadVarArgsNode extends ReadArgumentNode {
     private final int index;
-
-    /** Controls if the varargs are wrapped in a tuple */
-    private final boolean builtin;
+    @Child PythonObjectFactory factory = null;
 
     ReadVarArgsNode(int paramIndex, boolean isBuiltin) {
         index = paramIndex;
-        builtin = isBuiltin;
+        if (isBuiltin) {
+            factory = PythonObjectFactory.create();
+        }
     }
 
     public static ReadVarArgsNode create(int paramIndex) {
@@ -56,15 +57,15 @@ public abstract class ReadVarArgsNode extends ReadArgumentNode {
     }
 
     private Object output(Object[] varArgs) {
-        if (builtin) {
+        if (isBuiltin()) {
             return varArgs;
         } else {
-            return factory().createTuple(varArgs);
+            return factory.createTuple(varArgs);
         }
     }
 
     public boolean isBuiltin() {
-        return builtin;
+        return factory == null;
     }
 
     public int getIndex() {

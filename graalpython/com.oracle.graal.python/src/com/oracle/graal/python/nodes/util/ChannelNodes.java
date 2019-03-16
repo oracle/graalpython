@@ -188,7 +188,7 @@ public abstract class ChannelNodes {
             } else if (channel instanceof ReadableByteChannel) {
                 return readReadable((ReadableByteChannel) channel, size, raise);
             } else {
-                throw raise(OSError, "file not opened for reading");
+                throw raise.raise(OSError, "file not opened for reading");
             }
         }
 
@@ -332,7 +332,7 @@ public abstract class ChannelNodes {
             } else if (channel instanceof ReadableByteChannel) {
                 return writeWritable((WritableByteChannel) channel, s, len, raise);
             } else {
-                throw raise(OSError, "file not opened for reading");
+                throw raise.raise(OSError, "file not opened for reading");
             }
         }
 

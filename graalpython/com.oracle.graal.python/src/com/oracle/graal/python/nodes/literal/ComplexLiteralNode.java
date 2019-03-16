@@ -29,7 +29,6 @@ import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public final class ComplexLiteralNode extends LiteralNode {
-
     private final PComplex value;
 
     public ComplexLiteralNode(PComplex value) {

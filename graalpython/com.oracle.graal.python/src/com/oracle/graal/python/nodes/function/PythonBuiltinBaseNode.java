@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -49,27 +50,25 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class})
 public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
     @Child private PythonObjectFactory objectFactory;
-    @Child private WriteAttributeToDynamicObjectNode writeCause;
+    @Child private PRaiseNode raiseNode;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected final PythonObjectFactory factory() {
@@ -84,13 +83,20 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
         return objectFactory;
     }
 
-    public final PythonCore getCore() {
-        return getContext().getCore();
+    private final PRaiseNode getRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            if (isAdoptable()) {
+                raiseNode = insert(PRaiseNode.create());
+            } else {
+                raiseNode = PRaiseNode.getUncached();
+            }
+        }
+        return raiseNode;
     }
 
-    @TruffleBoundary
-    protected static final String getMessage(Exception e) {
-        return e.getMessage();
+    public final PythonCore getCore() {
+        return getContext().getCore();
     }
 
     public final PythonAbstractClass getPythonClass(LazyPythonClass lazyClass, ConditionProfile profile) {
@@ -114,43 +120,30 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
     }
 
     public final PException raise(PBaseException exc) {
-        if (isAdoptable()) {
-            throw PException.fromObject(exc, this);
-        } else {
-            throw PException.fromObject(exc, NodeUtil.getCurrentEncapsulatingNode());
-        }
+        return getRaiseNode().raise(exc);
     }
 
     public PException raise(LazyPythonClass exceptionType) {
-        throw raise(factory().createBaseException(exceptionType));
+        return getRaiseNode().raise(exceptionType);
     }
 
     public final PException raiseIndexError() {
-        return raise(PythonErrorType.IndexError, "cannot fit 'int' into an index-sized integer");
+        return getRaiseNode().raiseIndexError();
     }
 
     public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
-        assert format != null;
-        PBaseException baseException = factory().createBaseException(type, format, arguments);
-        if (writeCause == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            if (isAdoptable()) {
-                writeCause = insert(WriteAttributeToDynamicObjectNode.create());
-            } else {
-                writeCause = WriteAttributeToDynamicObjectNode.getUncached();
-            }
-        }
-        writeCause.execute(baseException.getStorage(), SpecialAttributeNames.__CAUSE__, cause);
-        throw raise(baseException);
+        return getRaiseNode().raise(type, cause, format, arguments);
     }
 
     public final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
-        assert format != null;
-        throw raise(factory().createBaseException(type, format, arguments));
+        return getRaiseNode().raise(type, format, arguments);
     }
 
     public final PException raise(PythonBuiltinClassType type, Exception e) {
-        throw raise(type, getMessage(e));
+        return getRaiseNode().raise(type, e);
     }
 
+    public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, Exception e) {
+        return getRaiseNode().raiseOSError(frame, oserror, e);
+    }
 }

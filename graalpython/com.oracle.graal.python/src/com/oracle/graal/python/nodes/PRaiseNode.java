@@ -50,6 +50,10 @@ public abstract class PRaiseNode extends Node {
         return raiseOSError(frame, new Object[]{oserror.getNumber(), oserror.getMessage()});
     }
 
+    public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, Exception e) {
+        return raiseOSError(frame, new Object[]{oserror.getNumber(), oserror.getMessage(), getMessage(e)});
+    }
+
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename) {
         Object[] args = new Object[]{oserror.getNumber(), oserror.getMessage(), filename};
         return raiseOSError(frame, args);
@@ -122,6 +126,10 @@ public abstract class PRaiseNode extends Node {
     @TruffleBoundary
     private static final String getMessage(Exception e) {
         return e.getMessage();
+    }
+
+    public static PRaiseNode create() {
+        return PRaiseNodeGen.create();
     }
 
     public static PRaiseNode getUncached() {

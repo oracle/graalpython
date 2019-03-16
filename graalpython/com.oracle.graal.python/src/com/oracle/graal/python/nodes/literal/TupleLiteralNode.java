@@ -31,12 +31,13 @@ import java.util.List;
 
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class TupleLiteralNode extends LiteralNode {
-
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Children private final ExpressionNode[] values;
     protected final boolean hasStarredExpressions;
 
@@ -76,7 +77,7 @@ public final class TupleLiteralNode extends LiteralNode {
                 addElement(elements, element);
             }
         }
-        return factory().createTuple(listToArray(elements));
+        return factory.createTuple(listToArray(elements));
     }
 
     @TruffleBoundary
@@ -110,6 +111,6 @@ public final class TupleLiteralNode extends LiteralNode {
         for (int i = 0; i < values.length; i++) {
             elements[i] = values[i].execute(frame);
         }
-        return factory().createTuple(elements);
+        return factory.createTuple(elements);
     }
 }

@@ -30,12 +30,13 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class SetLiteralNode extends LiteralNode {
-
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Children private final ExpressionNode[] values;
     @Child HashingStorageNodes.SetItemNode setItemNode;
 
@@ -56,6 +57,6 @@ public final class SetLiteralNode extends LiteralNode {
             storage = setItemNode.execute(storage, v.execute(frame), PNone.NO_VALUE);
         }
 
-        return factory().createSet(storage);
+        return factory.createSet(storage);
     }
 }

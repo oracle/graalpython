@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.nodes.builtins;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.FastConstructListNodeGen;
@@ -68,6 +69,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -293,7 +295,7 @@ public abstract class ListNodes {
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class ConstructListNode extends PNodeWithContext {
-
+        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
         @Child private ListAppendNode appendNode;
 
         public final PList execute(Object value) {
@@ -310,7 +312,7 @@ public abstract class ListNodes {
         @Specialization
         public PList listString(LazyPythonClass cls, String arg) {
             char[] chars = arg.toCharArray();
-            PList list = factory().createList(cls);
+            PList list = factory.createList(cls);
 
             for (char c : chars) {
                 getAppendNode().execute(list, Character.toString(c));
@@ -321,7 +323,7 @@ public abstract class ListNodes {
 
         @Specialization(guards = "isNoValue(none)")
         public PList listIterable(LazyPythonClass cls, @SuppressWarnings("unused") PNone none) {
-            return factory().createList(cls);
+            return factory.createList(cls);
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
@@ -331,7 +333,7 @@ public abstract class ListNodes {
 
             Object iterObj = getIteratorNode.executeWith(iterable);
             SequenceStorage storage = createStorageFromIteratorNode.execute(iterObj);
-            return factory().createList(cls, storage);
+            return factory.createList(cls, storage);
         }
 
         @Fallback
@@ -381,6 +383,7 @@ public abstract class ListNodes {
 
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class IndexNode extends PNodeWithContext {
+        @Child private PRaiseNode raise;
         private static final String DEFAULT_ERROR_MSG = "list indices must be integers or slices, not %p";
         @Child LookupAndCallUnaryNode getIndexNode;
         private final CheckType checkType;
@@ -467,7 +470,11 @@ public abstract class ListNodes {
             if (valid) {
                 return idx;
             } else {
-                throw raise(TypeError, errorMessage, idx);
+                if (raise == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    raise = insert(PRaiseNode.create());
+                }
+                throw raise.raise(TypeError, errorMessage, idx);
             }
         }
     }

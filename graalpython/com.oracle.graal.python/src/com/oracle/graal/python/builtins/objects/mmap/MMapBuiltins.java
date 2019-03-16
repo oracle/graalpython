@@ -132,22 +132,22 @@ public class MMapBuiltins extends PythonBuiltins {
 
     protected interface ByteReadingNode extends MMapBaseNode {
 
-        default ReadByteFromChannelNode createValueError() {
+        default ReadByteFromChannelNode createValueError(PRaiseNode raise) {
             return ReadByteFromChannelNode.create(() -> new ChannelNodes.ReadByteErrorHandler() {
 
                 @Override
                 public int execute(Channel channel) {
-                    throw raise(PythonBuiltinClassType.ValueError, "read byte out of range");
+                    throw raise.raise(PythonBuiltinClassType.ValueError, "read byte out of range");
                 }
             });
         }
 
-        default ReadByteFromChannelNode createIndexError() {
+        default ReadByteFromChannelNode createIndexError(PRaiseNode raise) {
             return ReadByteFromChannelNode.create(() -> new ChannelNodes.ReadByteErrorHandler() {
 
                 @Override
                 public int execute(Channel channel) {
-                    throw raise(PythonBuiltinClassType.IndexError, "mmap index out of range");
+                    throw raise.raise(PythonBuiltinClassType.IndexError, "mmap index out of range");
                 }
             });
 
@@ -156,22 +156,22 @@ public class MMapBuiltins extends PythonBuiltins {
 
     protected interface ByteWritingNode extends MMapBaseNode {
 
-        default WriteByteToChannelNode createValueError() {
+        default WriteByteToChannelNode createValueError(PRaiseNode raise) {
             return WriteByteToChannelNode.create(() -> new ChannelNodes.WriteByteErrorHandler() {
 
                 @Override
                 public void execute(Channel channel, byte b) {
-                    throw raise(PythonBuiltinClassType.ValueError, "write byte out of range");
+                    throw raise.raise(PythonBuiltinClassType.ValueError, "write byte out of range");
                 }
             });
         }
 
-        default WriteByteToChannelNode createIndexError() {
+        default WriteByteToChannelNode createIndexError(PRaiseNode raise) {
             return WriteByteToChannelNode.create(() -> new ChannelNodes.WriteByteErrorHandler() {
 
                 @Override
                 public void execute(Channel channel, byte b) {
-                    throw raise(PythonBuiltinClassType.IndexError, "mmap index out of range");
+                    throw raise.raise(PythonBuiltinClassType.IndexError, "mmap index out of range");
                 }
             });
 
@@ -255,7 +255,8 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPSlice(idxObj)")
         int doSingle(VirtualFrame frame, PMMap self, Object idxObj,
-                        @Cached("createIndexError()") ReadByteFromChannelNode readByteNode,
+                        @SuppressWarnings("unused") @Cached PRaiseNode raise,
+                        @Cached("createIndexError(raise)") ReadByteFromChannelNode readByteNode,
                         @Cached("create()") CastToJavaLongNode castToLongNode,
                         @Cached("create()") InternalLenNode lenNode) {
 
@@ -277,7 +278,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 return res;
 
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, getMessage(e));
+                throw raise(PythonBuiltinClassType.OSError, e);
             }
         }
 
@@ -301,7 +302,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
                 return factory().createBytes(s);
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, getMessage(e));
+                throw raise(PythonBuiltinClassType.OSError, e);
             }
         }
 
@@ -316,7 +317,8 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPSlice(idxObj)")
         PNone doSingle(VirtualFrame frame, PMMap self, Object idxObj, Object val,
-                        @Cached("createIndexError()") WriteByteToChannelNode writeByteNode,
+                        @SuppressWarnings("unused") @Cached PRaiseNode raise,
+                        @Cached("createIndexError(raise)") WriteByteToChannelNode writeByteNode,
                         @Cached("create()") CastToJavaLongNode castToLongNode,
                         @Cached("createCoerce()") CastToByteNode castToByteNode,
                         @Cached("create()") InternalLenNode lenNode,
@@ -344,7 +346,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 return PNone.NONE;
 
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, getMessage(e));
+                throw raise(PythonBuiltinClassType.OSError, e);
             }
         }
 
@@ -376,7 +378,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 return PNone.NONE;
 
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, getMessage(e));
+                throw raise(PythonBuiltinClassType.OSError, e);
             }
         }
 
@@ -462,13 +464,12 @@ public class MMapBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TellNode extends PythonBuiltinNode implements ByteReadingNode {
         @Specialization
-        long readline(VirtualFrame frame, PMMap self,
-                      @Cached PRaiseNode raise) {
+        long readline(VirtualFrame frame, PMMap self) {
             try {
                 SeekableByteChannel channel = self.getChannel();
                 return position(channel) - self.getOffset();
             } catch (IOException e) {
-                throw raise.raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
+                throw raiseOSError(frame, OSErrorEnum.EIO, e);
             }
         }
     }
@@ -480,7 +481,8 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         int readByte(PMMap self,
-                        @Cached("createValueError()") ReadByteFromChannelNode readByteNode) {
+                        @SuppressWarnings("unused") @Cached PRaiseNode raise,
+                        @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             return readByteNode.execute(self.getChannel());
         }
     }
@@ -544,7 +546,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 }
                 return factory().createBytes(res);
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, getMessage(e));
+                throw raise(PythonBuiltinClassType.OSError, e);
             }
         }
 
@@ -593,8 +595,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object seek(VirtualFrame frame, PMMap self, long dist, Object how,
-                    @Cached PRaiseNode raise) {
+        Object seek(VirtualFrame frame, PMMap self, long dist, Object how) {
             try {
                 SeekableByteChannel channel = self.getChannel();
                 long size;
@@ -627,7 +628,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } catch (IOException e) {
                 errorProfile.enter();
-                throw raise.raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
+                throw raiseOSError(frame, OSErrorEnum.EIO, e);
             }
         }
 
@@ -651,7 +652,8 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         long find(PMMap primary, PIBytesLike sub, Object starting, Object ending,
-                        @Cached("createValueError()") ReadByteFromChannelNode readByteNode) {
+                        @SuppressWarnings("unused") @Cached PRaiseNode raise,
+                        @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             try {
                 SeekableByteChannel channel = primary.getChannel();
                 long len1 = size(channel);
@@ -686,13 +688,14 @@ public class MMapBuiltins extends PythonBuiltins {
                 }
                 return -1;
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, getMessage(e));
+                throw raise(PythonBuiltinClassType.OSError, e);
             }
         }
 
         @Specialization
         long find(PMMap primary, int sub, Object starting, @SuppressWarnings("unused") Object ending,
-                        @Cached("createValueError()") ReadByteFromChannelNode readByteNode) {
+                        @SuppressWarnings("unused") @Cached PRaiseNode raise,
+                        @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             try {
                 SeekableByteChannel channel = primary.getChannel();
                 long len1 = size(channel);
@@ -713,7 +716,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 }
                 return -1;
             } catch (IOException e) {
-                throw raise(PythonBuiltinClassType.OSError, getMessage(e));
+                throw raise(PythonBuiltinClassType.OSError, e);
             }
         }
 
@@ -752,7 +755,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 return size(self.getChannel()) - self.getOffset();
             } catch (IOException e) {
                 profile.enter();
-                throw raise.raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
+                throw raise.raiseOSError(frame, OSErrorEnum.EIO, e);
             }
         }
 
@@ -768,7 +771,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 try {
                     return size(self.getChannel()) - self.getOffset();
                 } catch (IOException e) {
-                    throw raise.raiseOSError(frame, OSErrorEnum.EIO, getMessage(e));
+                    throw raise.raiseOSError(frame, OSErrorEnum.EIO, e);
                 }
             }
             return self.getLength();
