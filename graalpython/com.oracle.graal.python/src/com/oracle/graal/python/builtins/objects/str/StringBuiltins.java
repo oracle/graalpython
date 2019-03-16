@@ -49,7 +49,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -80,7 +79,6 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.SpliceNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.JoinInternalNode;
@@ -109,6 +107,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.math.BigInteger;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
 public final class StringBuiltins extends PythonBuiltins {
@@ -1464,31 +1463,27 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class EncodeNode extends PythonBuiltinNode {
 
         @Specialization
-        Object encode(String self, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                     @Cached PRaiseNode raise) {
-            return encodeString(self, "utf-8", "strict", raise);
+        Object encode(String self, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+            return encodeString(self, "utf-8", "strict");
         }
 
         @Specialization
-        Object encode(String self, String encoding, @SuppressWarnings("unused") PNone errors,
-                     @Cached PRaiseNode raise) {
-            return encodeString(self, encoding, "strict", raise);
+        Object encode(String self, String encoding, @SuppressWarnings("unused") PNone errors) {
+            return encodeString(self, encoding, "strict");
         }
 
         @Specialization
-        Object encode(String self, @SuppressWarnings("unused") PNone encoding, String errors,
-                     @Cached PRaiseNode raise) {
-            return encodeString(self, "utf-8", errors, raise);
+        Object encode(String self, @SuppressWarnings("unused") PNone encoding, String errors) {
+            return encodeString(self, "utf-8", errors);
         }
 
         @Specialization
-        Object encode(String self, String encoding, String errors,
-                     @Cached PRaiseNode raise) {
-            return encodeString(self, encoding, errors, raise);
+        Object encode(String self, String encoding, String errors) {
+            return encodeString(self, encoding, errors);
         }
 
         @TruffleBoundary
-        private Object encodeString(String self, String encoding, String errors, PRaiseNode raise) {
+        private Object encodeString(String self, String encoding, String errors) {
             CodingErrorAction errorAction;
             switch (errors) {
                 case "ignore":
@@ -1510,9 +1505,9 @@ public final class StringBuiltins extends PythonBuiltins {
                 encoded.get(data);
                 return factory().createBytes(data);
             } catch (IllegalArgumentException e) {
-                throw raise.raise(LookupError, "unknown encoding: %s", encoding);
+                throw raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
-                throw raise.raise(UnicodeEncodeError, e);
+                throw raise(UnicodeEncodeError, e);
             }
         }
     }

@@ -52,11 +52,11 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -70,7 +70,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
     @Child private PythonObjectFactory objectFactory;
     @Child private WriteAttributeToDynamicObjectNode writeCause;
-    @Child private CallVarargsMethodNode callNode;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected final PythonObjectFactory factory() {
@@ -124,6 +123,10 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
 
     public PException raise(LazyPythonClass exceptionType) {
         throw raise(factory().createBaseException(exceptionType));
+    }
+
+    public final PException raiseIndexError() {
+        return raise(PythonErrorType.IndexError, "cannot fit 'int' into an index-sized integer");
     }
 
     public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {

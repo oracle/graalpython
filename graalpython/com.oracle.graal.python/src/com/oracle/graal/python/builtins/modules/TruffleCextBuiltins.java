@@ -127,7 +127,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetInstanceShape;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -1683,12 +1682,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doLong")
-        PBytes doLongOvf(long size,
-                         @Cached PRaiseNode raise) {
+        PBytes doLongOvf(long size) {
             try {
                 return doInt(PInt.intValueExact(size));
             } catch (ArithmeticException e) {
-                throw raise.raiseIndexError();
+                throw raiseIndexError();
             }
         }
 
@@ -1698,12 +1696,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doPInt")
-        PBytes doPIntOvf(PInt size,
-                         @Cached PRaiseNode raise) {
+        PBytes doPIntOvf(PInt size) {
             try {
                 return doInt(size.intValueExact());
             } catch (ArithmeticException e) {
-                throw raise.raiseIndexError();
+                throw raiseIndexError();
             }
         }
     }

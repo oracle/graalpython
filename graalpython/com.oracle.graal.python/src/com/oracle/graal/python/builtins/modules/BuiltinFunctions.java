@@ -119,7 +119,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -1827,8 +1826,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     abstract static class InputNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        String input(@SuppressWarnings("unused") PNone prompt,
-                     @Cached PRaiseNode raise) {
+        String input(@SuppressWarnings("unused") PNone prompt) {
             CharBuffer buf = CharBuffer.allocate(1000);
             try {
                 InputStream stdin = getContext().getStandardIn();
@@ -1846,22 +1844,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 buf.rewind();
                 return buf.toString();
             } catch (IOException e) {
-                throw raise.raise(PythonBuiltinClassType.EOFError, e);
+                throw raise(PythonBuiltinClassType.EOFError, e);
             }
         }
 
         @Specialization
-        String inputPrompt(PString prompt,
-                     @Cached PRaiseNode raise) {
-            return inputPrompt(prompt.getValue(), raise);
+        String inputPrompt(PString prompt) {
+            return inputPrompt(prompt.getValue());
         }
 
         @Specialization
         @TruffleBoundary
-        String inputPrompt(String prompt,
-                     @Cached PRaiseNode raise) {
+        String inputPrompt(String prompt) {
             new PrintStream(getContext().getStandardOut()).println(prompt);
-            return input(null, raise);
+            return input(null);
         }
     }
 

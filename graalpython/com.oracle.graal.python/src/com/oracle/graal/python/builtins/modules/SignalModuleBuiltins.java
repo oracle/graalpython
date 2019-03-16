@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -159,13 +158,12 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int alarmOvf(PInt seconds,
-                     @Cached PRaiseNode raise) {
+        int alarmOvf(PInt seconds) {
             try {
                 Signals.scheduleAlarm(seconds.longValueExact());
                 return 0;
             } catch (ArithmeticException e) {
-                throw raise.raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
+                throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
             }
         }
     }
@@ -193,10 +191,9 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DefaultIntHandlerNode extends PythonBuiltinNode {
         @Specialization
-        Object defaultIntHandler(@SuppressWarnings("unused") Object[] args,
-                     @Cached PRaiseNode raise) {
+        Object defaultIntHandler(@SuppressWarnings("unused") Object[] args) {
             // TODO should be implemented properly.
-            throw raise.raise(PythonErrorType.KeyboardInterrupt);
+            throw raise(PythonErrorType.KeyboardInterrupt);
         }
     }
 
@@ -204,24 +201,23 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "signal", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
-        private static int getSignum(long signum, PRaiseNode raise) {
+        private int getSignum(long signum) {
             try {
                 return toIntExact(signum);
             } catch (ArithmeticException ae) {
-                throw raise.raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to C int");
+                throw raise(PythonBuiltinClassType.OverflowError, "Python int too large to convert to C int");
             }
         }
 
         @Specialization
         @TruffleBoundary
-        Object signal(@SuppressWarnings("unused") PythonModule self, long signalNumber, int id,
-                     @Cached PRaiseNode raise) {
-            int signum = getSignum(signalNumber, raise);
+        Object signal(@SuppressWarnings("unused") PythonModule self, long signalNumber, int id) {
+            int signum = getSignum(signalNumber);
             Object retval;
             try {
                 retval = Signals.setSignalHandler(signum, id);
             } catch (IllegalArgumentException e) {
-                throw raise.raise(PythonErrorType.ValueError, e);
+                throw raise(PythonErrorType.ValueError, e);
             }
             if ((int) retval == Signals.SIG_UNKNOWN) {
                 if (signalHandlers.containsKey(signum)) {
@@ -237,10 +233,9 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object signal(PythonModule self, long signalNumber, Object handler,
-                     @Cached PRaiseNode raise,
                         @Cached("create()") ReadAttributeFromObjectNode readQueueNode,
                         @Cached("create()") ReadAttributeFromObjectNode readSemaNode) {
-            int signum = getSignum(signalNumber, raise);
+            int signum = getSignum(signalNumber);
             ConcurrentLinkedDeque<SignalTriggerAction> queue = getQueue(self, readQueueNode);
             Semaphore semaphore = getSemaphore(self, readSemaNode);
             Object retval;
@@ -251,7 +246,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
                     semaphore.release();
                 });
             } catch (IllegalArgumentException e) {
-                throw raise.raise(PythonErrorType.ValueError, e);
+                throw raise(PythonErrorType.ValueError, e);
             }
             if ((int) retval == Signals.SIG_UNKNOWN) {
                 if (signalHandlers.containsKey(signum)) {

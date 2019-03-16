@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -237,15 +236,13 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class ReadHistoryFileNode extends PythonBinaryBuiltinNode {
         @Specialization
         PNone setCompleter(PythonModule self, PString path,
-                     @Cached PRaiseNode raise,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
-            return setCompleter(self, path.getValue(), raise, readNode);
+            return setCompleter(self, path.getValue(), readNode);
         }
 
         @Specialization
         @TruffleBoundary
         PNone setCompleter(PythonModule self, String path,
-                     @Cached PRaiseNode raise,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             try {
@@ -256,7 +253,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
                 }
                 reader.close();
             } catch (IOException e) {
-                throw raise.raise(PythonErrorType.IOError, e);
+                throw raise(PythonErrorType.IOError, e);
             }
             return PNone.NONE;
         }
@@ -267,15 +264,13 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class WriteHistoryFileNode extends PythonBinaryBuiltinNode {
         @Specialization
         PNone setCompleter(PythonModule self, PString path,
-                     @Cached PRaiseNode raise,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
-            return setCompleter(self, path.getValue(), raise, readNode);
+            return setCompleter(self, path.getValue(), readNode);
         }
 
         @Specialization
         @TruffleBoundary
         PNone setCompleter(PythonModule self, String path,
-                     @Cached PRaiseNode raise,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
             try {
@@ -286,7 +281,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
                 }
                 writer.close();
             } catch (IOException e) {
-                throw raise.raise(PythonErrorType.IOError, e);
+                throw raise(PythonErrorType.IOError, e);
             }
             return PNone.NONE;
         }

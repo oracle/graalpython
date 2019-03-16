@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -366,45 +365,41 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(str)")
         Object encode(Object str, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                     @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile strTypeProfile) {
             Object profiledStr = strTypeProfile.profile(str);
-            PBytes bytes = encodeString(profiledStr.toString(), "utf-8", "strict", raise);
+            PBytes bytes = encodeString(profiledStr.toString(), "utf-8", "strict");
             return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
 
         @Specialization(guards = {"isString(str)", "isString(encoding)"})
         Object encode(Object str, Object encoding, @SuppressWarnings("unused") PNone errors,
-                     @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile strTypeProfile,
                         @Cached("createClassProfile()") ValueProfile encodingTypeProfile) {
             Object profiledStr = strTypeProfile.profile(str);
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
-            PBytes bytes = encodeString(profiledStr.toString(), profiledEncoding.toString(), "strict", raise);
+            PBytes bytes = encodeString(profiledStr.toString(), profiledEncoding.toString(), "strict");
             return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
 
         @Specialization(guards = {"isString(str)", "isString(errors)"})
         Object encode(Object str, @SuppressWarnings("unused") PNone encoding, Object errors,
-                     @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile strTypeProfile,
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledStr = strTypeProfile.profile(str);
             Object profiledErrors = errorsTypeProfile.profile(errors);
-            PBytes bytes = encodeString(profiledStr.toString(), "utf-8", profiledErrors.toString(), raise);
+            PBytes bytes = encodeString(profiledStr.toString(), "utf-8", profiledErrors.toString());
             return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
 
         @Specialization(guards = {"isString(str)", "isString(encoding)", "isString(errors)"})
         Object encode(Object str, Object encoding, Object errors,
-                     @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile strTypeProfile,
                         @Cached("createClassProfile()") ValueProfile encodingTypeProfile,
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledStr = strTypeProfile.profile(str);
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
             Object profiledErrors = errorsTypeProfile.profile(errors);
-            PBytes bytes = encodeString(profiledStr.toString(), profiledEncoding.toString(), profiledErrors.toString(), raise);
+            PBytes bytes = encodeString(profiledStr.toString(), profiledEncoding.toString(), profiledErrors.toString());
             return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
 
@@ -414,8 +409,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private PBytes encodeString(String self, String encoding, String errors,
-                     @Cached PRaiseNode raise) {
+        private PBytes encodeString(String self, String encoding, String errors) {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
             try {
                 Charset charset = getCharset(encoding);
@@ -425,9 +419,9 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 encoded.get(data);
                 return factory().createBytes(data);
             } catch (IllegalArgumentException e) {
-                throw raise.raise(LookupError, "unknown encoding: %s", encoding);
+                throw raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
-                throw raise.raise(UnicodeEncodeError, e);
+                throw raise(UnicodeEncodeError, e);
             }
         }
 
@@ -445,19 +439,17 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     public abstract static class RawEncodeNode extends EncodeBaseNode {
 
         @Specialization
-        PTuple encode(String self, @SuppressWarnings("unused") PNone none,
-                     @Cached PRaiseNode raise) {
-            return encode(self, "strict", raise);
+        PTuple encode(String self, @SuppressWarnings("unused") PNone none) {
+            return encode(self, "strict");
         }
 
         @Specialization
-        PTuple encode(String self, String errors,
-                     @Cached PRaiseNode raise) {
-            return factory().createTuple(encodeString(self, errors, raise));
+        PTuple encode(String self, String errors) {
+            return factory().createTuple(encodeString(self, errors));
         }
 
         @TruffleBoundary
-        private Object[] encodeString(String self, String errors, PRaiseNode raise) {
+        private Object[] encodeString(String self, String errors) {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
 
             try {
@@ -489,7 +481,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 // TODO(fa): bytes object creation should not be behind a TruffleBoundary
                 return new Object[]{factory().createBytes(data), codePoints};
             } catch (CharacterCodingException e) {
-                throw raise.raise(UnicodeEncodeError, e);
+                throw raise(UnicodeEncodeError, e);
             }
         }
 
@@ -502,38 +494,34 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
 
         @Specialization
-        Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                     @Cached PRaiseNode raise) {
-            String string = decodeBytes(getBytesBuffer(bytes), "utf-8", "strict", raise);
+        Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+            String string = decodeBytes(getBytesBuffer(bytes), "utf-8", "strict");
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
         @Specialization(guards = {"isString(encoding)"})
         Object decode(PIBytesLike bytes, Object encoding, @SuppressWarnings("unused") PNone errors,
-                     @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile encodingTypeProfile) {
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
-            String string = decodeBytes(getBytesBuffer(bytes), profiledEncoding.toString(), "strict", raise);
+            String string = decodeBytes(getBytesBuffer(bytes), profiledEncoding.toString(), "strict");
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
         @Specialization(guards = {"isString(errors)"})
         Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, Object errors,
-                     @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledErrors = errorsTypeProfile.profile(errors);
-            String string = decodeBytes(getBytesBuffer(bytes), "utf-8", profiledErrors.toString(), raise);
+            String string = decodeBytes(getBytesBuffer(bytes), "utf-8", profiledErrors.toString());
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
         @Specialization(guards = {"isString(encoding)", "isString(errors)"})
         Object decode(PIBytesLike bytes, Object encoding, Object errors,
-                     @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile encodingTypeProfile,
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
             Object profiledErrors = errorsTypeProfile.profile(errors);
-            String string = decodeBytes(getBytesBuffer(bytes), profiledEncoding.toString(), profiledErrors.toString(), raise);
+            String string = decodeBytes(getBytesBuffer(bytes), profiledEncoding.toString(), profiledErrors.toString());
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
@@ -552,16 +540,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        String decodeBytes(ByteBuffer bytes, String encoding, String errors, PRaiseNode raise) {
+        String decodeBytes(ByteBuffer bytes, String encoding, String errors) {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
             try {
                 Charset charset = getCharset(encoding);
                 CharBuffer decoded = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(bytes);
                 return String.valueOf(decoded);
             } catch (IllegalArgumentException e) {
-                throw raise.raise(LookupError, "unknown encoding: %s", encoding);
+                throw raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
-                throw raise.raise(UnicodeDecodeError, e);
+                throw raise(UnicodeDecodeError, e);
             }
         }
     }
