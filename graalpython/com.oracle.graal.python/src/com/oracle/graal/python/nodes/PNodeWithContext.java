@@ -41,110 +41,11 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class PNodeWithContext extends Node {
-    @Child private PythonObjectFactory objectFactory;
-    @Child private WriteAttributeToDynamicObjectNode writeCause;
-    @Child private CallVarargsMethodNode callNode;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
-
-    protected final PythonObjectFactory factory() {
-        if (objectFactory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            if (isAdoptable()) {
-                objectFactory = insert(PythonObjectFactory.create());
-            } else {
-                objectFactory = getCore().factory();
-            }
-        }
-        return objectFactory;
-    }
-
-    public final PythonCore getCore() {
-        return getContext().getCore();
-    }
-
-    public final PException raise(PBaseException exc) {
-        if (isAdoptable()) {
-            throw PException.fromObject(exc, this);
-        } else {
-            throw PException.fromObject(exc, NodeUtil.getCurrentEncapsulatingNode());
-        }
-    }
-
-    public PException raise(LazyPythonClass exceptionType) {
-        throw raise(factory().createBaseException(exceptionType));
-    }
-
-    public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
-        assert format != null;
-        PBaseException baseException = factory().createBaseException(type, format, arguments);
-        if (writeCause == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            if (isAdoptable()) {
-                writeCause = insert(WriteAttributeToDynamicObjectNode.create());
-            } else {
-                writeCause = WriteAttributeToDynamicObjectNode.getUncached();
-            }
-        }
-        writeCause.execute(baseException.getStorage(), SpecialAttributeNames.__CAUSE__, cause);
-        throw raise(baseException);
-    }
-
-    public final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
-        assert format != null;
-        throw raise(factory().createBaseException(type, format, arguments));
-    }
-
-    public final PException raise(PythonBuiltinClassType type, Exception e) {
-        throw raise(type, getMessage(e));
-    }
-
-    @TruffleBoundary
-    protected static final String getMessage(Exception e) {
-        return e.getMessage();
-    }
-
-    public final PythonAbstractClass getPythonClass(LazyPythonClass lazyClass, ConditionProfile profile) {
-        if (profile.profile(lazyClass instanceof PythonBuiltinClassType)) {
-            return getCore().lookupType((PythonBuiltinClassType) lazyClass);
-        } else {
-            return (PythonAbstractClass) lazyClass;
-        }
-    }
-
-    public final PythonBuiltinClass getBuiltinPythonClass(PythonBuiltinClassType type) {
-        return getCore().lookupType(type);
-    }
-
-    public final PythonContext getContext() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = PythonLanguage.getContextRef();
-        }
-        return contextRef.get();
-    }
-
     protected Assumption singleContextAssumption() {
         CompilerAsserts.neverPartOfCompilation("the singleContextAssumption should only be retrieved in the interpreter");
         PythonLanguage language = PythonLanguage.getCurrent();
