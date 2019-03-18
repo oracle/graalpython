@@ -124,8 +124,7 @@ public abstract class ManagedMethodWrappers {
                         @Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
                         @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Exclusive @Cached CallNode dispatch,
-                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                        @Exclusive @Cached(allowUncached = true) ExecutePositionalStarargsNode posStarargsNode,
+                        @Exclusive @Cached ExecutePositionalStarargsNode posStarargsNode,
                         // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
                         @Exclusive @Cached(allowUncached = true) ExecuteKeywordStarargsNode expandKwargsNode,
                         @Exclusive @Cached("createEqualityProfile()") PrimitiveValueProfile starArgsLenProfile) throws ArityException {

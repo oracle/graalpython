@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -57,9 +56,12 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
-public abstract class ExecutePositionalStarargsNode extends PNodeWithContext {
+@GenerateUncached
+public abstract class ExecutePositionalStarargsNode extends Node {
     public abstract Object[] executeWith(Object starargs);
 
     @Specialization
@@ -106,9 +108,8 @@ public abstract class ExecutePositionalStarargsNode extends PNodeWithContext {
         return args;
     }
 
-    @SuppressWarnings("unused")
     @Specialization
-    Object[] starargs(PNone none) {
+    Object[] starargs(@SuppressWarnings("unused") PNone none) {
         return new Object[0];
     }
 
@@ -116,9 +117,9 @@ public abstract class ExecutePositionalStarargsNode extends PNodeWithContext {
     @TruffleBoundary(allowInlining = true)
     Object[] starargs(Object object,
                     @Cached PRaiseNode raise,
-                    @Cached("create()") GetIteratorNode getIterator,
-                    @Cached("create()") GetNextNode next,
-                    @Cached("create()") IsBuiltinClassProfile errorProfile) {
+                    @Cached GetIteratorNode getIterator,
+                    @Cached GetNextNode next,
+                    @Cached IsBuiltinClassProfile errorProfile) {
         Object iterator = getIterator.executeWith(object);
         if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
             ArrayList<Object> internalStorage = new ArrayList<>();
