@@ -323,13 +323,15 @@ public abstract class ListNodes {
 
         @Specialization
         public PList listString(LazyPythonClass cls, PString arg,
-                        @Shared("appendNode") @Cached AppendNode appendNode) {
-            return listString(cls, arg.getValue(), appendNode);
+                        @Shared("appendNode") @Cached AppendNode appendNode,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return listString(cls, arg.getValue(), appendNode, factory);
         }
 
         @Specialization
         public PList listString(LazyPythonClass cls, String arg,
-                        @Shared("appendNode") @Cached AppendNode appendNode) {
+                        @Shared("appendNode") @Cached AppendNode appendNode,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             char[] chars = arg.toCharArray();
             PList list = factory.createList(cls);
 
@@ -341,7 +343,8 @@ public abstract class ListNodes {
         }
 
         @Specialization(guards = "isNoValue(none)")
-        public PList listIterable(LazyPythonClass cls, @SuppressWarnings("unused") PNone none) {
+        public PList listIterable(LazyPythonClass cls, @SuppressWarnings("unused") PNone none,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createList(cls);
         }
 
