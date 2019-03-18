@@ -168,6 +168,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
         void findFirstEntryPosition() throws IOException {
             while (positions.isEmpty() && read() != -1) {
+                // do nothing here, just read until the first LOC is found
             }
             pos -= 4;
             readFirstLoc = true;
