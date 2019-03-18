@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetSequenceStorageNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetSequenceStorageNodeFactory.GetSequenceStorageCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
@@ -92,14 +92,43 @@ public abstract class SequenceNodes {
 
         public abstract SequenceStorage execute(Object seq);
 
-        @Specialization(guards = {"seq.getClass() == cachedClass"})
-        SequenceStorage doWithStorage(PSequence seq,
-                        @Cached("seq.getClass()") Class<? extends PSequence> cachedClass) {
-            return CompilerDirectives.castExact(seq, cachedClass).getSequenceStorage();
+        abstract static class GetSequenceStorageCachedNode extends GetSequenceStorageNode {
+            @Specialization(guards = {"seq.getClass() == cachedClass"})
+            static SequenceStorage doWithStorage(PSequence seq,
+                            @Cached("seq.getClass()") Class<? extends PSequence> cachedClass) {
+                return CompilerDirectives.castExact(seq, cachedClass).getSequenceStorage();
+            }
+
+            @Specialization(replaces = "doWithStorage")
+            static SequenceStorage doUncached(PSequence seq) {
+                return seq.getSequenceStorage();
+            }
+
+            @Specialization
+            static SequenceStorage doFallback(@SuppressWarnings("unused") Object seq) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException("cannot get sequence storage of non-sequence object");
+            }
+        }
+
+        private static final class GetSequenceStorageUncachedNode extends GetSequenceStorageNode {
+            private static final GetSequenceStorageUncachedNode INSTANCE = new GetSequenceStorageUncachedNode();
+
+            @Override
+            public SequenceStorage execute(Object seq) {
+                if (seq instanceof PSequence) {
+                    return GetSequenceStorageCachedNode.doUncached((PSequence) seq);
+                }
+                return GetSequenceStorageCachedNode.doFallback(seq);
+            }
         }
 
         public static GetSequenceStorageNode create() {
-            return GetSequenceStorageNodeGen.create();
+            return GetSequenceStorageCachedNodeGen.create();
+        }
+
+        public static GetSequenceStorageNode getUncached() {
+            return GetSequenceStorageUncachedNode.INSTANCE;
         }
     }
 
