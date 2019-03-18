@@ -208,9 +208,4 @@ public abstract class LookupAndCallTernaryNode extends Node {
         }
         return result;
     }
-
-    public static LookupAndCallTernaryNode getUncached() {
-        // TODO: TRUFFLE LIBRARY GETUNCACHED MIGRATION IMPLEMENT ME
-        return null;
-    }
 }
