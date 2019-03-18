@@ -15,14 +15,9 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -109,16 +104,16 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         @Specialization
         Object doTuple(PTuple tuple, long idx,
-                        @Cached(value = "createTupleGetItem()", allowUncached = true) TupleBuiltins.GetItemNode getItemNode,
+                        @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(getItemNode.execute(tuple, idx));
+            return toSulongNode.execute(getItemNode.execute(tuple.getSequenceStorage(), idx));
         }
 
         @Specialization
         Object doTuple(PList list, long idx,
-                        @Cached(value = "createListGetItem()", allowUncached = true) ListBuiltins.GetItemNode getItemNode,
+                        @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(getItemNode.execute(list, idx));
+            return toSulongNode.execute(getItemNode.execute(list.getSequenceStorage(), idx));
         }
 
         /**
@@ -195,14 +190,6 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             Object attrGetItem = lookupGetItemNode.execute(object, SpecialMethodNames.__GETITEM__);
             return toSulongNode.execute(callGetItemNode.execute(null, attrGetItem, object, idx));
-        }
-
-        protected static ListBuiltins.GetItemNode createListGetItem() {
-            return ListBuiltinsFactory.GetItemNodeFactory.create();
-        }
-
-        protected static TupleBuiltins.GetItemNode createTupleGetItem() {
-            return TupleBuiltinsFactory.GetItemNodeFactory.create();
         }
 
         protected static boolean isTuple(Object object) {
@@ -366,7 +353,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     }
 
     @GenerateUncached
-    static abstract class ToNativeStorageNode extends PNodeWithContext {
+    static abstract class ToNativeStorageNode extends Node {
 
         public abstract NativeSequenceStorage execute(SequenceStorage object);
 
