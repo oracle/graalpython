@@ -40,13 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.GetDictStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.GetDictStorageNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -84,32 +85,29 @@ public abstract class HashingCollectionNodes {
     }
 
     @ImportStatic(PGuards.class)
+    @GenerateUncached
     public abstract static class SetItemNode extends PNodeWithContext {
-        private @Child HashingStorageNodes.SetItemNode setItemNode;
-
-        public HashingStorageNodes.SetItemNode getSetItemNode() {
-            if (setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
-            }
-            return setItemNode;
-        }
-
         public abstract void execute(PHashingCollection c, Object key, Object value);
 
         @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
         void doSetItemCached(PHashingCollection c, Object key, Object value,
+                        @Shared("set") @Cached HashingStorageNodes.SetItemNode setItemNode,
                         @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
-            cachedClass.cast(c).setDictStorage(getSetItemNode().execute(cachedClass.cast(c).getDictStorage(), key, value));
+            cachedClass.cast(c).setDictStorage(setItemNode.execute(cachedClass.cast(c).getDictStorage(), key, value));
         }
 
         @Specialization(replaces = "doSetItemCached")
-        void doSetItemGeneric(PHashingCollection c, Object key, Object value) {
-            c.setDictStorage(getSetItemNode().execute(c.getDictStorage(), key, value));
+        void doSetItemGeneric(PHashingCollection c, Object key, Object value,
+                        @Shared("set") @Cached HashingStorageNodes.SetItemNode setItemNode) {
+            c.setDictStorage(setItemNode.execute(c.getDictStorage(), key, value));
         }
 
         public static SetItemNode create() {
             return SetItemNodeGen.create();
+        }
+
+        public static SetItemNode getUncached() {
+            return SetItemNodeGen.getUncached();
         }
     }
 
