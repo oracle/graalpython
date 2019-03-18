@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -93,16 +94,17 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) throws UnsupportedMessageException {
-        throw UnsupportedMessageException.create();
+    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+        return new InteropArray(new Object[]{NAME, DOC});
     }
 
     @ExportMessage
     protected Object readMember(String member,
-                    @Cached.Exclusive @Cached(allowUncached = true) ReadFieldNode readFieldNode) {
-        return readFieldNode.execute(this.getDelegate(), member);
+                    @Cached ReadFieldNode readFieldNode) {
+        return readFieldNode.execute(getDelegate(), member);
     }
 
+    @GenerateUncached
     @ImportStatic({SpecialMethodNames.class})
     abstract static class ReadFieldNode extends Node {
         public static final String NAME = PyMethodDescrWrapper.NAME;
@@ -110,12 +112,12 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
 
         public abstract Object execute(Object delegate, String key);
 
-        protected boolean eq(String expected, String actual) {
+        protected static boolean eq(String expected, String actual) {
             return expected.equals(actual);
         }
 
         @Specialization(guards = {"eq(NAME, key)"})
-        Object getName(PythonObject object, @SuppressWarnings("unused") String key,
+        static Object getName(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
@@ -128,7 +130,7 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = {"eq(DOC, key)"})
-        Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
+        static Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached ReadAttributeFromObjectNode getAttrNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
@@ -167,8 +169,8 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
         throw UnsupportedMessageException.create();
     }
 
-    @ImportStatic({SpecialMethodNames.class, PGuards.class, PyMethodDescrWrapper.class})
     @GenerateUncached
+    @ImportStatic({SpecialMethodNames.class, PGuards.class, PyMethodDescrWrapper.class})
     abstract static class WriteFieldNode extends Node {
 
         public abstract void execute(Object delegate, String key, Object value) throws UnsupportedMessageException, UnknownIdentifierException;
