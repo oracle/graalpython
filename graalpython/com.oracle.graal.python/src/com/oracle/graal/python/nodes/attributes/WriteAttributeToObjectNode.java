@@ -146,7 +146,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @SuppressWarnings("unused") @Cached("object") PythonObject cachedObject,
                     @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @SuppressWarnings("unused") @Cached("cachedObject.getDictUnsetOrSameAsStorageAssumption()") Assumption dictUnsetOrSameAsStorageAssumption,
-                    @Cached("create()") BranchProfile updateStorage,
+                    @Cached BranchProfile updateStorage,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @Exclusive @Cached HashingStorageNodes.SetItemNode setItemNode,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile) {
@@ -166,9 +166,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     "!isDictUnsetOrSameAsStorage(object)"
     }, replaces = "writeToDictCached")
     protected boolean writeToDict(PythonObject object, Object key, Object value,
-                    @Cached("create()") BranchProfile updateStorage,
+                    @Cached BranchProfile updateStorage,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                    @Cached(allowUncached = true) HashingStorageNodes.SetItemNode setItemNode,
+                    @Cached HashingStorageNodes.SetItemNode setItemNode,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile) {
         handlePythonClass(isClassProfile, object, key);
         PHashingCollection dict = object.getDict();
