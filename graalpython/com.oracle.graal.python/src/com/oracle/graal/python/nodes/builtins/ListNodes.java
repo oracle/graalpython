@@ -49,8 +49,9 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -60,6 +61,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.builtins.ListNodesFactory.AppendNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.FastConstructListNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.IndexNodeGen;
@@ -83,64 +85,49 @@ import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class ListNodes {
 
-    public static final class CreateStorageFromIteratorNode extends PNodeWithContext {
+    public abstract static class CreateStorageFromIteratorNode extends PNodeWithContext {
 
         private static final int START_SIZE = 2;
 
-        @Child private GetNextNode next = GetNextNode.create();
-
-        private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
-
-        @CompilationFinal private ListStorageType type = ListStorageType.Uninitialized;
-
         public static CreateStorageFromIteratorNode create() {
-            return new CreateStorageFromIteratorNode();
+            return new CreateStorageFromIteratorCachedNode();
         }
 
-        public SequenceStorage execute(Object iterator) {
+        public static CreateStorageFromIteratorNode getUncached() {
+            return CreateStorageFromIteratorUncachedNode.INSTANCE;
+        }
+
+        public abstract SequenceStorage execute(Object iterator);
+
+        private static SequenceStorage doIt(Object iterator, ListStorageType type, GetNextNode next, IsBuiltinClassProfile errorProfile) {
             SequenceStorage storage;
             if (type == ListStorageType.Uninitialized) {
-                try {
-                    Object[] elements = new Object[START_SIZE];
-                    int i = 0;
-                    while (true) {
-                        try {
-                            Object value = next.execute(iterator);
-                            if (i >= elements.length) {
-                                elements = Arrays.copyOf(elements, elements.length * 2);
-                            }
-                            elements[i++] = value;
-                        } catch (PException e) {
-                            e.expectStopIteration(errorProfile);
-                            break;
+                Object[] elements = new Object[START_SIZE];
+                int i = 0;
+                while (true) {
+                    try {
+                        Object value = next.execute(iterator);
+                        if (i >= elements.length) {
+                            elements = Arrays.copyOf(elements, elements.length * 2);
                         }
+                        elements[i++] = value;
+                    } catch (PException e) {
+                        e.expectStopIteration(errorProfile);
+                        break;
                     }
-                    storage = new SequenceStorageFactory().createStorage(Arrays.copyOf(elements, i));
-                    if (storage instanceof IntSequenceStorage) {
-                        type = ListStorageType.Int;
-                    } else if (storage instanceof LongSequenceStorage) {
-                        type = ListStorageType.Long;
-                    } else if (storage instanceof DoubleSequenceStorage) {
-                        type = ListStorageType.Double;
-                    } else if (storage instanceof ListSequenceStorage) {
-                        type = ListStorageType.List;
-                    } else if (storage instanceof TupleSequenceStorage) {
-                        type = ListStorageType.Tuple;
-                    } else {
-                        type = ListStorageType.Generic;
-                    }
-                } catch (Throwable t) {
-                    type = ListStorageType.Generic;
-                    throw t;
                 }
+                storage = new SequenceStorageFactory().createStorage(Arrays.copyOf(elements, i));
             } else {
                 int i = 0;
                 Object array = null;
@@ -263,14 +250,13 @@ public abstract class ListNodes {
                             throw new RuntimeException("unexpected state");
                     }
                 } catch (UnexpectedResultException e) {
-                    storage = genericFallback(iterator, array, i, e.getResult());
+                    storage = genericFallback(iterator, array, i, e.getResult(), next, errorProfile);
                 }
             }
             return storage;
         }
 
-        private SequenceStorage genericFallback(Object iterator, Object array, int count, Object result) {
-            type = ListStorageType.Generic;
+        private static SequenceStorage genericFallback(Object iterator, Object array, int count, Object result, GetNextNode next, IsBuiltinClassProfile errorProfile) {
             Object[] elements = new Object[Array.getLength(array) * 2];
             int i = 0;
             for (; i < count; i++) {
@@ -291,12 +277,43 @@ public abstract class ListNodes {
             }
             return new ObjectSequenceStorage(elements, i);
         }
+
     }
 
+    static final class CreateStorageFromIteratorCachedNode extends CreateStorageFromIteratorNode {
+
+        @Child private GetNextNode getNextNode = GetNextNode.create();
+
+        private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
+
+        @CompilationFinal private ListStorageType expectedElementType = ListStorageType.Uninitialized;
+
+        @Override
+        public SequenceStorage execute(Object iterator) {
+            SequenceStorage doIt = CreateStorageFromIteratorNode.doIt(iterator, expectedElementType, getNextNode, errorProfile);
+            ListStorageType actualElementType = doIt.getElementType();
+            if (expectedElementType != actualElementType) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                expectedElementType = actualElementType;
+            }
+            return null;
+        }
+    }
+
+    private static final class CreateStorageFromIteratorUncachedNode extends CreateStorageFromIteratorNode {
+        public static final CreateStorageFromIteratorNode INSTANCE = new CreateStorageFromIteratorUncachedNode();
+
+        @Override
+        public SequenceStorage execute(Object iterator) {
+            // TODO TRUFFLE LIBRARY MIGRATION 'GetNextNode.getUncached()'
+            return CreateStorageFromIteratorNode.doIt(iterator, ListStorageType.Uninitialized, GetNextNode.create(), IsBuiltinClassProfile.getUncached());
+        }
+
+    }
+
+    @GenerateUncached
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class ConstructListNode extends PNodeWithContext {
-        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-        @Child private ListAppendNode appendNode;
 
         public final PList execute(Object value) {
             return execute(PythonBuiltinClassType.PList, value);
@@ -305,17 +322,19 @@ public abstract class ListNodes {
         public abstract PList execute(LazyPythonClass cls, Object value);
 
         @Specialization
-        public PList listString(LazyPythonClass cls, PString arg) {
-            return listString(cls, arg.getValue());
+        public PList listString(LazyPythonClass cls, PString arg,
+                        @Shared("appendNode") @Cached AppendNode appendNode) {
+            return listString(cls, arg.getValue(), appendNode);
         }
 
         @Specialization
-        public PList listString(LazyPythonClass cls, String arg) {
+        public PList listString(LazyPythonClass cls, String arg,
+                        @Shared("appendNode") @Cached AppendNode appendNode) {
             char[] chars = arg.toCharArray();
             PList list = factory.createList(cls);
 
             for (char c : chars) {
-                getAppendNode().execute(list, Character.toString(c));
+                appendNode.execute(list, Character.toString(c));
             }
 
             return list;
@@ -328,8 +347,9 @@ public abstract class ListNodes {
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
         public PList listIterable(LazyPythonClass cls, Object iterable,
-                        @Cached("create()") GetIteratorNode getIteratorNode,
-                        @Cached("create()") CreateStorageFromIteratorNode createStorageFromIteratorNode) {
+                        @Cached GetIteratorNode getIteratorNode,
+                        @Cached CreateStorageFromIteratorNode createStorageFromIteratorNode,
+                        @Cached PythonObjectFactory factory) {
 
             Object iterObj = getIteratorNode.executeWith(iterable);
             SequenceStorage storage = createStorageFromIteratorNode.execute(iterObj);
@@ -342,16 +362,12 @@ public abstract class ListNodes {
             throw new RuntimeException("list does not support iterable object " + value);
         }
 
-        private ListAppendNode getAppendNode() {
-            if (appendNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                appendNode = insert(ListAppendNode.create());
-            }
-            return appendNode;
-        }
-
         public static ConstructListNode create() {
             return ConstructListNodeGen.create();
+        }
+
+        public static ConstructListNode getUncached() {
+            return ConstructListNodeGen.getUncached();
         }
     }
 
@@ -476,6 +492,37 @@ public abstract class ListNodes {
                 }
                 throw raise.raise(TypeError, errorMessage, idx);
             }
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class AppendNode extends PNodeWithContext {
+
+        public abstract Object execute(PList list, Object value);
+
+        @Specialization
+        public PNone appendObjectGeneric(PList list, Object value,
+                        // TODO TRUFFLE LIBRARY MIGRATION
+                        @Cached(value = "createAppend()", allowUncached = true) SequenceStorageNodes.AppendNode appendNode,
+                        @Cached BranchProfile updateStoreProfile) {
+            SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value);
+            if (list.getSequenceStorage() != newStore) {
+                updateStoreProfile.enter();
+                list.setSequenceStorage(newStore);
+            }
+            return PNone.NONE;
+        }
+
+        protected static SequenceStorageNodes.AppendNode createAppend() {
+            return SequenceStorageNodes.AppendNode.create(() -> ListGeneralizationNode.create());
+        }
+
+        public static AppendNode create() {
+            return AppendNodeGen.create();
+        }
+
+        public static AppendNode getUncached() {
+            return AppendNodeGen.getUncached();
         }
     }
 }
