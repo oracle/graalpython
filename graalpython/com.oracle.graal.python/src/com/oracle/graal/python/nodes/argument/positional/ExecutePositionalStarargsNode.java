@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -114,6 +115,7 @@ public abstract class ExecutePositionalStarargsNode extends PNodeWithContext {
     @Specialization
     @TruffleBoundary(allowInlining = true)
     Object[] starargs(Object object,
+                      @Cached PRaiseNode raise,
                     @Cached("create()") GetIteratorNode getIterator,
                     @Cached("create()") GetNextNode next,
                     @Cached("create()") IsBuiltinClassProfile errorProfile) {
@@ -129,7 +131,7 @@ public abstract class ExecutePositionalStarargsNode extends PNodeWithContext {
                 }
             }
         }
-        throw raise(PythonErrorType.TypeError, "argument after * must be an iterable, not %p", object);
+        throw raise.raise(PythonErrorType.TypeError, "argument after * must be an iterable, not %p", object);
     }
 
     public static ExecutePositionalStarargsNode create() {

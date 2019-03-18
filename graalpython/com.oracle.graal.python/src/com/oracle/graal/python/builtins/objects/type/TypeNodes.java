@@ -81,6 +81,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -88,6 +89,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -235,13 +237,15 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        MroSequenceStorage doBuiltinClass(PythonBuiltinClassType obj) {
-            return getBuiltinPythonClass(obj).getMethodResolutionOrder();
+        MroSequenceStorage doBuiltinClass(PythonBuiltinClassType obj,
+                                          @CachedContext(PythonLanguage.class) PythonContext context) {
+            return context.getCore().lookupType(obj).getMethodResolutionOrder();
         }
 
         @Specialization
         MroSequenceStorage doNativeClass(PythonNativeClass obj,
                         @Cached GetTypeMemberNode getTpMroNode,
+                        @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile tpMroProfile,
                         @Cached("createClassProfile()") ValueProfile storageProfile) {
             Object tupleObj = tpMroProfile.profile(getTpMroNode.execute(obj, NativeMemberNames.TP_MRO));
@@ -251,7 +255,7 @@ public abstract class TypeNodes {
                     return (MroSequenceStorage) sequenceStorage;
                 }
             }
-            throw raise(PythonBuiltinClassType.SystemError, "invalid mro object");
+            throw raise.raise(PythonBuiltinClassType.SystemError, "invalid mro object");
         }
 
         @Specialization(replaces = {"doPythonClass", "doBuiltinClass", "doNativeClass"})
@@ -346,13 +350,14 @@ public abstract class TypeNodes {
         @Specialization
         LazyPythonClass doNative(PythonNativeClass obj,
                         @Cached GetTypeMemberNode getTpBaseNode,
+                        @Cached PRaiseNode raise,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             Object tpBaseObj = getTpBaseNode.execute(obj, NativeMemberNames.TP_BASE);
             if (profile.profile(PGuards.isClass(tpBaseObj))) {
                 return (PythonAbstractClass) tpBaseObj;
             }
             CompilerDirectives.transferToInterpreter();
-            throw raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), tpBaseObj);
+            throw raise.raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), tpBaseObj);
         }
 
         @TruffleBoundary
@@ -389,8 +394,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        Set<PythonAbstractClass> doPythonClass(PythonBuiltinClassType obj) {
-            return getBuiltinPythonClass(obj).getSubClasses();
+        Set<PythonAbstractClass> doPythonClass(PythonBuiltinClassType obj,
+                                               @CachedContext(PythonLanguage.class) PythonContext context) {
+            return context.getCore().lookupType(obj).getSubClasses();
         }
 
         @Specialization
@@ -513,12 +519,14 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        PythonAbstractClass[] doPythonClass(PythonBuiltinClassType obj) {
-            return getBuiltinPythonClass(obj).getBaseClasses();
+        PythonAbstractClass[] doPythonClass(PythonBuiltinClassType obj,
+                                            @CachedContext(PythonLanguage.class) PythonContext context) {
+            return context.getCore().lookupType(obj).getBaseClasses();
         }
 
         @Specialization
         PythonAbstractClass[] doNative(PythonNativeClass obj,
+                                       @Cached PRaiseNode raise,
                         @Cached GetTypeMemberNode getTpBasesNode,
                         @Cached("createClassProfile()") ValueProfile resultTypeProfile,
                         @Cached("createToArray()") SequenceStorageNodes.ToArrayNode toArrayNode) {
@@ -528,10 +536,10 @@ public abstract class TypeNodes {
                 try {
                     return cast(values);
                 } catch (ClassCastException e) {
-                    throw raise(PythonBuiltinClassType.SystemError, "unsupported object in 'tp_bases'");
+                    throw raise.raise(PythonBuiltinClassType.SystemError, "unsupported object in 'tp_bases'");
                 }
             }
-            throw raise(PythonBuiltinClassType.SystemError, "type does not provide bases");
+            throw raise.raise(PythonBuiltinClassType.SystemError, "type does not provide bases");
         }
 
         @TruffleBoundary
@@ -811,9 +819,10 @@ public abstract class TypeNodes {
             return clazz.getInstanceShape();
         }
 
-        @Fallback
-        Shape doError(@SuppressWarnings("unused") LazyPythonClass clazz) {
-            throw raise(PythonBuiltinClassType.SystemError, "cannot get shape of native class");
+        @Specialization(guards = {"!isManagedClass(clazz)", "!isPythonBuiltinClassType(clazz)"})
+        Shape doError(@SuppressWarnings("unused") LazyPythonClass clazz,
+                      @Cached PRaiseNode raise) {
+            throw raise.raise(PythonBuiltinClassType.SystemError, "cannot get shape of native class");
         }
 
         public static Shape doSlowPath(LazyPythonClass clazz) {

@@ -48,11 +48,13 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.literal.BuiltinsLiteralNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -94,18 +96,20 @@ public abstract class CastToListNode extends UnaryOpNode {
     @Specialization(guards = {"cannotBeOverridden(getClass(v))", "cachedLength == getLength(v)", "cachedLength < 32"})
     @ExplodeLoop
     protected PList starredTupleCachedLength(PTuple v,
+                                             @Cached PythonObjectFactory factory,
                     @Cached("getLength(v)") int cachedLength) {
         SequenceStorage s = v.getSequenceStorage();
         Object[] array = new Object[cachedLength];
         for (int i = 0; i < cachedLength; i++) {
             array[i] = getGetItemNode().execute(s, i);
         }
-        return factory().createList(array);
+        return factory.createList(array);
     }
 
     @Specialization(replaces = "starredTupleCachedLength", guards = "cannotBeOverridden(getClass(v))")
-    protected PList starredTuple(PTuple v) {
-        return factory().createList(v.getArray().clone());
+    protected PList starredTuple(PTuple v,
+                                 @Cached PythonObjectFactory factory) {
+        return factory.createList(v.getArray().clone());
     }
 
     @Specialization(guards = "cannotBeOverridden(getClass(v))")
@@ -124,8 +128,9 @@ public abstract class CastToListNode extends UnaryOpNode {
     }
 
     @Specialization
-    protected PList starredGeneric(Object v) {
-        throw raise(TypeError, "%s is not iterable", v);
+    protected PList starredGeneric(Object v,
+                                   @Cached PRaiseNode raise) {
+        throw raise.raise(TypeError, "%s is not iterable", v);
     }
 
     protected int getLength(PTuple t) {

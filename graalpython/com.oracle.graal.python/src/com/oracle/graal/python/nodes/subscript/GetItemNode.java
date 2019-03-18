@@ -26,13 +26,14 @@
 package com.oracle.graal.python.nodes.subscript;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -60,9 +61,11 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
         if (callGetitemNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callGetitemNode = insert(LookupAndCallBinaryNode.create(__GETITEM__, null, () -> new LookupAndCallBinaryNode.NotImplementedHandler() {
+                @Child private PRaiseNode raiseNode = PRaiseNode.create();
+
                 @Override
                 public Object execute(Object arg, @SuppressWarnings("unused") Object arg2) {
-                    throw raise(TypeError, "'%p' object is not subscriptable", arg);
+                    throw raiseNode.raise(TypeError, "'%p' object is not subscriptable", arg);
                 }
             }));
         }

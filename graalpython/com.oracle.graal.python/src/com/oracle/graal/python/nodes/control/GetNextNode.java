@@ -45,8 +45,10 @@ import static com.oracle.truffle.api.nodes.NodeCost.NONE;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -58,6 +60,7 @@ public final class GetNextNode extends PNodeWithContext {
         return new GetNextNode();
     }
 
+    @Child private PRaiseNode raiseNode;
     @Child private LookupAndCallUnaryNode nextCall = LookupAndCallUnaryNode.create(__NEXT__);
 
     private final ConditionProfile notAnIterator = ConditionProfile.createBinaryProfile();
@@ -65,7 +68,11 @@ public final class GetNextNode extends PNodeWithContext {
     private Object checkResult(Object result, Object iterator) {
         if (notAnIterator.profile(result == PNone.NO_VALUE)) {
             // TODO: maybe this could be handled in LookupAndCallUnaryNode directly?
-            throw raise(PythonErrorType.AttributeError, "'%s' object has no attribute '__next__'", iterator);
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            throw raiseNode.raise(PythonErrorType.AttributeError, "'%s' object has no attribute '__next__'", iterator);
         }
         return result;
     }

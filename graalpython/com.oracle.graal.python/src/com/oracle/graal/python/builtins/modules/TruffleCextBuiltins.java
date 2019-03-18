@@ -612,7 +612,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(result)")
-        Object doNativeWrapper(String name, @SuppressWarnings("unused") PythonAbstractObject result,
+        Object doPythonObject(String name, @SuppressWarnings("unused") PythonAbstractObject result,
                                @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                                @Shared("fact") @Cached PythonObjectFactory factory,
                                @Shared("rais") @Cached PRaiseNode raise) {
@@ -629,24 +629,21 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(guards = {"isForeignObject(result)", "!isNativeNull(result)"})
-        Object doForeign(String name, TruffleObject result,
+        /*
+         * Our fallback case, but with some cached
+         * params. PythonObjectNativeWrapper results should be unwrapped and
+         * recursively delegated (see #doNativeWrapper) and PNone is treated
+         * specially, because we consider it as null in #doNoValue and as not
+         * null in #doPythonObject
+         */
+        @Specialization(guards = {"!isPythonObjectNativeWrapper(result)", "!isPNone(result)"})
+        Object doForeign(String name, Object result,
                          @Exclusive @Cached("createBinaryProfile()") ConditionProfile isNullProfile,
                          @Exclusive @CachedLibrary(limit = "1") InteropLibrary lib,
                          @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                          @Shared("fact") @Cached PythonObjectFactory factory,
                          @Shared("rais") @Cached PRaiseNode raise) {
             checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), context, raise, factory);
-            return result;
-        }
-
-        @Fallback
-        Object doGeneric(String name, Object result,
-                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
-                         @Shared("fact") @Cached PythonObjectFactory factory,
-                         @Shared("rais") @Cached PRaiseNode raise) {
-            assert result != null;
-            checkFunctionResult(name, false, context, raise, factory);
             return result;
         }
 

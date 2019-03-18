@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -82,6 +83,7 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
     @Specialization(guards = "starargs.size() == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
     PKeyword[] cached(PDict starargs,
                     @Cached("starargs.size()") int cachedLen,
+                    @Cached PRaiseNode raise,
                     @Cached("create()") BranchProfile errorProfile) {
         try {
             PKeyword[] keywords = new PKeyword[starargs.size()];
@@ -89,7 +91,7 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
             return keywords;
         } catch (KeywordNotStringException e) {
             errorProfile.enter();
-            throw raise(TypeError, "keywords must be strings");
+            throw raise.raise(TypeError, "keywords must be strings");
         }
     }
 
@@ -109,8 +111,9 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
     @Specialization(replaces = "cached")
     @TruffleBoundary
     PKeyword[] uncached(PDict starargs,
+                    @Cached PRaiseNode raise,
                     @Cached("create()") BranchProfile errorProfile) {
-        return cached(starargs, starargs.size(), errorProfile);
+        return cached(starargs, starargs.size(), raise, errorProfile);
     }
 
     @SuppressWarnings("unused")

@@ -97,10 +97,11 @@ public abstract class CastToJavaLongNode extends PNodeWithContext {
 
     @Specialization(guards = "!isNumber(x)")
     public long toLong(Object x,
+                       @Cached PRaiseNode raise,
                     @Cached LookupAndCallUnaryDynamicNode callIntNode) {
         Object result = callIntNode.executeObject(x, __INT__);
         if (result == PNone.NO_VALUE) {
-            throw raise(TypeError, "must be numeric, not %p", x);
+            throw raise.raise(TypeError, "must be numeric, not %p", x);
         }
         if (result instanceof PInt) {
             return toLongInternal((PInt) result);
@@ -111,7 +112,7 @@ public abstract class CastToJavaLongNode extends PNodeWithContext {
         if (result instanceof Long) {
             return (long) result;
         }
-        throw raise(TypeError, "%p.__int__ returned a non long (type %p)", x, result);
+        throw raise.raise(TypeError, "%p.__int__ returned a non long (type %p)", x, result);
     }
 
     @GenerateUncached

@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -67,7 +68,7 @@ public abstract class TupleNodes {
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class ConstructTupleNode extends PNodeWithContext {
-
+        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
         @Child private GetLazyClassNode getClassNode;
 
         protected LazyPythonClass getClass(Object value) {
@@ -86,7 +87,7 @@ public abstract class TupleNodes {
 
         @Specialization(guards = "isNoValue(none)")
         public PTuple tuple(LazyPythonClass cls, @SuppressWarnings("unused") PNone none) {
-            return factory().createEmptyTuple(cls);
+            return factory.createEmptyTuple(cls);
         }
 
         @Specialization
@@ -95,7 +96,7 @@ public abstract class TupleNodes {
             for (int i = 0; i < arg.length(); i++) {
                 values[i] = String.valueOf(arg.charAt(i));
             }
-            return factory().createTuple(cls, values);
+            return factory.createTuple(cls, values);
         }
 
         @Specialization(guards = {"cannotBeOverridden(cls)", "cannotBeOverridden(getClass(iterable))"})
@@ -116,7 +117,7 @@ public abstract class TupleNodes {
                     addToList(internalStorage, next.execute(iterator));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
-                    return factory().createTuple(cls, listToArray(internalStorage));
+                    return factory.createTuple(cls, listToArray(internalStorage));
                 }
             }
         }

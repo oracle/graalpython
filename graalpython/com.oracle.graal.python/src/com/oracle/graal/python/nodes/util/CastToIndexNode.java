@@ -40,22 +40,24 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+
+import java.util.function.Function;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import java.util.function.Function;
 
 /**
  * Converts an arbitrary object to an index-sized integer (which is a Java {@code int}).
@@ -67,6 +69,7 @@ public abstract class CastToIndexNode extends PNodeWithContext {
 
     @Child private LookupAndCallUnaryNode callIndexNode;
     @Child private CastToIndexNode recursiveNode;
+    @Child private PRaiseNode raiseNode;
 
     private final PythonBuiltinClassType errorType;
     private final boolean recursive;
@@ -85,6 +88,14 @@ public abstract class CastToIndexNode extends PNodeWithContext {
     public abstract int execute(long x);
 
     public abstract int execute(boolean x);
+
+    private PRaiseNode getRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        return raiseNode;
+    }
 
     @Specialization
     int doBoolean(boolean x) {
@@ -106,7 +117,7 @@ public abstract class CastToIndexNode extends PNodeWithContext {
         try {
             return PInt.intValueExact(x);
         } catch (ArithmeticException e) {
-            throw raise(errorType, ERROR_MESSAGE);
+            throw getRaiseNode().raise(errorType, ERROR_MESSAGE);
         }
     }
 
@@ -120,7 +131,7 @@ public abstract class CastToIndexNode extends PNodeWithContext {
         try {
             return x.intValueExact();
         } catch (ArithmeticException e) {
-            throw raise(errorType, ERROR_MESSAGE);
+            throw getRaiseNode().raise(errorType, ERROR_MESSAGE);
         }
     }
 
@@ -153,7 +164,7 @@ public abstract class CastToIndexNode extends PNodeWithContext {
         if (typeErrorHandler != null) {
             return typeErrorHandler.apply(x);
         }
-        throw raise(TypeError, fmt, x);
+        throw getRaiseNode().raise(TypeError, fmt, x);
     }
 
     public static CastToIndexNode create() {

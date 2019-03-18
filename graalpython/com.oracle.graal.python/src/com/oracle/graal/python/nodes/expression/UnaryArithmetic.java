@@ -44,6 +44,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.function.Supplier;
 
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
@@ -63,9 +64,11 @@ public enum UnaryArithmetic {
         this.methodName = methodName;
         this.operator = operator;
         this.noAttributeHandler = () -> new NoAttributeHandler() {
+            @Child private PRaiseNode raiseNode = PRaiseNode.create();
+
             @Override
             public Object execute(Object receiver) {
-                throw raise(TypeError, "bad operand type for unary %s: '%p'", operator, receiver);
+                throw raiseNode.raise(TypeError, "bad operand type for unary %s: '%p'", operator, receiver);
             }
         };
     }

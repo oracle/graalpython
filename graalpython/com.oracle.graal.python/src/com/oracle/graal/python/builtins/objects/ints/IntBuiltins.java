@@ -46,6 +46,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.math.BigInteger;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -84,10 +85,12 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -1469,8 +1472,9 @@ public class IntBuiltins extends PythonBuiltins {
             return left.getValue().compareTo(right.getValue()) < 0;
         }
 
-        @Specialization(guards = "fromNativeNode.isFloatSubtype(y, getClass, isSubtype)", limit = "1")
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(y, getClass, isSubtype, context)", limit = "1")
         boolean doDN(long x, PythonNativeObject y,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode fromNativeNode) {
@@ -1478,9 +1482,10 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {
-                        "nativeLeft.isFloatSubtype(x, getClass, isSubtype)",
-                        "nativeRight.isFloatSubtype(y, getClass, isSubtype)"}, limit = "1")
+                        "nativeLeft.isFloatSubtype(x, getClass, isSubtype, context)",
+                        "nativeRight.isFloatSubtype(y, getClass, isSubtype, context)"}, limit = "1")
         boolean doDN(PythonNativeObject x, PythonNativeObject y,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode nativeLeft,
@@ -1488,8 +1493,9 @@ public class IntBuiltins extends PythonBuiltins {
             return nativeLeft.execute(x) < nativeRight.execute(y);
         }
 
-        @Specialization(guards = "fromNativeNode.isFloatSubtype(x, getClass, isSubtype)", limit = "1")
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(x, getClass, isSubtype, context)", limit = "1")
         boolean doDN(PythonNativeObject x, double y,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode fromNativeNode) {

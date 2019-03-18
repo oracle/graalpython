@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
@@ -120,6 +121,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 public abstract class HashingStorageNodes {
 
     public static class PythonEquivalence extends Equivalence {
+        @Child private PRaiseNode raise;
         @Child private LookupAndCallUnaryNode callHashNode = LookupAndCallUnaryNode.create(__HASH__);
         @Child private BinaryComparisonNode callEqNode = BinaryComparisonNode.create(SpecialMethodNames.__EQ__, SpecialMethodNames.__EQ__, "==", null, null);
         @Child private CastToBooleanNode castToBoolean = CastToBooleanNode.createIfTrueNode();
@@ -168,7 +170,11 @@ public abstract class HashingStorageNodes {
         }
 
         private PException hashCodeTypeError() {
-            return raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
+            if (raise == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raise = insert(PRaiseNode.create());
+            }
+            return raise.raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
         }
 
         @Override
@@ -183,6 +189,7 @@ public abstract class HashingStorageNodes {
 
     @ImportStatic(PGuards.class)
     abstract static class DictStorageBaseNode extends PNodeWithContext {
+        @Child private PRaiseNode raise;
         @Child private GetLazyClassNode getClassNode;
         @Child private IsHashableNode isHashableNode;
         @Child private Equivalence equivalenceNode;
@@ -230,8 +237,16 @@ public abstract class HashingStorageNodes {
             return isHashableNode.execute(key);
         }
 
+        protected PRaiseNode getRaise() {
+            if (raise == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raise = insert(PRaiseNode.create());
+            }
+            return raise;
+        }
+
         protected PException unhashable(Object key) {
-            return raise(TypeError, "unhashable type: '%p'", key);
+            return getRaise().raise(TypeError, "unhashable type: '%p'", key);
         }
 
         protected boolean wrappedString(PString s) {
@@ -406,7 +421,7 @@ public abstract class HashingStorageNodes {
                     len = seqLenNode.execute(element);
 
                     if (lengthTwoProfile.profile(len != 2)) {
-                        throw raise(ValueError, "dictionary update sequence element #%d has length %d; 2 is required", elements.size(), len);
+                        throw getRaise().raise(ValueError, "dictionary update sequence element #%d has length %d; 2 is required", elements.size(), len);
                     }
 
                     // really check for Java String since PString can be subclassed
@@ -416,7 +431,7 @@ public abstract class HashingStorageNodes {
                 }
             } catch (PException e) {
                 if (isTypeErrorProfile.profileException(e, TypeError)) {
-                    throw raise(TypeError, "cannot convert dictionary update sequence element #%d to a sequence", elements.size());
+                    throw getRaise().raise(TypeError, "cannot convert dictionary update sequence element #%d to a sequence", elements.size());
                 } else {
                     e.expectStopIteration(errorProfile);
                 }

@@ -92,12 +92,12 @@ public abstract class CallNode extends PNodeWithContext {
 
         @Specialization(guards = {"!isCallable(callableObject) || isClass(callableObject)"})
         protected Object specialCall(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
+                                     @Cached PRaiseNode raise,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                         @Cached("create()") CallVarargsMethodNode callCallNode) {
             Object call = callAttrGetterNode.execute(callableObject);
             if (call == PNone.NO_VALUE) {
-                CompilerDirectives.transferToInterpreter();
-                throw raise(PythonBuiltinClassType.TypeError, "'%p' object is not callable", callableObject);
+                throw raise.raise(PythonBuiltinClassType.TypeError, "'%p' object is not callable", callableObject);
             }
             return callCallNode.execute(frame, call, PositionalArgumentsNode.prependArgument(callableObject, arguments, arguments.length), keywords);
         }
@@ -120,9 +120,10 @@ public abstract class CallNode extends PNodeWithContext {
 
         @Specialization
         protected Object decoratedMethodCall(VirtualFrame frame, PDecoratedMethod callable, Object[] arguments, PKeyword[] keywords,
+                                             @Cached PRaiseNode raise,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                         @Cached("create()") CallVarargsMethodNode callCallNode) {
-            return specialCall(frame, callable.getCallable(), arguments, keywords, callAttrGetterNode, callCallNode);
+            return specialCall(frame, callable.getCallable(), arguments, keywords, raise, callAttrGetterNode, callCallNode);
         }
 
         @Specialization(guards = "isPFunction(callable.getFunction())")
@@ -151,16 +152,18 @@ public abstract class CallNode extends PNodeWithContext {
 
         @Specialization(guards = "!isFunction(callable.getFunction())")
         protected Object methodCall(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords,
+                                    @Cached PRaiseNode raise,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                         @Cached("create()") CallVarargsMethodNode callCallNode) {
-            return specialCall(frame, callable, arguments, keywords, callAttrGetterNode, callCallNode);
+            return specialCall(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
         }
 
         @Specialization(guards = "!isFunction(callable.getFunction())")
         protected Object builtinMethodCall(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
+                                           @Cached PRaiseNode raise,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                         @Cached("create()") CallVarargsMethodNode callCallNode) {
-            return specialCall(frame, callable, arguments, keywords, callAttrGetterNode, callCallNode);
+            return specialCall(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
         }
 
         @Specialization

@@ -44,6 +44,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -51,7 +52,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -82,15 +82,16 @@ public abstract class JoinInternalNode extends PNodeWithContext {
         return sb.toString();
     }
 
-    private String checkItem(Object item, int pos, ConditionProfile profile) {
+    private static String checkItem(Object item, int pos, ConditionProfile profile, PRaiseNode raise) {
         if (profile.profile(PGuards.isString(item))) {
             return item.toString();
         }
-        throw raise(TypeError, "sequence item %d: expected str instance, %p found", pos, item);
+        throw raise.raise(TypeError, "sequence item %d: expected str instance, %p found", pos, item);
     }
 
     @Specialization
     protected String join(String string, Object iterable,
+                          @Cached PRaiseNode raise,
                     @Cached("create()") GetIteratorNode getIterator,
                     @Cached("create()") GetNextNode next,
                     @Cached("create()") IsBuiltinClassProfile errorProfile1,
@@ -100,7 +101,7 @@ public abstract class JoinInternalNode extends PNodeWithContext {
         Object iterator = getIterator.executeWith(iterable);
         StringBuilder str = new StringBuilder();
         try {
-            append(str, checkItem(next.execute(iterator), 0, errorProfile3));
+            append(str, checkItem(next.execute(iterator), 0, errorProfile3, raise));
         } catch (PException e) {
             e.expectStopIteration(errorProfile1);
             return "";
@@ -116,7 +117,7 @@ public abstract class JoinInternalNode extends PNodeWithContext {
                 return toString(str);
             }
             append(str, string);
-            append(str, checkItem(value, i++, errorProfile3));
+            append(str, checkItem(value, i++, errorProfile3, raise));
         }
     }
 
@@ -130,10 +131,11 @@ public abstract class JoinInternalNode extends PNodeWithContext {
         return sb.toString();
     }
 
-    @Fallback
+    @Specialization(guards = "!isString(self)")
     @SuppressWarnings("unused")
-    protected String join(Object self, Object arg) {
-        throw raise(TypeError, "can only join an iterable");
+    protected String join(Object self, Object arg,
+                          @Cached PRaiseNode raise) {
+        throw raise.raise(TypeError, "can only join an iterable");
     }
 
     public static JoinInternalNode create() {

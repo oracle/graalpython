@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -91,9 +92,19 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     @Child private ExpressionNode right;
     @Child private WriteNode yieldWriteNode;
 
+    @Child private PythonObjectFactory ofactory;
+
     public YieldFromNode(ExpressionNode right, WriteNode yieldSlot) {
         this.right = right;
         this.yieldWriteNode = yieldSlot;
+    }
+
+    private PythonObjectFactory factory() {
+        if (ofactory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            ofactory = insert(PythonObjectFactory.create());
+        }
+        return ofactory;
     }
 
     @Override

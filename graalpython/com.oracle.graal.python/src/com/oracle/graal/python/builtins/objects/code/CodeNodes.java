@@ -46,14 +46,17 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -81,26 +84,27 @@ public abstract class CodeNodes {
                         String filename, String name, int firstlineno,
                         byte[] lnotab) {
 
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
             RootCallTarget callTarget = null;
 
             // Derive a new call target from the code string, if we can
             RootNode rootNode = null;
             if (codestring.length > 0) {
+                PythonCore core = PythonLanguage.getCore();
                 if ((flags & PCode.FLAG_MODULE) == 0) {
                     // we're looking for the function, not the module
                     String funcdef;
                     funcdef = createFuncdef(codestring, freevars, name);
-
-                    rootNode = (RootNode) getCore().getParser().parse(ParserMode.File, getCore(), Source.newBuilder(PythonLanguage.ID, funcdef, name).build(), null);
+                    rootNode = (RootNode) core.getParser().parse(ParserMode.File, core, Source.newBuilder(PythonLanguage.ID, funcdef, name).build(), null);
                     Object[] args = PArguments.create();
-                    PDict globals = factory().createDict();
+                    PDict globals = factory.createDict();
                     PArguments.setGlobals(args, globals);
                     Truffle.getRuntime().createCallTarget(rootNode).call(args);
                     Object function = ensureGetItemNode().execute(globals.getDictStorage(), name);
                     if (function instanceof PFunction) {
                         rootNode = ((PFunction) function).getFunctionRootNode();
                     } else {
-                        throw raise(PythonBuiltinClassType.ValueError, "got an invalid codestring trying to create a function code object");
+                        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, "got an invalid codestring trying to create a function code object");
                     }
                 } else {
                     MaterializedFrame frame = null;
@@ -114,7 +118,7 @@ public abstract class CodeNodes {
                             frame.setObject(slot, new PCell());
                         }
                     }
-                    rootNode = (RootNode) getCore().getParser().parse(ParserMode.File, getCore(), Source.newBuilder(PythonLanguage.ID, new String(codestring), name).build(), frame);
+                    rootNode = (RootNode) core.getParser().parse(ParserMode.File, core, Source.newBuilder(PythonLanguage.ID, new String(codestring), name).build(), frame);
                     assert rootNode instanceof ModuleRootNode;
                 }
                 callTarget = Truffle.getRuntime().createCallTarget(rootNode);
@@ -129,7 +133,7 @@ public abstract class CodeNodes {
 
             Signature signature = createSignature(flags, argcount, kwonlyargcount, varnames);
 
-            return factory().createCode(cls, callTarget, signature, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
+            return factory.createCode(cls, callTarget, signature, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
         }
 
         private static String createFuncdef(byte[] codestring, Object[] freevars, String name) {

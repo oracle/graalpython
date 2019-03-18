@@ -42,15 +42,18 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -71,18 +74,33 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Child private StatementNode body;
     @Children private final ExceptNode[] exceptNodes;
     @Child private StatementNode orelse;
+    @Child private PythonObjectFactory ofactory;
     @CompilationFinal private CatchesFunction catchesFunction;
     @CompilationFinal boolean seenException;
     private final boolean shouldCatchAll;
     private final Assumption singleContextAssumption;
+    private final ContextReference<PythonContext> contextRef;
 
     public TryExceptNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode orelse) {
         this.body = body;
         body.markAsTryBlock();
         this.exceptNodes = exceptNodes;
         this.orelse = orelse;
-        this.shouldCatchAll = PythonOptions.getOption(getContext(), CatchAllExceptions);
+        this.contextRef = PythonLanguage.getContextRef();
+        this.shouldCatchAll = PythonOptions.getOption(contextRef.get(), CatchAllExceptions);
         this.singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
+    }
+
+    protected PythonContext getContext() {
+        return contextRef.get();
+    }
+
+    protected PythonObjectFactory factory() {
+        if (ofactory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            ofactory = insert(PythonObjectFactory.create());
+        }
+        return ofactory;
     }
 
     @Override
