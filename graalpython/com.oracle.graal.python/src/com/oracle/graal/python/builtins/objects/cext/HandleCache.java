@@ -40,9 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
@@ -55,6 +57,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @ExportLibrary(InteropLibrary.class)
@@ -89,8 +92,8 @@ public final class HandleCache implements TruffleObject {
 
     @ExportMessage
     public Object execute(Object[] arguments,
-                    @Cached.Exclusive @Cached(allowUncached = true) GetOrInsertNode getOrInsertNode,
-                    @Cached.Exclusive @Cached BranchProfile invalidArgCountProfile) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+                    @Cached GetOrInsertNode getOrInsertNode,
+                    @Cached BranchProfile invalidArgCountProfile) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
         if (arguments.length != 1) {
             invalidArgCountProfile.enter();
             throw ArityException.create(1, arguments.length);
@@ -103,8 +106,9 @@ public final class HandleCache implements TruffleObject {
         public static final InvalidCacheEntryException INSTANCE = new InvalidCacheEntryException();
     }
 
+    @GenerateUncached
     @ImportStatic(HandleCache.class)
-    abstract static class GetOrInsertNode extends PNodeWithContext {
+    abstract static class GetOrInsertNode extends Node {
         public abstract Object execute(HandleCache cache, long handle) throws UnsupportedTypeException, ArityException, UnsupportedMessageException;
 
         @Specialization(limit = "CACHE_SIZE", guards = {"cache.len() == cachedLen",
@@ -122,8 +126,8 @@ public final class HandleCache implements TruffleObject {
 
         @Specialization(guards = {"cache.len() == cachedLen"}, replaces = "doCachedSingleContext", assumptions = "singleContextAssumption()")
         Object doFullLookupSingleContext(HandleCache cache, long handle,
-                        @Cached("cache.len()") int cachedLen,
-                        @Cached("cache.getPtrToResolveHandle()") TruffleObject resolveHandleFunction,
+                        @Cached(value = "cache.len()", allowUncached = true) int cachedLen,
+                        @Cached(value = "cache.getPtrToResolveHandle()", allowUncached = true) TruffleObject resolveHandleFunction,
                         @CachedLibrary("resolveHandleFunction") InteropLibrary interopLibrary) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
             int pos = lookupPosition(cache, handle, cachedLen, resolveHandleFunction, interopLibrary);
             return cache.values[pos];
@@ -144,8 +148,8 @@ public final class HandleCache implements TruffleObject {
 
         @Specialization(guards = {"cache.len() == cachedLen", "cache.getPtrToResolveHandle() == cachedResolveHandleFunction"}, replaces = "doCached")
         Object doFullLookup(HandleCache cache, long handle,
-                        @Cached("cache.len()") int cachedLen,
-                        @Cached("cache.getPtrToResolveHandle()") TruffleObject cachedResolveHandleFunction,
+                        @Cached(value = "cache.len()", allowUncached = true) int cachedLen,
+                        @Cached(value = "cache.getPtrToResolveHandle()", allowUncached = true) TruffleObject cachedResolveHandleFunction,
                         @CachedLibrary("cachedResolveHandleFunction") InteropLibrary interopLibrary) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
             int pos = lookupPosition(cache, handle, cachedLen, cachedResolveHandleFunction, interopLibrary);
             return cache.values[pos];
@@ -174,6 +178,10 @@ public final class HandleCache implements TruffleObject {
             cache.pos = (insertPos + 1) % cache.len();
 
             return insertPos;
+        }
+
+        protected static Assumption singleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
         }
     }
 }
