@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.expression;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -49,10 +50,13 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
-import com.oracle.graal.python.nodes.literal.BuiltinsLiteralNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -63,9 +67,37 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class CastToListNode extends UnaryOpNode {
-
     public static CastToListNode create() {
         return CastToListNodeGen.create(null);
+    }
+
+    public static CastToListNode getUncached() {
+        return CastToListUncachedNode.UNCACHED;
+    }
+
+    private static final class CastToListUncachedNode extends CastToListNode {
+        private static CastToListUncachedNode UNCACHED = new CastToListUncachedNode();
+
+        private final ReadAttributeFromObjectNode getlist = ReadAttributeFromObjectNode.getUncached();
+        private final LookupInheritedAttributeNode.Dynamic getCall = LookupInheritedAttributeNode.Dynamic.getUncached();
+        private final CallNode callList = CallNode.getUncached();
+
+        @Override
+        public PList executeWith(Object list) {
+            Object builtins = PythonLanguage.getContextRef().get().getCore().lookupBuiltinModule("builtins");
+            Object listType = getlist.execute(builtins, "list");
+            return (PList) callList.execute(null, getCall.execute(listType, SpecialMethodNames.__CALL__), listType, list);
+        }
+
+        @Override
+        public ExpressionNode getOperand() {
+            throw new IllegalStateException("CastToListNode used in uncached case for rewriting");
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            throw new IllegalStateException("CastToListNode used in uncached case in syntax");
+        }
     }
 
     @Child private GetLazyClassNode getClassNode;
@@ -117,20 +149,23 @@ public abstract class CastToListNode extends UnaryOpNode {
         return v;
     }
 
-    protected GetAttributeNode getList() {
-        return GetAttributeNode.create("list", new BuiltinsLiteralNode());
-    }
-
     @Specialization(rewriteOn = PException.class)
     protected PList starredIterable(PythonObject value,
-                    @Cached("create()") ConstructListNode constructListNode) {
+                    @Cached ConstructListNode constructListNode) {
         return constructListNode.execute(PythonBuiltinClassType.PList, value);
     }
 
     @Specialization
     protected PList starredGeneric(Object v,
+                    @Cached ConstructListNode constructListNode,
+                    @Cached IsBuiltinClassProfile attrProfile,
                     @Cached PRaiseNode raise) {
-        throw raise.raise(TypeError, "%s is not iterable", v);
+        try {
+            return constructListNode.execute(PythonBuiltinClassType.PList, v);
+        } catch (PException e) {
+            e.expectAttributeError(attrProfile);
+            throw raise.raise(TypeError, "%s is not iterable", v);
+        }
     }
 
     protected int getLength(PTuple t) {

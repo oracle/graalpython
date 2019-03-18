@@ -413,8 +413,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @TruffleBoundary
     public Object getMembers(boolean includeInternal,
                     @Exclusive @Cached LookupAndCallUnaryDynamicNode keysNode,
-                    // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe?
-                    @Cached(allowUncached = true) CastToListNode castToList,
+                    @Cached CastToListNode castToList,
                     @Cached GetClassNode getClass,
                     @Shared("isMapping") @Cached IsMappingNode isMapping,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
