@@ -57,6 +57,8 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class CastToByteNode extends PNodeWithContext {
+    public static final CastToByteNode UNCACHED_INSTANCE = CastToByteNode.create();
+
     public static final String INVALID_BYTE_VALUE = "byte must be in range(0, 256)";
 
     @Child private PRaiseNode raiseNode;
@@ -159,6 +161,10 @@ public abstract class CastToByteNode extends PNodeWithContext {
 
     public static CastToByteNode create() {
         return CastToByteNodeGen.create(null, null, false);
+    }
+
+    public static CastToByteNode getUncached() {
+        return UNCACHED_INSTANCE;
     }
 
     public static CastToByteNode create(boolean coerce) {
