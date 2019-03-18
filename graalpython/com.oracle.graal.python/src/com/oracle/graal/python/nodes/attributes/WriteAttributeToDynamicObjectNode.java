@@ -91,7 +91,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     }
 
     @SuppressWarnings("unused")
-    @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", //
                     guards = {
                                     "dynamicObject.getShape() == cachedShape",
                                     "compareKey(cachedKey, key)",
@@ -119,7 +119,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     }
 
     @SuppressWarnings("unused")
-    @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", //
                     guards = {
                                     "dynamicObject.getShape() == cachedShape",
                                     "compareKey(cachedKey, key)",

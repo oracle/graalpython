@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseOSErrorNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -749,7 +750,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getLength() == 0")
         long doFull(VirtualFrame frame, PMMap self,
-                    @Cached PRaiseNode raise,
+                    @Cached PRaiseOSErrorNode raise,
                         @Cached("create()") BranchProfile profile) {
             try {
                 return size(self.getChannel()) - self.getOffset();
@@ -766,7 +767,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         long doGeneric(VirtualFrame frame, PMMap self,
-                       @Cached PRaiseNode raise) {
+                       @Cached PRaiseOSErrorNode raise) {
             if (self.getLength() == 0) {
                 try {
                     return size(self.getChannel()) - self.getOffset();

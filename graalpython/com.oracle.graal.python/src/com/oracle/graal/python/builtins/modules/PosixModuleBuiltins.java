@@ -102,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseOSErrorNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -608,21 +609,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ListdirNode extends PythonBuiltinNode {
-        private final BranchProfile gotException = BranchProfile.create();
-
         @Specialization
         Object listdir(VirtualFrame frame, String path,
-                       @Cached PRaiseNode raise) {
+                       @Cached PRaiseOSErrorNode raiseOS) {
             try {
                 TruffleFile file = getContext().getEnv().getTruffleFile(path);
                 Collection<TruffleFile> listFiles = file.list();
                 Object[] filenames = listToArray(listFiles);
                 return factory().createList(filenames);
             } catch (NoSuchFileException e) {
-                throw raise.raiseOSError(frame, OSErrorEnum.ENOENT, path);
-            } catch (SecurityException | IOException e) {
-                gotException.enter();
-                throw raise.raise(OSError, path);
+                throw raiseOS.raiseOSError(frame, OSErrorEnum.ENOENT, path);
+            } catch (SecurityException e) {
+                throw raiseOS.raiseOSError(frame, OSErrorEnum.EPERM, path);
+            } catch (IOException e) {
+                throw raiseOS.raiseOSError(frame, OSErrorEnum.ENOTDIR, path);
             }
         }
 
@@ -818,7 +818,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object lseek(VirtualFrame frame, int fd, long pos, int how,
-                     @Cached PRaiseNode raise,
+                     @Cached PRaiseOSErrorNode raise,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
             if (noFile.profile(channel == null || !(channel instanceof SeekableByteChannel))) {

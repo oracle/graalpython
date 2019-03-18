@@ -127,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetInstanceShape;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -584,65 +585,79 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
     @ImportStatic(PGuards.class)
     abstract static class CheckFunctionResultNode extends PNodeWithContext {
-
-        @Child private Node isNullNode;
-
         public abstract Object execute(String name, Object result);
 
         @Specialization
         Object doNativeWrapper(String name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
-                        @Cached("create()") CheckFunctionResultNode recursive) {
+                               @Cached("create()") CheckFunctionResultNode recursive) {
             return recursive.execute(name, result.getDelegate());
         }
 
         @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
-        Object doPrimitiveWrapper(String name, @SuppressWarnings("unused") PythonNativeWrapper result) {
-            checkFunctionResult(name, false);
+        Object doPrimitiveWrapper(String name, @SuppressWarnings("unused") PythonNativeWrapper result,
+                               @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                               @Shared("fact") @Cached PythonObjectFactory factory,
+                               @Shared("rais") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, false, context, raise, factory);
             return result;
         }
 
         @Specialization(guards = "isNoValue(result)")
-        Object doNoValue(String name, @SuppressWarnings("unused") PNone result) {
-            checkFunctionResult(name, true);
+        Object doNoValue(String name, @SuppressWarnings("unused") PNone result,
+                               @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                               @Shared("fact") @Cached PythonObjectFactory factory,
+                               @Shared("rais") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, true, context, raise, factory);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "!isNoValue(result)")
-        Object doNativeWrapper(String name, @SuppressWarnings("unused") PythonAbstractObject result) {
-            checkFunctionResult(name, false);
+        Object doNativeWrapper(String name, @SuppressWarnings("unused") PythonAbstractObject result,
+                               @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                               @Shared("fact") @Cached PythonObjectFactory factory,
+                               @Shared("rais") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, false, context, raise, factory);
             return result;
         }
 
         @Specialization
-        Object doPythonNativeNull(String name, @SuppressWarnings("unused") PythonNativeNull result) {
-            checkFunctionResult(name, true);
+        Object doPythonNativeNull(String name, @SuppressWarnings("unused") PythonNativeNull result,
+                               @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                               @Shared("fact") @Cached PythonObjectFactory factory,
+                               @Shared("rais") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, true, context, raise, factory);
             return result;
         }
 
         @Specialization(guards = {"isForeignObject(result)", "!isNativeNull(result)"})
         Object doForeign(String name, TruffleObject result,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile isNullProfile,
-                        @Exclusive @CachedLibrary(limit = "1") InteropLibrary lib) {
-            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)));
+                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile isNullProfile,
+                         @Exclusive @CachedLibrary(limit = "1") InteropLibrary lib,
+                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                         @Shared("fact") @Cached PythonObjectFactory factory,
+                         @Shared("rais") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), context, raise, factory);
             return result;
         }
 
         @Fallback
-        Object doGeneric(String name, Object result) {
+        Object doGeneric(String name, Object result,
+                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                         @Shared("fact") @Cached PythonObjectFactory factory,
+                         @Shared("rais") @Cached PRaiseNode raise) {
             assert result != null;
-            checkFunctionResult(name, false);
+            checkFunctionResult(name, false, context, raise, factory);
             return result;
         }
 
-        private void checkFunctionResult(String name, boolean isNull) {
-            PythonContext context = getContext();
+        private void checkFunctionResult(String name, boolean isNull, PythonContext context, PRaiseNode raise, PythonObjectFactory factory) {
             PException currentException = context.getCurrentException();
             boolean errOccurred = currentException != null;
             if (isNull) {
                 // consume exception
                 context.setCurrentException(null);
                 if (!errOccurred) {
-                    throw raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
+                    throw raise.raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
                 } else {
                     currentException.getExceptionObject().reifyException();
                     throw currentException;
@@ -650,7 +665,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             } else if (errOccurred) {
                 // consume exception
                 context.setCurrentException(null);
-                PBaseException sysExc = factory().createBaseException(PythonErrorType.SystemError, "%s returned a result with an error set", new Object[]{name});
+                PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, "%s returned a result with an error set", new Object[]{name});
                 currentException.getExceptionObject().reifyException();
                 sysExc.setAttribute(SpecialAttributeNames.__CAUSE__, currentException.getExceptionObject());
                 throw PException.fromObject(sysExc, this);
@@ -798,7 +813,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return NativeBuiltin.raiseNative(this, defaultValue, errType, fmt, args);
         }
 
-        protected static <T> T raiseNative(PNodeWithContext n, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
+        protected static <T> T raiseNative(PythonBuiltinBaseNode n, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
             try {
                 throw n.raise(errType, fmt, args);
             } catch (PException p) {

@@ -115,7 +115,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
     }
 
     @SuppressWarnings("unused")
-    @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", //
                     guards = {
                                     "dynamicObject.getShape() == cachedShape",
                                     "key == cachedKey",

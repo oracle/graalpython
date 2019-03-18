@@ -179,6 +179,10 @@ public final class PythonOptions {
         return context.getOptions().get(key);
     }
 
+    public static int getAttributeAccessInlineCacheMaxDepth() {
+        return getOption(PythonLanguage.getContextRef().get(), AttributeAccessInlineCacheMaxDepth);
+    }
+
     public static int getCallSiteInlineCacheMaxDepth() {
         return getOption(PythonLanguage.getContextRef().get(), CallSiteInlineCacheMaxDepth);
     }

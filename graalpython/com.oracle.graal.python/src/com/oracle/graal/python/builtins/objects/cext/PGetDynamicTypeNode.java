@@ -1,5 +1,6 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -8,10 +9,13 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -67,13 +71,15 @@ abstract class GetSulongTypeNode extends PNodeWithContext {
     @Specialization(guards = "clazz == cachedClass", limit = "10")
     Object doBuiltinCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
                     @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass,
-                    @Cached("getSulongTypeForBuiltinClass(clazz)") Object sulongType) {
+                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Cached("getSulongTypeForBuiltinClass(clazz, context)") Object sulongType) {
         return sulongType;
     }
 
     @Specialization(replaces = "doBuiltinCached")
-    Object doBuiltinGeneric(PythonBuiltinClassType clazz) {
-        return getSulongTypeForBuiltinClass(clazz);
+    Object doBuiltinGeneric(PythonBuiltinClassType clazz,
+                            @CachedContext(PythonLanguage.class) PythonContext context) {
+        return getSulongTypeForBuiltinClass(clazz, context);
     }
 
     @Specialization(assumptions = "singleContextAssumption()", guards = "clazz == cachedClass")
@@ -88,8 +94,8 @@ abstract class GetSulongTypeNode extends PNodeWithContext {
         return getSulongTypeForClass(clazz);
     }
 
-    protected Object getSulongTypeForBuiltinClass(PythonBuiltinClassType clazz) {
-        PythonBuiltinClass pythonClass = getCore().lookupType(clazz);
+    protected Object getSulongTypeForBuiltinClass(PythonBuiltinClassType clazz, PythonContext context) {
+        PythonBuiltinClass pythonClass = context.getCore().lookupType(clazz);
         return getSulongTypeForClass(pythonClass);
     }
 

@@ -32,8 +32,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -41,13 +43,20 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNodeGen;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public final class DestructuringAssignmentNode extends StatementNode implements WriteNode {
+    @Child private PythonObjectFactory factory;
+    @Child private PRaiseNode raiseNode;
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     @Child private ExpressionNode rhs;
     @Children private final WriteNode[] slots;
@@ -111,6 +120,10 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
 
     private int fillStarred(VirtualFrame frame, Object rhsValue) {
         int pos = starredIndex;
+        if (factory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            factory = insert(PythonObjectFactory.create());
+        }
         try {
             // TODO(ls): proper cast to int
             // TODO(ls): the result of the len call doesn't seem to be used in Python
@@ -120,7 +133,7 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
             for (int i = 0; i < starredLength; i++) {
                 array[i] = getItem.execute(rhsValue, pos++);
             }
-            slots[starredIndex].doWrite(frame, factory().createList(array));
+            slots[starredIndex].doWrite(frame, factory.createList(array));
             return fillRest(frame, rhsValue, pos);
         } catch (PException e) {
             e.expectAttributeError(errorProfile1);
@@ -143,7 +156,7 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
             }
             int rest = slots.length - starredIndex - 1;
             fillFromArray(frame, array, length - rest);
-            slots[starredIndex].doWrite(frame, factory().createList(Arrays.copyOf(array, length - rest)));
+            slots[starredIndex].doWrite(frame, factory.createList(Arrays.copyOf(array, length - rest)));
         }
         return pos;
     }
@@ -177,8 +190,9 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
                 if (lenNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     lenNode = insert(BuiltinFunctionsFactory.LenNodeFactory.create());
+                    raiseNode = insert(PRaiseNode.create());
                 }
-                throw raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, lenNode.executeWith(rhsValue));
+                throw raiseNode.raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, lenNode.executeWith(rhsValue));
             } else {
                 throw e;
             }
@@ -186,7 +200,11 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
         try {
             getNonExistingItem.execute(rhsValue, nonExistingItem);
             tooManyValuesProfile.enter();
-            throw getCore().raiseInvalidSyntax(getEncapsulatingSourceSection().getSource(), getEncapsulatingSourceSection(), "too many values to unpack (expected %d)", nonExistingItem);
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = PythonLanguage.getContextRef();
+            }
+            throw contextRef.get().getCore().raiseInvalidSyntax(getEncapsulatingSourceSection().getSource(), getEncapsulatingSourceSection(), "too many values to unpack (expected %d)", nonExistingItem);
         } catch (PException e) {
             if (tooManyValuesErrorProfile.profileException(e, IndexError)) {
                 // expected, fall through

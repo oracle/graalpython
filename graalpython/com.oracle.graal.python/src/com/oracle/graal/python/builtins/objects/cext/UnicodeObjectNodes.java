@@ -47,7 +47,10 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class UnicodeObjectNodes {
@@ -101,13 +104,15 @@ public abstract class UnicodeObjectNodes {
         public abstract PBytes execute(Object obj, long elementSize, long elements);
 
         @Specialization
-        PBytes doUnicode(PString s, long elementSize, long elements) {
-            return doUnicode(s.getValue(), elementSize, elements);
+        PBytes doUnicode(PString s, long elementSize, long elements,
+                         @Shared("factory") @Cached PythonObjectFactory factory) {
+            return doUnicode(s.getValue(), elementSize, elements, factory);
         }
 
         @Specialization
         @TruffleBoundary
-        PBytes doUnicode(String s, long elementSize, long elements) {
+        PBytes doUnicode(String s, long elementSize, long elements,
+                         @Shared("factory") @Cached PythonObjectFactory factory) {
             // use native byte order
             Charset utf32Charset = getUTF32Charset(-1);
 
@@ -134,9 +139,9 @@ public abstract class UnicodeObjectNodes {
                 buf.flip();
                 byte[] barr = new byte[buf.remaining()];
                 buf.get(barr);
-                return factory().createBytes(barr);
+                return factory.createBytes(barr);
             } else if (elementSize == 4L) {
-                return factory().createBytes(s.getBytes(utf32Charset));
+                return factory.createBytes(s.getBytes(utf32Charset));
             } else {
                 throw new RuntimeException("unsupported wchar size; was: " + elementSize);
             }

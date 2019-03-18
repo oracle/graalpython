@@ -50,12 +50,16 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class CastToByteNode extends PNodeWithContext {
     public static final String INVALID_BYTE_VALUE = "byte must be in range(0, 256)";
+
+    @Child private PRaiseNode raiseNode;
 
     private final Function<Object, Byte> rangeErrorHandler;
     private final Function<Object, Byte> typeErrorHandler;
@@ -133,7 +137,11 @@ public abstract class CastToByteNode extends PNodeWithContext {
         if (typeErrorHandler != null) {
             return typeErrorHandler.apply(val);
         } else {
-            throw raise(TypeError, "an integer is required (got type %p)", val);
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            throw raiseNode.raise(TypeError, "an integer is required (got type %p)", val);
         }
     }
 
@@ -141,7 +149,11 @@ public abstract class CastToByteNode extends PNodeWithContext {
         if (rangeErrorHandler != null) {
             return rangeErrorHandler.apply(val);
         } else {
-            throw raise(ValueError, INVALID_BYTE_VALUE);
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            throw raiseNode.raise(ValueError, INVALID_BYTE_VALUE);
         }
     }
 

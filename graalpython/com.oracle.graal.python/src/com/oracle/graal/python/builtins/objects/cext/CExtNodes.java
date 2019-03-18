@@ -62,9 +62,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToSulongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsDoubleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsLongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeClassNodeFactory.GetNativeClassCachedNodeGen;
@@ -113,6 +111,7 @@ import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -266,8 +265,9 @@ public abstract class CExtNodes {
                         @Exclusive @Cached IsSubtypeNode isSubtype,
                         @Exclusive @Cached ToSulongNode toSulongNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            if (isFloatSubtype(object, getClass, isSubtype)) {
+            if (isFloatSubtype(object, getClass, isSubtype, context)) {
                 try {
                     return (Double) interopLibrary.execute(importCAPISymbolNode.execute(FUN_PY_FLOAT_AS_DOUBLE), toSulongNode.execute(object));
                 } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
@@ -277,8 +277,8 @@ public abstract class CExtNodes {
             return null;
         }
 
-        public boolean isFloatSubtype(PythonNativeObject object, GetClassNode getClass, IsSubtypeNode isSubtype) {
-            return isSubtype.execute(getClass.execute(object), getCore().lookupType(PythonBuiltinClassType.PFloat));
+        public boolean isFloatSubtype(PythonNativeObject object, GetClassNode getClass, IsSubtypeNode isSubtype, PythonContext context) {
+            return isSubtype.execute(getClass.execute(object), context.getCore().lookupType(PythonBuiltinClassType.PFloat));
         }
 
         public static FromNativeSubclassNode create() {
@@ -294,14 +294,16 @@ public abstract class CExtNodes {
 
         @Specialization
         Object doString(String str,
+                        @Cached PythonObjectFactory factory,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
-            return DynamicObjectNativeWrapper.PythonObjectNativeWrapper.wrap(factory().createString(str), noWrapperProfile);
+            return DynamicObjectNativeWrapper.PythonObjectNativeWrapper.wrap(factory.createString(str), noWrapperProfile);
         }
 
         @Specialization
         Object doBoolean(boolean b,
+                        @Cached PythonObjectFactory factory,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
-            PInt boxed = factory().createInt(b);
+            PInt boxed = factory.createInt(b);
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
             if (profile.profile(nativeWrapper == null)) {
                 nativeWrapper = DynamicObjectNativeWrapper.PrimitiveNativeWrapper.createBool(b);
@@ -469,9 +471,10 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
         Object doNativeObject(TruffleObject object,
+                        @Cached PythonObjectFactory factory,
                         @SuppressWarnings("unused") @Cached("create()") GetLazyClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached("create()") IsBuiltinClassProfile isForeignClassProfile) {
-            return factory().createNativeObjectWrapper(object);
+            return factory.createNativeObjectWrapper(object);
         }
 
         @Specialization
@@ -558,7 +561,7 @@ public abstract class CExtNodes {
         }
 
         public static AsPythonObjectNode createForceClass() {
-            return AsPythonObjectNodeGen.create();
+            return CExtNodesFactory.AsPythonObjectNodeGen.create();
         }
     }
 
@@ -572,8 +575,9 @@ public abstract class CExtNodes {
         public abstract Object execute(PythonNativeWrapper object);
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isBool()"})
-        PInt doBoolNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            PInt materializedInt = factory().createInt(object.getBool());
+        PInt doBoolNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+                        @Cached PythonObjectFactory factory) {
+            PInt materializedInt = factory.createInt(object.getBool());
             object.setMaterializedObject(materializedInt);
             if (materializedInt.getNativeWrapper() != null) {
                 object.setNativePointer(materializedInt.getNativeWrapper().getNativePointer());
@@ -584,32 +588,36 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isByte()"})
-        PInt doByteNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            PInt materializedInt = factory().createInt(object.getByte());
+        PInt doByteNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+                        @Cached PythonObjectFactory factory) {
+            PInt materializedInt = factory.createInt(object.getByte());
             object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
             return materializedInt;
         }
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isInt()"})
-        PInt doIntNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            PInt materializedInt = factory().createInt(object.getInt());
+        PInt doIntNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+                        @Cached PythonObjectFactory factory) {
+            PInt materializedInt = factory.createInt(object.getInt());
             object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
             return materializedInt;
         }
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isLong()"})
-        PInt doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            PInt materializedInt = factory().createInt(object.getLong());
+        PInt doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+                        @Cached PythonObjectFactory factory) {
+            PInt materializedInt = factory.createInt(object.getLong());
             object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
             return materializedInt;
         }
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isDouble()"})
-        PFloat doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            PFloat materializedInt = factory().createFloat(object.getDouble());
+        PFloat doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+                        @Cached PythonObjectFactory factory) {
+            PFloat materializedInt = factory.createFloat(object.getDouble());
             object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
             return materializedInt;
@@ -1265,7 +1273,7 @@ public abstract class CExtNodes {
         public abstract double execute(Object arg);
 
         public static AsDouble create() {
-            return AsDoubleNodeGen.create();
+            return CExtNodesFactory.AsDoubleNodeGen.create();
         }
 
         @Specialization
@@ -1663,8 +1671,9 @@ public abstract class CExtNodes {
     public abstract static class GetTypeMemberNode extends CExtBaseNode {
         public abstract Object execute(Object obj, String getterFuncName);
 
-        @Specialization(guards = {"cachedObj.equals(obj)", "memberName == cachedMemberName"}, limit = "1", assumptions = "getNativeClassStableAssumption(cachedObj)")
+        @Specialization(guards = {"cachedObj.equals(obj)", "memberName == cachedMemberName"}, limit = "1", assumptions = "getNativeClassStableAssumption(cachedObj, context)")
         public Object doCachedObj(@SuppressWarnings("unused") PythonNativeClass obj, @SuppressWarnings("unused") String memberName,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached("memberName") String cachedMemberName,
                         @SuppressWarnings("unused") @Cached("getterFuncName(memberName)") String getterFuncName,
                         @Cached("obj") @SuppressWarnings("unused") PythonNativeClass cachedObj,
@@ -1702,8 +1711,8 @@ public abstract class CExtNodes {
             return name;
         }
 
-        protected Assumption getNativeClassStableAssumption(PythonNativeClass clazz) {
-            return getContext().getNativeClassStableAssumption(clazz, true).getAssumption();
+        protected Assumption getNativeClassStableAssumption(PythonNativeClass clazz, PythonContext context) {
+            return context.getNativeClassStableAssumption(clazz, true).getAssumption();
         }
 
         private static boolean isNativeTypeObject(Object self) {

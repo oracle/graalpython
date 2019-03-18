@@ -119,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -1212,7 +1213,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private static final Supplier<NoAttributeHandler> NO_LEN = () -> new NoAttributeHandler() {
             @Override
             public Object execute(Object receiver) {
-                throw raise(TypeError, "object of type '%p' has no len()", receiver);
+                throw PRaiseNode.getUncached().raise(TypeError, "object of type '%p' has no len()", receiver);
             }
         };
 

@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseOSErrorNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -69,6 +70,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
     @Child private PythonObjectFactory objectFactory;
     @Child private PRaiseNode raiseNode;
+    @Child private PRaiseOSErrorNode raiseOSNode;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected final PythonObjectFactory factory() {
@@ -93,6 +95,18 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
             }
         }
         return raiseNode;
+    }
+
+    private final PRaiseOSErrorNode getRaiseOSNode() {
+        if (raiseOSNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            if (isAdoptable()) {
+                raiseOSNode = insert(PRaiseOSErrorNode.create());
+            } else {
+                raiseOSNode = PRaiseOSErrorNode.getUncached();
+            }
+        }
+        return raiseOSNode;
     }
 
     public final PythonCore getCore() {
@@ -144,14 +158,14 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
     }
 
     public final PException raiseOSError(VirtualFrame frame, int num) {
-        return getRaiseNode().raiseOSError(frame, num);
+        return getRaiseOSNode().raiseOSError(frame, num);
     }
 
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, Exception e) {
-        return getRaiseNode().raiseOSError(frame, oserror, e);
+        return getRaiseOSNode().raiseOSError(frame, oserror, e);
     }
 
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename) {
-        return getRaiseNode().raiseOSError(frame, oserror, filename);
+        return getRaiseOSNode().raiseOSError(frame, oserror, filename);
     }
 }

@@ -48,6 +48,7 @@ import java.util.Iterator;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -174,7 +175,7 @@ public abstract class HashingStorage {
             } else if (result instanceof Long) {
                 return ((Long) result).intValue();
             } else {
-                throw raise(TypeError, "__hash__ method should return an integer");
+                throw PRaiseNode.getUncached().raise(TypeError, "__hash__ method should return an integer");
             }
         }
 

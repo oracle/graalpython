@@ -10,6 +10,7 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -30,6 +31,15 @@ public abstract class PRaiseOSErrorNode extends Node {
         return execute(frame, new Object[]{oserror.getNumber(), oserror.getMessage()});
     }
 
+    public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, Exception e) {
+        return raiseOSError(frame, oserror, getMessage(e));
+    }
+
+    @TruffleBoundary
+    private static final String getMessage(Exception e) {
+        return e.getMessage();
+    }
+
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename) {
         return execute(frame, new Object[]{oserror.getNumber(), oserror.getMessage(), filename});
     }
@@ -45,5 +55,13 @@ public abstract class PRaiseOSErrorNode extends Node {
         PythonCore core = context.getCore();
         PBaseException error = (PBaseException) callNode.execute(frame, core.lookupType(PythonBuiltinClassType.OSError), arguments, PKeyword.EMPTY_KEYWORDS);
         return PRaiseNode.raise(this, error);
+    }
+
+    public static PRaiseOSErrorNode create() {
+        return PRaiseOSErrorNodeGen.create();
+    }
+
+    public static PRaiseOSErrorNode getUncached() {
+        return PRaiseOSErrorNodeGen.getUncached();
     }
 }

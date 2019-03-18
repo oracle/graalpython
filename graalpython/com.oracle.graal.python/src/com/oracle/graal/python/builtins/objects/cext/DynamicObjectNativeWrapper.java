@@ -115,6 +115,7 @@ import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -337,11 +338,15 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_BASE, key)")
         Object doTpBase(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") GetSuperClassNode getSuperClassNode,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("create()") GetSuperClassNode getSuperClassNode) {
             LazyPythonClass superClass = getSuperClassNode.execute(object);
             if (superClass != null) {
-                return getToSulongNode().execute(getPythonClass(superClass, profile));
+                if (superClass instanceof PythonBuiltinClassType) {
+                    return getToSulongNode().execute(context.getCore().lookupType((PythonBuiltinClassType)superClass));
+                } else {
+                    return getToSulongNode().execute(superClass);
+                }
             }
             return getToSulongNode().execute(object);
         }
@@ -361,33 +366,34 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_AS_BUFFER, key)")
         Object doTpAsBuffer(PythonManagedClass object, @SuppressWarnings("unused") String key,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("create()") IsSubtypeNode isSubtype,
                         @Cached("create()") BranchProfile notBytes,
                         @Cached("create()") BranchProfile notBytearray,
                         @Cached("create()") BranchProfile notMemoryview,
                         @Cached("create()") BranchProfile notBuffer,
                         @Cached("create()") BranchProfile notMmap) {
-            PythonBuiltinClass pBytes = getBuiltinPythonClass(PythonBuiltinClassType.PBytes);
+            PythonBuiltinClass pBytes = context.getCore().lookupType(PythonBuiltinClassType.PBytes);
             if (isSubtype.execute(object, pBytes)) {
                 return new PyBufferProcsWrapper(pBytes);
             }
             notBytes.enter();
-            PythonBuiltinClass pBytearray = getBuiltinPythonClass(PythonBuiltinClassType.PByteArray);
+            PythonBuiltinClass pBytearray = context.getCore().lookupType(PythonBuiltinClassType.PByteArray);
             if (isSubtype.execute(object, pBytearray)) {
                 return new PyBufferProcsWrapper(pBytearray);
             }
             notBytearray.enter();
-            PythonBuiltinClass pMemoryview = getBuiltinPythonClass(PythonBuiltinClassType.PMemoryView);
+            PythonBuiltinClass pMemoryview = context.getCore().lookupType(PythonBuiltinClassType.PMemoryView);
             if (isSubtype.execute(object, pMemoryview)) {
                 return new PyBufferProcsWrapper(pMemoryview);
             }
             notMemoryview.enter();
-            PythonBuiltinClass pBuffer = getBuiltinPythonClass(PythonBuiltinClassType.PBuffer);
+            PythonBuiltinClass pBuffer = context.getCore().lookupType(PythonBuiltinClassType.PBuffer);
             if (isSubtype.execute(object, pBuffer)) {
                 return new PyBufferProcsWrapper(pBuffer);
             }
             notBuffer.enter();
-            PythonBuiltinClass pMmap = getBuiltinPythonClass(PythonBuiltinClassType.PMMap);
+            PythonBuiltinClass pMmap = context.getCore().lookupType(PythonBuiltinClassType.PMMap);
             if (isSubtype.execute(object, pMmap)) {
                 return new PyBufferProcsWrapper(pMmap);
             }
@@ -471,9 +477,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_SUBCLASSES, key)")
         Object doTpSubclasses(@SuppressWarnings("unused") PythonManagedClass object, @SuppressWarnings("unused") String key,
+                        @Cached PythonObjectFactory factory,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
             // TODO create dict view on subclasses set
-            return DynamicObjectNativeWrapper.PythonObjectNativeWrapper.wrap(factory().createDict(), noWrapperProfile);
+            return DynamicObjectNativeWrapper.PythonObjectNativeWrapper.wrap(factory.createDict(), noWrapperProfile);
         }
 
         @Specialization(guards = "eq(TP_GETATTR, key)")
@@ -616,7 +623,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(TP_DICT, key)")
-        Object doTpDict(PythonClass object, @SuppressWarnings("unused") String key) {
+        Object doTpDict(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached PythonObjectFactory factory) {
             PHashingCollection dict = object.getDict();
             if (!(dict instanceof PDict)) {
                 assert dict instanceof PMappingproxy || dict == null;
@@ -624,7 +632,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // '__dict__'
                 // on this type and created a mappingproxy object. We need to replace it by a
                 // dict.
-                dict = factory().createDictFixedStorage(object);
+                dict = factory.createDictFixedStorage(object);
                 object.setDict(dict);
             }
             assert dict instanceof PDict;

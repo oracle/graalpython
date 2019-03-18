@@ -44,6 +44,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.function.Supplier;
 
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
@@ -74,7 +75,7 @@ public enum BinaryArithmetic {
         this.notImplementedHandler = () -> new NotImplementedHandler() {
             @Override
             public Object execute(Object arg, Object arg2) {
-                throw raise(TypeError, "unsupported operand type(s) for %s: '%p' and '%p'", operator, arg, arg2);
+                throw PRaiseNode.getUncached().raise(TypeError, "unsupported operand type(s) for %s: '%p' and '%p'", operator, arg, arg2);
             }
         };
     }
