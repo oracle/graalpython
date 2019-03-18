@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcall
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeClassNodeFactory.GetNativeClassCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetTypeMemberNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ImportCAPISymbolNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeFactory.IsPointerCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCompareNodeGen;
@@ -96,7 +95,7 @@ import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -127,7 +126,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -858,8 +856,7 @@ public abstract class CExtNodes {
                 // TODO: (tfel) is this really something we can do? It's so rare for this class to
                 // change that it shouldn't be worth the effort, but in native code, anything can
                 // happen. OTOH, CPython also has caches that can become invalid when someone just
-                // goes
-                // and changes the ob_type of an object.
+                // goes and changes the ob_type of an object.
                 return cachedClass;
             }
 
@@ -925,19 +922,14 @@ public abstract class CExtNodes {
 
         @Specialization
         long doCached(
-                        @CachedLibrary(limit = "1") @SuppressWarnings("unused") InteropLibrary interopLibrary,
-                        @Exclusive @Cached(value = "getWcharSize(interopLibrary)", allowUncached = true) long wcharSize) {
+                        @Exclusive @Cached(value = "getWcharSize()", allowUncached = true) long wcharSize) {
             return wcharSize;
         }
 
-        protected static long getWcharSize(InteropLibrary interopLibrary) {
-            try {
-                long wcharSize = (long) interopLibrary.execute(ImportCAPISymbolNodeGen.getUncached().execute(FUN_WHCAR_SIZE));
-                assert wcharSize >= 0L;
-                return wcharSize;
-            } catch (InteropException e) {
-                throw new IllegalStateException("Cannot get wchar size", e);
-            }
+        protected static long getWcharSize() {
+            long wcharSize = (long) PCallCapiFunction.getUncached().call(FUN_WHCAR_SIZE);
+            assert wcharSize >= 0L;
+            return wcharSize;
         }
 
         public static SizeofWCharNode create() {
@@ -1320,12 +1312,12 @@ public abstract class CExtNodes {
         // cases
         @Specialization
         double runGeneric(PythonAbstractObject value,
-                        @Cached(value = "create(__FLOAT__)", allowUncached = true) LookupAndCallUnaryNode callFloatFunc,
+                        @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
                         @Cached PRaiseNode raiseNode) {
             if (PGuards.isPFloat(value)) {
                 return ((PFloat) value).getValue();
             }
-            Object result = callFloatFunc.executeObject(value);
+            Object result = callFloatFunc.executeObject(value, __FLOAT__);
             if (PGuards.isPFloat(result)) {
                 return ((PFloat) result).getValue();
             } else if (result instanceof Double) {
