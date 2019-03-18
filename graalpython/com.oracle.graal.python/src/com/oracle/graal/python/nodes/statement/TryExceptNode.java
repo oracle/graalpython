@@ -39,7 +39,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -214,7 +214,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
 
     @ExportMessage
     CatchesFunction readMember(String name,
-                    @Shared("getAttr") @Cached(value = "create(__GETATTRIBUTE__)", allowUncached = true) LookupAndCallBinaryNode getAttr) throws UnknownIdentifierException {
+                    @Shared("getAttr") @Cached ReadAttributeFromObjectNode getattr) throws UnknownIdentifierException {
         if (name.equals(StandardTags.TryBlockTag.CATCHES)) {
             if (catchesFunction == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -228,14 +228,14 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                     PNode exceptType = node.getExceptType();
                     if (exceptType instanceof ReadGlobalOrBuiltinNode) {
                         try {
-                            literalCatches.add(getAttr.executeObject(builtins, ((ReadGlobalOrBuiltinNode) exceptType).getAttributeId()));
+                            literalCatches.add(getattr.execute(builtins, ((ReadGlobalOrBuiltinNode) exceptType).getAttributeId()));
                         } catch (PException e) {
                         }
                     } else if (exceptType instanceof TupleLiteralNode) {
                         for (PNode tupleValue : ((TupleLiteralNode) exceptType).getValues()) {
                             if (tupleValue instanceof ReadGlobalOrBuiltinNode) {
                                 try {
-                                    literalCatches.add(getAttr.executeObject(builtins, ((ReadGlobalOrBuiltinNode) tupleValue).getAttributeId()));
+                                    literalCatches.add(getattr.execute(builtins, ((ReadGlobalOrBuiltinNode) tupleValue).getAttributeId()));
                                 } catch (PException e) {
                                 }
                             }
@@ -243,7 +243,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                     }
                 }
 
-                Object isinstanceFunc = getAttr.executeObject(builtins, BuiltinNames.ISINSTANCE);
+                Object isinstanceFunc = getattr.execute(builtins, BuiltinNames.ISINSTANCE);
                 PTuple caughtClasses = factory().createTuple(literalCatches.toArray());
 
                 if (isinstanceFunc instanceof PBuiltinMethod && ((PBuiltinMethod) isinstanceFunc).getFunction() instanceof PBuiltinFunction) {
@@ -261,11 +261,11 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
 
     @ExportMessage
     Object invokeMember(String name, Object[] arguments,
-                    @Shared("getAttr") @Cached(value = "create(__GETATTRIBUTE__)", allowUncached = true) LookupAndCallBinaryNode getAttr) throws ArityException, UnknownIdentifierException {
+                    @Shared("getAttr") @Cached ReadAttributeFromObjectNode getattr) throws ArityException, UnknownIdentifierException {
         if (arguments.length != 1) {
             throw ArityException.create(1, arguments.length);
         }
-        return readMember(name, getAttr).catches(arguments[0]);
+        return readMember(name, getattr).catches(arguments[0]);
     }
 
     static class CatchesFunction implements TruffleObject {
