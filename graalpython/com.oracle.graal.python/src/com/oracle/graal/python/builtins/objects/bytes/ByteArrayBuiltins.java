@@ -57,10 +57,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -75,7 +75,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -353,13 +352,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class ByteArrayAppendNode extends PythonBinaryBuiltinNode {
         @Specialization
         public PByteArray append(PByteArray byteArray, Object arg,
-                        @Cached("createAppend()") SequenceStorageNodes.AppendNode appendNode) {
-            appendNode.execute(byteArray.getSequenceStorage(), arg);
+                        @Cached SequenceStorageNodes.AppendNode appendNode) {
+            appendNode.execute(byteArray.getSequenceStorage(), arg, BytesLikeNoGeneralizationNode.SUPPLIER);
             return byteArray;
-        }
-
-        protected static SequenceStorageNodes.AppendNode createAppend() {
-            return SequenceStorageNodes.AppendNode.create(() -> NoGeneralizationNode.create(CastToByteNode.INVALID_BYTE_VALUE));
         }
     }
 
@@ -377,7 +372,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         protected static SequenceStorageNodes.ExtendNode createExtend() {
-            return SequenceStorageNodes.ExtendNode.create(() -> NoGeneralizationNode.create(CastToByteNode.INVALID_BYTE_VALUE));
+            return SequenceStorageNodes.ExtendNode.create(BytesLikeNoGeneralizationNode.SUPPLIER);
         }
 
         protected boolean isPSequenceWithStorage(Object source) {

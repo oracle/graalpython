@@ -67,12 +67,13 @@ import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListAppendNodeFactory;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListReverseNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -102,7 +103,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PList)
@@ -160,7 +160,7 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         public PNone init(PList list, String value,
-                        @Cached("create()") ListAppendNode appendNode) {
+                        @Cached("create()") AppendNode appendNode) {
             clearStorage(list);
             char[] chars = value.toCharArray();
             for (char c : chars) {
@@ -283,22 +283,9 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         public PNone appendObjectGeneric(PList list, Object arg,
-                        @Cached("createAppend()") SequenceStorageNodes.AppendNode appendNode,
-                        @Cached("create()") BranchProfile updateStoreProfile) {
-            SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), arg);
-            if (list.getSequenceStorage() != newStore) {
-                updateStoreProfile.enter();
-                list.setSequenceStorage(newStore);
-            }
+                        @Cached ListNodes.AppendNode appendNode) {
+            appendNode.execute(list, arg);
             return PNone.NONE;
-        }
-
-        protected static SequenceStorageNodes.AppendNode createAppend() {
-            return SequenceStorageNodes.AppendNode.create(() -> ListGeneralizationNode.create());
-        }
-
-        public static ListAppendNode create() {
-            return ListAppendNodeFactory.create();
         }
     }
 
@@ -323,7 +310,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         protected static SequenceStorageNodes.ExtendNode createExtend() {
-            return SequenceStorageNodes.ExtendNode.create(() -> ListGeneralizationNode.create());
+            return SequenceStorageNodes.ExtendNode.create(ListGeneralizationNode.SUPPLIER);
         }
 
         public static ListExtendNode create() {
@@ -774,7 +761,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         protected static SequenceStorageNodes.ExtendNode createExtend() {
-            return SequenceStorageNodes.ExtendNode.create(() -> ListGeneralizationNode.create());
+            return SequenceStorageNodes.ExtendNode.create(ListGeneralizationNode.SUPPLIER);
         }
     }
 

@@ -498,23 +498,17 @@ public abstract class ListNodes {
     @GenerateUncached
     public abstract static class AppendNode extends PNodeWithContext {
 
-        public abstract Object execute(PList list, Object value);
+        public abstract void execute(PList list, Object value);
 
         @Specialization
-        public PNone appendObjectGeneric(PList list, Object value,
-                        // TODO TRUFFLE LIBRARY MIGRATION
-                        @Cached(value = "createAppend()", allowUncached = true) SequenceStorageNodes.AppendNode appendNode,
+        public void appendObjectGeneric(PList list, Object value,
+                        @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached BranchProfile updateStoreProfile) {
-            SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value);
+            SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
             if (list.getSequenceStorage() != newStore) {
                 updateStoreProfile.enter();
                 list.setSequenceStorage(newStore);
             }
-            return PNone.NONE;
-        }
-
-        protected static SequenceStorageNodes.AppendNode createAppend() {
-            return SequenceStorageNodes.AppendNode.create(() -> ListGeneralizationNode.create());
         }
 
         public static AppendNode create() {

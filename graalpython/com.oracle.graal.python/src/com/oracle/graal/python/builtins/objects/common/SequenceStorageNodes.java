@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ItemIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ListGeneralizationNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.NoGeneralizationCustomMessageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.NoGeneralizationNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.NormalizeIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.RepeatNodeGen;
@@ -823,11 +824,11 @@ public abstract class SequenceStorageNodes {
         }
 
         public static SetItemNode create(NormalizeIndexNode normalizeIndexNode, String invalidItemErrorMessage) {
-            return SetItemNodeGen.create(normalizeIndexNode, () -> NoGeneralizationNode.create(invalidItemErrorMessage));
+            return SetItemNodeGen.create(normalizeIndexNode, () -> NoGeneralizationCustomMessageNode.create(invalidItemErrorMessage));
         }
 
         public static SetItemNode create(String invalidItemErrorMessage) {
-            return SetItemNodeGen.create(NormalizeIndexNode.create(), () -> NoGeneralizationNode.create(invalidItemErrorMessage));
+            return SetItemNodeGen.create(NormalizeIndexNode.create(), () -> NoGeneralizationCustomMessageNode.create(invalidItemErrorMessage));
         }
 
     }
@@ -1985,11 +1986,11 @@ public abstract class SequenceStorageNodes {
         }
 
         public static ConcatNode create() {
-            return ConcatNodeGen.create(() -> NoGeneralizationNode.create(DEFAULT_ERROR_MSG));
+            return ConcatNodeGen.create(() -> NoGeneralizationCustomMessageNode.create(DEFAULT_ERROR_MSG));
         }
 
         public static ConcatNode create(String msg) {
-            return ConcatNodeGen.create(() -> NoGeneralizationNode.create(msg));
+            return ConcatNodeGen.create(() -> NoGeneralizationCustomMessageNode.create(msg));
         }
 
         public static ConcatNode create(Supplier<GeneralizationNode> genNodeProvider) {
@@ -2002,9 +2003,9 @@ public abstract class SequenceStorageNodes {
         @Child private CreateEmptyNode createEmptyNode = CreateEmptyNode.create();
         @Child private GeneralizationNode genNode;
 
-        private final Supplier<GeneralizationNode> genNodeProvider;
+        private final GenNodeSupplier genNodeProvider;
 
-        public ExtendNode(Supplier<GeneralizationNode> genNodeProvider) {
+        public ExtendNode(GenNodeSupplier genNodeProvider) {
             this.genNodeProvider = genNodeProvider;
         }
 
@@ -2051,14 +2052,14 @@ public abstract class SequenceStorageNodes {
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile,
-                        @Cached("createAppend()") AppendNode appendNode) {
+                        @Cached AppendNode appendNode) {
             SequenceStorage currentStore = s;
             Object it = getIteratorNode.executeWith(iterable);
             while (true) {
                 Object value;
                 try {
                     value = getNextNode.execute(it);
-                    currentStore = appendNode.execute(currentStore, value);
+                    currentStore = appendNode.execute(currentStore, value, genNodeProvider);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return currentStore;
@@ -2069,20 +2070,16 @@ public abstract class SequenceStorageNodes {
         private SequenceStorage generalizeStore(SequenceStorage storage, Object value) {
             if (genNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                genNode = insert(genNodeProvider.get());
+                genNode = insert(genNodeProvider.create());
             }
             return genNode.execute(storage, value);
-        }
-
-        protected AppendNode createAppend() {
-            return AppendNode.create(genNodeProvider);
         }
 
         protected ExtendNode createRecursive() {
             return ExtendNodeGen.create(genNodeProvider);
         }
 
-        public static ExtendNode create(Supplier<GeneralizationNode> genNodeProvider) {
+        public static ExtendNode create(GenNodeSupplier genNodeProvider) {
             return ExtendNodeGen.create(genNodeProvider);
         }
     }
@@ -2338,6 +2335,24 @@ public abstract class SequenceStorageNodes {
 
         public static NoGeneralizationNode create(String invalidItemErrorMessage) {
             return NoGeneralizationNodeGen.create(invalidItemErrorMessage);
+        }
+    }
+
+    public abstract static class NoGeneralizationCustomMessageNode extends NoGeneralizationNode {
+
+        private final String errorMessage;
+
+        public NoGeneralizationCustomMessageNode(String errorMessage) {
+            this.errorMessage = errorMessage;
+        }
+
+        @Override
+        protected final String getErrorMessage() {
+            return errorMessage;
+        }
+
+        public static NoGeneralizationCustomMessageNode create(String msg) {
+            return NoGeneralizationCustomMessageNodeGen.create(msg);
         }
     }
 
@@ -2862,7 +2877,8 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    abstract static class GetElementType extends PNodeWithContext {
+    @GenerateUncached
+    public abstract static class GetElementType extends Node {
 
         public abstract ListStorageType execute(SequenceStorage s);
 
@@ -2874,6 +2890,14 @@ public abstract class SequenceStorageNodes {
 
         protected static int cacheLimit() {
             return SequenceStorageBaseNode.MAX_SEQUENCE_STORAGES;
+        }
+
+        public static GetElementType create() {
+            return GetElementTypeNodeGen.create();
+        }
+
+        public static GetElementType getUncached() {
+            return GetElementTypeNodeGen.getUncached();
         }
     }
 

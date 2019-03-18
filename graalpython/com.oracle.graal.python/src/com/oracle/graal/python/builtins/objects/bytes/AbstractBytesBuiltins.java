@@ -51,16 +51,21 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltinsFactory.BytesLikeNoGeneralizationNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GenNodeSupplier;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -68,6 +73,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -330,7 +336,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
 
         @Child private BytesNodes.ToBytesNode selfToBytesNode;
         @Child private BytesNodes.ToBytesNode sepToBytesNode;
-        @Child private ListAppendNode appendNode;
+        @Child private AppendNode appendNode;
         @Child private CastToIntegerFromIndexNode castIntNode;
         @Child private AbstractSplitNode recursiveNode;
 
@@ -387,10 +393,10 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
             return sepToBytesNode;
         }
 
-        protected ListAppendNode getAppendNode() {
+        protected AppendNode getAppendNode() {
             if (appendNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                appendNode = insert(ListAppendNode.create());
+                appendNode = insert(AppendNode.create());
             }
             return appendNode;
         }
@@ -994,5 +1000,27 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
             Result result = translateAndDelete(bSelf, bTable, bDelete);
             return factory().createByteArray(result.array);
         }
+    }
+
+    @GenerateUncached
+    public abstract static class BytesLikeNoGeneralizationNode extends SequenceStorageNodes.NoGeneralizationNode {
+
+        public static final GenNodeSupplier SUPPLIER = new GenNodeSupplier() {
+
+            public GeneralizationNode create() {
+                return BytesLikeNoGeneralizationNodeGen.create();
+            }
+
+            public GeneralizationNode getUncached() {
+                return BytesLikeNoGeneralizationNodeGen.getUncached();
+            }
+
+        };
+
+        @Override
+        protected final String getErrorMessage() {
+            return CastToByteNode.INVALID_BYTE_VALUE;
+        }
+
     }
 }

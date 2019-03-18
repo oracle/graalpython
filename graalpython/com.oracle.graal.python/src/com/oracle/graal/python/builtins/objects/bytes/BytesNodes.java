@@ -44,6 +44,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.ArrayList;
 
+import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.BytesJoinNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
@@ -358,7 +359,7 @@ public abstract class BytesNodes {
         public SequenceStorageNodes.AppendNode getAppendByteNode() {
             if (appendByteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                appendByteNode = insert(SequenceStorageNodes.AppendNode.create(() -> SequenceStorageNodes.NoGeneralizationNode.create(CastToByteNode.INVALID_BYTE_VALUE)));
+                appendByteNode = insert(SequenceStorageNodes.AppendNode.create());
             }
             return appendByteNode;
         }
@@ -370,7 +371,7 @@ public abstract class BytesNodes {
             ByteSequenceStorage bss = new ByteSequenceStorage(16);
             while (true) {
                 try {
-                    getAppendByteNode().execute(bss, getNextNode.execute(iterObject));
+                    getAppendByteNode().execute(bss, getNextNode.execute(iterObject), BytesLikeNoGeneralizationNode.SUPPLIER);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return bss.getInternalByteArray();

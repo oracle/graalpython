@@ -83,6 +83,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.JoinInternalNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
@@ -1043,13 +1044,13 @@ public final class StringBuiltins extends PythonBuiltins {
 
     protected abstract static class SplitBaseNode extends PythonTernaryBuiltinNode {
 
-        @Child private ListAppendNode appendNode;
+        @Child private AppendNode appendNode;
         @Child private ListReverseNode reverseNode;
 
-        protected ListAppendNode getAppendNode() {
+        protected AppendNode getAppendNode() {
             if (appendNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                appendNode = insert(ListAppendNode.create());
+                appendNode = insert(AppendNode.create());
             }
             return appendNode;
         }
@@ -1299,7 +1300,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SplitLinesNode extends PythonBinaryBuiltinNode {
-        @Child private ListAppendNode appendNode = ListAppendNode.create();
+        @Child private AppendNode appendNode = AppendNode.create();
         @Child private CastToBooleanNode keepEndsNode = CastToBooleanNode.createIfTrueNode();
 
         @Specialization

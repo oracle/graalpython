@@ -1774,6 +1774,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class TypeNode extends PythonBuiltinNode {
         private static final long SIZEOF_PY_OBJECT_PTR = Long.BYTES;
+
         @Child private ReadAttributeFromObjectNode readAttrNode;
         @Child private SetAttributeNode.Dynamic writeAttrNode;
         @Child private GetAnyAttributeNode getAttrNode;
@@ -1969,7 +1970,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     return null;
                 }
 
-                setSlotItemNode().execute(newSlots, slotName);
+                setSlotItemNode().execute(newSlots, slotName, NoGeneralizationNode.DEFAULT);
                 if (getContainsKeyNode().execute(namespace.getDictStorage(), slotName)) {
                     throw raise(PythonBuiltinClassType.ValueError, "%s in __slots__ conflicts with class variable", slotName);
                 }
@@ -2038,7 +2039,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private SequenceStorageNodes.AppendNode setSlotItemNode() {
             if (appendNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                appendNode = insert(SequenceStorageNodes.AppendNode.create(() -> NoGeneralizationNode.create("")));
+                appendNode = insert(SequenceStorageNodes.AppendNode.create());
             }
             return appendNode;
         }

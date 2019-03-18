@@ -68,12 +68,12 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -523,7 +523,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         Object readline(PMMap self,
-                        @Cached("createAppend()") SequenceStorageNodes.AppendNode appendNode) {
+                        @Cached SequenceStorageNodes.AppendNode appendNode) {
 
             try {
                 ByteBuffer buf = ByteBuffer.allocate(4096);
@@ -536,7 +536,7 @@ public class MMapBuiltins extends PythonBuiltins {
                         byte b = buf.get();
                         // CPython really tests for '\n' only
                         if (b != (byte) '\n') {
-                            appendNode.execute(res, b);
+                            appendNode.execute(res, b, BytesLikeNoGeneralizationNode.SUPPLIER);
                         } else {
                             // recover correct position (i.e. number of remaining bytes in buffer)
                             position(channel, position(channel) - buf.remaining() - 1);
@@ -554,10 +554,6 @@ public class MMapBuiltins extends PythonBuiltins {
         @TruffleBoundary(allowInlining = true)
         private static int readIntoBuffer(SeekableByteChannel ch, ByteBuffer dst) throws IOException {
             return ch.read(dst);
-        }
-
-        protected static SequenceStorageNodes.AppendNode createAppend() {
-            return SequenceStorageNodes.AppendNode.create(() -> NoGeneralizationNode.create(CastToByteNode.INVALID_BYTE_VALUE));
         }
     }
 
