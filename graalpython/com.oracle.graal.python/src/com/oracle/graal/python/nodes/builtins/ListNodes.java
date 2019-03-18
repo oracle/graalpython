@@ -64,7 +64,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNode
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.FastConstructListNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.IndexNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;

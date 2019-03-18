@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;

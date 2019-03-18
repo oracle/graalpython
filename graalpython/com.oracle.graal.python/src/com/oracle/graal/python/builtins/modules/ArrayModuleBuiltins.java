@@ -40,7 +40,7 @@ import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;

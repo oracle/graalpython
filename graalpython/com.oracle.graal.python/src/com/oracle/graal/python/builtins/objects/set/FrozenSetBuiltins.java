@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
@@ -35,6 +34,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 
@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.Bin
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;

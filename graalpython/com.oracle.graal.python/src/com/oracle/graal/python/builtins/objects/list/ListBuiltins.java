@@ -76,7 +76,7 @@ import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
