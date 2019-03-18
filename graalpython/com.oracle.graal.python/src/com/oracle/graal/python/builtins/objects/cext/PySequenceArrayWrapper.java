@@ -5,12 +5,16 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FU
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_NATIVE_HANDLE_FOR_ARRAY;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -23,7 +27,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
@@ -37,7 +40,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -212,8 +214,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public void writeArrayElement(long index, Object value,
-                    @Exclusive @Cached(allowUncached = true) WriteArrayItemNode writeArrayItemNode) {
-        writeArrayItemNode.execute(this.getDelegate(), index, value);
+                    @Cached(allowUncached = true) WriteArrayItemNode writeArrayItemNode) throws UnsupportedMessageException {
+        writeArrayItemNode.execute(getDelegate(), index, value);
     }
 
     @ExportMessage
@@ -246,83 +248,69 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ImportStatic(SpecialMethodNames.class)
     @TypeSystemReference(PythonTypes.class)
     abstract static class WriteArrayItemNode extends Node {
-        public abstract Object execute(Object arrayObject, Object idx, Object value);
+        public abstract void execute(Object arrayObject, Object idx, Object value) throws UnsupportedMessageException;
 
         @Specialization
-        Object doBytes(PIBytesLike s, long idx, byte value,
+        void doBytes(PIBytesLike s, long idx, byte value,
                         @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
-            setByteItemNode.executeLong(getSequenceStorageNode.execute(s), idx, value);
-            return value;
+                        @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
+            setByteItemNode.execute(NoGeneralizationNode.DEFAULT, getSequenceStorageNode.execute(s), idx, value);
         }
 
         @Specialization
         @ExplodeLoop
-        Object doBytes(PIBytesLike s, long idx, short value,
+        void doBytes(PIBytesLike s, long idx, short value,
                         @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
+                        @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
             for (int offset = 0; offset < Short.BYTES; offset++) {
-                setByteItemNode.executeLong(getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
-            return value;
         }
 
         @Specialization
         @ExplodeLoop
-        Object doBytes(PIBytesLike s, long idx, int value,
+        void doBytes(PIBytesLike s, long idx, int value,
                         @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
+                        @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
             for (int offset = 0; offset < Integer.BYTES; offset++) {
-                setByteItemNode.executeLong(getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
-            return value;
         }
 
         @Specialization
         @ExplodeLoop
-        Object doBytes(PIBytesLike s, long idx, long value,
+        void doBytes(PIBytesLike s, long idx, long value,
                         @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared("setByteItemNode") @Cached("create(__SETITEM__)") SequenceStorageNodes.SetItemNode setByteItemNode) {
+                        @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
             for (int offset = 0; offset < Long.BYTES; offset++) {
-                setByteItemNode.executeLong(getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
-            return value;
         }
 
         @Specialization
-        Object doList(PList s, long idx, Object value,
+        void doList(PList s, long idx, Object value,
                         @Shared("toJavaNode") @Cached CExtNodes.ToJavaNode toJavaNode,
-                        @Cached("createSetListItem()") SequenceStorageNodes.SetItemNode setListItemNode,
+                        @Cached SequenceStorageNodes.SetItemDynamicNode setListItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile updateStorageProfile) {
             SequenceStorage storage = s.getSequenceStorage();
-            SequenceStorage updatedStorage = setListItemNode.executeLong(storage, idx, toJavaNode.execute(value));
+            SequenceStorage updatedStorage = setListItemNode.execute(ListGeneralizationNode.SUPPLIER, storage, idx, toJavaNode.execute(value));
             if (updateStorageProfile.profile(storage != updatedStorage)) {
                 s.setSequenceStorage(updatedStorage);
             }
-            return value;
         }
 
         @Specialization
-        Object doTuple(PTuple s, long idx, Object value,
+        void doTuple(PTuple s, long idx, Object value,
                         @Shared("toJavaNode") @Cached CExtNodes.ToJavaNode toJavaNode,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setListItemNode) {
-            setListItemNode.executeLong(s.getSequenceStorage(), idx, toJavaNode.execute(value));
-            return value;
+                        @Cached SequenceStorageNodes.SetItemDynamicNode setListItemNode) {
+            setListItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx, toJavaNode.execute(value));
         }
 
-        @Fallback
-        Object doGeneric(Object sequence, Object idx, Object value) {
-            CExtNodes.ToJavaNode toJavaNode = CExtNodes.ToJavaNode.getUncached();
-            LookupAndCallTernaryNode.getUncached().execute(sequence, idx, toJavaNode.execute(value));
-            return value;
-        }
-
-        protected static SequenceStorageNodes.SetItemNode createSetListItem() {
-            return SequenceStorageNodes.SetItemNode.create(SequenceStorageNodes.NormalizeIndexNode.forArrayAssign(), () -> SequenceStorageNodes.ListGeneralizationNode.create());
-        }
-
-        protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            return SequenceStorageNodes.SetItemNode.create("invalid item for assignment");
+        @Specialization
+        void doGeneric(PythonAbstractObject sequence, Object idx, Object value,
+                        @Shared("toJavaNode") @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Cached PInteropSubscriptAssignNode setItemNode) throws UnsupportedMessageException {
+            setItemNode.execute(sequence, idx, toJavaNode.execute(value));
         }
 
         public static WriteArrayItemNode create() {
@@ -403,7 +391,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    public boolean isPointer(@Exclusive @Cached(allowUncached = true) CExtNodes.IsPointerNode pIsPointerNode) {
+    public boolean isPointer(
+                    @Cached CExtNodes.IsPointerNode pIsPointerNode) {
         return pIsPointerNode.execute(this);
     }
 
