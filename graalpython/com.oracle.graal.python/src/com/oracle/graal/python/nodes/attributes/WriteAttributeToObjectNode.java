@@ -225,6 +225,20 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     @GenerateUncached
     protected static abstract class WriteAttributeToObjectNotTypeUncachedNode extends WriteAttributeToObjectNode {
+        @Specialization(guards = {
+                "!isHiddenKey(key)",
+                "!isDictUnsetOrSameAsStorage(object)"
+            }, replaces = {"writeToDict", "writeToDictCached"})
+        protected boolean writeToDictUncached(PythonObject object, Object key, Object value,
+                        @Cached LookupInheritedAttributeNode.Dynamic getSetItem,
+                        @Cached CallNode callSetItem,
+                        @Cached PRaiseNode raiseNode,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile) {
+            handlePythonClass(isClassProfile, object, key);
+            PHashingCollection dict = object.getDict();
+            return writeToDictUncached(object, key, value, getSetItem, callSetItem, raiseNode, dict);
+        }
+
         @Specialization(guards = {"!isHiddenKey(key)"})
         static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
                         @Cached GetObjectDictNode getNativeDict,
@@ -232,9 +246,14 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                         @Cached CallNode callSetItem,
                         @Cached PRaiseNode raiseNode) {
             Object nativeDict = getNativeDict.execute(object);
-            Object setItemCallable = getSetItem.execute(nativeDict, SpecialMethodNames.__SETITEM__);
+            return writeToDictUncached(object, key, value, getSetItem, callSetItem, raiseNode, nativeDict);
+        }
+
+        private static boolean writeToDictUncached(Object object, Object key, Object value, LookupInheritedAttributeNode.Dynamic getSetItem, CallNode callSetItem, PRaiseNode raiseNode,
+                                                   Object dict) {
+            Object setItemCallable = getSetItem.execute(dict, SpecialMethodNames.__SETITEM__);
             if (setItemCallable == PNone.NO_VALUE) {
-                throw raiseNode.raise(PythonBuiltinClassType.AttributeError, "'%p' dict of '%p' object has no attribute '__setitem__'", nativeDict, object);
+                throw raiseNode.raise(PythonBuiltinClassType.AttributeError, "'%p' dict of '%p' object has no attribute '__setitem__'", dict, object);
             } else {
                 callSetItem.execute(null, setItemCallable, object, key, value);
                 return true;

@@ -47,7 +47,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -85,20 +84,19 @@ public abstract class HashingCollectionNodes {
     }
 
     @ImportStatic(PGuards.class)
-    @GenerateUncached
     public abstract static class SetItemNode extends PNodeWithContext {
         public abstract void execute(PHashingCollection c, Object key, Object value);
 
         @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
         void doSetItemCached(PHashingCollection c, Object key, Object value,
-                        @Shared("set") @Cached HashingStorageNodes.SetItemNode setItemNode,
+                        @Cached HashingStorageNodes.SetItemNode setItemNode,
                         @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
             cachedClass.cast(c).setDictStorage(setItemNode.execute(cachedClass.cast(c).getDictStorage(), key, value));
         }
 
         @Specialization(replaces = "doSetItemCached")
         void doSetItemGeneric(PHashingCollection c, Object key, Object value,
-                        @Shared("set") @Cached HashingStorageNodes.SetItemNode setItemNode) {
+                        @Cached HashingStorageNodes.SetItemNode setItemNode) {
             c.setDictStorage(setItemNode.execute(c.getDictStorage(), key, value));
         }
 
