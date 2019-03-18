@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetObjectDictNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
@@ -56,8 +57,11 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectNotTypeNodeGen;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectNotTypeUncachedNodeGen;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectTpDictNodeGen;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
@@ -83,11 +87,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     public static WriteAttributeToObjectNode getUncached() {
-        return WriteAttributeToObjectNotTypeNodeGen.getUncached();
-    }
-
-    public static WriteAttributeToObjectNode getUncachedForceType() {
-        return WriteAttributeToObjectTpDictNodeGen.getUncached();
+        return WriteAttributeToObjectNotTypeUncachedNodeGen.getUncached();
     }
 
     protected static boolean isAttrWritable(IsBuiltinClassProfile exactBuiltinInstanceProfile, PythonObject self, Object key) {
@@ -213,7 +213,6 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return true;
     }
 
-    @GenerateUncached
     protected static abstract class WriteAttributeToObjectNotTypeNode extends WriteAttributeToObjectNode {
         @Specialization(guards = {"!isHiddenKey(key)"})
         static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
@@ -225,6 +224,24 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     @GenerateUncached
+    protected static abstract class WriteAttributeToObjectNotTypeUncachedNode extends WriteAttributeToObjectNode {
+        @Specialization(guards = {"!isHiddenKey(key)"})
+        static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
+                        @Cached GetObjectDictNode getNativeDict,
+                        @Cached LookupInheritedAttributeNode.Dynamic getSetItem,
+                        @Cached CallNode callSetItem,
+                        @Cached PRaiseNode raiseNode) {
+            Object nativeDict = getNativeDict.execute(object);
+            Object setItemCallable = getSetItem.execute(nativeDict, SpecialMethodNames.__SETITEM__);
+            if (setItemCallable == PNone.NO_VALUE) {
+                throw raiseNode.raise(PythonBuiltinClassType.AttributeError, "'%p' dict of '%p' object has no attribute '__setitem__'", nativeDict, object);
+            } else {
+                callSetItem.execute(null, setItemCallable, object, key, value);
+                return true;
+            }
+        }
+    }
+
     protected static abstract class WriteAttributeToObjectTpDictNode extends WriteAttributeToObjectNode {
         @Specialization(guards = "!isHiddenKey(key)")
         static boolean writeNativeClass(PythonAbstractNativeObject object, Object key, Object value,
