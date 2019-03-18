@@ -41,10 +41,9 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -53,6 +52,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -112,11 +112,10 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"eq(NAME, key)"})
         Object getName(PythonObject object, @SuppressWarnings("unused") String key,
-                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                        @Shared("getAttrNode") @Cached(value = "create(__GETATTRIBUTE__)", allowUncached = true) LookupAndCallBinaryNode getAttrNode,
+                        @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached.Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
-            Object doc = getAttrNode.executeObject(object, NAME);
+            Object doc = getAttrNode.execute(object, NAME);
             if (doc == PNone.NONE) {
                 return toSulongNode.execute(PNone.NO_VALUE);
             } else {
@@ -126,11 +125,10 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"eq(DOC, key)"})
         Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
-                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                        @Shared("getAttrNode") @Cached(value = "create(__GETATTRIBUTE__)", allowUncached = true) LookupAndCallBinaryNode getAttrNode,
+                        @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached.Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
-            Object doc = getAttrNode.executeObject(object, DOC);
+            Object doc = getAttrNode.execute(object, DOC);
             if (doc == PNone.NONE) {
                 return toSulongNode.execute(PNone.NO_VALUE);
             } else {
@@ -151,9 +149,8 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected void writeMember(String member, Object value,
-                    // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                    @Cached(value = "create(__SETATTR__)", allowUncached = true) LookupAndCallTernaryNode setAttrNode,
-                    @Exclusive @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException {
+                    @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode,
+                    @Exclusive @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException, UnknownIdentifierException {
         if (!DOC.equals(member)) {
             CompilerDirectives.transferToInterpreter();
             throw UnsupportedMessageException.create();

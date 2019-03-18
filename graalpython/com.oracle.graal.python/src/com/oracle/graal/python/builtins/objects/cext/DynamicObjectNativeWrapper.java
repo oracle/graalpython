@@ -103,7 +103,6 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -896,12 +895,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
         Object doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") String key, Object value,
                         @Cached("create()") CastToIntegerFromIntNode.Dynamic castToIntNode,
-                        @Cached("create(__SETATTR__)") LookupAndCallTernaryNode call) {
+                        @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode) throws UnsupportedMessageException, UnknownIdentifierException {
             // TODO properly implement 'tp_dictoffset' for builtin classes
             if (object instanceof PythonBuiltinClass) {
                 return 0L;
             }
-            call.execute(object, __DICTOFFSET__, castToIntNode.execute(value));
+            setAttrNode.execute(object, __DICTOFFSET__, castToIntNode.execute(value));
             return value;
         }
 

@@ -41,14 +41,13 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -57,6 +56,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -116,11 +116,10 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"eq(NAME, key)"})
         Object getName(PythonObject object, @SuppressWarnings("unused") String key,
-                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                        @Cached(value = "create(__GETATTRIBUTE__)", allowUncached = true) LookupAndCallBinaryNode getAttrNode,
+                        @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
-            Object doc = getAttrNode.executeObject(object, SpecialAttributeNames.__NAME__);
+            Object doc = getAttrNode.execute(object, SpecialAttributeNames.__NAME__);
             if (doc == PNone.NONE) {
                 return toSulongNode.execute(PNone.NO_VALUE);
             } else {
@@ -154,7 +153,7 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected void writeMember(String member, Object value,
-                    @Exclusive @Cached WriteFieldNode writeFieldNode) {
+                    @Exclusive @Cached WriteFieldNode writeFieldNode) throws UnsupportedMessageException, UnknownIdentifierException {
         writeFieldNode.execute(this.getDelegate(), member, value);
     }
 
@@ -172,7 +171,7 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
     @GenerateUncached
     abstract static class WriteFieldNode extends Node {
 
-        public abstract void execute(Object delegate, String key, Object value);
+        public abstract void execute(Object delegate, String key, Object value) throws UnsupportedMessageException, UnknownIdentifierException;
 
         protected static boolean eq(String expected, String actual) {
             return expected.equals(actual);
@@ -181,8 +180,8 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
         @Specialization(guards = {"!isBuiltinMethod(object)", "eq(DOC, key)"})
         void getDoc(PythonObject object, @SuppressWarnings("unused") String key, Object value,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
-                        @Cached("create(__SETATTR__)") LookupAndCallTernaryNode setAttrNode,
-                        @Shared("fromCharPointerNode") @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) {
+                        @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode,
+                        @Shared("fromCharPointerNode") @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException, UnknownIdentifierException {
             setAttrNode.execute(object, SpecialAttributeNames.__DOC__, fromCharPointerNode.execute(value));
         }
 

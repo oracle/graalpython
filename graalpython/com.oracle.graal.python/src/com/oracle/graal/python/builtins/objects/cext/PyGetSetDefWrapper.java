@@ -44,11 +44,10 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -57,6 +56,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -116,11 +116,10 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
         @Specialization(guards = {"eq(NAME, key)"})
         Object getName(PythonObject object, @SuppressWarnings("unused") String key,
                         @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedKey,
-                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                        @Shared("getAttrNode") @Cached(value = "create(__GETATTRIBUTE__)", allowUncached = true) LookupAndCallBinaryNode getAttrNode,
+                        @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
-            Object doc = getAttrNode.executeObject(object, __NAME__);
+            Object doc = getAttrNode.execute(object, __NAME__);
             if (doc == PNone.NONE) {
                 return toSulongNode.execute(PNone.NO_VALUE);
             } else {
@@ -131,11 +130,10 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
         @Specialization(guards = {"eq(DOC, key)"})
         Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
                         @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedKey,
-                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                        @Shared("getAttrNode") @Cached(value = "create(__GETATTRIBUTE__)", allowUncached = true) LookupAndCallBinaryNode getAttrNode,
+                        @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
-            Object doc = getAttrNode.executeObject(object, __DOC__);
+            Object doc = getAttrNode.execute(object, __DOC__);
             if (doc == PNone.NONE) {
                 return toSulongNode.execute(PNone.NO_VALUE);
             } else {
@@ -156,8 +154,8 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected void writeMember(String member, Object value,
-                    @Cached("create(__SETATTR__)") LookupAndCallTernaryNode setAttrNode,
-                    @Exclusive @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException {
+                    @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode,
+                    @Exclusive @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException, UnknownIdentifierException {
         if (!DOC.equals(member)) {
             CompilerDirectives.transferToInterpreter();
             throw UnsupportedMessageException.create();
