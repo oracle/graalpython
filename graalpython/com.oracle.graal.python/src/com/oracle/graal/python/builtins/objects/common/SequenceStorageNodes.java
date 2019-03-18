@@ -30,12 +30,12 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FU
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode.INDEX_OUT_OF_BOUNDS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
@@ -61,6 +61,9 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.AppendNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CmpNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatBaseNodeGen;
@@ -70,19 +73,22 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DeleteItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DeleteNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DeleteSliceNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DoGeneralizationNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.EnsureCapacityNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ExtendNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetElementTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemScalarNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemSliceNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.IsAssignCompatibleNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.IsDataTypeCompatibleNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ItemIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ListGeneralizationNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.NoGeneralizationCustomMessageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.NoGeneralizationNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.NormalizeIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.RepeatNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemDynamicNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemScalarNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemSliceNodeGen;
@@ -105,7 +111,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -152,55 +158,32 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class SequenceStorageNodes {
 
-    abstract static class SequenceStorageBaseNode extends PNodeWithContext {
+    public static interface GenNodeSupplier {
+        GeneralizationNode create();
 
-        @Child private GetElementType getElementTypeNode;
+        GeneralizationNode getUncached();
+    }
 
-        protected static final int DEFAULT_CAPACITY = 8;
+    @GenerateUncached
+    public abstract static class IsAssignCompatibleNode extends Node {
 
-        protected static final int MAX_SEQUENCE_STORAGES = 12;
-        protected static final int MAX_ARRAY_STORAGES = 9;
-
-        protected static boolean isByteStorage(NativeSequenceStorage store) {
-            return store.getElementType() == ListStorageType.Byte;
-        }
-
-        /**
-         * Tests if {@code left} has the same element type as {@code right}.
-         */
-        protected boolean compatible(SequenceStorage left, NativeSequenceStorage right) {
-            switch (right.getElementType()) {
-                case Boolean:
-                    return left instanceof BoolSequenceStorage;
-                case Byte:
-                    return left instanceof ByteSequenceStorage;
-                case Char:
-                    return left instanceof CharSequenceStorage;
-                case Int:
-                    return left instanceof IntSequenceStorage;
-                case Long:
-                    return left instanceof LongSequenceStorage;
-                case Double:
-                    return left instanceof DoubleSequenceStorage;
-                case Generic:
-                    return left instanceof ObjectSequenceStorage || left instanceof TupleSequenceStorage || left instanceof ListSequenceStorage;
-            }
-            assert false : "should not reach";
-            return false;
-        }
+        protected abstract boolean execute(SequenceStorage lhs, SequenceStorage rhs);
 
         /**
          * Tests if each element of {@code rhs} can be assign to {@code lhs} without casting.
          */
-        protected boolean compatibleAssign(SequenceStorage lhs, SequenceStorage rhs) {
-            ListStorageType rhsType = getElementType(rhs);
-            switch (getElementType(lhs)) {
+        @Specialization
+        static boolean compatibleAssign(SequenceStorage lhs, SequenceStorage rhs,
+                        @Cached GetElementType getElementTypeNode) {
+            ListStorageType rhsType = getElementTypeNode.execute(rhs);
+            switch (getElementTypeNode.execute(lhs)) {
                 case Boolean:
                     return rhsType == Boolean || rhsType == Uninitialized;
                 case Byte:
@@ -226,12 +209,28 @@ public abstract class SequenceStorageNodes {
             return false;
         }
 
+        public static IsAssignCompatibleNode create() {
+            return IsAssignCompatibleNodeGen.create();
+        }
+
+        public static IsAssignCompatibleNode getUncached() {
+            return IsAssignCompatibleNodeGen.getUncached();
+        }
+    }
+
+    @GenerateUncached
+    abstract static class IsDataTypeCompatibleNode extends Node {
+
+        protected abstract boolean execute(SequenceStorage lhs, SequenceStorage rhs);
+
         /**
-         * Tests if elements of {@code rhs} can be assign to {@code lhs} with casting.
+         * Tests if each element of {@code rhs} can be assign to {@code lhs} without casting.
          */
-        protected boolean compatibleDataType(SequenceStorage lhs, SequenceStorage rhs) {
-            ListStorageType rhsType = getElementType(rhs);
-            switch (getElementType(lhs)) {
+        @Specialization
+        static boolean compatibleAssign(SequenceStorage lhs, SequenceStorage rhs,
+                        @Cached GetElementType getElementTypeNode) {
+            ListStorageType rhsType = getElementTypeNode.execute(rhs);
+            switch (getElementTypeNode.execute(lhs)) {
                 case Boolean:
                 case Byte:
                 case Int:
@@ -254,6 +253,52 @@ public abstract class SequenceStorageNodes {
             return false;
         }
 
+        public static IsDataTypeCompatibleNode create() {
+            return IsDataTypeCompatibleNodeGen.create();
+        }
+
+        public static IsDataTypeCompatibleNode getUncached() {
+            return IsDataTypeCompatibleNodeGen.getUncached();
+        }
+    }
+
+    abstract static class SequenceStorageBaseNode extends PNodeWithContext {
+
+        protected static final int DEFAULT_CAPACITY = 8;
+
+        protected static final int MAX_SEQUENCE_STORAGES = 12;
+        protected static final int MAX_ARRAY_STORAGES = 9;
+
+        @Child private GetElementType getElementType;
+
+        protected static boolean isByteStorage(NativeSequenceStorage store) {
+            return store.getElementType() == ListStorageType.Byte;
+        }
+
+        /**
+         * Tests if {@code left} has the same element type as {@code right}.
+         */
+        protected static boolean compatible(SequenceStorage left, NativeSequenceStorage right) {
+            switch (right.getElementType()) {
+                case Boolean:
+                    return left instanceof BoolSequenceStorage;
+                case Byte:
+                    return left instanceof ByteSequenceStorage;
+                case Char:
+                    return left instanceof CharSequenceStorage;
+                case Int:
+                    return left instanceof IntSequenceStorage;
+                case Long:
+                    return left instanceof LongSequenceStorage;
+                case Double:
+                    return left instanceof DoubleSequenceStorage;
+                case Generic:
+                    return left instanceof ObjectSequenceStorage || left instanceof TupleSequenceStorage || left instanceof ListSequenceStorage;
+            }
+            assert false : "should not reach";
+            return false;
+        }
+
         protected static boolean isNative(SequenceStorage store) {
             return store instanceof NativeSequenceStorage;
         }
@@ -263,12 +308,88 @@ public abstract class SequenceStorageNodes {
             return left instanceof EmptySequenceStorage || left.length() == 0;
         }
 
-        private ListStorageType getElementType(SequenceStorage s) {
-            if (getElementTypeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getElementTypeNode = insert(GetElementTypeNodeGen.create());
-            }
-            return getElementTypeNode.execute(s);
+        protected static boolean isBoolean(GetElementType getElementTypeNode, SequenceStorage s) {
+            return getElementTypeNode.execute(s) == ListStorageType.Boolean;
+        }
+
+        protected static boolean isByte(GetElementType getElementTypeNode, SequenceStorage s) {
+            return getElementTypeNode.execute(s) == ListStorageType.Byte;
+        }
+
+        protected static boolean isByteLike(GetElementType getElementTypeNode, SequenceStorage s) {
+            return isByte(getElementTypeNode, s) || isInt(getElementTypeNode, s) || isLong(getElementTypeNode, s);
+        }
+
+        protected static boolean isChar(GetElementType getElementTypeNode, SequenceStorage s) {
+            return getElementTypeNode.execute(s) == ListStorageType.Char;
+        }
+
+        protected static boolean isInt(GetElementType getElementTypeNode, SequenceStorage s) {
+            return getElementTypeNode.execute(s) == ListStorageType.Int;
+        }
+
+        protected static boolean isLong(GetElementType getElementTypeNode, SequenceStorage s) {
+            return getElementTypeNode.execute(s) == ListStorageType.Long;
+        }
+
+        protected static boolean isDouble(GetElementType getElementTypeNode, SequenceStorage s) {
+            return getElementTypeNode.execute(s) == ListStorageType.Double;
+        }
+
+        protected static boolean isObject(GetElementType getElementTypeNode, SequenceStorage s) {
+            return getElementTypeNode.execute(s) == ListStorageType.Generic;
+        }
+
+        protected static boolean isTuple(GetElementType getElementTypeNode, SequenceStorage s) {
+            return getElementTypeNode.execute(s) == ListStorageType.Tuple;
+        }
+
+        protected static boolean isList(GetElementType getElementTypeNode, SequenceStorage s) {
+            return getElementTypeNode.execute(s) == ListStorageType.List;
+        }
+
+        protected static boolean isBoolean(ListStorageType et) {
+            return et == ListStorageType.Boolean;
+        }
+
+        protected static boolean isByte(ListStorageType et) {
+            return et == ListStorageType.Byte;
+        }
+
+        protected static boolean isByteLike(ListStorageType et) {
+            return isByte(et) || isInt(et) || isLong(et);
+        }
+
+        protected static boolean isChar(ListStorageType et) {
+            return et == ListStorageType.Char;
+        }
+
+        protected static boolean isInt(ListStorageType et) {
+            return et == ListStorageType.Int;
+        }
+
+        protected static boolean isLong(ListStorageType et) {
+            return et == ListStorageType.Long;
+        }
+
+        protected static boolean isDouble(ListStorageType et) {
+            return et == ListStorageType.Double;
+        }
+
+        protected static boolean isObject(ListStorageType et) {
+            return et == ListStorageType.Generic;
+        }
+
+        protected static boolean isTuple(ListStorageType et) {
+            return et == ListStorageType.Tuple;
+        }
+
+        protected static boolean isList(ListStorageType et) {
+            return et == ListStorageType.List;
+        }
+
+        protected static boolean hasStorage(Object source) {
+            return source instanceof PSequence && !(source instanceof PString);
         }
 
         protected boolean isBoolean(SequenceStorage s) {
@@ -285,6 +406,14 @@ public abstract class SequenceStorageNodes {
 
         protected boolean isChar(SequenceStorage s) {
             return getElementType(s) == ListStorageType.Char;
+        }
+
+        private ListStorageType getElementType(SequenceStorage s) {
+            if (getElementType == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getElementType = insert(GetElementType.create());
+            }
+            return getElementType.execute(s);
         }
 
         protected boolean isInt(SequenceStorage s) {
@@ -311,9 +440,6 @@ public abstract class SequenceStorageNodes {
             return getElementType(s) == ListStorageType.List;
         }
 
-        protected static boolean hasStorage(Object source) {
-            return source instanceof PSequence && !(source instanceof PString);
-        }
     }
 
     abstract static class NormalizingNode extends PNodeWithContext {
@@ -338,14 +464,14 @@ public abstract class SequenceStorageNodes {
         protected final int normalizeIndex(Object idx, SequenceStorage store) {
             int intIdx = getCastToIndexNode().execute(idx);
             if (normalizeIndexNode != null) {
-                return normalizeIndexNode.doInt(intIdx, getStoreProfile().profile(store).length());
+                return normalizeIndexNode.execute(intIdx, getStoreProfile().profile(store).length());
             }
             return intIdx;
         }
 
         protected final int normalizeIndex(int idx, SequenceStorage store) {
             if (normalizeIndexNode != null) {
-                return normalizeIndexNode.doInt(idx, getStoreProfile().profile(store).length());
+                return normalizeIndexNode.execute(idx, getStoreProfile().profile(store).length());
             }
             return idx;
         }
@@ -353,7 +479,7 @@ public abstract class SequenceStorageNodes {
         protected final int normalizeIndex(long idx, SequenceStorage store) {
             int intIdx = getCastToIndexNode().execute(idx);
             if (normalizeIndexNode != null) {
-                return normalizeIndexNode.doInt(intIdx, getStoreProfile().profile(store).length());
+                return normalizeIndexNode.execute(intIdx, getStoreProfile().profile(store).length());
             }
             return intIdx;
         }
@@ -480,16 +606,17 @@ public abstract class SequenceStorageNodes {
 
     }
 
+    @GenerateUncached
     abstract static class GetItemScalarNode extends SequenceStorageBaseNode {
-
-        @Child private VerifyNativeItemNode verifyNativeItemNode;
-
-        @CompilationFinal private BranchProfile invalidTypeProfile;
 
         public abstract Object execute(SequenceStorage s, int idx);
 
         public static GetItemScalarNode create() {
             return GetItemScalarNodeGen.create();
+        }
+
+        public static GetItemScalarNode getUncached() {
+            return GetItemScalarNodeGen.getUncached();
         }
 
         public abstract boolean executeBoolean(SequenceStorage s, int idx);
@@ -554,14 +681,16 @@ public abstract class SequenceStorageNodes {
             return storage.getItemNormalized(idx);
         }
 
-        @Specialization(guards = "isObject(storage)", limit = "1")
+        @Specialization(guards = "isObject(getElementType, storage)", limit = "1")
         protected Object doNativeObject(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
+                        @Shared("verifyNativeItemNode") @Cached VerifyNativeItemNode verifyNativeItemNode,
+                        @Shared("getElementType") @Cached @SuppressWarnings("unused") GetElementType getElementType,
                         @Cached CExtNodes.ToJavaNode toJavaNode,
                         @Cached BranchProfile errorProfile,
                         @Cached PRaiseNode raiseNode) {
             try {
-                return verifyResult(storage, toJavaNode.execute(lib.readArrayElement(storage.getPtr(), idx)));
+                return verifyResult(verifyNativeItemNode, raiseNode, storage, toJavaNode.execute(lib.readArrayElement(storage.getPtr(), idx)));
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 // The 'InvalidArrayIndexExceptione' should really not happen since we did a bounds
                 // check before.
@@ -573,19 +702,23 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isByteStorage(storage)", limit = "1")
         protected int doNativeByte(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
+                        @Shared("verifyNativeItemNode") @Cached VerifyNativeItemNode verifyNativeItemNode,
+                        @Shared("getElementType") @Cached GetElementType getElementType,
                         @Cached BranchProfile errorProfile,
                         @Cached PRaiseNode raiseNode) {
-            Object result = doNative(storage, idx, lib, errorProfile, raiseNode);
+            Object result = doNative(storage, idx, lib, verifyNativeItemNode, getElementType, errorProfile, raiseNode);
             return (byte) result & 0xFF;
         }
 
-        @Specialization(guards = {"!isByteStorage(storage)", "!isObject(storage)"}, limit = "1")
+        @Specialization(guards = {"!isByteStorage(storage)", "!isObject(getElementType, storage)"}, limit = "1")
         protected Object doNative(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
+                        @Shared("verifyNativeItemNode") @Cached VerifyNativeItemNode verifyNativeItemNode,
+                        @Shared("getElementType") @Cached @SuppressWarnings("unused") GetElementType getElementType,
                         @Cached BranchProfile errorProfile,
                         @Cached PRaiseNode raiseNode) {
             try {
-                return verifyResult(storage, lib.readArrayElement(storage.getPtr(), idx));
+                return verifyResult(verifyNativeItemNode, raiseNode, storage, lib.readArrayElement(storage.getPtr(), idx));
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 // The 'InvalidArrayIndexExceptione' should really not happen since we did a bounds
                 // check before.
@@ -594,20 +727,11 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        private Object verifyResult(NativeSequenceStorage storage, Object item) {
-            if (verifyNativeItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                verifyNativeItemNode = insert(VerifyNativeItemNode.create());
+        private static Object verifyResult(VerifyNativeItemNode verifyNativeItemNode, PRaiseNode raiseNode, NativeSequenceStorage storage, Object item) {
+            if (verifyNativeItemNode.execute(storage.getElementType(), item)) {
+                return item;
             }
-            if (invalidTypeProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                invalidTypeProfile = BranchProfile.create();
-            }
-            if (!verifyNativeItemNode.execute(storage.getElementType(), item)) {
-                invalidTypeProfile.enter();
-                throw raise(SystemError, "Invalid item type %s returned from native sequence storage (expected: %s)", item, storage.getElementType());
-            }
-            return item;
+            throw raiseNode.raise(SystemError, "Invalid item type %s returned from native sequence storage (expected: %s)", item, storage.getElementType());
         }
     }
 
@@ -701,12 +825,149 @@ public abstract class SequenceStorageNodes {
         }
     }
 
+    @GenerateUncached
+    @ImportStatic(PGuards.class)
+    public abstract static class SetItemDynamicNode extends Node {
+
+        public abstract SequenceStorage execute(GenNodeSupplier generalizationNodeProvider, SequenceStorage s, Object key, Object value);
+
+        @Specialization
+        protected static SequenceStorage doScalarInt(GenNodeSupplier generalizationNodeProvider, SequenceStorage storage, int idx, Object value,
+                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode,
+                        @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
+                        @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode,
+                        @Shared("lenNode") @Cached LenNode lenNode) {
+            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS);
+            try {
+                setItemScalarNode.execute(storage, normalized, value);
+                return storage;
+            } catch (SequenceStoreException e) {
+                generalizeProfile.enter();
+                SequenceStorage generalized = doGenNode.execute(generalizationNodeProvider, storage, e.getIndicationValue());
+                try {
+                    setItemScalarNode.execute(generalized, normalized, value);
+                } catch (SequenceStoreException e1) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException();
+                }
+                return generalized;
+            }
+        }
+
+        @Specialization
+        protected static SequenceStorage doScalarLong(GenNodeSupplier generalizationNodeProvider, SequenceStorage storage, long idx, Object value,
+                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode,
+                        @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
+                        @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode,
+                        @Shared("lenNode") @Cached LenNode lenNode) {
+            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS);
+            try {
+                setItemScalarNode.execute(storage, normalized, value);
+                return storage;
+            } catch (SequenceStoreException e) {
+                generalizeProfile.enter();
+                SequenceStorage generalized = doGenNode.execute(generalizationNodeProvider, storage, e.getIndicationValue());
+                setItemScalarNode.execute(generalized, normalized, value);
+                return generalized;
+            }
+        }
+
+        @Specialization
+        protected static SequenceStorage doScalarPInt(GenNodeSupplier generalizationNodeProvider, SequenceStorage storage, PInt idx, Object value,
+                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode,
+                        @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
+                        @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode,
+                        @Shared("lenNode") @Cached LenNode lenNode) {
+            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS);
+            try {
+                setItemScalarNode.execute(storage, normalized, value);
+                return storage;
+            } catch (SequenceStoreException e) {
+                generalizeProfile.enter();
+                SequenceStorage generalized = doGenNode.execute(generalizationNodeProvider, storage, e.getIndicationValue());
+                setItemScalarNode.execute(generalized, normalized, value);
+                return generalized;
+            }
+        }
+
+        @Specialization(guards = "!isPSlice(idx)")
+        protected static SequenceStorage doScalarGeneric(GenNodeSupplier generalizationNodeProvider, SequenceStorage storage, Object idx, Object value,
+                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode,
+                        @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode,
+                        @Shared("normalizeNode") @Cached NormalizeIndexCustomMessageNode normalizeNode,
+                        @Shared("lenNode") @Cached LenNode lenNode) {
+            int normalized = normalizeNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS);
+            try {
+                setItemScalarNode.execute(storage, normalized, value);
+                return storage;
+            } catch (SequenceStoreException e) {
+                generalizeProfile.enter();
+                SequenceStorage generalized = doGenNode.execute(generalizationNodeProvider, storage, e.getIndicationValue());
+                setItemScalarNode.execute(generalized, normalized, value);
+                return generalized;
+            }
+        }
+
+        @Specialization
+        protected static SequenceStorage doSlice(GenNodeSupplier generalizationNodeProvider, SequenceStorage storage, PSlice slice, Object iterable,
+                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Cached SetItemSliceNode setItemSliceNode,
+                        @Shared("doGenNode") @Cached DoGeneralizationNode doGenNode) {
+            SliceInfo info = slice.computeIndices(storage.length());
+            try {
+                setItemSliceNode.execute(storage, info, iterable);
+                return storage;
+            } catch (SequenceStoreException e) {
+                generalizeProfile.enter();
+                SequenceStorage generalized = doGenNode.execute(generalizationNodeProvider, storage, e.getIndicationValue());
+                setItemSliceNode.execute(generalized, info, iterable);
+                return generalized;
+            }
+        }
+
+        public static SetItemDynamicNode create() {
+            return SetItemDynamicNodeGen.create();
+        }
+
+        public static SetItemDynamicNode getUncached() {
+            return SetItemDynamicNodeGen.getUncached();
+        }
+    }
+
+    @GenerateUncached
+    abstract static class DoGeneralizationNode extends Node {
+
+        public abstract SequenceStorage execute(GenNodeSupplier supplier, SequenceStorage storage, Object value);
+
+        @Specialization(guards = "supplier == cachedSupplier")
+        static SequenceStorage doCached(@SuppressWarnings("unused") GenNodeSupplier supplier, SequenceStorage storage, Object value,
+                        @Cached("supplier") @SuppressWarnings("unused") GenNodeSupplier cachedSupplier,
+                        @Cached(value = "supplier.create()", uncached = "supplier.getUncached()") GeneralizationNode genNode) {
+
+            return genNode.execute(storage, value);
+        }
+
+        @Specialization(replaces = "doCached")
+        static SequenceStorage doUncached(GenNodeSupplier supplier, SequenceStorage storage, Object value) {
+            return supplier.getUncached().execute(storage, value);
+        }
+
+        public static DoGeneralizationNode create() {
+            return DoGeneralizationNodeGen.create();
+        }
+
+        public static DoGeneralizationNode getUncached() {
+            return DoGeneralizationNodeGen.getUncached();
+        }
+    }
+
     public abstract static class SetItemNode extends NormalizingNode {
-        @Child private SetItemScalarNode setItemScalarNode;
-        @Child private SetItemSliceNode setItemSliceNode;
         @Child private GeneralizationNode generalizationNode;
 
-        private final BranchProfile generalizeProfile = BranchProfile.create();
         private final Supplier<GeneralizationNode> generalizationNodeProvider;
 
         public SetItemNode(NormalizeIndexNode normalizeIndexNode, Supplier<GeneralizationNode> generalizationNodeProvider) {
@@ -721,16 +982,18 @@ public abstract class SequenceStorageNodes {
         public abstract SequenceStorage executeLong(SequenceStorage s, long key, Object value);
 
         @Specialization
-        protected SequenceStorage doScalarInt(SequenceStorage storage, int idx, Object value) {
+        protected SequenceStorage doScalarInt(SequenceStorage storage, int idx, Object value,
+                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
             int normalized = normalizeIndex(idx, storage);
             try {
-                getSetItemScalarNode().execute(storage, normalized, value);
+                setItemScalarNode.execute(storage, normalized, value);
                 return storage;
             } catch (SequenceStoreException e) {
                 generalizeProfile.enter();
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
                 try {
-                    getSetItemScalarNode().execute(generalized, normalized, value);
+                    setItemScalarNode.execute(generalized, normalized, value);
                 } catch (SequenceStoreException e1) {
                     CompilerDirectives.transferToInterpreter();
                     throw new IllegalStateException();
@@ -740,57 +1003,65 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected SequenceStorage doScalarLong(SequenceStorage storage, long idx, Object value) {
+        protected SequenceStorage doScalarLong(SequenceStorage storage, long idx, Object value,
+                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
             int normalized = normalizeIndex(idx, storage);
             try {
-                getSetItemScalarNode().execute(storage, normalized, value);
+                setItemScalarNode.execute(storage, normalized, value);
                 return storage;
             } catch (SequenceStoreException e) {
                 generalizeProfile.enter();
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
-                getSetItemScalarNode().execute(generalized, normalized, value);
+                setItemScalarNode.execute(generalized, normalized, value);
                 return generalized;
             }
         }
 
         @Specialization
-        protected SequenceStorage doScalarPInt(SequenceStorage storage, PInt idx, Object value) {
+        protected SequenceStorage doScalarPInt(SequenceStorage storage, PInt idx, Object value,
+                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
             int normalized = normalizeIndex(idx, storage);
             try {
-                getSetItemScalarNode().execute(storage, normalized, value);
+                setItemScalarNode.execute(storage, normalized, value);
                 return storage;
             } catch (SequenceStoreException e) {
                 generalizeProfile.enter();
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
-                getSetItemScalarNode().execute(generalized, normalized, value);
+                setItemScalarNode.execute(generalized, normalized, value);
                 return generalized;
             }
         }
 
         @Specialization(guards = "!isPSlice(idx)")
-        protected SequenceStorage doScalarGeneric(SequenceStorage storage, Object idx, Object value) {
+        protected SequenceStorage doScalarGeneric(SequenceStorage storage, Object idx, Object value,
+                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
             int normalized = normalizeIndex(idx, storage);
             try {
-                getSetItemScalarNode().execute(storage, normalized, value);
+                setItemScalarNode.execute(storage, normalized, value);
                 return storage;
             } catch (SequenceStoreException e) {
                 generalizeProfile.enter();
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
-                getSetItemScalarNode().execute(generalized, normalized, value);
+                setItemScalarNode.execute(generalized, normalized, value);
                 return generalized;
             }
         }
 
         @Specialization
-        protected SequenceStorage doSlice(SequenceStorage storage, PSlice slice, Object iterable) {
+        protected SequenceStorage doSlice(SequenceStorage storage, PSlice slice, Object iterable,
+                        @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
+                        @Cached SetItemSliceNode setItemSliceNode) {
             SliceInfo info = slice.computeIndices(storage.length());
             try {
-                getSetItemSliceNode().execute(storage, info, iterable);
+                setItemSliceNode.execute(storage, info, iterable);
                 return storage;
             } catch (SequenceStoreException e) {
                 generalizeProfile.enter();
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
-                getSetItemSliceNode().execute(generalized, info, iterable);
+                setItemSliceNode.execute(generalized, info, iterable);
                 return generalized;
             }
         }
@@ -801,22 +1072,6 @@ public abstract class SequenceStorageNodes {
                 generalizationNode = insert(generalizationNodeProvider.get());
             }
             return generalizationNode.execute(storage, value);
-        }
-
-        private SetItemScalarNode getSetItemScalarNode() {
-            if (setItemScalarNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemScalarNode = insert(SetItemScalarNode.create());
-            }
-            return setItemScalarNode;
-        }
-
-        private SetItemSliceNode getSetItemSliceNode() {
-            if (setItemSliceNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemSliceNode = insert(SetItemSliceNode.create());
-            }
-            return setItemSliceNode;
         }
 
         public static SetItemNode create(NormalizeIndexNode normalizeIndexNode, Supplier<GeneralizationNode> generalizationNodeProvider) {
@@ -833,12 +1088,9 @@ public abstract class SequenceStorageNodes {
 
     }
 
-    abstract static class SetItemScalarNode extends SequenceStorageBaseNode {
-
-        @Child private VerifyNativeItemNode verifyNativeItemNode;
-        @Child private CastToByteNode castToByteNode;
-
-        @CompilationFinal private BranchProfile invalidTypeProfile;
+    @GenerateUncached
+    @ImportStatic(SequenceStorageBaseNode.class)
+    abstract static class SetItemScalarNode extends Node {
 
         public abstract void execute(SequenceStorage s, int idx, Object value);
 
@@ -848,8 +1100,9 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected void doByte(ByteSequenceStorage storage, int idx, Object value) {
-            storage.setByteItemNormalized(idx, getCastToByteNode().execute(value));
+        protected void doByte(ByteSequenceStorage storage, int idx, Object value,
+                        @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
+            storage.setByteItemNormalized(idx, castToByteNode.execute(value));
         }
 
         @Specialization
@@ -912,24 +1165,25 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "isByteStorage(storage)")
         protected void doNativeByte(NativeSequenceStorage storage, int idx, Object value,
-                        @Cached PRaiseNode raise,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
             try {
-                lib.writeArrayElement(storage.getPtr(), idx, getCastToByteNode().execute(value));
+                lib.writeArrayElement(storage.getPtr(), idx, castToByteNode.execute(value));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
                 CompilerDirectives.transferToInterpreter();
-                raise.raise(SystemError, e);
+                throw PRaiseNode.raise(this, SystemError, e);
             }
         }
 
         @Specialization
         protected void doNative(NativeSequenceStorage storage, int idx, Object value,
-                        @Cached PRaiseNode raise,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached VerifyNativeItemNode verifyNativeItemNode) {
             try {
-                lib.writeArrayElement(storage.getPtr(), idx, verifyValue(storage, value));
+                lib.writeArrayElement(storage.getPtr(), idx, verifyValue(storage, value, verifyNativeItemNode));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
-                raise.raise(SystemError, e);
+                CompilerDirectives.transferToInterpreter();
+                throw PRaiseNode.raise(this, SystemError, e);
             }
         }
 
@@ -939,28 +1193,11 @@ public abstract class SequenceStorageNodes {
             throw new SequenceStoreException(item);
         }
 
-        private CastToByteNode getCastToByteNode() {
-            if (castToByteNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToByteNode = insert(CastToByteNode.create());
+        private static Object verifyValue(NativeSequenceStorage storage, Object item, VerifyNativeItemNode verifyNativeItemNode) {
+            if (verifyNativeItemNode.execute(storage.getElementType(), item)) {
+                return item;
             }
-            return castToByteNode;
-        }
-
-        private Object verifyValue(NativeSequenceStorage storage, Object item) {
-            if (verifyNativeItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                verifyNativeItemNode = insert(VerifyNativeItemNode.create());
-            }
-            if (invalidTypeProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                invalidTypeProfile = BranchProfile.create();
-            }
-            if (!verifyNativeItemNode.execute(storage.getElementType(), item)) {
-                invalidTypeProfile.enter();
-                throw new SequenceStoreException(item);
-            }
-            return item;
+            throw new SequenceStoreException(item);
         }
 
         public static SetItemScalarNode create() {
@@ -968,6 +1205,7 @@ public abstract class SequenceStorageNodes {
         }
     }
 
+    @GenerateUncached
     @ImportStatic(ListStorageType.class)
     public abstract static class SetItemSliceNode extends SequenceStorageBaseNode {
 
@@ -975,14 +1213,15 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "hasStorage(seq)")
         void doStorage(SequenceStorage s, SliceInfo info, PSequence seq,
-                        @Cached("create()") SetStorageSliceNode setStorageSliceNode) {
-            setStorageSliceNode.execute(s, info, seq.getSequenceStorage());
+                        @Shared("setStorageSliceNode") @Cached SetStorageSliceNode setStorageSliceNode,
+                        @Cached GetSequenceStorageNode getSequenceStorageNode) {
+            setStorageSliceNode.execute(s, info, getSequenceStorageNode.execute(seq));
         }
 
         @Specialization
         void doGeneric(SequenceStorage s, SliceInfo info, Object iterable,
-                        @Cached("create()") SetStorageSliceNode setStorageSliceNode,
-                        @Cached("create()") ListNodes.ConstructListNode constructListNode) {
+                        @Shared("setStorageSliceNode") @Cached SetStorageSliceNode setStorageSliceNode,
+                        @Cached ListNodes.ConstructListNode constructListNode) {
             PList list = constructListNode.execute(iterable);
             setStorageSliceNode.execute(s, info, list.getSequenceStorage());
         }
@@ -990,9 +1229,15 @@ public abstract class SequenceStorageNodes {
         public static SetItemSliceNode create() {
             return SetItemSliceNodeGen.create();
         }
+
+        public static SetItemSliceNode getUncached() {
+            return SetItemSliceNodeGen.getUncached();
+        }
     }
 
-    abstract static class SetStorageSliceNode extends SequenceStorageBaseNode {
+    @GenerateUncached
+    @ImportStatic(SequenceStorageBaseNode.class)
+    abstract static class SetStorageSliceNode extends Node {
 
         public abstract void execute(SequenceStorage s, SliceInfo info, SequenceStorage iterable);
 
@@ -1006,19 +1251,21 @@ public abstract class SequenceStorageNodes {
             selfProfiled.minimizeCapacity();
         }
 
-        @Specialization(guards = {"compatibleDataType(store, sequence)"})
+        @Specialization(guards = {"isDataTypeCompatibleNode.execute(store, sequence)"})
         void setSlice(SequenceStorage store, SliceInfo sinfo, SequenceStorage sequence,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLength,
                         @Cached("createBinaryProfile()") ConditionProfile clearProfile,
-                        @Cached("create()") LenNode selfLenNode,
-                        @Cached("create()") LenNode otherLenNode,
-                        @Cached("create()") SetLenNode setLenNode,
-                        @Cached("create()") SetItemScalarNode setLeftItemNode,
-                        @Cached("create()") GetItemScalarNode getRightItemNode) {
+                        @Cached LenNode selfLenNode,
+                        @Cached LenNode otherLenNode,
+                        @Cached SetLenNode setLenNode,
+                        @Cached SetItemScalarNode setLeftItemNode,
+                        @Cached GetItemScalarNode getRightItemNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode) {
             int length = selfLenNode.execute(store);
             int valueLen = otherLenNode.execute(sequence);
             if (wrongLength.profile(sinfo.step != 1 && sinfo.length != valueLen)) {
-                throw raise(ValueError, "attempt to assign sequence of size %d to extended slice of size %d", valueLen, length);
+                throw raiseNode.raise(ValueError, "attempt to assign sequence of size %d to extended slice of size %d", valueLen, length);
             }
             int start = sinfo.start;
             int stop = sinfo.stop;
@@ -1088,8 +1335,9 @@ public abstract class SequenceStorageNodes {
             setLenNode.execute(store, length);
         }
 
-        @Specialization(guards = "!compatibleAssign(self, sequence)")
-        void doError(@SuppressWarnings("unused") SequenceStorage self, @SuppressWarnings("unused") SliceInfo info, SequenceStorage sequence) {
+        @Specialization(guards = "!isAssignCompatibleNode.execute(self, sequence)")
+        void doError(@SuppressWarnings("unused") SequenceStorage self, @SuppressWarnings("unused") SliceInfo info, SequenceStorage sequence,
+                        @Cached @SuppressWarnings("unused") IsAssignCompatibleNode isAssignCompatibleNode) {
             throw new SequenceStoreException(sequence.getIndicativeValue());
         }
 
@@ -1104,44 +1352,60 @@ public abstract class SequenceStorageNodes {
         public static SetStorageSliceNode create() {
             return SetStorageSliceNodeGen.create();
         }
+
+        public static SetStorageSliceNode getUncached() {
+            return SetStorageSliceNodeGen.getUncached();
+        }
     }
 
-    abstract static class VerifyNativeItemNode extends PNodeWithContext {
+    @GenerateUncached
+    abstract static class VerifyNativeItemNode extends Node {
 
         public abstract boolean execute(ListStorageType expectedType, Object item);
 
         @Specialization(guards = "elementType == cachedElementType", limit = "1")
         boolean doCached(@SuppressWarnings("unused") ListStorageType elementType, Object item,
-                        @Cached("elementType") ListStorageType cachedElementType) {
-            return doGeneric(cachedElementType, item);
+                        @Cached("elementType") ListStorageType cachedElementType,
+                        @Shared("profile") @Cached("createBinaryProfile()") ConditionProfile profile) {
+            return doGeneric(cachedElementType, item, profile);
         }
 
         @Specialization(replaces = "doCached")
-        boolean doGeneric(ListStorageType expectedType, Object item) {
+        boolean doGeneric(ListStorageType expectedType, Object item,
+                        @Shared("profile") @Cached("createBinaryProfile()") ConditionProfile profile) {
+            boolean res = false;
             switch (expectedType) {
                 case Byte:
-                    return item instanceof Byte;
+                    res = item instanceof Byte;
+                    break;
                 case Int:
-                    return item instanceof Integer;
+                    res = item instanceof Integer;
+                    break;
                 case Long:
-                    return item instanceof Long;
+                    res = item instanceof Long;
+                    break;
                 case Double:
-                    return item instanceof Double;
+                    res = item instanceof Double;
+                    break;
                 case Generic:
-                    return !(item instanceof Byte || item instanceof Integer || item instanceof Long || item instanceof Double);
+                    res = !(item instanceof Byte || item instanceof Integer || item instanceof Long || item instanceof Double);
+                    break;
             }
-            return false;
+            return profile.profile(res);
         }
 
         public static VerifyNativeItemNode create() {
             return VerifyNativeItemNodeGen.create();
         }
 
+        public static VerifyNativeItemNode getUncached() {
+            return VerifyNativeItemNodeGen.getUncached();
+        }
     }
 
     @ImportStatic(NativeCAPISymbols.class)
     @GenerateUncached
-    public abstract static class StorageToNativeNode extends PNodeWithContext {
+    public abstract static class StorageToNativeNode extends Node {
 
         public abstract NativeSequenceStorage execute(Object obj);
 
@@ -1595,140 +1859,6 @@ public abstract class SequenceStorageNodes {
 
         public static CmpNode createEq() {
             return CmpNodeGen.create(Eq.INSTANCE);
-        }
-    }
-
-    public abstract static class NormalizeIndexNode extends PNodeWithContext {
-        public static final String INDEX_OUT_OF_BOUNDS = "index out of range";
-        public static final String RANGE_OUT_OF_BOUNDS = "range index out of range";
-        public static final String TUPLE_OUT_OF_BOUNDS = "tuple index out of range";
-        public static final String TUPLE_ASSIGN_OUT_OF_BOUNDS = "tuple assignment index out of range";
-        public static final String LIST_OUT_OF_BOUNDS = "list index out of range";
-        public static final String LIST_ASSIGN_OUT_OF_BOUNDS = "list assignment index out of range";
-        public static final String ARRAY_OUT_OF_BOUNDS = "array index out of range";
-        public static final String ARRAY_ASSIGN_OUT_OF_BOUNDS = "array assignment index out of range";
-        public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
-
-        private final String errorMessage;
-        private final boolean boundsCheck;
-        private final ConditionProfile negativeIndexProfile = ConditionProfile.createBinaryProfile();
-
-        @CompilationFinal private ConditionProfile outOfBoundsProfile;
-
-        public NormalizeIndexNode(String errorMessage, boolean boundsCheck) {
-            this.errorMessage = errorMessage;
-            this.boundsCheck = boundsCheck;
-        }
-
-        public abstract int execute(Object index, int length);
-
-        @Specialization
-        public int doInt(int index, int length) {
-            int idx = index;
-            if (negativeIndexProfile.profile(idx < 0)) {
-                idx += length;
-            }
-            doBoundsCheck(idx, length);
-            return idx;
-        }
-
-        @Specialization
-        int doBool(boolean index, int length) {
-            int idx = PInt.intValue(index);
-            doBoundsCheck(idx, length);
-            return idx;
-        }
-
-        private void doBoundsCheck(int idx, int length) {
-            if (boundsCheck) {
-                if (outOfBoundsProfile == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    outOfBoundsProfile = ConditionProfile.createBinaryProfile();
-                }
-                if (outOfBoundsProfile.profile(idx < 0 || idx >= length)) {
-                    throw raise(IndexError, errorMessage);
-                }
-            }
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doLong(long index, int length) {
-            int idx = PInt.intValueExact(index);
-            return doInt(idx, length);
-        }
-
-        @Specialization(replaces = "doLong")
-        int doLongOvf(long index, int length,
-                        @Cached PRaiseNode raise) {
-            try {
-                return doLong(index, length);
-            } catch (ArithmeticException e) {
-                throw raise.raiseIndexError();
-            }
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doPInt(PInt index, int length) {
-            int idx = index.intValueExact();
-            return doInt(idx, length);
-        }
-
-        @Specialization(replaces = "doPInt")
-        int doPIntOvf(PInt index, int length,
-                        @Cached PRaiseNode raise) {
-            try {
-                return doPInt(index, length);
-            } catch (ArithmeticException e) {
-                throw raise.raiseIndexError();
-            }
-        }
-
-        public static NormalizeIndexNode create() {
-            return create(INDEX_OUT_OF_BOUNDS, true);
-        }
-
-        public static NormalizeIndexNode create(String errorMessage) {
-            return NormalizeIndexNodeGen.create(errorMessage, true);
-        }
-
-        public static NormalizeIndexNode create(boolean boundsCheck) {
-            return NormalizeIndexNodeGen.create(INDEX_OUT_OF_BOUNDS, boundsCheck);
-        }
-
-        public static NormalizeIndexNode create(String errorMessage, boolean boundsCheck) {
-            return NormalizeIndexNodeGen.create(errorMessage, boundsCheck);
-        }
-
-        public static NormalizeIndexNode forList() {
-            return create(LIST_OUT_OF_BOUNDS);
-        }
-
-        public static NormalizeIndexNode forListAssign() {
-            return create(LIST_ASSIGN_OUT_OF_BOUNDS);
-        }
-
-        public static NormalizeIndexNode forTuple() {
-            return create(TUPLE_OUT_OF_BOUNDS);
-        }
-
-        public static NormalizeIndexNode forTupleAssign() {
-            return create(TUPLE_ASSIGN_OUT_OF_BOUNDS);
-        }
-
-        public static NormalizeIndexNode forArray() {
-            return create(ARRAY_OUT_OF_BOUNDS);
-        }
-
-        public static NormalizeIndexNode forArrayAssign() {
-            return create(ARRAY_ASSIGN_OUT_OF_BOUNDS);
-        }
-
-        public static NormalizeIndexNode forRange() {
-            return create(RANGE_OUT_OF_BOUNDS);
-        }
-
-        public static NormalizeIndexNode forBytearray() {
-            return create(BYTEARRAY_OUT_OF_BOUNDS);
         }
     }
 
@@ -2285,56 +2415,43 @@ public abstract class SequenceStorageNodes {
     /**
      * Does not allow any generalization but compatible types.
      */
+    @GenerateUncached
     public abstract static class NoGeneralizationNode extends GeneralizationNode {
 
-        private final String errorMessage;
+        public static final GenNodeSupplier DEFAULT = new GenNodeSupplier() {
 
-        public NoGeneralizationNode(String errorMessage) {
-            this.errorMessage = errorMessage;
+            public GeneralizationNode getUncached() {
+                return NoGeneralizationNodeGen.getUncached();
+            }
+
+            public GeneralizationNode create() {
+                return NoGeneralizationNodeGen.create();
+            }
+        };
+
+        @Specialization
+        protected SequenceStorage doGeneric(SequenceStorage s, Object indicationVal,
+                        @Cached IsAssignCompatibleNode isAssignCompatibleNode,
+                        @Cached GetElementType getElementType,
+                        @Cached("createClassProfile()") ValueProfile valTypeProfile,
+                        @Cached PRaiseNode raiseNode) {
+
+            Object val = valTypeProfile.profile(indicationVal);
+            if (val instanceof SequenceStorage && isAssignCompatibleNode.execute(s, (SequenceStorage) val)) {
+                return s;
+            }
+
+            ListStorageType et = getElementType.execute(s);
+            if (val instanceof Byte && isByteLike(et) || val instanceof Integer && (isInt(et) || isLong(et)) || val instanceof Long && isLong(et) ||
+                            val instanceof PList && isList(et) || val instanceof PTuple && isTuple(et) || isObject(et)) {
+                return s;
+            }
+
+            throw raiseNode.raise(TypeError, getErrorMessage());
         }
 
-        @Specialization(guards = "compatibleAssign(s, indicationStorage)")
-        SequenceStorage doGeneric(SequenceStorage s, @SuppressWarnings("unused") SequenceStorage indicationStorage) {
-            return s;
-        }
-
-        @Specialization(guards = "isByteLike(s)")
-        SequenceStorage doLongByte(SequenceStorage s, @SuppressWarnings("unused") byte val) {
-            return s;
-        }
-
-        @Specialization(guards = "isInt(s) || isLong(s)")
-        SequenceStorage doLongInteger(SequenceStorage s, @SuppressWarnings("unused") int val) {
-            return s;
-        }
-
-        @Specialization(guards = "isLong(s)")
-        SequenceStorage doLongLong(SequenceStorage s, @SuppressWarnings("unused") long val) {
-            return s;
-        }
-
-        @Specialization(guards = "isList(s)")
-        SequenceStorage doListList(SequenceStorage s, @SuppressWarnings("unused") PList val) {
-            return s;
-        }
-
-        @Specialization(guards = "isTuple(s)")
-        SequenceStorage doTupleTuple(SequenceStorage s, @SuppressWarnings("unused") PTuple val) {
-            return s;
-        }
-
-        @Specialization(guards = "isObject(s)")
-        SequenceStorage doObjectObject(SequenceStorage s, @SuppressWarnings("unused") Object val) {
-            return s;
-        }
-
-        @Fallback
-        SequenceStorage doGeneric(@SuppressWarnings("unused") SequenceStorage s, @SuppressWarnings("unused") Object indicationValue) {
-            throw raise(TypeError, errorMessage);
-        }
-
-        public static NoGeneralizationNode create(String invalidItemErrorMessage) {
-            return NoGeneralizationNodeGen.create(invalidItemErrorMessage);
+        protected String getErrorMessage() {
+            return "";
         }
     }
 
@@ -2359,11 +2476,21 @@ public abstract class SequenceStorageNodes {
     /**
      * Implements list generalization rules; previously in 'SequenceStroage.generalizeFor'.
      */
+    @GenerateUncached
     public abstract static class ListGeneralizationNode extends GeneralizationNode {
 
-        private static final int DEFAULT_CAPACITY = 8;
+        public static final GenNodeSupplier SUPPLIER = new GenNodeSupplier() {
 
-        @CompilationFinal private ValueProfile selfProfile;
+            public GeneralizationNode getUncached() {
+                return ListGeneralizationNodeGen.getUncached();
+            }
+
+            public GeneralizationNode create() {
+                return ListGeneralizationNodeGen.create();
+            }
+        };
+
+        private static final int DEFAULT_CAPACITY = 8;
 
         @Specialization
         ObjectSequenceStorage doObject(@SuppressWarnings("unused") ObjectSequenceStorage s, @SuppressWarnings("unused") Object indicationValue) {
@@ -2465,14 +2592,18 @@ public abstract class SequenceStorageNodes {
 
         // TODO native sequence storage
 
-        @Specialization(guards = "compatibleAssign(s, indicationStorage)")
-        TypedSequenceStorage doTyped(TypedSequenceStorage s, @SuppressWarnings("unused") SequenceStorage indicationStorage) {
+        @Specialization(guards = "isAssignCompatibleNode.execute(s, indicationStorage)", limit = "1")
+        TypedSequenceStorage doTyped(TypedSequenceStorage s, @SuppressWarnings("unused") SequenceStorage indicationStorage,
+                        @Shared("isAssignCompatibleNode") @Cached @SuppressWarnings("unused") IsAssignCompatibleNode isAssignCompatibleNode) {
             return s;
         }
 
-        @Fallback
-        ObjectSequenceStorage doTyped(SequenceStorage s, @SuppressWarnings("unused") Object value) {
-            SequenceStorage profiled = getSelfProfile().profile(s);
+        // TODO fallback guard
+        @Specialization(guards = "isFallbackCase(s, value, isAssignCompatibleNode)", limit = "1")
+        ObjectSequenceStorage doTyped(SequenceStorage s, @SuppressWarnings("unused") Object value,
+                        @Cached("createClassProfile()") ValueProfile selfProfile,
+                        @Shared("isAssignCompatibleNode") @Cached @SuppressWarnings("unused") IsAssignCompatibleNode isAssignCompatibleNode) {
+            SequenceStorage profiled = selfProfile.profile(s);
             if (profiled instanceof BasicSequenceStorage) {
                 return new ObjectSequenceStorage(profiled.getInternalArray());
             }
@@ -2480,43 +2611,44 @@ public abstract class SequenceStorageNodes {
             return new ObjectSequenceStorage(DEFAULT_CAPACITY);
         }
 
-        private ValueProfile getSelfProfile() {
-            if (selfProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                selfProfile = ValueProfile.createClassProfile();
+        protected static boolean isFallbackCase(SequenceStorage s, Object value, IsAssignCompatibleNode isAssignCompatibleNode) {
+            // there are explicit specializations for all cases with EmptySequenceStorage
+            if (s instanceof EmptySequenceStorage || s instanceof ObjectSequenceStorage) {
+                return false;
             }
-            return selfProfile;
+            if ((value instanceof ByteSequenceStorage || value instanceof IntSequenceStorage || value instanceof LongSequenceStorage) &&
+                            (value instanceof Byte || value instanceof Integer || value instanceof Long)) {
+                return false;
+            }
+            if (value instanceof SequenceStorage && isAssignCompatibleNode.execute(s, (SequenceStorage) value)) {
+                return false;
+            }
+            return true;
         }
 
         public static ListGeneralizationNode create() {
             return ListGeneralizationNodeGen.create();
         }
-
     }
 
+    @GenerateUncached
     public abstract static class AppendNode extends SequenceStorageBaseNode {
 
-        @Child private GeneralizationNode genNode;
-
-        private final Supplier<GeneralizationNode> genNodeProvider;
-
-        public AppendNode(Supplier<GeneralizationNode> genNodeProvider) {
-            this.genNodeProvider = genNodeProvider;
-        }
-
-        public abstract SequenceStorage execute(SequenceStorage s, Object val);
+        public abstract SequenceStorage execute(SequenceStorage s, Object val, GenNodeSupplier genNodeSupplier);
 
         @Specialization
-        SequenceStorage doEmpty(EmptySequenceStorage s, Object val,
-                        @Cached("createRecursive()") AppendNode recursive) {
-            SequenceStorage newStorage = generalizeStore(s, val);
-            return recursive.execute(newStorage, val);
+        SequenceStorage doEmpty(EmptySequenceStorage s, Object val, GenNodeSupplier genNodeSupplier,
+                        @Cached AppendNode recursive,
+                        @Exclusive @Cached DoGeneralizationNode doGenNode) {
+            SequenceStorage newStorage = doGenNode.execute(genNodeSupplier, s, val);
+            return recursive.execute(newStorage, val, genNodeSupplier);
         }
 
         @Specialization(limit = "MAX_ARRAY_STORAGES", guards = "s.getClass() == cachedClass")
-        SequenceStorage doManaged(BasicSequenceStorage s, Object val,
+        SequenceStorage doManaged(BasicSequenceStorage s, Object val, GenNodeSupplier genNodeSupplier,
                         @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
-                        @Cached("create()") SetItemScalarNode setItemNode) {
+                        @Cached("create()") SetItemScalarNode setItemNode,
+                        @Exclusive @Cached DoGeneralizationNode doGenNode) {
             BasicSequenceStorage profiled = cachedClass.cast(s);
             int len = profiled.length();
             profiled.ensureCapacity(len + 1);
@@ -2525,7 +2657,7 @@ public abstract class SequenceStorageNodes {
                 profiled.setNewLength(len + 1);
                 return profiled;
             } catch (SequenceStoreException e) {
-                SequenceStorage generalized = generalizeStore(profiled, e.getIndicationValue());
+                SequenceStorage generalized = doGenNode.execute(genNodeSupplier, profiled, e.getIndicationValue());
                 generalized.ensureCapacity(len + 1);
                 try {
                     setItemNode.execute(generalized, len, val);
@@ -2540,22 +2672,13 @@ public abstract class SequenceStorageNodes {
 
         // TODO native sequence storage
 
-        protected AppendNode createRecursive() {
-            return AppendNodeGen.create(genNodeProvider);
+        public static AppendNode create() {
+            return AppendNodeGen.create();
         }
 
-        private SequenceStorage generalizeStore(SequenceStorage storage, Object value) {
-            if (genNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                genNode = insert(genNodeProvider.get());
-            }
-            return genNode.execute(storage, value);
+        public static AppendNode getUncached() {
+            return AppendNodeGen.getUncached();
         }
-
-        public static AppendNode create(Supplier<GeneralizationNode> genNodeProvider) {
-            return AppendNodeGen.create(genNodeProvider);
-        }
-
     }
 
     public abstract static class CreateEmptyNode extends SequenceStorageBaseNode {
@@ -2650,18 +2773,19 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
-    public abstract static class LenNode extends SequenceStorageBaseNode {
+    @ImportStatic(SequenceStorageBaseNode.class)
+    public abstract static class LenNode extends Node {
 
         public abstract int execute(SequenceStorage s);
 
         @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
-        int doSpecial(SequenceStorage s,
+        static int doSpecial(SequenceStorage s,
                         @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
             return cachedClass.cast(s).length();
         }
 
         @Specialization(replaces = "doSpecial")
-        int doGeneric(SequenceStorage s) {
+        static int doGeneric(SequenceStorage s) {
             return s.length();
         }
 
@@ -2674,18 +2798,29 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    public abstract static class SetLenNode extends SequenceStorageBaseNode {
+    @GenerateUncached
+    @ImportStatic(SequenceStorageBaseNode.class)
+    public abstract static class SetLenNode extends Node {
 
         public abstract void execute(SequenceStorage s, int len);
 
         @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
-        void doSpecial(SequenceStorage s, int len,
+        static void doSpecial(SequenceStorage s, int len,
                         @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
             cachedClass.cast(s).setNewLength(len);
         }
 
+        @Specialization(replaces = "doSpecial")
+        static void doGeneric(SequenceStorage s, int len) {
+            s.setNewLength(len);
+        }
+
         public static SetLenNode create() {
             return SetLenNodeGen.create();
+        }
+
+        public static SetLenNode getUncached() {
+            return SetLenNodeGen.getUncached();
         }
     }
 
@@ -2883,9 +3018,14 @@ public abstract class SequenceStorageNodes {
         public abstract ListStorageType execute(SequenceStorage s);
 
         @Specialization(limit = "cacheLimit()", guards = {"s.getClass() == cachedClass"})
-        ListStorageType doCached(SequenceStorage s,
+        static ListStorageType doCached(SequenceStorage s,
                         @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
             return cachedClass.cast(s).getElementType();
+        }
+
+        @Specialization(replaces = "doCached")
+        static ListStorageType doUncached(SequenceStorage s) {
+            return s.getElementType();
         }
 
         protected static int cacheLimit() {

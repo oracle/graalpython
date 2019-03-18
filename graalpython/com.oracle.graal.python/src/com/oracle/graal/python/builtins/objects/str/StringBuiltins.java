@@ -71,7 +71,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetIt
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListReverseNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -1026,7 +1025,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public PList doSplit(String self, String sep,
-                        @Cached("create()") ListAppendNode appendNode) {
+                        @Cached("create()") AppendNode appendNode) {
             int lastIndexOf = self.lastIndexOf(sep);
             PList list = factory().createList();
             if (lastIndexOf == -1) {
