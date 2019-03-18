@@ -93,7 +93,7 @@ public abstract class CastToIntegerFromIndexNode extends PNodeWithContext {
 
     @Specialization
     public long toInt(double x,
-                      @Cached PRaiseNode raise) {
+                    @Cached PRaiseNode raise) {
         if (typeErrorHandler != null) {
             return typeErrorHandler.apply(x);
         }
@@ -102,7 +102,7 @@ public abstract class CastToIntegerFromIndexNode extends PNodeWithContext {
 
     @Specialization(guards = "!isNumber(x)")
     public Object toInt(Object x,
-                        @Cached PRaiseNode raise) {
+                    @Cached PRaiseNode raise) {
         if (callIndexNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__INDEX__));

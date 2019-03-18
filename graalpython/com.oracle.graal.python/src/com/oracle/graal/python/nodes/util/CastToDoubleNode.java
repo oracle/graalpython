@@ -85,7 +85,7 @@ public abstract class CastToDoubleNode extends PNodeWithContext {
 
     @Specialization(guards = "!isNumber(x)")
     public double toDouble(Object x,
-                           @Cached PRaiseNode raise) {
+                    @Cached PRaiseNode raise) {
         if (callFloatNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callFloatNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__FLOAT__));

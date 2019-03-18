@@ -64,7 +64,7 @@ public abstract class GetDictNode extends PNodeWithContext {
 
     @Specialization
     Object dict(PythonModule self,
-                @Cached PythonObjectFactory factory) {
+                    @Cached PythonObjectFactory factory) {
         PHashingCollection dict = self.getDict();
         if (dict == null) {
             dict = factory.createDictFixedStorage(self);

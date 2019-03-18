@@ -81,7 +81,7 @@ public abstract class SetNodes {
         @Specialization
         @TruffleBoundary
         public PSet setString(LazyPythonClass cls, String arg,
-                              @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             PSet set = factory.createSet(cls);
             for (int i = 0; i < arg.length(); i++) {
                 getSetItemNode().execute(set, String.valueOf(arg.charAt(i)), PNone.NO_VALUE);

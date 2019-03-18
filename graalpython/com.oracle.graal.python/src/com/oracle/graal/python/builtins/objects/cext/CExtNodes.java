@@ -1672,10 +1672,9 @@ public abstract class CExtNodes {
         public abstract Object execute(Object obj, String getterFuncName);
 
         /*
-         * A note about the logic here, and why this is fine: the cachedObj is
-         * from a particular native context, so we can be sure that the
-         * "nativeClassStableAssumption" (which is per-context) is from the
-         * context in which this native object was created.
+         * A note about the logic here, and why this is fine: the cachedObj is from a particular
+         * native context, so we can be sure that the "nativeClassStableAssumption" (which is
+         * per-context) is from the context in which this native object was created.
          */
         @Specialization(guards = {"cachedObj.equals(obj)", "memberName == cachedMemberName"}, limit = "1", assumptions = "getNativeClassStableAssumption(cachedObj)")
         public Object doCachedObj(@SuppressWarnings("unused") PythonNativeClass obj, @SuppressWarnings("unused") String memberName,

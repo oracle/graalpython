@@ -106,7 +106,7 @@ public abstract class CastToStringNode extends PNodeWithContext {
 
     @Specialization(guards = "coerce")
     String doGeneric(Object x,
-                     @Cached PRaiseNode raise) {
+                    @Cached PRaiseNode raise) {
         if (callStrNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callStrNode = insert(LookupAndCallUnaryNode.create(__STR__));

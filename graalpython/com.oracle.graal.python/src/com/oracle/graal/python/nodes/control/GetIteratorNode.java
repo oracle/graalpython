@@ -116,7 +116,7 @@ public abstract class GetIteratorNode extends UnaryOpNode {
 
     @Specialization
     public PythonObject doNone(PNone none,
-                               @Cached PRaiseNode raise) {
+                    @Cached PRaiseNode raise) {
         throw notIterable(none, raise);
     }
 

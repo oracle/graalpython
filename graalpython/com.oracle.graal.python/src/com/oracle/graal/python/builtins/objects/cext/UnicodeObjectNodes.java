@@ -105,14 +105,14 @@ public abstract class UnicodeObjectNodes {
 
         @Specialization
         PBytes doUnicode(PString s, long elementSize, long elements,
-                         @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             return doUnicode(s.getValue(), elementSize, elements, factory);
         }
 
         @Specialization
         @TruffleBoundary
         PBytes doUnicode(String s, long elementSize, long elements,
-                         @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             // use native byte order
             Charset utf32Charset = getUTF32Charset(-1);
 

@@ -77,7 +77,7 @@ abstract class GetSulongTypeNode extends PNodeWithContext {
 
     @Specialization(replaces = "doBuiltinCached")
     Object doBuiltinGeneric(PythonBuiltinClassType clazz,
-                            @CachedContext(PythonLanguage.class) PythonContext context) {
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
         return getSulongTypeForBuiltinClass(clazz, context);
     }
 

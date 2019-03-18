@@ -238,7 +238,7 @@ public abstract class TypeNodes {
 
         @Specialization
         MroSequenceStorage doBuiltinClass(PythonBuiltinClassType obj,
-                                          @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getCore().lookupType(obj).getMethodResolutionOrder();
         }
 
@@ -395,7 +395,7 @@ public abstract class TypeNodes {
 
         @Specialization
         Set<PythonAbstractClass> doPythonClass(PythonBuiltinClassType obj,
-                                               @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getCore().lookupType(obj).getSubClasses();
         }
 
@@ -520,13 +520,13 @@ public abstract class TypeNodes {
 
         @Specialization
         PythonAbstractClass[] doPythonClass(PythonBuiltinClassType obj,
-                                            @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getCore().lookupType(obj).getBaseClasses();
         }
 
         @Specialization
         PythonAbstractClass[] doNative(PythonNativeClass obj,
-                                       @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached GetTypeMemberNode getTpBasesNode,
                         @Cached("createClassProfile()") ValueProfile resultTypeProfile,
                         @Cached("createToArray()") SequenceStorageNodes.ToArrayNode toArrayNode) {
@@ -822,7 +822,7 @@ public abstract class TypeNodes {
 
         @Specialization(guards = {"!isManagedClass(clazz)", "!isPythonBuiltinClassType(clazz)"})
         Shape doError(@SuppressWarnings("unused") LazyPythonClass clazz,
-                      @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode raise) {
             throw raise.raise(PythonBuiltinClassType.SystemError, "cannot get shape of native class");
         }
 

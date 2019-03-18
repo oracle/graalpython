@@ -589,60 +589,59 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doNativeWrapper(String name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
-                               @Cached("create()") CheckFunctionResultNode recursive) {
+                        @Cached("create()") CheckFunctionResultNode recursive) {
             return recursive.execute(name, result.getDelegate());
         }
 
         @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
         Object doPrimitiveWrapper(String name, @SuppressWarnings("unused") PythonNativeWrapper result,
-                               @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
-                               @Shared("fact") @Cached PythonObjectFactory factory,
-                               @Shared("rais") @Cached PRaiseNode raise) {
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("rais") @Cached PRaiseNode raise) {
             checkFunctionResult(name, false, context, raise, factory);
             return result;
         }
 
         @Specialization(guards = "isNoValue(result)")
         Object doNoValue(String name, @SuppressWarnings("unused") PNone result,
-                               @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
-                               @Shared("fact") @Cached PythonObjectFactory factory,
-                               @Shared("rais") @Cached PRaiseNode raise) {
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("rais") @Cached PRaiseNode raise) {
             checkFunctionResult(name, true, context, raise, factory);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "!isNoValue(result)")
         Object doPythonObject(String name, @SuppressWarnings("unused") PythonAbstractObject result,
-                               @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
-                               @Shared("fact") @Cached PythonObjectFactory factory,
-                               @Shared("rais") @Cached PRaiseNode raise) {
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("rais") @Cached PRaiseNode raise) {
             checkFunctionResult(name, false, context, raise, factory);
             return result;
         }
 
         @Specialization
         Object doPythonNativeNull(String name, @SuppressWarnings("unused") PythonNativeNull result,
-                               @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
-                               @Shared("fact") @Cached PythonObjectFactory factory,
-                               @Shared("rais") @Cached PRaiseNode raise) {
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("rais") @Cached PRaiseNode raise) {
             checkFunctionResult(name, true, context, raise, factory);
             return result;
         }
 
         /*
-         * Our fallback case, but with some cached
-         * params. PythonObjectNativeWrapper results should be unwrapped and
-         * recursively delegated (see #doNativeWrapper) and PNone is treated
-         * specially, because we consider it as null in #doNoValue and as not
-         * null in #doPythonObject
+         * Our fallback case, but with some cached params. PythonObjectNativeWrapper results should
+         * be unwrapped and recursively delegated (see #doNativeWrapper) and PNone is treated
+         * specially, because we consider it as null in #doNoValue and as not null in
+         * #doPythonObject
          */
         @Specialization(guards = {"!isPythonObjectNativeWrapper(result)", "!isPNone(result)"})
         Object doForeign(String name, Object result,
-                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile isNullProfile,
-                         @Exclusive @CachedLibrary(limit = "1") InteropLibrary lib,
-                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
-                         @Shared("fact") @Cached PythonObjectFactory factory,
-                         @Shared("rais") @Cached PRaiseNode raise) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile isNullProfile,
+                        @Exclusive @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("rais") @Cached PRaiseNode raise) {
             checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), context, raise, factory);
             return result;
         }

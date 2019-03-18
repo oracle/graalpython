@@ -147,7 +147,7 @@ public abstract class ChannelNodes {
 
         @Specialization
         ByteSequenceStorage readSeekable(SeekableByteChannel channel, int size,
-                     @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode raise) {
             long availableSize;
             try {
                 availableSize = availableSize(channel);
@@ -164,7 +164,7 @@ public abstract class ChannelNodes {
 
         @Specialization
         ByteSequenceStorage readReadable(ReadableByteChannel channel, int size,
-                     @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode raise) {
             int sz = Math.min(size, MAX_READ);
             ByteBuffer dst = allocateBuffer(sz);
             int readSize = readIntoBuffer(channel, dst, raise);
@@ -182,7 +182,7 @@ public abstract class ChannelNodes {
 
         @Specialization
         ByteSequenceStorage readGeneric(Channel channel, int size,
-                     @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode raise) {
             if (channel instanceof SeekableByteChannel) {
                 return readSeekable((SeekableByteChannel) channel, size, raise);
             } else if (channel instanceof ReadableByteChannel) {
@@ -216,7 +216,7 @@ public abstract class ChannelNodes {
 
         @Specialization
         int readByte(ReadableByteChannel channel,
-                     @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached("createBinaryProfile()") ConditionProfile readProfile) {
             ByteBuffer buf = allocate(1);
             int read = readIntoBuffer(channel, buf, raise);
@@ -259,7 +259,7 @@ public abstract class ChannelNodes {
 
         @Specialization
         void readByte(WritableByteChannel channel, byte b,
-                     @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached("createBinaryProfile()") ConditionProfile readProfile) {
             ByteBuffer buf = allocate(1);
             put(b, buf);
@@ -298,7 +298,7 @@ public abstract class ChannelNodes {
 
         @Specialization
         int writeSeekable(SeekableByteChannel channel, SequenceStorage s, int len,
-                     @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode raise) {
             long availableSize;
             try {
                 availableSize = availableSize(channel);
@@ -316,7 +316,7 @@ public abstract class ChannelNodes {
 
         @Specialization
         int writeWritable(WritableByteChannel channel, SequenceStorage s, int len,
-                     @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode raise) {
             ByteBuffer src = allocateBuffer(getBytes(s));
             if (src.remaining() > len) {
                 src.limit(len);
@@ -326,7 +326,7 @@ public abstract class ChannelNodes {
 
         @Specialization
         int writeGeneric(Channel channel, SequenceStorage s, int len,
-                     @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode raise) {
             if (channel instanceof SeekableByteChannel) {
                 return writeSeekable((SeekableByteChannel) channel, s, len, raise);
             } else if (channel instanceof ReadableByteChannel) {

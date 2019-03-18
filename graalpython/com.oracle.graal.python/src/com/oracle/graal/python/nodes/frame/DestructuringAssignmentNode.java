@@ -204,7 +204,8 @@ public final class DestructuringAssignmentNode extends StatementNode implements 
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 contextRef = PythonLanguage.getContextRef();
             }
-            throw contextRef.get().getCore().raiseInvalidSyntax(getEncapsulatingSourceSection().getSource(), getEncapsulatingSourceSection(), "too many values to unpack (expected %d)", nonExistingItem);
+            throw contextRef.get().getCore().raiseInvalidSyntax(getEncapsulatingSourceSection().getSource(), getEncapsulatingSourceSection(), "too many values to unpack (expected %d)",
+                            nonExistingItem);
         } catch (PException e) {
             if (tooManyValuesErrorProfile.profileException(e, IndexError)) {
                 // expected, fall through

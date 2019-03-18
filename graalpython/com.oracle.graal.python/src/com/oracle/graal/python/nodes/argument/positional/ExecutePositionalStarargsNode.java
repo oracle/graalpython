@@ -115,7 +115,7 @@ public abstract class ExecutePositionalStarargsNode extends PNodeWithContext {
     @Specialization
     @TruffleBoundary(allowInlining = true)
     Object[] starargs(Object object,
-                      @Cached PRaiseNode raise,
+                    @Cached PRaiseNode raise,
                     @Cached("create()") GetIteratorNode getIterator,
                     @Cached("create()") GetNextNode next,
                     @Cached("create()") IsBuiltinClassProfile errorProfile) {

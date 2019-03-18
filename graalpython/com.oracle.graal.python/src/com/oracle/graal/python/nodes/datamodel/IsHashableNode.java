@@ -75,8 +75,8 @@ public abstract class IsHashableNode extends PDataModelEmulationNode {
 
     @Specialization
     protected boolean isHashableGeneric(Object object,
-                                        @CachedContext(PythonLanguage.class) PythonContext context,
-                                        @Cached PRaiseNode raiseNode,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Cached PRaiseNode raiseNode,
                     @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
                     @Cached("create()") BuiltinFunctions.IsInstanceNode isInstanceNode) {
         Object hashValue = lookupHashAttributeNode.executeObject(object);

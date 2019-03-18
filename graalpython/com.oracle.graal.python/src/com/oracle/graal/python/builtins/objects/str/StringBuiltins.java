@@ -77,7 +77,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.SpliceNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -905,14 +904,14 @@ public final class StringBuiltins extends PythonBuiltins {
 
     protected abstract static class SpliceNode extends PNodeWithContext {
         public static SpliceNode create() {
-            return SpliceNodeGen.create();
+            return StringBuiltinsFactory.SpliceNodeGen.create();
         }
 
         protected abstract char[] execute(char[] translatedChars, int i, Object translated);
 
         @Specialization
         char[] doInt(char[] translatedChars, int i, int translated,
-                     @Shared("raise") @Cached PRaiseNode raise,
+                        @Shared("raise") @Cached PRaiseNode raise,
                         @Cached("create()") BranchProfile ovf) {
             char t = (char) translated;
             if (t != translated) {
@@ -925,7 +924,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         char[] doLong(char[] translatedChars, int i, long translated,
-                     @Shared("raise") PRaiseNode raise,
+                        @Shared("raise") PRaiseNode raise,
                         @Cached("create()") BranchProfile ovf) {
             char t = (char) translated;
             if (t != translated) {
@@ -936,13 +935,13 @@ public final class StringBuiltins extends PythonBuiltins {
             return translatedChars;
         }
 
-        private PException raiseError(PRaiseNode raise) {
+        private static PException raiseError(PRaiseNode raise) {
             return raise.raise(ValueError, "character mapping must be in range(0x%s)", Integer.toHexString(Character.MAX_CODE_POINT + 1));
         }
 
         @Specialization
         char[] doPInt(char[] translatedChars, int i, PInt translated,
-                     @Shared("raise") @Cached PRaiseNode raise,
+                        @Shared("raise") @Cached PRaiseNode raise,
                         @Cached("create()") BranchProfile ovf) {
             double doubleValue = translated.doubleValue();
             char t = (char) doubleValue;

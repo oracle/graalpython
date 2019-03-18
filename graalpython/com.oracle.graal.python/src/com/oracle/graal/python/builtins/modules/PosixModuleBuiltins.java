@@ -611,7 +611,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class ListdirNode extends PythonBuiltinNode {
         @Specialization
         Object listdir(VirtualFrame frame, String path,
-                       @Cached PRaiseOSErrorNode raiseOS) {
+                        @Cached PRaiseOSErrorNode raiseOS) {
             try {
                 TruffleFile file = getContext().getEnv().getTruffleFile(path);
                 Collection<TruffleFile> listFiles = file.list();
@@ -818,7 +818,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object lseek(VirtualFrame frame, int fd, long pos, int how,
-                     @Cached PRaiseOSErrorNode raise,
+                        @Cached PRaiseOSErrorNode raise,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
             if (noFile.profile(channel == null || !(channel instanceof SeekableByteChannel))) {

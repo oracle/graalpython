@@ -101,8 +101,8 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
         PythonAbstractClass doCurExcType(@SuppressWarnings("unused") String key,
-                                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
-                                         @Shared("getClassNode") @Cached GetClassNode getClassNode) {
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode) {
             PException currentException = context.getCurrentException();
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
@@ -113,7 +113,7 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, CUR_EXC_VALUE)")
         PBaseException doCurExcValue(@SuppressWarnings("unused") String key,
-                                     @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException currentException = context.getCurrentException();
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
@@ -124,8 +124,8 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
         PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key,
-                                     @Shared("factory") @Cached PythonObjectFactory factory,
-                                     @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException currentException = context.getCurrentException();
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
@@ -136,8 +136,8 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, EXC_TYPE)")
         PythonAbstractClass doExcType(@SuppressWarnings("unused") String key,
-                                      @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
-                                      @Shared("getClassNode") @Cached GetClassNode getClassNode) {
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode) {
             PException currentException = context.getCaughtException();
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
@@ -148,7 +148,7 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, EXC_VALUE)")
         PBaseException doExcValue(@SuppressWarnings("unused") String key,
-                                  @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException currentException = context.getCaughtException();
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
@@ -159,8 +159,8 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, EXC_TRACEBACK)")
         PTraceback doExcTraceback(@SuppressWarnings("unused") String key,
-                                  @Shared("factory") @Cached PythonObjectFactory factory,
-                                  @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException currentException = context.getCaughtException();
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
@@ -171,8 +171,8 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, DICT)")
         PDict doDict(@SuppressWarnings("unused") String key,
-                     @Shared("factory") @Cached PythonObjectFactory factory,
-                     @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PThreadState customThreadState = context.getCustomThreadState();
             PDict threadStateDict = customThreadState.getThreadStateDict();
             if (threadStateDict == null) {

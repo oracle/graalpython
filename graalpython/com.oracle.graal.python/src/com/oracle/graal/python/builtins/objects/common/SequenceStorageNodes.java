@@ -629,7 +629,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "storage.getElementType() == Byte")
         protected NativeSequenceStorage doNativeByte(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                                                       @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             byte[] newArray = new byte[length];
@@ -641,7 +641,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "storage.getElementType() == Int")
         protected NativeSequenceStorage doNativeInt(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                                                       @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             int[] newArray = new int[length];
@@ -653,7 +653,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "storage.getElementType() == Long")
         protected NativeSequenceStorage doNativeLong(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                                                       @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             long[] newArray = new long[length];
@@ -665,7 +665,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "storage.getElementType() == Double")
         protected NativeSequenceStorage doNativeDouble(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                                                       @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             double[] newArray = new double[length];
@@ -677,7 +677,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "storage.getElementType() == Generic")
         protected NativeSequenceStorage doNativeObject(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                                                       @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             Object[] newArray = new Object[length];
@@ -911,8 +911,8 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "isByteStorage(storage)")
         protected void doNativeByte(NativeSequenceStorage storage, int idx, Object value,
-                                    @Cached PRaiseNode raise,
-                                    @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Cached PRaiseNode raise,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             try {
                 lib.writeArrayElement(storage.getPtr(), idx, getCastToByteNode().execute(value));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
@@ -923,8 +923,8 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected void doNative(NativeSequenceStorage storage, int idx, Object value,
-                                @Cached PRaiseNode raise,
-                                @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Cached PRaiseNode raise,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             try {
                 lib.writeArrayElement(storage.getPtr(), idx, verifyValue(storage, value));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
@@ -1658,7 +1658,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(replaces = "doLong")
         int doLongOvf(long index, int length,
-                      @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode raise) {
             try {
                 return doLong(index, length);
             } catch (ArithmeticException e) {
@@ -1674,7 +1674,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(replaces = "doPInt")
         int doPIntOvf(PInt index, int length,
-                      @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode raise) {
             try {
                 return doPInt(index, length);
             } catch (ArithmeticException e) {

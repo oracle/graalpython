@@ -1368,7 +1368,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected static NextNode create() {
-            return NextNodeFactory.create();
+            return BuiltinFunctionsFactory.NextNodeFactory.create();
         }
     }
 

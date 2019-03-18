@@ -92,7 +92,7 @@ public abstract class CallNode extends PNodeWithContext {
 
         @Specialization(guards = {"!isCallable(callableObject) || isClass(callableObject)"})
         protected Object specialCall(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
-                                     @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                         @Cached("create()") CallVarargsMethodNode callCallNode) {
             Object call = callAttrGetterNode.execute(callableObject);
@@ -120,7 +120,7 @@ public abstract class CallNode extends PNodeWithContext {
 
         @Specialization
         protected Object decoratedMethodCall(VirtualFrame frame, PDecoratedMethod callable, Object[] arguments, PKeyword[] keywords,
-                                             @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                         @Cached("create()") CallVarargsMethodNode callCallNode) {
             return specialCall(frame, callable.getCallable(), arguments, keywords, raise, callAttrGetterNode, callCallNode);
@@ -152,7 +152,7 @@ public abstract class CallNode extends PNodeWithContext {
 
         @Specialization(guards = "!isFunction(callable.getFunction())")
         protected Object methodCall(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords,
-                                    @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                         @Cached("create()") CallVarargsMethodNode callCallNode) {
             return specialCall(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
@@ -160,7 +160,7 @@ public abstract class CallNode extends PNodeWithContext {
 
         @Specialization(guards = "!isFunction(callable.getFunction())")
         protected Object builtinMethodCall(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
-                                           @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                         @Cached("create()") CallVarargsMethodNode callCallNode) {
             return specialCall(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);

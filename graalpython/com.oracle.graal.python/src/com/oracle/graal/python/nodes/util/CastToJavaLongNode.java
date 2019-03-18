@@ -97,7 +97,7 @@ public abstract class CastToJavaLongNode extends PNodeWithContext {
 
     @Specialization(guards = "!isNumber(x)")
     public long toLong(Object x,
-                       @Cached PRaiseNode raise,
+                    @Cached PRaiseNode raise,
                     @Cached LookupAndCallUnaryDynamicNode callIntNode) {
         Object result = callIntNode.executeObject(x, __INT__);
         if (result == PNone.NO_VALUE) {

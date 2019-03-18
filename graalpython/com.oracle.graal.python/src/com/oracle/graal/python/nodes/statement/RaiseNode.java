@@ -62,8 +62,8 @@ public abstract class RaiseNode extends StatementNode {
 
     @Specialization
     public void reraise(PNone type, Object cause,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached PRaiseNode raise,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Cached PRaiseNode raise,
                     @Cached("createBinaryProfile()") ConditionProfile hasCurrentException) {
         PException currentException = context.getCaughtException();
         if (hasCurrentException.profile(currentException == null)) {
@@ -74,13 +74,13 @@ public abstract class RaiseNode extends StatementNode {
 
     @Specialization
     public void doRaise(PBaseException exception, PNone cause,
-                        @Cached PRaiseNode raise) {
+                    @Cached PRaiseNode raise) {
         throw raise.raise(exception);
     }
 
     @Specialization(guards = "!isPNone(cause)")
     public void doRaise(PBaseException exception, Object cause,
-                        @Cached PRaiseNode raise,
+                    @Cached PRaiseNode raise,
                     @Cached("create()") WriteAttributeToObjectNode writeCause) {
         writeCause.execute(exception, SpecialAttributeNames.__CAUSE__, cause);
         throw raise.raise(exception);
@@ -101,15 +101,15 @@ public abstract class RaiseNode extends StatementNode {
 
     @Specialization
     public void doRaise(PythonAbstractClass pythonClass, PNone cause,
-                        @Cached PRaiseNode raise) {
+                    @Cached PRaiseNode raise) {
         checkBaseClass(pythonClass, raise);
         throw raise.raise(pythonClass);
     }
 
     @Specialization(guards = "!isPNone(cause)")
     public void doRaise(PythonAbstractClass pythonClass, Object cause,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode raise,
+                    @Cached PythonObjectFactory factory,
+                    @Cached PRaiseNode raise,
                     @Cached("create()") WriteAttributeToObjectNode writeCause) {
         checkBaseClass(pythonClass, raise);
         PBaseException pythonException = factory.createBaseException(pythonClass);
@@ -119,7 +119,7 @@ public abstract class RaiseNode extends StatementNode {
 
     @Specialization(guards = "!isAnyPythonObject(exception)")
     public void doRaise(Object exception, Object cause,
-                        @Cached PRaiseNode raise) {
+                    @Cached PRaiseNode raise) {
         throw raiseNoException(raise);
     }
 

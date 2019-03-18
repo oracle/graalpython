@@ -750,7 +750,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getLength() == 0")
         long doFull(VirtualFrame frame, PMMap self,
-                    @Cached PRaiseOSErrorNode raise,
+                        @Cached PRaiseOSErrorNode raise,
                         @Cached("create()") BranchProfile profile) {
             try {
                 return size(self.getChannel()) - self.getOffset();
@@ -767,7 +767,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         long doGeneric(VirtualFrame frame, PMMap self,
-                       @Cached PRaiseOSErrorNode raise) {
+                        @Cached PRaiseOSErrorNode raise) {
             if (self.getLength() == 0) {
                 try {
                     return size(self.getChannel()) - self.getOffset();

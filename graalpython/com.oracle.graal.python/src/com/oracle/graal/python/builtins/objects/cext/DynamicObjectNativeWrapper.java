@@ -343,7 +343,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             LazyPythonClass superClass = getSuperClassNode.execute(object);
             if (superClass != null) {
                 if (superClass instanceof PythonBuiltinClassType) {
-                    return getToSulongNode().execute(context.getCore().lookupType((PythonBuiltinClassType)superClass));
+                    return getToSulongNode().execute(context.getCore().lookupType((PythonBuiltinClassType) superClass));
                 } else {
                     return getToSulongNode().execute(superClass);
                 }
@@ -741,7 +741,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization
         Object doMemoryview(PMemoryView object, String key,
-                     @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
                         @CachedLibrary(limit = "1") InteropLibrary read,
                         @Cached("createBinaryProfile()") ConditionProfile isNativeObject) {

@@ -127,7 +127,7 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
 
         @Specialization
         boolean doObject(Object object,
-                         @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached("create(__BOOL__)") LookupAndCallUnaryNode callBoolNode) {
             Object value = callBoolNode.executeObject(object);
             if (value instanceof Boolean) {
@@ -206,7 +206,7 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
 
         @Specialization(guards = "!isForeignObject(object)")
         boolean doObject(Object object,
-                         @Cached PRaiseNode raise,
+                        @Cached PRaiseNode raise,
                         @Cached("create(__BOOL__)") LookupAndCallUnaryNode callBoolNode) {
             Object value = callBoolNode.executeObject(object);
             if (value instanceof Boolean) {

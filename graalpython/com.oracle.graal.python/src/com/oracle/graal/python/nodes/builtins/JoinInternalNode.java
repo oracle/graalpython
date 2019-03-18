@@ -91,7 +91,7 @@ public abstract class JoinInternalNode extends PNodeWithContext {
 
     @Specialization
     protected String join(String string, Object iterable,
-                          @Cached PRaiseNode raise,
+                    @Cached PRaiseNode raise,
                     @Cached("create()") GetIteratorNode getIterator,
                     @Cached("create()") GetNextNode next,
                     @Cached("create()") IsBuiltinClassProfile errorProfile1,
@@ -134,7 +134,7 @@ public abstract class JoinInternalNode extends PNodeWithContext {
     @Specialization(guards = "!isString(self)")
     @SuppressWarnings("unused")
     protected String join(Object self, Object arg,
-                          @Cached PRaiseNode raise) {
+                    @Cached PRaiseNode raise) {
         throw raise.raise(TypeError, "can only join an iterable");
     }
 

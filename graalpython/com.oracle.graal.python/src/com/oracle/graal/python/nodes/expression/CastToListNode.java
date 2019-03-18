@@ -96,7 +96,7 @@ public abstract class CastToListNode extends UnaryOpNode {
     @Specialization(guards = {"cannotBeOverridden(getClass(v))", "cachedLength == getLength(v)", "cachedLength < 32"})
     @ExplodeLoop
     protected PList starredTupleCachedLength(PTuple v,
-                                             @Cached PythonObjectFactory factory,
+                    @Cached PythonObjectFactory factory,
                     @Cached("getLength(v)") int cachedLength) {
         SequenceStorage s = v.getSequenceStorage();
         Object[] array = new Object[cachedLength];
@@ -108,7 +108,7 @@ public abstract class CastToListNode extends UnaryOpNode {
 
     @Specialization(replaces = "starredTupleCachedLength", guards = "cannotBeOverridden(getClass(v))")
     protected PList starredTuple(PTuple v,
-                                 @Cached PythonObjectFactory factory) {
+                    @Cached PythonObjectFactory factory) {
         return factory.createList(v.getArray().clone());
     }
 
@@ -129,7 +129,7 @@ public abstract class CastToListNode extends UnaryOpNode {
 
     @Specialization
     protected PList starredGeneric(Object v,
-                                   @Cached PRaiseNode raise) {
+                    @Cached PRaiseNode raise) {
         throw raise.raise(TypeError, "%s is not iterable", v);
     }
 
