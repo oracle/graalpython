@@ -75,31 +75,6 @@ public abstract class CastToListNode extends UnaryOpNode {
         return CastToListUncachedNode.UNCACHED;
     }
 
-    private static final class CastToListUncachedNode extends CastToListNode {
-        private static CastToListUncachedNode UNCACHED = new CastToListUncachedNode();
-
-        private final ReadAttributeFromObjectNode getlist = ReadAttributeFromObjectNode.getUncached();
-        private final LookupInheritedAttributeNode.Dynamic getCall = LookupInheritedAttributeNode.Dynamic.getUncached();
-        private final CallNode callList = CallNode.getUncached();
-
-        @Override
-        public PList executeWith(Object list) {
-            Object builtins = PythonLanguage.getContextRef().get().getCore().lookupBuiltinModule("builtins");
-            Object listType = getlist.execute(builtins, "list");
-            return (PList) callList.execute(null, getCall.execute(listType, SpecialMethodNames.__CALL__), listType, list);
-        }
-
-        @Override
-        public ExpressionNode getOperand() {
-            throw new IllegalStateException("CastToListNode used in uncached case for rewriting");
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            throw new IllegalStateException("CastToListNode used in uncached case in syntax");
-        }
-    }
-
     @Child private GetLazyClassNode getClassNode;
     @Child private SequenceStorageNodes.LenNode lenNode;
     @Child private SequenceStorageNodes.GetItemNode getItemNode;
@@ -182,5 +157,30 @@ public abstract class CastToListNode extends UnaryOpNode {
             getItemNode = insert(SequenceStorageNodes.GetItemNode.createNotNormalized());
         }
         return getItemNode;
+    }
+}
+
+final class CastToListUncachedNode extends CastToListNode {
+    static CastToListUncachedNode UNCACHED = new CastToListUncachedNode();
+
+    private final ReadAttributeFromObjectNode getlist = ReadAttributeFromObjectNode.getUncached();
+    private final LookupInheritedAttributeNode.Dynamic getCall = LookupInheritedAttributeNode.Dynamic.getUncached();
+    private final CallNode callList = CallNode.getUncached();
+
+    @Override
+    public PList executeWith(Object list) {
+        Object builtins = PythonLanguage.getContextRef().get().getCore().lookupBuiltinModule("builtins");
+        Object listType = getlist.execute(builtins, "list");
+        return (PList) callList.execute(null, getCall.execute(listType, SpecialMethodNames.__CALL__), listType, list);
+    }
+
+    @Override
+    public ExpressionNode getOperand() {
+        throw new IllegalStateException("CastToListNode used in uncached case for rewriting");
+    }
+
+    @Override
+    public Object execute(VirtualFrame frame) {
+        throw new IllegalStateException("CastToListNode used in uncached case in syntax");
     }
 }
