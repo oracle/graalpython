@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.EnsureCapacityNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ExtendNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetElementTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemDynamicNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemScalarNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemSliceNodeGen;
@@ -169,6 +170,11 @@ public abstract class SequenceStorageNodes {
         GeneralizationNode create();
 
         GeneralizationNode getUncached();
+    }
+
+    public static interface ContainerFactory {
+
+        Object apply(SequenceStorage s, PythonObjectFactory factory);
     }
 
     @GenerateUncached
@@ -617,6 +623,77 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
+    @ImportStatic(PGuards.class)
+    public abstract static class GetItemDynamicNode extends Node {
+
+        public abstract Object execute(ContainerFactory factoryMethod, SequenceStorage s, Object key);
+
+        public final Object execute(SequenceStorage s, int key) {
+            return execute(null, s, key);
+        }
+
+        public final Object execute(SequenceStorage s, long key) {
+            return execute(null, s, key);
+        }
+
+        public final Object execute(SequenceStorage s, PInt key) {
+            return execute(null, s, key);
+        }
+
+        @Specialization
+        protected Object doScalarInt(@SuppressWarnings("unused") ContainerFactory factoryMethod, SequenceStorage storage, int idx,
+                        @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
+                        @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
+                        @Shared("lenNode") @Cached LenNode lenNode) {
+            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS));
+        }
+
+        @Specialization
+        protected Object doScalarLong(@SuppressWarnings("unused") ContainerFactory factoryMethod, SequenceStorage storage, long idx,
+                        @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
+                        @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
+                        @Shared("lenNode") @Cached LenNode lenNode) {
+            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS));
+        }
+
+        @Specialization
+        protected Object doScalarPInt(@SuppressWarnings("unused") ContainerFactory factoryMethod, SequenceStorage storage, PInt idx,
+                        @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
+                        @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
+                        @Shared("lenNode") @Cached LenNode lenNode) {
+            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS));
+        }
+
+        @Specialization(guards = "!isPSlice(idx)")
+        protected Object doScalarGeneric(@SuppressWarnings("unused") ContainerFactory factoryMethod, SequenceStorage storage, Object idx,
+                        @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
+                        @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
+                        @Shared("lenNode") @Cached LenNode lenNode) {
+            return getItemScalarNode.execute(storage, normalizeIndexNode.execute(idx, lenNode.execute(storage), INDEX_OUT_OF_BOUNDS));
+        }
+
+        @Specialization
+        protected Object doSlice(ContainerFactory factoryMethod, SequenceStorage storage, PSlice slice,
+                        @Cached GetItemSliceNode getItemSliceNode,
+                        @Cached PythonObjectFactory factory) {
+            SliceInfo info = slice.computeIndices(storage.length());
+            if (factoryMethod != null) {
+                return factoryMethod.apply(getItemSliceNode.execute(storage, info.start, info.stop, info.step, info.length), factory);
+            }
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException();
+        }
+
+        public static GetItemDynamicNode create() {
+            return GetItemDynamicNodeGen.create();
+        }
+
+        public static GetItemDynamicNode getUncached() {
+            return GetItemDynamicNodeGen.getUncached();
+        }
+    }
+
+    @GenerateUncached
     abstract static class GetItemScalarNode extends SequenceStorageBaseNode {
 
         public abstract Object execute(SequenceStorage s, int idx);
@@ -745,6 +822,7 @@ public abstract class SequenceStorageNodes {
         }
     }
 
+    @GenerateUncached
     @ImportStatic(ListStorageType.class)
     abstract static class GetItemSliceNode extends SequenceStorageBaseNode {
 
@@ -762,7 +840,7 @@ public abstract class SequenceStorageNodes {
             return cachedClass.cast(storage).getSliceInBound(start, stop, step, length);
         }
 
-        @Specialization(guards = "storage.getElementType() == Byte")
+        @Specialization(guards = "isByte(storage.getElementType())")
         protected NativeSequenceStorage doNativeByte(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
@@ -774,7 +852,7 @@ public abstract class SequenceStorageNodes {
             return storageToNativeNode.execute(newArray);
         }
 
-        @Specialization(guards = "storage.getElementType() == Int")
+        @Specialization(guards = "isInt(storage.getElementType())")
         protected NativeSequenceStorage doNativeInt(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
@@ -786,7 +864,7 @@ public abstract class SequenceStorageNodes {
             return storageToNativeNode.execute(newArray);
         }
 
-        @Specialization(guards = "storage.getElementType() == Long")
+        @Specialization(guards = "isLong(storage.getElementType())")
         protected NativeSequenceStorage doNativeLong(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
@@ -798,7 +876,7 @@ public abstract class SequenceStorageNodes {
             return storageToNativeNode.execute(newArray);
         }
 
-        @Specialization(guards = "storage.getElementType() == Double")
+        @Specialization(guards = "isDouble(storage.getElementType())")
         protected NativeSequenceStorage doNativeDouble(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
@@ -810,7 +888,7 @@ public abstract class SequenceStorageNodes {
             return storageToNativeNode.execute(newArray);
         }
 
-        @Specialization(guards = "storage.getElementType() == Generic")
+        @Specialization(guards = "isObject(storage.getElementType())")
         protected NativeSequenceStorage doNativeObject(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached PRaiseNode raise,
                         @Cached("create()") StorageToNativeNode storageToNativeNode,
@@ -832,6 +910,10 @@ public abstract class SequenceStorageNodes {
 
         public static GetItemSliceNode create() {
             return GetItemSliceNodeGen.create();
+        }
+
+        public static GetItemSliceNode getUncached() {
+            return GetItemSliceNodeGen.getUncached();
         }
     }
 
@@ -2621,7 +2703,6 @@ public abstract class SequenceStorageNodes {
             return s;
         }
 
-        // TODO fallback guard
         @Specialization(guards = "isFallbackCase(s, value, isAssignCompatibleNode)", limit = "1")
         ObjectSequenceStorage doTyped(SequenceStorage s, @SuppressWarnings("unused") Object value,
                         @Cached("createClassProfile()") ValueProfile selfProfile,
