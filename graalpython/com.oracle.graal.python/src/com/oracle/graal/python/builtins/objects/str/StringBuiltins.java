@@ -924,7 +924,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         char[] doLong(char[] translatedChars, int i, long translated,
-                        @Shared("raise") PRaiseNode raise,
+                        @Shared("raise") @Cached PRaiseNode raise,
                         @Cached("create()") BranchProfile ovf) {
             char t = (char) translated;
             if (t != translated) {
