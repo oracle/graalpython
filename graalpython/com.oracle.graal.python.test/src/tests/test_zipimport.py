@@ -24,9 +24,12 @@ def get_file():
 """
 
 ZIP_FILE_NAME = 'testzipfile.zip'
+EGG_FILE_NAME = 'testeggfile.egg'
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ZIP_PATH = os.path.join(DIR_PATH, ZIP_FILE_NAME)
 ZIP_ABS_PATH = os.path.abspath(ZIP_PATH);
+EGG_PATH = os.path.join(DIR_PATH, EGG_FILE_NAME)
+EGG_ABS_PATH = os.path.abspath(EGG_PATH);
 
 class ZipImportBaseTestCase(unittest.TestCase):
 
@@ -176,3 +179,26 @@ class ImportTests(ZipImportBaseTestCase):
         self.assertTrue (m.get_file() == ZIP_ABS_PATH + "/MyTestModule.py")
         p = importlib.import_module("packageA.moduleC")
         self.assertTrue (p.get_file() == ZIP_ABS_PATH + "/packageA/moduleC.py")
+
+class BasicEggImportTests(ZipImportBaseTestCase):
+
+    def setUp(self):
+        ZipImportBaseTestCase.setUp(self)
+        self.z = zipimport.zipimporter(EGG_PATH)
+
+    def test_zipimporter_egg(self):
+        self.assertTrue(self.z.prefix == "")
+        self.assertTrue(self.z.archive == EGG_ABS_PATH)
+        self.assertTrue(type(self.z._files) is dict)
+        self.assertTrue(self.z._files["data.bin"] is not None)
+        self.assertTrue(self.z._files["read.me"] is not None)
+        
+    def test_egg_get_data(self):
+        data = self.z.get_data("data.bin")
+        self.assertTrue(type(data) is bytes)
+        self.assertEqual(bytes(b'ahojPK\003\004ahoj'), data)
+    
+    def test_egg_get_readme(self):
+        data = self.z.get_data("read.me")
+        self.assertTrue(type(data) is bytes)
+        self.assertEqual(bytes(b'Pokus\n'), data)
