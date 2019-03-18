@@ -218,7 +218,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         @Specialization(guards = {"!isHiddenKey(key)"})
         static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
                         @Cached GetObjectDictNode getNativeDict,
-                        @Cached(allowUncached = true) HashingCollectionNodes.SetItemNode setItemNode,
+                        @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached PRaiseNode raiseNode) {
             return writeNativeGeneric(object, key, value, getNativeDict.execute(object), setItemNode, raiseNode);
         }
@@ -229,7 +229,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         @Specialization(guards = "!isHiddenKey(key)")
         static boolean writeNativeClass(PythonAbstractNativeObject object, Object key, Object value,
                         @Cached GetTypeMemberNode getNativeDict,
-                        @Cached(allowUncached = true) HashingCollectionNodes.SetItemNode setItemNode,
+                        @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached PRaiseNode raiseNode) {
             return writeNativeGeneric(object, key, value, getNativeDict.execute(object, NativeMemberNames.TP_DICT), setItemNode, raiseNode);
         }
