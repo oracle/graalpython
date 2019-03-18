@@ -805,6 +805,7 @@ public abstract class TypeNodes {
         }
     }
 
+    @ImportStatic(PGuards.class)
     public abstract static class GetInstanceShape extends PNodeWithContext {
 
         public abstract Shape execute(LazyPythonClass clazz);

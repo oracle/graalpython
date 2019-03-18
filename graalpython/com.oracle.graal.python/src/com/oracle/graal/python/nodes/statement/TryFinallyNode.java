@@ -25,13 +25,15 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 
 public class TryFinallyNode extends StatementNode {
-
+    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
     @Child private StatementNode body;
     @Child private StatementNode finalbody;
 
@@ -42,24 +44,23 @@ public class TryFinallyNode extends StatementNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        PythonContext context = getContext();
-        PException exceptionState = context.getCaughtException();
+        PException exceptionState = contextRef.get().getCaughtException();
         try {
             body.executeVoid(frame);
         } catch (PException e) {
             // any thrown Python exception is visible in the finally block
-            context.setCaughtException(e);
+            contextRef.get().setCaughtException(e);
             throw e;
         } finally {
             try {
                 finalbody.executeVoid(frame);
             } catch (ControlFlowException e) {
                 // restore
-                context.setCaughtException(exceptionState);
+                contextRef.get().setCaughtException(exceptionState);
                 throw e;
             }
             // restore
-            context.setCaughtException(exceptionState);
+            contextRef.get().setCaughtException(exceptionState);
         }
     }
 

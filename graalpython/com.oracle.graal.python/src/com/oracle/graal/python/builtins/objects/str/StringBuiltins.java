@@ -912,7 +912,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         char[] doInt(char[] translatedChars, int i, int translated,
-                     @Shared("raise") PRaiseNode raise,
+                     @Shared("raise") @Cached PRaiseNode raise,
                         @Cached("create()") BranchProfile ovf) {
             char t = (char) translated;
             if (t != translated) {
@@ -942,7 +942,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         char[] doPInt(char[] translatedChars, int i, PInt translated,
-                     @Shared("raise") PRaiseNode raise,
+                     @Shared("raise") @Cached PRaiseNode raise,
                         @Cached("create()") BranchProfile ovf) {
             double doubleValue = translated.doubleValue();
             char t = (char) doubleValue;

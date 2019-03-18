@@ -673,7 +673,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return object instanceof PythonNativeNull;
         }
 
-        protected static boolean isPythonObjectNativeWrapper(PythonNativeWrapper object) {
+        protected static boolean isPythonObjectNativeWrapper(Object object) {
             return object instanceof DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
         }
 

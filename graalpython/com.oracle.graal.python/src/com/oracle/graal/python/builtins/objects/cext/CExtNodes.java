@@ -1671,13 +1671,14 @@ public abstract class CExtNodes {
     public abstract static class GetTypeMemberNode extends CExtBaseNode {
         public abstract Object execute(Object obj, String getterFuncName);
 
-        @Specialization(guards = {"cachedObj.equals(obj)", "memberName == cachedMemberName", "context == cachedContext"}, limit = "1", assumptions = "getNativeClassStableAssumption(cachedObj, cachedContext)")
+        @Specialization(guards = {"cachedObj.equals(obj)", "memberName == cachedMemberName", "context == cachedContext"}, limit = "1", assumptions = "nativeClassStable")
         public Object doCachedObj(@SuppressWarnings("unused") PythonNativeClass obj, @SuppressWarnings("unused") String memberName,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached("context") PythonContext cachedContext,
                         @SuppressWarnings("unused") @Cached("memberName") String cachedMemberName,
                         @SuppressWarnings("unused") @Cached("getterFuncName(memberName)") String getterFuncName,
                         @Cached("obj") @SuppressWarnings("unused") PythonNativeClass cachedObj,
+                        @SuppressWarnings("unused") @Cached("getNativeClassStableAssumption(cachedObj, cachedContext)") Assumption nativeClassStable,
                         @Cached("doSlowPath(obj, getterFuncName)") Object result) {
             return result;
         }

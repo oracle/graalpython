@@ -341,7 +341,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             throw raiseTooManyArguments(callable, co_argcount, ndefaults, avail, forgotSelf, kwonly_given, raise);
         }
 
-        private PException raiseTooManyArguments(Object callable, int co_argcount, int ndefaults, int avail, boolean forgotSelf, int kwonly_given, PRaiseNode raise) {
+        private static PException raiseTooManyArguments(Object callable, int co_argcount, int ndefaults, int avail, boolean forgotSelf, int kwonly_given, PRaiseNode raise) {
             String forgotSelfMsg = forgotSelf ? ". Did you forget 'self' in the function definition?" : "";
             if (ndefaults > 0) {
                 if (kwonly_given == 0) {
@@ -528,7 +528,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return arguments;
         }
 
-        private void storeKeywordsOrRaise(Object[] arguments, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords, String lastWrongKeyword, PRaiseNode raise) {
+        private static void storeKeywordsOrRaise(Object[] arguments, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords, String lastWrongKeyword, PRaiseNode raise) {
             if (tooManyKeywords == 1) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, "got an unexpected keyword argument '%s'", lastWrongKeyword);
             } else if (tooManyKeywords > 1) {
