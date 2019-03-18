@@ -802,22 +802,31 @@ public abstract class HashingStorageNodes {
         }
     }
 
+    @GenerateUncached
     protected abstract static class InvalidateMroNode extends Node {
         public abstract void execute(DynamicObjectStorage s, String key, Object val);
 
         @Specialization
-        void doPythonNativeObjectDictStorage(PythonNativeObjectDictStorage storage, String key, @SuppressWarnings("unused") Object val) {
+        static void doPythonNativeObjectDictStorage(PythonNativeObjectDictStorage storage, String key, @SuppressWarnings("unused") Object val) {
             storage.invalidateAttributeInMROFinalAssumptions(key);
         }
 
-        @Fallback
+        @Specialization(guards = "!isNativeObjectDictStorage(storage)")
         @SuppressWarnings("unused")
-        void doPythonNativeObjectDictStorage(DynamicObjectStorage storage, String key, Object val) {
+        static void doPythonNativeObjectDictStorage(DynamicObjectStorage storage, String key, Object val) {
             // do nothing
+        }
+
+        protected static boolean isNativeObjectDictStorage(DynamicObjectStorage storage) {
+            return storage instanceof PythonNativeObjectDictStorage;
         }
 
         public static InvalidateMroNode create() {
             return InvalidateMroNodeGen.create();
+        }
+
+        public static InvalidateMroNode getUncached() {
+            return InvalidateMroNodeGen.getUncached();
         }
     }
 
