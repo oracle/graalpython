@@ -26,7 +26,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
@@ -130,8 +129,9 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         @Specialization
         long doBytesI64(PIBytesLike bytesLike, long byteIdx,
                         @Cached("createClassProfile()") ValueProfile profile,
-                        @Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached(value = "create()", allowUncached = true) SequenceStorageNodes.GetItemNode getItemNode) {
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
             PIBytesLike profiled = profile.profile(bytesLike);
             int len = lenNode.execute(profiled.getSequenceStorage());
             // simulate sentinel value
@@ -141,29 +141,29 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             int i = (int) byteIdx;
             long result = 0;
             SequenceStorage store = profiled.getSequenceStorage();
-            result |= getItemNode.executeInt(store, i);
+            result |= castToByteNode.execute(getItemNode.execute(store, i));
             if (i + 1 < len)
-                result |= ((long) getItemNode.executeInt(store, i + 1) << 8L) & 0xFF00L;
+                result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 1)) << 8L) & 0xFF00L;
             if (i + 2 < len)
-                result |= ((long) getItemNode.executeInt(store, i + 2) << 16L) & 0xFF0000L;
+                result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 2)) << 16L) & 0xFF0000L;
             if (i + 3 < len)
-                result |= ((long) getItemNode.executeInt(store, i + 3) << 24L) & 0xFF000000L;
+                result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 3)) << 24L) & 0xFF000000L;
             if (i + 4 < len)
-                result |= ((long) getItemNode.executeInt(store, i + 4) << 32L) & 0xFF00000000L;
+                result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 4)) << 32L) & 0xFF00000000L;
             if (i + 5 < len)
-                result |= ((long) getItemNode.executeInt(store, i + 5) << 40L) & 0xFF0000000000L;
+                result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 5)) << 40L) & 0xFF0000000000L;
             if (i + 6 < len)
-                result |= ((long) getItemNode.executeInt(store, i + 6) << 48L) & 0xFF000000000000L;
+                result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 6)) << 48L) & 0xFF000000000000L;
             if (i + 7 < len)
-                result |= ((long) getItemNode.executeInt(store, i + 7) << 56L) & 0xFF00000000000000L;
+                result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 7)) << 56L) & 0xFF00000000000000L;
             return result;
         }
 
         @Specialization
         long doPMmapI64(PMMap mmap, long byteIdx,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
-                        @Cached CallNode callGetItemNode,
-                        @Cached(allowUncached = true) CastToByteNode castToByteNode) {
+                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
+                        @Exclusive @Cached CallNode callGetItemNode,
+                        @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
 
             long len = mmap.getLength();
             Object attrGetItem = lookupGetItemNode.execute(mmap, SpecialMethodNames.__GETITEM__);
@@ -190,9 +190,11 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"!isTuple(object)", "!isList(object)", "!hasByteArrayContent(object)"})
         Object doGeneric(Object object, long idx,
-                        @Cached(value = "create(__GETITEM__)", allowUncached = true) LookupAndCallBinaryNode getItemNode,
+                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
+                        @Exclusive @Cached CallNode callGetItemNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(getItemNode.executeObject(object, idx));
+            Object attrGetItem = lookupGetItemNode.execute(object, SpecialMethodNames.__GETITEM__);
+            return toSulongNode.execute(callGetItemNode.execute(null, attrGetItem, object, idx));
         }
 
         protected static ListBuiltins.GetItemNode createListGetItem() {
@@ -214,7 +216,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public void writeArrayElement(long index, Object value,
-                    @Cached(allowUncached = true) WriteArrayItemNode writeArrayItemNode) throws UnsupportedMessageException {
+                    @Cached WriteArrayItemNode writeArrayItemNode) throws UnsupportedMessageException {
         writeArrayItemNode.execute(getDelegate(), index, value);
     }
 
@@ -245,6 +247,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         return 0 <= index && index <= getArraySize(callLenNode, castToLongNode);
     }
 
+    @GenerateUncached
     @ImportStatic(SpecialMethodNames.class)
     @TypeSystemReference(PythonTypes.class)
     abstract static class WriteArrayItemNode extends Node {
@@ -315,6 +318,10 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         public static WriteArrayItemNode create() {
             return PySequenceArrayWrapperFactory.WriteArrayItemNodeGen.create();
+        }
+
+        public static WriteArrayItemNode getUncached() {
+            return PySequenceArrayWrapperFactory.WriteArrayItemNodeGen.getUncached();
         }
     }
 
