@@ -305,8 +305,7 @@ public abstract class ListNodes {
 
         @Override
         public SequenceStorage execute(Object iterator) {
-            // TODO TRUFFLE LIBRARY MIGRATION 'GetNextNode.getUncached()'
-            return CreateStorageFromIteratorNode.doIt(iterator, ListStorageType.Uninitialized, GetNextNode.create(), IsBuiltinClassProfile.getUncached());
+            return CreateStorageFromIteratorNode.doIt(iterator, ListStorageType.Uninitialized, GetNextNode.getUncached(), IsBuiltinClassProfile.getUncached());
         }
 
     }

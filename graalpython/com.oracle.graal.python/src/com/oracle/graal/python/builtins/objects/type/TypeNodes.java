@@ -289,7 +289,7 @@ public abstract class TypeNodes {
 
     @ImportStatic(NativeMemberNames.class)
     @GenerateUncached
-    public abstract static class GetNameNode extends PNodeWithContext {
+    public abstract static class GetNameNode extends Node {
 
         public abstract String execute(Object obj);
 
@@ -327,8 +327,7 @@ public abstract class TypeNodes {
         }
 
         public static GetNameNode getUncached() {
-            // TODO TRUFFLE LIBRARY MIGRATION: Singleton
-            return GetNameNodeGen.create();
+            return GetNameNodeGen.getUncached();
         }
     }
 
