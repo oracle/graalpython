@@ -70,3 +70,22 @@ def test_call_builtin_method():
 def test_call_builtin_unbound_method():
     x = {1: 2}
     assert dict.__getitem__.__call__(x, 1) == 2
+
+
+def test_make_method():
+    method_type = type(X().foo)
+
+    class A():
+        def __init__(self, *args):
+            pass
+
+        def __call__(self, x, y):
+            assert isinstance(x, str)
+            assert isinstance(self, A)
+            return "A" + str(x) + str(y)
+
+    method1 = method_type(A, A)
+    method2 = method_type(A(), " is ")
+
+    assert isinstance(method1(), A)
+    assert method2(1) == "A is 1", method2(1)
