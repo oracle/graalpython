@@ -694,7 +694,8 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
-    abstract static class GetItemScalarNode extends SequenceStorageBaseNode {
+    @ImportStatic(SequenceStorageBaseNode.class)
+    abstract static class GetItemScalarNode extends Node {
 
         public abstract Object execute(SequenceStorage s, int idx);
 
@@ -823,8 +824,8 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
-    @ImportStatic(ListStorageType.class)
-    abstract static class GetItemSliceNode extends SequenceStorageBaseNode {
+    @ImportStatic({ListStorageType.class, SequenceStorageBaseNode.class})
+    abstract static class GetItemSliceNode extends Node {
 
         public abstract SequenceStorage execute(SequenceStorage s, int start, int stop, int step, int length);
 
@@ -1298,8 +1299,8 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
-    @ImportStatic(ListStorageType.class)
-    public abstract static class SetItemSliceNode extends SequenceStorageBaseNode {
+    @ImportStatic({ListStorageType.class, SequenceStorageBaseNode.class})
+    public abstract static class SetItemSliceNode extends Node {
 
         public abstract void execute(SequenceStorage s, SliceInfo info, Object iterable);
 
@@ -2512,7 +2513,7 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    public abstract static class GeneralizationNode extends SequenceStorageBaseNode {
+    public abstract static class GeneralizationNode extends Node {
         public abstract SequenceStorage execute(SequenceStorage toGeneralize, Object indicationValue);
 
     }
@@ -2547,8 +2548,11 @@ public abstract class SequenceStorageNodes {
             }
 
             ListStorageType et = getElementType.execute(s);
-            if (val instanceof Byte && isByteLike(et) || val instanceof Integer && (isInt(et) || isLong(et)) || val instanceof Long && isLong(et) ||
-                            val instanceof PList && isList(et) || val instanceof PTuple && isTuple(et) || isObject(et)) {
+            if (val instanceof Byte && SequenceStorageBaseNode.isByteLike(et) ||
+                            val instanceof Integer && (SequenceStorageBaseNode.isInt(et) || SequenceStorageBaseNode.isLong(et)) ||
+                            val instanceof Long && SequenceStorageBaseNode.isLong(et) ||
+                            val instanceof PList && SequenceStorageBaseNode.isList(et) ||
+                            val instanceof PTuple && SequenceStorageBaseNode.isTuple(et) || SequenceStorageBaseNode.isObject(et)) {
                 return s;
             }
 
@@ -2736,7 +2740,8 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
-    public abstract static class AppendNode extends SequenceStorageBaseNode {
+    @ImportStatic(SequenceStorageBaseNode.class)
+    public abstract static class AppendNode extends Node {
 
         public abstract SequenceStorage execute(SequenceStorage s, Object val, GenNodeSupplier genNodeSupplier);
 
