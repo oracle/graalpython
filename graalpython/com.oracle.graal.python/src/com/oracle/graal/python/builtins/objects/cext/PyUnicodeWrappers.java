@@ -50,7 +50,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -148,7 +147,7 @@ public abstract class PyUnicodeWrappers {
         @ExportMessage
         protected Object readMember(String member,
                         @Cached.Exclusive @Cached(value = "create(0)", allowUncached = true) UnicodeObjectNodes.UnicodeAsWideCharNode asWideCharNode,
-                        @Shared("sizeofWcharNode") @Cached CExtNodes.SizeofWCharNode sizeofWcharNode) throws UnknownIdentifierException {
+                        @Cached CExtNodes.SizeofWCharNode sizeofWcharNode) throws UnknownIdentifierException {
             switch (member) {
                 case NativeMemberNames.UNICODE_DATA_ANY:
                 case NativeMemberNames.UNICODE_DATA_LATIN1:
@@ -205,7 +204,7 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         protected Object readMember(String member,
-                        @Shared("sizeofWcharNode") @Cached CExtNodes.SizeofWCharNode sizeofWcharNode) throws UnknownIdentifierException {
+                        @Cached CExtNodes.SizeofWCharNode sizeofWcharNode) throws UnknownIdentifierException {
             // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
             int value = 0b000000000000000000000000_1_0_0_000_00;
             if (onlyAscii(this.getPString().getValue())) {
