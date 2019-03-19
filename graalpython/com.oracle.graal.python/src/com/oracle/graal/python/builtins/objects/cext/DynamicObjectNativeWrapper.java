@@ -620,7 +620,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(MD_DEF, key)")
         Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key,
-                        @Shared("getItemNode") @Cached PythonAbstractObject.PInteropSubscriptNode getItemNode) {
+                        @Shared("getItemNode") @Cached HashingStorageNodes.GetItemNode getItemNode) {
             DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
             assert nativeWrapper != null;
             return getItemNode.execute(nativeWrapper.getNativeMemberStore(), MD_DEF);
@@ -782,7 +782,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         // TODO fallback guard
         @Specialization
         Object doGeneric(Object object, String key,
-                        @Shared("getItemNode") @Cached PythonAbstractObject.PInteropSubscriptNode getItemNode) throws UnknownIdentifierException {
+                        @Shared("getItemNode") @Cached HashingStorageNodes.GetItemNode getItemNode) throws UnknownIdentifierException {
             // This is the preliminary generic case: There are native members we know that they
             // exist but we do currently not represent them. So, store them into a dynamic
             // object
