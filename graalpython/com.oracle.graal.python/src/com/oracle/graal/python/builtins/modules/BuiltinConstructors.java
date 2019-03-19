@@ -2390,7 +2390,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         Object methodGeneric(@SuppressWarnings("unused") LazyPythonClass cls, Object func, Object self,
-                             @Cached("create()") IsCallableNode isCallable) {
+                        @Cached("create()") IsCallableNode isCallable) {
             if (isCallable.execute(func)) {
                 return factory().createMethod(self, func);
             } else {
