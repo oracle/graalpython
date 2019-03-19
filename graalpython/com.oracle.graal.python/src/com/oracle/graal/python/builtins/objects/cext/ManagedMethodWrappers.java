@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -125,8 +125,7 @@ public abstract class ManagedMethodWrappers {
                         @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Exclusive @Cached CallNode dispatch,
                         @Exclusive @Cached ExecutePositionalStarargsNode posStarargsNode,
-                        // TODO TRUFFLE LIBRARY MIGRATION: is 'allowUncached = true' safe ?
-                        @Exclusive @Cached(allowUncached = true) ExecuteKeywordStarargsNode expandKwargsNode,
+                        @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode,
                         @Exclusive @Cached("createEqualityProfile()") PrimitiveValueProfile starArgsLenProfile) throws ArityException {
             if (arguments.length != 3) {
                 throw ArityException.create(3, arguments.length);
