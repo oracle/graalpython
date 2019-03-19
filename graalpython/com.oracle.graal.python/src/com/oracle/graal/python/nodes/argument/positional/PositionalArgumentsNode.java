@@ -63,10 +63,10 @@ public final class PositionalArgumentsNode extends Node {
         return values;
     }
 
-    public static Object[] prependArgument(Object primary, Object[] arguments, int argumentsLength) {
-        Object[] result = new Object[argumentsLength + 1];
+    public static Object[] prependArgument(Object primary, Object[] arguments) {
+        Object[] result = new Object[arguments.length + 1];
         result[0] = primary;
-        System.arraycopy(arguments, 0, result, 1, argumentsLength);
+        System.arraycopy(arguments, 0, result, 1, arguments.length);
         return result;
     }
 

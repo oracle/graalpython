@@ -255,7 +255,7 @@ public class TypeBuiltins extends PythonBuiltins {
             Object newMethod = lookupNew.execute(self);
             if (newMethod != PNone.NO_VALUE) {
                 CompilerAsserts.partialEvaluationConstant(doCreateArgs);
-                Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments, arguments.length) : arguments;
+                Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments) : arguments;
                 Object newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
                 PythonAbstractClass newInstanceKlass = getClass.execute(newInstance);
                 if (isSameType(newInstanceKlass, self)) {
@@ -268,7 +268,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         if (initMethod != PNone.NO_VALUE) {
                             Object[] initArgs;
                             if (doCreateArgs) {
-                                initArgs = PositionalArgumentsNode.prependArgument(newInstance, arguments, arguments.length);
+                                initArgs = PositionalArgumentsNode.prependArgument(newInstance, arguments);
                             } else {
                                 // XXX: (tfel) is this valid? I think it should be fine...
                                 arguments[0] = newInstance;
