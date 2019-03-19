@@ -168,4 +168,35 @@ public final class StringUtils {
 
         return str.substring(i, j);
     }
+
+    public static String strip(String str, String chars, StripKind stripKind) {
+        int i = 0;
+        int len = str.length();
+        // TODO: cpython uses a bloom filter for to skip chars that are not in the sep list:
+        // to avoid the linear search in chars
+        if (stripKind != StripKind.RIGHT) {
+            while (i < len) {
+                char ch = str.charAt(i);
+                if (chars.indexOf(ch) < 0) {
+                    break;
+                }
+                i++;
+            }
+        }
+
+        int j = len;
+        if (stripKind != StripKind.LEFT) {
+            j--;
+            while (j >= i) {
+                char ch = str.charAt(j);
+                if (chars.indexOf(ch) < 0) {
+                    break;
+                }
+                j--;
+            }
+            j++;
+        }
+
+        return str.substring(i, j);
+    }
 }

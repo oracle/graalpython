@@ -1080,3 +1080,19 @@ def test_strip_whitespace():
     assert 'hello   ' == '   hello   '.lstrip(None)
     assert '   hello' == '   hello   '.rstrip(None)
     assert 'hello' == 'hello'.strip(None)
+
+
+def test_strip_with_sep():
+    # strip/lstrip/rstrip with str arg
+    assert 'hello' == 'xyzzyhelloxyzzy'.strip('xyz')
+    assert 'helloxyzzy' == 'xyzzyhelloxyzzy'.lstrip('xyz')
+    assert 'xyzzyhello' == 'xyzzyhelloxyzzy'.rstrip('xyz')
+    assert 'hello' == 'hello'.strip('xyz')
+    assert '' == 'mississippi'.strip('mississippi')
+
+    # only trim the start and end; does not strip internal characters
+    assert 'mississipp' == 'mississippi'.strip('i')
+
+    assertRaises(TypeError, 'hello', 'strip', 42, 42)
+    assertRaises(TypeError, 'hello', 'lstrip', 42, 42)
+    assertRaises(TypeError, 'hello', 'rstrip', 42, 42)

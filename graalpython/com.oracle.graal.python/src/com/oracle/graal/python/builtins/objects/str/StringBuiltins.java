@@ -57,7 +57,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -1359,9 +1358,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StripNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         String strip(String self, String chars) {
-            return self.replaceAll("^[" + Pattern.quote(chars) + "]+", "").replaceAll("[" + Pattern.quote(chars) + "]+$", "");
+            return StringUtils.strip(self, chars, StripKind.BOTH);
         }
 
         @SuppressWarnings("unused")
@@ -1376,9 +1374,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RStripNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         String rstrip(String self, String chars) {
-            return self.replaceAll("[" + Pattern.quote(chars) + "]+$", "");
+            return StringUtils.strip(self, chars, StripKind.RIGHT);
         }
 
         @SuppressWarnings("unused")
@@ -1393,9 +1390,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LStripNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         String rstrip(String self, String chars) {
-            return self.replaceAll("^[" + Pattern.quote(chars) + "]+", "");
+            return StringUtils.strip(self, chars, StripKind.LEFT);
         }
 
         @SuppressWarnings("unused")
