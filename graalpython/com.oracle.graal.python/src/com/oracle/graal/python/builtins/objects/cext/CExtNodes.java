@@ -1682,23 +1682,23 @@ public abstract class CExtNodes {
                         @SuppressWarnings("unused") @Cached("memberName") String cachedMemberName,
                         @Cached("getterFuncName(memberName)") String getterName,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
-                        @Shared("toJava") @Cached AsPythonObjectNode toJava,
+                        @Shared("asPythonObject") @Cached AsPythonObjectNode asPythonObject,
                         @Shared("callCapi") @Cached PCallCapiFunction callGetTpDictNode) {
             assert isNativeTypeObject(self);
-            return toJava.execute(callGetTpDictNode.call(getterName, toSulong.execute(self)));
+            return asPythonObject.execute(callGetTpDictNode.call(getterName, toSulong.execute(self)));
         }
 
         @Specialization(replaces = "doCachedMember")
         public Object doUncached(Object self, String memberName,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
-                        @Shared("toJava") @Cached AsPythonObjectNode toJava,
+                        @Shared("asPythonObject") @Cached AsPythonObjectNode asPythonObject,
                         @Shared("callCapi") @Cached PCallCapiFunction callGetTpDictNode) {
             assert isNativeTypeObject(self);
-            return toJava.execute(callGetTpDictNode.call(getterFuncName(memberName), toSulong.execute(self)));
+            return asPythonObject.execute(callGetTpDictNode.call(getterFuncName(memberName), toSulong.execute(self)));
         }
 
         protected Object doSlowPath(Object obj, String getterFuncName) {
-            return ToJavaNode.getUncached().execute(PCallCapiFunction.getUncached().call(getterFuncName, ToSulongNode.getUncached().execute(obj)));
+            return AsPythonObjectNode.getUncached().execute(PCallCapiFunction.getUncached().call(getterFuncName, ToSulongNode.getUncached().execute(obj)));
         }
 
         protected String getterFuncName(String memberName) {
