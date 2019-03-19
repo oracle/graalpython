@@ -46,8 +46,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
@@ -64,7 +64,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class PNodeWithContext extends Node {
@@ -175,16 +174,6 @@ public abstract class PNodeWithContext extends Node {
 
     protected Assumption singleContextAssumption() {
         CompilerAsserts.neverPartOfCompilation("the singleContextAssumption should only be retrieved in the interpreter");
-        PythonLanguage language = null;
-        RootNode rootNode = getRootNode();
-        if (rootNode != null) {
-            language = rootNode.getLanguage(PythonLanguage.class);
-        } else {
-            throw new IllegalStateException("a python node was executed without being adopted!");
-        }
-        if (language == null) {
-            language = PythonLanguage.getCurrent();
-        }
-        return language.singleContextAssumption;
+        return PythonLanguage.getCurrent().singleContextAssumption;
     }
 }
