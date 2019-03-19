@@ -103,6 +103,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -1501,20 +1502,30 @@ public abstract class HashingStorageNodes {
         }
     }
 
-    public abstract static class LenNode extends PNodeWithContext {
+    @GenerateUncached
+    public abstract static class LenNode extends Node {
 
         protected static final int MAX_STORAGES = 8;
 
         public abstract int execute(HashingStorage s);
 
         @Specialization(limit = "MAX_STORAGES", guards = "s.getClass() == cachedClass")
-        int doCached(HashingStorage s,
+        static int doCached(HashingStorage s,
                         @Cached("s.getClass()") Class<? extends HashingStorage> cachedClass) {
             return cachedClass.cast(s).length();
         }
 
+        @Specialization(replaces = "doCached")
+        static int doGeneric(HashingStorage s) {
+            return s.length();
+        }
+
         public static LenNode create() {
             return LenNodeGen.create();
+        }
+
+        public static LenNode getUnached() {
+            return LenNodeGen.getUnached();
         }
     }
 }
