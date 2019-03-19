@@ -327,13 +327,15 @@ public abstract class TypeNodes {
         }
 
         public static GetNameNode getUncached() {
+            // TODO TRUFFLE LIBRARY MIGRATION: Singleton
             return GetNameNodeGen.create();
         }
     }
 
+    @GenerateUncached
     @TypeSystemReference(PythonTypes.class)
     @ImportStatic(NativeMemberNames.class)
-    public abstract static class GetSuperClassNode extends PNodeWithContext {
+    public abstract static class GetSuperClassNode extends Node {
 
         public abstract LazyPythonClass execute(Object obj);
 
@@ -360,26 +362,13 @@ public abstract class TypeNodes {
             throw raise.raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), tpBaseObj);
         }
 
-        @TruffleBoundary
-        public static LazyPythonClass doSlowPath(Object obj) {
-            if (obj instanceof PythonManagedClass) {
-                return ((PythonManagedClass) obj).getSuperClass();
-            } else if (obj instanceof PythonBuiltinClassType) {
-                return ((PythonBuiltinClassType) obj).getBase();
-            } else if (PGuards.isNativeClass(obj)) {
-                Object tpBaseObj = GetTypeMemberNode.getUncached().execute(obj, NativeMemberNames.TP_BASE);
-                if (PGuards.isClass(tpBaseObj)) {
-                    return (PythonAbstractClass) tpBaseObj;
-                }
-                PythonLanguage.getCore().raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), tpBaseObj);
-            }
-            throw new IllegalStateException("unknown type " + obj.getClass().getName());
-        }
-
         public static GetSuperClassNode create() {
             return GetSuperClassNodeGen.create();
         }
 
+        public static GetSuperClassNode getUncached() {
+            return GetSuperClassNodeGen.getUncached();
+        }
     }
 
     @TypeSystemReference(PythonTypes.class)
