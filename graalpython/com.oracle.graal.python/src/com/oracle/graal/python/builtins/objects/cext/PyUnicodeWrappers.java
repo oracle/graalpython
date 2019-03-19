@@ -45,6 +45,7 @@ import java.nio.charset.CharsetEncoder;
 
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -146,7 +147,7 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         protected Object readMember(String member,
-                        @Cached.Exclusive @Cached(value = "create(0)", allowUncached = true) UnicodeObjectNodes.UnicodeAsWideCharNode asWideCharNode,
+                        @Cached(value = "createNativeOrder()", uncached = "getUncachedNativeOrder()") UnicodeAsWideCharNode asWideCharNode,
                         @Cached CExtNodes.SizeofWCharNode sizeofWcharNode) throws UnknownIdentifierException {
             switch (member) {
                 case NativeMemberNames.UNICODE_DATA_ANY:

@@ -45,11 +45,14 @@ import java.nio.charset.Charset;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen.BigEndianNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen.LittleEndianNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -57,6 +60,8 @@ public abstract class UnicodeObjectNodes {
 
     abstract static class UnicodeBaseNode extends PNodeWithContext {
         private static final int NATIVE_ORDER = 0;
+        private static final int LITTLE_ENDIAN = -1;
+        private static final int BIG_ENDIAN = 1;
         private static Charset UTF32;
         private static Charset UTF32LE;
         private static Charset UTF32BE;
@@ -93,12 +98,31 @@ public abstract class UnicodeObjectNodes {
         }
     }
 
+    @GenerateUncached
     public abstract static class UnicodeAsWideCharNode extends UnicodeBaseNode {
 
-        private final int byteOrder;
+        public static UnicodeAsWideCharNode createNativeOrder() {
+            return UnicodeAsWideCharNodeGen.create();
+        }
 
-        protected UnicodeAsWideCharNode(int byteOrder) {
-            this.byteOrder = byteOrder;
+        public static UnicodeAsWideCharNode getUncachedNativeOrder() {
+            return UnicodeAsWideCharNodeGen.getUncached();
+        }
+
+        public static UnicodeAsWideCharNode createLittleEndian() {
+            return LittleEndianNodeGen.create();
+        }
+
+        public static UnicodeAsWideCharNode getUncachedLittleEndian() {
+            return LittleEndianNodeGen.getUncached();
+        }
+
+        public static UnicodeAsWideCharNode createBigEndian() {
+            return BigEndianNodeGen.create();
+        }
+
+        public static UnicodeAsWideCharNode getUncachedBigEndian() {
+            return BigEndianNodeGen.getUncached();
         }
 
         public abstract PBytes execute(Object obj, long elementSize, long elements);
@@ -130,7 +154,7 @@ public abstract class UnicodeObjectNodes {
                 }
                 ByteBuffer buf = ByteBuffer.allocate(size);
                 while (bytes.remaining() >= 4) {
-                    if (byteOrder < UnicodeBaseNode.NATIVE_ORDER) {
+                    if (getByteOrder() < UnicodeBaseNode.NATIVE_ORDER) {
                         buf.putChar((char) ((bytes.getInt() & 0xFFFF0000) >> 16));
                     } else {
                         buf.putChar((char) (bytes.getInt() & 0x0000FFFF));
@@ -147,8 +171,28 @@ public abstract class UnicodeObjectNodes {
             }
         }
 
-        public static UnicodeAsWideCharNode create(int byteOrder) {
-            return UnicodeAsWideCharNodeGen.create(byteOrder);
+        protected int getByteOrder() {
+            return UnicodeBaseNode.NATIVE_ORDER;
+        }
+
+        @GenerateUncached
+        abstract static class LittleEndianNode extends UnicodeAsWideCharNode {
+
+            @Override
+            protected int getByteOrder() {
+                return UnicodeBaseNode.LITTLE_ENDIAN;
+            }
+
+        }
+
+        @GenerateUncached
+        abstract static class BigEndianNode extends UnicodeAsWideCharNode {
+
+            @Override
+            protected int getByteOrder() {
+                return UnicodeBaseNode.BIG_ENDIAN;
+            }
+
         }
     }
 

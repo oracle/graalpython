@@ -1230,7 +1230,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             try {
                 if (asWideCharNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    asWideCharNode = insert(UnicodeAsWideCharNode.create(-1));
+                    asWideCharNode = insert(UnicodeAsWideCharNode.createLittleEndian());
                 }
 
                 PBytes wchars = asWideCharNode.execute(s, elementSize, elements);
