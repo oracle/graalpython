@@ -33,9 +33,9 @@ public abstract class IndexNodes {
         public NormalizeIndexNode(String errorMessage, boolean boundsCheck) {
             this.errorMessage = errorMessage;
             if (boundsCheck) {
-                subNode = NormalizeIndexWithBoundsCheckNode.create();
+                subNode = NormalizeIndexWithBoundsCheckNodeGen.create();
             } else {
-                subNode = NormalizeIndexWithoutBoundsCheckNode.create();
+                subNode = NormalizeIndexWithoutBoundsCheckNodeGen.create();
             }
         }
 
@@ -121,12 +121,12 @@ public abstract class IndexNodes {
             return NormalizeIndexWithBoundsCheckNodeGen.create();
         }
 
-        public static NormalizeIndexCustomMessageNode createWithoutBoundsCheck() {
-            return NormalizeIndexWithoutBoundsCheckNode.create();
-        }
-
         public static NormalizeIndexCustomMessageNode getUncached() {
             return NormalizeIndexWithBoundsCheckNodeGen.getUncached();
+        }
+
+        public static NormalizeIndexCustomMessageNode createWithoutBoundsCheck() {
+            return NormalizeIndexWithoutBoundsCheckNodeGen.create();
         }
 
         public static NormalizeIndexCustomMessageNode getUncachedWithoutBoundsCheck() {
@@ -196,6 +196,7 @@ public abstract class IndexNodes {
                 throw raiseNode.raiseIndexError();
             }
         }
+
     }
 
     @GenerateUncached
