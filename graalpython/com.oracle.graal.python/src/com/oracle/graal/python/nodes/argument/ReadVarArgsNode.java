@@ -36,7 +36,7 @@ public abstract class ReadVarArgsNode extends ReadArgumentNode {
 
     ReadVarArgsNode(int paramIndex, boolean isBuiltin) {
         index = paramIndex;
-        if (isBuiltin) {
+        if (!isBuiltin) {
             factory = PythonObjectFactory.create();
         }
     }

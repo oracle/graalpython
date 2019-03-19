@@ -296,7 +296,7 @@ public abstract class ListNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 expectedElementType = actualElementType;
             }
-            return null;
+            return doIt;
         }
     }
 
