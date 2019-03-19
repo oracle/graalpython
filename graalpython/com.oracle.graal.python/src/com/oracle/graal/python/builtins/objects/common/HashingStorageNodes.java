@@ -60,7 +60,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.CopyNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.DelItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.DiffNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.DynamicObjectSetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.DynamicObjectSetItemNodeFactory.DynamicObjectSetItemCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.EqualsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.GetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.InitNodeGen;
@@ -262,6 +262,13 @@ public abstract class HashingStorageNodes {
             // We cannot store this key in the dynamic object -> switch to generic store
             EconomicMapStorage newStorage = EconomicMapStorage.create(storage.length() + 1, false);
             newStorage.addAll(storage, getEquivalence());
+            return newStorage;
+        }
+
+        protected static EconomicMapStorage switchToEconomicMap(HashingStorage storage, Equivalence equiv) {
+            // We cannot store this key in the dynamic object -> switch to generic store
+            EconomicMapStorage newStorage = EconomicMapStorage.create(storage.length() + 1, false);
+            newStorage.addAll(storage, equiv);
             return newStorage;
         }
 
@@ -830,96 +837,131 @@ public abstract class HashingStorageNodes {
         }
     }
 
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class DynamicObjectSetItemNode extends SetItemBaseNode {
-
-        @Child private InvalidateMroNode actionNode = InvalidateMroNode.create();
+    public abstract static class DynamicObjectSetItemNode extends SetItemBaseNode {
 
         public abstract HashingStorage execute(DynamicObjectStorage s, Object key, Object val);
 
-        // write to existing property; no shape change
-        @Specialization(limit = "3", //
-                        guards = {
-                                        "cachedName.equals(name)",
-                                        "shapeCheck(shape, storage.getStore())",
-                                        "location != null",
-                                        "canSet(location, value)"
-                        }, //
-                        assumptions = {
-                                        "shape.getValidAssumption()"
-                        })
-        protected HashingStorage doDynamicObjectExistingCached(DynamicObjectStorage storage, @SuppressWarnings("unused") String name,
-                        Object value,
-                        @SuppressWarnings("unused") @Cached("name") String cachedName,
-                        @Cached("lookupShape(storage.getStore())") Shape shape,
-                        @Cached("lookupLocation(shape, name, value)") Location location) {
-            try {
-                location.set(storage.getStore(), value, shape);
+        @TypeSystemReference(PythonArithmeticTypes.class)
+        abstract static class DynamicObjectSetItemCachedNode extends DynamicObjectSetItemNode {
+            @Child private InvalidateMroNode actionNode = InvalidateMroNode.create();
+
+            // write to existing property; no shape change
+            @Specialization(limit = "3", //
+                            guards = {
+                                            "cachedName.equals(name)",
+                                            "shapeCheck(shape, storage.getStore())",
+                                            "location != null",
+                                            "canSet(location, value)"
+                            }, //
+                            assumptions = {
+                                            "shape.getValidAssumption()"
+                            })
+            protected HashingStorage doDynamicObjectExistingCached(DynamicObjectStorage storage, @SuppressWarnings("unused") String name,
+                            Object value,
+                            @SuppressWarnings("unused") @Cached("name") String cachedName,
+                            @Cached("lookupShape(storage.getStore())") Shape shape,
+                            @Cached("lookupLocation(shape, name, value)") Location location) {
+                try {
+                    location.set(storage.getStore(), value, shape);
+                    actionNode.execute(storage, name, value);
+                    return storage;
+                } catch (IncompatibleLocationException | FinalLocationException ex) {
+                    /* Our guards ensure that the value can be stored, so this cannot happen. */
+                    throw new IllegalStateException(ex);
+                }
+            }
+
+            // add new property; shape change
+            @Specialization(limit = "3", //
+                            guards = {
+                                            "cachedName.equals(name)",
+                                            "shapeCheck(oldShape, storage.getStore())",
+                                            "oldLocation == null",
+                                            "canStore(newLocation, value)"
+                            }, //
+                            assumptions = {
+                                            "oldShape.getValidAssumption()",
+                                            "newShape.getValidAssumption()"
+                            })
+            @SuppressWarnings("unused")
+            protected HashingStorage doDynamicObjectNewCached(DynamicObjectStorage storage, String name, Object value,
+                            @Cached("name") String cachedName,
+                            @Cached("lookupShape(storage.getStore())") Shape oldShape,
+                            @Cached("lookupLocation(oldShape, name, value)") Location oldLocation,
+                            @Cached("defineProperty(oldShape, name, value)") Shape newShape,
+                            @Cached("lookupLocation(newShape, name)") Location newLocation) {
+                try {
+                    newLocation.set(storage.getStore(), value, oldShape, newShape);
+                    actionNode.execute(storage, name, value);
+                    return storage;
+                } catch (IncompatibleLocationException ex) {
+                    /* Our guards ensure that the value can be stored, so this cannot happen. */
+                    throw new IllegalStateException(ex);
+                }
+            }
+
+            /**
+             * The generic case is used if the number of shapes accessed overflows the limit of the
+             * polymorphic inline cache.
+             */
+            @TruffleBoundary
+            @Specialization(replaces = {"doDynamicObjectExistingCached", "doDynamicObjectNewCached"}, guards = {"storage.getStore().getShape().isValid()", "!exceedsLimit(storage)"})
+            protected HashingStorage doDynamicObjectUncached(DynamicObjectStorage storage, String name, Object value) {
+                storage.getStore().define(name, value);
                 actionNode.execute(storage, name, value);
                 return storage;
-            } catch (IncompatibleLocationException | FinalLocationException ex) {
-                /* Our guards ensure that the value can be stored, so this cannot happen. */
-                throw new IllegalStateException(ex);
+            }
+
+            @Specialization(guards = {"storage.getStore().getShape().isValid()", "exceedsLimit(storage)"})
+            protected HashingStorage doDynamicObjectGeneralize(FastDictStorage storage, String name, Object value) {
+                HashingStorage newStorage = switchToEconomicMap(storage);
+                newStorage.setItem(name, value, getEquivalence());
+                return newStorage;
+            }
+
+            @TruffleBoundary
+            @Specialization(guards = {"!storage.getStore().getShape().isValid()"})
+            protected HashingStorage doDynamicObjectUpdateShape(DynamicObjectStorage storage, String name, Object value) {
+                storage.getStore().updateShape();
+                return doDynamicObjectUncached(storage, name, value);
             }
         }
 
-        // add new property; shape change
-        @Specialization(limit = "3", //
-                        guards = {
-                                        "cachedName.equals(name)",
-                                        "shapeCheck(oldShape, storage.getStore())",
-                                        "oldLocation == null",
-                                        "canStore(newLocation, value)"
-                        }, //
-                        assumptions = {
-                                        "oldShape.getValidAssumption()",
-                                        "newShape.getValidAssumption()"
-                        })
-        @SuppressWarnings("unused")
-        protected HashingStorage doDynamicObjectNewCached(DynamicObjectStorage storage, String name, Object value,
-                        @Cached("name") String cachedName,
-                        @Cached("lookupShape(storage.getStore())") Shape oldShape,
-                        @Cached("lookupLocation(oldShape, name, value)") Location oldLocation,
-                        @Cached("defineProperty(oldShape, name, value)") Shape newShape,
-                        @Cached("lookupLocation(newShape, name)") Location newLocation) {
-            try {
-                newLocation.set(storage.getStore(), value, oldShape, newShape);
-                actionNode.execute(storage, name, value);
-                return storage;
-            } catch (IncompatibleLocationException ex) {
-                /* Our guards ensure that the value can be stored, so this cannot happen. */
-                throw new IllegalStateException(ex);
+        private static final class DynamicObjectSetItemUncachedNode extends DynamicObjectSetItemNode {
+            private static final DynamicObjectSetItemUncachedNode INSTANCE = new DynamicObjectSetItemUncachedNode();
+
+            @Override
+            public HashingStorage execute(DynamicObjectStorage s, Object key, Object val) {
+                if (key instanceof String || key instanceof PString) {
+                    String skey = key instanceof String ? (String) key : ((PString) key).getValue();
+                    if (!exceedsLimit(s)) {
+                        DynamicObject store = s.getStore();
+                        Shape shape = store.getShape();
+                        if (!shape.isValid()) {
+                            store.updateShape();
+                        }
+                        store.define(skey, val);
+                        InvalidateMroNode.getUncached().execute(s, skey, val);
+                    } else {
+                        // switch to economic map
+                        Equivalence slowPathEquivalence = HashingStorage.getSlowPathEquivalence(skey);
+                        EconomicMapStorage newStorage = EconomicMapStorage.create(s.length() + 1, false);
+                        newStorage.addAll(s, slowPathEquivalence);
+                        newStorage.setItem(skey, val, slowPathEquivalence);
+                        return newStorage;
+                    }
+                }
+                return null;
             }
-        }
 
-        /**
-         * The generic case is used if the number of shapes accessed overflows the limit of the
-         * polymorphic inline cache.
-         */
-        @TruffleBoundary
-        @Specialization(replaces = {"doDynamicObjectExistingCached", "doDynamicObjectNewCached"}, guards = {"storage.getStore().getShape().isValid()", "!exceedsLimit(storage)"})
-        protected HashingStorage doDynamicObjectUncached(DynamicObjectStorage storage, String name, Object value) {
-            storage.getStore().define(name, value);
-            actionNode.execute(storage, name, value);
-            return storage;
-        }
-
-        @Specialization(guards = {"storage.getStore().getShape().isValid()", "exceedsLimit(storage)"})
-        protected HashingStorage doDynamicObjectGeneralize(FastDictStorage storage, String name, Object value) {
-            HashingStorage newStorage = switchToEconomicMap(storage);
-            newStorage.setItem(name, value, getEquivalence());
-            return newStorage;
-        }
-
-        @TruffleBoundary
-        @Specialization(guards = {"!storage.getStore().getShape().isValid()"})
-        protected HashingStorage doDynamicObjectUpdateShape(DynamicObjectStorage storage, String name, Object value) {
-            storage.getStore().updateShape();
-            return doDynamicObjectUncached(storage, name, value);
         }
 
         public static DynamicObjectSetItemNode create() {
-            return DynamicObjectSetItemNodeGen.create();
+            return DynamicObjectSetItemCachedNodeGen.create();
+        }
+
+        public static DynamicObjectSetItemNode getUncached() {
+            return DynamicObjectSetItemUncachedNode.INSTANCE;
         }
     }
 
