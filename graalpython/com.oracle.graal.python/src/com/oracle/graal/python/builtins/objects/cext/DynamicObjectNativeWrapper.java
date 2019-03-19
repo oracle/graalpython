@@ -114,6 +114,7 @@ import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.Assumption;
@@ -190,10 +191,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        // TODO(fa) use class 'PythonAbstractObject.Keys'
-        return context.getEnv().asGuestValue(new String[]{DynamicObjectNativeWrapper.GP_OBJECT});
+    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+        return new InteropArray(new String[]{DynamicObjectNativeWrapper.GP_OBJECT});
     }
 
     @ExportMessage(name = "readMember")
