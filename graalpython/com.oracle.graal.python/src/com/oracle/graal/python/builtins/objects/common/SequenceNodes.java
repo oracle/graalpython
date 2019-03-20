@@ -88,7 +88,8 @@ public abstract class SequenceNodes {
         }
     }
 
-    public abstract static class GetSequenceStorageNode extends Node {
+    // TODO qualified name is a workaround for a DSL bug
+    public abstract static class GetSequenceStorageNode extends com.oracle.truffle.api.nodes.Node {
 
         public abstract SequenceStorage execute(Object seq);
 

@@ -107,7 +107,8 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class TypeNodes {
 
-    public abstract static class GetTypeFlagsNode extends PNodeWithContext {
+    // TODO qualified name is a workaround for a DSL bug
+    public abstract static class GetTypeFlagsNode extends com.oracle.truffle.api.nodes.Node {
         private static final int HEAPTYPE = 1 << 9;
 
         public abstract long execute(PythonAbstractClass clazz);

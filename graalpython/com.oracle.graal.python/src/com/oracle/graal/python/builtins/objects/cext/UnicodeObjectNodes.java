@@ -48,17 +48,17 @@ import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.U
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen.BigEndianNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen.LittleEndianNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class UnicodeObjectNodes {
 
-    abstract static class UnicodeBaseNode extends PNodeWithContext {
+    // TODO qualified name is a workaround for a DSL bug
+    abstract static class UnicodeBaseNode extends com.oracle.truffle.api.nodes.Node {
         private static final int NATIVE_ORDER = 0;
         private static final int LITTLE_ENDIAN = -1;
         private static final int BIG_ENDIAN = 1;
@@ -98,7 +98,8 @@ public abstract class UnicodeObjectNodes {
         }
     }
 
-    @GenerateUncached
+    // TODO qualified name is a workaround for a DSL bug
+    @com.oracle.truffle.api.dsl.GenerateUncached
     public abstract static class UnicodeAsWideCharNode extends UnicodeBaseNode {
 
         public static UnicodeAsWideCharNode createNativeOrder() {

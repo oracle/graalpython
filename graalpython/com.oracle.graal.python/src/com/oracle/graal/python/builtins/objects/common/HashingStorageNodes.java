@@ -77,7 +77,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -188,8 +187,9 @@ public abstract class HashingStorageNodes {
         }
     }
 
-    @ImportStatic(PGuards.class)
-    abstract static class DictStorageBaseNode extends PNodeWithContext {
+    // TODO qualified name is a workaround for a DSL bug
+    @com.oracle.truffle.api.dsl.ImportStatic(PGuards.class)
+    abstract static class DictStorageBaseNode extends com.oracle.truffle.api.nodes.Node {
         @Child private PRaiseNode raise;
         @Child private GetLazyClassNode getClassNode;
         @Child private IsHashableNode isHashableNode;
