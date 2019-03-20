@@ -216,7 +216,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             path[pathIdx++] = getScriptPath(env, args);
         }
         path[pathIdx++] = PythonCore.getStdlibHome(env);
-        path[pathIdx++] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
+        path[pathIdx++] = PythonCore.getCoreHome(env) + env.getFileNameSeparator() + "modules";
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
     }
