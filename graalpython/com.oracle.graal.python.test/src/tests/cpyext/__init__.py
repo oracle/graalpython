@@ -498,7 +498,7 @@ def CPyExtType(name, code, **kwargs):
         {tp_getattro},
         {tp_setattro},
         {tp_as_buffer},
-        Py_TPFLAGS_DEFAULT,
+        Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
         "",
         {tp_traverse},              /* tp_traverse */
         {tp_clear},                 /* tp_clear */
