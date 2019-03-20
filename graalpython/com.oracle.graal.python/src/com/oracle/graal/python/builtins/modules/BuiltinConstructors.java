@@ -143,6 +143,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
@@ -2377,13 +2378,23 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MethodTypeNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object method(LazyPythonClass cls, Object self, PFunction func) {
+        Object method(LazyPythonClass cls, PFunction func, Object self) {
             return factory().createMethod(cls, self, func);
         }
 
-        @Specialization(guards = "isPythonBuiltinClass(cls)")
-        Object methodGeneric(@SuppressWarnings("unused") LazyPythonClass cls, Object self, PBuiltinFunction func) {
-            return factory().createBuiltinMethod(self, func);
+        @Specialization
+        Object methodBuiltin(@SuppressWarnings("unused") LazyPythonClass cls, PBuiltinFunction func, Object self) {
+            return factory().createMethod(self, func);
+        }
+
+        @Specialization
+        Object methodGeneric(@SuppressWarnings("unused") LazyPythonClass cls, Object func, Object self,
+                        @Cached("create()") IsCallableNode isCallable) {
+            if (isCallable.execute(func)) {
+                return factory().createMethod(self, func);
+            } else {
+                throw raise(TypeError, "first argument must be callable");
+            }
         }
     }
 
