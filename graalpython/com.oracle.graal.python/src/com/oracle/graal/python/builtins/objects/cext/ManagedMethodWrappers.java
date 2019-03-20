@@ -138,7 +138,7 @@ public abstract class ManagedMethodWrappers {
 
             Object[] starArgsArray = posStarargsNode.executeWith(starArgs);
             int starArgsLen = starArgsLenProfile.profile(starArgsArray.length);
-            Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray, starArgsLen);
+            Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
             PKeyword[] kwArgsArray = expandKwargsNode.executeWith(kwArgs);
 
             // execute
