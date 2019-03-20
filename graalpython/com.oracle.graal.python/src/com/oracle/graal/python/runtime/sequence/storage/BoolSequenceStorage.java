@@ -36,9 +36,13 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
     }
 
     public BoolSequenceStorage(boolean[] elements) {
+        this(elements, elements.length);
+    }
+
+    public BoolSequenceStorage(boolean[] elements, int length) {
         this.values = elements;
         this.capacity = values.length;
-        this.length = elements.length;
+        this.length = length;
     }
 
     public BoolSequenceStorage(int capacity) {

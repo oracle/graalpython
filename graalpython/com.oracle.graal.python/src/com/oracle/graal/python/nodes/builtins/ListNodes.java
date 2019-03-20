@@ -73,6 +73,8 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
@@ -133,6 +135,50 @@ public abstract class ListNodes {
                 Object array = null;
                 try {
                     switch (type) {
+                        case Boolean: {
+                            boolean[] elements = new boolean[START_SIZE];
+                            array = elements;
+                            while (true) {
+                                try {
+                                    boolean value = next.executeBoolean(iterator);
+                                    if (i >= elements.length) {
+                                        elements = Arrays.copyOf(elements, elements.length * 2);
+                                        array = elements;
+                                    }
+                                    elements[i++] = value;
+                                } catch (PException e) {
+                                    e.expectStopIteration(errorProfile);
+                                    break;
+                                }
+                            }
+                            storage = new BoolSequenceStorage(elements, i);
+                            break;
+                        }
+                        case Byte: {
+                            byte[] elements = new byte[START_SIZE];
+                            array = elements;
+                            while (true) {
+                                try {
+                                    int value = next.executeInt(iterator);
+                                    byte bvalue;
+                                    try {
+                                        bvalue = PInt.byteValueExact(value);
+                                        if (i >= elements.length) {
+                                            elements = Arrays.copyOf(elements, elements.length * 2);
+                                            array = elements;
+                                        }
+                                        elements[i++] = bvalue;
+                                    } catch (ArithmeticException e) {
+                                        throw new UnexpectedResultException(value);
+                                    }
+                                } catch (PException e) {
+                                    e.expectStopIteration(errorProfile);
+                                    break;
+                                }
+                            }
+                            storage = new ByteSequenceStorage(elements, i);
+                            break;
+                        }
                         case Int: {
                             int[] elements = new int[START_SIZE];
                             array = elements;
