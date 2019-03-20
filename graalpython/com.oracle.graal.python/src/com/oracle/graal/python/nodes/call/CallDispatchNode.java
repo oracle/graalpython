@@ -29,6 +29,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.nodes.code.GetFunctionCodeNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
@@ -81,10 +82,15 @@ public abstract class CallDispatchNode extends Node {
 
     // We only have a single context and this function changed its code before, but now it's
     // constant
-    @Specialization(guards = {"callee == cachedCallee", "callee.getCode() == cachedCode"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = {"singleContextAssumption()"})
+    protected PCode getCode(GetFunctionCodeNode getFunctionCodeNode, PFunction function) {
+        return getFunctionCodeNode.execute(function);
+    }
+
+    @Specialization(guards = {"callee == cachedCallee", "getCode(getFunctionCodeNode, callee) == cachedCode"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = {"singleContextAssumption()"})
     protected Object callFunctionCachedCode(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
-                    @SuppressWarnings("unused") @Cached("callee.getCode()") PCode cachedCode,
+                    @SuppressWarnings("unused") @Cached("create()") GetFunctionCodeNode getFunctionCodeNode,
+                    @SuppressWarnings("unused") @Cached("getCode(getFunctionCodeNode, callee)") PCode cachedCode,
                     @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
         return invoke.execute(frame, arguments);
     }

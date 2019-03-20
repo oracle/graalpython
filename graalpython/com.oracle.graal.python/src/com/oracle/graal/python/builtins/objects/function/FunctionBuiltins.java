@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.code.GetFunctionCodeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -245,8 +246,9 @@ public class FunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isNoValue(none)"})
-        Object getCode(PFunction self, @SuppressWarnings("unused") PNone none) {
-            return self.getCode();
+        Object getCodeU(PFunction self, @SuppressWarnings("unused") PNone none,
+                        @Cached("create()") GetFunctionCodeNode getFunctionCodeNode) {
+            return getFunctionCodeNode.execute(self);
         }
 
         @SuppressWarnings("unused")

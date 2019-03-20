@@ -137,18 +137,23 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNativeObject(object)")
         public PReferenceType refType(LazyPythonClass cls, Object object, Object callback) {
-            return factory().createReferenceType(cls, object, callback, getWeakReferenceQueue());
+            if (callback instanceof PNone) {
+                return factory().createReferenceType(cls, object, null, getWeakReferenceQueue());
+            } else {
+                return factory().createReferenceType(cls, object, callback, getWeakReferenceQueue());
+            }
         }
 
         @Specialization
         public PReferenceType refType(LazyPythonClass cls, PythonAbstractNativeObject pythonObject, Object callback,
                         @Cached("create()") GetLazyClassNode getClassNode,
                         @Cached("create()") IsBuiltinClassProfile profile) {
+            Object actualCallback = callback instanceof PNone ? null : callback;
             LazyPythonClass clazz = getClassNode.execute(pythonObject);
 
             // if the object is a type, a weak ref is allowed
             if (profile.profileClass(clazz, PythonBuiltinClassType.PythonClass)) {
-                return factory().createReferenceType(cls, pythonObject, callback, getWeakReferenceQueue());
+                return factory().createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
             }
 
             // if the object's type is a native type, we need to consider 'tp_weaklistoffset'
@@ -159,10 +164,10 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
                 }
                 Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(clazz, NativeMemberNames.TP_WEAKLISTOFFSET);
                 if (tpWeaklistoffset != PNone.NO_VALUE) {
-                    return factory().createReferenceType(cls, pythonObject, callback, getWeakReferenceQueue());
+                    return factory().createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
                 }
             }
-            return refType(cls, pythonObject, callback);
+            return refType(cls, pythonObject, actualCallback);
         }
 
         @Fallback

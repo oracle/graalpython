@@ -643,7 +643,7 @@ public class IntBuiltins extends PythonBuiltins {
             if (((ax | ay) >>> 31 != 0)) {
                 int leadingZeros = Long.numberOfLeadingZeros(ax) + Long.numberOfLeadingZeros(ay);
                 if (leadingZeros < 66) {
-                    return factory().createInt(op(BigInteger.valueOf(x), BigInteger.valueOf(y)));
+                    return factory().createInt(mul(BigInteger.valueOf(x), BigInteger.valueOf(y)));
                 }
             }
             return factory().createInt(r);
@@ -651,17 +651,31 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt doPIntLong(PInt left, long right) {
-            return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
+            return factory().createInt(mul(left.getValue(), BigInteger.valueOf(right)));
         }
 
         @Specialization
         PInt doPIntPInt(PInt left, PInt right) {
-            return factory().createInt(op(left.getValue(), right.getValue()));
+            return factory().createInt(mul(left.getValue(), right.getValue()));
         }
 
         @TruffleBoundary
-        BigInteger op(BigInteger a, BigInteger b) {
+        BigInteger mul(BigInteger a, BigInteger b) {
+            if (b.and(b.subtract(BigInteger.ONE)).equals(BigInteger.ZERO)) {
+                return bigIntegerShift(a, b.getLowestSetBit());
+            } else {
+                return bigIntegerMul(a, b);
+            }
+        }
+
+        @TruffleBoundary
+        BigInteger bigIntegerMul(BigInteger a, BigInteger b) {
             return a.multiply(b);
+        }
+
+        @TruffleBoundary
+        BigInteger bigIntegerShift(BigInteger a, int n) {
+            return a.shiftLeft(n);
         }
 
         @SuppressWarnings("unused")

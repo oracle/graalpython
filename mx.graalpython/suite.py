@@ -9,7 +9,7 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "1.0.0-rc14",
+    "version": "1.0.0-rc15",
     "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
@@ -165,6 +165,7 @@ suite = {
             "dependencies": [
                 "truffle:ANTLR4_COMPLETE",
             ],
+            "jacoco": "include",
             "native": True,
             "vpath": True,
         },
@@ -176,6 +177,7 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
             ],
+            "jacoco": "include",
             "javaCompliance": "8+",
             "checkstyle": "com.oracle.graal.python",
         },
@@ -192,6 +194,7 @@ suite = {
                 "sulong:SULONG",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
+            "jacoco": "include",
             "javaCompliance" : "8+",
             "checkstyleVersion" : "8.8",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
