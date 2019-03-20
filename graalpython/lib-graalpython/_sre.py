@@ -48,20 +48,28 @@ def maxsize():
     import sys
     return sys.maxsize
 
+
 class _RegexResult:
-    def __init__(self, input, isMatch, groupCount, start, end, regex):
-        self.input = input
+    def __init__(self, pattern_input, isMatch, groupCount, start, end):
+        self.input = pattern_input
         self.isMatch = isMatch
         self.groupCount = groupCount
         self.start = start
         self.end = end
-        self.regex = regex
+        
+    def getStart(self, grpidx):
+        return self.start[grpidx]
+
+    def getEnd(self, grpidx):
+        return self.end[grpidx]
+
 
 def _str_to_bytes(arg):
     buffer = bytearray(len(arg))
     for i, c in enumerate(arg):
         buffer[i] = ord(c)
     return bytes(buffer)
+
 
 def setup(sre_compiler, error_class, flags_table):
     global error
@@ -82,22 +90,36 @@ def setup(sre_compiler, error_class, flags_table):
                     bit_flags = bit_flags | FLAGS[flag]
 
             compiled_pattern = sre_compiler(pattern if mode == "str" else _str_to_bytes(pattern), bit_flags)
+            
+            # wraps a native 're.Pattern' object
+            class ExecutablePattern:
+                def __call__(self, *args):
+                    # deprecated
+                    return self.exec(*args)
 
-            def executable_pattern(regex_object, input, from_index):
-                search_method = compiled_pattern.match if sticky else compiled_pattern.search
-                result = search_method(input, from_index)
-                is_match = result is not None
-                group_count = 1 + compiled_pattern.groups
-                return _RegexResult(
-                    input = input,
-                    isMatch = is_match,
-                    groupCount = group_count if is_match else 0,
-                    start = [result.start(i) for i in range(group_count)] if is_match else [],
-                    end = [result.end(i) for i in range(group_count)] if is_match else [],
-                    regex = regex_object
-                )
+                def exec(self, *args):
+                    nargs = len(args)
+                    if nargs == 2:
+                        # new-style signature
+                        pattern_input, from_index = args
+                    elif nargs == 3:
+                        # old-style signature; deprecated
+                        _, pattern_input, from_index = args
+                    else:
+                        raise TypeError("invalid arguments: " + repr(args))
+                    search_method = compiled_pattern.match if sticky else compiled_pattern.search
+                    result = search_method(pattern_input, from_index)
+                    is_match = result is not None
+                    group_count = 1 + compiled_pattern.groups
+                    return _RegexResult(
+                        pattern_input = pattern_input,
+                        isMatch = is_match,
+                        groupCount = group_count if is_match else 0,
+                        start = [result.start(i) for i in range(group_count)] if is_match else [],
+                        end = [result.end(i) for i in range(group_count)] if is_match else []
+                    )
 
-            return executable_pattern
+            return ExecutablePattern()
 
         return fallback_compiler
 
