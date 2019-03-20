@@ -57,7 +57,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -79,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.SpliceNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.StringLenNodeFactory;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -1358,13 +1358,12 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StripNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         String strip(String self, String chars) {
-            return self.replaceAll("^[" + Pattern.quote(chars) + "]+", "").replaceAll("[" + Pattern.quote(chars) + "]+$", "");
+            return StringUtils.strip(self, chars, StripKind.BOTH);
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isNoValue(chars)")
+        @Specialization
         String strip(String self, PNone chars) {
             return self.trim();
         }
@@ -1375,16 +1374,14 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RStripNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         String rstrip(String self, String chars) {
-            return self.replaceAll("[" + Pattern.quote(chars) + "]+$", "");
+            return StringUtils.strip(self, chars, StripKind.RIGHT);
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isNoValue(chars)")
-        @TruffleBoundary
+        @Specialization
         String rstrip(String self, PNone chars) {
-            return self.replaceAll("\\s+$", "");
+            return StringUtils.strip(self, StripKind.RIGHT);
         }
     }
 
@@ -1393,16 +1390,14 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LStripNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         String rstrip(String self, String chars) {
-            return self.replaceAll("^[" + Pattern.quote(chars) + "]+", "");
+            return StringUtils.strip(self, chars, StripKind.LEFT);
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isNoValue(chars)")
-        @TruffleBoundary
+        @Specialization
         String rstrip(String self, PNone chars) {
-            return self.replaceAll("^\\s+", "");
+            return StringUtils.strip(self, StripKind.LEFT);
         }
     }
 
