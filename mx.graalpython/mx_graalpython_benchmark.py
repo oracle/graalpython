@@ -220,9 +220,9 @@ class GraalPythonVm(GuestVm):
             dists.append('SULONG')
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
-                extra_polyglot_args += [mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_MANAGED_LIBS>')]
+                extra_polyglot_args += ["--experimental-options", mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_MANAGED_LIBS>')]
             else:
-                extra_polyglot_args += [mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_LIBS>')]
+                extra_polyglot_args += ["--experimental-options", mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_LIBS>')]
 
 
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)

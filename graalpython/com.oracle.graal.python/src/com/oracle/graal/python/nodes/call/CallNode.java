@@ -88,7 +88,7 @@ public abstract class CallNode extends PNodeWithContext {
             CompilerDirectives.transferToInterpreter();
             throw raise(PythonBuiltinClassType.TypeError, "'%p' object is not callable", callableObject);
         }
-        return callCallNode.execute(frame, call, PositionalArgumentsNode.prependArgument(callableObject, arguments, arguments.length), keywords);
+        return callCallNode.execute(frame, call, PositionalArgumentsNode.prependArgument(callableObject, arguments), keywords);
     }
 
     private CreateArgumentsNode ensureCreateArguments() {
