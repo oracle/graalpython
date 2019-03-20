@@ -96,9 +96,11 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
@@ -784,8 +786,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         Object doGeneric(Object object, String key,
                         @Shared("getItemNode") @Cached HashingStorageNodes.GetItemNode getItemNode) throws UnknownIdentifierException {
             // This is the preliminary generic case: There are native members we know that they
-            // exist but we do currently not represent them. So, store them into a dynamic
-            // object
+            // exist but we do currently not represent them. So, store them into a dynamic object
             // such that native code at least reads the value that was written before.
             if (object instanceof PythonAbstractObject) {
                 DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
@@ -822,22 +823,15 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return flags;
         }
 
-        @Specialization(guards = {"eq(TP_BASICSIZE, key)", "isPythonBuiltinClass(object)"})
-        @TruffleBoundary
-        long doTpBasicsize(PythonBuiltinClass object, @SuppressWarnings("unused") String key, long basicsize) {
-            // We have to use the 'setAttributeUnsafe' because this properly cannot be modified
-            // by
-            // the user and we need to initialize it.
-            object.setAttributeUnsafe(SpecialAttributeNames.__BASICSIZE__, basicsize);
-            return basicsize;
-        }
-
-        @Specialization(guards = {"eq(TP_BASICSIZE, key)", "isPythonUserClass(object)"})
-        @TruffleBoundary
-        long doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key, long basicsize) {
-            // Do deliberately not use "SetAttributeNode" because we want to directly set the
-            // attribute an bypass any user code.
-            object.setAttribute(SpecialAttributeNames.__BASICSIZE__, basicsize);
+        @Specialization(guards = "eq(TP_BASICSIZE, key)")
+        long doTpBasicsize(PythonAbstractClass object, @SuppressWarnings("unused") String key, long basicsize,
+                        @Cached WriteAttributeToObjectNode writeAttrNode,
+                        @Cached IsBuiltinClassProfile profile) {
+            if (profile.profileClass(object, PythonBuiltinClassType.PythonClass)) {
+                writeAttrNode.execute(object, TypeBuiltins.TYPE_BASICSIZE, basicsize);
+            } else {
+                writeAttrNode.execute(object, SpecialAttributeNames.__BASICSIZE__, basicsize);
+            }
             return basicsize;
         }
 
@@ -915,8 +909,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         Object doGeneric(Object object, String key, Object value,
                         @Shared("setItemNode") @Cached HashingStorageNodes.DynamicObjectSetItemNode setItemNode) throws UnknownIdentifierException {
             // This is the preliminary generic case: There are native members we know that they
-            // exist but we do currently not represent them. So, store them into a dynamic
-            // object
+            // exist but we do currently not represent them. So, store them into a dynamic object
             // such that native code at least reads the value that was written before.
             if (object instanceof PythonAbstractObject) {
                 DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
@@ -955,20 +948,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected boolean isMemberInsertable(String member) {
-        // TODO: cbasca, fangerer is this true ?
-        switch (member) {
-            case OB_TYPE:
-            case TP_FLAGS:
-            case TP_BASICSIZE:
-            case TP_SUBCLASSES:
-            case MD_DEF:
-            case TP_DICT:
-            case TP_DICTOFFSET:
-                return true;
-            default:
-                return false;
-        }
+    protected boolean isMemberInsertable(@SuppressWarnings("unused") String member) {
+        return false;
     }
 
     @ExportMessage
