@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -95,21 +94,21 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic getSqItemNode,
-                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic getSqRepeatNode,
-                    @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) throws UnknownIdentifierException {
+                    @Cached LookupAttributeInMRONode.Dynamic getSqItemNode,
+                    @Cached LookupAttributeInMRONode.Dynamic getSqRepeatNode,
+                    @Cached CExtNodes.ToSulongNode toSulongNode) throws UnknownIdentifierException {
         Object result;
         switch (member) {
             case NativeMemberNames.SQ_REPEAT:
-                result = getSqRepeatNode.execute(this.getPythonClass(), __GETITEM__);
+                result = toSulongNode.execute(getSqRepeatNode.execute(this.getPythonClass(), __MUL__));
                 break;
             case NativeMemberNames.SQ_ITEM:
-                return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(this.getPythonClass(), __MUL__));
+                return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(this.getPythonClass(), __GETITEM__));
             default:
                 // TODO extend list
                 throw UnknownIdentifierException.create(member);
         }
-        return toSulongNode.execute(result);
+        return result;
     }
 
     @ExportMessage
