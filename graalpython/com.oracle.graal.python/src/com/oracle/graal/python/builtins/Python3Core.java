@@ -372,7 +372,7 @@ public final class Python3Core implements PythonCore {
      */
     private boolean initialized;
 
-    private final PythonObjectFactory objectFactory = PythonObjectFactory.create();
+    private final PythonObjectFactory objectFactory = PythonObjectFactory.getUncached();
 
     public Python3Core(PythonParser parser) {
         this.parser = parser;
