@@ -55,7 +55,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.profiles.PrimitiveValueProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -125,8 +124,7 @@ public abstract class ManagedMethodWrappers {
                         @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Exclusive @Cached CallNode dispatch,
                         @Exclusive @Cached ExecutePositionalStarargsNode posStarargsNode,
-                        @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                        @Exclusive @Cached("createEqualityProfile()") PrimitiveValueProfile starArgsLenProfile) throws ArityException {
+                        @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode) throws ArityException {
             if (arguments.length != 3) {
                 throw ArityException.create(3, arguments.length);
             }
@@ -137,7 +135,6 @@ public abstract class ManagedMethodWrappers {
             Object kwArgs = toJavaNode.execute(arguments[2]);
 
             Object[] starArgsArray = posStarargsNode.executeWith(starArgs);
-            int starArgsLen = starArgsLenProfile.profile(starArgsArray.length);
             Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
             PKeyword[] kwArgsArray = expandKwargsNode.executeWith(kwArgs);
 
