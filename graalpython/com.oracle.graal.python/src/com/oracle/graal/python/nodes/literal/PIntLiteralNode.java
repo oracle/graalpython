@@ -32,11 +32,10 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public final class PIntLiteralNode extends LiteralNode {
-    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     private final PInt value;
 
     public PIntLiteralNode(BigInteger value) {
-        this.value = factory.createInt(value);
+        this.value = PythonObjectFactory.getUncached().createInt(value);
     }
 
     public PInt getValue() {
