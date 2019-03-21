@@ -198,9 +198,11 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
-@CoreFunctions(defineModule = "python_cext")
+@CoreFunctions(defineModule = TruffleCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
 public class TruffleCextBuiltins extends PythonBuiltins {
+
+    public static final String PYTHON_CEXT = "python_cext";
 
     private static final String ERROR_HANDLER = "error_handler";
     public static final String NATIVE_NULL = "native_null";
@@ -293,7 +295,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                     return core.lookupType(type);
                 }
             }
-            Object attribute = core.lookupBuiltinModule("python_cext").getAttribute(typeName);
+            Object attribute = core.lookupBuiltinModule(TruffleCextBuiltins.PYTHON_CEXT).getAttribute(typeName);
             if (attribute != PNone.NO_VALUE) {
                 return attribute;
             }
@@ -403,7 +405,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         public Object run(Object module,
                         @Exclusive @Cached GetClassNode getClassNode,
-                        @Exclusive @Cached GetNativeNullNode getNativeNullNode) {
+                        @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
             Object result;
@@ -573,7 +575,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object slots(Object module, LazyPythonClass pythonClass,
                         @Exclusive @Cached LookupAttributeInMRONode.Dynamic lookupSlotsNode,
-                        @Exclusive @Cached GetNativeNullNode getNativeNullNode) {
+                        @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
             Object execute = lookupSlotsNode.execute(pythonClass, __SLOTS__);
             if (execute != PNone.NO_VALUE) {
                 return execute;
@@ -875,20 +877,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             }
             return csName;
         }
-    }
-
-    abstract static class GetNativeNullNode extends PNodeWithContext {
-
-        public abstract Object execute(Object module);
-
-        @Specialization
-        protected Object getNativeNull(Object module,
-                        @Exclusive @Cached ReadAttributeFromObjectNode readAttrNode) {
-            Object wrapper = readAttrNode.execute(module, NATIVE_NULL);
-            assert wrapper instanceof PythonNativeNull;
-            return wrapper;
-        }
-
     }
 
     @Builtin(name = "TrufflePInt_AsPrimitive", minNumOfPositionalArgs = 3)
@@ -1965,7 +1953,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object doIt(Object object,
                         @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
-            Object wrapper = readAttrNode.execute(getCore().lookupBuiltinModule("python_cext"), NATIVE_NULL);
+            Object wrapper = readAttrNode.execute(getCore().lookupBuiltinModule(TruffleCextBuiltins.PYTHON_CEXT), NATIVE_NULL);
             if (wrapper instanceof PythonNativeNull) {
                 ((PythonNativeNull) wrapper).setPtr(object);
             }
@@ -2163,7 +2151,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGeneric(Object module, PythonNativeObject object,
-                        @Exclusive @Cached GetNativeNullNode getNativeNullNode,
+                        @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
                         @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
             try {
                 return factory().createBytes(getByteArrayNode.execute(object.getPtr(), -1));
@@ -2237,7 +2225,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doGeneric")
         Object doGenericErr(Object module, Object object,
-                        @Exclusive @Cached GetNativeNullNode getNativeNullNode,
+                        @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             try {

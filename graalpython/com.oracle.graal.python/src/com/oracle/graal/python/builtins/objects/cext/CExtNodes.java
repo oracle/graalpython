@@ -58,6 +58,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToJavaNodeGen;
@@ -77,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -1722,5 +1724,34 @@ public abstract class CExtNodes {
         public static GetTypeMemberNode getUncached() {
             return GetTypeMemberNodeGen.getUncached();
         }
+    }
+
+    @GenerateUncached
+    public abstract static class GetNativeNullNode extends Node {
+
+        public abstract Object execute(Object module);
+
+        public final Object execute() {
+            return execute(null);
+        }
+
+        @Specialization(guards = "module != null")
+        static Object getNativeNullWithModule(Object module,
+                        @Shared("readAttrNode") @Cached ReadAttributeFromObjectNode readAttrNode) {
+            Object wrapper = readAttrNode.execute(module, TruffleCextBuiltins.NATIVE_NULL);
+            assert wrapper instanceof PythonNativeNull;
+            return wrapper;
+        }
+
+        @Specialization(guards = "module == null")
+        static Object getNativeNullWithoutModule(@SuppressWarnings("unused") Object module,
+                        @Shared("readAttrNode") @Cached ReadAttributeFromObjectNode readAttrNode,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            PythonModule pythonCextModule = context.getCore().lookupBuiltinModule(TruffleCextBuiltins.PYTHON_CEXT);
+            Object wrapper = readAttrNode.execute(pythonCextModule, TruffleCextBuiltins.NATIVE_NULL);
+            assert wrapper instanceof PythonNativeNull;
+            return wrapper;
+        }
+
     }
 }

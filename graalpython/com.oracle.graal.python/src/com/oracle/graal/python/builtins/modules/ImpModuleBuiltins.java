@@ -241,13 +241,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = insert(ReadAttributeFromObjectNode.create());
                 CallUnaryMethodNode callNode = insert(CallUnaryMethodNode.create());
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(TruffleCextBuiltins.PYTHON_CEXT), INITIALIZE_CAPI), capi);
                 ctxt.setCapiWasLoaded(capi);
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), RUN_CAPI_LOADED_HOOKS), capi);
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(TruffleCextBuiltins.PYTHON_CEXT), RUN_CAPI_LOADED_HOOKS), capi);
 
                 // initialization needs to be finished already but load memoryview implemenation
                 // immediately
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), IMPORT_NATIVE_MEMORYVIEW), capi);
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(TruffleCextBuiltins.PYTHON_CEXT), IMPORT_NATIVE_MEMORYVIEW), capi);
             }
         }
 

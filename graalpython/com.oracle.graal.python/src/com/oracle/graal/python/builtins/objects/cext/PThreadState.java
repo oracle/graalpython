@@ -3,8 +3,8 @@ package com.oracle.graal.python.builtins.objects.cext;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_THREAD_STATE_TYPE_ID;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -14,7 +14,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -184,11 +183,8 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, PREV)")
         Object doPrev(@SuppressWarnings("unused") String key,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Exclusive @Cached ReadAttributeFromObjectNode readNativeNull) {
-            Object wrapper = readNativeNull.execute(context.getCore().lookupBuiltinModule("python_cext"), TruffleCextBuiltins.NATIVE_NULL);
-            assert wrapper instanceof PythonNativeNull;
-            return wrapper;
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return getNativeNullNode.execute(null);
         }
 
         protected static boolean eq(String key, String expected) {
