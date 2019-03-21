@@ -129,7 +129,7 @@ public abstract class ListNodes {
                         break;
                     }
                 }
-                storage = new SequenceStorageFactory().createStorage(Arrays.copyOf(elements, i));
+                storage = SequenceStorageFactory.createStorage(Arrays.copyOf(elements, i));
             } else {
                 int i = 0;
                 Object array = null;

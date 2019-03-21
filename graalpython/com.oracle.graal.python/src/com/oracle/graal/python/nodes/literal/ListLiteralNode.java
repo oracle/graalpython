@@ -69,7 +69,7 @@ public final class ListLiteralNode extends LiteralNode {
                 for (int i = 0; i < values.length; i++) {
                     elements[i] = values[i].execute(frame);
                 }
-                storage = new SequenceStorageFactory().createStorage(elements);
+                storage = SequenceStorageFactory.createStorage(elements);
                 if (storage instanceof IntSequenceStorage) {
                     type = ListStorageType.Int;
                 } else if (storage instanceof LongSequenceStorage) {

@@ -110,6 +110,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -301,9 +302,10 @@ public abstract class CExtNodes {
 
         @Specialization
         Object doBoolean(boolean b,
-                        @Cached PythonObjectFactory factory,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
-            PInt boxed = factory.createInt(b);
+            PythonCore core = context.getCore();
+            PInt boxed = b ? core.getTrue() : core.getFalse();
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
             if (profile.profile(nativeWrapper == null)) {
                 nativeWrapper = DynamicObjectNativeWrapper.PrimitiveNativeWrapper.createBool(b);
@@ -576,8 +578,9 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isBool()"})
         PInt doBoolNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
-                        @Cached PythonObjectFactory factory) {
-            PInt materializedInt = factory.createInt(object.getBool());
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            PythonCore core = context.getCore();
+            PInt materializedInt = object.getBool() ? core.getTrue() : core.getFalse();
             object.setMaterializedObject(materializedInt);
             if (materializedInt.getNativeWrapper() != null) {
                 object.setNativePointer(materializedInt.getNativeWrapper().getNativePointer());

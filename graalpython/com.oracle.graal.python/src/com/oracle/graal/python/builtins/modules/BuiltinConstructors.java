@@ -1369,12 +1369,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return doObjectIndirect(cachedSelf, varargs, kwargs);
         }
 
-        @Specialization(guards = "!self.needsNativeAllocation()", replaces = "doObjectDirect")
-        Object doObjectIndirect(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs) {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", //
+                        guards = {"getInstanceShape(self) == cachedInstanceShape", "!self.needsNativeAllocation()"}, //
+                        replaces = "doObjectDirect")
+        Object doObjectCachedInstanceShape(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
+                        @Cached("getInstanceShape(self)") Shape cachedInstanceShape) {
             if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
-            return factory().createPythonObject(self, getInstanceShape(self));
+            return factory().createPythonObject(self, cachedInstanceShape);
+        }
+
+        @Specialization(guards = "!self.needsNativeAllocation()", replaces = "doObjectCachedInstanceShape")
+        Object doObjectIndirect(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs) {
+            return doObjectCachedInstanceShape(self, varargs, kwargs, getInstanceShape(self));
         }
 
         @Specialization(guards = "self.needsNativeAllocation()")
@@ -1428,7 +1436,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                                             toSulongNodes[3].execute(dkwargs)));
         }
 
-        private Shape getInstanceShape(LazyPythonClass clazz) {
+        protected Shape getInstanceShape(LazyPythonClass clazz) {
             if (getInstanceShapeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getInstanceShapeNode = insert(TypeNodes.GetInstanceShape.create());
