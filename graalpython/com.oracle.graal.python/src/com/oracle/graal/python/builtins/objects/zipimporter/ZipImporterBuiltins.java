@@ -170,8 +170,10 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             while (positions.isEmpty() && read() != -1) {
                 // do nothing here, just read until the first LOC is found
             }
-            pos -= 4;
-            readFirstLoc = true;
+            if (!positions.isEmpty()) {
+                pos -= 4;
+                readFirstLoc = true;
+            }
         }
     }
 
@@ -221,6 +223,10 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                     try {
                         locis = new LOCZipEntryStream(tfile.newInputStream(StandardOpenOption.READ));
                         locis.findFirstEntryPosition(); // find location of the first zip entry
+                        if (locis.positions.isEmpty()) {
+                            // no PK\003\004 found -> not a correct zip file
+                            throw raise(PythonErrorType.ZipImportError, "not a Zip file: '%s'", archive);
+                        }
                         zis = new ZipInputStream(locis); // and create new ZipInput stream from this
                                                          // location
                         ZipEntry entry;
@@ -262,7 +268,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                             }
                         }
                     } catch (IOException ex) {
-                        throw raise(PythonErrorType.ZipImportError, "not a Zip file");
+                        throw raise(PythonErrorType.ZipImportError, "not a Zip file: '%s'", archive);
                     } finally {
                         if (zis != null) {
                             try {
@@ -288,7 +294,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 self.setFiles((PDict) files);
 
             } else {
-                throw raise(PythonErrorType.ZipImportError, "not a Zip file");
+                throw raise(PythonErrorType.ZipImportError, "not a Zip file: '%s'", archive);
             }
 
         }
