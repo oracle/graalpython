@@ -677,6 +677,22 @@ class TestAbstract(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PySequence_ITEM = CPyExtFunction(
+        _reference_getitem,
+        lambda: (
+            (tuple(), 10),
+            ((1, 2, 3), 2),
+            ((None,), 0),
+            ([], 10),
+            (['a', 'b', 'c'], 2),
+            ([None], 0),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* sequence", "Py_ssize_t idx"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PySequence_SetItem = CPyExtFunction(
         _reference_setitem,
         lambda: (
