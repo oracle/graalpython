@@ -394,10 +394,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             unbufferedIO = unbufferedIO || System.getenv("PYTHONUNBUFFERED") != null;
         }
 
-        // The unlikely separator is used because options need to be strings. See
-        // PythonOptions.getExecutableList()
-        contextBuilder.option("python.ExecutableList", String.join("🏆", getExecutableList()));
-        setContextOptionIfUnset(contextBuilder, "python.Executable", getExecutable());
+        String executable = getContextOptionIfSetViaCommandLine("python.Executable");
+        if (executable != null) {
+            contextBuilder.option("python.ExecutableList", executable);
+        } else {
+            contextBuilder.option("python.Executable", getExecutable());
+            // The unlikely separator is used because options need to be
+            // strings. See PythonOptions.getExecutableList()
+            contextBuilder.option("python.ExecutableList", String.join("🏆", getExecutableList()));
+        }
 
         // setting this to make sure our TopLevelExceptionHandler calls the excepthook
         // to print Python exceptions
@@ -471,16 +476,21 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         System.exit(rc);
     }
 
-    private void setContextOptionIfUnset(Builder contextBuilder, String key, String value) {
+    private String getContextOptionIfSetViaCommandLine(String key) {
         if (System.getProperty("polyglot." + key) != null) {
-            return;
+            return System.getProperty("polyglot." + key);
         }
         for (String f : givenArguments) {
             if (f.startsWith("--" + key)) {
-                return;
+                String[] splits = f.split("=", 2);
+                if (splits.length > 1) {
+                    return splits[1];
+                } else {
+                    return "true";
+                }
             }
         }
-        contextBuilder.option(key, value);
+        return null;
     }
 
     private static void printFileNotFoundException(NoSuchFileException e) {
