@@ -35,7 +35,7 @@
     </module>
     <module name="RedundantImport"/>
     <module name="LineLength">
-      <property name="max" value="255"/>
+      <property name="max" value="300"/>
     </module>
     <module name="MethodParamPad"/>
     <module name="NoWhitespaceAfter">
