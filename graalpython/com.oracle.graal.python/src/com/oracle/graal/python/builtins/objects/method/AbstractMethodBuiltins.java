@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -73,14 +74,24 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     public abstract static class CallNode extends PythonVarargsBuiltinNode {
         @Child private com.oracle.graal.python.nodes.call.CallNode callNode = com.oracle.graal.python.nodes.call.CallNode.create();
 
-        @Specialization
+        @Specialization(guards = "isFunction(self.getFunction())")
         protected Object doIt(VirtualFrame frame, PMethod self, Object[] arguments, PKeyword[] keywords) {
             return callNode.execute(frame, self, arguments, keywords);
         }
 
-        @Specialization
+        @Specialization(guards = "isFunction(self.getFunction())")
         protected Object doIt(VirtualFrame frame, PBuiltinMethod self, Object[] arguments, PKeyword[] keywords) {
             return callNode.execute(frame, self, arguments, keywords);
+        }
+
+        @Specialization(guards = "!isFunction(self.getFunction())")
+        protected Object doItNonFunction(VirtualFrame frame, PMethod self, Object[] arguments, PKeyword[] keywords) {
+            return callNode.execute(frame, self.getFunction(), PositionalArgumentsNode.prependArgument(self.getSelf(), arguments), keywords);
+        }
+
+        @Specialization(guards = "!isFunction(self.getFunction())")
+        protected Object doItNonFunction(VirtualFrame frame, PBuiltinMethod self, Object[] arguments, PKeyword[] keywords) {
+            return callNode.execute(frame, self.getFunction(), PositionalArgumentsNode.prependArgument(self.getSelf(), arguments), keywords);
         }
 
         @Override

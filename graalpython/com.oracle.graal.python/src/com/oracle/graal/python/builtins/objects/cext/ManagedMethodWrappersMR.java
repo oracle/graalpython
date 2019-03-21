@@ -60,7 +60,6 @@ import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.PrimitiveValueProfile;
 
 @MessageResolution(receiverType = MethodWrapper.class)
 public class ManagedMethodWrappersMR {
@@ -76,8 +75,6 @@ public class ManagedMethodWrappersMR {
         @Child private ExecuteKeywordStarargsNode expandKwargsNode = ExecuteKeywordStarargsNode.create();
         @Child private CallNode dispatch;
 
-        private final PrimitiveValueProfile starArgsLenProfile = PrimitiveValueProfile.createEqualityProfile();
-
         public Object access(MethKeywords object, Object[] arguments) {
             if (arguments.length != 3) {
                 throw ArityException.raise(3, arguments.length);
@@ -90,8 +87,7 @@ public class ManagedMethodWrappersMR {
             Object kwArgs = toJavaNode.execute(arguments[2]);
 
             Object[] starArgsArray = posStarargsNode.executeWith(starArgs);
-            int starArgsLen = starArgsLenProfile.profile(starArgsArray.length);
-            Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray, starArgsLen);
+            Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
             PKeyword[] kwArgsArray = expandKwargsNode.executeWith(kwArgs);
 
             // execute

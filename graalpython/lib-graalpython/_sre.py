@@ -127,12 +127,13 @@ FLAG_NAMES = ["re.TEMPLATE", "re.IGNORECASE", "re.LOCALE", "re.MULTILINE",
 
 
 class SRE_Match():
-    def __init__(self, pattern, pos, endpos, result):
+    def __init__(self, pattern, pos, endpos, result, input_str, compiled_regex):
         self.result = result
-        self.compiled_regex = result.regex
+        self.compiled_regex = compiled_regex
         self.re = pattern
         self.pos = pos
         self.endpos = endpos
+        self.input_str = input_str
 
     def end(self, groupnum=0):
         return self.result.end[groupnum]
@@ -166,7 +167,7 @@ class SRE_Match():
         if start < 0:
             return None
         else:
-            return self.result.input[start:self.result.end[idxarg]]
+            return self.input_str[start:self.result.end[idxarg]]
 
     def groupdict(self, default=None):
         d = {}
@@ -187,7 +188,7 @@ class SRE_Match():
 
     @property
     def string(self):
-        return self.result.input
+        return self.input_str
 
     @property
     def lastgroup(self):
@@ -274,12 +275,14 @@ class SRE_Pattern():
 
     def _search(self, pattern, string, pos, endpos, sticky=False):
         pattern = self.__tregex_compile(pattern, self.flags_str + ("y" if sticky else ""))
+        input_str = string
         if endpos == -1 or endpos >= len(string):
-            result = tregex_call_exec(pattern.exec, string, min(pos, len(string) + 1))
+            result = tregex_call_exec(pattern.exec, input_str, min(pos, len(string) + 1))
         else:
-            result = tregex_call_exec(pattern.exec, string[:endpos], min(pos, endpos % len(string) + 1))
+            input_str = string[:endpos]
+            result = tregex_call_exec(pattern.exec, input_str, min(pos, endpos % len(string) + 1))
         if result.isMatch:
-            return SRE_Match(self, pos, endpos, result)
+            return SRE_Match(self, pos, endpos, result, input_str, pattern)
         else:
             return None
 
@@ -310,11 +313,12 @@ class SRE_Pattern():
         elif endpos < 0:
             endpos = endpos % len(string) + 1
         while pos < endpos:
-            result = tregex_call_exec(self.__tregex_compile(self.pattern).exec, string, pos)
+            compiled_regex = self.__tregex_compile(self.pattern)
+            result = tregex_call_exec(compiled_regex.exec, string, pos)
             if not result.isMatch:
                 break
             else:
-                yield SRE_Match(self, pos, endpos, result)
+                yield SRE_Match(self, pos, endpos, result, string, compiled_regex)
             no_progress = (result.start[0] == result.end[0])
             pos = result.end[0] + no_progress
         return
@@ -327,7 +331,8 @@ class SRE_Pattern():
             endpos = endpos % len(string) + 1
         matchlist = []
         while pos < endpos:
-            result = tregex_call_exec(self.__tregex_compile(self.pattern).exec, string, pos)
+            compiled_regex = self.__tregex_compile(self.pattern)
+            result = tregex_call_exec(compiled_regex.exec, string, pos)
             if not result.isMatch:
                 break
             elif result.groupCount == 1:
@@ -335,7 +340,7 @@ class SRE_Pattern():
             elif result.groupCount == 2:
                 matchlist.append(self.__sanitize_out_type(string[result.start[1]:result.end[1]]))
             else:
-                matchlist.append(tuple(map(self.__sanitize_out_type, SRE_Match(self, pos, endpos, result).groups())))
+                matchlist.append(tuple(map(self.__sanitize_out_type, SRE_Match(self, pos, endpos, result, string, compiled_regex).groups())))
             no_progress = (result.start[0] == result.end[0])
             pos = result.end[0] + no_progress
         return matchlist
@@ -421,7 +426,7 @@ class SRE_Pattern():
             if is_string_rep:
                 result.append(self.__replace_groups(repl, string, match_result, pattern))
             else:
-                _srematch = SRE_Match(self, pos, -1, match_result)
+                _srematch = SRE_Match(self, pos, -1, match_result, string, pattern)
                 _repl = repl(_srematch)
                 result.append(_repl)
             pos = end
