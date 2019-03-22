@@ -241,6 +241,7 @@ abstract class AccessForeignItemNodes {
             if (lib.isArrayElementModifiable(object, idx)) {
                 try {
                     lib.writeArrayElement(object, idx, value);
+                    return;
                 } catch (InvalidArrayIndexException ex) {
                     throw raise(IndexError, "invalid index %s", idx);
                 }
