@@ -123,9 +123,6 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         dists.append('SULONG')
         if mx.suite("sulong-managed", fatalIfMissing=False):
             dists.append('SULONG_MANAGED')
-            graalpython_args.insert(0, mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_MANAGED_LIBS>'))
-        else:
-            graalpython_args.insert(0, mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_LIBS>'))
 
     graalpython_args.insert(0, '--experimental-options=true')
 
