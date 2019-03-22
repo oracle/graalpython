@@ -183,6 +183,29 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             this.reverse = reverse;
         }
 
+        protected static boolean isNegativeNumber(InteropLibrary lib, Object right) {
+            long val = 0;
+            try {
+                if (lib.fitsInByte(right)) {
+                    val = lib.asByte(right);
+                } else if (lib.fitsInShort(right)) {
+                    val = lib.asShort(right);
+                } else if (lib.fitsInInt(right)) {
+                    val = lib.asInt(right);
+                } else if (lib.fitsInLong(right)) {
+                    val = lib.asLong(right);
+                }
+                return val < 0;
+            } catch (UnsupportedMessageException e) {
+                // fall through
+            }
+            return false;
+        }
+
+        protected static boolean isPythonLikeSequence(InteropLibrary lib, Object receiver) {
+            return lib.hasArrayElements(receiver) || lib.isString(receiver);
+        }
+
         @Specialization(guards = {"!reverse", "lib.isBoolean(left)"})
         Object doComparisonBool(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
@@ -244,8 +267,15 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!lib.fitsInDouble(left)", "!lib.fitsInLong(left)", "!lib.isBoolean(left)"})
+        @Specialization(guards = {"!reverse", "!lib.fitsInDouble(left)", "!lib.fitsInLong(left)", "!lib.isBoolean(left)"})
         public PNotImplemented doGeneric(Object left, Object right,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"reverse", "!lib.fitsInDouble(right)", "!lib.fitsInLong(right)", "!lib.isBoolean(right)"})
+        public PNotImplemented doGenericReverse(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
@@ -297,7 +327,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             super(BinaryArithmetic.Mul.create(), false);
         }
 
-        @Specialization(insertBefore = "doGeneric", guards = {"lib.hasArrayElements(left)", "lib.fitsInInt(right)"})
+        @Specialization(insertBefore = "doGeneric", guards = {"isPythonLikeSequence(lib, left)", "lib.fitsInInt(right)"})
         static Object doForeignArray(Object left, Object right,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
@@ -327,7 +357,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(insertBefore = "doGeneric", guards = {"lib.hasArrayElements(left)", "lib.isBoolean(right)"})
+        @Specialization(insertBefore = "doGeneric", guards = {"isPythonLikeSequence(lib, left)", "lib.isBoolean(right)"})
         static Object doForeignArrayForeignBoolean(Object left, Object right,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
@@ -341,7 +371,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(insertBefore = "doGeneric", guards = {"lib.hasArrayElements(left)", "isNegativeNumber(lib, right)"})
+        @Specialization(insertBefore = "doGeneric", guards = {"isPythonLikeSequence(lib, left)", "isNegativeNumber(lib, right)"})
         static Object doForeignArrayNegativeMult(Object left, Object right,
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
@@ -350,30 +380,12 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(insertBefore = "doGeneric", guards = {"!lib.fitsInDouble(left)", "!lib.fitsInLong(left)", "!lib.isBoolean(left)", "!lib.hasArrayElements(left)"})
+        @Specialization(insertBefore = "doGeneric", guards = {"!lib.fitsInDouble(left)", "!lib.fitsInLong(left)", "!lib.isBoolean(left)", "!isPythonLikeSequence(lib, left)"})
         PNotImplemented doForeignGeneric(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        protected static boolean isNegativeNumber(InteropLibrary lib, Object right) {
-            long val = 0;
-            try {
-                if (lib.fitsInByte(right)) {
-                    val = lib.asByte(right);
-                } else if (lib.fitsInShort(right)) {
-                    val = lib.asShort(right);
-                } else if (lib.fitsInInt(right)) {
-                    val = lib.asInt(right);
-                } else if (lib.fitsInLong(right)) {
-                    val = lib.asLong(right);
-                }
-                return val < 0;
-            } catch (UnsupportedMessageException e) {
-                // fall through
-            }
-            return false;
-        }
     }
 
     @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
@@ -383,8 +395,8 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             super(BinaryArithmetic.Mul.create(), true);
         }
 
-        @Specialization(guards = {"lib.hasArrayElements(right)", "lib.fitsInInt(left)"})
-        Object doForeignArray(Object left, Object right,
+        @Specialization(guards = {"isPythonLikeSequence(lib, right)", "lib.fitsInInt(left)"})
+        Object doForeignArray(Object right, Object left,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
                         @Cached PForeignToPTypeNode convert,
@@ -392,8 +404,8 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             return MulNode.doForeignArray(right, left, raise, factory, convert, lib);
         }
 
-        @Specialization(guards = {"lib.hasArrayElements(right)", "lib.isBoolean(left)"})
-        Object doForeignArrayForeignBoolean(Object left, Object right,
+        @Specialization(guards = {"isPythonLikeSequence(lib, right)", "lib.isBoolean(left)"})
+        Object doForeignArrayForeignBoolean(Object right, Object left,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
                         @Cached PForeignToPTypeNode convert,
@@ -406,8 +418,8 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(insertBefore = "doGeneric", guards = {"!lib.fitsInDouble(right)", "!lib.fitsInLong(right)", "!lib.isBoolean(right)", "!lib.hasArrayElements(right)"})
-        PNotImplemented doForeignGneeric(Object left, Object right,
+        @Specialization(insertBefore = "doGeneric", guards = {"!lib.fitsInDouble(right)", "!lib.fitsInLong(right)", "!lib.isBoolean(right)", "!isPythonLikeSequence(lib, right)"})
+        PNotImplemented doForeignGneeric(Object right, Object left,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
