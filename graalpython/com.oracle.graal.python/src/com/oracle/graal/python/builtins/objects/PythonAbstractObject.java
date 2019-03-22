@@ -394,6 +394,20 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
+    public boolean hasMemberReadSideEffects(String member,
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+        // TODO write specialized nodes for the appropriate property
+        return (keyInfoNode.execute(this, member) & PKeyInfoNode.READ_SIDE_EFFECTS) != 0;
+    }
+
+    @ExportMessage
+    public boolean hasMemberWriteSideEffects(String member,
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+        // TODO write specialized nodes for the appropriate property
+        return (keyInfoNode.execute(this, member) & PKeyInfoNode.WRITE_SIDE_EFFECTS) != 0;
+    }
+
+    @ExportMessage
     public Object invokeMember(String member, Object[] arguments,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Exclusive @Cached CallNode callGetattributeNode,
