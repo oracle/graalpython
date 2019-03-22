@@ -202,10 +202,6 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             return false;
         }
 
-        protected static boolean isPythonLikeSequence(InteropLibrary lib, Object receiver) {
-            return lib.hasArrayElements(receiver);
-        }
-
         @Specialization(guards = {"!reverse", "lib.isBoolean(left)"})
         Object doComparisonBool(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
@@ -245,56 +241,49 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
         }
-        @Specialization(guards = {"reverse", "lib.isBoolean(right)"})
+        @Specialization(guards = {"reverse", "lib.isBoolean(left)"})
         Object doComparisonBoolR(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return op.executeObject(left, lib.asBoolean(right));
+                return op.executeObject(right, lib.asBoolean(left));
             } catch (UnsupportedMessageException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
         }
 
-        @Specialization(guards = {"reverse", "lib.fitsInLong(right)"})
+        @Specialization(guards = {"reverse", "lib.fitsInLong(left)"})
         Object doComparisonLongR(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return op.executeObject(left, lib.asLong(right));
+                return op.executeObject(right, lib.asLong(left));
             } catch (UnsupportedMessageException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
         }
 
-        @Specialization(guards = {"reverse", "lib.fitsInDouble(right)"})
+        @Specialization(guards = {"reverse", "lib.fitsInDouble(left)"})
         Object doComparisonDoubleR(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return op.executeObject(left, lib.asDouble(right));
+                return op.executeObject(right, lib.asDouble(left));
             } catch (UnsupportedMessageException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
         }
 
-        @Specialization(guards = {"reverse", "lib.isString(right)"})
+        @Specialization(guards = {"reverse", "lib.isString(left)"})
         Object doComparisonStringR(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return op.executeObject(left, lib.asString(right));
+                return op.executeObject(right, lib.asString(left));
             } catch (UnsupportedMessageException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!reverse", "!lib.fitsInDouble(left)", "!lib.fitsInLong(left)", "!lib.isBoolean(left)"})
+        @Specialization(guards = {"!lib.fitsInDouble(left)", "!lib.fitsInLong(left)", "!lib.isBoolean(left)"})
         public PNotImplemented doGeneric(Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"reverse", "!lib.fitsInDouble(right)", "!lib.fitsInLong(right)", "!lib.isBoolean(right)"})
-        public PNotImplemented doGenericReverse(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
@@ -346,6 +335,10 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             super(BinaryArithmetic.Mul.create(), false);
         }
 
+        protected static boolean isPythonLikeSequence(InteropLibrary lib, Object receiver) {
+            return lib.hasArrayElements(receiver);
+        }
+
         @Specialization(insertBefore = "doComparisonBool", guards = {"isPythonLikeSequence(lib, left)", "lib.fitsInInt(right)"})
         static Object doForeignArray(Object left, Object right,
                         @Cached PRaiseNode raise,
@@ -365,7 +358,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
                     // repeat data
                     for (int i = 0; i < repeatedData.length; i++) {
-                        repeatedData[i] = unpackForeignArray[i % rightInt];
+                        repeatedData[i] = unpackForeignArray[i % unpackForeignArray.length];
                     }
 
                     return factory.createList(repeatedData);
@@ -409,39 +402,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class RMulNode extends ForeignBinaryNode {
-        RMulNode() {
-            super(BinaryArithmetic.Mul.create(), true);
-        }
-
-        @Specialization(insertBefore = "doComparisonBool", guards = {"isPythonLikeSequence(lib, right)", "lib.fitsInInt(left)"})
-        Object doForeignArray(Object right, Object left,
-                        @Cached PRaiseNode raise,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PForeignToPTypeNode convert,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
-            return MulNode.doForeignArray(right, left, raise, factory, convert, lib);
-        }
-
-        @Specialization(insertBefore = "doComparisonBool", guards = {"isPythonLikeSequence(lib, right)", "lib.isBoolean(left)"})
-        Object doForeignArrayForeignBoolean(Object right, Object left,
-                        @Cached PRaiseNode raise,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PForeignToPTypeNode convert,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
-            try {
-                return MulNode.doForeignArray(right, lib.asBoolean(left) ? 1 : 0, raise, factory, convert, lib);
-            } catch (UnsupportedMessageException e) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(insertBefore = "doGeneric", guards = {"!lib.fitsInDouble(right)", "!lib.fitsInLong(right)", "!lib.isBoolean(right)", "!isPythonLikeSequence(lib, right)"})
-        PNotImplemented doForeignGneeric(Object right, Object left,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
+    abstract static class RMulNode extends MulNode {
     }
 
     @Builtin(name = __SUB__, minNumOfPositionalArgs = 2)
