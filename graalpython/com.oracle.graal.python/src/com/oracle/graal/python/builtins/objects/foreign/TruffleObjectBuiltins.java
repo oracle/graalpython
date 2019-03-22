@@ -339,6 +339,13 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
         }
+
+        @SuppressWarnings("unused")
+        @Specialization(insertBefore = "doGeneric", guards = {"!lib.fitsInDouble(left)", "!lib.fitsInLong(left)", "!lib.isBoolean(left)", "!lib.hasArrayElements(left)"})
+        PNotImplemented doForeignGeneric(Object left, Object right,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
     }
 
     @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
@@ -368,6 +375,13 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(insertBefore = "doGeneric", guards = {"!lib.fitsInDouble(right)", "!lib.fitsInLong(right)", "!lib.isBoolean(right)", "!lib.hasArrayElements(right)"})
+        PNotImplemented doForeignGneeric(Object left, Object right,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
