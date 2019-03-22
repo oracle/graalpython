@@ -203,7 +203,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         protected static boolean isPythonLikeSequence(InteropLibrary lib, Object receiver) {
-            return lib.hasArrayElements(receiver) || lib.isString(receiver);
+            return lib.hasArrayElements(receiver);
         }
 
         @Specialization(guards = {"!reverse", "lib.isBoolean(left)"})
@@ -236,6 +236,15 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             }
         }
 
+        @Specialization(guards = {"!reverse", "lib.isString(left)"})
+        Object doComparisonString(Object left, Object right,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            try {
+                return op.executeObject(lib.asString(left), right);
+            } catch (UnsupportedMessageException e) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+        }
         @Specialization(guards = {"reverse", "lib.isBoolean(right)"})
         Object doComparisonBoolR(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
@@ -261,6 +270,16 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 return op.executeObject(left, lib.asDouble(right));
+            } catch (UnsupportedMessageException e) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+        }
+
+        @Specialization(guards = {"reverse", "lib.isString(right)"})
+        Object doComparisonStringR(Object left, Object right,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            try {
+                return op.executeObject(left, lib.asString(right));
             } catch (UnsupportedMessageException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -327,7 +346,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             super(BinaryArithmetic.Mul.create(), false);
         }
 
-        @Specialization(insertBefore = "doGeneric", guards = {"isPythonLikeSequence(lib, left)", "lib.fitsInInt(right)"})
+        @Specialization(insertBefore = "doComparisonBool", guards = {"isPythonLikeSequence(lib, left)", "lib.fitsInInt(right)"})
         static Object doForeignArray(Object left, Object right,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
@@ -357,7 +376,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(insertBefore = "doGeneric", guards = {"isPythonLikeSequence(lib, left)", "lib.isBoolean(right)"})
+        @Specialization(insertBefore = "doComparisonBool", guards = {"isPythonLikeSequence(lib, left)", "lib.isBoolean(right)"})
         static Object doForeignArrayForeignBoolean(Object left, Object right,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
@@ -395,7 +414,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             super(BinaryArithmetic.Mul.create(), true);
         }
 
-        @Specialization(guards = {"isPythonLikeSequence(lib, right)", "lib.fitsInInt(left)"})
+        @Specialization(insertBefore = "doComparisonBool", guards = {"isPythonLikeSequence(lib, right)", "lib.fitsInInt(left)"})
         Object doForeignArray(Object right, Object left,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
@@ -404,7 +423,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             return MulNode.doForeignArray(right, left, raise, factory, convert, lib);
         }
 
-        @Specialization(guards = {"isPythonLikeSequence(lib, right)", "lib.isBoolean(left)"})
+        @Specialization(insertBefore = "doComparisonBool", guards = {"isPythonLikeSequence(lib, right)", "lib.isBoolean(left)"})
         Object doForeignArrayForeignBoolean(Object right, Object left,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
