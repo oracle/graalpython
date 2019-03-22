@@ -303,31 +303,44 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean isArrayElementReadable(@SuppressWarnings("unused") long idx,
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode) {
-        return isInBounds(callLenNode, idx);
+        return isInBounds(callLenNode, getItemNode, idx);
     }
 
     @ExportMessage
     public boolean isArrayElementModifiable(@SuppressWarnings("unused") long idx,
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode) {
-        return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(callLenNode, idx);
+        return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(callLenNode, getItemNode, idx);
     }
 
     @ExportMessage
     public boolean isArrayElementInsertable(@SuppressWarnings("unused") long idx,
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode) {
-        return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(callLenNode, idx);
+        return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(callLenNode, getItemNode, idx);
     }
 
     @ExportMessage
     public boolean isArrayElementRemovable(@SuppressWarnings("unused") long idx,
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode) {
-        return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(callLenNode, idx);
+        return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(callLenNode, getItemNode, idx);
     }
 
-    private boolean isInBounds(LookupAndCallUnaryDynamicNode callLenNode, long idx) {
+    private boolean isInBounds(LookupAndCallUnaryDynamicNode callLenNode, PInteropSubscriptNode getItemNode, long idx) {
         long len = getArraySizeSafe(callLenNode);
-        return 0 <= idx && idx < len;
+        if (0 <= idx && idx < len) {
+            try {
+                getItemNode.execute(this, idx);
+                return true;
+            } catch (PException e) {
+                return false;
+            }
+        } else {
+            return false;
+        }
     }
 
     private long getArraySizeSafe(LookupAndCallUnaryDynamicNode callLenNode) {
