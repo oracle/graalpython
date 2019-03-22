@@ -592,18 +592,6 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             throw raise(TypeError, "'foreign' object is not iterable");
         }
 
-        @Specialization(guards = "lib.hasMembers(mapping)")
-        Object doForeignMapping(Object mapping,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                Object keysObj = lib.getMembers(mapping);
-                return doForeignArray(keysObj, lib);
-            } catch (UnsupportedMessageException e) {
-                // fall through
-            }
-            throw raise(TypeError, "'foreign' object is not iterable");
-        }
-
         @Fallback
         PNone doGeneric(@SuppressWarnings("unused") Object o) {
             throw raise(TypeError, "'foreign' object is not iterable");
