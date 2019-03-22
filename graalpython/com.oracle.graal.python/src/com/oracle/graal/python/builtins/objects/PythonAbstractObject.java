@@ -211,6 +211,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public Object readArrayElement(long key,
                     @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
+                    @Shared("isMapping") @Cached IsMappingNode isMapping,
                     @Shared("isIterableNode") @Cached IsIterableNode isIterableNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIterNode,
@@ -222,9 +223,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             try {
                 return toForeign.executeConvert(getItemNode.execute(this, key));
             } catch (PException e) {
-                // TODO(fa) refine exception handling
-                // it's a sequence, so we assume the index is wrong
-                throw InvalidArrayIndexException.create(key);
+                if (isMapping.execute(this)) {
+                    throw UnsupportedMessageException.create();
+                } else {
+                    // TODO(fa) refine exception handling
+                    // it's a sequence, so we assume the index is wrong
+                    throw InvalidArrayIndexException.create(key);
+                }
             }
         }
 
