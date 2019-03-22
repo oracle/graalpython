@@ -230,6 +230,7 @@ public final class Python3Core implements PythonCore {
                         "mmap",
                         "_queue",
                         "_ast",
+                        "java",
                         "_contextvars"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
