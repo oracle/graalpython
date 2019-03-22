@@ -239,13 +239,13 @@ if sys.implementation.name == "graalpython":
         assert polyglot.__key_info__(o, "my_field", "modifiable")
         assert polyglot.__key_info__(o, "my_field", "removable")
         assert not polyglot.__key_info__(o, "my_field", "insertable")
-        
+
         assert polyglot.__key_info__(o, "__getattribute__", "readable")
         assert polyglot.__key_info__(o, "__getattribute__", "invokable")
         assert not polyglot.__key_info__(o, "__getattribute__", "modifiable")
         assert not polyglot.__key_info__(o, "__getattribute__", "removable")
         assert not polyglot.__key_info__(o, "__getattribute__", "insertable")
-        
+
         builtinObj = (1,2,3)
         assert polyglot.__key_info__(builtinObj, "__len__", "readable")
         assert polyglot.__key_info__(builtinObj, "__len__", "invokable")
@@ -297,7 +297,7 @@ if sys.implementation.name == "graalpython":
             assert False, "calling the python equivalents for well-known functions directly should work"
         except NotImplementedError as e:
             assert "host lookup is not allowed" in str(e)
-            
+
     def test_array_element_info():
         immutableObj = (1,2,3,4)
         assert polyglot.__element_info__(immutableObj, 0, "exists")
@@ -316,3 +316,18 @@ if sys.implementation.name == "graalpython":
         assert not polyglot.__element_info__(mutableObj, 0, "insertable")
         assert polyglot.__element_info__(mutableObj, 0, "modifiable")
         assert polyglot.__element_info__(mutableObj, 4, "insertable")
+
+    def test_java_imports():
+        import java
+        try:
+            al = java.type("java.util.ArrayList")()
+        except NotImplementedError as e:
+            assert "host lookup is not allowed" in str(e)
+        else:
+            import java.util.ArrayList
+            assert repr(java.util.ArrayList()) == "[]"
+
+            from java.util import ArrayList
+            assert repr(ArrayList()) == "[]"
+
+            assert java.util.ArrayList == ArrayList
