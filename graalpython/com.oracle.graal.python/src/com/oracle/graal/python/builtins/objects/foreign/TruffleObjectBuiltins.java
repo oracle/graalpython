@@ -151,7 +151,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                 return data;
             }
         } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-            throw new IllegalStateException("object does not unpack as it claims to");
+            throw new IllegalStateException("object does not unpack to array as it claims to");
         }
         return null;
     }
@@ -212,7 +212,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                     return op.executeObject(right, lib.asBoolean(left));
                 }
             } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException("object does not unpack as it claims to");
+                throw new IllegalStateException("object does not unpack to boolean as it claims to");
             }
         }
 
@@ -226,7 +226,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                     return op.executeObject(right, lib.asLong(left));
                 }
             } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException("object does not unpack as it claims to");
+                throw new IllegalStateException("3object does not unpack to long as it claims to");
             }
         }
 
@@ -240,7 +240,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                     return op.executeObject(right, lib.asDouble(left));
                 }
             } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException("object does not unpack as it claims to");
+                throw new IllegalStateException("object does not unpack to double as it claims to");
             }
         }
 
@@ -254,7 +254,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                     return op.executeObject(right, lib.asString(left));
                 }
             } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException("object does not unpack as it claims to");
+                throw new IllegalStateException("object does not unpack to String as it claims to");
             }
         }
 
@@ -322,7 +322,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                 try {
                     rightInt = lib.asInt(right);
                 } catch (UnsupportedMessageException e) {
-                    throw new IllegalStateException("object does not unpack as it claims to");
+                    throw new IllegalStateException("object does not unpack to index-sized int as it claims to");
                 }
                 Object[] unpackForeignArray = unpackForeignArray(left, lib, convert);
                 if (unpackForeignArray != null) {
@@ -350,7 +350,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             try {
                 return doForeignArray(left, lib.asBoolean(right) ? 1 : 0, raise, factory, convert, lib);
             } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException("object does not unpack as it claims to");
+                throw new IllegalStateException("object does not unpack to boolean (to be used as index) as it claims to");
             }
         }
 
@@ -429,7 +429,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             try {
                 return comparisonNode.executeBool(lib.asBoolean(left), right);
             } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException("object does not unpack as it claims to");
+                throw new IllegalStateException("object does not unpack to boolean for comparison as it claims to");
             }
         }
 
@@ -439,7 +439,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             try {
                 return comparisonNode.executeWith(lib.asLong(left), right);
             } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException("object does not unpack as it claims to");
+                throw new IllegalStateException("object does not unpack to long for comparison as it claims to");
             }
         }
 
@@ -449,7 +449,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             try {
                 return comparisonNode.executeWith(lib.asDouble(left), right);
             } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException("object does not unpack as it claims to");
+                throw new IllegalStateException("object does not unpack to double for comparison as it claims to");
             }
         }
 
@@ -462,7 +462,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         public PNotImplemented doGeneric(Object left, Object right) {
-            throw new IllegalStateException("object does not unpack as it claims to");
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
