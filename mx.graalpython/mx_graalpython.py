@@ -111,7 +111,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         elif check_vm_env == '0':
             check_vm()
 
-    dists = ['GRAALPYTHON']
+    dists = ['GRAALPYTHON', 'TRUFFLE_NFI']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)

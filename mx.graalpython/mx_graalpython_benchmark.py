@@ -209,7 +209,7 @@ class GraalPythonVm(GuestVm):
             # '-Dgraal.TruffleCompilationExceptionsAreFatal=true'
         ]
 
-        dists = ["GRAALPYTHON", "GRAALPYTHON-LAUNCHER"]
+        dists = ["GRAALPYTHON", "TRUFFLE_NFI", "GRAALPYTHON-LAUNCHER"]
         # add configuration specified distributions
         if self._distributions:
             assert isinstance(self._distributions, list), "distributions must be either None or a list"
