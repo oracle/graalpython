@@ -203,8 +203,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public boolean hasArrayElements(
                     @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
+                    @Shared("isMapping") @Cached IsMappingNode isMapping,
                     @Shared("isIterableNode") @Cached IsIterableNode isIterableNode) {
-        return isSequenceNode.execute(this) || isIterableNode.execute(this);
+        return (isSequenceNode.execute(this) && !isMapping.execute(this)) || isIterableNode.execute(this);
     }
 
     @ExportMessage
