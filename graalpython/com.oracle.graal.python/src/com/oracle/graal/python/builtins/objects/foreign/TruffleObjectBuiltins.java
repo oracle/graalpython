@@ -315,7 +315,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                     Object[] repeatedData = new Object[Math.max(0, Math.multiplyExact(unpackForeignArray.length, rightInt))];
 
                     // repeat data
-                    for (int i = 0; i < unpackForeignArray.length; i++) {
+                    for (int i = 0; i < repeatedData.length; i++) {
                         repeatedData[i] = unpackForeignArray[i % rightInt];
                     }
 
@@ -341,10 +341,38 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
+        @Specialization(insertBefore = "doGeneric", guards = {"lib.hasArrayElements(left)", "isNegativeNumber(lib, right)"})
+        static Object doForeignArrayNegativeMult(Object left, Object right,
+                        @Cached PythonObjectFactory factory,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+
+            return factory.createList();
+        }
+
+        @SuppressWarnings("unused")
         @Specialization(insertBefore = "doGeneric", guards = {"!lib.fitsInDouble(left)", "!lib.fitsInLong(left)", "!lib.isBoolean(left)", "!lib.hasArrayElements(left)"})
         PNotImplemented doForeignGeneric(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        protected static boolean isNegativeNumber(InteropLibrary lib, Object right) {
+            long val = 0;
+            try {
+                if (lib.fitsInByte(right)) {
+                    val = lib.asByte(right);
+                } else if (lib.fitsInShort(right)) {
+                    val = lib.asShort(right);
+                } else if (lib.fitsInInt(right)) {
+                    val = lib.asInt(right);
+                } else if (lib.fitsInLong(right)) {
+                    val = lib.asLong(right);
+                }
+                return val < 0;
+            } catch (UnsupportedMessageException e) {
+                // fall through
+            }
+            return false;
         }
     }
 
