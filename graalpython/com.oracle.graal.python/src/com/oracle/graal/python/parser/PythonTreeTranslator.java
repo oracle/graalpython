@@ -1388,6 +1388,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         StatementNode elseNode = factory.createBlock();
         StatementNode finallyNode = factory.createBlock();
         int i = 3; // 0 == 'try', 1 == ':', 2 == tryNode
+        boolean gotDefaultExcept = false;
         while (i < ctx.getChildCount()) {
             ParseTree child = ctx.getChild(i);
             i += 2; // skip the ':'
@@ -1402,7 +1403,6 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                     continue;
                 }
             }
-            boolean gotDefaultExcept = false;
             if (child instanceof Python3Parser.Except_clauseContext) {
                 Python3Parser.Except_clauseContext excctx = (Python3Parser.Except_clauseContext) child;
                 ExpressionNode exceptType = null;

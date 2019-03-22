@@ -335,7 +335,7 @@ public class PySequenceArrayWrapperMR {
 
         @Fallback
         Object doGeneric(Object sequence, Object idx, Object value) {
-            setItemNode().execute(sequence, idx, getToJavaNode().execute(value));
+            getSetItemNode().execute(sequence, idx, getToJavaNode().execute(value));
             return value;
         }
 
@@ -371,7 +371,7 @@ public class PySequenceArrayWrapperMR {
             return setByteItemNode;
         }
 
-        private LookupAndCallTernaryNode setItemNode() {
+        private LookupAndCallTernaryNode getSetItemNode() {
             if (setItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 setItemNode = insert(LookupAndCallTernaryNode.create(__SETITEM__));
