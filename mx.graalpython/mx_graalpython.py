@@ -123,8 +123,6 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         dists.append('SULONG')
         if mx.suite("sulong-managed", fatalIfMissing=False):
             dists.append('SULONG_MANAGED')
-            # TODO Remove this as soon as the llvm home directory layout problem is solved.
-            vm_args += [mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>')]
 
     graalpython_args.insert(0, '--experimental-options=true')
 
