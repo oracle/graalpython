@@ -202,89 +202,65 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             return false;
         }
 
-        @Specialization(guards = {"!reverse", "lib.isBoolean(left)"})
+        @Specialization(guards = {"lib.isBoolean(left)"})
         Object doComparisonBool(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return op.executeObject(lib.asBoolean(left), right);
+                if (!reverse) {
+                    return op.executeObject(lib.asBoolean(left), right);
+                } else {
+                    return op.executeObject(right, lib.asBoolean(left));
+                }
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("object does not unpack as it claims to");
             }
         }
 
-        @Specialization(guards = {"!reverse", "lib.fitsInLong(left)"})
+        @Specialization(guards = {"lib.fitsInLong(left)"})
         Object doComparisonLong(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return op.executeObject(lib.asLong(left), right);
+                if (!reverse) {
+                    return op.executeObject(lib.asLong(left), right);
+                } else {
+                    return op.executeObject(right, lib.asLong(left));
+                }
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("object does not unpack as it claims to");
             }
         }
 
-        @Specialization(guards = {"!reverse", "lib.fitsInDouble(left)"})
+        @Specialization(guards = {"lib.fitsInDouble(left)"})
         Object doComparisonDouble(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return op.executeObject(lib.asDouble(left), right);
+                if (!reverse) {
+                    return op.executeObject(lib.asDouble(left), right);
+                } else {
+                    return op.executeObject(right, lib.asDouble(left));
+                }
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("object does not unpack as it claims to");
             }
         }
 
-        @Specialization(guards = {"!reverse", "lib.isString(left)"})
+        @Specialization(guards = {"lib.isString(left)"})
         Object doComparisonString(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return op.executeObject(lib.asString(left), right);
-            } catch (UnsupportedMessageException e) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-        }
-        @Specialization(guards = {"reverse", "lib.isBoolean(left)"})
-        Object doComparisonBoolR(Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                return op.executeObject(right, lib.asBoolean(left));
-            } catch (UnsupportedMessageException e) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-        }
-
-        @Specialization(guards = {"reverse", "lib.fitsInLong(left)"})
-        Object doComparisonLongR(Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                return op.executeObject(right, lib.asLong(left));
-            } catch (UnsupportedMessageException e) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-        }
-
-        @Specialization(guards = {"reverse", "lib.fitsInDouble(left)"})
-        Object doComparisonDoubleR(Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                return op.executeObject(right, lib.asDouble(left));
-            } catch (UnsupportedMessageException e) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-        }
-
-        @Specialization(guards = {"reverse", "lib.isString(left)"})
-        Object doComparisonStringR(Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                return op.executeObject(right, lib.asString(left));
+                if (!reverse) {
+                    return op.executeObject(lib.asString(left), right);
+                } else {
+                    return op.executeObject(right, lib.asString(left));
+                }
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("object does not unpack as it claims to");
             }
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!lib.fitsInDouble(left)", "!lib.fitsInLong(left)", "!lib.isBoolean(left)"})
-        public PNotImplemented doGeneric(Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+        @Fallback
+        public PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -335,11 +311,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             super(BinaryArithmetic.Mul.create(), false);
         }
 
-        protected static boolean isPythonLikeSequence(InteropLibrary lib, Object receiver) {
-            return lib.hasArrayElements(receiver);
-        }
-
-        @Specialization(insertBefore = "doComparisonBool", guards = {"isPythonLikeSequence(lib, left)", "lib.fitsInInt(right)"})
+        @Specialization(insertBefore = "doComparisonBool", guards = {"lib.hasArrayElements(left)", "lib.fitsInInt(right)"})
         static Object doForeignArray(Object left, Object right,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
@@ -369,7 +341,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(insertBefore = "doComparisonBool", guards = {"isPythonLikeSequence(lib, left)", "lib.isBoolean(right)"})
+        @Specialization(insertBefore = "doComparisonBool", guards = {"lib.hasArrayElements(left)", "lib.isBoolean(right)"})
         static Object doForeignArrayForeignBoolean(Object left, Object right,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
@@ -378,26 +350,17 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             try {
                 return doForeignArray(left, lib.asBoolean(right) ? 1 : 0, raise, factory, convert, lib);
             } catch (UnsupportedMessageException e) {
-                return PNotImplemented.NOT_IMPLEMENTED;
+                throw new IllegalStateException("object does not unpack as it claims to");
             }
         }
 
         @SuppressWarnings("unused")
-        @Specialization(insertBefore = "doGeneric", guards = {"isPythonLikeSequence(lib, left)", "isNegativeNumber(lib, right)"})
+        @Specialization(insertBefore = "doGeneric", guards = {"lib.hasArrayElements(left)", "isNegativeNumber(lib, right)"})
         static Object doForeignArrayNegativeMult(Object left, Object right,
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
-
             return factory.createList();
         }
-
-        @SuppressWarnings("unused")
-        @Specialization(insertBefore = "doGeneric", guards = {"!lib.fitsInDouble(left)", "!lib.fitsInLong(left)", "!lib.isBoolean(left)", "!isPythonLikeSequence(lib, left)"})
-        PNotImplemented doForeignGeneric(Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
     }
 
     @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
