@@ -599,9 +599,9 @@ public final class Python3Core implements PythonCore {
 
     @TruffleBoundary
     private Source getSource(String basename, String prefix) {
-        String suffix = FILE_SEPARATOR + basename + ".py";
         PythonContext ctxt = getContext();
         Env env = ctxt.getEnv();
+        String suffix = env.getFileNameSeparator() + basename + ".py";
         TruffleFile file = env.getTruffleFile(prefix + suffix);
         try {
             if (file.exists()) {
