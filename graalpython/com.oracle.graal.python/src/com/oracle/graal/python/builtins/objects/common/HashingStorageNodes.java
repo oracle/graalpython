@@ -1590,8 +1590,8 @@ public abstract class HashingStorageNodes {
             return LenNodeGen.create();
         }
 
-        public static LenNode getUnached() {
-            return LenNodeGen.getUnached();
+        public static LenNode getUncached() {
+            return LenNodeGen.getUncached();
         }
     }
 }
