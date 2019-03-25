@@ -158,7 +158,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
 public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
-    private static final String GP_OBJECT = "gp_object";
+    static final String GP_OBJECT = "gp_object";
     private static final Layout OBJECT_LAYOUT = Layout.newLayout().build();
     private static final Shape SHAPE = OBJECT_LAYOUT.createShape(new ObjectType());
 

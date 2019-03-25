@@ -40,8 +40,22 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ReadNativeMemberDispatchNode;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToNativeNode;
+import com.oracle.graal.python.runtime.interop.InteropArray;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
+@ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
 public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
 
     public TruffleObjectNativeWrapper(TruffleObject foreignObject) {
@@ -51,5 +65,77 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
     public static TruffleObjectNativeWrapper wrap(TruffleObject foreignObject) {
         assert !(foreignObject instanceof PythonNativeWrapper) : "attempting to wrap a native wrapper";
         return new TruffleObjectNativeWrapper(foreignObject);
+    }
+
+    @ExportMessage
+    boolean hasMembers() {
+        return true;
+    }
+
+    @ExportMessage
+    protected boolean isMemberReadable(@SuppressWarnings("unused") String member) {
+        // TODO(fa) should that be refined?
+        return true;
+    }
+
+    @ExportMessage
+    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+        return new InteropArray(new String[]{DynamicObjectNativeWrapper.GP_OBJECT});
+    }
+
+    @ExportMessage(name = "readMember")
+    abstract static class ReadNode {
+
+        @Specialization(guards = {"key == cachedObBase", "isObBase(cachedObBase)"}, limit = "1")
+        static Object doObBaseCached(TruffleObjectNativeWrapper object, @SuppressWarnings("unused") String key,
+                        @Cached("key") @SuppressWarnings("unused") String cachedObBase) {
+            return object;
+        }
+
+        @Specialization
+        static Object execute(TruffleObjectNativeWrapper object, String key,
+                        @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
+                        @Cached CExtNodes.AsPythonObjectNode getDelegate) throws UnsupportedMessageException, UnknownIdentifierException {
+            Object delegate = getDelegate.execute(object);
+
+            // special key for the debugger
+            if (key.equals(DynamicObjectNativeWrapper.GP_OBJECT)) {
+                return delegate;
+            }
+            return readNativeMemberNode.execute(delegate, key);
+        }
+
+        protected static boolean isObBase(String key) {
+            return NativeMemberNames.OB_BASE.equals(key);
+        }
+    }
+
+    @ExportMessage
+    protected boolean isPointer(
+                    @Cached CExtNodes.IsPointerNode pIsPointerNode) {
+        return pIsPointerNode.execute(this);
+    }
+
+    @ExportMessage
+    protected long asPointer(
+                    @Cached PAsPointerNode pAsPointerNode) {
+        return pAsPointerNode.execute(this);
+    }
+
+    @ExportMessage
+    protected void toNative(
+                    @Cached.Exclusive @Cached ToNativeNode toNativeNode) {
+        toNativeNode.execute(this);
+    }
+
+    @ExportMessage
+    protected boolean hasNativeType() {
+        return true;
+    }
+
+    @ExportMessage
+    protected Object getNativeType(
+                    @Cached PGetDynamicTypeNode getDynamicTypeNode) {
+        return getDynamicTypeNode.execute(this);
     }
 }
