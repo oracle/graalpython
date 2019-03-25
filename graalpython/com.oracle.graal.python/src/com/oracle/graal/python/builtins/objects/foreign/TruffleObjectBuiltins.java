@@ -311,7 +311,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             super(BinaryArithmetic.Mul.create(), false);
         }
 
-        @Specialization(insertBefore = "doComparisonBool", guards = {"lib.hasArrayElements(left)", "lib.fitsInInt(right)"})
+        @Specialization(insertBefore = "doComparisonBool", guards = {"!lib.isNumber(left)", "lib.hasArrayElements(left)", "lib.fitsInInt(right)"})
         static Object doForeignArray(Object left, Object right,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
@@ -341,7 +341,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(insertBefore = "doComparisonBool", guards = {"lib.hasArrayElements(left)", "lib.isBoolean(right)"})
+        @Specialization(insertBefore = "doComparisonBool", guards = {"!lib.isNumber(left)", "lib.hasArrayElements(left)", "lib.isBoolean(right)"})
         static Object doForeignArrayForeignBoolean(Object left, Object right,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
@@ -355,7 +355,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(insertBefore = "doGeneric", guards = {"lib.hasArrayElements(left)", "isNegativeNumber(lib, right)"})
+        @Specialization(insertBefore = "doGeneric", guards = {"!lib.isNumber(left)", "lib.hasArrayElements(left)", "isNegativeNumber(lib, right)"})
         static Object doForeignArrayNegativeMult(Object left, Object right,
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
