@@ -218,7 +218,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                             "\n\tSysPrefix: {1}" +
                             "\n\tSysBasePrefix: {2}" +
                             "\n\tCoreHome: {3}" +
-                            "\n\tStdLibHome: {4}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome)));
+                            "\n\tStdLibHome: {4}" +
+                            "\n\tExecutable: {5}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, env.getOptions().get(PythonOptions.Executable))));
         }
     }
 

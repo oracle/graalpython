@@ -89,6 +89,10 @@ public abstract class PGuards {
      * Specialization guards.
      */
 
+    public static boolean isSameObject(Object left, Object right) {
+        return left == right;
+    }
+
     public static boolean isEmpty(Object[] array) {
         return array.length == 0;
     }

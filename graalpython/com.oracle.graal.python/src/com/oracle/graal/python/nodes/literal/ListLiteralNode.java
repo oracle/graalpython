@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -139,7 +139,6 @@ public final class ListLiteralNode extends LiteralNode {
                     }
                     case Generic: {
                         Object[] elements = new Object[values.length];
-                        array = elements;
                         for (; i < values.length; i++) {
                             elements[i] = values[i].execute(frame);
                         }

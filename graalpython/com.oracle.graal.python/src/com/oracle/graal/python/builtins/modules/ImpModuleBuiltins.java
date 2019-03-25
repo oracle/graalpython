@@ -227,7 +227,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             if (!ctxt.capiWasLoaded()) {
                 Env env = ctxt.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                TruffleFile capiFile = env.getTruffleFile(PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "capi.bc");
+                TruffleFile capiFile = env.getTruffleFile(PythonCore.getCoreHome(env) + env.getFileNameSeparator() + "capi.bc");
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);

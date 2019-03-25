@@ -1838,7 +1838,7 @@ public class IntBuiltins extends PythonBuiltins {
                     // requested array is bigger then we obtained from BigInteger
                     byte[] resultBytes = new byte[byteCount];
                     System.arraycopy(bytes, 0, resultBytes, resultBytes.length - bytes.length, bytes.length);
-                    if (signed && signByte == -1) {
+                    if (signByte == -1) {
                         // add sign bytes
                         for (int i = 0; i < resultBytes.length - bytes.length; i++) {
                             resultBytes[i] = signByte;
@@ -1854,7 +1854,7 @@ public class IntBuiltins extends PythonBuiltins {
                 for (int i = 0; i < bytes.length; i++) {
                     resultBytes[i] = bytes[bytes.length - 1 - i];
                 }
-                if (byteCount > bytes.length && signed && signByte == -1) {
+                if (byteCount > bytes.length && signByte == -1) {
                     // add sign negative bytes
                     for (int i = bytes.length; i < resultBytes.length; i++) {
                         resultBytes[i] = signByte;

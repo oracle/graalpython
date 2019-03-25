@@ -73,6 +73,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -1343,6 +1344,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (!context.isExecutableAccessAllowed()) {
                 return -1;
             }
+            PythonLanguage.getLogger().fine(() -> "os.system: " + cmd);
             String[] command = new String[]{shell[0], shell[1], cmd};
             Env env = context.getEnv();
             try {

@@ -318,7 +318,13 @@ public class PythonProvider implements LanguageProvider {
         int slashIndex = resourceName.lastIndexOf('/');
         String scriptName = slashIndex >= 0 ? resourceName.substring(slashIndex + 1) : resourceName;
         Reader in = new InputStreamReader(PythonProvider.class.getResourceAsStream(resourceName), "UTF-8");
-        return Source.newBuilder(ID, in, scriptName).build();
+        try {
+            return Source.newBuilder(ID, in, scriptName).build();
+        } finally {
+            if (in != null) {
+                in.close();
+            }
+        }
     }
 
     private abstract static class PResultVerifier implements ResultVerifier {
