@@ -89,9 +89,4 @@ public abstract class IsHashableNode extends PDataModelEmulationNode {
     public static IsHashableNode create() {
         return IsHashableNodeGen.create();
     }
-
-    public static IsHashableNode getUncached() {
-        // TODO: implement uncached
-        return null;
-    }
 }

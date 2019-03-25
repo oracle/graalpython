@@ -229,11 +229,7 @@ public abstract class HashingStorageNodes {
         protected boolean isHashable(Object key) {
             if (isHashableNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                if (isAdoptable()) {
-                    isHashableNode = insert(IsHashableNode.create());
-                } else {
-                    isHashableNode = IsHashableNode.getUncached();
-                }
+                isHashableNode = insert(IsHashableNode.create());
             }
             return isHashableNode.execute(key);
         }

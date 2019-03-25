@@ -100,8 +100,4 @@ public abstract class PRaiseOSErrorNode extends Node {
     public static PRaiseOSErrorNode create() {
         return PRaiseOSErrorNodeGen.create();
     }
-
-    public static PRaiseOSErrorNode getUncached() {
-        return PRaiseOSErrorNodeGen.getUncached();
-    }
 }

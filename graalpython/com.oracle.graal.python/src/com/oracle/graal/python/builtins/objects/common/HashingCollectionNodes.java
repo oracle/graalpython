@@ -103,10 +103,6 @@ public abstract class HashingCollectionNodes {
         public static SetItemNode create() {
             return SetItemNodeGen.create();
         }
-
-        public static SetItemNode getUncached() {
-            return SetItemNodeGen.getUncached();
-        }
     }
 
     @ImportStatic({PGuards.class})

@@ -100,11 +100,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
     private final PRaiseOSErrorNode getRaiseOSNode() {
         if (raiseOSNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            if (isAdoptable()) {
-                raiseOSNode = insert(PRaiseOSErrorNode.create());
-            } else {
-                raiseOSNode = PRaiseOSErrorNode.getUncached();
-            }
+            raiseOSNode = insert(PRaiseOSErrorNode.create());
         }
         return raiseOSNode;
     }
