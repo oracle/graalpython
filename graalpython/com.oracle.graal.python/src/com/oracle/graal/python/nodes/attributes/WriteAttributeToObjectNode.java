@@ -226,9 +226,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     @GenerateUncached
     protected static abstract class WriteAttributeToObjectNotTypeUncachedNode extends WriteAttributeToObjectNode {
         @Specialization(guards = {
-                "!isHiddenKey(key)",
-                "!isDictUnsetOrSameAsStorage(object)"
-            }, replaces = {"writeToDict", "writeToDictCached"})
+                        "!isHiddenKey(key)",
+                        "!isDictUnsetOrSameAsStorage(object)"
+        }, replaces = {"writeToDict", "writeToDictCached"})
         protected boolean writeToDictUncached(PythonObject object, Object key, Object value,
                         @Cached LookupInheritedAttributeNode.Dynamic getSetItem,
                         @Cached CallNode callSetItem,
@@ -250,7 +250,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         }
 
         private static boolean writeToDictUncached(Object object, Object key, Object value, LookupInheritedAttributeNode.Dynamic getSetItem, CallNode callSetItem, PRaiseNode raiseNode,
-                                                   Object dict) {
+                        Object dict) {
             Object setItemCallable = getSetItem.execute(dict, SpecialMethodNames.__SETITEM__);
             if (setItemCallable == PNone.NO_VALUE) {
                 throw raiseNode.raise(PythonBuiltinClassType.AttributeError, "'%p' dict of '%p' object has no attribute '__setitem__'", dict, object);
