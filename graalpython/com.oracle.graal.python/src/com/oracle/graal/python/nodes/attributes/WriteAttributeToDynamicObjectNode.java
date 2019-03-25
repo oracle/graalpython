@@ -153,7 +153,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     @Specialization(guards = {
                     "dynamicObject.getShape().isValid()"
     }, replaces = {"doDirect", "defineDirect", "updateShapeAndWrite"})
-    static protected boolean doIndirect(DynamicObject dynamicObject, Object key, Object value) {
+    protected static boolean doIndirect(DynamicObject dynamicObject, Object key, Object value) {
         Object attrKey = attrKey(key);
         CompilerAsserts.neverPartOfCompilation();
         dynamicObject.define(attrKey, value);
@@ -161,7 +161,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     }
 
     @Specialization(guards = "!dynamicObject.getShape().isValid()")
-    static protected boolean defineDirect2(DynamicObject dynamicObject, Object key, Object value) {
+    protected static boolean defineDirect2(DynamicObject dynamicObject, Object key, Object value) {
         CompilerDirectives.transferToInterpreter();
         dynamicObject.updateShape();
         return doIndirect(dynamicObject, key, value);

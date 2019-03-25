@@ -176,7 +176,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // the boolean flag forceType for the fallback in their type
 
     @GenerateUncached
-    protected static abstract class ReadAttributeFromObjectNotTypeNode extends ReadAttributeFromObjectNode {
+    protected abstract static class ReadAttributeFromObjectNotTypeNode extends ReadAttributeFromObjectNode {
         @Specialization(guards = {"!isHiddenKey(key)"})
         protected Object readNativeObject(PythonNativeObject object, Object key,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
@@ -192,7 +192,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     @GenerateUncached
-    protected static abstract class ReadAttributeFromObjectTpDictNode extends ReadAttributeFromObjectNode {
+    protected abstract static class ReadAttributeFromObjectTpDictNode extends ReadAttributeFromObjectNode {
         @Specialization(guards = {"!isHiddenKey(key)"})
         protected Object readNativeClass(PythonNativeClass object, Object key,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,

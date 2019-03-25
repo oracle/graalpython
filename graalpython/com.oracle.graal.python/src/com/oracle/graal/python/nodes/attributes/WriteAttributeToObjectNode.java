@@ -213,7 +213,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return true;
     }
 
-    protected static abstract class WriteAttributeToObjectNotTypeNode extends WriteAttributeToObjectNode {
+    protected abstract static class WriteAttributeToObjectNotTypeNode extends WriteAttributeToObjectNode {
         @Specialization(guards = {"!isHiddenKey(key)"})
         static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
                         @Cached GetObjectDictNode getNativeDict,
@@ -224,7 +224,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     @GenerateUncached
-    protected static abstract class WriteAttributeToObjectNotTypeUncachedNode extends WriteAttributeToObjectNode {
+    protected abstract static class WriteAttributeToObjectNotTypeUncachedNode extends WriteAttributeToObjectNode {
         @Specialization(guards = {
                         "!isHiddenKey(key)",
                         "!isDictUnsetOrSameAsStorage(object)"
@@ -261,7 +261,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         }
     }
 
-    protected static abstract class WriteAttributeToObjectTpDictNode extends WriteAttributeToObjectNode {
+    protected abstract static class WriteAttributeToObjectTpDictNode extends WriteAttributeToObjectNode {
         @Specialization(guards = "!isHiddenKey(key)")
         static boolean writeNativeClass(PythonAbstractNativeObject object, Object key, Object value,
                         @Cached GetTypeMemberNode getNativeDict,

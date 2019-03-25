@@ -86,7 +86,7 @@ public abstract class CallNode extends PNodeWithContext {
         return execute(frame, callableObject, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
-    static abstract class CachedCallNode extends CallNode {
+    abstract static class CachedCallNode extends CallNode {
         @Child private CreateArgumentsNode createArguments = CreateArgumentsNode.create();
         @Child private CallDispatchNode dispatch = CallDispatchNode.create();
 

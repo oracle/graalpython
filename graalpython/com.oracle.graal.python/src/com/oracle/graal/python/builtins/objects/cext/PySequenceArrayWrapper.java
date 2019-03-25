@@ -177,20 +177,27 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             long result = 0;
             SequenceStorage store = profiled.getSequenceStorage();
             result |= castToByteNode.execute(getItemNode.execute(store, i));
-            if (i + 1 < len)
+            if (i + 1 < len) {
                 result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 1)) << 8L) & 0xFF00L;
-            if (i + 2 < len)
+            }
+            if (i + 2 < len) {
                 result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 2)) << 16L) & 0xFF0000L;
-            if (i + 3 < len)
+            }
+            if (i + 3 < len) {
                 result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 3)) << 24L) & 0xFF000000L;
-            if (i + 4 < len)
+            }
+            if (i + 4 < len) {
                 result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 4)) << 32L) & 0xFF00000000L;
-            if (i + 5 < len)
+            }
+            if (i + 5 < len) {
                 result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 5)) << 40L) & 0xFF0000000000L;
-            if (i + 6 < len)
+            }
+            if (i + 6 < len) {
                 result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 6)) << 48L) & 0xFF000000000000L;
-            if (i + 7 < len)
+            }
+            if (i + 7 < len) {
                 result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 7)) << 56L) & 0xFF00000000000000L;
+            }
             return result;
         }
 
@@ -206,20 +213,27 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             int i = (int) byteIdx;
             long result = 0;
             result |= castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx));
-            if (i + 1 < len)
+            if (i + 1 < len) {
                 result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 8L) & 0xFF00L;
-            if (i + 2 < len)
+            }
+            if (i + 2 < len) {
                 result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 16L) & 0xFF0000L;
-            if (i + 3 < len)
+            }
+            if (i + 3 < len) {
                 result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 24L) & 0xFF000000L;
-            if (i + 4 < len)
+            }
+            if (i + 4 < len) {
                 result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 32L) & 0xFF00000000L;
-            if (i + 5 < len)
+            }
+            if (i + 5 < len) {
                 result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 40L) & 0xFF0000000000L;
-            if (i + 6 < len)
+            }
+            if (i + 6 < len) {
                 result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 48L) & 0xFF000000000000L;
-            if (i + 7 < len)
+            }
+            if (i + 7 < len) {
                 result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 56L) & 0xFF00000000000000L;
+            }
             return result;
         }
 
@@ -393,7 +407,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     }
 
     @GenerateUncached
-    static abstract class ToNativeStorageNode extends Node {
+    abstract static class ToNativeStorageNode extends Node {
 
         public abstract NativeSequenceStorage execute(SequenceStorage object);
 

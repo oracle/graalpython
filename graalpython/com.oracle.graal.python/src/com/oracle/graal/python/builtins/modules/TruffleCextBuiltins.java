@@ -683,7 +683,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    static abstract class ExternalFunctionNode extends PRootNode {
+    abstract static class ExternalFunctionNode extends PRootNode {
         private final Signature signature;
         private final TruffleObject cwrapper;
         private final TruffleObject callable;

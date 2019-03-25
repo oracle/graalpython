@@ -255,7 +255,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    public static abstract class FromNativeSubclassNode extends CExtBaseNode {
+    public abstract static class FromNativeSubclassNode extends CExtBaseNode {
 
         public abstract Double execute(PythonNativeObject object);
 
@@ -1636,7 +1636,7 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    public static abstract class GetObjectDictNode extends CExtBaseNode {
+    public abstract static class GetObjectDictNode extends CExtBaseNode {
         public abstract Object execute(Object self);
 
         @Specialization

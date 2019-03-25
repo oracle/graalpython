@@ -448,7 +448,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
      */
     // TODO qualified name is a workaround for a DSL bug
     @com.oracle.truffle.api.dsl.GenerateUncached
-    protected static abstract class ApplyKeywordsNode extends PNodeWithContext {
+    protected abstract static class ApplyKeywordsNode extends PNodeWithContext {
         public abstract Object[] execute(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords);
 
         public static ApplyKeywordsNode create() {

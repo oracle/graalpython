@@ -79,7 +79,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
     }
 
-    static abstract class DynamicCached extends Dynamic {
+    abstract static class DynamicCached extends Dynamic {
         @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         protected static boolean compareStrings(String key, String cachedKey) {
