@@ -2724,7 +2724,7 @@ public abstract class SequenceStorageNodes {
             if (s instanceof EmptySequenceStorage || s instanceof ObjectSequenceStorage) {
                 return false;
             }
-            if ((value instanceof ByteSequenceStorage || value instanceof IntSequenceStorage || value instanceof LongSequenceStorage) &&
+            if ((s instanceof ByteSequenceStorage || s instanceof IntSequenceStorage || s instanceof LongSequenceStorage) &&
                             (value instanceof Byte || value instanceof Integer || value instanceof Long)) {
                 return false;
             }
