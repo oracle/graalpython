@@ -12,17 +12,15 @@ You can import a global value from the entire polyglot scope:
 ```python
 imported_polyglot_global = polyglot.import_value("global_name")
 ```
-This global should then work as expected, accessing items sends `READ` messages,
-calling methods sends `INVOKE` messages etc.
+
+This global should then work as expected; accessing attributes assumes it reads
+from the `members` namespace; accessing items is supported both with strings and
+numbers; calling methods on the result tries to do a straight invoke and falls
+back to reading the member and trying to execute it.
 
 You can evaluate some code in another language:
 ```python
 polyglot.eval(string="1 + 1", language="ruby")
-```
-
-This kind of `polyglot.eval` also works with the somewhat obscure mime-types:
-```python
-polyglot.eval(string="1 + 1", language="application/x-ruby")
 ```
 
 It also works with the path to a file:
@@ -38,7 +36,8 @@ polyglot.eval(file="./my_ruby_file.rb")
 To export something from Python to other Polyglot languages so they can import
 it:
 ```python
-foo = object() polyglot.export_value(foo, "python_foo")
+foo = object()
+polyglot.export_value(foo, name="python_foo")
 ```
 
 The export function can be used as a decorator, in this case the function name
@@ -62,6 +61,21 @@ byteArray = myBigInt.toByteArray()
 print(list(byteArray))             # Java arrays can act like Python lists
 ```
 
+For packages under the `java` package, you can also use the normal Python import
+syntax:
+```python
+import java.util.ArrayList
+from java.util import ArrayList
+
+# these are the same class
+java.util.ArrayList == ArrayList
+
+al = ArrayList()
+al.add(1)
+al.add(12)
+print(al) # prints [1, 12]
+```
+
 In addition to the `type` builtin method, the `java` module, exposes the following 
 methods as well:
 
@@ -81,124 +95,4 @@ print(java.is_symbol(my_list))      # prints False, my_list is not a Java host s
 print(java.is_object(ArrayList))    # prints True, symbols are also host objects 
 print(java.is_function(my_list.add))# prints True, the add method of ArrayList
 print(java.instanceof(my_list, ArrayList)) # prints True 
-```    
-
-
-#### Python responses to Truffle interop messages
-
-###### READ
-If the key is a String try using `__getattribute__` to read. If that fails or
-the key isn't a String, but there is both a `__len__` and a `__getitem__`
-method, call `__getitem__`.
-
-Since the `KEYS` message returns an object's attributes, `READ` thus prefers the
-object attributes if the key is a String, and only falls back to `__getitem__`
-if the key is not a String or the object actually looks like a sequence.
-
-Since disambiguation is hard here, to be explicit when using String keys, the
-key may be prefixed with `@` to force `__getattribute__` access or with `[` to
-force `__getitem__` access. If an item is accessed that starts with `@`, this
-will mean we first try to read it as an attribute without the `@`, only to fall
-back to reading it as an item. If the performance of this access is an issue,
-always prefixing may be advisable.
-
-###### UNBOX
-* `str` => `java.lang.String`
-* `byte` => `java.lang.String`, assuming Java system encoding
-* `float` => `double`
-* `int` => `int` or `long`, if it fits, otherwise raises an interop exception
-
-###### WRITE
-If the key is an attribute defined directly on the object (not inherited), use
-`__setattr__`. If the key is a String and there is a `keys`, `items`, `values`
-and a `__setitem__` method, we assume this is a Mapping and try to set the key
-using `__setitem__`. If the key is a String, but not all of `keys`, `items`, and
-`values` exists, we use `__setattr__`. Otherwise, we try to use `__setitem__` if
-that exists, or otherwise fall back to `__setattr__`.
-
-Just as with `READ`, disambiguation is hard here, so to be explicit when using
-String keys, the key may be prefixed with `@` to force `__setattr__` access or
-with `[` to force `__setitem__` access.
-
-###### REMOVE
-The remove message follows the same logic as the `WRITE` message, except with
-`__delattr__` and `__delitem__`. It returns true if the removal was successful.
-
-###### EXECUTE
-Call the `__call__` method of the receiver with the provided arguments.
-
-###### IS_EXECUTABLE
-Returns true if the receiver has inherited a `__call__` field.
-
-###### IS_INSTANTIABLE
-Returns true only for python classes, i.e., type instances constructed through
-the `type` constructor.
-
-###### INVOKE
-The equivalent of `receiver.methodname(arguments)`.
-
-###### NEW
-Calls the constructor only if the receiver object is a Python class.
-
-###### IS_NULL
-Returns true for None only.
-
-###### HAS_SIZE
-According to the Truffle interop contract answering `true` to `HAS_SIZE` implies
-that indexed element access is available. However, we cannot fully guarantee
-this. We may answer `true` here when the object has both a `__len__` field and a
-`__getitem__` field. If the object's length is reported >0, we also try to read
-the item `0` and if that fails, we answer `false`. If the object reports it's
-empty, we cannot know if a read with an index will actually work, but we'll
-report `true`.
-
-###### GET_SIZE
-Calls `__len__`. Just because `GET_SIZE` returns something positive does not
-mean that accessing the object using integers is possible. We have no way of
-knowing what the `__getitem__` method does with an integer argument. Use
-`HAS_SIZE` first for a more conservative check if indexed access is possible.
-
-###### IS_BOXED
-Returns true for those values that can be unboxed using the `UNBOX` message.
-
-###### KEY_INFO
-This will lookup the key using the Python MRO. It will check if it's readable
-and writable, and also check if it has side-effects based on wether it is an
-inherited descriptor (i.e., an object with `__get__`, `__set__`, and/or
-`__delete__`). If the owner of the key is mutable (the owner being the class the
-key is inherited from or the object itself) then `REMOVABLE` and `MODIFABLE` are
-true. If the object itself is mutable, `INSERTABLE` will also be true. Finally,
-if the attribute is a function or it is *not* a descriptor and has a `__call__`,
-we declare it `INOCABLE`. We don't do this for descriptors, because we would
-have to run the `__get__` method and this message should not have side-effects.
-
-###### HAS_KEYS
-Always returns true.
-
-###### KEYS
-This returns the all attributes of the receiver object that would usually be
-available through `__getattribute__`, i.e., both inherited and direct
-attributes.
-
-If the object responds to `keys`, `values`, `items`, and `__getitem__`, we
-assume it is Mapping, and we present the String result of the `keys` method in
-combination with the attributes, prefixed with `[` if, and only if, the request
-asked for _internal_ keys also. The `KEYS` message requires the returned object
-to have only `java.lang.String` items, so inlo String keys are added to the
-result set. The `[` prefix ensures that in our handling of `READ` and `WRITE`
-messages we also treat them as mapping entries, not attributes.
-
-It's still possible that none of the keys can be `READ`: the `READ` message uses
-Python semantics for lookup, which means that an inherited descriptor with a
-`__get__` method or the `__getitem__` method may still intercept actual access.
-
-###### IS_POINTER
-Returns true if the object is a Python function defined in a Python C extension
-module and the function pointer is a native pointer.
-
-###### AS_POINTER
-Returns the underlying C function pointer for the Python C extension module.
-
-###### TO_NATIVE
-Returns the underlying TruffleObject for a Python C extension module function
-if that is a native pointer.
+```
