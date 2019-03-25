@@ -727,7 +727,7 @@ def import_python_sources(args):
     SUITE.vc.git_command(SUITE.dir, ["clean", "-fdx"])
     shutil.rmtree("graalpython")
 
-    for inlined_file in (pypy_files + extra_pypy_files):
+    for inlined_file in pypy_files + extra_pypy_files:
         original_file = None
         name = os.path.basename(inlined_file)
         name = mapping.get(name, name)
