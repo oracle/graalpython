@@ -40,16 +40,11 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -58,8 +53,6 @@ import com.oracle.truffle.api.object.Property;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
 public abstract class ObjectAttributeNode extends PNodeWithContext {
-    @Child private GetDictStorageNode getStorageNode;
-
     protected static Object attrKey(Object key) {
         if (key instanceof PString) {
             return ((PString) key).getValue();
@@ -68,19 +61,11 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
         }
     }
 
-    protected HashingStorage getDictStorage(PHashingCollection c) {
-        if (getStorageNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getStorageNode = insert(HashingCollectionNodes.GetDictStorageNode.create());
-        }
-        return getStorageNode.execute(c);
-    }
-
     protected static boolean isDictUnsetOrSameAsStorage(PythonObject object) {
         return object.getDict() == null;
     }
 
-    protected Location getLocationOrNull(Property prop) {
+    protected static Location getLocationOrNull(Property prop) {
         return prop == null ? null : prop.getLocation();
     }
 

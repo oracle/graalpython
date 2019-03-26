@@ -209,7 +209,7 @@ public final class Python3Core implements PythonCore {
                         "set",
                         "itertools",
                         "base_exception",
-                        "python_cext",
+                        TruffleCextBuiltins.PYTHON_CEXT,
                         "_collections",
                         "memoryview",
                         "list",
@@ -230,6 +230,7 @@ public final class Python3Core implements PythonCore {
                         "mmap",
                         "_queue",
                         "_ast",
+                        "java",
                         "_contextvars"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
@@ -372,7 +373,7 @@ public final class Python3Core implements PythonCore {
      */
     private boolean initialized;
 
-    private final PythonObjectFactory objectFactory = PythonObjectFactory.create();
+    private final PythonObjectFactory objectFactory = PythonObjectFactory.getUncached();
 
     public Python3Core(PythonParser parser) {
         this.parser = parser;
@@ -482,7 +483,7 @@ public final class Python3Core implements PythonCore {
     public void exportCInterface(PythonContext context) {
         Env env = context.getEnv();
         if (env != null) {
-            env.exportSymbol("python_cext", builtinModules.get("python_cext"));
+            env.exportSymbol(TruffleCextBuiltins.PYTHON_CEXT, builtinModules.get(TruffleCextBuiltins.PYTHON_CEXT));
             env.exportSymbol("python_builtins", builtinsModule);
 
             // export all exception classes for the C API

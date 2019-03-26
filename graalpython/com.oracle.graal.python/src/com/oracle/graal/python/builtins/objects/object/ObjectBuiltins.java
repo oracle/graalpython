@@ -51,6 +51,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -66,8 +67,8 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
@@ -239,8 +240,8 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         public boolean eq(PythonAbstractNativeObject self, PythonAbstractNativeObject other,
-                        @Cached("create(__EQ__)") CExtNodes.PointerCompareNode nativeIsNode) {
-            return nativeIsNode.execute(self, other);
+                        @Cached CExtNodes.PointerCompareNode nativeIsNode) {
+            return nativeIsNode.execute(__EQ__, self, other);
         }
 
         @Fallback
@@ -258,8 +259,8 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         public boolean ne(PythonAbstractNativeObject self, PythonAbstractNativeObject other,
-                        @Cached("create(__NE__)") CExtNodes.PointerCompareNode nativeNeNode) {
-            return nativeNeNode.execute(self, other);
+                        @Cached CExtNodes.PointerCompareNode nativeNeNode) {
+            return nativeNeNode.execute(__NE__, self, other);
         }
 
         @Fallback
@@ -620,7 +621,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         protected static final int NO_SLOW_PATH = Integer.MAX_VALUE;
 
         protected BinaryComparisonNode createOp(String op) {
-            return (BinaryComparisonNode) getContext().getLanguage().getNodeFactory().createComparisonOperation(op, null, null);
+            return (BinaryComparisonNode) PythonLanguage.getCurrent().getNodeFactory().createComparisonOperation(op, null, null);
         }
 
         @Specialization(guards = "op.equals(cachedOp)", limit = "NO_SLOW_PATH")

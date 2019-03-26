@@ -62,6 +62,7 @@ import java.math.RoundingMode;
 import java.nio.ByteOrder;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -74,13 +75,16 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
@@ -88,6 +92,7 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat.Formatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -123,9 +128,12 @@ public final class FloatBuiltins extends PythonBuiltins {
             return FloatBuiltinsFactory.StrNodeFactory.create();
         }
 
-        @Specialization(guards = "getFloat.isSubtype(object)", limit = "1")
+        @Specialization(guards = "getFloat.isFloatSubtype(object, getClass, isSubtype, context)", limit = "1")
         String doNativeFloat(PythonNativeObject object,
-                        @SuppressWarnings("unused") @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @SuppressWarnings("unused") @Cached FromNativeSubclassNode getFloat) {
             return PFloat.doubleToString(getFloat.execute(object));
         }
     }
@@ -256,9 +264,12 @@ public final class FloatBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "getFloat.isSubtype(possibleBase)", limit = "1")
+        @Specialization(guards = "getFloat.isFloatSubtype(possibleBase, getClass, isSubtype, context)", limit = "1")
         PythonNativeObject doNativeFloat(PythonNativeObject possibleBase,
-                        @SuppressWarnings("unused") @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @SuppressWarnings("unused") @Cached FromNativeSubclassNode getFloat) {
             return possibleBase;
         }
 
@@ -289,7 +300,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doDP(PythonNativeObject left, long right,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+                        @Cached FromNativeSubclassNode getFloat) {
             Double leftPrimitive = getFloat.execute(left);
             if (leftPrimitive != null) {
                 return leftPrimitive + right;
@@ -300,7 +311,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doDP(PythonNativeObject left, double right,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+                        @Cached FromNativeSubclassNode getFloat) {
             Double leftPrimitive = getFloat.execute(left);
             if (leftPrimitive != null) {
                 return leftPrimitive + right;
@@ -394,7 +405,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doDP(PythonNativeObject left, long right,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+                        @Cached FromNativeSubclassNode getFloat) {
             Double leftPrimitive = getFloat.execute(left);
             if (leftPrimitive != null) {
                 return leftPrimitive * right;
@@ -405,7 +416,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doDP(PythonNativeObject left, double right,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+                        @Cached FromNativeSubclassNode getFloat) {
             Double leftPrimitive = getFloat.execute(left);
             if (leftPrimitive != null) {
                 return leftPrimitive * right;
@@ -416,7 +427,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doDP(PythonNativeObject left, PInt right,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+                        @Cached FromNativeSubclassNode getFloat) {
             Double leftPrimitive = getFloat.execute(left);
             if (leftPrimitive != null) {
                 return leftPrimitive * right.doubleValue();
@@ -797,7 +808,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doDP(PythonNativeObject right, long left,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+                        @Cached FromNativeSubclassNode getFloat) {
             Double rPrimitive = getFloat.execute(right);
             if (rPrimitive != null) {
                 return left / rPrimitive;
@@ -891,19 +902,19 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         Object eqPDb(PythonNativeObject left, double right,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+                        @Cached FromNativeSubclassNode getFloat) {
             return getFloat.execute(left) == right;
         }
 
         @Specialization
         Object eqPDb(PythonNativeObject left, long right,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+                        @Cached FromNativeSubclassNode getFloat) {
             return getFloat.execute(left) == right;
         }
 
         @Specialization
         Object eqPDb(PythonNativeObject left, PInt right,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+                        @Cached FromNativeSubclassNode getFloat) {
             return getFloat.execute(left) == right.doubleValue();
         }
 
@@ -935,19 +946,19 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         Object eqPDb(PythonNativeObject left, double right,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+                        @Cached FromNativeSubclassNode getFloat) {
             return getFloat.execute(left) != right;
         }
 
         @Specialization
         Object eqPDb(PythonNativeObject left, long right,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+                        @Cached FromNativeSubclassNode getFloat) {
             return getFloat.execute(left) != right;
         }
 
         @Specialization
         Object eqPDb(PythonNativeObject left, PInt right,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+                        @Cached FromNativeSubclassNode getFloat) {
             return getFloat.execute(left) != right.doubleValue();
         }
 
@@ -977,28 +988,42 @@ public final class FloatBuiltins extends PythonBuiltins {
             return x < y.doubleValue();
         }
 
-        @Specialization(guards = "fromNativeNode.isSubtype(y)", limit = "1")
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(y, getClass, isSubtype, context)", limit = "1")
         boolean doDN(double x, PythonNativeObject y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode fromNativeNode) {
             return x < fromNativeNode.execute(y);
         }
 
-        @Specialization(guards = {"nativeLeft.isSubtype(x)", "nativeRight.isSubtype(y)"}, limit = "1")
+        @Specialization(guards = {
+                        "nativeLeft.isFloatSubtype(x, getClass, isSubtype, context)",
+                        "nativeRight.isFloatSubtype(y, getClass, isSubtype, context)"}, limit = "1")
         boolean doDN(PythonNativeObject x, PythonNativeObject y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> nativeLeft,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> nativeRight) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode nativeLeft,
+                        @Cached FromNativeSubclassNode nativeRight) {
             return nativeLeft.execute(x) < nativeRight.execute(y);
         }
 
-        @Specialization(guards = "fromNativeNode.isSubtype(x)", limit = "1")
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(x, getClass, isSubtype, context)", limit = "1")
         boolean doDN(PythonNativeObject x, double y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode fromNativeNode) {
             return fromNativeNode.execute(x) < y;
         }
 
-        @Specialization(guards = "fromNativeNode.isSubtype(x)", limit = "1")
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(x, getClass, isSubtype, context)", limit = "1")
         boolean doDN(PythonNativeObject x, long y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode fromNativeNode) {
             return fromNativeNode.execute(x) < y;
         }
 
@@ -1023,28 +1048,42 @@ public final class FloatBuiltins extends PythonBuiltins {
             return x <= y;
         }
 
-        @Specialization(guards = "fromNativeNode.isSubtype(y)", limit = "1")
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(y, getClass, isSubtype, context)", limit = "1")
         boolean doDN(double x, PythonNativeObject y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode fromNativeNode) {
             return x <= fromNativeNode.execute(y);
         }
 
-        @Specialization(guards = {"nativeLeft.isSubtype(x)", "nativeRight.isSubtype(y)"}, limit = "1")
+        @Specialization(guards = {
+                        "nativeLeft.isFloatSubtype(x, getClass, isSubtype, context)",
+                        "nativeRight.isFloatSubtype(y, getClass, isSubtype, context)"}, limit = "1")
         boolean doNN(PythonNativeObject x, PythonNativeObject y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> nativeLeft,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> nativeRight) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode nativeLeft,
+                        @Cached FromNativeSubclassNode nativeRight) {
             return nativeLeft.execute(x) <= nativeRight.execute(y);
         }
 
-        @Specialization(guards = "fromNativeNode.isSubtype(x)", limit = "1")
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(x, getClass, isSubtype, context)", limit = "1")
         boolean doND(PythonNativeObject x, double y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode fromNativeNode) {
             return fromNativeNode.execute(x) <= y;
         }
 
-        @Specialization(guards = "fromNativeNode.isSubtype(x)", limit = "1")
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(x, getClass, isSubtype, context)", limit = "1")
         boolean doNL(PythonNativeObject x, long y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode fromNativeNode) {
             return fromNativeNode.execute(x) <= y;
         }
 
@@ -1074,28 +1113,42 @@ public final class FloatBuiltins extends PythonBuiltins {
             return x > y.doubleValue();
         }
 
-        @Specialization(guards = "fromNativeNode.isSubtype(y)", limit = "1")
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(y, getClass, isSubtype, context)", limit = "1")
         boolean doDN(double x, PythonNativeObject y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode fromNativeNode) {
             return x > fromNativeNode.execute(y);
         }
 
-        @Specialization(guards = {"nativeLeft.isSubtype(x)", "nativeRight.isSubtype(y)"}, limit = "1")
+        @Specialization(guards = {
+                        "nativeLeft.isFloatSubtype(x, getClass, isSubtype, context)",
+                        "nativeRight.isFloatSubtype(y, getClass, isSubtype, context)"}, limit = "1")
         boolean doNN(PythonNativeObject x, PythonNativeObject y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> nativeLeft,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> nativeRight) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode nativeLeft,
+                        @Cached FromNativeSubclassNode nativeRight) {
             return nativeLeft.execute(x) > nativeRight.execute(y);
         }
 
-        @Specialization(guards = "fromNativeNode.isSubtype(x)", limit = "1")
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(x, getClass, isSubtype, context)", limit = "1")
         boolean doND(PythonNativeObject x, double y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode fromNativeNode) {
             return fromNativeNode.execute(x) > y;
         }
 
-        @Specialization(guards = "fromNativeNode.isSubtype(x)", limit = "1")
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(x, getClass, isSubtype, context)", limit = "1")
         boolean doNL(PythonNativeObject x, long y,
-                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode fromNativeNode) {
             return fromNativeNode.execute(x) > y;
         }
 

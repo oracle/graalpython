@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,39 +38,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext;
+package com.oracle.graal.python.nodes.util;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 
-public class PCallNativeNode extends PNodeWithContext {
-    @Child private Node executeNode;
+@GenerateUncached
+public abstract class SplitArgsNode extends Node {
 
-    private Node getExecuteNode() {
-        if (executeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            executeNode = insert(Message.EXECUTE.createNode());
-        }
-        return executeNode;
+    public abstract Object[] execute(Object[] varargsWitSelf);
+
+    @Specialization(guards = "varargsWithSelf.length == 1")
+    Object[] doEmpty(@SuppressWarnings("unused") Object[] varargsWithSelf) {
+        return new Object[0];
     }
 
-    public Object execute(TruffleObject func, Object[] args) {
-        try {
-            return ForeignAccess.sendExecute(getExecuteNode(), func, args);
-        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw e.raise();
+    @Specialization(guards = {"varargsWithSelf.length == cachedLen", "varargsWithSelf.length < 32"})
+    @ExplodeLoop
+    Object[] doCached(Object[] varargsWithSelf,
+                    @Cached("varargsWithSelf.length") int cachedLen) {
+        Object[] splitArgs = new Object[cachedLen - 1];
+        for (int i = 0; i < cachedLen - 1; i++) {
+            splitArgs[i] = varargsWithSelf[i + 1];
         }
+        return splitArgs;
     }
 
-    public static PCallNativeNode create() {
-        return new PCallNativeNode();
+    @Specialization(replaces = "doCached")
+    Object[] doGeneric(@SuppressWarnings("unused") Object[] varargsWithSelf) {
+        Object[] splitArgs = new Object[varargsWithSelf.length - 1];
+        System.arraycopy(varargsWithSelf, 1, splitArgs, 0, varargsWithSelf.length - 1);
+        return splitArgs;
+    }
+
+    public static SplitArgsNode create() {
+        return SplitArgsNodeGen.create();
+    }
+
+    public static SplitArgsNode getUncached() {
+        return SplitArgsNodeGen.getUncached();
     }
 }

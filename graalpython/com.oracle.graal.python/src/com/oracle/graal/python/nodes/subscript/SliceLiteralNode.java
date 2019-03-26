@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -35,6 +35,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNodeGen.CastToSliceComponentNodeGen;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
@@ -47,7 +48,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 @NodeChild(value = "third", type = ExpressionNode.class)
 @TypeSystemReference(PythonArithmeticTypes.class) // because bool -> int works here
 public abstract class SliceLiteralNode extends ExpressionNode {
-
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Child private CastToSliceComponentNode castStartNode;
     @Child private CastToSliceComponentNode castStopNode;
     @Child private CastToSliceComponentNode castStepNode;
@@ -56,17 +57,17 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
     @Specialization
     public PSlice doInt(int start, int stop, int step) {
-        return factory().createSlice(start, stop, step);
+        return factory.createSlice(start, stop, step);
     }
 
     @Specialization
     public PSlice doInt(int start, int stop, PNone step) {
-        return factory().createSlice(start, stop, castStep(step));
+        return factory.createSlice(start, stop, castStep(step));
     }
 
     @Fallback
     public PSlice doGeneric(Object start, Object stop, Object step) {
-        return factory().createSlice(castStart(start), castStop(stop), castStep(step));
+        return factory.createSlice(castStart(start), castStop(stop), castStep(step));
     }
 
     private int castStart(Object o) {

@@ -344,7 +344,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                             value instanceof Number ||
                             value instanceof String ||
                             value instanceof Boolean) {
-                return GetClassNode.getItSlowPath(value);
+                return GetClassNode.getUncached().execute(value);
             }
         }
         return null;
@@ -425,7 +425,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             return ((PCode) value).getRootNode().getSourceSection();
         } else if (value instanceof PythonManagedClass) {
             for (String k : ((PythonManagedClass) value).getAttributeNames()) {
-                Object attrValue = ReadAttributeFromDynamicObjectNode.doSlowPath(((PythonManagedClass) value).getStorage(), k);
+                Object attrValue = ReadAttributeFromDynamicObjectNode.getUncached().execute(((PythonManagedClass) value).getStorage(), k);
                 SourceSection attrSourceLocation = findSourceLocation(context, attrValue);
                 if (attrSourceLocation != null) {
                     return attrSourceLocation;

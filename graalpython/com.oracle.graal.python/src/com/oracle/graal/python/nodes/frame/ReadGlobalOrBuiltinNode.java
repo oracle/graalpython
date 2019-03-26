@@ -28,12 +28,14 @@ package com.oracle.graal.python.nodes.frame;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -43,6 +45,8 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -53,11 +57,13 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements ReadNode, GlobalNode {
     @Child private ReadAttributeFromObjectNode readFromModuleNode = ReadAttributeFromObjectNode.create();
     @Child private ReadAttributeFromObjectNode readFromBuiltinsNode;
+    @Child private PRaiseNode raiseNode;
 
     protected final String attributeId;
     protected final ConditionProfile isGlobalProfile = ConditionProfile.createBinaryProfile();
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
     protected final ConditionProfile isInitializedProfile = ConditionProfile.createBinaryProfile();
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected ReadGlobalOrBuiltinNode(String attributeId) {
         this.attributeId = attributeId;
@@ -114,7 +120,11 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readFromBuiltinsNode = insert(ReadAttributeFromObjectNode.create());
             }
-            PythonContext context = getContext();
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = PythonLanguage.getContextRef();
+            }
+            PythonContext context = contextRef.get();
             PythonCore core = context.getCore();
             PythonModule builtins;
             if (isInitializedProfile.profile(core.isInitialized())) {
@@ -126,7 +136,11 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
             if (isBuiltinProfile.profile(builtin != PNone.NO_VALUE)) {
                 return builtin;
             } else {
-                throw raise(NameError, "name '%s' is not defined", attributeId);
+                if (raiseNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    raiseNode = insert(PRaiseNode.create());
+                }
+                throw raiseNode.raise(NameError, "name '%s' is not defined", attributeId);
             }
         }
     }

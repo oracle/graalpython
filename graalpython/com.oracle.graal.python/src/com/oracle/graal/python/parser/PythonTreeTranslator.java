@@ -61,7 +61,7 @@ import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.classes.ClassDefinitionPrologueNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.control.ForNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
@@ -1300,7 +1300,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     }
 
     private LoopNode createForInScope(StatementNode target, ExpressionNode iterator, StatementNode body) {
-        GetIteratorNode getIterator = factory.createGetIterator(iterator);
+        GetIteratorExpressionNode getIterator = factory.createGetIterator(iterator);
         getIterator.assignSourceSection(iterator.getSourceSection());
         return new ForNode(body, target, getIterator);
     }

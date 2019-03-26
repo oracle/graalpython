@@ -29,10 +29,16 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(InteropLibrary.class)
 public class PFloat extends PythonBuiltinObject {
 
-    private final double value;
+    protected final double value;
 
     public PFloat(LazyPythonClass clazz, double value) {
         super(clazz);
@@ -95,5 +101,71 @@ public class PFloat extends PythonBuiltinObject {
             d = d.toLowerCase();
         }
         return d;
+    }
+
+    @ExportMessage
+    public boolean isNumber() {
+        return true;
+    }
+
+    @ExportMessage
+    boolean fitsInFloat(@CachedLibrary("this.value") InteropLibrary interop) {
+        return interop.fitsInFloat(value);
+    }
+
+    @ExportMessage
+    float asFloat(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
+        return interop.asFloat(value);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean fitsInDouble() {
+        return true;
+    }
+
+    @ExportMessage
+    public double asDouble() {
+        return this.getValue();
+    }
+
+    @ExportMessage
+    boolean fitsInByte(@CachedLibrary("this.value") InteropLibrary interop) {
+        return interop.fitsInByte(value);
+    }
+
+    @ExportMessage
+    byte asByte(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
+        return interop.asByte(value);
+    }
+
+    @ExportMessage
+    boolean fitsInShort(@CachedLibrary("this.value") InteropLibrary interop) {
+        return interop.fitsInShort(value);
+    }
+
+    @ExportMessage
+    short asShort(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
+        return interop.asShort(value);
+    }
+
+    @ExportMessage
+    boolean fitsInInt(@CachedLibrary("this.value") InteropLibrary interop) {
+        return interop.fitsInInt(value);
+    }
+
+    @ExportMessage
+    int asInt(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
+        return interop.asInt(value);
+    }
+
+    @ExportMessage
+    boolean fitsInLong(@CachedLibrary("this.value") InteropLibrary interop) {
+        return interop.fitsInLong(value);
+    }
+
+    @ExportMessage
+    long asLong(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
+        return interop.asLong(value);
     }
 }

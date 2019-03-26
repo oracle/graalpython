@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "db79f81716886b7883370cd6ea1bbf5c42966fa5",
+                "version": "364b9c253ef58a82ce3601b8588f13b9777ca50f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "db79f81716886b7883370cd6ea1bbf5c42966fa5",
+                "version": "364b9c253ef58a82ce3601b8588f13b9777ca50f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -191,6 +191,7 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
                 "regex:TREGEX",
+                "sulong:SULONG",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",
@@ -314,6 +315,7 @@ suite = {
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
+                "sulong:SULONG",
             ],
             "sourcesPath": "graalpython.src.zip",
             "description": "GraalPython engine",

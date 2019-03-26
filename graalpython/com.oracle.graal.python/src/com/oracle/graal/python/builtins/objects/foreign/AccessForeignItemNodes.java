@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,148 +40,131 @@
  */
 package com.oracle.graal.python.builtins.objects.foreign;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.GetForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.RemoveForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.SetForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.InteropException;
-import com.oracle.truffle.api.interop.KeyInfo;
-import com.oracle.truffle.api.interop.Message;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 abstract class AccessForeignItemNodes {
 
-    @ImportStatic(Message.class)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     protected abstract static class AccessForeignItemBaseNode extends PNodeWithContext {
+        @Child PRaiseNode raiseNode;
+
+        protected PException raise(PythonBuiltinClassType type, String msg, Object... arguments) {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode.raise(type, msg, arguments);
+        }
 
         protected static boolean isSlice(Object o) {
             return o instanceof PSlice;
         }
 
-        protected int getForeignSize(TruffleObject object, Node getSizeNode, PForeignToPTypeNode foreign2PTypeNode) throws UnsupportedMessageException {
-            // TODO type check
-            Object foreignSizeObj = foreign2PTypeNode.executeConvert(ForeignAccess.sendGetSize(getSizeNode, object));
-            if (PGuards.isInteger(foreignSizeObj)) {
-                return ((Number) foreignSizeObj).intValue();
-            }
-            throw raise(TypeError, "list indices must be integers, not %p", foreignSizeObj);
+        protected static boolean isString(Object o) {
+            return o instanceof String || o instanceof PString;
         }
 
-        protected SliceInfo materializeSlice(PSlice idxSlice, TruffleObject object, Node getSizeNode, PForeignToPTypeNode foreign2PTypeNode) throws UnsupportedMessageException {
-            int foreignSize = getForeignSize(object, getSizeNode, foreign2PTypeNode);
+        protected int getForeignSize(Object object, InteropLibrary lib) throws UnsupportedMessageException {
+            long foreignSizeObj = lib.getArraySize(object);
+            if (foreignSizeObj <= Integer.MAX_VALUE) {
+                return (int) foreignSizeObj;
+            }
+            throw raise(TypeError, "number %s cannot fit into index-sized integer", foreignSizeObj);
+        }
+
+        protected SliceInfo materializeSlice(PSlice idxSlice, Object object, InteropLibrary lib) throws UnsupportedMessageException {
+            int foreignSize = getForeignSize(object, lib);
             return idxSlice.computeIndices(foreignSize);
         }
     }
 
     protected abstract static class GetForeignItemNode extends AccessForeignItemBaseNode {
-
-        @Child private Node hasSizeNode;
-        @Child private LookupAndCallUnaryNode indexNode;
-        @Child private PTypeToForeignNode ptypeToForeignNode;
         @Child private PForeignToPTypeNode toPythonNode;
 
-        public abstract Object execute(TruffleObject object, Object idx);
+        public abstract Object execute(Object object, Object idx);
 
-        @Specialization(guards = "isArray(object) == isArray")
-        public Object doForeignObjectSlice(TruffleObject object, PSlice idxSlice,
-                        @Cached("READ.createNode()") Node foreignRead,
-                        @Cached("isArray(object)") boolean isArray,
-                        @Cached("GET_SIZE.createNode()") Node getSizeNode,
-                        @Cached("create()") PForeignToPTypeNode foreign2PTypeNode,
+        @Specialization
+        public Object doForeignObjectSlice(Object object, PSlice idxSlice,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached("create()") PythonObjectFactory factory) {
             SliceInfo mslice;
             try {
-                mslice = materializeSlice(idxSlice, object, getSizeNode, foreign2PTypeNode);
-            } catch (InteropException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw raise(RuntimeError, e);
+                mslice = materializeSlice(idxSlice, object, lib);
+            } catch (UnsupportedMessageException e) {
+                throw raise(AttributeError, "%s instance has no attribute '__getitem__'", object);
             }
             Object[] values = new Object[mslice.length];
             for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
-                values[j] = readForeignValue(object, i, foreignRead, isArray);
+                values[j] = readForeignValue(object, i, lib);
             }
             return factory.createList(values);
         }
 
-        @Specialization(guards = {"!isSlice(idx)", "isArray(object) == isArray"})
-        public Object doForeignObject(TruffleObject object, Object idx,
-                        @Cached("isArray(object)") boolean isArray,
-                        @Cached("READ.createNode()") Node foreignRead) {
-            Object convertedIdx = getToForeignNode().executeConvert(idx);
-            return readForeignValue(object, convertedIdx, foreignRead, isArray);
+        @Specialization
+        public Object doForeignKey(Object object, String key,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            try {
+                return lib.readMember(object, key);
+            } catch (UnsupportedMessageException e) {
+                if (lib.hasArrayElements(object)) {
+                    throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
+                } else {
+                    throw raise(AttributeError, "%s instance has no attribute '__getitem__'", object);
+                }
+            } catch (UnknownIdentifierException e) {
+                throw raise(KeyError, key);
+            }
         }
 
-        private Object readForeignValue(TruffleObject object, Object key, Node foreignRead, boolean indexed) {
-            Object index = key;
-            if (indexed) {
-                // getIndexNode() is branch profile
-                Object indexKey = getIndexNode().executeObject(key);
-                if (object instanceof Number || PTypeToForeignNode.isBoxed(object)) {
-                    index = indexKey;
-                }
-            }
+        @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"})
+        public Object doForeignObject(Object object, Object idx,
+                        @Cached CastToIndexNode castIndex,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            return readForeignValue(object, castIndex.execute(idx), lib);
+        }
+
+        private Object readForeignValue(Object object, long index, InteropLibrary lib) {
             try {
-                return getToPythonNode().executeConvert(ForeignAccess.sendRead(foreignRead, object, getToForeignNode().executeConvert(index)));
+                return getToPythonNode().executeConvert(lib.readArrayElement(object, index));
             } catch (UnsupportedMessageException ex) {
                 throw raise(AttributeError, "%s instance has no attribute '__getitem__'", object);
-            } catch (UnknownIdentifierException ex) {
-                if (indexed) {
-                    throw raise(IndexError, "invalid index %s", index);
-                } else {
-                    throw raise(KeyError, "invalid key %s", key);
-                }
+            } catch (InvalidArrayIndexException ex) {
+                throw raise(IndexError, "invalid index %s", index);
             }
-        }
-
-        protected boolean isArray(TruffleObject o) {
-            if (hasSizeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                hasSizeNode = insert(Message.HAS_SIZE.createNode());
-            }
-            return ForeignAccess.sendHasSize(hasSizeNode, o);
-        }
-
-        private LookupAndCallUnaryNode getIndexNode() {
-            if (indexNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                indexNode = insert(LookupAndCallUnaryNode.create(__INDEX__));
-            }
-            return indexNode;
-        }
-
-        private PTypeToForeignNode getToForeignNode() {
-            if (ptypeToForeignNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                ptypeToForeignNode = insert(PTypeToForeignNode.create());
-            }
-            return ptypeToForeignNode;
         }
 
         private PForeignToPTypeNode getToPythonNode() {
@@ -201,57 +184,68 @@ abstract class AccessForeignItemNodes {
     @ImportStatic(SpecialMethodNames.class)
     protected abstract static class SetForeignItemNode extends AccessForeignItemBaseNode {
 
-        public abstract Object execute(TruffleObject object, Object idx, Object value);
+        public abstract Object execute(Object object, Object idx, Object value);
 
         @Specialization
-        public Object doForeignObjectSlice(TruffleObject object, PSlice idxSlice, PSequence pvalues,
-                        @Cached("WRITE.createNode()") Node foreignWrite,
-                        @Cached("KEY_INFO.createNode()") Node keyInfoNode,
-                        @Cached("HAS_SIZE.createNode()") Node hasSizeNode,
-                        @Cached("GET_SIZE.createNode()") Node getSizeNode,
+        public Object doForeignObjectSlice(Object object, PSlice idxSlice, PSequence pvalues,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
-                        @Cached("create()") PTypeToForeignNode valueToForeignNode,
-                        @Cached("create()") PForeignToPTypeNode foreign2PTypeNode) {
-
+                        @Cached("create()") PTypeToForeignNode valueToForeignNode) {
             try {
-                SliceInfo mslice = materializeSlice(idxSlice, object, getSizeNode, foreign2PTypeNode);
+                SliceInfo mslice = materializeSlice(idxSlice, object, lib);
                 for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
                     Object convertedValue = valueToForeignNode.executeConvert(getItemNode.executeObject(pvalues, j));
-                    writeForeignValue(object, i, convertedValue, foreignWrite, keyInfoNode, hasSizeNode, foreign2PTypeNode);
+                    writeForeignValue(object, i, convertedValue, lib);
                 }
                 return PNone.NONE;
-            } catch (InteropException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw raise(RuntimeError, e);
+            } catch (UnsupportedTypeException | UnsupportedMessageException e) {
+                throw raise(AttributeError, "%s instance has no attribute '__setitem__'", object);
             }
         }
 
-        @Specialization(guards = "!isSlice(idx)")
-        public Object doForeignObject(TruffleObject object, Object idx, Object value,
-                        @Cached("WRITE.createNode()") Node foreignWrite,
-                        @Cached("KEY_INFO.createNode()") Node keyInfoNode,
-                        @Cached("HAS_SIZE.createNode()") Node hasSizeNode,
-                        @Cached("create()") PTypeToForeignNode indexToForeignNode,
-                        @Cached("create()") PTypeToForeignNode valueToForeignNode,
-                        @Cached("create()") PForeignToPTypeNode foreign2PTypeNode) {
+        @Specialization
+        public Object doForeignKey(Object object, String key, Object value,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                Object convertedIdx = indexToForeignNode.executeConvert(idx);
-                Object convertedValue = valueToForeignNode.executeConvert(value);
-                return writeForeignValue(object, convertedIdx, convertedValue, foreignWrite, keyInfoNode, hasSizeNode, foreign2PTypeNode);
-            } catch (InteropException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw raise(RuntimeError, e);
+                lib.writeMember(object, key, value);
+                return PNone.NONE;
+            } catch (UnsupportedMessageException e) {
+                if (lib.hasArrayElements(object)) {
+                    throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
+                } else {
+                    throw raise(AttributeError, "attribute %s is read-only", key);
+                }
+            } catch (UnknownIdentifierException e) {
+                throw raise(AttributeError, "foreign object has no attribute '%s'", key);
+            } catch (UnsupportedTypeException e) {
+                throw raise(AttributeError, "attribute %s is read-only", key);
             }
         }
 
-        private Object writeForeignValue(TruffleObject object, Object idx, Object value, Node foreignWrite, Node keyInfoNode, Node hasSizeNode, PForeignToPTypeNode foreign2PTypeNode)
-                        throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
-            int info = ForeignAccess.sendKeyInfo(keyInfoNode, object, idx);
-            if (KeyInfo.isWritable(info) || ForeignAccess.sendHasSize(hasSizeNode, object)) {
-                return foreign2PTypeNode.executeConvert(ForeignAccess.sendWrite(foreignWrite, object, idx, value));
+        @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"})
+        public Object doForeignObject(Object object, Object idx, Object value,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached CastToIndexNode castIndex,
+                        @Cached("create()") PTypeToForeignNode valueToForeignNode) {
+            try {
+                int convertedIdx = castIndex.execute(idx);
+                Object convertedValue = valueToForeignNode.executeConvert(value);
+                writeForeignValue(object, convertedIdx, convertedValue, lib);
+                return PNone.NONE;
+            } catch (UnsupportedTypeException | UnsupportedMessageException e) {
+                throw raise(AttributeError, "%s instance has no attribute '__setitem__'", object);
             }
-            // TODO error message
-            CompilerDirectives.transferToInterpreter();
+        }
+
+        private void writeForeignValue(Object object, int idx, Object value, InteropLibrary lib) throws UnsupportedMessageException, UnsupportedTypeException {
+            if (lib.isArrayElementModifiable(object, idx)) {
+                try {
+                    lib.writeArrayElement(object, idx, value);
+                    return;
+                } catch (InvalidArrayIndexException ex) {
+                    throw raise(IndexError, "invalid index %s", idx);
+                }
+            }
             throw raise(AttributeError, "%s instance has no attribute '__setitem__'", object);
         }
 
@@ -262,51 +256,60 @@ abstract class AccessForeignItemNodes {
 
     protected abstract static class RemoveForeignItemNode extends AccessForeignItemBaseNode {
 
-        public abstract Object execute(TruffleObject object, Object idx);
+        public abstract Object execute(Object object, Object idx);
 
         @Specialization
-        public Object doForeignObjectSlice(TruffleObject object, PSlice idxSlice,
-                        @Cached("REMOVE.createNode()") Node foreignRemove,
-                        @Cached("KEY_INFO.createNode()") Node keyInfoNode,
-                        @Cached("HAS_SIZE.createNode()") Node hasSizeNode,
-                        @Cached("GET_SIZE.createNode()") Node getSizeNode,
-                        @Cached("create()") PForeignToPTypeNode foreign2PTypeNode) {
+        public Object doForeignObjectSlice(Object object, PSlice idxSlice,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
 
             try {
-                SliceInfo mslice = materializeSlice(idxSlice, object, getSizeNode, foreign2PTypeNode);
+                SliceInfo mslice = materializeSlice(idxSlice, object, lib);
                 for (int i = mslice.start; i < mslice.stop; i += mslice.step) {
-                    removeForeignValue(object, i, foreignRemove, keyInfoNode, hasSizeNode);
+                    removeForeignValue(object, i, lib);
                 }
                 return PNone.NONE;
-            } catch (InteropException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw raise(RuntimeError, e);
+            } catch (UnsupportedMessageException e) {
+                throw raise(AttributeError, "%s instance has no attribute '__delitem__'", object);
+            }
+        }
+
+        @Specialization
+        public Object doForeignKey(Object object, String key,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            try {
+                lib.removeMember(object, key);
+                return PNone.NONE;
+            } catch (UnsupportedMessageException e) {
+                if (lib.hasArrayElements(object)) {
+                    throw raise(TypeError, "'%p' object cannot be interpreted as an integer", key);
+                } else {
+                    throw raise(AttributeError, "attribute %s is read-only", key);
+                }
+            } catch (UnknownIdentifierException e) {
+                throw raise(AttributeError, "foreign object has no attribute '%s'", key);
             }
         }
 
         @Specialization(guards = "!isSlice(idx)")
-        public Object doForeignObject(TruffleObject object, Object idx,
-                        @Cached("REMOVE.createNode()") Node foreignRemove,
-                        @Cached("KEY_INFO.createNode()") Node keyInfoNode,
-                        @Cached("HAS_SIZE.createNode()") Node hasSizeNode,
-                        @Cached("create()") PTypeToForeignNode indexToForeignNode) {
+        public Object doForeignObject(Object object, Object idx,
+                        @Cached CastToIndexNode castIndex,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                Object convertedIdx = indexToForeignNode.executeConvert(idx);
-                return removeForeignValue(object, convertedIdx, foreignRemove, keyInfoNode, hasSizeNode);
-            } catch (InteropException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw raise(RuntimeError, e);
+                int convertedIdx = castIndex.execute(idx);
+                return removeForeignValue(object, convertedIdx, lib);
+            } catch (UnsupportedMessageException e) {
+                throw raise(AttributeError, "%s instance has no attribute '__delitem__'", object);
             }
         }
 
-        private Object removeForeignValue(TruffleObject object, Object idx, Node foreignRemove, Node keyInfoNode, Node hasSizeNode)
-                        throws UnknownIdentifierException, UnsupportedMessageException {
-            int info = ForeignAccess.sendKeyInfo(keyInfoNode, object, idx);
-            if (KeyInfo.isRemovable(info) || ForeignAccess.sendHasSize(hasSizeNode, object)) {
-                return ForeignAccess.sendRemove(foreignRemove, object, idx);
+        private Object removeForeignValue(Object object, int idx, InteropLibrary lib) throws UnsupportedMessageException {
+            if (lib.isArrayElementRemovable(object, idx)) {
+                try {
+                    lib.removeArrayElement(object, idx);
+                } catch (InvalidArrayIndexException ex) {
+                    throw raise(IndexError, "invalid index %s", idx);
+                }
             }
-            // TODO error message
-            CompilerDirectives.transferToInterpreter();
             throw raise(AttributeError, "%s instance has no attribute '__delitem__'", object);
         }
 

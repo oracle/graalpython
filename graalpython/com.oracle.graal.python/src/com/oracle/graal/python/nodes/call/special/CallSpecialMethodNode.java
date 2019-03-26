@@ -80,11 +80,7 @@ abstract class CallSpecialMethodNode extends Node {
     }
 
     protected Assumption singleContextAssumption() {
-        PythonLanguage language = getRootNode().getLanguage(PythonLanguage.class);
-        if (language == null) {
-            language = PythonLanguage.getCurrent();
-        }
-        return language.singleContextAssumption;
+        return PythonLanguage.getCurrent().singleContextAssumption;
     }
 
     protected static PythonUnaryBuiltinNode getUnary(Object func) {

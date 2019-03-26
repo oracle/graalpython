@@ -71,12 +71,11 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.regex.RegexSyntaxException;
@@ -193,9 +192,9 @@ public class SREModuleBuiltins extends PythonBuiltins {
         Object call(TruffleObject callable, Object arg1, Object arg2,
                         @Cached("create()") BranchProfile syntaxError,
                         @Cached("create()") BranchProfile typeError,
-                        @Cached("createExecute()") Node invokeNode) {
+                        @CachedLibrary(limit = "1") InteropLibrary interop) {
             try {
-                return ForeignAccess.sendExecute(invokeNode, callable, new Object[]{arg1, arg2});
+                return interop.execute(callable, arg1, arg2);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
@@ -214,10 +213,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
         Object call(Object callable, Object arg1, Object arg2) {
             throw raise(RuntimeError, "invalid arguments passed to tregex_call_compile");
         }
-
-        protected static Node createExecute() {
-            return Message.EXECUTE.createNode();
-        }
     }
 
     @Builtin(name = "tregex_call_exec", minNumOfPositionalArgs = 3)
@@ -228,9 +223,9 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isForeignObject(callable)")
         Object call(TruffleObject callable, Object arg1, Number arg2,
                         @Cached("create()") BranchProfile typeError,
-                        @Cached("createExecute()") Node invokeNode) {
+                        @CachedLibrary(limit = "1") InteropLibrary interop) {
             try {
-                return ForeignAccess.sendExecute(invokeNode, callable, new Object[]{arg1, arg2});
+                return interop.execute(callable, arg1, arg2);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
@@ -241,10 +236,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @Fallback
         Object call(Object callable, Object arg1, Object arg2) {
             throw raise(RuntimeError, "invalid arguments passed to tregex_call_exec");
-        }
-
-        protected static Node createExecute() {
-            return Message.EXECUTE.createNode();
         }
     }
 }

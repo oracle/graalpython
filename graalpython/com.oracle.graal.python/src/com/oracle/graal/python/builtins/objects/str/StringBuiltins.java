@@ -70,20 +70,20 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetIt
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListReverseNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.SpliceNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.StringLenNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.JoinInternalNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
@@ -102,6 +102,7 @@ import com.oracle.graal.python.runtime.formatting.StringFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -905,18 +906,19 @@ public final class StringBuiltins extends PythonBuiltins {
 
     protected abstract static class SpliceNode extends PNodeWithContext {
         public static SpliceNode create() {
-            return SpliceNodeGen.create();
+            return StringBuiltinsFactory.SpliceNodeGen.create();
         }
 
         protected abstract char[] execute(char[] translatedChars, int i, Object translated);
 
         @Specialization
         char[] doInt(char[] translatedChars, int i, int translated,
+                        @Shared("raise") @Cached PRaiseNode raise,
                         @Cached("create()") BranchProfile ovf) {
             char t = (char) translated;
             if (t != translated) {
                 ovf.enter();
-                throw raiseError();
+                throw raiseError(raise);
             }
             translatedChars[i] = t;
             return translatedChars;
@@ -924,28 +926,30 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         char[] doLong(char[] translatedChars, int i, long translated,
+                        @Shared("raise") @Cached PRaiseNode raise,
                         @Cached("create()") BranchProfile ovf) {
             char t = (char) translated;
             if (t != translated) {
                 ovf.enter();
-                throw raiseError();
+                throw raiseError(raise);
             }
             translatedChars[i] = t;
             return translatedChars;
         }
 
-        private PException raiseError() {
-            return raise(ValueError, "character mapping must be in range(0x%s)", Integer.toHexString(Character.MAX_CODE_POINT + 1));
+        private static PException raiseError(PRaiseNode raise) {
+            return raise.raise(ValueError, "character mapping must be in range(0x%s)", Integer.toHexString(Character.MAX_CODE_POINT + 1));
         }
 
         @Specialization
         char[] doPInt(char[] translatedChars, int i, PInt translated,
+                        @Shared("raise") @Cached PRaiseNode raise,
                         @Cached("create()") BranchProfile ovf) {
             double doubleValue = translated.doubleValue();
             char t = (char) doubleValue;
             if (t != doubleValue) {
                 ovf.enter();
-                throw raiseError();
+                throw raiseError(raise);
             }
             translatedChars[i] = t;
             return translatedChars;
@@ -1023,7 +1027,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public PList doSplit(String self, String sep,
-                        @Cached("create()") ListAppendNode appendNode) {
+                        @Cached("create()") AppendNode appendNode) {
             int lastIndexOf = self.lastIndexOf(sep);
             PList list = factory().createList();
             if (lastIndexOf == -1) {
@@ -1041,13 +1045,13 @@ public final class StringBuiltins extends PythonBuiltins {
 
     protected abstract static class SplitBaseNode extends PythonTernaryBuiltinNode {
 
-        @Child private ListAppendNode appendNode;
+        @Child private AppendNode appendNode;
         @Child private ListReverseNode reverseNode;
 
-        protected ListAppendNode getAppendNode() {
+        protected AppendNode getAppendNode() {
             if (appendNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                appendNode = insert(ListAppendNode.create());
+                appendNode = insert(AppendNode.create());
             }
             return appendNode;
         }
@@ -1297,7 +1301,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SplitLinesNode extends PythonBinaryBuiltinNode {
-        @Child private ListAppendNode appendNode = ListAppendNode.create();
+        @Child private AppendNode appendNode = AppendNode.create();
         @Child private CastToBooleanNode keepEndsNode = CastToBooleanNode.createIfTrueNode();
 
         @Specialization

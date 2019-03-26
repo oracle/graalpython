@@ -45,7 +45,7 @@ import com.oracle.graal.python.nodes.control.BreakTargetNode;
 import com.oracle.graal.python.nodes.control.ContinueNode;
 import com.oracle.graal.python.nodes.control.ContinueTargetNode;
 import com.oracle.graal.python.nodes.control.ElseNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.IfNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.control.ReturnNode;
@@ -180,8 +180,8 @@ public class NodeFactory {
         return new TernaryIfNode(condition, thenPart, elsePart);
     }
 
-    public GetIteratorNode createGetIterator(ExpressionNode collection) {
-        return GetIteratorNode.create(collection);
+    public GetIteratorExpressionNode createGetIterator(ExpressionNode collection) {
+        return GetIteratorExpressionNode.create(collection);
     }
 
     public StatementNode createElse(StatementNode forNode, StatementNode orelse) {

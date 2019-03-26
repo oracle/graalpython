@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
@@ -62,6 +63,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.CheckFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.ExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.TrufflePInt_AsPrimitiveFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -77,26 +79,26 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNodeFactory;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PThreadState;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PythonClassInitNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeNull;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -125,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetInstanceShape;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -167,6 +170,10 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -175,12 +182,13 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropException;
-import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
@@ -190,8 +198,11 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
-@CoreFunctions(defineModule = "python_cext")
+@CoreFunctions(defineModule = TruffleCextBuiltins.PYTHON_CEXT)
+@GenerateNodeFactory
 public class TruffleCextBuiltins extends PythonBuiltins {
+
+    public static final String PYTHON_CEXT = "python_cext";
 
     private static final String ERROR_HANDLER = "error_handler";
     public static final String NATIVE_NULL = "native_null";
@@ -220,7 +231,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public abstract static class AsPythonObjectNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object run(Object object,
-                        @Cached("create()") CExtNodes.AsPythonObjectNode toJavaNode) {
+                        @Cached CExtNodes.AsPythonObjectNode toJavaNode) {
             return toJavaNode.execute(object);
         }
     }
@@ -244,7 +255,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(str)")
         Object run(Object str,
-                        @Cached("create()") CExtNodes.AsCharPointer asCharPointerNode) {
+                        @Cached("create()") CExtNodes.AsCharPointerNode asCharPointerNode) {
             return asCharPointerNode.execute(str);
         }
 
@@ -284,7 +295,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                     return core.lookupType(type);
                 }
             }
-            Object attribute = core.lookupBuiltinModule("python_cext").getAttribute(typeName);
+            Object attribute = core.lookupBuiltinModule(TruffleCextBuiltins.PYTHON_CEXT).getAttribute(typeName);
             if (attribute != PNone.NO_VALUE) {
                 return attribute;
             }
@@ -330,33 +341,37 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(cwrapper)")
         @TruffleBoundary
-        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, LazyPythonClass type) {
+        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, LazyPythonClass type,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable, SIGNATURE));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, null, callable, SIGNATURE));
             return factory().createBuiltinFunction(name, type, 0, callTarget);
         }
 
         @Specialization(guards = {"isNoValue(cwrapper)", "isNoValue(type)"})
         @TruffleBoundary
-        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, @SuppressWarnings("unused") PNone type) {
+        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, @SuppressWarnings("unused") PNone type,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable, SIGNATURE));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, null, callable, SIGNATURE));
             return factory().createBuiltinFunction(name, null, 0, callTarget);
         }
 
         @Specialization(guards = {"!isNoValue(cwrapper)", "isNoValue(type)"})
         @TruffleBoundary
-        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, TruffleObject cwrapper, @SuppressWarnings("unused") PNone type) {
+        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, TruffleObject cwrapper, @SuppressWarnings("unused") PNone type,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable, SIGNATURE));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, cwrapper, callable, SIGNATURE));
             return factory().createBuiltinFunction(name, null, 0, callTarget);
         }
 
         @Specialization(guards = "!isNoValue(cwrapper)")
         @TruffleBoundary
-        PBuiltinFunction run(String name, TruffleObject callable, TruffleObject cwrapper, LazyPythonClass type) {
+        PBuiltinFunction run(String name, TruffleObject callable, TruffleObject cwrapper, LazyPythonClass type,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable, SIGNATURE));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, cwrapper, callable, SIGNATURE));
             return factory().createBuiltinFunction(name, type, 0, callTarget);
         }
     }
@@ -389,12 +404,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyErrFetchNode extends NativeBuiltin {
         @Specialization
         public Object run(Object module,
-                        @Cached("create()") GetClassNode getClassNode) {
+                        @Exclusive @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
             Object result;
             if (currentException == null) {
-                result = getNativeNull(module);
+                result = getNativeNullNode.execute(module);
             } else {
                 PBaseException exception = currentException.getExceptionObject();
                 exception.reifyException();
@@ -547,7 +563,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Type_Slots", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    @ImportStatic(SpecialAttributeNames.class)
     abstract static class PyTruffle_Type_SlotsNode extends NativeBuiltin {
 
         /**
@@ -559,76 +574,88 @@ public class TruffleCextBuiltins extends PythonBuiltins {
          */
         @Specialization
         Object slots(Object module, LazyPythonClass pythonClass,
-                        @Cached("create(__SLOTS__)") LookupAttributeInMRONode lookupSlotsNode) {
-            Object execute = lookupSlotsNode.execute(pythonClass);
+                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic lookupSlotsNode,
+                        @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
+            Object execute = lookupSlotsNode.execute(pythonClass, __SLOTS__);
             if (execute != PNone.NO_VALUE) {
                 return execute;
             }
-            return getNativeNull(module);
+            return getNativeNullNode.execute(module);
         }
     }
 
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
     @ImportStatic(PGuards.class)
     abstract static class CheckFunctionResultNode extends PNodeWithContext {
-
-        @Child private Node isNullNode;
-
         public abstract Object execute(String name, Object result);
 
         @Specialization
-        Object doNativeWrapper(String name, PythonObjectNativeWrapper result,
+        Object doNativeWrapper(String name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
                         @Cached("create()") CheckFunctionResultNode recursive) {
             return recursive.execute(name, result.getDelegate());
         }
 
         @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
-        Object doPrimitiveWrapper(String name, @SuppressWarnings("unused") PythonNativeWrapper result) {
-            checkFunctionResult(name, false);
+        Object doPrimitiveWrapper(String name, @SuppressWarnings("unused") PythonNativeWrapper result,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("rais") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, false, context, raise, factory);
             return result;
         }
 
         @Specialization(guards = "isNoValue(result)")
-        Object doNoValue(String name, @SuppressWarnings("unused") PNone result) {
-            checkFunctionResult(name, true);
+        Object doNoValue(String name, @SuppressWarnings("unused") PNone result,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("rais") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, true, context, raise, factory);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "!isNoValue(result)")
-        Object doNativeWrapper(String name, @SuppressWarnings("unused") PythonAbstractObject result) {
-            checkFunctionResult(name, false);
+        Object doPythonObject(String name, @SuppressWarnings("unused") PythonAbstractObject result,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("rais") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, false, context, raise, factory);
             return result;
         }
 
         @Specialization
-        Object doPythonNativeNull(String name, @SuppressWarnings("unused") PythonNativeNull result) {
-            checkFunctionResult(name, true);
+        Object doPythonNativeNull(String name, @SuppressWarnings("unused") PythonNativeNull result,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("rais") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, true, context, raise, factory);
             return result;
         }
 
-        @Specialization(guards = {"isForeignObject(result)", "!isNativeNull(result)"})
-        Object doForeign(String name, TruffleObject result,
-                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
-            checkFunctionResult(name, isNullProfile.profile(isNull(result)));
+        /*
+         * Our fallback case, but with some cached params. PythonObjectNativeWrapper results should
+         * be unwrapped and recursively delegated (see #doNativeWrapper) and PNone is treated
+         * specially, because we consider it as null in #doNoValue and as not null in
+         * #doPythonObject
+         */
+        @Specialization(guards = {"!isPythonObjectNativeWrapper(result)", "!isPNone(result)"})
+        Object doForeign(String name, Object result,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile isNullProfile,
+                        @Exclusive @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("rais") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), context, raise, factory);
             return result;
         }
 
-        @Fallback
-        Object doGeneric(String name, Object result) {
-            assert result != null;
-            checkFunctionResult(name, false);
-            return result;
-        }
-
-        private void checkFunctionResult(String name, boolean isNull) {
-            PythonContext context = getContext();
+        private void checkFunctionResult(String name, boolean isNull, PythonContext context, PRaiseNode raise, PythonObjectFactory factory) {
             PException currentException = context.getCurrentException();
             boolean errOccurred = currentException != null;
             if (isNull) {
                 // consume exception
                 context.setCurrentException(null);
                 if (!errOccurred) {
-                    throw raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
+                    throw raise.raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
                 } else {
                     currentException.getExceptionObject().reifyException();
                     throw currentException;
@@ -636,27 +663,19 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             } else if (errOccurred) {
                 // consume exception
                 context.setCurrentException(null);
-                PBaseException sysExc = factory().createBaseException(PythonErrorType.SystemError, "%s returned a result with an error set", new Object[]{name});
+                PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, "%s returned a result with an error set", new Object[]{name});
                 currentException.getExceptionObject().reifyException();
                 sysExc.setAttribute(SpecialAttributeNames.__CAUSE__, currentException.getExceptionObject());
                 throw PException.fromObject(sysExc, this);
             }
         }
 
-        private boolean isNull(TruffleObject result) {
-            if (isNullNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isNullNode = insert(Message.IS_NULL.createNode());
-            }
-            return ForeignAccess.sendIsNull(isNullNode, result);
-        }
-
         protected static boolean isNativeNull(TruffleObject object) {
             return object instanceof PythonNativeNull;
         }
 
-        protected static boolean isPythonObjectNativeWrapper(PythonNativeWrapper object) {
-            return object instanceof PythonObjectNativeWrapper;
+        protected static boolean isPythonObjectNativeWrapper(Object object) {
+            return object instanceof DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
         }
 
         public static CheckFunctionResultNode create() {
@@ -664,15 +683,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    static class ExternalFunctionNode extends PRootNode {
+    abstract static class ExternalFunctionNode extends PRootNode {
         private final Signature signature;
         private final TruffleObject cwrapper;
         private final TruffleObject callable;
         private final String name;
-        @CompilationFinal ContextReference<PythonContext> ctxt;
-        @Child private Node executeNode;
-        @Child CExtNodes.AllToSulongNode toSulongNode = CExtNodes.AllToSulongNode.create();
-        @Child CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodes.AsPythonObjectNode.create();
+        @CompilationFinal private ContextReference<PythonContext> ctxt;
+        @Child private CExtNodes.AllToSulongNode toSulongNode = CExtNodes.AllToSulongNode.create();
         @Child private CheckFunctionResultNode checkResultNode = CheckFunctionResultNode.create();
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
 
@@ -682,15 +699,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             this.name = name;
             this.cwrapper = cwrapper;
             this.callable = callable;
-            this.executeNode = Message.EXECUTE.createNode();
         }
 
         public TruffleObject getCallable() {
             return callable;
         }
 
-        @Override
-        public Object execute(VirtualFrame frame) {
+        @Specialization
+        Object doIt(VirtualFrame frame,
+                        @Exclusive @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Exclusive @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             Object[] frameArgs = PArguments.getVariableArguments(frame);
             try {
                 TruffleObject fun;
@@ -707,35 +726,30 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                     toSulongNode.executeInto(frameArgs, 0, arguments, 0);
                 }
                 // save current exception state
-                PException exceptionState = getContext().getCurrentException();
+                PException exceptionState = context.getCurrentException();
                 // clear current exception such that native code has clean environment
-                getContext().setCurrentException(null);
+                context.setCurrentException(null);
 
-                Object result = fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, ForeignAccess.sendExecute(executeNode, fun, arguments))));
+                Object result;
+                result = fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(fun, arguments))));
 
                 // restore previous exception state
-                getContext().setCurrentException(exceptionState);
+                context.setCurrentException(exceptionState);
                 return result;
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw e.raise();
+            } catch (UnsupportedTypeException | UnsupportedMessageException e) {
+                throw context.getCore().raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %s", name, getMessage(e));
+            } catch (ArityException e) {
+                throw context.getCore().raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
             }
+        }
+
+        @TruffleBoundary
+        private static final String getMessage(Throwable e) {
+            return e.getMessage();
         }
 
         private Object fromNative(Object result) {
             return fromForeign.executeConvert(result);
-        }
-
-        public final PythonCore getCore() {
-            return getContext().getCore();
-        }
-
-        public final PythonContext getContext() {
-            if (ctxt == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                ctxt = PythonLanguage.getContextRef();
-            }
-            return ctxt.get();
         }
 
         @Override
@@ -756,6 +770,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Override
         public Signature getSignature() {
             return signature;
+        }
+
+        public static ExternalFunctionNode create(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable, Signature signature) {
+            return ExternalFunctionNodeGen.create(lang, name, cwrapper, callable, signature);
         }
     }
 
@@ -780,23 +798,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonTypes.class)
     abstract static class NativeBuiltin extends PythonBuiltinNode {
 
-        @Child private Node hasSizeNode;
-        @Child private Node getSizeNode;
-        @Child private Node isBoxedNode;
-        @Child private Node unboxNode;
-        @Child private GetByteArrayNode getByteArrayNode;
-        @Child private ReadAttributeFromObjectNode readNativeNull;
-
-        protected Object getNativeNull(Object module) {
-            if (readNativeNull == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readNativeNull = insert(ReadAttributeFromObjectNode.create());
-            }
-            Object wrapper = readNativeNull.execute(module, NATIVE_NULL);
-            assert wrapper instanceof PythonNativeNull;
-            return wrapper;
-        }
-
         protected void transformToNative(PException p) {
             NativeBuiltin.transformToNative(getContext(), p);
         }
@@ -810,7 +811,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return NativeBuiltin.raiseNative(this, defaultValue, errType, fmt, args);
         }
 
-        protected static <T> T raiseNative(PNodeWithContext n, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
+        protected static <T> T raiseNative(PythonBuiltinBaseNode n, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
             try {
                 throw n.raise(errType, fmt, args);
             } catch (PException p) {
@@ -819,66 +820,23 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             }
         }
 
-        protected boolean isByteArray(TruffleObject o) {
-            return o instanceof PySequenceArrayWrapper || o instanceof CByteArrayWrapper || ForeignAccess.sendHasSize(getHasSizeNode(), o);
-        }
-
-        protected byte[] getByteArray(TruffleObject o) {
-            if (getByteArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getByteArrayNode = insert(GetByteArrayNode.create());
-            }
-            if (getSizeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getSizeNode = insert(Message.GET_SIZE.createNode());
-            }
-            Object sizeObj;
-            try {
-                sizeObj = ForeignAccess.sendGetSize(getSizeNode, o);
-                long size;
-                if (sizeObj instanceof Integer) {
-                    size = (int) sizeObj;
-                } else if (sizeObj instanceof Long) {
-                    size = (long) sizeObj;
-                } else {
-                    if (isBoxedNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        isBoxedNode = insert(Message.IS_BOXED.createNode());
-                    }
-                    if (unboxNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        unboxNode = insert(Message.UNBOX.createNode());
-                    }
-                    if (sizeObj instanceof TruffleObject && ForeignAccess.sendIsBoxed(isBoxedNode, (TruffleObject) sizeObj)) {
-                        size = (int) ForeignAccess.sendUnbox(unboxNode, (TruffleObject) sizeObj);
-                    } else {
-                        throw new RuntimeException("invalid size type");
-                    }
-                }
-                return getByteArrayNode.execute(o, size);
-            } catch (UnsupportedMessageException e) {
-                throw e.raise();
-            }
-        }
-
-        protected byte[] getByteArray(TruffleObject o, long size) {
-            if (getByteArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getByteArrayNode = insert(GetByteArrayNode.create());
-            }
-            return getByteArrayNode.execute(o, size);
-        }
-
         protected Object raiseBadArgument(Object errorMarker) {
             return raiseNative(errorMarker, PythonErrorType.TypeError, "bad argument type for built-in operation");
         }
 
-        private Node getHasSizeNode() {
-            if (hasSizeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                hasSizeNode = insert(Message.HAS_SIZE.createNode());
-            }
-            return hasSizeNode;
+        @TruffleBoundary(allowInlining = true)
+        protected static ByteBuffer wrap(byte[] data) {
+            return ByteBuffer.wrap(data);
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        protected static ByteBuffer wrap(byte[] data, int offset, int length) {
+            return ByteBuffer.wrap(data, offset, length);
+        }
+
+        @TruffleBoundary
+        protected static String getMessage(Throwable throwable) {
+            return throwable.getMessage();
         }
     }
 
@@ -888,6 +846,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         private static Charset UTF32LE;
         private static Charset UTF32BE;
 
+        @TruffleBoundary
         protected static Charset getUTF32Charset(int byteorder) {
             String utf32Name = getUTF32Name(byteorder);
             if (byteorder == NativeUnicodeBuiltin.NATIVE_ORDER) {
@@ -1032,11 +991,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
-        @Specialization(guards = "isByteArray(o)")
+        @Specialization
         @TruffleBoundary
-        Object doBytes(TruffleObject o, long elementSize, Object errorMarker) {
+        Object doBytes(TruffleObject o, long elementSize, Object errorMarker,
+                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
             try {
-                ByteBuffer bytes = ByteBuffer.wrap(getByteArray(o));
+                ByteBuffer bytes = wrap(getByteArrayNode.execute(o, -1));
                 CharBuffer decoded;
                 if (elementSize == 2L) {
                     decoded = bytes.asCharBuffer();
@@ -1050,14 +1010,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 return raiseNative(errorMarker, PythonErrorType.UnicodeError, e.getMessage());
             } catch (IllegalArgumentException e) {
                 return raiseNative(errorMarker, PythonErrorType.LookupError, e.getMessage());
+            } catch (InteropException e) {
+                return raiseNative(errorMarker, PythonErrorType.TypeError, e.getMessage());
             }
         }
 
-        @Specialization(guards = "isByteArray(o)")
+        @Specialization
         @TruffleBoundary
-        Object doBytes(TruffleObject o, PInt elementSize, Object errorMarker) {
+        Object doBytes(TruffleObject o, PInt elementSize, Object errorMarker,
+                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
             try {
-                return doBytes(o, elementSize.longValueExact(), errorMarker);
+                return doBytes(o, elementSize.longValueExact(), errorMarker, getByteArrayNode);
             } catch (ArithmeticException e) {
                 return raiseNative(errorMarker, PythonErrorType.ValueError, "invalid parameters");
             }
@@ -1066,18 +1029,20 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Unicode_FromUTF8", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @ImportStatic(Message.class)
     abstract static class PyTruffle_Unicode_FromUTF8 extends NativeBuiltin {
 
-        @Specialization(guards = "isByteArray(o)")
+        @Specialization
         @TruffleBoundary
-        Object doBytes(TruffleObject o, Object errorMarker) {
+        Object doBytes(TruffleObject o, Object errorMarker,
+                        @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
             try {
                 CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
-                CharBuffer cbuf = decoder.decode(ByteBuffer.wrap(getByteArray(o)));
+                CharBuffer cbuf = decoder.decode(wrap(getByteArrayNode.execute(o, -1)));
                 return cbuf.toString();
             } catch (CharacterCodingException e) {
                 return raiseNative(errorMarker, PythonErrorType.UnicodeError, e.getMessage());
+            } catch (InteropException e) {
+                return raiseNative(errorMarker, PythonErrorType.TypeError, e.getMessage());
             }
         }
     }
@@ -1167,76 +1132,73 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_DecodeUTF32 extends NativeUnicodeBuiltin {
 
-        @Child private CExtNodes.ToSulongNode toSulongNode;
-
-        @Specialization(guards = {"isByteArray(o)", "isNoValue(errors)"})
-        Object doUnicode(TruffleObject o, long size, @SuppressWarnings("unused") PNone errors, int byteorder, Object errorMarker) {
-            return doUnicode(o, size, "strict", byteorder, errorMarker);
+        @Specialization(guards = "isNoValue(errors)")
+        Object doUnicode(TruffleObject o, long size, @SuppressWarnings("unused") PNone errors, int byteorder, Object errorMarker,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
+            return doUnicode(o, size, "strict", byteorder, errorMarker, toSulongNode, getByteArrayNode);
         }
 
-        @Specialization(guards = "isByteArray(o)")
+        @Specialization
         @TruffleBoundary
-        Object doUnicode(TruffleObject o, long size, String errors, int byteorder, Object errorMarker) {
+        Object doUnicode(TruffleObject o, long size, String errors, int byteorder, Object errorMarker,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
             try {
                 CharsetDecoder decoder = getUTF32Charset(byteorder).newDecoder();
                 CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
-                CharBuffer decode = decoder.onMalformedInput(action).onUnmappableCharacter(action).decode(ByteBuffer.wrap(getByteArray(o, size), 0, (int) size));
-                return getToSulongNode().execute(decode.toString());
+                CharBuffer decode = decoder.onMalformedInput(action).onUnmappableCharacter(action).decode(wrap(getByteArrayNode.execute(o, size), 0, (int) size));
+                return toSulongNode.execute(decode.toString());
             } catch (CharacterCodingException e) {
                 return raiseNative(errorMarker, PythonErrorType.UnicodeEncodeError, e.getMessage());
             } catch (IllegalArgumentException e) {
                 String csName = getUTF32Name(byteorder);
                 return raiseNative(errorMarker, PythonErrorType.LookupError, "unknown encoding: " + csName);
+            } catch (InteropException e) {
+                return raiseNative(errorMarker, PythonErrorType.TypeError, e.getMessage());
             }
-        }
-
-        private CExtNodes.ToSulongNode getToSulongNode() {
-            if (toSulongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(CExtNodes.ToSulongNode.create());
-            }
-            return toSulongNode;
         }
     }
 
     abstract static class GetByteArrayNode extends PNodeWithContext {
 
-        @Child private Node readNode;
-
-        public abstract byte[] execute(TruffleObject o, long size);
+        public abstract byte[] execute(Object obj, long n) throws InteropException;
 
         public static GetByteArrayNode create() {
             return GetByteArrayNodeGen.create();
         }
 
         @Specialization
-        byte[] doCArrayWrapper(CByteArrayWrapper o, @SuppressWarnings("unused") long size) {
+        byte[] doCArrayWrapper(CByteArrayWrapper o, @SuppressWarnings("unused") long n) {
             return o.getByteArray();
         }
 
         @Specialization
-        byte[] doSequenceArrayWrapper(PySequenceArrayWrapper o, @SuppressWarnings("unused") long size,
+        byte[] doSequenceArrayWrapper(PySequenceArrayWrapper obj, @SuppressWarnings("unused") long n,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return toBytesNode.execute(o.getDelegate());
+            return toBytesNode.execute(obj.getDelegate());
         }
 
-        @Fallback
-        byte[] doTruffleObject(TruffleObject o, long size) {
-            try {
-                byte[] bytes = new byte[(int) size];
-                for (long i = 0; i < size; i++) {
-                    if (readNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        readNode = insert(Message.READ.createNode());
-                    }
-                    bytes[(int) i] = (byte) ForeignAccess.sendRead(readNode, o, i);
-                }
-                return bytes;
-            } catch (InteropException e) {
-                throw e.raise();
+        @Specialization(guards = "n < 0")
+        byte[] doForeign(Object obj, @SuppressWarnings("unused") long n,
+                        @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) throws InteropException {
+            return readWithSize(interopLib, obj, interopLib.getArraySize(obj));
+        }
+
+        @Specialization(guards = "n >= 0")
+        byte[] doForeignWithSize(Object obj, long n,
+                        @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) throws InteropException {
+            return readWithSize(interopLib, obj, n);
+        }
+
+        private static byte[] readWithSize(InteropLibrary interopLib, Object o, long size) throws UnsupportedMessageException, InvalidArrayIndexException {
+            byte[] bytes = new byte[(int) size];
+            for (long i = 0; i < size; i++) {
+                Object elem = interopLib.readArrayElement(o, i);
+                bytes[(int) i] = interopLib.asByte(elem);
             }
+            return bytes;
         }
-
     }
 
     @Builtin(name = "PyTruffle_Unicode_AsWideChar", minNumOfPositionalArgs = 4)
@@ -1256,7 +1218,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             try {
                 if (asWideCharNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    asWideCharNode = insert(UnicodeAsWideCharNode.create(-1));
+                    asWideCharNode = insert(UnicodeAsWideCharNode.createLittleEndian());
                 }
 
                 PBytes wchars = asWideCharNode.execute(s, elementSize, elements);
@@ -1637,9 +1599,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public abstract static class MethKeywordsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
+        Object call(PBuiltinFunction function,
+                        @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethKeywordsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethKeywordsRoot(lang, factory(), function.getCallTarget())));
         }
     }
 
@@ -1648,9 +1611,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public abstract static class MethVarargsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
+        Object call(PBuiltinFunction function,
+                        @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethVarargsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethVarargsRoot(lang, factory(), function.getCallTarget())));
         }
     }
 
@@ -1659,9 +1623,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public abstract static class MethNoargsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
+        Object call(PBuiltinFunction function,
+                        @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethNoargsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethNoargsRoot(lang, factory(), function.getCallTarget())));
         }
     }
 
@@ -1670,9 +1635,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public abstract static class MethONode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
+        Object call(PBuiltinFunction function,
+                        @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethORoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethORoot(lang, factory(), function.getCallTarget())));
         }
     }
 
@@ -1681,9 +1647,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public abstract static class MethFastcallNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
+        Object call(PBuiltinFunction function,
+                        @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethFastcallRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethFastcallRoot(lang, factory(), function.getCallTarget())));
         }
     }
 
@@ -1692,9 +1659,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     public abstract static class MethFastcallWithKeywordsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object call(PBuiltinFunction function) {
+        Object call(PBuiltinFunction function,
+                        @Exclusive @CachedLanguage PythonLanguage lang) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethFastcallWithKeywordsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+                            Truffle.getRuntime().createCallTarget(new MethFastcallWithKeywordsRoot(lang, factory(), function.getCallTarget())));
         }
     }
 
@@ -1739,13 +1707,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Upcall", minNumOfPositionalArgs = 3, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class UpcallNode extends PythonBuiltinNode {
-        @Child CExtNodes.AsPythonObjectNode toJavaNode = CExtNodes.AsPythonObjectNode.create();
-        @Child CExtNodes.ToSulongNode toSulongNode = CExtNodes.ToSulongNode.create();
-        @Child CExtNodes.ObjectUpcallNode upcallNode = CExtNodes.ObjectUpcallNode.create();
-        @Child ReadAttributeFromObjectNode readErrorHandlerNode;
+        @Child private ReadAttributeFromObjectNode readErrorHandlerNode;
 
         @Specialization
-        Object upcall(VirtualFrame frame, PythonModule cextModule, Object receiver, String name, Object[] args) {
+        Object upcall(VirtualFrame frame, PythonModule cextModule, Object receiver, String name, Object[] args,
+                        @Cached CExtNodes.AsPythonObjectNode toJavaNode,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached CExtNodes.ObjectUpcallNode upcallNode) {
             try {
                 return toSulongNode.execute(upcallNode.execute(frame, toJavaNode.execute(receiver), name, args));
             } catch (PException e) {
@@ -1762,13 +1730,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Upcall_l", minNumOfPositionalArgs = 2, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class UpcallLNode extends PythonBuiltinNode {
-        @Child CExtNodes.AsPythonObjectNode toJavaNode = CExtNodes.AsPythonObjectNode.create();
-        @Child CExtNodes.AsLong asLongNode = CExtNodes.AsLong.create();
-        @Child CExtNodes.ObjectUpcallNode upcallNode = CExtNodes.ObjectUpcallNode.create();
 
         @Specialization
         long upcall(VirtualFrame frame, Object receiver, String name, Object[] args,
-                        @Cached("create()") BranchProfile errorProfile) {
+                        @Cached("create()") BranchProfile errorProfile,
+                        @Cached CExtNodes.AsPythonObjectNode toJavaNode,
+                        @Cached CExtNodes.AsLong asLongNode,
+                        @Cached CExtNodes.ObjectUpcallNode upcallNode) {
             try {
                 return asLongNode.execute(upcallNode.execute(frame, toJavaNode.execute(receiver), name, args));
             } catch (PException e) {
@@ -1782,13 +1750,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Upcall_d", minNumOfPositionalArgs = 2, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class UpcallDNode extends PythonBuiltinNode {
-        @Child CExtNodes.AsPythonObjectNode toJavaNode = CExtNodes.AsPythonObjectNode.create();
-        @Child CExtNodes.AsDouble asDoubleNode = CExtNodes.AsDouble.create();
-        @Child CExtNodes.ObjectUpcallNode upcallNode = CExtNodes.ObjectUpcallNode.create();
 
         @Specialization
         double upcall(VirtualFrame frame, Object receiver, String name, Object[] args,
-                        @Cached("create()") BranchProfile errorProfile) {
+                        @Cached("create()") BranchProfile errorProfile,
+                        @Cached CExtNodes.AsPythonObjectNode toJavaNode,
+                        @Cached CExtNodes.AsDouble asDoubleNode,
+                        @Cached CExtNodes.ObjectUpcallNode upcallNode) {
             try {
                 return asDoubleNode.execute(upcallNode.execute(frame, toJavaNode.execute(receiver), name, args));
             } catch (PException e) {
@@ -1802,12 +1770,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Upcall_ptr", minNumOfPositionalArgs = 2, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class UpcallPtrNode extends PythonBuiltinNode {
-        @Child private CExtNodes.AsPythonObjectNode toJavaNode = CExtNodes.AsPythonObjectNode.create();
-        @Child private CExtNodes.ObjectUpcallNode upcallNode = CExtNodes.ObjectUpcallNode.create();
 
         @Specialization
         Object upcall(VirtualFrame frame, Object receiver, String name, Object[] args,
-                        @Cached("create()") BranchProfile errorProfile) {
+                        @Cached("create()") BranchProfile errorProfile,
+                        @Cached CExtNodes.AsPythonObjectNode toJavaNode,
+                        @Cached CExtNodes.ObjectUpcallNode upcallNode) {
             try {
                 return upcallNode.execute(frame, toJavaNode.execute(receiver), name, args);
             } catch (PException e) {
@@ -1821,17 +1789,18 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Cext_Upcall", minNumOfPositionalArgs = 2, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class UpcallCextNode extends PythonBuiltinNode {
-        @Child private CExtNodes.ToSulongNode toSulongNode = CExtNodes.ToSulongNode.create();
 
         @Specialization
         Object upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args,
-                        @Cached("create()") CExtNodes.CextUpcallNode upcallNode) {
+                        @Cached CExtNodes.CextUpcallNode upcallNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(upcallNode.execute(frame, cextModule, name, args));
         }
 
         @Specialization(guards = "!isString(callable)")
         Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object callable, Object[] args,
-                        @Cached("create()") CExtNodes.DirectUpcallNode upcallNode) {
+                        @Cached("create()") CExtNodes.DirectUpcallNode upcallNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(upcallNode.execute(frame, callable, args));
         }
     }
@@ -1911,7 +1880,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object make(PFunction func, Object errorResult) {
+        Object make(PFunction func, Object errorResult,
+                        @Exclusive @CachedLanguage PythonLanguage lang) {
             CompilerDirectives.transferToInterpreter();
             func.getFunctionRootNode().accept(new NodeVisitor() {
                 public boolean visit(Node node) {
@@ -1927,17 +1897,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             if (funcSignature.takesPositionalOnly()) {
                 switch (funcSignature.getMaxNumOfPositionalArgs()) {
                     case 1:
-                        rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), unaryBuiltin,
+                        rootNode = new BuiltinFunctionRootNode(lang, unaryBuiltin,
                                         new MayRaiseNodeFactory<PythonUnaryBuiltinNode>(MayRaiseUnaryNodeGen.create(func, errorResult)),
                                         true);
                         break;
                     case 2:
-                        rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), binaryBuiltin,
+                        rootNode = new BuiltinFunctionRootNode(lang, binaryBuiltin,
                                         new MayRaiseNodeFactory<PythonBinaryBuiltinNode>(MayRaiseBinaryNodeGen.create(func, errorResult)),
                                         true);
                         break;
                     case 3:
-                        rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), ternaryBuiltin,
+                        rootNode = new BuiltinFunctionRootNode(lang, ternaryBuiltin,
                                         new MayRaiseNodeFactory<PythonTernaryBuiltinNode>(MayRaiseTernaryNodeGen.create(func, errorResult)),
                                         true);
                         break;
@@ -1946,7 +1916,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 }
             }
             if (rootNode == null) {
-                rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), varargsBuiltin,
+                rootNode = new BuiltinFunctionRootNode(lang, varargsBuiltin,
                                 new MayRaiseNodeFactory<PythonBuiltinNode>(new MayRaiseNode(func, errorResult)),
                                 true);
             }
@@ -1983,7 +1953,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object doIt(Object object,
                         @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
-            Object wrapper = readAttrNode.execute(getCore().lookupBuiltinModule("python_cext"), NATIVE_NULL);
+            Object wrapper = readAttrNode.execute(getCore().lookupBuiltinModule(TruffleCextBuiltins.PYTHON_CEXT), NATIVE_NULL);
             if (wrapper instanceof PythonNativeNull) {
                 ((PythonNativeNull) wrapper).setPtr(object);
             }
@@ -2095,8 +2065,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyType_IsSubtype extends PythonBinaryBuiltinNode {
 
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
-        @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodes.AsPythonObjectNode.create();
-        @Child private CExtNodes.ToJavaNode toJavaNode;
+        @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodesFactory.AsPythonObjectNodeGen.create();
 
         @Specialization(guards = {"a == cachedA", "b == cachedB"})
         int doCached(@SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
@@ -2111,12 +2080,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return isNativeSubtype(a, b);
         }
 
-        @Fallback
-        int doGeneric(Object a, Object b) {
-            if (toJavaNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toJavaNode = insert(CExtNodes.ToJavaNode.create());
-            }
+        @Specialization
+        int doGeneric(Object a, Object b,
+                        @Cached CExtNodes.ToJavaNode toJavaNode) {
             return isSubtypeNode.execute(toJavaNode.execute(a), toJavaNode.execute(b)) ? 1 : 0;
         }
 
@@ -2179,13 +2145,19 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyBytes_FromStringAndSize", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PyBytes_FromStringAndSize", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class PyBytes_FromStringAndSize extends NativeBuiltin {
 
         @Specialization
-        PBytes doGeneric(PythonNativeObject object) {
-            return factory().createBytes(getByteArray(object.getPtr()));
+        Object doGeneric(Object module, PythonNativeObject object,
+                        @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
+                        @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
+            try {
+                return factory().createBytes(getByteArrayNode.execute(object.getPtr(), -1));
+            } catch (InteropException e) {
+                return raiseNative(getNativeNullNode.execute(module), PythonErrorType.TypeError, getMessage(e));
+            }
         }
     }
 
@@ -2193,36 +2165,29 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyFloat_AsDouble extends NativeBuiltin {
 
-        @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode;
-        @Child private CExtNodes.AsDouble asDoubleNode;
-
         @Specialization(guards = "!object.isDouble()")
-        double doLongNativeWrapper(PrimitiveNativeWrapper object) {
+        double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object.getLong();
         }
 
         @Specialization(guards = "object.isDouble()")
-        double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
+        double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object.getDouble();
         }
 
         @Specialization(rewriteOn = PException.class)
-        double doGeneric(Object object) {
-            if (asPythonObjectNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asPythonObjectNode = insert(CExtNodes.AsPythonObjectNode.create());
-            }
-            if (asDoubleNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asDoubleNode = insert(CExtNodes.AsDouble.create());
-            }
+        double doGeneric(Object object,
+                        @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
+                        @Shared("asDoubleNode") @Cached CExtNodes.AsDouble asDoubleNode) {
             return asDoubleNode.execute(asPythonObjectNode.execute(object));
         }
 
         @Specialization(replaces = "doGeneric")
-        double doGenericErr(Object object) {
+        double doGenericErr(Object object,
+                        @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
+                        @Shared("asDoubleNode") @Cached CExtNodes.AsDouble asDoubleNode) {
             try {
-                return doGeneric(object);
+                return doGeneric(object, asPythonObjectNode, asDoubleNode);
             } catch (PException e) {
                 transformToNative(e);
                 return -1.0;
@@ -2234,45 +2199,40 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyNumber_Float extends NativeBuiltin {
 
-        @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode;
-        @Child private CExtNodes.ToSulongNode toSulongNode;
         @Child private BuiltinConstructors.FloatNode floatNode;
 
         @Specialization(guards = "object.isDouble()")
-        Object doDoubleNativeWrapper(@SuppressWarnings("unused") Object module, PrimitiveNativeWrapper object) {
+        Object doDoubleNativeWrapper(@SuppressWarnings("unused") Object module, DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object;
         }
 
         @Specialization(guards = "!object.isDouble()")
-        Object doLongNativeWrapper(@SuppressWarnings("unused") Object module, PrimitiveNativeWrapper object,
-                        @Cached("create()") CExtNodes.ToSulongNode primitiveToSulongNode) {
+        Object doLongNativeWrapper(@SuppressWarnings("unused") Object module, DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+                        @Cached CExtNodes.ToSulongNode primitiveToSulongNode) {
             return primitiveToSulongNode.execute((double) object.getLong());
         }
 
         @Specialization(rewriteOn = PException.class)
-        Object doGeneric(@SuppressWarnings("unused") Object module, Object object) {
-            if (asPythonObjectNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asPythonObjectNode = insert(CExtNodes.AsPythonObjectNode.create());
-            }
+        Object doGeneric(@SuppressWarnings("unused") Object module, Object object,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             if (floatNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 floatNode = insert(BuiltinConstructorsFactory.FloatNodeFactory.create(null));
-            }
-            if (toSulongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(CExtNodes.ToSulongNode.create());
             }
             return toSulongNode.execute(floatNode.executeWith(PythonBuiltinClassType.PFloat, asPythonObjectNode.execute(object)));
         }
 
         @Specialization(replaces = "doGeneric")
-        Object doGenericErr(Object module, Object object) {
+        Object doGenericErr(Object module, Object object,
+                        @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             try {
-                return doGeneric(module, object);
+                return doGeneric(module, object, toSulongNode, asPythonObjectNode);
             } catch (PException e) {
                 transformToNative(e);
-                return getNativeNull(module);
+                return getNativeNullNode.execute(module);
             }
         }
     }

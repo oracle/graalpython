@@ -27,8 +27,8 @@ package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.cell.CellSupplier;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -80,7 +80,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     }
 
     public FunctionRootNode copyWithNewSignature(Signature newSignature) {
-        return new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
+        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, newSignature);
     }
 
     @Override
@@ -100,7 +100,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
 
     @Override
     public FunctionRootNode copy() {
-        return new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, getSignature());
+        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots, getSignature());
     }
 
     @ExplodeLoop

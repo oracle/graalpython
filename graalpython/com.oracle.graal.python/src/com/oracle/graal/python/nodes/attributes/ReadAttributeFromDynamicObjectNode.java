@@ -45,7 +45,9 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -55,9 +57,14 @@ import com.oracle.truffle.api.object.Shape;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
 @ReportPolymorphism
+@GenerateUncached
 public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttributeNode {
     public static ReadAttributeFromDynamicObjectNode create() {
         return ReadAttributeFromDynamicObjectNodeGen.create();
+    }
+
+    public static ReadAttributeFromDynamicObjectNode getUncached() {
+        return ReadAttributeFromDynamicObjectNodeGen.getUncached();
     }
 
     public abstract Object execute(Object object, Object key);
@@ -108,7 +115,7 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
     }
 
     @SuppressWarnings("unused")
-    @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", //
                     guards = {
                                     "dynamicObject.getShape() == cachedShape",
                                     "key == cachedKey",
@@ -143,12 +150,14 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         return nextNode.execute(dynamicObject, key);
     }
 
-    @Specialization(replaces = "readDirect")
-    protected Object readIndirect(DynamicObject dynamicObject, Object key) {
-        return doSlowPath(dynamicObject, key);
-    }
-
-    public static Object doSlowPath(DynamicObject dynamicObject, Object key) {
-        return dynamicObject.get(ObjectAttributeNode.attrKey(key), PNone.NO_VALUE);
+    @TruffleBoundary
+    @Specialization(replaces = {"readDirect", "readDirectFinal", "updateShapeAndRead"})
+    protected static Object readIndirect(DynamicObject dynamicObject, Object key) {
+        Object value = dynamicObject.get(attrKey(key));
+        if (value == null) {
+            return PNone.NO_VALUE;
+        } else {
+            return value;
+        }
     }
 }

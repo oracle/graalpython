@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
@@ -32,6 +33,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.BreakException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -42,6 +44,7 @@ public final class GeneratorWhileNode extends LoopNode implements GeneratorContr
     @Child private CastToBooleanNode condition;
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
 
+    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
     private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile seenYield = BranchProfile.create();
     private final BranchProfile seenBreak = BranchProfile.create();
@@ -69,7 +72,7 @@ public final class GeneratorWhileNode extends LoopNode implements GeneratorContr
         }
         boolean nextFlag = false;
         int count = 0;
-        PythonContext context = getContext();
+        PythonContext context = contextRef.get();
         try {
             do {
                 body.executeVoid(frame);

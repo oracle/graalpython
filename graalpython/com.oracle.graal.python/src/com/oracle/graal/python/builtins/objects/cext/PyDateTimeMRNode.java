@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,15 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
+@GenerateUncached
 @ImportStatic(NativeMemberNames.class)
 public abstract class PyDateTimeMRNode extends Node {
 
@@ -80,22 +83,22 @@ public abstract class PyDateTimeMRNode extends Node {
      */
     @Specialization(guards = "eq(DATETIME_DATA,key)")
     Object doData(PythonObject object, @SuppressWarnings("unused") String key,
-                    @Cached("createAttr(YEAR)") GetAttributeNode getYearNode,
-                    @Cached("createAttr(MONTH)") GetAttributeNode getMonthNode,
-                    @Cached("createAttr(DAY)") GetAttributeNode getDayNode,
-                    @Cached("createAttr(HOUR)") GetAttributeNode getHourNode,
-                    @Cached("createAttr(MIN)") GetAttributeNode getMinNode,
-                    @Cached("createAttr(SEC)") GetAttributeNode getSecNode,
-                    @Cached("createAttr(USEC)") GetAttributeNode getUSecNode,
-                    @Cached("create()") CastToIndexNode castToIntNode) {
+                    @Cached PInteropGetAttributeNode getYearNode,
+                    @Cached PInteropGetAttributeNode getMonthNode,
+                    @Cached PInteropGetAttributeNode getDayNode,
+                    @Cached PInteropGetAttributeNode getHourNode,
+                    @Cached PInteropGetAttributeNode getMinNode,
+                    @Cached PInteropGetAttributeNode getSecNode,
+                    @Cached PInteropGetAttributeNode getUSecNode,
+                    @Cached CastToIndexNode castToIntNode) {
 
-        int year = castToIntNode.execute(getYearNode.executeObject(object));
-        int month = castToIntNode.execute(getMonthNode.executeObject(object));
-        int day = castToIntNode.execute(getDayNode.executeObject(object));
-        int hour = castToIntNode.execute(getHourNode.executeObject(object));
-        int min = castToIntNode.execute(getMinNode.executeObject(object));
-        int sec = castToIntNode.execute(getSecNode.executeObject(object));
-        int usec = castToIntNode.execute(getUSecNode.executeObject(object));
+        int year = castToIntNode.execute(getYearNode.execute(object, YEAR));
+        int month = castToIntNode.execute(getMonthNode.execute(object, MONTH));
+        int day = castToIntNode.execute(getDayNode.execute(object, DAY));
+        int hour = castToIntNode.execute(getHourNode.execute(object, HOUR));
+        int min = castToIntNode.execute(getMinNode.execute(object, MIN));
+        int sec = castToIntNode.execute(getSecNode.execute(object, SEC));
+        int usec = castToIntNode.execute(getUSecNode.execute(object, USEC));
         assert year >= 0 && year < 0x10000;
         assert month >= 0 && month < 0x100;
         assert day >= 0 && day < 0x100;
@@ -112,11 +115,15 @@ public abstract class PyDateTimeMRNode extends Node {
         return GetAttributeNode.create(expected, null);
     }
 
-    protected boolean eq(String expected, String actual) {
+    protected static boolean eq(String expected, String actual) {
         return expected.equals(actual);
     }
 
     public static PyDateTimeMRNode create() {
         return PyDateTimeMRNodeGen.create();
+    }
+
+    public static PyDateTimeMRNode getUncached() {
+        return PyDateTimeMRNodeGen.getUncached();
     }
 }
