@@ -57,10 +57,12 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetKeywordDef
 import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetSignatureNodeGen;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class FunctionNodes {
+    @GenerateUncached
     public abstract static class GetFunctionDefaultsNode extends PNodeWithContext {
         public abstract Object[] execute(PFunction function);
 
@@ -83,6 +85,7 @@ public abstract class FunctionNodes {
     }
 
     @ImportStatic(PGuards.class)
+    @GenerateUncached
     public abstract static class GetDefaultsNode extends PNodeWithContext {
         private static Object[] doFunctionInternal(GetFunctionDefaultsNode getFunctionDefaultsNode, PFunction function) {
             return getFunctionDefaultsNode.execute(function);
@@ -118,6 +121,7 @@ public abstract class FunctionNodes {
         }
     }
 
+    @GenerateUncached
     public abstract static class GetFunctionKeywordDefaultsNode extends PNodeWithContext {
         public abstract PKeyword[] execute(PFunction function);
 
@@ -140,6 +144,7 @@ public abstract class FunctionNodes {
     }
 
     @ImportStatic(PGuards.class)
+    @GenerateUncached
     public abstract static class GetKeywordDefaultsNode extends PNodeWithContext {
         private static PKeyword[] doFunctionInternal(GetFunctionKeywordDefaultsNode getFunctionKeywordDefaultsNode, PFunction function) {
             return getFunctionKeywordDefaultsNode.execute(function);
@@ -175,6 +180,7 @@ public abstract class FunctionNodes {
         }
     }
 
+    @GenerateUncached
     public abstract static class GetFunctionCodeNode extends PNodeWithContext {
         public abstract PCode execute(PFunction function);
 
@@ -186,7 +192,7 @@ public abstract class FunctionNodes {
             return cachedCode;
         }
 
-        @Specialization
+        @Specialization(replaces = "getCodeCached")
         PCode getCodeUncached(PFunction self) {
             return self.getCode();
         }
@@ -197,6 +203,7 @@ public abstract class FunctionNodes {
     }
 
     @ImportStatic(PGuards.class)
+    @GenerateUncached
     public abstract static class GetSignatureNode extends PNodeWithContext {
         private static Signature doFunctionInternal(GetFunctionCodeNode getFunctionCodeNode, PFunction function) {
             return getFunctionCodeNode.execute(function).getSignature();
