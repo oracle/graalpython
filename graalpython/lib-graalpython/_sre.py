@@ -54,14 +54,14 @@ class _RegexResult:
         self.input = pattern_input
         self.isMatch = isMatch
         self.groupCount = groupCount
-        self.start = start
-        self.end = end
+        self._start = start
+        self._end = end
         
     def getStart(self, grpidx):
-        return self.start[grpidx]
+        return self._start[grpidx]
 
     def getEnd(self, grpidx):
-        return self.end[grpidx]
+        return self._end[grpidx]
 
 
 def _str_to_bytes(arg):
@@ -158,7 +158,7 @@ class SRE_Match():
         self.input_str = input_str
 
     def end(self, groupnum=0):
-        return self.result.end[groupnum]
+        return self.result.getEnd(groupnum)
 
     def group(self, *args):
         if not args:
@@ -185,11 +185,11 @@ class SRE_Match():
 
     def __group__(self, idx):
         idxarg = self.__groupidx__(idx)
-        start = self.result.start[idxarg]
+        start = self.result.getStart(idxarg)
         if start < 0:
             return None
         else:
-            return self.input_str[start:self.result.end[idxarg]]
+            return self.input_str[start:self.result.getEnd(idxarg)]
 
     def groupdict(self, default=None):
         d = {}
@@ -202,11 +202,11 @@ class SRE_Match():
 
     def span(self, groupnum=0):
         idxarg = self.__groupidx__(groupnum)
-        return (self.result.start[idxarg], self.result.end[idxarg])
+        return (self.result.getStart(idxarg), self.result.getEnd(idxarg))
 
     def start(self, groupnum=0):
         idxarg = self.__groupidx__(groupnum)
-        return self.result.start[idxarg]
+        return self.result.getStart(idxarg)
 
     @property
     def string(self):
@@ -218,7 +218,7 @@ class SRE_Match():
 
     @property
     def lastindex(self):
-        return self.result.end[0]
+        return self.result.getEnd(0)
 
     def __repr__(self):
         return "<re.Match object; span=%r, match=%r>" % (self.span(), self.group())
@@ -341,8 +341,8 @@ class SRE_Pattern():
                 break
             else:
                 yield SRE_Match(self, pos, endpos, result, string, compiled_regex)
-            no_progress = (result.start[0] == result.end[0])
-            pos = result.end[0] + no_progress
+            no_progress = (result.getStart(0) == result.getEnd(0))
+            pos = result.getEnd(0) + no_progress
         return
 
     def findall(self, string, pos=0, endpos=-1):
@@ -358,21 +358,21 @@ class SRE_Pattern():
             if not result.isMatch:
                 break
             elif result.groupCount == 1:
-                matchlist.append(self.__sanitize_out_type(string[result.start[0]:result.end[0]]))
+                matchlist.append(self.__sanitize_out_type(string[result.getStart(0):result.getEnd(0)]))
             elif result.groupCount == 2:
-                matchlist.append(self.__sanitize_out_type(string[result.start[1]:result.end[1]]))
+                matchlist.append(self.__sanitize_out_type(string[result.getStart(1):result.getEnd(1)]))
             else:
                 matchlist.append(tuple(map(self.__sanitize_out_type, SRE_Match(self, pos, endpos, result, string, compiled_regex).groups())))
-            no_progress = (result.start[0] == result.end[0])
-            pos = result.end[0] + no_progress
+            no_progress = (result.getStart(0) == result.getEnd(0))
+            pos = result.getEnd(0) + no_progress
         return matchlist
 
     def __replace_groups(self, repl, string, match_result, pattern):
         def group(match_result, group_nr, string):
             if group_nr >= match_result.groupCount:
                 return None
-            group_start = match_result.start[group_nr]
-            group_end = match_result.end[group_nr]
+            group_start = match_result.getStart(group_nr)
+            group_end = match_result.getEnd(group_nr)
             return string[group_start:group_end]
 
         n = len(repl)
@@ -442,8 +442,8 @@ class SRE_Pattern():
             if not match_result.isMatch:
                 break
             n += 1
-            start = match_result.start[0]
-            end = match_result.end[0]
+            start = match_result.getStart(0)
+            end = match_result.getEnd(0)
             result.append(string[pos:start])
             if is_string_rep:
                 result.append(self.__replace_groups(repl, string, match_result, pattern))
@@ -473,14 +473,14 @@ class SRE_Pattern():
             if not match_result.isMatch:
                 break
             n += 1
-            start = match_result.start[0]
-            end = match_result.end[0]
+            start = match_result.getStart(0)
+            end = match_result.getEnd(0)
             result.append(self.__sanitize_out_type(string[collect_pos:start]))
             # add all group strings
             for i in range(1, match_result.groupCount):
-                groupStart = match_result.start[i]
+                groupStart = match_result.getStart(i)
                 if groupStart >= 0:
-                    result.append(self.__sanitize_out_type(string[groupStart:match_result.end[i]]))
+                    result.append(self.__sanitize_out_type(string[groupStart:match_result.getEnd(i)]))
                 else:
                     result.append(None)
             collect_pos = end
