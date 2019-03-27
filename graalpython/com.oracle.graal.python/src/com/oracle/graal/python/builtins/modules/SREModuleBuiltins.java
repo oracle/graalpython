@@ -57,13 +57,14 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -78,7 +79,6 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.regex.RegexSyntaxException;
 
 @CoreFunctions(defineModule = "_sre")
 public class SREModuleBuiltins extends PythonBuiltins {
@@ -186,25 +186,25 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "tregex_call_compile", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class TRegexCallCompile extends PythonBuiltinNode {
+    abstract static class TRegexCallCompile extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "isForeignObject(callable)")
+        @Specialization(guards = "isForeignObject(callable)", limit = "1")
         Object call(TruffleObject callable, Object arg1, Object arg2,
                         @Cached("create()") BranchProfile syntaxError,
                         @Cached("create()") BranchProfile typeError,
-                        @CachedLibrary(limit = "1") InteropLibrary interop) {
+                        @CachedLibrary("callable") InteropLibrary interop) {
             try {
                 return interop.execute(callable, arg1, arg2);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
-            } catch (RegexSyntaxException e) {
-                syntaxError.enter();
-                if (e.getPosition() == -1) {
-                    throw raise(ValueError, "%s", e.getReason());
-                } else {
-                    throw raise(ValueError, "%s at position %d", e.getReason(), e.getPosition());
+            } catch (RuntimeException e) {
+                if (e instanceof TruffleException && ((TruffleException) e).isSyntaxError()) {
+                    syntaxError.enter();
+                    throw raise(ValueError, "%s", e);
                 }
+                // just re-throw
+                throw e;
             }
         }
 
@@ -218,12 +218,12 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "tregex_call_exec", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class TRegexCallExec extends PythonBuiltinNode {
+    abstract static class TRegexCallExec extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "isForeignObject(callable)")
+        @Specialization(guards = "isForeignObject(callable)", limit = "1")
         Object call(TruffleObject callable, Object arg1, Number arg2,
                         @Cached("create()") BranchProfile typeError,
-                        @CachedLibrary(limit = "1") InteropLibrary interop) {
+                        @CachedLibrary("callable") InteropLibrary interop) {
             try {
                 return interop.execute(callable, arg1, arg2);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
