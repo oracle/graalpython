@@ -46,6 +46,7 @@ import java.util.regex.Pattern;
 
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
  * Custom formatter adding Python-specific conversions often required in error messages.
@@ -94,6 +95,14 @@ public class ErrorMessageFormatter {
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
                 removedCnt++;
+            } else if ("%m".equals(group) && args[matchIdx] instanceof Throwable) {
+                // If the format arg is not a Throwable, 'String.format' will do the error handling
+                // and throw an IllegalFormatException for us.
+                String exceptionMessage = getMessage((Throwable) args[matchIdx]);
+                sb.replace(m.start() + offset, m.end() + offset, exceptionMessage);
+                offset += exceptionMessage.length() - (m.end() - m.start());
+                args[matchIdx] = REMOVED_MARKER;
+                removedCnt++;
             }
 
             idx = m.end();
@@ -103,6 +112,11 @@ public class ErrorMessageFormatter {
             }
         }
         return String.format(sb.toString(), compact(args, removedCnt));
+    }
+
+    @TruffleBoundary
+    private static String getMessage(Throwable exception) {
+        return exception.getMessage();
     }
 
     private static String getClassName(GetLazyClassNode getClassNode, Object obj) {
