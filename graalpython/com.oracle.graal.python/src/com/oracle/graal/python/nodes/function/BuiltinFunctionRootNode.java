@@ -51,6 +51,7 @@ import com.oracle.truffle.api.nodes.Node;
 public final class BuiltinFunctionRootNode extends PRootNode {
     private final Signature signature;
     private final Builtin builtin;
+    private final String name;
     private final NodeFactory<? extends PythonBuiltinBaseNode> factory;
     private final boolean declaresExplicitSelf;
 
@@ -145,8 +146,10 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf) {
         super(language);
+        CompilerAsserts.neverPartOfCompilation();
         this.signature = createSignature(factory, builtin, declaresExplicitSelf);
         this.builtin = builtin;
+        this.name = builtin.name();
         this.factory = factory;
         this.declaresExplicitSelf = declaresExplicitSelf;
         if (builtin.alwaysNeedsCallerFrame()) {
@@ -207,6 +210,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
      */
     private static ReadArgumentNode[] createArgumentsList(Builtin builtin, boolean needsExplicitSelf) {
         ArrayList<ReadArgumentNode> args = new ArrayList<>();
+
         String[] parameterNames = builtin.parameterNames();
         int maxNumPosArgs = Math.max(builtin.minNumOfPositionalArgs(), parameterNames.length);
 
@@ -305,7 +309,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     }
 
     public String getFunctionName() {
-        return builtin.name();
+        return name;
     }
 
     public NodeFactory<? extends PythonBuiltinBaseNode> getFactory() {
@@ -315,12 +319,12 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "<builtin function " + builtin.name() + " at " + Integer.toHexString(hashCode()) + ">";
+        return "<builtin function " + name + " at " + Integer.toHexString(hashCode()) + ">";
     }
 
     @Override
     public String getName() {
-        return builtin.name();
+        return name;
     }
 
     public boolean declaresExplicitSelf() {
