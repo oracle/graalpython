@@ -104,7 +104,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         try {
             TruffleFile coreDir = env.getTruffleFile(coreHome);
             TruffleFile docDir = coreDir.resolveSibling("doc");
-            if (docDir.exists() || (docDir = coreDir.getParent().resolveSibling("doc")).exists()) {
+            if (docDir.exists() || docDir.getParent() != null && (docDir = coreDir.getParent().resolveSibling("doc")).exists()) {
                 builtinConstants.put(SpecialAttributeNames.__DOC__, new String(docDir.resolve("INTEROP.md").readAllBytes()));
             }
         } catch (SecurityException | IOException e) {
