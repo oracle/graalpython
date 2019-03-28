@@ -32,7 +32,7 @@ public class InternalFormat {
         try {
             return parser.parse();
         } catch (IllegalArgumentException e) {
-            throw core.raise(ValueError, e.getMessage());
+            throw core.raise(ValueError, "%m", e);
         }
     }
 

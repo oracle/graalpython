@@ -179,7 +179,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 CallTarget callTarget = env.parse(Source.newBuilder(LLVM_LANGUAGE, env.getTruffleFile(path)).build());
                 sulongLibrary = (TruffleObject) callTarget.call();
             } catch (SecurityException | IOException e) {
-                throw raise(ImportError, "cannot load %s: %s", path, e.getMessage());
+                throw raise(ImportError, "cannot load %s: %m", path, e);
             } catch (RuntimeException e) {
                 throw reportImportError(e, path);
             }

@@ -157,7 +157,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     throw raise(PythonBuiltinClassType.OSError, "working directory %s is not accessible", cwd);
                 }
             } catch (SecurityException e) {
-                throw raise(PythonBuiltinClassType.OSError, e.getMessage());
+                throw raise(PythonBuiltinClassType.OSError, e);
             }
 
             Map<String, String> environment = pb.environment();
