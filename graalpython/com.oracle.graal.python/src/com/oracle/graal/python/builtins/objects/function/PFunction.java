@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -49,8 +50,8 @@ public class PFunction extends PythonObject {
     private static final Object[] EMPTY_DEFAULTS = new Object[0];
     private final String name;
     private final String enclosingClassName;
-    private final Assumption codeStableAssumption = Truffle.getRuntime().createAssumption("function code unchanged for " + getQualifiedName());
-    private final Assumption defaultsStableAssumption = Truffle.getRuntime().createAssumption("function defaults unchanged " + getQualifiedName());
+    private final Assumption codeStableAssumption = Truffle.getRuntime().createAssumption();
+    private final Assumption defaultsStableAssumption = Truffle.getRuntime().createAssumption();
     private final PythonObject globals;
     private final PCell[] closure;
     private final boolean isStatic;
@@ -64,6 +65,11 @@ public class PFunction extends PythonObject {
 
     public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
+        this(clazz, name, enclosingClassName, callTarget, globals, defaultValues, kwDefaultValues, closure, null);
+    }
+
+    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+                    PCell[] closure, WriteAttributeToDynamicObjectNode writeAttrNode) {
         super(clazz);
         this.name = name;
         this.code = new PCode(PythonBuiltinClassType.PCode, callTarget);
@@ -73,13 +79,17 @@ public class PFunction extends PythonObject {
         this.defaultValues = defaultValues == null ? EMPTY_DEFAULTS : defaultValues;
         this.kwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
         this.closure = closure;
-        addDefaultConstants(this.getStorage(), name, enclosingClassName);
+        addDefaultConstants(writeAttrNode, getStorage(), name, enclosingClassName);
     }
 
-    @TruffleBoundary
-    private static void addDefaultConstants(DynamicObject storage, String name, String enclosingClassName) {
-        storage.define(__NAME__, name);
-        storage.define(__QUALNAME__, enclosingClassName != null ? enclosingClassName + "." + name : name);
+    private static void addDefaultConstants(WriteAttributeToDynamicObjectNode writeAttrNode, DynamicObject storage, String name, String enclosingClassName) {
+        if (writeAttrNode != null) {
+            writeAttrNode.execute(storage, __NAME__, name);
+            writeAttrNode.execute(storage, __QUALNAME__, enclosingClassName != null ? enclosingClassName + "." + name : name);
+        } else {
+            storage.define(__NAME__, name);
+            storage.define(__QUALNAME__, enclosingClassName != null ? enclosingClassName + "." + name : name);
+        }
     }
 
     public boolean isStatic() {

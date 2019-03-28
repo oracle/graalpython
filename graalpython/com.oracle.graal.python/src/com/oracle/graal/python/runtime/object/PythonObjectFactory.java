@@ -113,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -361,6 +362,11 @@ public abstract class PythonObjectFactory extends Node {
     public PFunction createFunction(String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
         return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, callTarget, globals, defaultValues, kwDefaultValues, closure));
+    }
+
+    public PFunction createFunction(String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+                    PCell[] closure, WriteAttributeToDynamicObjectNode writeAttrNode) {
+        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, callTarget, globals, defaultValues, kwDefaultValues, closure, writeAttrNode));
     }
 
     public PBuiltinFunction createBuiltinFunction(String name, LazyPythonClass type, int numDefaults, RootCallTarget callTarget) {
