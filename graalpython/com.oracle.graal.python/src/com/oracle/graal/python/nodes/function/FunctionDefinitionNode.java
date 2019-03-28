@@ -31,6 +31,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
@@ -53,6 +54,8 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     @Children protected KwDefaultExpressionNode[] kwDefaults;
     @Child private ExpressionNode doc;
     @Child private WriteAttributeToObjectNode writeDocNode = WriteAttributeToObjectNode.create();
+    @Child private WriteAttributeToDynamicObjectNode writeNameNode = WriteAttributeToDynamicObjectNode.create();
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
     public FunctionDefinitionNode(String functionName, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
                     RootCallTarget callTarget,
@@ -74,7 +77,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     }
 
     protected PythonObjectFactory factory() {
-        return getContext().getCore().factory();
+        return factory;
     }
 
     private static boolean noNullElements(Object[] array) {
@@ -91,7 +94,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         Object[] defaultValues = computeDefaultValues(frame);
         PKeyword[] kwDefaultValues = computeKwDefaultValues(frame);
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, callTarget, PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure));
+        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, callTarget, PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure, writeNameNode));
     }
 
     @ExplodeLoop
