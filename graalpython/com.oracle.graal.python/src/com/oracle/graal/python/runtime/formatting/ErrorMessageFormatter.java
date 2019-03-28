@@ -126,6 +126,21 @@ public class ErrorMessageFormatter {
         return GetNameNode.doSlowPath(GetLazyClassNode.getUncached().execute(obj));
     }
 
+    /**
+     * Use this method to check if a given format string contains any of the custom format
+     * specifiers handled by this formatter.
+     */
+    public static boolean containsCustomSpecifier(String format) {
+        int pidx = -1;
+        while ((pidx = format.indexOf('%', pidx + 1)) != -1 && pidx + 1 < format.length()) {
+            char c = format.charAt(pidx + 1);
+            if (c == 'p' || c == 'P' || c == 'm') {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static Object[] compact(Object[] args, int removedCnt) {
         Object[] compacted = new Object[args.length - removedCnt];
         int j = 0;
