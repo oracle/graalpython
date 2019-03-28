@@ -43,9 +43,17 @@ if sys.implementation.name == "graalpython":
     import polyglot
 
     def test_import():
-        imported_cext = polyglot.import_value("python_cext")
-        import python_cext
-        assert imported_cext is python_cext
+        def some_function():
+            return "hello, polyglot world!"
+        polyglot.export_value(some_function)
+        imported_fun0 = polyglot.import_value("some_function")
+        assert imported_fun0 is some_function
+        assert imported_fun0() == "hello, polyglot world!"
+
+        polyglot.export_value(some_function, "same_function")
+        imported_fun1 = polyglot.import_value("same_function")
+        assert imported_fun1 is some_function
+        assert imported_fun1() == "hello, polyglot world!"
 
     class GetterOnly():
         def __get__(self, instance, owner):

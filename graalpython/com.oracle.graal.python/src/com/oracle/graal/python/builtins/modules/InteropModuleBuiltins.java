@@ -51,6 +51,7 @@ import java.util.Map;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -255,6 +256,11 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         public Object exportSymbol(PBuiltinMethod fun, @SuppressWarnings("unused") PNone name) {
             getContext().getEnv().exportSymbol(getMethodName(fun), fun);
             return fun;
+        }
+
+        @Fallback
+        public Object exportSymbol(Object value, Object name) {
+            throw raise(PythonBuiltinClassType.TypeError, "expected argument types (function) or (object, str) but not (%p, %p)", value, name);
         }
 
         private String getMethodName(Object o) {

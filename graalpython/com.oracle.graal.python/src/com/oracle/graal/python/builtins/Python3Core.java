@@ -421,7 +421,6 @@ public final class Python3Core implements PythonCore {
         for (String s : coreFiles) {
             loadFile(s, coreHome);
         }
-        exportCInterface(getContext());
         initialized = true;
     }
 
@@ -477,20 +476,6 @@ public final class Python3Core implements PythonCore {
         PDict sysModules = (PDict) sysModule.getAttribute("modules");
         for (Entry<String, PythonModule> entry : builtinModules.entrySet()) {
             sysModules.setItem(entry.getKey(), entry.getValue());
-        }
-    }
-
-    public void exportCInterface(PythonContext context) {
-        Env env = context.getEnv();
-        if (env != null) {
-            env.exportSymbol(TruffleCextBuiltins.PYTHON_CEXT, builtinModules.get(TruffleCextBuiltins.PYTHON_CEXT));
-            env.exportSymbol("python_builtins", builtinsModule);
-
-            // export all exception classes for the C API
-            for (PythonBuiltinClassType errorType : PythonBuiltinClassType.EXCEPTIONS) {
-                PythonBuiltinClass errorClass = lookupType(errorType);
-                env.exportSymbol("python_" + GetNameNode.doSlowPath(errorClass), errorClass);
-            }
         }
     }
 

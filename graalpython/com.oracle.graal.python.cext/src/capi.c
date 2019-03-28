@@ -59,8 +59,8 @@ cache_t cache;
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
-    PY_TRUFFLE_CEXT = (void*)polyglot_import("python_cext");
-    PY_BUILTIN = (void*)polyglot_import("python_builtins");
+    PY_TRUFFLE_CEXT = (void*)polyglot_eval("python", "import python_cext\npython_cext");
+    PY_BUILTIN = (void*)polyglot_eval("python", "import builtins\nbuiltins");
 
     PY_TRUFFLE_LANDING = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)));
     PY_TRUFFLE_LANDING_L = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)));
