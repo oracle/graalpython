@@ -595,13 +595,13 @@ public abstract class TypeNodes {
 
         @Specialization
         boolean doManaged(PythonBuiltinClassType left, PythonManagedClass right,
-                          @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getCore().lookupType(left) == right;
         }
 
         @Specialization
         boolean doManaged(PythonManagedClass left, PythonBuiltinClassType right,
-                          @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             return left == context.getCore().lookupType(right);
         }
 
