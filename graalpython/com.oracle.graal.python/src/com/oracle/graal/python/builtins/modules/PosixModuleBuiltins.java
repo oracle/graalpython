@@ -32,6 +32,24 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import static com.oracle.truffle.api.TruffleFile.CREATION_TIME;
+import static com.oracle.truffle.api.TruffleFile.IS_DIRECTORY;
+import static com.oracle.truffle.api.TruffleFile.IS_REGULAR_FILE;
+import static com.oracle.truffle.api.TruffleFile.IS_SYMBOLIC_LINK;
+import static com.oracle.truffle.api.TruffleFile.LAST_ACCESS_TIME;
+import static com.oracle.truffle.api.TruffleFile.LAST_MODIFIED_TIME;
+import static com.oracle.truffle.api.TruffleFile.SIZE;
+import static com.oracle.truffle.api.TruffleFile.UNIX_CTIME;
+import static com.oracle.truffle.api.TruffleFile.UNIX_DEV;
+import static com.oracle.truffle.api.TruffleFile.UNIX_INODE;
+import static com.oracle.truffle.api.TruffleFile.UNIX_GID;
+import static com.oracle.truffle.api.TruffleFile.UNIX_GROUP;
+import static com.oracle.truffle.api.TruffleFile.UNIX_MODE;
+import static com.oracle.truffle.api.TruffleFile.UNIX_NLINK;
+import static com.oracle.truffle.api.TruffleFile.UNIX_OWNER;
+import static com.oracle.truffle.api.TruffleFile.UNIX_PERMISSIONS;
+import static com.oracle.truffle.api.TruffleFile.UNIX_UID;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -445,108 +463,189 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return t.to(TimeUnit.SECONDS);
         }
 
+        @TruffleBoundary
         Object stat(String path, boolean followSymlinks) {
             TruffleFile f = getContext().getEnv().getTruffleFile(path);
             LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
             try {
-                if (!f.exists(linkOptions)) {
-                    throw fileNoFound(path);
+                return unixStat(f, linkOptions);
+            } catch (UnsupportedOperationException unsupported) {
+                try {
+                    return posixStat(f, linkOptions);
+                } catch (UnsupportedOperationException unsupported2) {
+                    return basicStat(f, linkOptions);
                 }
-            } catch (SecurityException e) {
-                throw fileNoFound(path);
             }
+        }
+
+        private PTuple unixStat(TruffleFile file, LinkOption... linkOptions) {
+            try {
+                TruffleFile.Attributes attributes = file.getAttributes(Arrays.asList(
+                                UNIX_MODE,
+                                UNIX_INODE,
+                                UNIX_DEV,
+                                UNIX_NLINK,
+                                UNIX_UID,
+                                UNIX_GID,
+                                SIZE,
+                                LAST_ACCESS_TIME,
+                                LAST_MODIFIED_TIME,
+                                UNIX_CTIME), linkOptions);
+                return factory().createTuple(new Object[]{
+                                attributes.get(UNIX_MODE),
+                                attributes.get(UNIX_INODE),
+                                attributes.get(UNIX_DEV),
+                                attributes.get(UNIX_NLINK),
+                                attributes.get(UNIX_UID),
+                                attributes.get(UNIX_GID),
+                                attributes.get(SIZE),
+                                fileTimeToSeconds(attributes.get(LAST_ACCESS_TIME)),
+                                fileTimeToSeconds(attributes.get(LAST_MODIFIED_TIME)),
+                                fileTimeToSeconds(attributes.get(UNIX_CTIME)),
+                });
+            } catch (IOException | SecurityException e) {
+                throw fileNoFound(file.getPath());
+            }
+        }
+
+        private PTuple posixStat(TruffleFile file, LinkOption... linkOptions) {
+            try {
+                int mode = 0;
+                long size = 0;
+                long ctime = 0;
+                long atime = 0;
+                long mtime = 0;
+                long gid = 0;
+                long uid = 0;
+                TruffleFile.Attributes attributes = file.getAttributes(Arrays.asList(
+                                IS_DIRECTORY,
+                                IS_SYMBOLIC_LINK,
+                                IS_REGULAR_FILE,
+                                LAST_MODIFIED_TIME,
+                                LAST_ACCESS_TIME,
+                                CREATION_TIME,
+                                SIZE,
+                                UNIX_OWNER,
+                                UNIX_GROUP,
+                                UNIX_PERMISSIONS), linkOptions);
+                mode |= fileTypeBitsFromAttributes(attributes);
+                mtime = fileTimeToSeconds(attributes.get(LAST_MODIFIED_TIME));
+                ctime = fileTimeToSeconds(attributes.get(CREATION_TIME));
+                atime = fileTimeToSeconds(attributes.get(LAST_ACCESS_TIME));
+                size = attributes.get(SIZE);
+                UserPrincipal owner = attributes.get(UNIX_OWNER);
+                if (owner instanceof UnixNumericUserPrincipal) {
+                    try {
+                        uid = strToLong(((UnixNumericUserPrincipal) owner).getName());
+                    } catch (NumberFormatException e2) {
+                    }
+                }
+                GroupPrincipal group = attributes.get(UNIX_GROUP);
+                if (group instanceof UnixNumericGroupPrincipal) {
+                    try {
+                        gid = strToLong(((UnixNumericGroupPrincipal) group).getName());
+                    } catch (NumberFormatException e2) {
+                    }
+                }
+                final Set<PosixFilePermission> posixFilePermissions = attributes.get(UNIX_PERMISSIONS);
+                mode = posixPermissionsToMode(mode, posixFilePermissions);
+                int inode = getInode(file);
+                return factory().createTuple(new Object[]{
+                                mode,
+                                inode, // ino
+                                0, // dev
+                                0, // nlink
+                                uid,
+                                gid,
+                                size,
+                                atime,
+                                mtime,
+                                ctime,
+                });
+            } catch (IOException | SecurityException e) {
+                throw fileNoFound(file.getPath());
+            }
+        }
+
+        private PTuple basicStat(TruffleFile file, LinkOption... linkOptions) {
+            try {
+                int mode = 0;
+                long size = 0;
+                long ctime = 0;
+                long atime = 0;
+                long mtime = 0;
+                long gid = 0;
+                long uid = 0;
+                TruffleFile.Attributes attributes = file.getAttributes(Arrays.asList(
+                                IS_DIRECTORY,
+                                IS_SYMBOLIC_LINK,
+                                IS_REGULAR_FILE,
+                                LAST_MODIFIED_TIME,
+                                LAST_ACCESS_TIME,
+                                CREATION_TIME,
+                                SIZE), linkOptions);
+                mode |= fileTypeBitsFromAttributes(attributes);
+                mtime = fileTimeToSeconds(attributes.get(LAST_MODIFIED_TIME));
+                ctime = fileTimeToSeconds(attributes.get(CREATION_TIME));
+                atime = fileTimeToSeconds(attributes.get(LAST_ACCESS_TIME));
+                size = attributes.get(SIZE);
+                if (file.isReadable()) {
+                    mode |= 0004;
+                    mode |= 0040;
+                    mode |= 0400;
+                }
+                if (file.isWritable()) {
+                    mode |= 0002;
+                    mode |= 0020;
+                    mode |= 0200;
+                }
+                if (file.isExecutable()) {
+                    mode |= 0001;
+                    mode |= 0010;
+                    mode |= 0100;
+                }
+                int inode = getInode(file);
+                return factory().createTuple(new Object[]{
+                                mode,
+                                inode, // ino
+                                0, // dev
+                                0, // nlink
+                                uid,
+                                gid,
+                                size,
+                                atime,
+                                mtime,
+                                ctime,
+                });
+            } catch (IOException | SecurityException e) {
+                throw fileNoFound(file.getPath());
+            }
+        }
+
+        private static int fileTypeBitsFromAttributes(TruffleFile.Attributes attributes) {
             int mode = 0;
-            long size = 0;
-            long ctime = 0;
-            long atime = 0;
-            long mtime = 0;
-            long gid = 0;
-            long uid = 0;
-            if (f.isRegularFile(linkOptions)) {
+            if (attributes.get(IS_REGULAR_FILE)) {
                 mode |= S_IFREG;
-            } else if (f.isDirectory(linkOptions)) {
+            } else if (attributes.get(IS_DIRECTORY)) {
                 mode |= S_IFDIR;
-            } else if (f.isSymbolicLink()) {
+            } else if (attributes.get(IS_SYMBOLIC_LINK)) {
                 mode |= S_IFLNK;
             } else {
                 // TODO: differentiate these
                 mode |= S_IFSOCK | S_IFBLK | S_IFCHR | S_IFIFO;
             }
-            try {
-                mtime = fileTimeToSeconds(f.getLastModifiedTime(linkOptions));
-            } catch (IOException e1) {
-                mtime = 0;
-            }
-            try {
-                ctime = fileTimeToSeconds(f.getCreationTime(linkOptions));
-            } catch (IOException e1) {
-                ctime = 0;
-            }
-            try {
-                atime = fileTimeToSeconds(f.getLastAccessTime(linkOptions));
-            } catch (IOException e1) {
-                atime = 0;
-            }
-            UserPrincipal owner;
-            try {
-                owner = f.getOwner(linkOptions);
-                if (owner instanceof UnixNumericUserPrincipal) {
-                    uid = strToLong(((UnixNumericUserPrincipal) owner).getName());
-                }
-            } catch (NumberFormatException | IOException | UnsupportedOperationException | SecurityException e2) {
-            }
-            try {
-                GroupPrincipal group = f.getGroup(linkOptions);
-                if (group instanceof UnixNumericGroupPrincipal) {
-                    gid = strToLong(((UnixNumericGroupPrincipal) group).getName());
-                }
-            } catch (NumberFormatException | IOException | UnsupportedOperationException | SecurityException e2) {
-            }
-            try {
-                final Set<PosixFilePermission> posixFilePermissions = f.getPosixPermissions(linkOptions);
-                mode = posixPermissionsToMode(mode, posixFilePermissions);
-            } catch (UnsupportedOperationException | IOException e1) {
-                if (f.isReadable()) {
-                    mode |= 0004;
-                    mode |= 0040;
-                    mode |= 0400;
-                }
-                if (f.isWritable()) {
-                    mode |= 0002;
-                    mode |= 0020;
-                    mode |= 0200;
-                }
-                if (f.isExecutable()) {
-                    mode |= 0001;
-                    mode |= 0010;
-                    mode |= 0100;
-                }
-            }
-            try {
-                size = f.size(linkOptions);
-            } catch (IOException e) {
-                size = 0;
-            }
+            return mode;
+        }
+
+        private int getInode(TruffleFile file) {
             TruffleFile canonical;
             try {
-                canonical = f.getCanonicalFile();
+                canonical = file.getCanonicalFile();
             } catch (IOException | SecurityException e) {
                 // best effort
-                canonical = f.getAbsoluteFile();
+                canonical = file.getAbsoluteFile();
             }
-            int inode = getContext().getResources().getInodeId(canonical.getPath());
-            return factory().createTuple(new Object[]{
-                            mode,
-                            inode, // ino
-                            0, // dev
-                            0, // nlink
-                            uid,
-                            gid,
-                            size,
-                            atime,
-                            mtime,
-                            ctime,
-            });
+            return getContext().getResources().getInodeId(canonical.getPath());
         }
 
         private PException fileNoFound(String path) {
