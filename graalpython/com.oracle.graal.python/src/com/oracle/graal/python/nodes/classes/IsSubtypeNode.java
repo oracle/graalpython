@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
@@ -114,8 +115,8 @@ public abstract class IsSubtypeNode extends Node {
                         assumptions = "mro.getLookupStableAssumption()" //
         )
         @ExplodeLoop
-        boolean isSubtypeOfVariableType(@SuppressWarnings("unused") PythonAbstractClass derived, PythonAbstractClass cls,
-                        @Cached("derived") @SuppressWarnings("unused") PythonAbstractClass cachedDerived,
+        boolean isSubtypeOfVariableType(@SuppressWarnings("unused") LazyPythonClass derived, LazyPythonClass cls,
+                        @Cached("derived") @SuppressWarnings("unused") LazyPythonClass cachedDerived,
                         @Cached("getMro(cachedDerived)") MroSequenceStorage mro) {
             for (PythonAbstractClass n : mro.getInternalClassArray()) {
                 if (isSameType(n, cls)) {
@@ -126,7 +127,7 @@ public abstract class IsSubtypeNode extends Node {
         }
 
         @Specialization(replaces = {"isSubtypeOfConstantType", "isSubtypeOfVariableType"})
-        boolean issubTypeGeneric(PythonAbstractClass derived, PythonAbstractClass cls) {
+        boolean issubTypeGeneric(LazyPythonClass derived, LazyPythonClass cls) {
             for (PythonAbstractClass n : getMro(derived).getInternalClassArray()) {
                 if (isSameType(n, cls)) {
                     return true;
@@ -153,7 +154,7 @@ public abstract class IsSubtypeNode extends Node {
             return abstractIsSubclassNode.execute(derived, cls);
         }
 
-        protected MroSequenceStorage getMro(PythonAbstractClass clazz) {
+        protected MroSequenceStorage getMro(LazyPythonClass clazz) {
             if (getMroNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getMroNode = insert(GetMroStorageNode.create());
@@ -161,7 +162,7 @@ public abstract class IsSubtypeNode extends Node {
             return getMroNode.execute(clazz);
         }
 
-        private boolean isSameType(PythonAbstractClass left, PythonAbstractClass right) {
+        private boolean isSameType(LazyPythonClass left, LazyPythonClass right) {
             if (isSameTypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isSameTypeNode = insert(IsSameTypeNode.create());

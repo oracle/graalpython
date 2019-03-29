@@ -589,6 +589,21 @@ public abstract class TypeNodes {
         }
 
         @Specialization
+        boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClassType right) {
+            return left == right;
+        }
+
+        @Specialization
+        boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClass right) {
+            return left == right.getType();
+        }
+
+        @Specialization
+        boolean doManaged(PythonBuiltinClass left, PythonBuiltinClassType right) {
+            return left.getType() == right;
+        }
+
+        @Specialization
         boolean doNativeSlow(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
             if (fastCheck) {
                 return doNativeFast(left, right);
