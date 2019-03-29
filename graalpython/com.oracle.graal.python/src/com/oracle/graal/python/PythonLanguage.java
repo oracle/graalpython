@@ -91,7 +91,14 @@ import com.oracle.truffle.api.source.SourceSection;
 
 import org.graalvm.options.OptionDescriptors;
 
-@TruffleLanguage.Registration(id = PythonLanguage.ID, name = PythonLanguage.NAME, version = PythonLanguage.VERSION, characterMimeTypes = PythonLanguage.MIME_TYPE, interactive = true, internal = false, contextPolicy = TruffleLanguage.ContextPolicy.SHARED, fileTypeDetectors = PythonFileDetector.class)
+@TruffleLanguage.Registration(id = PythonLanguage.ID, //
+                name = PythonLanguage.NAME, //
+                version = PythonLanguage.VERSION, //
+                characterMimeTypes = PythonLanguage.MIME_TYPE, //
+                dependentLanguages = "llvm", //
+                interactive = true, internal = false, //
+                contextPolicy = TruffleLanguage.ContextPolicy.SHARED, //
+                fileTypeDetectors = PythonFileDetector.class)
 @ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, StandardTags.TryBlockTag.class, StandardTags.ExpressionTag.class,
                 DebuggerTags.AlwaysHalt.class})
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {
