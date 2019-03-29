@@ -120,7 +120,11 @@ public final class ReadCallerFrameNode extends Node {
             if (rootNode instanceof PRootNode) {
                 ((PRootNode) rootNode).setNeedsCallerFrame();
             }
-            return Truffle.getRuntime().getCallerFrame().getFrame(frameAccess).materialize();
+            FrameInstance callerFrame = Truffle.getRuntime().getCallerFrame();
+            if (callerFrame != null) {
+                return callerFrame.getFrame(frameAccess).materialize();
+            }
+            return null;
         } else {
             return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Frame>() {
                 int i = 0;

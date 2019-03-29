@@ -50,6 +50,12 @@ import com.oracle.truffle.api.nodes.RootNode;
 public abstract class PRootNode extends RootNode {
     @CompilationFinal private boolean needsCallerFrame = false;
 
+    /**
+     * Flag indicating if the except nodes in this root node should write the exception state to the
+     * context because any of its transitive callees needs the state.
+     */
+    @CompilationFinal private boolean storeExceptionState = false;
+
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
     }
@@ -66,6 +72,17 @@ public abstract class PRootNode extends RootNode {
         CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
         if (!this.needsCallerFrame) {
             this.needsCallerFrame = true;
+        }
+    }
+
+    public boolean storeExceptionState() {
+        return storeExceptionState;
+    }
+
+    public void setStoreExceptionState() {
+        CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
+        if (!this.storeExceptionState) {
+            this.storeExceptionState = true;
         }
     }
 

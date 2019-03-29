@@ -33,6 +33,7 @@ import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -80,6 +81,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
+
         ArrayList<String> unrecognized = new ArrayList<>();
         ArrayList<String> inputArgs = new ArrayList<>();
         inputArgs.addAll(givenArgs);

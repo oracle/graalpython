@@ -42,6 +42,8 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
@@ -75,11 +77,15 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Children private final ExceptNode[] exceptNodes;
     @Child private StatementNode orelse;
     @Child private PythonObjectFactory ofactory;
-    @CompilationFinal private CatchesFunction catchesFunction;
-    @CompilationFinal boolean seenException;
+    @Child private GetCaughtExceptionNode getCaughtExceptionNode = GetCaughtExceptionNode.create();
+    @Child private SetCaughtExceptionNode setCaughtExceptionNode;
+
     private final boolean shouldCatchAll;
     private final Assumption singleContextAssumption;
     private final ContextReference<PythonContext> contextRef;
+
+    @CompilationFinal private CatchesFunction catchesFunction;
+    @CompilationFinal boolean seenException;
 
     public TryExceptNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode orelse) {
         this.body = body;
@@ -106,7 +112,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Override
     public void executeVoid(VirtualFrame frame) {
         // store current exception state for later restore
-        PException exceptionState = getContext().getCurrentException();
+        PException exceptionState = getCaughtExceptionNode.execute(frame);
         try {
             body.executeVoid(frame);
         } catch (PException ex) {
@@ -166,7 +172,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                     } catch (ControlFlowException e) {
                         // restore previous exception state, this won't happen if the except block
                         // raises an exception
-                        getContext().setCaughtException(exceptionState);
+                        setCaughtException(frame, exceptionState);
                         throw e;
                     }
                 }
@@ -177,7 +183,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         }
         // restore previous exception state, this won't happen if the except block
         // raises an exception
-        getContext().setCaughtException(exceptionState);
+        setCaughtException(frame, exceptionState);
     }
 
     public StatementNode getBody() {
@@ -296,5 +302,13 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     public void setCatchesFunction(CatchesFunction catchesFunction) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         this.catchesFunction = catchesFunction;
+    }
+
+    private void setCaughtException(VirtualFrame frame, PException e) {
+        if (setCaughtExceptionNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            setCaughtExceptionNode = insert(SetCaughtExceptionNode.create());
+        }
+        setCaughtExceptionNode.execute(frame, e);
     }
 }

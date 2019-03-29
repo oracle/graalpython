@@ -50,6 +50,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PException extends RuntimeException implements TruffleException {
     private static final long serialVersionUID = -6437116280384996361L;
+
     private Node location;
     private String message = null;
     private boolean isIncompleteSource;

@@ -7,7 +7,28 @@ import unittest
 import sys
 import errno
 
+def fun0(test_obj, expected_error):
+    typ, val, tb = sys.exc_info()
+    test_obj.assertEqual(typ, expected_error)
+
+def fun1(test_obj, expected_error):
+    fun0(test_obj, expected_error)
+
 class ExceptionTests(unittest.TestCase):
+    
+    def test_exc_info(self):
+        typ, val, tb = (None,) * 3
+        try:
+            raise TypeError
+        except:
+            typ, val, tb = sys.exc_info()
+        self.assertEqual(typ, TypeError)
+
+        typ, val, tb = (None,) * 3
+        try:
+            raise ValueError
+        except:
+            fun1(self, ValueError)
 
     def testInvalidTraceback(self):
         try:

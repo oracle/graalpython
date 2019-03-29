@@ -40,18 +40,19 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class GeneratorTryFinallyNode extends TryFinallyNode implements GeneratorControlNode {
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
+    @Child private GetCaughtExceptionNode getCaughtExceptionNode = GetCaughtExceptionNode.create();
+    @Child private SetCaughtExceptionNode setCaughtExceptionNode;
 
-    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
     private final int finallyFlag;
 
     public GeneratorTryFinallyNode(StatementNode body, StatementNode finalbody, int finallyFlag) {
@@ -61,7 +62,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        PException exceptionState = contextRef.get().getCaughtException();
+        PException exceptionState = getCaughtExceptionNode.execute(frame);
         PException exception = null;
         if (gen.isActive(frame, finallyFlag)) {
             executeFinalBody(frame);
@@ -78,7 +79,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
         if (exception != null) {
             throw exception;
         }
-        contextRef.get().setCaughtException(exceptionState);
+        ensureSetCaughtExceptionNode().execute(frame, exceptionState);
     }
 
     private void executeFinalBody(VirtualFrame frame) {
@@ -90,5 +91,13 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
 
     public void reset(VirtualFrame frame) {
         gen.setActive(frame, finallyFlag, false);
+    }
+
+    private SetCaughtExceptionNode ensureSetCaughtExceptionNode() {
+        if (setCaughtExceptionNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            setCaughtExceptionNode = insert(SetCaughtExceptionNode.create());
+        }
+        return setCaughtExceptionNode;
     }
 }

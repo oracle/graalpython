@@ -25,17 +25,19 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.GetCaughtExceptionNodeGen;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 
 public class TryFinallyNode extends StatementNode {
-    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
     @Child private StatementNode body;
     @Child private StatementNode finalbody;
+    @Child private GetCaughtExceptionNode getCaughtExceptionNode;
+    @Child private SetCaughtExceptionNode setCaughtExceptionNode;
 
     public TryFinallyNode(StatementNode body, StatementNode finalbody) {
         this.body = body;
@@ -44,28 +46,41 @@ public class TryFinallyNode extends StatementNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
+        PException exceptionState = ensureGetCaughtExceptionNode().execute(frame);
         if (finalbody == null) {
-            body.executeVoid(frame);
+            try {
+                body.executeVoid(frame);
+            } finally {
+                // restore
+                restoreExceptionState(frame, exceptionState);
+            }
         } else {
-            PException exceptionState = contextRef.get().getCaughtException();
             try {
                 body.executeVoid(frame);
             } catch (PException e) {
                 // any thrown Python exception is visible in the finally block
-                contextRef.get().setCaughtException(e);
+                setCaughtExceptionNode.execute(frame, e);
                 throw e;
             } finally {
                 try {
                     finalbody.executeVoid(frame);
                 } catch (ControlFlowException e) {
                     // restore
-                    contextRef.get().setCaughtException(exceptionState);
+                    restoreExceptionState(frame, exceptionState);
                     throw e;
                 }
                 // restore
-                contextRef.get().setCaughtException(exceptionState);
+                restoreExceptionState(frame, exceptionState);
             }
         }
+    }
+
+    private void restoreExceptionState(VirtualFrame frame, PException exceptionState) {
+        if (setCaughtExceptionNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            setCaughtExceptionNode = insert(SetCaughtExceptionNode.create());
+        }
+        setCaughtExceptionNode.execute(frame, exceptionState);
     }
 
     public StatementNode getBody() {
@@ -74,5 +89,13 @@ public class TryFinallyNode extends StatementNode {
 
     public StatementNode getFinalbody() {
         return finalbody;
+    }
+
+    private GetCaughtExceptionNode ensureGetCaughtExceptionNode() {
+        if (getCaughtExceptionNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getCaughtExceptionNode = insert(GetCaughtExceptionNodeGen.create());
+        }
+        return getCaughtExceptionNode;
     }
 }

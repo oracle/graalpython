@@ -28,7 +28,6 @@ package com.oracle.graal.python.nodes.statement;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -41,11 +40,11 @@ import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -61,10 +60,11 @@ public class WithNode extends StatementNode {
     @Child private GetClassNode getClassNode = GetClassNode.create();
     @Child private PRaiseNode raiseNode;
     @Child private PythonObjectFactory factory;
+    @Child private GetCaughtExceptionNode getCaughtExceptionNode = GetCaughtExceptionNode.create();
+    @Child private SetCaughtExceptionNode setCaughtExceptionNode;
 
     private final BranchProfile noEnter = BranchProfile.create();
     private final BranchProfile noExit = BranchProfile.create();
-    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
 
     protected WithNode(WriteNode targetNode, StatementNode body, ExpressionNode withContext) {
         this.targetNode = targetNode;
@@ -148,7 +148,7 @@ public class WithNode extends StatementNode {
         if (!gotException) {
             exitDispatch.execute(frame, exitCallable, new Object[]{withObject, PNone.NONE, PNone.NONE, PNone.NONE}, PKeyword.EMPTY_KEYWORDS);
         }
-        contextRef.get().setCaughtException(exceptionState);
+        restoreExceptionState(frame, exceptionState);
     }
 
     /**
@@ -156,7 +156,7 @@ public class WithNode extends StatementNode {
      * statement
      */
     protected PException doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
-        PException caughtException = contextRef.get().getCaughtException();
+        PException caughtException = getCaughtExceptionNode.execute(frame);
         applyValues(frame, enterDispatch.execute(frame, enterCallable, new Object[]{withObject}, PKeyword.EMPTY_KEYWORDS));
         return caughtException;
     }
@@ -185,5 +185,13 @@ public class WithNode extends StatementNode {
 
     public ExpressionNode getWithContext() {
         return withContext;
+    }
+
+    private void restoreExceptionState(VirtualFrame frame, PException exceptionState) {
+        if (setCaughtExceptionNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            setCaughtExceptionNode = insert(SetCaughtExceptionNode.create());
+        }
+        setCaughtExceptionNode.execute(frame, exceptionState);
     }
 }
