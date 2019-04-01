@@ -737,15 +737,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 context.setCurrentException(exceptionState);
                 return result;
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
-                throw context.getCore().raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %s", name, getMessage(e));
+                throw context.getCore().raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
             } catch (ArityException e) {
                 throw context.getCore().raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
             }
-        }
-
-        @TruffleBoundary
-        private static final String getMessage(Throwable e) {
-            return e.getMessage();
         }
 
         private Object fromNative(Object result) {
@@ -832,11 +827,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary(allowInlining = true)
         protected static ByteBuffer wrap(byte[] data, int offset, int length) {
             return ByteBuffer.wrap(data, offset, length);
-        }
-
-        @TruffleBoundary
-        protected static String getMessage(Throwable throwable) {
-            return throwable.getMessage();
         }
     }
 
@@ -1007,11 +997,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 }
                 return decoded.toString();
             } catch (CharacterCodingException e) {
-                return raiseNative(errorMarker, PythonErrorType.UnicodeError, e.getMessage());
+                return raiseNative(errorMarker, PythonErrorType.UnicodeError, "%m", e);
             } catch (IllegalArgumentException e) {
-                return raiseNative(errorMarker, PythonErrorType.LookupError, e.getMessage());
+                return raiseNative(errorMarker, PythonErrorType.LookupError, "%m", e);
             } catch (InteropException e) {
-                return raiseNative(errorMarker, PythonErrorType.TypeError, e.getMessage());
+                return raiseNative(errorMarker, PythonErrorType.TypeError, "%m", e);
             }
         }
 
@@ -1040,9 +1030,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 CharBuffer cbuf = decoder.decode(wrap(getByteArrayNode.execute(o, -1)));
                 return cbuf.toString();
             } catch (CharacterCodingException e) {
-                return raiseNative(errorMarker, PythonErrorType.UnicodeError, e.getMessage());
+                return raiseNative(errorMarker, PythonErrorType.UnicodeError, "%m", e);
             } catch (InteropException e) {
-                return raiseNative(errorMarker, PythonErrorType.TypeError, e.getMessage());
+                return raiseNative(errorMarker, PythonErrorType.TypeError, "%m", e);
             }
         }
     }
@@ -1077,7 +1067,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 transformToNative(e);
                 return error_marker;
             } catch (CharacterCodingException e) {
-                return raiseNative(error_marker, PythonErrorType.UnicodeEncodeError, e.getMessage());
+                return raiseNative(error_marker, PythonErrorType.UnicodeEncodeError, "%m", e);
             }
         }
 
@@ -1150,12 +1140,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 CharBuffer decode = decoder.onMalformedInput(action).onUnmappableCharacter(action).decode(wrap(getByteArrayNode.execute(o, size), 0, (int) size));
                 return toSulongNode.execute(decode.toString());
             } catch (CharacterCodingException e) {
-                return raiseNative(errorMarker, PythonErrorType.UnicodeEncodeError, e.getMessage());
+                return raiseNative(errorMarker, PythonErrorType.UnicodeEncodeError, "%m", e);
             } catch (IllegalArgumentException e) {
                 String csName = getUTF32Name(byteorder);
                 return raiseNative(errorMarker, PythonErrorType.LookupError, "unknown encoding: " + csName);
             } catch (InteropException e) {
-                return raiseNative(errorMarker, PythonErrorType.TypeError, e.getMessage());
+                return raiseNative(errorMarker, PythonErrorType.TypeError, "%m", e);
             }
         }
     }
@@ -1229,7 +1219,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 }
             } catch (IllegalArgumentException e) {
                 // TODO
-                return raiseNative(errorMarker, PythonErrorType.LookupError, e.getMessage());
+                return raiseNative(errorMarker, PythonErrorType.LookupError, "%m", e);
             }
         }
 
@@ -2156,7 +2146,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             try {
                 return factory().createBytes(getByteArrayNode.execute(object.getPtr(), -1));
             } catch (InteropException e) {
-                return raiseNative(getNativeNullNode.execute(module), PythonErrorType.TypeError, getMessage(e));
+                return raiseNative(getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
             }
         }
     }

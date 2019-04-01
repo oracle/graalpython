@@ -757,7 +757,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 return new String(raw, "ascii");
             } catch (UnsupportedEncodingException e) {
-                throw raise(PythonBuiltinClassType.UnicodeDecodeError, e.getMessage());
+                throw raise(PythonBuiltinClassType.UnicodeDecodeError, e);
             }
         }
 

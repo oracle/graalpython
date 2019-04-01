@@ -143,7 +143,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
                 }
                 return env.parse(newBuilder.build()).call();
             } catch (RuntimeException e) {
-                throw raise(NotImplementedError, e.getMessage());
+                throw raise(NotImplementedError, e);
             }
         }
 
@@ -170,7 +170,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw raise(OSError, "%s", e);
             } catch (RuntimeException e) {
-                throw raise(NotImplementedError, e.getMessage());
+                throw raise(NotImplementedError, e);
             }
         }
 
@@ -183,7 +183,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw raise(OSError, "%s", e);
             } catch (RuntimeException e) {
-                throw raise(NotImplementedError, e.getMessage());
+                throw raise(NotImplementedError, e);
             }
         }
 

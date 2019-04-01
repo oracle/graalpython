@@ -148,7 +148,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
 
     @TruffleBoundary
     private PBaseException getBaseException(Exception t) {
-        return factory().createBaseException(PythonErrorType.ValueError, t.getMessage(), new Object[0]);
+        return factory().createBaseException(PythonErrorType.ValueError, "%m", new Object[]{t});
     }
 
     @ExplodeLoop

@@ -501,7 +501,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                 try {
                     bytesWritten = stream.inflater.inflate(result, 0, result.length);
                 } catch (DataFormatException e) {
-                    throw raise(ZLibError, e.getMessage());
+                    throw raise(ZLibError, e);
                 }
                 baos.write(result, 0, bytesWritten);
             }

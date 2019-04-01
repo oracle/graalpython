@@ -546,7 +546,7 @@ public abstract class TypeNodes {
                 try {
                     return cast(SequenceStorageNodes.ToArrayNode.doSlowPath(basesTuple.getSequenceStorage()));
                 } catch (ClassCastException e) {
-                    throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, "unsupported object in 'tp_bases' (msg: %s)", e.getMessage());
+                    throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, "unsupported object in 'tp_bases' (msg: %m)", e);
                 }
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
