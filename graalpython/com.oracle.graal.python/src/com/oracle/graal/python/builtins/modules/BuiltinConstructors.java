@@ -119,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -130,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -1813,6 +1815,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public Object type(VirtualFrame frame, PythonAbstractClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @Cached("create()") GetClassNode getMetaclassNode,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
+                        @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
+                        @Cached("create()") CallNode callInitSubclassNode,
                         @Cached("create()") CallNode callNewFuncNode) {
             // Determine the proper metatype to deal with this
             PythonAbstractClass metaclass = calculate_metaclass(cls, bases, getMetaclassNode);
@@ -1827,7 +1831,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             try {
-                Object newType = typeMetaclass(name, bases, namespace, metaclass);
+                PythonClass newType = typeMetaclass(name, bases, namespace, metaclass);
+
+                // TODO: Call __set_name__ on all descriptors in a newly generated type
+
+                // Call __init_subclass__ on the parent of a newly generated type
+                SuperObject superObject = factory().createSuperObject(PythonBuiltinClassType.Super);
+                superObject.init(newType, newType, newType);
+                callInitSubclassNode.execute(frame, getInitSubclassNode.executeObject(superObject), new Object[0], kwds);
 
                 // set '__module__' attribute
                 Object moduleAttr = ensureReadAttrNode().execute(newType, __MODULE__);
@@ -1863,7 +1874,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object typeMetaclass(String name, PTuple bases, PDict namespace, PythonAbstractClass metaclass) {
+        private PythonClass typeMetaclass(String name, PTuple bases, PDict namespace, PythonAbstractClass metaclass) {
 
             Object[] array = bases.getArray();
 
