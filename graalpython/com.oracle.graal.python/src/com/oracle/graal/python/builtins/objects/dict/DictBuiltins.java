@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.ContainsKeyNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -337,6 +338,12 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doDictDict(PDict self, PDict other,
+                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
+            return equalsNode.execute(self.getDictStorage(), other.getDictStorage());
+        }
+
+        @Specialization
+        Object doDictProxy(PDict self, PMappingproxy other,
                         @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
             return equalsNode.execute(self.getDictStorage(), other.getDictStorage());
         }

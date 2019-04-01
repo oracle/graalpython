@@ -41,6 +41,8 @@ import polyglot as _interop
 
 from mmap import mmap
 
+_mappingpoxy = type(type.__dict__)
+
 def default(value, default):
     return default if not value else value
 
@@ -235,6 +237,7 @@ def _is_bytes_like(object):
 class SRE_Pattern():
     def __init__(self, pattern, flags):
         self.__binary = isinstance(pattern, bytes)
+        self.groups = 0
         self.pattern = pattern
         self.flags = flags
         flags_str = []
@@ -243,12 +246,13 @@ class SRE_Pattern():
                 flags_str.append(char)
         self.flags_str = "".join(flags_str)
         self.__compiled_regexes = dict()
-        self.groupindex = dict()
+        groupindex = dict()
         if self.__tregex_compile(self.pattern).groups is not None:
             for group_name in dir(self.__tregex_compile(self.pattern).groups):
                 groups = self.__tregex_compile(self.pattern).groups
                 self.groups = _interop.__get_size__(_interop.__keys__(groups))
-                self.groupindex[group_name] = groups[group_name]
+                groupindex[group_name] = groups[group_name]
+        self.groupindex = _mappingpoxy(groupindex)
 
     def __check_input_type(self, input):
         if not isinstance(input, str) and not _is_bytes_like(input):
@@ -299,6 +303,7 @@ class SRE_Pattern():
         pattern = self.__tregex_compile(pattern, self.flags_str + ("y" if sticky else ""))
         input_str = string
         if endpos == -1 or endpos >= len(string):
+            endpos = len(string)
             result = tregex_call_exec(pattern.exec, input_str, min(pos, len(string) + 1))
         else:
             input_str = string[:endpos]
@@ -425,6 +430,9 @@ class SRE_Pattern():
 
 
     def sub(self, repl, string, count=0):
+        return self.subn(repl, string, count)[0]
+
+    def subn(self, repl, string, count=0):
         self.__check_input_type(string)
         n = 0
         pattern = self.__tregex_compile(self.pattern)
@@ -458,9 +466,9 @@ class SRE_Pattern():
                 pos = pos + 1
         result.append(string[pos:])
         if self.__binary:
-            return b"".join(result)
+            return (b"".join(result), n)
         else:
-            return "".join(result)
+            return ("".join(result), n)
 
     def split(self, string, maxsplit=0):
         n = 0

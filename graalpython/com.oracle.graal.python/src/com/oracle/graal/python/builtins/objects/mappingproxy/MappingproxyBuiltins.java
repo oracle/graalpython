@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.mappingproxy;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
@@ -43,6 +44,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -53,6 +55,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -198,4 +201,27 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
             return factory().createDict(proxy.getDictStorage());
         }
     }
+
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object doProxyProxy(PMappingproxy self, PMappingproxy other,
+                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
+            return equalsNode.execute(self.getDictStorage(), other.getDictStorage());
+        }
+
+        @Specialization
+        Object doProxDict(PMappingproxy self, PDict other,
+                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
+            return equalsNode.execute(self.getDictStorage(), other.getDictStorage());
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        PNotImplemented doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
 }
