@@ -5,6 +5,8 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 1.0.0 RC15
 
+* Implement PEP 487 `__init_subclass__`
+* Implement PEP 560 `__class_getitem__` and `__mro_entries__`
 * Migrate to Truffle libraries for interop
 * Support the buffer protocol for mmap
 * Support importing java classes using normal Python import syntax

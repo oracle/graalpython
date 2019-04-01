@@ -25,22 +25,31 @@
  */
 package com.oracle.graal.python.nodes.subscript;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = __GETITEM__)
 public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
+    private static final String P_OBJECT_IS_NOT_SUBSCRIPTABLE = "'%p' object is not subscriptable";
 
     @Child private LookupAndCallBinaryNode callGetitemNode;
 
@@ -61,11 +70,39 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
         if (callGetitemNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callGetitemNode = insert(LookupAndCallBinaryNode.create(__GETITEM__, null, () -> new LookupAndCallBinaryNode.NotImplementedHandler() {
-                @Child private PRaiseNode raiseNode = PRaiseNode.create();
+                @CompilationFinal private IsBuiltinClassProfile isBuiltinClassProfile;
+                @Child private PRaiseNode raiseNode;
+                @Child private CallNode callClassGetItemNode;
+                @Child private GetAttributeNode getClassGetItemNode;
 
                 @Override
-                public Object execute(Object arg, @SuppressWarnings("unused") Object arg2) {
-                    throw raiseNode.raise(TypeError, "'%p' object is not subscriptable", arg);
+                public Object execute(Object arg, Object arg2) {
+                    if (arg instanceof PythonAbstractClass) {
+                        if (getClassGetItemNode == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            getClassGetItemNode = insert(GetAttributeNode.create(__CLASS_GETITEM__));
+                            isBuiltinClassProfile = IsBuiltinClassProfile.create();
+                        }
+                        Object classGetItem = null;
+                        try {
+                            classGetItem = getClassGetItemNode.executeObject(arg);
+                        } catch (PException e) {
+                            e.expect(AttributeError, isBuiltinClassProfile);
+                            // fall through to normal error handling
+                        }
+                        if (classGetItem != null) {
+                            if (callClassGetItemNode == null) {
+                                CompilerDirectives.transferToInterpreterAndInvalidate();
+                                callClassGetItemNode = insert(CallNode.create());
+                            }
+                            return callClassGetItemNode.execute(null, classGetItem, arg2);
+                        }
+                    }
+                    if (raiseNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        raiseNode = insert(PRaiseNode.create());
+                    }
+                    throw raiseNode.raise(TypeError, P_OBJECT_IS_NOT_SUBSCRIPTABLE, arg);
                 }
             }));
         }

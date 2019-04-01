@@ -39,6 +39,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT_SUBCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
@@ -629,6 +630,15 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached("op") String cachedOp,
                         @Cached("createOp(op)") BinaryComparisonNode node) {
             return node.executeBool(left, right);
+        }
+    }
+
+    @Builtin(name = __INIT_SUBCLASS__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class InitSubclass extends PythonUnaryBuiltinNode {
+        @Specialization
+        PNone initSubclass(@SuppressWarnings("unused") Object self) {
+            return PNone.NONE;
         }
     }
 }
