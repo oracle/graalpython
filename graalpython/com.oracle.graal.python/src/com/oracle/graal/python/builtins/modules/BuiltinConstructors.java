@@ -1916,7 +1916,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // side that I don't want to do now
                     pythonClass.setAttribute(key, value);
                 } else if (SpecialMethodNames.__INIT_SUBCLASS__.equals(key) ||
-                           SpecialMethodNames.__CLASS_GETITEM__.equals(key)) {
+                                SpecialMethodNames.__CLASS_GETITEM__.equals(key)) {
                     // see CPython: Special-case __init_subclass__ and
                     // __class_getitem__: if they are plain functions, make them
                     // classmethods
