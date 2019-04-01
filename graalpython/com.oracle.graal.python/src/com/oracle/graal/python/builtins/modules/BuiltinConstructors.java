@@ -129,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -1896,6 +1897,23 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 Object value = entry.getValue();
                 if (__SLOTS__.equals(key)) {
                     slots = value;
+                } else if (SpecialMethodNames.__NEW__.equals(key)) {
+                    // TODO: see CPython: if it's a plain function, make it a
+                    // static function
+
+                    // tfel: this requires a little bit of refactoring on our
+                    // side that I don't want to do now
+                    pythonClass.setAttribute(key, value);
+                } else if (SpecialMethodNames.__INIT_SUBCLASS__.equals(key) ||
+                           SpecialMethodNames.__CLASS_GETITEM__.equals(key)) {
+                    // see CPython: Special-case __init_subclass__ and
+                    // __class_getitem__: if they are plain functions, make them
+                    // classmethods
+                    if (value instanceof PFunction) {
+                        pythonClass.setAttribute(key, factory().createClassmethod(value));
+                    } else {
+                        pythonClass.setAttribute(key, value);
+                    }
                 } else {
                     pythonClass.setAttribute(key, value);
                 }
@@ -1956,10 +1974,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     addNativeSlots(pythonClass, newSlots);
                 }
             }
-
-            // TODO: tfel special case __new__: if it's a plain function, make it a static function
-            // TODO: tfel Special-case __init_subclass__: if it's a plain function, make it a
-            // classmethod
 
             return pythonClass;
         }
