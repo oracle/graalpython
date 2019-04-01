@@ -81,8 +81,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
         ArrayList<String> unrecognized = new ArrayList<>();
-        List<String> defaultEnvironmentArgs = getDefaultEnvironmentArgs();
-        ArrayList<String> inputArgs = new ArrayList<>(defaultEnvironmentArgs);
+        ArrayList<String> inputArgs = new ArrayList<>();
         inputArgs.addAll(givenArgs);
         givenArguments = new ArrayList<>(inputArgs);
         List<String> arguments = new ArrayList<>(inputArgs);
@@ -152,10 +151,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     break;
                 case "-CC":
                     if (wantsExperimental) {
-                        if (i != defaultEnvironmentArgs.size() + 1) {
-                            // +1 because we need the --experimental-options
-                            throw new IllegalArgumentException("-CC must be the first given argument");
-                        }
                         GraalPythonCC.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
                         System.exit(0);
                     } else {
@@ -164,10 +159,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     break;
                 case "-LD":
                     if (wantsExperimental) {
-                        if (i != defaultEnvironmentArgs.size() + 1) {
-                            // +1 because we need the --experimental-options
-                            throw new IllegalArgumentException("-LD must be the first given argument");
-                        }
                         GraalPythonLD.main(arguments.subList(i + 1, arguments.size()).toArray(new String[0]));
                         System.exit(0);
                     } else {
@@ -267,60 +258,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
 
         return unrecognized;
-    }
-
-    private static enum State {
-        NORMAL,
-        SINGLE_QUOTE,
-        DOUBLE_QUOTE,
-        ESCAPE_SINGLE_QUOTE,
-        ESCAPE_DOUBLE_QUOTE,
-    }
-
-    private static List<String> getDefaultEnvironmentArgs() {
-        String envArgsOpt = System.getenv("GRAAL_PYTHON_OPTIONS");
-        ArrayList<String> envArgs = new ArrayList<>();
-        State s = State.NORMAL;
-        StringBuilder sb = new StringBuilder();
-        if (envArgsOpt != null) {
-            for (char x : envArgsOpt.toCharArray()) {
-                if (s == State.NORMAL && Character.isWhitespace(x)) {
-                    if (sb.length() > 0) {
-                        envArgs.add(sb.toString());
-                        sb.setLength(0);
-                    }
-                } else {
-                    if (x == '"') {
-                        if (s == State.NORMAL) {
-                            s = State.DOUBLE_QUOTE;
-                        } else if (s == State.DOUBLE_QUOTE) {
-                            s = State.NORMAL;
-                        } else if (s == State.ESCAPE_DOUBLE_QUOTE) {
-                            s = State.DOUBLE_QUOTE;
-                            sb.append(x);
-                        }
-                    } else if (x == '\'') {
-                        if (s == State.NORMAL) {
-                            s = State.SINGLE_QUOTE;
-                        } else if (s == State.SINGLE_QUOTE) {
-                            s = State.NORMAL;
-                        } else if (s == State.ESCAPE_SINGLE_QUOTE) {
-                            s = State.SINGLE_QUOTE;
-                            sb.append(x);
-                        }
-                    } else if (x == '\\') {
-                        if (s == State.SINGLE_QUOTE) {
-                            s = State.ESCAPE_SINGLE_QUOTE;
-                        } else if (s == State.DOUBLE_QUOTE) {
-                            s = State.ESCAPE_DOUBLE_QUOTE;
-                        }
-                    } else {
-                        sb.append(x);
-                    }
-                }
-            }
-        }
-        return envArgs;
     }
 
     private static void printShortHelp() {
@@ -617,10 +554,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                                         "                 All following arguments are passed to the linker.\n" +
                                         "\nEnvironment variables specific to the Graal Python launcher:\n" +
                                         "SULONG_LIBRARY_PATH: Specifies the library path for Sulong.\n" +
-                                        "   This is required when starting subprocesses of python.\n" +
-                                        "GRAAL_PYTHON_OPTIONS: This environment variable can include default options that\n" +
-                                        "   are always passed to the launcher. These are not shell expanded and given to\n" +
-                                        "   the launcher as-is." : ""));
+                                        "   This is required when starting subprocesses of python.\n" : ""));
     }
 
     @Override
