@@ -137,7 +137,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
             SUITE.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
             dists.append('CHROMEINSPECTOR')
             if SUITE_SULONG:
-                vm_args.append("-Dpolyglot.llvm.enableLVI=true")
+                graalpython_args.insert(1, "--llvm.enableLVI=true")
 
     vm_args += mx.get_runtime_jvm_args(dists, jdk=jdk)
 
