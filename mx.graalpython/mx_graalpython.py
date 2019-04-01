@@ -859,6 +859,10 @@ def mx_post_parse_cmd_line(namespace):
     _register_bench_suites(namespace)
 
 
+def python_coverage(args):
+    mx.run_mx(['--jacoco-whitelist-package', 'com.oracle.graal.python', '--primary', 'gate', '--tags', 'python-junit', '--jacocout', 'html'])
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # register the suite commands (if any)
@@ -882,4 +886,5 @@ mx.update_commands(SUITE, {
     'nativeclean': [nativeclean, ''],
     'python-so-test': [run_shared_lib_test, ''],
     'python-src-import': [import_python_sources, ''],
+    'python-coverage': [python_coverage, ''],
 })
