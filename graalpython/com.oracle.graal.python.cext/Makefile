@@ -49,7 +49,7 @@ MODULE_OBJ_FILES=$(MODULE_SOURCES:%.c=%.o)
 MODULE_TARGETS=$(MODULE_SOURCES:modules/%.c=${LIBDIR}/modules/%.bc)
 
 .PHONY: default clean
-default: ${TARGET_LIB} ${MODULE_TARGETS}
+default: ${TARGET_LIB} ${MODULE_TARGETS} compile_flags.txt
 
 
 CFLAGS=${LLVM_TARGET_FLAGS} -O1 -ggdb -emit-llvm
@@ -82,6 +82,13 @@ clean:
 	$(QUIETLY) rm -f ${OBJ_FILES}
 	$(QUIETLY) rm -f ${MODULE_TARGETS}
 	$(QUIETLY) rm -f ${MODULE_OBJ_FILES}
+	$(QUIETLY) rm -f compile_flags.txt
 ifeq ($(wildcard ../com.oracle.graal.python.test/src/tests/cpyext/*.bc),)
 	rm -f $(wildcard ../com.oracle.graal.python.test/src/tests/cpyext/*.bc)
 endif
+
+# compile_flags.txt is useful with clangd as language server
+compile_flags.txt: Makefile
+	$(QUIETLY) rm -f $@
+	$(QUIETLY) $(foreach var,$(WARNINGS),$(file >> $@,$(var)))
+	$(QUIETLY) $(foreach var,$(INCLUDES),$(file >> $@,$(var)))
