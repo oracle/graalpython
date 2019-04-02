@@ -164,12 +164,21 @@ def punittest(args):
     unittest(args + ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)', "-Dgraal.TraceTruffleCompilation=true"])
 
 
+PYTHON_ARCHIVES = ["GRAALPYTHON-LAUNCHER",
+                   "GRAALPYTHON",
+                   "GRAALPYTHON_GRAALVM_SUPPORT"]
+PYTHON_NATIVE_PROJECTS = ["com.oracle.graal.python.parser.antlr",
+                          "com.oracle.graal.python.cext"]
+
+
 def nativebuild(args):
-    mx.build(["--only", "com.oracle.graal.python.parser.antlr,com.oracle.graal.python.cext,GRAALPYTHON-LAUNCHER,GRAALPYTHON,GRAALPYTHON_GRAALVM_SUPPORT"])
+    "Build the non-Java Python projects and archives"
+    mx.build(["--only", ",".join(PYTHON_NATIVE_PROJECTS + PYTHON_ARCHIVES)])
 
 
 def nativeclean(args):
-    mx.run(['find', SUITE.dir, '-name', '*.bc', '-delete'])
+    "Clean the non-Java Python projects"
+    mx.clean(["--dependencies", ",".join(PYTHON_NATIVE_PROJECTS)])
 
 
 def python3_unittests(args):
@@ -244,6 +253,7 @@ _SVM_ARGS = ["--dynamicimports", "/vm,/tools,/substratevm",
 
 
 def python_svm(args):
+    "Build and run the native graalpython image"
     mx.run_mx(_SVM_ARGS + ["build"])
     out = mx.OutputCapture()
     mx.run_mx(_SVM_ARGS + ["graalvm-home"], out=mx.TeeOutputCapture(out))
@@ -633,6 +643,7 @@ def update_import_cmd(args):
 
 
 def python_style_checks(args):
+    "Check (and fix where possible) copyrights, eclipse formatting, and spotbugs"
     python_checkcopyrights(["--fix"])
     if not os.environ.get("ECLIPSE_EXE"):
         find_eclipse()
@@ -664,6 +675,8 @@ def python_checkcopyrights(args):
 
 
 def import_python_sources(args):
+    "Update the inlined files from PyPy and CPython"
+
     # mappings for files that are renamed
     mapping = {
         "_memoryview.c": "memoryobject.c",
@@ -879,6 +892,7 @@ def mx_post_parse_cmd_line(namespace):
 
 
 def python_coverage(args):
+    "Generate coverage report either running python-junit gate or the gate passed as argument"
     mx.run_mx(['--jacoco-whitelist-package', 'com.oracle.graal.python', '--primary', 'gate', '--tags', args[0] if args else 'python-junit', '--jacocout', 'html'])
 
 
@@ -898,6 +912,6 @@ mx.update_commands(SUITE, {
     'python-unittests': [python3_unittests, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
-    'python-src-import': [import_python_sources, 'Update the inlined files from PyPy and CPython'],
-    'python-coverage': [python_coverage, 'Generate coverage report either running python-junit gate or the gate passed as argument'],
+    'python-src-import': [import_python_sources, ''],
+    'python-coverage': [python_coverage, '[gate-tag]'],
 })
