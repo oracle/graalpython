@@ -196,9 +196,9 @@ class GraalPythonTags(object):
     cpyext_sandboxed = 'python-cpyext-sandboxed'
     svmunit = 'python-svm-unittest'
     graalvm = 'python-graalvm'
-    license = 'python-license'
-    so = 'python-so'
+    shared_object = 'python-so'
     svm = 'python-svm'
+    license = 'python-license'
 
 
 def python_gate(args):
@@ -356,7 +356,7 @@ def graalpython_gate_runner(args, tasks):
         if task:
             python_checkcopyrights(["--fix"])
 
-    with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.so, GraalPythonTags.graalvm]) as task:
+    with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.shared_object, GraalPythonTags.graalvm]) as task:
         if task:
             run_shared_lib_test()
 
@@ -909,6 +909,7 @@ mx.update_commands(SUITE, {
     'python-update-import': [update_import_cmd, '[import-name, default: truffle]'],
     'python-style': [python_style_checks, ''],
     'python-svm': [python_svm, ''],
+    'python-build-svm': [python_build_svm, ''],
     'python-unittests': [python3_unittests, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
