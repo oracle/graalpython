@@ -346,7 +346,7 @@ public final class Python3Core implements PythonCore {
                         new RLockBuiltins(),
                         new ContextvarsModuleBuiltins()));
         if (!TruffleOptions.AOT) {
-            ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
+            ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {
                 builtins.add(builtin);
             }
