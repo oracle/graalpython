@@ -152,7 +152,6 @@ suite = {
             "buildEnv": {
                 "ANTLR_JAR": "<path:truffle:ANTLR4_COMPLETE>",
                 "PARSER_PATH": "<src_dir:com.oracle.graal.python>/com/oracle/graal/python/parser/antlr",
-                "OUTPUT_PATH": "<src_dir:com.oracle.graal.python>/com/oracle/graal/python/parser/antlr",
                 "PARSER_PKG": "com.oracle.graal.python.parser.antlr",
                 "POSTPROCESSOR": "<suite:graalpython>/graalpython/com.oracle.graal.python.parser.antlr/postprocess.py",
             },
@@ -161,7 +160,7 @@ suite = {
             ],
             "jacoco": "include",
             "native": True,
-            "vpath": True,
+            "vpath": False,
         },
 
         "com.oracle.graal.python.shell": {

@@ -479,12 +479,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/ScopeInfo
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/ScopeTranslator.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/TranslationEnvironment.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/TranslationUtil.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3BaseListener.java,python3antlr.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3BaseVisitor.java,python3antlr.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Lexer.java,python3antlr.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Listener.java,python3antlr.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Parser.java,python3antlr.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Visitor.java,python3antlr.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonContext.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonCore.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonOptions.java,zippy.copyright
