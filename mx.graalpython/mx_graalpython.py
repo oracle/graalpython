@@ -111,7 +111,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         elif check_vm_env == '0':
             check_vm()
 
-    dists = ['GRAALPYTHON', 'TRUFFLE_NFI']
+    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
@@ -119,10 +119,8 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
     if '--python.WithJavaStacktrace' not in graalpython_args:
         graalpython_args.insert(0, '--python.WithJavaStacktrace')
 
-    if SUITE_SULONG:
-        dists.append('SULONG')
-        if mx.suite("sulong-managed", fatalIfMissing=False):
-            dists.append('SULONG_MANAGED')
+    if mx.suite("sulong-managed", fatalIfMissing=False):
+        dists.append('SULONG_MANAGED')
 
     graalpython_args.insert(0, '--experimental-options=true')
 
