@@ -636,8 +636,9 @@ def python_style_checks(args):
     python_checkcopyrights(["--fix"])
     if not os.environ.get("ECLIPSE_EXE"):
         find_eclipse()
-    mx.command_function("eclipseformat")()
-    mx.command_function("spotbugs")()
+    if os.environ.get("ECLIPSE_EXE"):
+        mx.command_function("eclipseformat")([])
+    mx.command_function("spotbugs")([])
 
 
 def python_checkcopyrights(args):
