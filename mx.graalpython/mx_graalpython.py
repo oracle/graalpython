@@ -122,20 +122,18 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
     if mx.suite("sulong-managed", fatalIfMissing=False):
         dists.append('SULONG_MANAGED')
 
-    graalpython_args.insert(0, '--experimental-options=true')
-
-    # Try eagerly to include tools on Tim's computer
-    if not mx.suite("/tools", fatalIfMissing=False):
-        def _is_user(user, home=None):
-            if home:
-                return os.environ.get("USER") == user and os.environ.get(home)
-            return os.environ.get("USER") == user
-
-        if _is_user("tim", "MAGLEV_HOME") or _is_user("cbasca") or _is_user("fa"):
-            SUITE.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
+    # Try eagerly to include tools for convenience when running Python
+    if not mx.suite("tools", fatalIfMissing=False):
+        SUITE.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
+    if mx.suite("tools", fatalIfMissing=False):
+        if os.path.exists(mx.suite("tools").dependency("CHROMEINSPECTOR").path):
+            # CHROMEINSPECTOR was built, put it on the classpath
             dists.append('CHROMEINSPECTOR')
-            if SUITE_SULONG:
-                graalpython_args.insert(1, "--llvm.enableLVI=true")
+            graalpython_args.insert(0, "--llvm.enableLVI=true")
+        else:
+            mx.logv("CHROMEINSPECTOR was not built, not including it automatically")
+
+    graalpython_args.insert(0, '--experimental-options=true')
 
     vm_args += mx.get_runtime_jvm_args(dists, jdk=jdk)
 
