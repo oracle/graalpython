@@ -173,7 +173,7 @@ class SRE_Match():
 
     def groups(self, default=None):
         lst = []
-        for arg in range(1, self.result.groupCount):
+        for arg in range(1, self.compiled_regex.groupCount):
             lst.append(self.__group__(arg))
         return tuple(lst)
 
@@ -214,7 +214,7 @@ class SRE_Match():
 
     @property
     def lastgroup(self):
-        return self.result.groupCount
+        return self.compiled_regex.groupCount
 
     @property
     def lastindex(self):
@@ -357,9 +357,9 @@ class SRE_Pattern():
             result = tregex_call_exec(compiled_regex.exec, string, pos)
             if not result.isMatch:
                 break
-            elif result.groupCount == 1:
+            elif compiled_regex.groupCount == 1:
                 matchlist.append(self.__sanitize_out_type(string[result.getStart(0):result.getEnd(0)]))
-            elif result.groupCount == 2:
+            elif compiled_regex.groupCount == 2:
                 matchlist.append(self.__sanitize_out_type(string[result.getStart(1):result.getEnd(1)]))
             else:
                 matchlist.append(tuple(map(self.__sanitize_out_type, SRE_Match(self, pos, endpos, result, string, compiled_regex).groups())))
@@ -368,8 +368,8 @@ class SRE_Pattern():
         return matchlist
 
     def __replace_groups(self, repl, string, match_result, pattern):
-        def group(match_result, group_nr, string):
-            if group_nr >= match_result.groupCount:
+        def group(pattern, match_result, group_nr, string):
+            if group_nr >= pattern.groupCount:
                 return None
             group_start = match_result.getStart(group_nr)
             group_end = match_result.getEnd(group_nr)
@@ -382,10 +382,10 @@ class SRE_Pattern():
         pos = repl.find(backslash, start)
         while pos != -1 and start < n:
             if pos+1 < n:
-                if repl[pos + 1].isdigit() and match_result.groupCount > 0:
+                if repl[pos + 1].isdigit() and pattern.groupCount > 0:
                     # TODO: Should handle backreferences longer than 1 digit and fall back to octal escapes.
                     group_nr = int(repl[pos+1].decode('ascii')) if self.__binary else int(repl[pos+1])
-                    group_str = group(match_result, group_nr, string)
+                    group_str = group(pattern, match_result, group_nr, string)
                     if group_str is None:
                         raise error("invalid group reference %s at position %s" % (group_nr, pos))
                     result += repl[start:pos] + group_str
@@ -393,7 +393,7 @@ class SRE_Pattern():
                 elif repl[pos + 1] == (b'g' if self.__binary else 'g'):
                     group_ref, group_ref_end, digits_only = self.__extract_groupname(repl, pos + 2)
                     if group_ref:
-                        group_str = group(match_result, int(group_ref) if digits_only else pattern.groups[group_ref], string)
+                        group_str = group(pattern, match_result, int(group_ref) if digits_only else pattern.groups[group_ref], string)
                         if group_str is None:
                             raise error("invalid group reference %s at position %s" % (group_ref, pos))
                         result += repl[start:pos] + group_str
@@ -477,7 +477,7 @@ class SRE_Pattern():
             end = match_result.getEnd(0)
             result.append(self.__sanitize_out_type(string[collect_pos:start]))
             # add all group strings
-            for i in range(1, match_result.groupCount):
+            for i in range(1, pattern.groupCount):
                 groupStart = match_result.getStart(i)
                 if groupStart >= 0:
                     result.append(self.__sanitize_out_type(string[groupStart:match_result.getEnd(i)]))
