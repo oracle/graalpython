@@ -48,21 +48,22 @@ TARGETS=${PARSER_PATH}/Python3BaseVisitor.java \
 	${PARSER_PATH}/Python3Lexer.java
 
 SOURCE=${PARSER_PATH}/Python3.g4
+STAMP=${SOURCE}.stamp
 
 .PHONY: default clean
 default: ${TARGETS}
 
-# postprocessing to make source compile without warnings
-define postprocess_file
-	python ${POSTPROCESSOR} $(1)
-endef
-
-${PARSER_PATH}/%.java: ${SOURCE} ${POSTPROCESSOR}
+${STAMP}: ${SOURCE} ${POSTPROCESSOR}
+	$(QUIETLY) touch $@
 	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE}
-	$(QUIETLY) $(call postprocess_file,$@)
+
+# postprocessing to make source compile without warnings
+${PARSER_PATH}/%.java: ${STAMP}
+	$(QUIETLY) python ${POSTPROCESSOR} $@
 
 clean:
 ifeq ($(wildcard ${SOURCE}),)
 	$(error ${SOURCE} is not in the location I expected it to be, not cleaning antlr parser)
 endif
 	$(QUIETLY) rm -f ${TARGETS}
+	$(QUIETLY) rm -f ${STAMP}
