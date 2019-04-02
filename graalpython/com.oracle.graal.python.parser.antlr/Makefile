@@ -57,7 +57,7 @@ define postprocess_file
 	python ${POSTPROCESSOR} $(1)
 endef
 
-${PARSER_PATH}/%.java: ${SOURCE}
+${PARSER_PATH}/%.java: ${SOURCE} ${POSTPROCESSOR}
 	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE}
 	$(QUIETLY) $(call postprocess_file,$@)
 

@@ -48,7 +48,6 @@ COPYRIGHT_HEADER = """\
 """
 
 PTRN_SUPPRESS_WARNINGS = re.compile(r"@SuppressWarnings.*")
-PTRN_GENBY = re.compile(r"Generated from (?P<path>.*)/(?P<grammar>.*.g4)")
 
 
 def replace_suppress_warnings(line):
@@ -59,14 +58,9 @@ def replace_rulectx(line):
         return line.replace("(RuleContext)_localctx", "_localctx")
 
 
-def replace_genby(line):
-        return PTRN_GENBY.sub("Generated from \g<grammar>", line)
-
-
 TRANSFORMS = [
         replace_suppress_warnings,
         replace_rulectx,
-        replace_genby,
 ]
 
 
@@ -74,8 +68,7 @@ def postprocess(file):
         lines = []
         for line in file:
                 for transform in TRANSFORMS:
-                        if hasattr(transform, '__call__'):
-                                line = transform(line)
+                        line = transform(line)
                 lines.append(line)
         return ''.join(lines)
 
