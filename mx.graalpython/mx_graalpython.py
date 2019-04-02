@@ -623,7 +623,7 @@ def update_import_cmd(args):
     if "sulong" in args or "regex" in args or "truffle" in args:
         join = os.path.join
         callback = lambda: shutil.copy(
-            join(SUITE_SULONG.dir, "include", "truffle.h"),
+            join(mx.dependency("SULONG_LEGACY").output, "include", "truffle.h"),
             join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "truffle.h")
         ) and shutil.copy(
             join(mx.dependency("SULONG_LIBS").output, "polyglot.h"),

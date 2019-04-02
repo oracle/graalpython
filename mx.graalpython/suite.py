@@ -233,6 +233,7 @@ suite = {
             "output": ".",
             "buildDependencies": [
                 "sulong:SULONG_LIBS",
+                "sulong:SULONG_LEGACY",
             ],
             "buildEnv": {
                 "POLYGLOT_INC": "<path:SULONG_LIBS>",
