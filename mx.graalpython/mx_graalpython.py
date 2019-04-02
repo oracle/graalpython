@@ -620,7 +620,16 @@ def update_import(name, rev="origin/master", callback=None):
 
 def update_import_cmd(args):
     """Update our mx imports"""
-    if "sulong" in args or "regex" in args or "truffle" in args:
+    if not args:
+        args = ["truffle"]
+    if "sulong" in args:
+        args.append("regex")
+    if "regex" in args:
+        args.append("sulong")
+    if "truffle" in args:
+        args.remove("truffle")
+        args += ["sulong", "regex"]
+    if "sulong" in args:
         join = os.path.join
         callback = lambda: shutil.copy(
             join(mx.dependency("SULONG_LEGACY").output, "include", "truffle.h"),
@@ -629,16 +638,9 @@ def update_import_cmd(args):
             join(mx.dependency("SULONG_LIBS").output, "polyglot.h"),
             join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h")
         )
-        update_import("sulong", callback=callback)
-        update_import("regex")
-        try: args.remove("sulong")
-        except ValueError: pass
-        try: args.remove("truffle")
-        except ValueError: pass
-        try: args.remove("regex")
-        except ValueError: pass
-
-    for name in args:
+    else:
+        callback = None
+    for name in set(args):
         update_import(name, callback=callback)
 
 
