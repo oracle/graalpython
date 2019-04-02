@@ -113,12 +113,6 @@ suite = {
             "source": []
         },
 
-        "python.include": {
-            "type": "python",
-            "path": 'graalpython/include',
-            "source": []
-        },
-
         "python.site-packages": {
             "type": "python",
             "path": 'graalpython/site-packages',
@@ -235,7 +229,7 @@ suite = {
         "com.oracle.graal.python.cext": {
             "subDir": "graalpython",
             "native": True,
-            "vpath": True,
+            "vpath": False,
             "results": ["graalpython/lib-graalpython"],
             "output": ".",
             "buildDependencies": [
