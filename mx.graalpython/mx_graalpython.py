@@ -890,8 +890,10 @@ def mx_post_parse_cmd_line(namespace):
 
 
 def python_coverage(args):
-    "Generate coverage report either running python-junit gate or the gate passed as argument"
-    mx.run_mx(['--jacoco-whitelist-package', 'com.oracle.graal.python', '--primary', 'gate', '--tags', args[0] if args else 'python-junit', '--jacocout', 'html'])
+    "Generate coverage report running args"
+    mx.run_mx(['--jacoco=on', '--jacoco-whitelist-package=com.oracle.graal.python'] + args)
+    mx.command_function("jacocoreport")(["--omit-excluded", "--format=html"])
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------
