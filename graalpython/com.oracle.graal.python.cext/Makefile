@@ -82,3 +82,6 @@ clean:
 	$(QUIETLY) rm -f ${OBJ_FILES}
 	$(QUIETLY) rm -f ${MODULE_TARGETS}
 	$(QUIETLY) rm -f ${MODULE_OBJ_FILES}
+ifeq ($(wildcard ../com.oracle.graal.python.test/src/tests/cpyext/*.bc),)
+	rm -f $(wildcard ../com.oracle.graal.python.test/src/tests/cpyext/*.bc)
+endif
