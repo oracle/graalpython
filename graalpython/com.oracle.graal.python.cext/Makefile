@@ -48,8 +48,12 @@ MODULE_SOURCES=$(wildcard modules/*.c)
 MODULE_OBJ_FILES=$(MODULE_SOURCES:%.c=%.o)
 MODULE_TARGETS=$(MODULE_SOURCES:modules/%.c=${LIBDIR}/modules/%.bc)
 
+# These are just needed to allow compilation from source, because include needs
+# to be next to lib-graalpython
+HEADER_TARGETS=$(INCLUDE_FILES:include/%.h=../include/%.h)
+
 .PHONY: default clean
-default: ${TARGET_LIB} ${MODULE_TARGETS} compile_flags.txt
+default: ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS} compile_flags.txt
 
 
 CFLAGS=${LLVM_TARGET_FLAGS} -O1 -ggdb -emit-llvm
@@ -60,7 +64,7 @@ INCLUDES=-I${POLYGLOT_INC} -Iinclude
 
 rebuild:
 	$(MAKE) clean
-	$(MAKE) ${TARGET_LIB} ${MODULE_TARGETS}
+	$(MAKE) default
 
 ${LIBDIR}/modules/%.bc: modules/%.o
 	$(QUIETLY) mkdir -p ${LIBDIR}/modules
@@ -77,11 +81,16 @@ modules/%.o: modules/%.c Makefile src/capi.h ${INCLUDE_FILES}
 	$(QUIETLY) clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
 	$(QUIETLY) opt -o $@ $@ ${OPT_FLAGS}
 
+../include/%.h: ${INCLUDE_FILES}
+	$(QUIETLY) mkdir -p ../include/
+	$(QUIETLY) cp $(@:../include/%.h=include/%.h) $@
+
 clean:
 	$(QUIETLY) rm -f ${TARGET_LIB}
 	$(QUIETLY) rm -f ${OBJ_FILES}
 	$(QUIETLY) rm -f ${MODULE_TARGETS}
 	$(QUIETLY) rm -f ${MODULE_OBJ_FILES}
+	$(QUIETLY) rm -f ${HEADER_TARGETS}
 	$(QUIETLY) rm -f compile_flags.txt
 ifeq ($(wildcard ../com.oracle.graal.python.test/src/tests/cpyext/*.bc),)
 	rm -f $(wildcard ../com.oracle.graal.python.test/src/tests/cpyext/*.bc)
