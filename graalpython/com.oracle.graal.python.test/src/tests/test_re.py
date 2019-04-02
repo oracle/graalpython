@@ -254,6 +254,14 @@ class ReTests(unittest.TestCase):
             self.checkPatternError(r'(?(-1))', "bad character in group name '-1'", 3)
             self.assertEqual(re.match(pat, 'xc8yz').span(), (0, 5))
 
+    def test_re_subn(self):
+        self.assertEqual(re.subn("(?i)b+", "x", "bbbb BBBB"), ('x x', 2))
+        self.assertEqual(re.subn("b+", "x", "bbbb BBBB"), ('x BBBB', 1))
+        self.assertEqual(re.subn("b+", "x", "xyz"), ('xyz', 0))
+        self.assertEqual(re.subn("b*", "x", "xyz"), ('xxxyxzx', 4))
+        self.assertEqual(re.subn("b*", "x", "xyz", 2), ('xxxyz', 2))
+        self.assertEqual(re.subn("b*", "x", "xyz", count=2), ('xxxyz', 2))
+
     def test_re_split(self):
         for string in ":a:b::c", S(":a:b::c"):
             self.assertTypedEqual(re.split(":", string),
@@ -357,6 +365,36 @@ class ReTests(unittest.TestCase):
         assert '\ufb05'.upper() == '\ufb06'.upper() == 'ST'  # 'ﬅ', 'ﬆ'
 #         self.assertTrue(re.match(r'[19\ufb05]', '\ufb06', re.I))
 #         self.assertTrue(re.match(r'[19\ufb06]', '\ufb05', re.I))
+
+    def test_getattr(self):
+        self.assertEqual(re.compile("(?i)(a)(b)").pattern, "(?i)(a)(b)")
+        # TODO at the moment, we use slightly different default flags
+        #self.assertEqual(re.compile("(?i)(a)(b)").flags, re.I | re.U)
+        
+        # TODO re-enable this test once TRegex provides this property
+        #self.assertEqual(re.compile("(?i)(a)(b)").groups, 2)
+        self.assertEqual(re.compile("(?i)(a)(b)").groupindex, {})
+        self.assertEqual(re.compile("(?i)(?P<first>a)(?P<other>b)").groupindex,
+                         {'first': 1, 'other': 2})
+
+        self.assertEqual(re.match("(a)", "a").pos, 0)
+        self.assertEqual(re.match("(a)", "a").endpos, 1)
+        self.assertEqual(re.match("(a)", "a").string, "a")
+
+        # TODO not yet supported
+        #self.assertEqual(re.match("(a)", "a").regs, ((0, 1), (0, 1)))
+
+        self.assertTrue(re.match("(a)", "a").re)
+
+        # Issue 14260. groupindex should be non-modifiable mapping.
+        p = re.compile(r'(?i)(?P<first>a)(?P<other>b)')
+        self.assertEqual(sorted(p.groupindex), ['first', 'other'])
+        self.assertEqual(p.groupindex['other'], 2)
+        
+        if sys.version_info.minor >= 6:
+            with self.assertRaises(TypeError):
+                p.groupindex['other'] = 0
+        self.assertEqual(p.groupindex['other'], 2)
 
     def test_backreference(self):
         compiled = re.compile(r"(.)\1")
