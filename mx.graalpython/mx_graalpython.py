@@ -162,6 +162,7 @@ def punittest(args):
 
 PYTHON_ARCHIVES = ["GRAALPYTHON-LAUNCHER",
                    "GRAALPYTHON",
+                   "GRAALPYTHON_UNIT_TESTS",
                    "GRAALPYTHON_GRAALVM_SUPPORT"]
 PYTHON_NATIVE_PROJECTS = ["com.oracle.graal.python.parser.antlr",
                           "com.oracle.graal.python.cext"]
@@ -170,6 +171,7 @@ PYTHON_NATIVE_PROJECTS = ["com.oracle.graal.python.parser.antlr",
 def nativebuild(args):
     "Build the non-Java Python projects and archives"
     mx.build(["--only", ",".join(PYTHON_NATIVE_PROJECTS + PYTHON_ARCHIVES)])
+    mx.archive(["@" + a for a in PYTHON_ARCHIVES])
 
 
 def nativeclean(args):
