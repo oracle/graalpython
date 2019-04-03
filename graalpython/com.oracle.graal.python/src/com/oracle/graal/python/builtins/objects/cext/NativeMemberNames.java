@@ -147,7 +147,7 @@ public final class NativeMemberNames {
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
     public static boolean isValid(String name) {
         for (int i = 0; i < values.length; i++) {
-            if (values[i].equals(name)) {
+            if (name.equals(values[i])) {
                 return true;
             }
         }

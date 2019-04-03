@@ -116,7 +116,7 @@ public class ErrorMessageFormatter {
 
     @TruffleBoundary
     private static String getMessage(Throwable exception) {
-        return exception.getMessage();
+        return exception.getClass().getSimpleName() + ": " + exception.getMessage();
     }
 
     private static String getClassName(GetLazyClassNode getClassNode, Object obj) {

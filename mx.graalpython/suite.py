@@ -113,12 +113,6 @@ suite = {
             "source": []
         },
 
-        "python.include": {
-            "type": "python",
-            "path": 'graalpython/include',
-            "source": []
-        },
-
         "python.site-packages": {
             "type": "python",
             "path": 'graalpython/site-packages',
@@ -158,7 +152,6 @@ suite = {
             "buildEnv": {
                 "ANTLR_JAR": "<path:truffle:ANTLR4_COMPLETE>",
                 "PARSER_PATH": "<src_dir:com.oracle.graal.python>/com/oracle/graal/python/parser/antlr",
-                "OUTPUT_PATH": "<src_dir:com.oracle.graal.python>/com/oracle/graal/python/parser/antlr",
                 "PARSER_PKG": "com.oracle.graal.python.parser.antlr",
                 "POSTPROCESSOR": "<suite:graalpython>/graalpython/com.oracle.graal.python.parser.antlr/postprocess.py",
             },
@@ -167,7 +160,7 @@ suite = {
             ],
             "jacoco": "include",
             "native": True,
-            "vpath": True,
+            "vpath": False,
         },
 
         "com.oracle.graal.python.shell": {
@@ -211,6 +204,7 @@ suite = {
                 "truffle:TRUFFLE_TCK",
                 "mx:JUNIT"
             ],
+            "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "8+",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
@@ -235,11 +229,12 @@ suite = {
         "com.oracle.graal.python.cext": {
             "subDir": "graalpython",
             "native": True,
-            "vpath": True,
+            "vpath": False,
             "results": ["graalpython/lib-graalpython"],
             "output": ".",
             "buildDependencies": [
                 "sulong:SULONG_LIBS",
+                "sulong:SULONG_LEGACY",
             ],
             "buildEnv": {
                 "POLYGLOT_INC": "<path:SULONG_LIBS>",
