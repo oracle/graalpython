@@ -475,8 +475,9 @@ public abstract class CExtNodes {
         Object doNativeObject(TruffleObject object,
                         @Cached PythonObjectFactory factory,
                         @SuppressWarnings("unused") @Cached("create()") GetLazyClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached("create()") IsBuiltinClassProfile isForeignClassProfile) {
-            return factory.createNativeObjectWrapper(object);
+                        @SuppressWarnings("unused") @Cached("create()") IsBuiltinClassProfile isForeignClassProfile,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            return factory.createNativeObjectWrapper(object, context);
         }
 
         @Specialization
@@ -543,13 +544,13 @@ public abstract class CExtNodes {
                 return ((PythonNativeWrapper) object).getDelegate();
             } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(object), PythonBuiltinClassType.TruffleObject)) {
                 if (forceNativeClass) {
-                    return PythonLanguage.getCore().factory().createNativeClassWrapper((TruffleObject) object);
+                    return PythonObjectFactory.getUncached().createNativeClassWrapper((TruffleObject) object);
                 }
-                return PythonLanguage.getCore().factory().createNativeObjectWrapper((TruffleObject) object);
+                return PythonObjectFactory.getUncached().createNativeObjectWrapper((TruffleObject) object);
             } else if (object instanceof String || object instanceof Number || object instanceof Boolean || object instanceof PythonNativeNull || object instanceof PythonAbstractObject) {
                 return object;
             }
-            throw PythonLanguage.getCore().raise(PythonErrorType.SystemError, "invalid object from native: %s", object);
+            throw PRaiseNode.getUncached().raise(PythonErrorType.SystemError, "invalid object from native: %s", object);
         }
 
         // TODO(fa): Workaround for DSL bug: did not import factory at users
@@ -1673,11 +1674,14 @@ public abstract class CExtNodes {
          * native context, so we can be sure that the "nativeClassStableAssumption" (which is
          * per-context) is from the context in which this native object was created.
          */
-        @Specialization(guards = {"cachedObj.equals(obj)", "memberName == cachedMemberName"}, limit = "1", assumptions = "getNativeClassStableAssumption(cachedObj)")
-        public Object doCachedObj(@SuppressWarnings("unused") PythonNativeClass obj, @SuppressWarnings("unused") String memberName,
+        @Specialization(guards = {"isSameNativeObjectNode.execute(cachedObj, obj)", "memberName == cachedMemberName"}, //
+                        limit = "1", //
+                        assumptions = {"getNativeClassStableAssumption(cachedObj)", "singleContextAssumption()"})
+        public Object doCachedObj(@SuppressWarnings("unused") PythonAbstractNativeObject obj, @SuppressWarnings("unused") String memberName,
+                        @SuppressWarnings("unused") @Cached IsSameNativeObjectFastNode isSameNativeObjectNode,
                         @SuppressWarnings("unused") @Cached("memberName") String cachedMemberName,
                         @SuppressWarnings("unused") @Cached("getterFuncName(memberName)") String getterFuncName,
-                        @Cached("obj") @SuppressWarnings("unused") PythonNativeClass cachedObj,
+                        @Cached("obj") @SuppressWarnings("unused") PythonAbstractNativeObject cachedObj,
                         @Cached("doSlowPath(obj, getterFuncName)") Object result) {
             return result;
         }
@@ -1756,5 +1760,40 @@ public abstract class CExtNodes {
             return wrapper;
         }
 
+    }
+
+    public abstract static class IsSameNativeObjectNode extends CExtBaseNode {
+
+        public abstract boolean execute(PythonAbstractNativeObject left, PythonAbstractNativeObject right);
+
+        protected static boolean doNativeFast(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
+            // This check is a bit dangerous since we cannot be sure about the code that is running.
+            // Currently, we assume that the pointer object is a Sulong pointer and for this it's
+            // fine.
+            return left.equals(right);
+        }
+
+    }
+
+    @GenerateUncached
+    public abstract static class IsSameNativeObjectFastNode extends IsSameNativeObjectNode {
+
+        @Specialization
+        boolean doSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
+            return IsSameNativeObjectNode.doNativeFast(left, right);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class IsSameNativeObjectSlowNode extends IsSameNativeObjectNode {
+
+        @Specialization
+        boolean doSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
+                        @Cached PointerCompareNode pointerCompareNode) {
+            if (IsSameNativeObjectNode.doNativeFast(left, right)) {
+                return true;
+            }
+            return pointerCompareNode.execute(SpecialMethodNames.__EQ__, left, right);
+        }
     }
 }
