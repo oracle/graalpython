@@ -58,7 +58,7 @@ class _RegexResult:
         self.groupCount = groupCount
         self._start = start
         self._end = end
-        
+
     def getStart(self, grpidx):
         return self._start[grpidx]
 
@@ -92,7 +92,7 @@ def setup(sre_compiler, error_class, flags_table):
                     bit_flags = bit_flags | FLAGS[flag]
 
             compiled_pattern = sre_compiler(pattern if mode == "str" else _str_to_bytes(pattern), bit_flags)
-            
+
             # wraps a native 're.Pattern' object
             class ExecutablePattern:
                 def __call__(self, *args):
@@ -297,7 +297,7 @@ class SRE_Pattern():
         else:
             sep = ", "
             sflags = "|".join(flag_items)
-        return "re.compile(%s%s%s)" % (self.pattern, sep, sflags)
+        return "re.compile(%r%s%s)" % (self.pattern, sep, sflags)
 
     def _search(self, pattern, string, pos, endpos, sticky=False):
         pattern = self.__tregex_compile(pattern, self.flags_str + ("y" if sticky else ""))
