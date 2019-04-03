@@ -79,7 +79,7 @@ public final class PythonContext {
     private PException currentException;
 
     /* corresponds to 'PyThreadState.exc_*' */
-    private PException caughtException;
+    private PException caughtException = PException.LAZY_FETCH_EXCEPTION;
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;

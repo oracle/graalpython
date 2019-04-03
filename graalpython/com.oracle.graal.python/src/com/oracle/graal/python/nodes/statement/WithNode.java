@@ -40,8 +40,9 @@ import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -61,7 +62,7 @@ public class WithNode extends StatementNode {
     @Child private PRaiseNode raiseNode;
     @Child private PythonObjectFactory factory;
     @Child private GetCaughtExceptionNode getCaughtExceptionNode = GetCaughtExceptionNode.create();
-    @Child private SetCaughtExceptionNode setCaughtExceptionNode;
+    @Child private RestoreExceptionStateNode restoreExceptionStateNode;
 
     private final BranchProfile noEnter = BranchProfile.create();
     private final BranchProfile noExit = BranchProfile.create();
@@ -115,7 +116,7 @@ public class WithNode extends StatementNode {
             noExit.enter();
             throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", withObject, __EXIT__);
         }
-        PException exceptionState = doEnter(frame, withObject, enterCallable);
+        ExceptionState exceptionState = doEnter(frame, withObject, enterCallable);
         try {
             doBody(frame);
         } catch (PException exception) {
@@ -144,7 +145,7 @@ public class WithNode extends StatementNode {
      * Leave the with-body. Call __exit__ if it hasn't already happened because of an exception, and
      * reset the exception state.
      */
-    protected void doLeave(VirtualFrame frame, Object withObject, PException exceptionState, boolean gotException, Object exitCallable) {
+    protected void doLeave(VirtualFrame frame, Object withObject, ExceptionState exceptionState, boolean gotException, Object exitCallable) {
         if (!gotException) {
             exitDispatch.execute(frame, exitCallable, new Object[]{withObject, PNone.NONE, PNone.NONE, PNone.NONE}, PKeyword.EMPTY_KEYWORDS);
         }
@@ -155,8 +156,8 @@ public class WithNode extends StatementNode {
      * Call the __enter__ method and return the exception state as it was before starting the with
      * statement
      */
-    protected PException doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
-        PException caughtException = getCaughtExceptionNode.execute(frame);
+    protected ExceptionState doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
+        ExceptionState caughtException = getCaughtExceptionNode.execute(frame);
         applyValues(frame, enterDispatch.execute(frame, enterCallable, new Object[]{withObject}, PKeyword.EMPTY_KEYWORDS));
         return caughtException;
     }
@@ -187,11 +188,11 @@ public class WithNode extends StatementNode {
         return withContext;
     }
 
-    private void restoreExceptionState(VirtualFrame frame, PException exceptionState) {
-        if (setCaughtExceptionNode == null) {
+    private void restoreExceptionState(VirtualFrame frame, ExceptionState exceptionState) {
+        if (restoreExceptionStateNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            setCaughtExceptionNode = insert(SetCaughtExceptionNode.create());
+            restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
         }
-        setCaughtExceptionNode.execute(frame, exceptionState);
+        restoreExceptionStateNode.execute(frame, exceptionState);
     }
 }

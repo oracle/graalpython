@@ -25,7 +25,9 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.GetCaughtExceptionNodeGen;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -37,6 +39,7 @@ public class TryFinallyNode extends StatementNode {
     @Child private StatementNode body;
     @Child private StatementNode finalbody;
     @Child private GetCaughtExceptionNode getCaughtExceptionNode;
+    @Child private RestoreExceptionStateNode restoreExceptionStateNode;
     @Child private SetCaughtExceptionNode setCaughtExceptionNode;
 
     public TryFinallyNode(StatementNode body, StatementNode finalbody) {
@@ -46,7 +49,7 @@ public class TryFinallyNode extends StatementNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        PException exceptionState = ensureGetCaughtExceptionNode().execute(frame);
+        ExceptionState exceptionState = ensureGetCaughtExceptionNode().execute(frame);
         if (finalbody == null) {
             try {
                 body.executeVoid(frame);
@@ -59,7 +62,7 @@ public class TryFinallyNode extends StatementNode {
                 body.executeVoid(frame);
             } catch (PException e) {
                 // any thrown Python exception is visible in the finally block
-                setCaughtExceptionNode.execute(frame, e);
+                ensureSetCaughtExceptionNode().execute(frame, e);
                 throw e;
             } finally {
                 try {
@@ -75,12 +78,12 @@ public class TryFinallyNode extends StatementNode {
         }
     }
 
-    private void restoreExceptionState(VirtualFrame frame, PException exceptionState) {
-        if (setCaughtExceptionNode == null) {
+    private void restoreExceptionState(VirtualFrame frame, ExceptionState exceptionState) {
+        if (restoreExceptionStateNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            setCaughtExceptionNode = insert(SetCaughtExceptionNode.create());
+            restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
         }
-        setCaughtExceptionNode.execute(frame, exceptionState);
+        restoreExceptionStateNode.execute(frame, exceptionState);
     }
 
     public StatementNode getBody() {
@@ -97,5 +100,13 @@ public class TryFinallyNode extends StatementNode {
             getCaughtExceptionNode = insert(GetCaughtExceptionNodeGen.create());
         }
         return getCaughtExceptionNode;
+    }
+
+    private SetCaughtExceptionNode ensureSetCaughtExceptionNode() {
+        if (setCaughtExceptionNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            setCaughtExceptionNode = insert(SetCaughtExceptionNode.create());
+        }
+        return setCaughtExceptionNode;
     }
 }

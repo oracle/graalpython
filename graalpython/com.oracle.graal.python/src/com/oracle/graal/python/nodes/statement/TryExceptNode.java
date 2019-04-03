@@ -42,8 +42,9 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
@@ -78,7 +79,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Child private StatementNode orelse;
     @Child private PythonObjectFactory ofactory;
     @Child private GetCaughtExceptionNode getCaughtExceptionNode = GetCaughtExceptionNode.create();
-    @Child private SetCaughtExceptionNode setCaughtExceptionNode;
+    @Child private RestoreExceptionStateNode restoreExceptionStateNode;
 
     private final boolean shouldCatchAll;
     private final Assumption singleContextAssumption;
@@ -112,7 +113,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Override
     public void executeVoid(VirtualFrame frame) {
         // store current exception state for later restore
-        PException exceptionState = getCaughtExceptionNode.execute(frame);
+        ExceptionState exceptionState = getCaughtExceptionNode.execute(frame);
         try {
             body.executeVoid(frame);
         } catch (PException ex) {
@@ -158,7 +159,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     }
 
     @ExplodeLoop
-    private void catchException(VirtualFrame frame, PException exception, PException exceptionState) {
+    private void catchException(VirtualFrame frame, PException exception, ExceptionState exceptionState) {
         boolean wasHandled = false;
         for (ExceptNode exceptNode : exceptNodes) {
             // we want a constant loop iteration count for ExplodeLoop to work,
@@ -172,7 +173,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                     } catch (ControlFlowException e) {
                         // restore previous exception state, this won't happen if the except block
                         // raises an exception
-                        setCaughtException(frame, exceptionState);
+                        restoreExceptionState(frame, exceptionState);
                         throw e;
                     }
                 }
@@ -183,7 +184,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         }
         // restore previous exception state, this won't happen if the except block
         // raises an exception
-        setCaughtException(frame, exceptionState);
+        restoreExceptionState(frame, exceptionState);
     }
 
     public StatementNode getBody() {
@@ -304,11 +305,11 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         this.catchesFunction = catchesFunction;
     }
 
-    private void setCaughtException(VirtualFrame frame, PException e) {
-        if (setCaughtExceptionNode == null) {
+    private void restoreExceptionState(VirtualFrame frame, ExceptionState e) {
+        if (restoreExceptionStateNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            setCaughtExceptionNode = insert(SetCaughtExceptionNode.create());
+            restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
         }
-        setCaughtExceptionNode.execute(frame, e);
+        restoreExceptionStateNode.execute(frame, e);
     }
 }
