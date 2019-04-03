@@ -130,6 +130,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "This option control builtin _thread module support") //
     public static final OptionKey<Boolean> WithThread = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.EXPERT, help = "Use the optimized TRegex engine and call the CPython sre engine only as a fallback. Default true") //
+    public static final OptionKey<Boolean> WithTRegex = new OptionKey<>(true);
+
     @Option(category = OptionCategory.EXPERT, help = "Switch on/off using lazy strings for performance reasons. Default true.") //
     public static final OptionKey<Boolean> LazyStrings = new OptionKey<>(true);
 

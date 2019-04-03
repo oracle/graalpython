@@ -37,8 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import polyglot as _interop
-
 from mmap import mmap
 
 _mappingpoxy = type(type.__dict__)
@@ -81,6 +79,40 @@ def setup(sre_compiler, error_class, flags_table):
     FLAGS = flags_table
 
     def configure_fallback_compiler(mode):
+        # wraps a native 're.Pattern' object
+        class ExecutablePattern:
+            def __init__(self, sticky, compiled_pattern):
+                self.__sticky__ = sticky
+                self.__compiled_pattern__ = compiled_pattern
+
+            def __call__(self, *args):
+                # deprecated
+                return self.exec(*args)
+
+            def exec(self, *args):
+                nargs = len(args)
+                if nargs == 2:
+                    # new-style signature
+                    pattern_input, from_index = args
+                elif nargs == 3:
+                    # old-style signature; deprecated
+                    _, pattern_input, from_index = args
+                else:
+                    raise TypeError("invalid arguments: " + repr(args))
+                if self.__sticky__:
+                    result = self.__compiled_pattern__.match(pattern_input, from_index)
+                else:
+                    result = self.__compiled_pattern__.search(pattern_input, from_index)
+                is_match = result is not None
+                group_count = 1 + self.__compiled_pattern__.groups
+                return _RegexResult(
+                    pattern_input = pattern_input,
+                    isMatch = is_match,
+                    groupCount = group_count if is_match else 0,
+                    start = [result.start(i) for i in range(group_count)] if is_match else [],
+                    end = [result.end(i) for i in range(group_count)] if is_match else []
+                )
+
         def fallback_compiler(pattern, flags):
             sticky = False
             bit_flags = 0
@@ -93,52 +125,29 @@ def setup(sre_compiler, error_class, flags_table):
 
             compiled_pattern = sre_compiler(pattern if mode == "str" else _str_to_bytes(pattern), bit_flags)
 
-            # wraps a native 're.Pattern' object
-            class ExecutablePattern:
-                def __call__(self, *args):
-                    # deprecated
-                    return self.exec(*args)
-
-                def exec(self, *args):
-                    nargs = len(args)
-                    if nargs == 2:
-                        # new-style signature
-                        pattern_input, from_index = args
-                    elif nargs == 3:
-                        # old-style signature; deprecated
-                        _, pattern_input, from_index = args
-                    else:
-                        raise TypeError("invalid arguments: " + repr(args))
-                    search_method = compiled_pattern.match if sticky else compiled_pattern.search
-                    result = search_method(pattern_input, from_index)
-                    is_match = result is not None
-                    group_count = 1 + compiled_pattern.groups
-                    return _RegexResult(
-                        pattern_input = pattern_input,
-                        isMatch = is_match,
-                        groupCount = group_count if is_match else 0,
-                        start = [result.start(i) for i in range(group_count)] if is_match else [],
-                        end = [result.end(i) for i in range(group_count)] if is_match else []
-                    )
-
-            return ExecutablePattern()
+            return ExecutablePattern(sticky, compiled_pattern)
 
         return fallback_compiler
 
     engine_builder = _build_regex_engine("")
 
-    global TREGEX_ENGINE_STR
-    global TREGEX_ENGINE_BYTES
-    TREGEX_ENGINE_STR = engine_builder("Flavor=PythonStr", configure_fallback_compiler("str"))
-    TREGEX_ENGINE_BYTES = engine_builder("Flavor=PythonBytes", configure_fallback_compiler("bytes"))
+    if engine_builder:
+        global TREGEX_ENGINE_STR
+        global TREGEX_ENGINE_BYTES
+        TREGEX_ENGINE_STR = engine_builder("Flavor=PythonStr", configure_fallback_compiler("str"))
+        TREGEX_ENGINE_BYTES = engine_builder("Flavor=PythonBytes", configure_fallback_compiler("bytes"))
 
-    def new_compile(p, flags=0):
-        if isinstance(p, (str, bytes)):
-            return _tcompile(p, flags)
-        else:
+        def new_compile(p, flags=0):
+            if isinstance(p, (str, bytes)):
+                return _tcompile(p, flags)
+            else:
+                return sre_compiler(p, flags)
+    else:
+        def new_compile(p, flags=0):
             return sre_compiler(p, flags)
 
     return new_compile
+
 
 CODESIZE = 4
 
@@ -196,8 +205,8 @@ class SRE_Match():
     def groupdict(self, default=None):
         d = {}
         if self.compiled_regex.groups:
-            assert _interop.__has_keys__(self.compiled_regex.groups)
-            for k in _interop.__keys__(self.compiled_regex.groups):
+            assert dir(self.compiled_regex.groups)
+            for k in dir(self.compiled_regex.groups):
                 idx = self.compiled_regex.groups[k]
                 d[k] = self.__group__(idx)
         return d
@@ -250,7 +259,7 @@ class SRE_Pattern():
         if self.__tregex_compile(self.pattern).groups is not None:
             for group_name in dir(self.__tregex_compile(self.pattern).groups):
                 groups = self.__tregex_compile(self.pattern).groups
-                self.groups = _interop.__get_size__(_interop.__keys__(groups))
+                self.groups = len(dir(groups))
                 groupindex[group_name] = groups[group_name]
         self.groupindex = _mappingpoxy(groupindex)
 
