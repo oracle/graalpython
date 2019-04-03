@@ -70,6 +70,7 @@ COPYRIGHT_HEADER = """\
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 // Checkstyle: stop
+// JaCoCo Exclude
 //@formatter:off
 {0}
 """
