@@ -256,7 +256,7 @@ def python_svm(args):
     out = mx.OutputCapture()
     mx.run_mx(_SVM_ARGS + ["graalvm-home"], out=mx.TeeOutputCapture(out))
     svm_image = os.path.join(out.data.strip(), "bin", "graalpython")
-    print(svm_image)
+    mx.log(svm_image)
     mx.run([svm_image] + args)
     return svm_image
 
