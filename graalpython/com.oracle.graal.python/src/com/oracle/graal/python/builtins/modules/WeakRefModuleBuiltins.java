@@ -114,6 +114,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             try {
                 reference = weakRefQueue.remove();
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
             if (reference instanceof PReferenceType.WeakRefStorage) {
                 return new WeakrefCallbackAction((PReferenceType.WeakRefStorage) reference);
