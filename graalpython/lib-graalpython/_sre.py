@@ -535,3 +535,13 @@ def unicode_iscased(codepoint):
 @__builtin__
 def unicode_tolower(codepoint):
     return ord(chr(codepoint).lower())
+
+
+@__builtin__
+def ascii_iscased(codepoint):
+    return codepoint < 128 and chr(codepoint).isalpha()
+
+
+@__builtin__
+def ascii_tolower(codepoint):
+    return ord(chr(codepoint).lower()) if codepoint < 128 else codepoint
