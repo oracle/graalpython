@@ -77,7 +77,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -414,10 +413,6 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         public DeflaterWrapper(Deflater deflater) {
             this.deflater = deflater;
         }
-
-        public ForeignAccess getForeignAccess() {
-            return null;
-        }
     }
 
     @Builtin(name = "zlib_deflateCompress", minNumOfPositionalArgs = 3)
@@ -484,10 +479,6 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         public InflaterWrapper(Inflater inflater) {
             this.inflater = inflater;
         }
-
-        public ForeignAccess getForeignAccess() {
-            return null;
-        }
     }
 
     @Builtin(name = "zlib_inflateDecompress", minNumOfPositionalArgs = 3)
@@ -510,7 +501,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                 try {
                     bytesWritten = stream.inflater.inflate(result, 0, result.length);
                 } catch (DataFormatException e) {
-                    throw raise(ZLibError, e.getMessage());
+                    throw raise(ZLibError, e);
                 }
                 baos.write(result, 0, bytesWritten);
             }

@@ -39,7 +39,7 @@
 
 import sys
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, GRAALPYTHON
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -225,6 +225,17 @@ class TestObject(object):
         tester = TestSlotsInitialized(2012, 4, 4)
         assert tester.year == 2012, "year was %s "% tester.year
 
+    def test_no_dictoffset(self):
+        TestNoDictoffset = CPyExtType("TestNoDictoffset", "")
+        
+        class TestNoDictoffsetSubclass(TestNoDictoffset):
+            pass
+        
+        obj = TestNoDictoffsetSubclass()
+        
+        obj.__dict__["newAttr"] = 123
+        assert obj.newAttr == 123, "invalid attr"
+
     def test_float_subclass(self):
         TestFloatSubclass = CPyExtType("TestFloatSubclass",
                                        """
@@ -272,6 +283,36 @@ class TestObject(object):
         res = tester + 1
         assert res == 42.0, "expected 42.0 but was %s" % res
         
+    def test_custom_basicsize(self):
+        TestCustomBasicsize = CPyExtType("TestCustomBasicsize", 
+                                      '''
+                                          Py_ssize_t global_basicsize = -1;
+
+                                          static PyObject* get_basicsize(PyObject* self, PyObject* is_graalpython) {
+                                              // The basicsize will be the struct's size plus a pointer to the object's dict and weaklist.
+                                              // Graalpython does currently not implement the weaklist, so do not add in this case.
+                                              if (PyObject_IsTrue(is_graalpython)) {
+                                                  return PyLong_FromSsize_t(global_basicsize + sizeof(PyObject*));
+                                              } else {
+                                                  return PyLong_FromSsize_t(global_basicsize + 2 * sizeof(PyObject*));
+                                              }
+                                          }
+                                      ''',
+                                      cmembers='''long long field0;
+                                      int field1;
+                                      ''',
+                                      tp_methods='{"get_basicsize", (PyCFunction)get_basicsize, METH_O, ""}',
+                                      post_ready_code="global_basicsize = TestCustomBasicsizeType.tp_basicsize;"
+                                      )
+        class TestCustomBasicsizeSubclass(TestCustomBasicsize):
+            pass
+        
+        obj = TestCustomBasicsizeSubclass()
+
+        # TODO pass False as soon as we implement 'tp_weaklistoffset'
+        expected_basicsize = obj.get_basicsize(GRAALPYTHON)
+        actual_basicsize = TestCustomBasicsizeSubclass.__basicsize__
+        assert expected_basicsize == actual_basicsize, "expected = %s, actual = %s" % (expected_basicsize, actual_basicsize)
 
 
 class TestObjectFunctions(CPyExtTestCase):

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,12 +28,9 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 
-public class SequenceStorageFactory {
+public abstract class SequenceStorageFactory {
 
-    public SequenceStorageFactory() {
-    }
-
-    public SequenceStorage createStorage(Object[] values) {
+    public static SequenceStorage createStorage(Object[] values) {
         assert values != null;
         assert values.getClass() == Object[].class : "cannot use non-Object array for modifiable list";
 

@@ -49,6 +49,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -56,7 +57,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -70,18 +70,20 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetIt
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListReverseNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.SpliceNodeGen;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.StringLenNodeFactory;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.JoinInternalNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
@@ -100,6 +102,7 @@ import com.oracle.graal.python.runtime.formatting.StringFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -107,7 +110,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.math.BigInteger;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
 public final class StringBuiltins extends PythonBuiltins {
@@ -903,18 +906,19 @@ public final class StringBuiltins extends PythonBuiltins {
 
     protected abstract static class SpliceNode extends PNodeWithContext {
         public static SpliceNode create() {
-            return SpliceNodeGen.create();
+            return StringBuiltinsFactory.SpliceNodeGen.create();
         }
 
         protected abstract char[] execute(char[] translatedChars, int i, Object translated);
 
         @Specialization
         char[] doInt(char[] translatedChars, int i, int translated,
+                        @Shared("raise") @Cached PRaiseNode raise,
                         @Cached("create()") BranchProfile ovf) {
             char t = (char) translated;
             if (t != translated) {
                 ovf.enter();
-                throw raiseError();
+                throw raiseError(raise);
             }
             translatedChars[i] = t;
             return translatedChars;
@@ -922,28 +926,30 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         char[] doLong(char[] translatedChars, int i, long translated,
+                        @Shared("raise") @Cached PRaiseNode raise,
                         @Cached("create()") BranchProfile ovf) {
             char t = (char) translated;
             if (t != translated) {
                 ovf.enter();
-                throw raiseError();
+                throw raiseError(raise);
             }
             translatedChars[i] = t;
             return translatedChars;
         }
 
-        private PException raiseError() {
-            return raise(ValueError, "character mapping must be in range(0x%s)", Integer.toHexString(Character.MAX_CODE_POINT + 1));
+        private static PException raiseError(PRaiseNode raise) {
+            return raise.raise(ValueError, "character mapping must be in range(0x%s)", Integer.toHexString(Character.MAX_CODE_POINT + 1));
         }
 
         @Specialization
         char[] doPInt(char[] translatedChars, int i, PInt translated,
+                        @Shared("raise") @Cached PRaiseNode raise,
                         @Cached("create()") BranchProfile ovf) {
             double doubleValue = translated.doubleValue();
             char t = (char) doubleValue;
             if (t != doubleValue) {
                 ovf.enter();
-                throw raiseError();
+                throw raiseError(raise);
             }
             translatedChars[i] = t;
             return translatedChars;
@@ -1021,7 +1027,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public PList doSplit(String self, String sep,
-                        @Cached("create()") ListAppendNode appendNode) {
+                        @Cached("create()") AppendNode appendNode) {
             int lastIndexOf = self.lastIndexOf(sep);
             PList list = factory().createList();
             if (lastIndexOf == -1) {
@@ -1039,13 +1045,13 @@ public final class StringBuiltins extends PythonBuiltins {
 
     protected abstract static class SplitBaseNode extends PythonTernaryBuiltinNode {
 
-        @Child private ListAppendNode appendNode;
+        @Child private AppendNode appendNode;
         @Child private ListReverseNode reverseNode;
 
-        protected ListAppendNode getAppendNode() {
+        protected AppendNode getAppendNode() {
             if (appendNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                appendNode = insert(ListAppendNode.create());
+                appendNode = insert(AppendNode.create());
             }
             return appendNode;
         }
@@ -1295,7 +1301,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SplitLinesNode extends PythonBinaryBuiltinNode {
-        @Child private ListAppendNode appendNode = ListAppendNode.create();
+        @Child private AppendNode appendNode = AppendNode.create();
         @Child private CastToBooleanNode keepEndsNode = CastToBooleanNode.createIfTrueNode();
 
         @Specialization
@@ -1356,13 +1362,12 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StripNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         String strip(String self, String chars) {
-            return self.replaceAll("^[" + Pattern.quote(chars) + "]+", "").replaceAll("[" + Pattern.quote(chars) + "]+$", "");
+            return StringUtils.strip(self, chars, StripKind.BOTH);
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isNoValue(chars)")
+        @Specialization
         String strip(String self, PNone chars) {
             return self.trim();
         }
@@ -1373,16 +1378,14 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RStripNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         String rstrip(String self, String chars) {
-            return self.replaceAll("[" + Pattern.quote(chars) + "]+$", "");
+            return StringUtils.strip(self, chars, StripKind.RIGHT);
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isNoValue(chars)")
-        @TruffleBoundary
+        @Specialization
         String rstrip(String self, PNone chars) {
-            return self.replaceAll("\\s+$", "");
+            return StringUtils.strip(self, StripKind.RIGHT);
         }
     }
 
@@ -1391,30 +1394,42 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LStripNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         String rstrip(String self, String chars) {
-            return self.replaceAll("^[" + Pattern.quote(chars) + "]+", "");
+            return StringUtils.strip(self, chars, StripKind.LEFT);
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isNoValue(chars)")
-        @TruffleBoundary
+        @Specialization
         String rstrip(String self, PNone chars) {
-            return self.replaceAll("^\\s+", "");
+            return StringUtils.strip(self, StripKind.LEFT);
         }
     }
 
     @Builtin(name = SpecialMethodNames.__LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class LenNode extends PythonUnaryBuiltinNode {
+    public abstract static class StringLenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public int len(String self) {
             return self.length();
         }
 
         @Specialization
-        public int len(PString self) {
-            return self.len();
+        public int len(PString self,
+                        @Cached("createClassProfile()") ValueProfile classProfile,
+                        @Cached("create()") BranchProfile uncommonStringTypeProfile) {
+            Object profiled = classProfile.profile(self.getCharSequence());
+            if (profiled instanceof String) {
+                return ((String) profiled).length();
+            } else if (profiled instanceof LazyString) {
+                return ((LazyString) profiled).length();
+            } else {
+                uncommonStringTypeProfile.enter();
+                return ((CharSequence) profiled).length();
+            }
+        }
+
+        public static StringLenNode create() {
+            return StringLenNodeFactory.create();
         }
     }
 

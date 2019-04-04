@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,63 +41,37 @@
 package com.oracle.graal.python.runtime.interop;
 
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.MessageResolution;
-import com.oracle.truffle.api.interop.Resolve;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(InteropLibrary.class)
 public final class InteropArray implements TruffleObject {
     @CompilationFinal(dimensions = 1) private final Object[] array;
 
-    InteropArray(Object[] array) {
+    public InteropArray(Object[] array) {
         this.array = array;
     }
 
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return InteropArrayMRForeign.ACCESS;
+    @ExportMessage(name = "readArrayElement")
+    Object get(long idx) {
+        return array[(int) idx];
     }
 
-    private Object get(int pos) {
-        return array[pos];
-    }
-
-    private int size() {
+    @ExportMessage(name = "getArraySize")
+    int size() {
         return array.length;
     }
 
-    static boolean isInstance(TruffleObject object) {
-        return object instanceof InteropArray;
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    boolean hasArrayElements() {
+        return true;
     }
 
-    @MessageResolution(receiverType = InteropArray.class)
-    static class InteropArrayMR {
-
-        @Resolve(message = "READ")
-        abstract static class Read extends Node {
-            Object access(InteropArray target, int index) {
-                return target.get(index);
-            }
-
-            Object access(InteropArray target, long index) {
-                return target.get((int) index);
-            }
-        }
-
-        @Resolve(message = "HAS_SIZE")
-        abstract static class HasSize extends Node {
-            boolean access(@SuppressWarnings("unused") InteropArray target) {
-                return true;
-            }
-        }
-
-        @Resolve(message = "GET_SIZE")
-        abstract static class GetSize extends Node {
-            int access(InteropArray target) {
-                return target.size();
-            }
-        }
+    @ExportMessage
+    boolean isArrayElementReadable(long idx) {
+        return idx < array.length;
     }
-
 }

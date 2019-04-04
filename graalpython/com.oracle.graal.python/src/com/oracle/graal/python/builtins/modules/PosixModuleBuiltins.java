@@ -32,6 +32,24 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import static com.oracle.truffle.api.TruffleFile.CREATION_TIME;
+import static com.oracle.truffle.api.TruffleFile.IS_DIRECTORY;
+import static com.oracle.truffle.api.TruffleFile.IS_REGULAR_FILE;
+import static com.oracle.truffle.api.TruffleFile.IS_SYMBOLIC_LINK;
+import static com.oracle.truffle.api.TruffleFile.LAST_ACCESS_TIME;
+import static com.oracle.truffle.api.TruffleFile.LAST_MODIFIED_TIME;
+import static com.oracle.truffle.api.TruffleFile.SIZE;
+import static com.oracle.truffle.api.TruffleFile.UNIX_CTIME;
+import static com.oracle.truffle.api.TruffleFile.UNIX_DEV;
+import static com.oracle.truffle.api.TruffleFile.UNIX_INODE;
+import static com.oracle.truffle.api.TruffleFile.UNIX_GID;
+import static com.oracle.truffle.api.TruffleFile.UNIX_GROUP;
+import static com.oracle.truffle.api.TruffleFile.UNIX_MODE;
+import static com.oracle.truffle.api.TruffleFile.UNIX_NLINK;
+import static com.oracle.truffle.api.TruffleFile.UNIX_OWNER;
+import static com.oracle.truffle.api.TruffleFile.UNIX_PERMISSIONS;
+import static com.oracle.truffle.api.TruffleFile.UNIX_UID;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -66,12 +84,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -100,6 +120,8 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseOSErrorNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -135,7 +157,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.sun.security.auth.UnixNumericGroupPrincipal;
 import com.sun.security.auth.UnixNumericUserPrincipal;
-import java.util.Locale;
 
 @CoreFunctions(defineModule = "posix")
 public class PosixModuleBuiltins extends PythonBuiltins {
@@ -442,108 +463,189 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return t.to(TimeUnit.SECONDS);
         }
 
+        @TruffleBoundary
         Object stat(String path, boolean followSymlinks) {
             TruffleFile f = getContext().getEnv().getTruffleFile(path);
             LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
             try {
-                if (!f.exists(linkOptions)) {
-                    throw fileNoFound(path);
+                return unixStat(f, linkOptions);
+            } catch (UnsupportedOperationException unsupported) {
+                try {
+                    return posixStat(f, linkOptions);
+                } catch (UnsupportedOperationException unsupported2) {
+                    return basicStat(f, linkOptions);
                 }
-            } catch (SecurityException e) {
-                throw fileNoFound(path);
             }
+        }
+
+        private PTuple unixStat(TruffleFile file, LinkOption... linkOptions) {
+            try {
+                TruffleFile.Attributes attributes = file.getAttributes(Arrays.asList(
+                                UNIX_MODE,
+                                UNIX_INODE,
+                                UNIX_DEV,
+                                UNIX_NLINK,
+                                UNIX_UID,
+                                UNIX_GID,
+                                SIZE,
+                                LAST_ACCESS_TIME,
+                                LAST_MODIFIED_TIME,
+                                UNIX_CTIME), linkOptions);
+                return factory().createTuple(new Object[]{
+                                attributes.get(UNIX_MODE),
+                                attributes.get(UNIX_INODE),
+                                attributes.get(UNIX_DEV),
+                                attributes.get(UNIX_NLINK),
+                                attributes.get(UNIX_UID),
+                                attributes.get(UNIX_GID),
+                                attributes.get(SIZE),
+                                fileTimeToSeconds(attributes.get(LAST_ACCESS_TIME)),
+                                fileTimeToSeconds(attributes.get(LAST_MODIFIED_TIME)),
+                                fileTimeToSeconds(attributes.get(UNIX_CTIME)),
+                });
+            } catch (IOException | SecurityException e) {
+                throw fileNoFound(file.getPath());
+            }
+        }
+
+        private PTuple posixStat(TruffleFile file, LinkOption... linkOptions) {
+            try {
+                int mode = 0;
+                long size = 0;
+                long ctime = 0;
+                long atime = 0;
+                long mtime = 0;
+                long gid = 0;
+                long uid = 0;
+                TruffleFile.Attributes attributes = file.getAttributes(Arrays.asList(
+                                IS_DIRECTORY,
+                                IS_SYMBOLIC_LINK,
+                                IS_REGULAR_FILE,
+                                LAST_MODIFIED_TIME,
+                                LAST_ACCESS_TIME,
+                                CREATION_TIME,
+                                SIZE,
+                                UNIX_OWNER,
+                                UNIX_GROUP,
+                                UNIX_PERMISSIONS), linkOptions);
+                mode |= fileTypeBitsFromAttributes(attributes);
+                mtime = fileTimeToSeconds(attributes.get(LAST_MODIFIED_TIME));
+                ctime = fileTimeToSeconds(attributes.get(CREATION_TIME));
+                atime = fileTimeToSeconds(attributes.get(LAST_ACCESS_TIME));
+                size = attributes.get(SIZE);
+                UserPrincipal owner = attributes.get(UNIX_OWNER);
+                if (owner instanceof UnixNumericUserPrincipal) {
+                    try {
+                        uid = strToLong(((UnixNumericUserPrincipal) owner).getName());
+                    } catch (NumberFormatException e2) {
+                    }
+                }
+                GroupPrincipal group = attributes.get(UNIX_GROUP);
+                if (group instanceof UnixNumericGroupPrincipal) {
+                    try {
+                        gid = strToLong(((UnixNumericGroupPrincipal) group).getName());
+                    } catch (NumberFormatException e2) {
+                    }
+                }
+                final Set<PosixFilePermission> posixFilePermissions = attributes.get(UNIX_PERMISSIONS);
+                mode = posixPermissionsToMode(mode, posixFilePermissions);
+                int inode = getInode(file);
+                return factory().createTuple(new Object[]{
+                                mode,
+                                inode, // ino
+                                0, // dev
+                                0, // nlink
+                                uid,
+                                gid,
+                                size,
+                                atime,
+                                mtime,
+                                ctime,
+                });
+            } catch (IOException | SecurityException e) {
+                throw fileNoFound(file.getPath());
+            }
+        }
+
+        private PTuple basicStat(TruffleFile file, LinkOption... linkOptions) {
+            try {
+                int mode = 0;
+                long size = 0;
+                long ctime = 0;
+                long atime = 0;
+                long mtime = 0;
+                long gid = 0;
+                long uid = 0;
+                TruffleFile.Attributes attributes = file.getAttributes(Arrays.asList(
+                                IS_DIRECTORY,
+                                IS_SYMBOLIC_LINK,
+                                IS_REGULAR_FILE,
+                                LAST_MODIFIED_TIME,
+                                LAST_ACCESS_TIME,
+                                CREATION_TIME,
+                                SIZE), linkOptions);
+                mode |= fileTypeBitsFromAttributes(attributes);
+                mtime = fileTimeToSeconds(attributes.get(LAST_MODIFIED_TIME));
+                ctime = fileTimeToSeconds(attributes.get(CREATION_TIME));
+                atime = fileTimeToSeconds(attributes.get(LAST_ACCESS_TIME));
+                size = attributes.get(SIZE);
+                if (file.isReadable()) {
+                    mode |= 0004;
+                    mode |= 0040;
+                    mode |= 0400;
+                }
+                if (file.isWritable()) {
+                    mode |= 0002;
+                    mode |= 0020;
+                    mode |= 0200;
+                }
+                if (file.isExecutable()) {
+                    mode |= 0001;
+                    mode |= 0010;
+                    mode |= 0100;
+                }
+                int inode = getInode(file);
+                return factory().createTuple(new Object[]{
+                                mode,
+                                inode, // ino
+                                0, // dev
+                                0, // nlink
+                                uid,
+                                gid,
+                                size,
+                                atime,
+                                mtime,
+                                ctime,
+                });
+            } catch (IOException | SecurityException e) {
+                throw fileNoFound(file.getPath());
+            }
+        }
+
+        private static int fileTypeBitsFromAttributes(TruffleFile.Attributes attributes) {
             int mode = 0;
-            long size = 0;
-            long ctime = 0;
-            long atime = 0;
-            long mtime = 0;
-            long gid = 0;
-            long uid = 0;
-            if (f.isRegularFile(linkOptions)) {
+            if (attributes.get(IS_REGULAR_FILE)) {
                 mode |= S_IFREG;
-            } else if (f.isDirectory(linkOptions)) {
+            } else if (attributes.get(IS_DIRECTORY)) {
                 mode |= S_IFDIR;
-            } else if (f.isSymbolicLink()) {
+            } else if (attributes.get(IS_SYMBOLIC_LINK)) {
                 mode |= S_IFLNK;
             } else {
                 // TODO: differentiate these
                 mode |= S_IFSOCK | S_IFBLK | S_IFCHR | S_IFIFO;
             }
-            try {
-                mtime = fileTimeToSeconds(f.getLastModifiedTime(linkOptions));
-            } catch (IOException e1) {
-                mtime = 0;
-            }
-            try {
-                ctime = fileTimeToSeconds(f.getCreationTime(linkOptions));
-            } catch (IOException e1) {
-                ctime = 0;
-            }
-            try {
-                atime = fileTimeToSeconds(f.getLastAccessTime(linkOptions));
-            } catch (IOException e1) {
-                atime = 0;
-            }
-            UserPrincipal owner;
-            try {
-                owner = f.getOwner(linkOptions);
-                if (owner instanceof UnixNumericUserPrincipal) {
-                    uid = strToLong(((UnixNumericUserPrincipal) owner).getName());
-                }
-            } catch (NumberFormatException | IOException | UnsupportedOperationException | SecurityException e2) {
-            }
-            try {
-                GroupPrincipal group = f.getGroup(linkOptions);
-                if (group instanceof UnixNumericGroupPrincipal) {
-                    gid = strToLong(((UnixNumericGroupPrincipal) group).getName());
-                }
-            } catch (NumberFormatException | IOException | UnsupportedOperationException | SecurityException e2) {
-            }
-            try {
-                final Set<PosixFilePermission> posixFilePermissions = f.getPosixPermissions(linkOptions);
-                mode = posixPermissionsToMode(mode, posixFilePermissions);
-            } catch (UnsupportedOperationException | IOException e1) {
-                if (f.isReadable()) {
-                    mode |= 0004;
-                    mode |= 0040;
-                    mode |= 0400;
-                }
-                if (f.isWritable()) {
-                    mode |= 0002;
-                    mode |= 0020;
-                    mode |= 0200;
-                }
-                if (f.isExecutable()) {
-                    mode |= 0001;
-                    mode |= 0010;
-                    mode |= 0100;
-                }
-            }
-            try {
-                size = f.size(linkOptions);
-            } catch (IOException e) {
-                size = 0;
-            }
+            return mode;
+        }
+
+        private int getInode(TruffleFile file) {
             TruffleFile canonical;
             try {
-                canonical = f.getCanonicalFile();
+                canonical = file.getCanonicalFile();
             } catch (IOException | SecurityException e) {
                 // best effort
-                canonical = f.getAbsoluteFile();
+                canonical = file.getAbsoluteFile();
             }
-            int inode = getContext().getResources().getInodeId(canonical.getPath());
-            return factory().createTuple(new Object[]{
-                            mode,
-                            inode, // ino
-                            0, // dev
-                            0, // nlink
-                            uid,
-                            gid,
-                            size,
-                            atime,
-                            mtime,
-                            ctime,
-            });
+            return getContext().getResources().getInodeId(canonical.getPath());
         }
 
         private PException fileNoFound(String path) {
@@ -607,20 +709,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ListdirNode extends PythonBuiltinNode {
-        private final BranchProfile gotException = BranchProfile.create();
-
         @Specialization
-        Object listdir(VirtualFrame frame, String path) {
+        Object listdir(VirtualFrame frame, String path,
+                        @Cached PRaiseOSErrorNode raiseOS) {
             try {
                 TruffleFile file = getContext().getEnv().getTruffleFile(path);
                 Collection<TruffleFile> listFiles = file.list();
                 Object[] filenames = listToArray(listFiles);
                 return factory().createList(filenames);
             } catch (NoSuchFileException e) {
-                throw raiseOSError(frame, OSErrorEnum.ENOENT, path);
-            } catch (SecurityException | IOException e) {
-                gotException.enter();
-                throw raise(OSError, path);
+                throw raiseOS.raiseOSError(frame, OSErrorEnum.ENOENT, path);
+            } catch (SecurityException e) {
+                throw raiseOS.raiseOSError(frame, OSErrorEnum.EPERM, path);
+            } catch (IOException e) {
+                throw raiseOS.raiseOSError(frame, OSErrorEnum.ENOTDIR, path);
             }
         }
 
@@ -754,7 +856,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 return new String(raw, "ascii");
             } catch (UnsupportedEncodingException e) {
-                throw raise(PythonBuiltinClassType.UnicodeDecodeError, e.getMessage());
+                throw raise(PythonBuiltinClassType.UnicodeDecodeError, e);
             }
         }
 
@@ -816,10 +918,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object lseek(VirtualFrame frame, int fd, long pos, int how,
+                        @Cached PRaiseOSErrorNode raise,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
             if (noFile.profile(channel == null || !(channel instanceof SeekableByteChannel))) {
-                throw raiseOSError(frame, OSErrorEnum.ESPIPE);
+                throw raise.raiseOSError(frame, OSErrorEnum.ESPIPE);
             }
             SeekableByteChannel fc = (SeekableByteChannel) channel;
             try {
@@ -827,7 +930,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 gotException.enter();
                 // if this happen, we should raise OSError with appropriate errno
-                throw raiseOSError(frame, -1);
+                throw raise.raiseOSError(frame, -1);
             }
         }
 
@@ -1340,6 +1443,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (!context.isExecutableAccessAllowed()) {
                 return -1;
             }
+            PythonLanguage.getLogger().fine(() -> "os.system: " + cmd);
             String[] command = new String[]{shell[0], shell[1], cmd};
             Env env = context.getEnv();
             try {
@@ -1393,6 +1497,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     public abstract static class ConvertPathlikeObjectNode extends PNodeWithContext {
+        @Child private PRaiseNode raise;
         @Child private LookupAndCallUnaryNode callFspathNode;
         @CompilationFinal private ValueProfile resultTypeProfile;
 
@@ -1424,7 +1529,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } else if (profiled instanceof PString) {
                 return doPString((PString) profiled);
             }
-            throw raise(TypeError, "invalid type %p return from path-like object", profiled);
+            if (raise == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raise = insert(PRaiseNode.create());
+            }
+            throw raise.raise(TypeError, "invalid type %p return from path-like object", profiled);
         }
 
         public static ConvertPathlikeObjectNode create() {
@@ -1752,7 +1861,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 return getContext().getEnv().getTruffleFile(str).getCanonicalFile().getPath();
             } catch (IOException e) {
-                throw raise(OSError, getMessage(e));
+                throw raise(OSError, e);
             }
         }
     }

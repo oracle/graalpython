@@ -51,6 +51,7 @@ import java.util.Map;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -61,29 +62,28 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.LanguageInfo;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.LiteralBuilder;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
@@ -105,7 +105,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         try {
             TruffleFile coreDir = env.getTruffleFile(coreHome);
             TruffleFile docDir = coreDir.resolveSibling("doc");
-            if (docDir.exists() || (docDir = coreDir.getParent().resolveSibling("doc")).exists()) {
+            if (docDir.exists() || docDir.getParent() != null && (docDir = coreDir.getParent().resolveSibling("doc")).exists()) {
                 builtinConstants.put(SpecialAttributeNames.__DOC__, new String(docDir.resolve("INTEROP.md").readAllBytes()));
             }
         } catch (SecurityException | IOException e) {
@@ -143,7 +143,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
                 }
                 return env.parse(newBuilder.build()).call();
             } catch (RuntimeException e) {
-                throw raise(NotImplementedError, e.getMessage());
+                throw raise(NotImplementedError, e);
             }
         }
 
@@ -170,7 +170,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw raise(OSError, "%s", e);
             } catch (RuntimeException e) {
-                throw raise(NotImplementedError, e.getMessage());
+                throw raise(NotImplementedError, e);
             }
         }
 
@@ -183,7 +183,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw raise(OSError, "%s", e);
             } catch (RuntimeException e) {
-                throw raise(NotImplementedError, e.getMessage());
+                throw raise(NotImplementedError, e);
             }
         }
 
@@ -258,6 +258,11 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             return fun;
         }
 
+        @Fallback
+        public Object exportSymbol(Object value, Object name) {
+            throw raise(PythonBuiltinClassType.TypeError, "expected argument types (function) or (object, str) but not (%p, %p)", value, name);
+        }
+
         private String getMethodName(Object o) {
             if (getNameAttributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -275,60 +280,82 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @CompilationFinal static InteropLibrary UNCACHED_INTEROP;
+
+    static InteropLibrary getInterop() {
+        if (UNCACHED_INTEROP == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            UNCACHED_INTEROP = InteropLibrary.getFactory().getUncached();
+        }
+        return UNCACHED_INTEROP;
+    }
+
     @Builtin(name = "__read__", minNumOfPositionalArgs = 2)
-    @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class ReadNode extends PythonBuiltinNode {
         @Specialization
-        Object read(TruffleObject receiver, Object key,
-                        @Cached("READ.createNode()") Node readNode) {
+        Object read(Object receiver, Object key) {
             try {
-                return ForeignAccess.sendRead(readNode, receiver, key);
-            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                if (key instanceof String) {
+                    return getInterop().readMember(receiver, (String) key);
+                } else if (key instanceof Number) {
+                    return getInterop().readArrayElement(receiver, ((Number) key).longValue());
+                } else {
+                    throw raise(PythonErrorType.AttributeError, "Unknown attribute: '%s'", key);
+                }
+            } catch (UnknownIdentifierException | UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw raise(PythonErrorType.AttributeError, e);
             }
         }
     }
 
     @Builtin(name = "__write__", minNumOfPositionalArgs = 3)
-    @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class WriteNode extends PythonBuiltinNode {
         @Specialization
-        Object write(TruffleObject receiver, Object key, Object value,
-                        @Cached("WRITE.createNode()") Node writeNode) {
+        Object write(Object receiver, Object key, Object value) {
             try {
-                return ForeignAccess.sendWrite(writeNode, receiver, key, value);
-            } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException e) {
+                if (key instanceof String) {
+                    getInterop().writeMember(receiver, (String) key, value);
+                } else if (key instanceof Number) {
+                    getInterop().writeArrayElement(receiver, ((Number) key).longValue(), value);
+                } else {
+                    throw raise(PythonErrorType.AttributeError, "Unknown attribute: '%s'", key);
+                }
+            } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
                 throw raise(PythonErrorType.AttributeError, e);
             }
+            return PNone.NONE;
         }
     }
 
     @Builtin(name = "__remove__", minNumOfPositionalArgs = 2)
-    @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class removeNode extends PythonBuiltinNode {
         @Specialization
-        Object remove(TruffleObject receiver, Object key,
-                        @Cached("REMOVE.createNode()") Node removeNode) {
+        Object remove(Object receiver, Object key) {
             try {
-                return ForeignAccess.sendRemove(removeNode, receiver, key);
-            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                if (key instanceof String) {
+                    getInterop().removeMember(receiver, (String) key);
+                } else if (key instanceof Number) {
+                    getInterop().removeArrayElement(receiver, ((Number) key).longValue());
+                } else {
+                    throw raise(PythonErrorType.AttributeError, "Unknown attribute: '%s'", key);
+                }
+            } catch (UnknownIdentifierException | UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw raise(PythonErrorType.AttributeError, e);
             }
+            return PNone.NONE;
         }
     }
 
     @Builtin(name = "__execute__", minNumOfPositionalArgs = 1, takesVarArgs = true)
-    @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class executeNode extends PythonBuiltinNode {
         @Specialization
-        Object remove(TruffleObject receiver, Object[] arguments,
-                        @Cached("EXECUTE.createNode()") Node executeNode) {
+        Object exec(Object receiver, Object[] arguments) {
             try {
-                return ForeignAccess.sendExecute(executeNode, receiver, arguments);
+                return getInterop().execute(receiver, arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
                 throw raise(PythonErrorType.AttributeError, e);
             }
@@ -336,14 +363,12 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "__new__", minNumOfPositionalArgs = 1, takesVarArgs = true)
-    @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class newNode extends PythonBuiltinNode {
         @Specialization
-        Object remove(TruffleObject receiver, Object[] arguments,
-                        @Cached("NEW.createNode()") Node executeNode) {
+        Object instantiate(Object receiver, Object[] arguments) {
             try {
-                return ForeignAccess.sendNew(executeNode, receiver, arguments);
+                return getInterop().instantiate(receiver, arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
                 throw raise(PythonErrorType.AttributeError, e);
             }
@@ -351,14 +376,12 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "__invoke__", minNumOfPositionalArgs = 2, takesVarArgs = true)
-    @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class invokeNode extends PythonBuiltinNode {
         @Specialization
-        Object remove(TruffleObject receiver, String key, Object[] arguments,
-                        @Cached("INVOKE.createNode()") Node executeNode) {
+        Object invoke(Object receiver, String key, Object[] arguments) {
             try {
-                return ForeignAccess.sendInvoke(executeNode, receiver, key, arguments);
+                return getInterop().invokeMember(receiver, key, arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException | UnknownIdentifierException e) {
                 throw raise(PythonErrorType.AttributeError, e);
             }
@@ -366,41 +389,30 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "__is_null__", minNumOfPositionalArgs = 1)
-    @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class IsNullNode extends PythonBuiltinNode {
         @Specialization
-        boolean remove(TruffleObject receiver,
-                        @Cached("IS_NULL.createNode()") Node executeNode) {
-            return ForeignAccess.sendIsNull(executeNode, receiver);
+        boolean isNull(Object receiver) {
+            return getInterop().isNull(receiver);
         }
     }
 
     @Builtin(name = "__has_size__", minNumOfPositionalArgs = 1)
-    @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class HasSizeNode extends PythonBuiltinNode {
         @Specialization
-        boolean remove(@SuppressWarnings("unused") String receiver) {
-            return true;
-        }
-
-        @Specialization
-        boolean remove(TruffleObject receiver,
-                        @Cached("HAS_SIZE.createNode()") Node executeNode) {
-            return ForeignAccess.sendHasSize(executeNode, receiver);
+        boolean hasSize(Object receiver) {
+            return getInterop().hasArrayElements(receiver);
         }
     }
 
     @Builtin(name = "__get_size__", minNumOfPositionalArgs = 1)
-    @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class GetSizeNode extends PythonBuiltinNode {
         @Specialization
-        Object remove(TruffleObject receiver,
-                        @Cached("GET_SIZE.createNode()") Node executeNode) {
+        Object getSize(Object receiver) {
             try {
-                return ForeignAccess.sendGetSize(executeNode, receiver);
+                return getInterop().getArraySize(receiver);
             } catch (UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, e);
             }
@@ -408,55 +420,89 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "__is_boxed__", minNumOfPositionalArgs = 1)
-    @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class IsBoxedNode extends PythonBuiltinNode {
         @Specialization
-        boolean remove(TruffleObject receiver,
-                        @Cached("IS_BOXED.createNode()") Node executeNode) {
-            return ForeignAccess.sendIsBoxed(executeNode, receiver);
+        boolean isBoxed(Object receiver) {
+            return getInterop().isString(receiver) || getInterop().fitsInDouble(receiver) || getInterop().fitsInLong(receiver);
         }
     }
 
     @Builtin(name = "__has_keys__", minNumOfPositionalArgs = 1)
-    @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class HasKeysNode extends PythonBuiltinNode {
         @Specialization
-        boolean remove(TruffleObject receiver,
-                        @Cached("HAS_KEYS.createNode()") Node executeNode) {
-            return ForeignAccess.sendHasKeys(executeNode, receiver);
-        }
-
-        @Fallback
-        boolean remove(@SuppressWarnings("unused") Object receiver) {
-            return false;
+        boolean hasKeys(Object receiver) {
+            return getInterop().hasMembers(receiver);
         }
     }
 
-    @Builtin(name = "__key_info__", minNumOfPositionalArgs = 2)
-    @ImportStatic(Message.class)
+    @Builtin(name = "__key_info__", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class KeyInfoNode extends PythonBuiltinNode {
         @Specialization
-        int remove(TruffleObject receiver, Object key,
-                        @Cached("KEY_INFO.createNode()") Node executeNode) {
-            return ForeignAccess.sendKeyInfo(executeNode, receiver, key);
+        boolean keyInfo(Object receiver, String member, String info) {
+            if (info.equals("read-side-effects")) {
+                return getInterop().hasMemberReadSideEffects(receiver, member);
+            } else if (info.equals("write-side-effects")) {
+                return getInterop().hasMemberWriteSideEffects(receiver, member);
+            } else if (info.equals("exists")) {
+                return getInterop().isMemberExisting(receiver, member);
+            } else if (info.equals("readable")) {
+                return getInterop().isMemberReadable(receiver, member);
+            } else if (info.equals("writable")) {
+                return getInterop().isMemberWritable(receiver, member);
+            } else if (info.equals("insertable")) {
+                return getInterop().isMemberInsertable(receiver, member);
+            } else if (info.equals("removable")) {
+                return getInterop().isMemberRemovable(receiver, member);
+            } else if (info.equals("modifiable")) {
+                return getInterop().isMemberModifiable(receiver, member);
+            } else if (info.equals("invokable")) {
+                return getInterop().isMemberInvocable(receiver, member);
+            } else if (info.equals("internal")) {
+                return getInterop().isMemberInternal(receiver, member);
+            } else {
+                return false;
+            }
         }
     }
 
     @Builtin(name = "__keys__", minNumOfPositionalArgs = 1)
-    @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class KeysNode extends PythonBuiltinNode {
         @Specialization
-        TruffleObject remove(TruffleObject receiver,
-                        @Cached("KEYS.createNode()") Node executeNode) {
+        Object remove(Object receiver) {
             try {
-                return ForeignAccess.sendKeys(executeNode, receiver);
+                return getInterop().getMembers(receiver);
             } catch (UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, e);
             }
         }
     }
+
+    @Builtin(name = "__element_info__", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class ArrayElementInfoNode extends PythonBuiltinNode {
+        @Specialization
+        boolean keyInfo(Object receiver, long member, String info) {
+            if (info.equals("exists")) {
+                return getInterop().isArrayElementExisting(receiver, member);
+            } else if (info.equals("readable")) {
+                return getInterop().isArrayElementReadable(receiver, member);
+            } else if (info.equals("writable")) {
+                return getInterop().isArrayElementWritable(receiver, member);
+            } else if (info.equals("insertable")) {
+                return getInterop().isArrayElementInsertable(receiver, member);
+            } else if (info.equals("removable")) {
+                return getInterop().isArrayElementRemovable(receiver, member);
+            } else if (info.equals("modifiable")) {
+                return getInterop().isArrayElementModifiable(receiver, member);
+            } else {
+                return false;
+            }
+        }
+    }
+
 }

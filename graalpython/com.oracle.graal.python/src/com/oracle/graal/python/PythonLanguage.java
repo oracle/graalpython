@@ -31,8 +31,6 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-import org.graalvm.options.OptionDescriptors;
-
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -91,7 +89,16 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.source.SourceSection;
 
-@TruffleLanguage.Registration(id = PythonLanguage.ID, name = PythonLanguage.NAME, version = PythonLanguage.VERSION, characterMimeTypes = PythonLanguage.MIME_TYPE, interactive = true, internal = false, contextPolicy = TruffleLanguage.ContextPolicy.SHARED)
+import org.graalvm.options.OptionDescriptors;
+
+@TruffleLanguage.Registration(id = PythonLanguage.ID, //
+                name = PythonLanguage.NAME, //
+                version = PythonLanguage.VERSION, //
+                characterMimeTypes = PythonLanguage.MIME_TYPE, //
+                dependentLanguages = "llvm", //
+                interactive = true, internal = false, //
+                contextPolicy = TruffleLanguage.ContextPolicy.SHARED, //
+                fileTypeDetectors = PythonFileDetector.class)
 @ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, StandardTags.TryBlockTag.class, StandardTags.ExpressionTag.class,
                 DebuggerTags.AlwaysHalt.class})
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {
@@ -218,7 +225,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                             "\n\tSysPrefix: {1}" +
                             "\n\tSysBasePrefix: {2}" +
                             "\n\tCoreHome: {3}" +
-                            "\n\tStdLibHome: {4}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome)));
+                            "\n\tStdLibHome: {4}" +
+                            "\n\tExecutable: {5}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, env.getOptions().get(PythonOptions.Executable))));
         }
     }
 
@@ -343,7 +351,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                             value instanceof Number ||
                             value instanceof String ||
                             value instanceof Boolean) {
-                return GetClassNode.getItSlowPath(value);
+                return GetClassNode.getUncached().execute(value);
             }
         }
         return null;
@@ -424,7 +432,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             return ((PCode) value).getRootNode().getSourceSection();
         } else if (value instanceof PythonManagedClass) {
             for (String k : ((PythonManagedClass) value).getAttributeNames()) {
-                Object attrValue = ReadAttributeFromDynamicObjectNode.doSlowPath(((PythonManagedClass) value).getStorage(), k);
+                Object attrValue = ReadAttributeFromDynamicObjectNode.getUncached().execute(((PythonManagedClass) value).getStorage(), k);
                 SourceSection attrSourceLocation = findSourceLocation(context, attrValue);
                 if (attrSourceLocation != null) {
                     return attrSourceLocation;

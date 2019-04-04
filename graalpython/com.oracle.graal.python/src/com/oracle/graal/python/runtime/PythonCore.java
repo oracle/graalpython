@@ -42,7 +42,6 @@ import com.oracle.truffle.api.TruffleLanguage;
  * Storage for initialized Python built-in modules and types.
  */
 public interface PythonCore extends ParserErrorCallback {
-    public static final String FILE_SEPARATOR = File.separator;
     public static final String PATH_SEPARATOR = File.pathSeparator;
     static final String PREFIX = "/";
     static final String LIB_PYTHON_3 = "/lib-python/3";

@@ -208,7 +208,11 @@ public class PZipImporter extends PythonBuiltinObject {
 
             // reading the file should be done better?
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-            StringBuilder code = new StringBuilder();
+            int size = (int) entry.getSize();
+            if (size < 0) {
+                size = (int) entry.getCompressedSize();
+            }
+            StringBuilder code = new StringBuilder(size < 16 ? 16 : size);
             String line;
             while ((line = reader.readLine()) != null) {
                 code.append(line);

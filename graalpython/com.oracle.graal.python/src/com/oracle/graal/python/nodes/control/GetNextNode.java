@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,64 +45,152 @@ import static com.oracle.truffle.api.nodes.NodeCost.NONE;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(cost = NONE)
-public final class GetNextNode extends PNodeWithContext {
+public abstract class GetNextNode extends PNodeWithContext {
+
+    private static final GetNextUncachedNode UNCACHED = new GetNextUncachedNode();
 
     public static GetNextNode create() {
-        return new GetNextNode();
+        return new GetNextCachedNode();
     }
 
-    @Child private LookupAndCallUnaryNode nextCall = LookupAndCallUnaryNode.create(__NEXT__);
+    public static GetNextNode getUncached() {
+        return UNCACHED;
+    }
 
-    private final ConditionProfile notAnIterator = ConditionProfile.createBinaryProfile();
+    public abstract Object execute(Object iterator);
 
-    private Object checkResult(Object result, Object iterator) {
-        if (notAnIterator.profile(result == PNone.NO_VALUE)) {
-            // TODO: maybe this could be handled in LookupAndCallUnaryNode directly?
-            throw raise(PythonErrorType.AttributeError, "'%s' object has no attribute '__next__'", iterator);
+    public abstract boolean executeBoolean(Object iterator) throws UnexpectedResultException;
+
+    public abstract int executeInt(Object iterator) throws UnexpectedResultException;
+
+    public abstract long executeLong(Object iterator) throws UnexpectedResultException;
+
+    public abstract double executeDouble(Object iterator) throws UnexpectedResultException;
+
+    private static final class GetNextCachedNode extends GetNextNode {
+
+        @Child private PRaiseNode raiseNode;
+        @Child private LookupAndCallUnaryNode nextCall = LookupAndCallUnaryNode.create(__NEXT__);
+
+        private final ConditionProfile notAnIterator = ConditionProfile.createBinaryProfile();
+
+        private Object checkResult(Object result, Object iterator) {
+            if (notAnIterator.profile(result == PNone.NO_VALUE)) {
+                // TODO: maybe this could be handled in LookupAndCallUnaryNode directly?
+                if (raiseNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    raiseNode = insert(PRaiseNode.create());
+                }
+                throw raiseNode.raise(PythonErrorType.AttributeError, "'%s' object has no attribute '__next__'", iterator);
+            }
+            return result;
         }
-        return result;
-    }
 
-    public Object execute(Object iterator) {
-        return checkResult(nextCall.executeObject(iterator), iterator);
-    }
+        @Override
+        public Object execute(Object iterator) {
+            return checkResult(nextCall.executeObject(iterator), iterator);
+        }
 
-    public boolean executeBoolean(Object iterator) throws UnexpectedResultException {
-        try {
-            return nextCall.executeBoolean(iterator);
-        } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
+        @Override
+        public boolean executeBoolean(Object iterator) throws UnexpectedResultException {
+            try {
+                return nextCall.executeBoolean(iterator);
+            } catch (UnexpectedResultException e) {
+                throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
+            }
+        }
+
+        @Override
+        public int executeInt(Object iterator) throws UnexpectedResultException {
+            try {
+                return nextCall.executeInt(iterator);
+            } catch (UnexpectedResultException e) {
+                throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
+            }
+        }
+
+        @Override
+        public long executeLong(Object iterator) throws UnexpectedResultException {
+            try {
+                return nextCall.executeLong(iterator);
+            } catch (UnexpectedResultException e) {
+                throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
+            }
+        }
+
+        @Override
+        public double executeDouble(Object iterator) throws UnexpectedResultException {
+            try {
+                return nextCall.executeDouble(iterator);
+            } catch (UnexpectedResultException e) {
+                throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
+            }
         }
     }
 
-    public int executeInt(Object iterator) throws UnexpectedResultException {
-        try {
-            return nextCall.executeInt(iterator);
-        } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
-        }
-    }
+    private static final class GetNextUncachedNode extends GetNextNode {
 
-    public long executeLong(Object iterator) throws UnexpectedResultException {
-        try {
-            return nextCall.executeLong(iterator);
-        } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
+        private static Object checkResult(Object result, Object iterator) {
+            if (result == PNone.NO_VALUE) {
+                throw PRaiseNode.getUncached().raise(PythonErrorType.AttributeError, "'%s' object has no attribute '__next__'", iterator);
+            }
+            return result;
         }
-    }
 
-    public double executeDouble(Object iterator) throws UnexpectedResultException {
-        try {
-            return nextCall.executeDouble(iterator);
-        } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
+        @Override
+        public Object execute(Object iterator) {
+            return checkResult(LookupAndCallUnaryDynamicNode.getUncached().executeObject(iterator, __NEXT__), iterator);
         }
+
+        @Override
+        public boolean executeBoolean(Object iterator) throws UnexpectedResultException {
+            Object res = execute(iterator);
+            try {
+                return (boolean) res;
+            } catch (ClassCastException e) {
+                throw new UnexpectedResultException(checkResult(res, iterator));
+            }
+        }
+
+        @Override
+        public int executeInt(Object iterator) throws UnexpectedResultException {
+            Object res = execute(iterator);
+            try {
+                return (int) res;
+            } catch (ClassCastException e) {
+                throw new UnexpectedResultException(checkResult(res, iterator));
+            }
+        }
+
+        @Override
+        public long executeLong(Object iterator) throws UnexpectedResultException {
+            Object res = execute(iterator);
+            try {
+                return (long) res;
+            } catch (ClassCastException e) {
+                throw new UnexpectedResultException(checkResult(res, iterator));
+            }
+        }
+
+        @Override
+        public double executeDouble(Object iterator) throws UnexpectedResultException {
+            Object res = execute(iterator);
+            try {
+                return (double) res;
+            } catch (ClassCastException e) {
+                throw new UnexpectedResultException(checkResult(res, iterator));
+            }
+        }
+
     }
 }

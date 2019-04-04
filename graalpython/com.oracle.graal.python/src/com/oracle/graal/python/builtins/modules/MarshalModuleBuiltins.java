@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -65,9 +66,12 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -195,7 +199,28 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     private static final int MAX_MARSHAL_STACK_DEPTH = 2000;
     private static final int CURRENT_VERSION = 1;
 
-    public abstract static class MarshallerNode extends PNodeWithContext {
+    private abstract static class PNodeWithState extends PNodeWithContext {
+        @Child private PythonObjectFactory objectFactory;
+        @Child private PRaiseNode raiseNode;
+
+        protected final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode.raise(type, format, arguments);
+        }
+
+        protected final PythonObjectFactory factory() {
+            if (objectFactory == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                objectFactory = insert(PythonObjectFactory.create());
+            }
+            return objectFactory;
+        }
+    }
+
+    abstract static class MarshallerNode extends PNodeWithState {
 
         public abstract void execute(Object x, int version, DataOutputStream buffer);
 
@@ -465,7 +490,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class UnmarshallerNode extends PNodeWithContext {
+    public abstract static class UnmarshallerNode extends PNodeWithState {
         public abstract Object execute(byte[] dataBytes, int version);
 
         @Child private HashingStorageNodes.SetItemNode setItemNode;
@@ -630,7 +655,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_NOVALUE:
                     return PNone.NO_VALUE;
                 case TYPE_STOPITER:
-                    return getBuiltinPythonClass(PythonBuiltinClassType.StopIteration);
+                    return PythonLanguage.getCore().lookupType(PythonBuiltinClassType.StopIteration);
                 case TYPE_ELLIPSIS:
                     return PythonBuiltinClassType.PEllipsis;
                 case TYPE_FALSE:

@@ -35,7 +35,7 @@ import java.util.WeakHashMap;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ComputeMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
@@ -122,7 +122,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         return getBaseClasses().length > 0 ? getBaseClasses()[0] : null;
     }
 
-    MroSequenceStorage getMethodResolutionOrder() {
+    public MroSequenceStorage getMethodResolutionOrder() {
         return methodResolutionOrder;
     }
 

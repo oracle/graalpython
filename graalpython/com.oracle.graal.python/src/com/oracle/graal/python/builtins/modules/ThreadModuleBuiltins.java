@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -160,7 +160,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         long start(VirtualFrame frame, LazyPythonClass cls, Object callable, Object args, Object kwargs,
                         @Cached("create()") CallNode callNode,
                         @Cached("create()") ExecutePositionalStarargsNode getArgsNode,
-                        @Cached("create()") ExecuteKeywordStarargsNode getKwArgsNode) {
+                        @Cached("create()") ExpandKeywordStarargsNode getKwArgsNode) {
             PythonContext context = getContext();
             TruffleLanguage.Env env = context.getEnv();
 

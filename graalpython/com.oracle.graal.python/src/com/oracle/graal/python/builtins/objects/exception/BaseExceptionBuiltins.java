@@ -109,8 +109,8 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private String getFormattedMessage(String format, Object... args) {
             try {
-                // pre-format for '%p' which retrieves the Python class of an argument
-                if (format.contains("%p")) {
+                // pre-format for custom error message formatter
+                if (ErrorMessageFormatter.containsCustomSpecifier(format)) {
                     return formatter.format(getGetClassNode(), format, args);
                 }
                 return String.format(format, args);

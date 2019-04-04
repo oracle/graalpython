@@ -45,7 +45,7 @@ import java.util.function.Supplier;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -122,7 +123,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     }
 
     protected Object getMethod(Object receiver, String methodName) {
-        return LookupAttributeInMRONode.lookupSlow(GetClassNode.getItSlowPath(receiver), methodName);
+        return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), methodName);
     }
 
     protected boolean isReversible() {
@@ -157,7 +158,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     protected PythonBinaryBuiltinNode getBuiltin(Object receiver) {
         assert receiver instanceof Boolean || receiver instanceof Integer || receiver instanceof Long || receiver instanceof Double || receiver instanceof String;
-        Object attribute = LookupAttributeInMRONode.lookupSlow(GetClassNode.getItSlowPath(receiver), name);
+        Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
             if (PythonBinaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {
@@ -285,15 +286,15 @@ public abstract class LookupAndCallBinaryNode extends Node {
     Object callObject(Object left, Object right,
                     @Cached("create(name)") LookupAttributeInMRONode getattr,
                     @Cached("create(rname)") LookupAttributeInMRONode getattrR,
-                    @Cached("create()") GetClassNode getClass,
-                    @Cached("create()") GetClassNode getClassR,
+                    @Cached("create()") GetLazyClassNode getClass,
+                    @Cached("create()") GetLazyClassNode getClassR,
                     @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
                     @Cached("create()") IsSubtypeNode isSubtype,
                     @Cached("createBinaryProfile()") ConditionProfile notImplementedBranch) {
         Object result = PNotImplemented.NOT_IMPLEMENTED;
-        PythonAbstractClass leftClass = getClass.execute(left);
+        LazyPythonClass leftClass = getClass.execute(left);
         Object leftCallable = getattr.execute(leftClass);
-        PythonAbstractClass rightClass = getClassR.execute(right);
+        LazyPythonClass rightClass = getClassR.execute(right);
         Object rightCallable = getattrR.execute(rightClass);
         if (leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;

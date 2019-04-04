@@ -41,6 +41,8 @@ import polyglot as _interop
 
 from mmap import mmap
 
+_mappingpoxy = type(type.__dict__)
+
 def default(value, default):
     return default if not value else value
 
@@ -48,20 +50,28 @@ def maxsize():
     import sys
     return sys.maxsize
 
+
 class _RegexResult:
-    def __init__(self, input, isMatch, groupCount, start, end, regex):
-        self.input = input
+    def __init__(self, pattern_input, isMatch, groupCount, start, end):
+        self.input = pattern_input
         self.isMatch = isMatch
         self.groupCount = groupCount
-        self.start = start
-        self.end = end
-        self.regex = regex
+        self._start = start
+        self._end = end
+        
+    def getStart(self, grpidx):
+        return self._start[grpidx]
+
+    def getEnd(self, grpidx):
+        return self._end[grpidx]
+
 
 def _str_to_bytes(arg):
     buffer = bytearray(len(arg))
     for i, c in enumerate(arg):
         buffer[i] = ord(c)
     return bytes(buffer)
+
 
 def setup(sre_compiler, error_class, flags_table):
     global error
@@ -82,22 +92,36 @@ def setup(sre_compiler, error_class, flags_table):
                     bit_flags = bit_flags | FLAGS[flag]
 
             compiled_pattern = sre_compiler(pattern if mode == "str" else _str_to_bytes(pattern), bit_flags)
+            
+            # wraps a native 're.Pattern' object
+            class ExecutablePattern:
+                def __call__(self, *args):
+                    # deprecated
+                    return self.exec(*args)
 
-            def executable_pattern(regex_object, input, from_index):
-                search_method = compiled_pattern.match if sticky else compiled_pattern.search
-                result = search_method(input, from_index)
-                is_match = result is not None
-                group_count = 1 + compiled_pattern.groups
-                return _RegexResult(
-                    input = input,
-                    isMatch = is_match,
-                    groupCount = group_count if is_match else 0,
-                    start = [result.start(i) for i in range(group_count)] if is_match else [],
-                    end = [result.end(i) for i in range(group_count)] if is_match else [],
-                    regex = regex_object
-                )
+                def exec(self, *args):
+                    nargs = len(args)
+                    if nargs == 2:
+                        # new-style signature
+                        pattern_input, from_index = args
+                    elif nargs == 3:
+                        # old-style signature; deprecated
+                        _, pattern_input, from_index = args
+                    else:
+                        raise TypeError("invalid arguments: " + repr(args))
+                    search_method = compiled_pattern.match if sticky else compiled_pattern.search
+                    result = search_method(pattern_input, from_index)
+                    is_match = result is not None
+                    group_count = 1 + compiled_pattern.groups
+                    return _RegexResult(
+                        pattern_input = pattern_input,
+                        isMatch = is_match,
+                        groupCount = group_count if is_match else 0,
+                        start = [result.start(i) for i in range(group_count)] if is_match else [],
+                        end = [result.end(i) for i in range(group_count)] if is_match else []
+                    )
 
-            return executable_pattern
+            return ExecutablePattern()
 
         return fallback_compiler
 
@@ -127,15 +151,16 @@ FLAG_NAMES = ["re.TEMPLATE", "re.IGNORECASE", "re.LOCALE", "re.MULTILINE",
 
 
 class SRE_Match():
-    def __init__(self, pattern, pos, endpos, result):
+    def __init__(self, pattern, pos, endpos, result, input_str, compiled_regex):
         self.result = result
-        self.compiled_regex = result.regex
+        self.compiled_regex = compiled_regex
         self.re = pattern
         self.pos = pos
         self.endpos = endpos
+        self.input_str = input_str
 
     def end(self, groupnum=0):
-        return self.result.end[groupnum]
+        return self.result.getEnd(groupnum)
 
     def group(self, *args):
         if not args:
@@ -150,7 +175,7 @@ class SRE_Match():
 
     def groups(self, default=None):
         lst = []
-        for arg in range(1, self.result.groupCount):
+        for arg in range(1, self.compiled_regex.groupCount):
             lst.append(self.__group__(arg))
         return tuple(lst)
 
@@ -162,11 +187,11 @@ class SRE_Match():
 
     def __group__(self, idx):
         idxarg = self.__groupidx__(idx)
-        start = self.result.start[idxarg]
+        start = self.result.getStart(idxarg)
         if start < 0:
             return None
         else:
-            return self.result.input[start:self.result.end[idxarg]]
+            return self.input_str[start:self.result.getEnd(idxarg)]
 
     def groupdict(self, default=None):
         d = {}
@@ -179,23 +204,23 @@ class SRE_Match():
 
     def span(self, groupnum=0):
         idxarg = self.__groupidx__(groupnum)
-        return (self.result.start[idxarg], self.result.end[idxarg])
+        return (self.result.getStart(idxarg), self.result.getEnd(idxarg))
 
     def start(self, groupnum=0):
         idxarg = self.__groupidx__(groupnum)
-        return self.result.start[idxarg]
+        return self.result.getStart(idxarg)
 
     @property
     def string(self):
-        return self.result.input
+        return self.input_str
 
     @property
     def lastgroup(self):
-        return self.result.groupCount
+        return self.compiled_regex.groupCount
 
     @property
     def lastindex(self):
-        return self.result.end[0]
+        return self.result.getEnd(0)
 
     def __repr__(self):
         return "<re.Match object; span=%r, match=%r>" % (self.span(), self.group())
@@ -212,6 +237,7 @@ def _is_bytes_like(object):
 class SRE_Pattern():
     def __init__(self, pattern, flags):
         self.__binary = isinstance(pattern, bytes)
+        self.groups = 0
         self.pattern = pattern
         self.flags = flags
         flags_str = []
@@ -220,12 +246,13 @@ class SRE_Pattern():
                 flags_str.append(char)
         self.flags_str = "".join(flags_str)
         self.__compiled_regexes = dict()
-        self.groupindex = dict()
+        groupindex = dict()
         if self.__tregex_compile(self.pattern).groups is not None:
             for group_name in dir(self.__tregex_compile(self.pattern).groups):
                 groups = self.__tregex_compile(self.pattern).groups
                 self.groups = _interop.__get_size__(_interop.__keys__(groups))
-                self.groupindex[group_name] = groups[group_name]
+                groupindex[group_name] = groups[group_name]
+        self.groupindex = _mappingpoxy(groupindex)
 
     def __check_input_type(self, input):
         if not isinstance(input, str) and not _is_bytes_like(input):
@@ -274,12 +301,15 @@ class SRE_Pattern():
 
     def _search(self, pattern, string, pos, endpos, sticky=False):
         pattern = self.__tregex_compile(pattern, self.flags_str + ("y" if sticky else ""))
+        input_str = string
         if endpos == -1 or endpos >= len(string):
-            result = tregex_call_exec(pattern.exec, string, min(pos, len(string) + 1))
+            endpos = len(string)
+            result = tregex_call_exec(pattern.exec, input_str, min(pos, len(string) + 1))
         else:
-            result = tregex_call_exec(pattern.exec, string[:endpos], min(pos, endpos % len(string) + 1))
+            input_str = string[:endpos]
+            result = tregex_call_exec(pattern.exec, input_str, min(pos, endpos % len(string) + 1))
         if result.isMatch:
-            return SRE_Match(self, pos, endpos, result)
+            return SRE_Match(self, pos, endpos, result, input_str, pattern)
         else:
             return None
 
@@ -310,13 +340,14 @@ class SRE_Pattern():
         elif endpos < 0:
             endpos = endpos % len(string) + 1
         while pos < endpos:
-            result = tregex_call_exec(self.__tregex_compile(self.pattern).exec, string, pos)
+            compiled_regex = self.__tregex_compile(self.pattern)
+            result = tregex_call_exec(compiled_regex.exec, string, pos)
             if not result.isMatch:
                 break
             else:
-                yield SRE_Match(self, pos, endpos, result)
-            no_progress = (result.start[0] == result.end[0])
-            pos = result.end[0] + no_progress
+                yield SRE_Match(self, pos, endpos, result, string, compiled_regex)
+            no_progress = (result.getStart(0) == result.getEnd(0))
+            pos = result.getEnd(0) + no_progress
         return
 
     def findall(self, string, pos=0, endpos=-1):
@@ -327,25 +358,26 @@ class SRE_Pattern():
             endpos = endpos % len(string) + 1
         matchlist = []
         while pos < endpos:
-            result = tregex_call_exec(self.__tregex_compile(self.pattern).exec, string, pos)
+            compiled_regex = self.__tregex_compile(self.pattern)
+            result = tregex_call_exec(compiled_regex.exec, string, pos)
             if not result.isMatch:
                 break
-            elif result.groupCount == 1:
-                matchlist.append(self.__sanitize_out_type(string[result.start[0]:result.end[0]]))
-            elif result.groupCount == 2:
-                matchlist.append(self.__sanitize_out_type(string[result.start[1]:result.end[1]]))
+            elif compiled_regex.groupCount == 1:
+                matchlist.append(self.__sanitize_out_type(string[result.getStart(0):result.getEnd(0)]))
+            elif compiled_regex.groupCount == 2:
+                matchlist.append(self.__sanitize_out_type(string[result.getStart(1):result.getEnd(1)]))
             else:
-                matchlist.append(tuple(map(self.__sanitize_out_type, SRE_Match(self, pos, endpos, result).groups())))
-            no_progress = (result.start[0] == result.end[0])
-            pos = result.end[0] + no_progress
+                matchlist.append(tuple(map(self.__sanitize_out_type, SRE_Match(self, pos, endpos, result, string, compiled_regex).groups())))
+            no_progress = (result.getStart(0) == result.getEnd(0))
+            pos = result.getEnd(0) + no_progress
         return matchlist
 
     def __replace_groups(self, repl, string, match_result, pattern):
-        def group(match_result, group_nr, string):
-            if group_nr >= match_result.groupCount:
+        def group(pattern, match_result, group_nr, string):
+            if group_nr >= pattern.groupCount:
                 return None
-            group_start = match_result.start[group_nr]
-            group_end = match_result.end[group_nr]
+            group_start = match_result.getStart(group_nr)
+            group_end = match_result.getEnd(group_nr)
             return string[group_start:group_end]
 
         n = len(repl)
@@ -355,10 +387,10 @@ class SRE_Pattern():
         pos = repl.find(backslash, start)
         while pos != -1 and start < n:
             if pos+1 < n:
-                if repl[pos + 1].isdigit() and match_result.groupCount > 0:
+                if repl[pos + 1].isdigit() and pattern.groupCount > 0:
                     # TODO: Should handle backreferences longer than 1 digit and fall back to octal escapes.
                     group_nr = int(repl[pos+1].decode('ascii')) if self.__binary else int(repl[pos+1])
-                    group_str = group(match_result, group_nr, string)
+                    group_str = group(pattern, match_result, group_nr, string)
                     if group_str is None:
                         raise error("invalid group reference %s at position %s" % (group_nr, pos))
                     result += repl[start:pos] + group_str
@@ -366,7 +398,7 @@ class SRE_Pattern():
                 elif repl[pos + 1] == (b'g' if self.__binary else 'g'):
                     group_ref, group_ref_end, digits_only = self.__extract_groupname(repl, pos + 2)
                     if group_ref:
-                        group_str = group(match_result, int(group_ref) if digits_only else pattern.groups[group_ref], string)
+                        group_str = group(pattern, match_result, int(group_ref) if digits_only else pattern.groups[group_ref], string)
                         if group_str is None:
                             raise error("invalid group reference %s at position %s" % (group_ref, pos))
                         result += repl[start:pos] + group_str
@@ -398,6 +430,9 @@ class SRE_Pattern():
 
 
     def sub(self, repl, string, count=0):
+        return self.subn(repl, string, count)[0]
+
+    def subn(self, repl, string, count=0):
         self.__check_input_type(string)
         n = 0
         pattern = self.__tregex_compile(self.pattern)
@@ -415,13 +450,13 @@ class SRE_Pattern():
             if not match_result.isMatch:
                 break
             n += 1
-            start = match_result.start[0]
-            end = match_result.end[0]
+            start = match_result.getStart(0)
+            end = match_result.getEnd(0)
             result.append(string[pos:start])
             if is_string_rep:
                 result.append(self.__replace_groups(repl, string, match_result, pattern))
             else:
-                _srematch = SRE_Match(self, pos, -1, match_result)
+                _srematch = SRE_Match(self, pos, -1, match_result, string, pattern)
                 _repl = repl(_srematch)
                 result.append(_repl)
             pos = end
@@ -431,9 +466,9 @@ class SRE_Pattern():
                 pos = pos + 1
         result.append(string[pos:])
         if self.__binary:
-            return b"".join(result)
+            return (b"".join(result), n)
         else:
-            return "".join(result)
+            return ("".join(result), n)
 
     def split(self, string, maxsplit=0):
         n = 0
@@ -446,14 +481,14 @@ class SRE_Pattern():
             if not match_result.isMatch:
                 break
             n += 1
-            start = match_result.start[0]
-            end = match_result.end[0]
+            start = match_result.getStart(0)
+            end = match_result.getEnd(0)
             result.append(self.__sanitize_out_type(string[collect_pos:start]))
             # add all group strings
-            for i in range(1, match_result.groupCount):
-                groupStart = match_result.start[i]
+            for i in range(1, pattern.groupCount):
+                groupStart = match_result.getStart(i)
                 if groupStart >= 0:
-                    result.append(self.__sanitize_out_type(string[groupStart:match_result.end[i]]))
+                    result.append(self.__sanitize_out_type(string[groupStart:match_result.getEnd(i)]))
                 else:
                     result.append(None)
             collect_pos = end

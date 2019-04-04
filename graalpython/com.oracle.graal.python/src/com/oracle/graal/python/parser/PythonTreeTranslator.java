@@ -61,7 +61,7 @@ import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.classes.ClassDefinitionPrologueNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.control.ForNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
@@ -1300,7 +1300,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     }
 
     private LoopNode createForInScope(StatementNode target, ExpressionNode iterator, StatementNode body) {
-        GetIteratorNode getIterator = factory.createGetIterator(iterator);
+        GetIteratorExpressionNode getIterator = factory.createGetIterator(iterator);
         getIterator.assignSourceSection(iterator.getSourceSection());
         return new ForNode(body, target, getIterator);
     }
@@ -1388,6 +1388,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         StatementNode elseNode = factory.createBlock();
         StatementNode finallyNode = factory.createBlock();
         int i = 3; // 0 == 'try', 1 == ':', 2 == tryNode
+        boolean gotDefaultExcept = false;
         while (i < ctx.getChildCount()) {
             ParseTree child = ctx.getChild(i);
             i += 2; // skip the ':'
@@ -1402,7 +1403,6 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                     continue;
                 }
             }
-            boolean gotDefaultExcept = false;
             if (child instanceof Python3Parser.Except_clauseContext) {
                 Python3Parser.Except_clauseContext excctx = (Python3Parser.Except_clauseContext) child;
                 ExpressionNode exceptType = null;

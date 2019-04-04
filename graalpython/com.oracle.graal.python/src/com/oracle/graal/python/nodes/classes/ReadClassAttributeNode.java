@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.NodeFactory;
@@ -70,7 +71,7 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
         this.identifier = identifier;
         this.isFreeVar = isFreeVar;
 
-        NodeFactory factory = getNodeFactory();
+        NodeFactory factory = PythonLanguage.getCurrent().getNodeFactory();
         ReadIndexedArgumentNode namespace = ReadIndexedArgumentNode.create(0);
 
         if (cellSlot != null) {

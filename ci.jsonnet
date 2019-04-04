@@ -128,7 +128,7 @@
 
   local labsjdk8Mixin = {
     downloads +: {
-      JAVA_HOME: utils.download("labsjdk", "8u202-jvmci-0.55"),
+      JAVA_HOME: utils.download("labsjdk", "8u202-jvmci-0.57"),
       EXTRA_JAVA_HOMES : { pathlist: [utils.download("oraclejdk", "11+20")] },
     },
     environment +: {
@@ -244,6 +244,18 @@
       name: "deploy-binaries-"+platform,
     },
 
+  local coverageGate = commonBuilder + {
+      targets: TARGET.weekly,
+      timelimit: TIME_LIMIT["2h"],
+      run +: [
+          // cannot run with excluded "GeneratedBy" since that would lead to "command line too long"
+          // ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--jacoco-exclude-annotation', '@GeneratedBy', '--strict-compliance', "--dynamicimports", super.dynamicImports, "--primary", 'gate', '-B=--force-deprecation-as-warning-for-dependencies', '--strict-mode', '--tags', "python-junit", '--jacocout', 'html'],
+          // ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--jacoco-exclude-annotation', '@GeneratedBy', 'sonarqube-upload', "-Dsonar.host.url=$SONAR_HOST_URL", "-Dsonar.projectKey=com.oracle.graalvm.python", "-Dsonar.projectName=GraalVM - Python", '--exclude-generated'],
+          ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--strict-compliance', "--dynamicimports", super.dynamicImports, "--primary", 'gate', '-B=--force-deprecation-as-warning-for-dependencies', '--strict-mode', '--tags', "python-unittest,python-junit", '--jacocout', 'html'],
+          ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', 'sonarqube-upload', "-Dsonar.host.url=$SONAR_HOST_URL", "-Dsonar.projectKey=com.oracle.graalvm.python", "-Dsonar.projectName=GraalVM - Python", '--exclude-generated'],
+      ],
+      name: "python-coverage"
+    } + getPlatform(platform="linux"),
   // ------------------------------------------------------------------------------------------------------
   //
   // the gates
@@ -262,6 +274,9 @@
 
     // style
     styleGate,
+
+    // coverage
+    coverageGate,
 
     // graalvm gates
     graalVmGate,

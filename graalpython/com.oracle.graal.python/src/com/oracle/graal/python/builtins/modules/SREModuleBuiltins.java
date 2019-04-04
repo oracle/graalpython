@@ -57,13 +57,14 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -71,15 +72,13 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.regex.RegexSyntaxException;
 
 @CoreFunctions(defineModule = "_sre")
 public class SREModuleBuiltins extends PythonBuiltins {
@@ -187,25 +186,25 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "tregex_call_compile", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class TRegexCallCompile extends PythonBuiltinNode {
+    abstract static class TRegexCallCompile extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "isForeignObject(callable)")
+        @Specialization(guards = "isForeignObject(callable)", limit = "1")
         Object call(TruffleObject callable, Object arg1, Object arg2,
                         @Cached("create()") BranchProfile syntaxError,
                         @Cached("create()") BranchProfile typeError,
-                        @Cached("createExecute()") Node invokeNode) {
+                        @CachedLibrary("callable") InteropLibrary interop) {
             try {
-                return ForeignAccess.sendExecute(invokeNode, callable, new Object[]{arg1, arg2});
+                return interop.execute(callable, arg1, arg2);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
-            } catch (RegexSyntaxException e) {
-                syntaxError.enter();
-                if (e.getPosition() == -1) {
-                    throw raise(ValueError, "%s", e.getReason());
-                } else {
-                    throw raise(ValueError, "%s at position %d", e.getReason(), e.getPosition());
+            } catch (RuntimeException e) {
+                if (e instanceof TruffleException && ((TruffleException) e).isSyntaxError()) {
+                    syntaxError.enter();
+                    throw raise(ValueError, "%s", e);
                 }
+                // just re-throw
+                throw e;
             }
         }
 
@@ -214,23 +213,19 @@ public class SREModuleBuiltins extends PythonBuiltins {
         Object call(Object callable, Object arg1, Object arg2) {
             throw raise(RuntimeError, "invalid arguments passed to tregex_call_compile");
         }
-
-        protected static Node createExecute() {
-            return Message.EXECUTE.createNode();
-        }
     }
 
     @Builtin(name = "tregex_call_exec", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class TRegexCallExec extends PythonBuiltinNode {
+    abstract static class TRegexCallExec extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "isForeignObject(callable)")
+        @Specialization(guards = "isForeignObject(callable)", limit = "1")
         Object call(TruffleObject callable, Object arg1, Number arg2,
                         @Cached("create()") BranchProfile typeError,
-                        @Cached("createExecute()") Node invokeNode) {
+                        @CachedLibrary("callable") InteropLibrary interop) {
             try {
-                return ForeignAccess.sendExecute(invokeNode, callable, new Object[]{arg1, arg2});
+                return interop.execute(callable, arg1, arg2);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
@@ -241,10 +236,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @Fallback
         Object call(Object callable, Object arg1, Object arg2) {
             throw raise(RuntimeError, "invalid arguments passed to tregex_call_exec");
-        }
-
-        protected static Node createExecute() {
-            return Message.EXECUTE.createNode();
         }
     }
 }

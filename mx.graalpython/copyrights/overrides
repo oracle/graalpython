@@ -236,6 +236,7 @@ graalpython/com.oracle.graal.python.test/src/tests/test_getattribute-bimorphic-i
 graalpython/com.oracle.graal.python.test/src/tests/test_if-class-none.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_if.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_itertools.py,python.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_genericclass.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_list.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_builtin.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_mandelbrot3.py,benchmarks.copyright
@@ -394,7 +395,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/Co
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/ContinueTargetNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/ElseNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/ForNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/GetIteratorNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/IfNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/LoopNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/ReturnNode.java,zippy.copyright
@@ -479,12 +479,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/ScopeInfo
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/ScopeTranslator.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/TranslationEnvironment.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/TranslationUtil.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3BaseListener.java,python3antlr.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3BaseVisitor.java,python3antlr.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Lexer.java,python3antlr.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Listener.java,python3antlr.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Parser.java,python3antlr.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Visitor.java,python3antlr.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonContext.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonCore.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonOptions.java,zippy.copyright

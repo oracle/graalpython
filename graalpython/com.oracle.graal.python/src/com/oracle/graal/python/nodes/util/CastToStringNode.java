@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,9 +45,11 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 /**
@@ -103,7 +105,8 @@ public abstract class CastToStringNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "coerce")
-    String doGeneric(Object x) {
+    String doGeneric(Object x,
+                    @Cached PRaiseNode raise) {
         if (callStrNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callStrNode = insert(LookupAndCallUnaryNode.create(__STR__));
@@ -114,7 +117,7 @@ public abstract class CastToStringNode extends PNodeWithContext {
         } else if (result instanceof PString) {
             return ((PString) result).getValue();
         }
-        throw raise(errorType, message);
+        throw raise.raise(errorType, message);
     }
 
     public static CastToStringNode create() {

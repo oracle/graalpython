@@ -28,18 +28,24 @@ package com.oracle.graal.python.nodes.statement;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -52,10 +58,13 @@ public class WithNode extends StatementNode {
     @Child private CallNode enterDispatch = CallNode.create();
     @Child private CallNode exitDispatch = CallNode.create();
     @Child private CastToBooleanNode toBooleanNode = CastToBooleanNode.createIfTrueNode();
-    @Child GetClassNode getClassNode = GetClassNode.create();
+    @Child private GetClassNode getClassNode = GetClassNode.create();
+    @Child private PRaiseNode raiseNode;
+    @Child private PythonObjectFactory factory;
 
     private final BranchProfile noEnter = BranchProfile.create();
     private final BranchProfile noExit = BranchProfile.create();
+    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
 
     protected WithNode(WriteNode targetNode, StatementNode body, ExpressionNode withContext) {
         this.targetNode = targetNode;
@@ -84,6 +93,14 @@ public class WithNode extends StatementNode {
         return targetNode;
     }
 
+    private PRaiseNode getRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        return raiseNode;
+    }
+
     @Override
     public void executeVoid(VirtualFrame frame) {
         boolean gotException = false;
@@ -91,12 +108,12 @@ public class WithNode extends StatementNode {
         Object enterCallable = enterGetter.execute(withObject);
         if (enterCallable == PNone.NO_VALUE) {
             noEnter.enter();
-            throw raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", withObject, __ENTER__);
+            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", withObject, __ENTER__);
         }
         Object exitCallable = exitGetter.execute(withObject);
         if (exitCallable == PNone.NO_VALUE) {
             noExit.enter();
-            throw raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", withObject, __EXIT__);
+            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, "'%p' object has no attribute '%s'", withObject, __EXIT__);
         }
         PException exceptionState = doEnter(frame, withObject, enterCallable);
         try {
@@ -131,7 +148,7 @@ public class WithNode extends StatementNode {
         if (!gotException) {
             exitDispatch.execute(frame, exitCallable, new Object[]{withObject, PNone.NONE, PNone.NONE, PNone.NONE}, PKeyword.EMPTY_KEYWORDS);
         }
-        getContext().setCaughtException(exceptionState);
+        contextRef.get().setCaughtException(exceptionState);
     }
 
     /**
@@ -139,7 +156,7 @@ public class WithNode extends StatementNode {
      * statement
      */
     protected PException doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
-        PException caughtException = getContext().getCaughtException();
+        PException caughtException = contextRef.get().getCaughtException();
         applyValues(frame, enterDispatch.execute(frame, enterCallable, new Object[]{withObject}, PKeyword.EMPTY_KEYWORDS));
         return caughtException;
     }
@@ -151,7 +168,11 @@ public class WithNode extends StatementNode {
         e.getExceptionObject().reifyException();
         PBaseException value = e.getExceptionObject();
         PythonAbstractClass type = getClassNode.execute(value);
-        Object trace = e.getExceptionObject().getTraceback(factory());
+        if (factory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            factory = insert(PythonObjectFactory.create());
+        }
+        Object trace = e.getExceptionObject().getTraceback(factory);
         Object returnValue = exitDispatch.execute(frame, exitCallable, new Object[]{withObject, type, value, trace}, PKeyword.EMPTY_KEYWORDS);
         // If exit handler returns 'true', suppress
         if (toBooleanNode.executeWith(returnValue)) {

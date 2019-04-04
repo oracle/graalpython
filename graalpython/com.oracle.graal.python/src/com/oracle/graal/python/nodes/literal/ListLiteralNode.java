@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,6 +30,7 @@ import java.lang.reflect.Array;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
@@ -45,7 +46,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public final class ListLiteralNode extends LiteralNode {
-
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Children protected final ExpressionNode[] values;
 
     @CompilationFinal private ListStorageType type = ListStorageType.Uninitialized;
@@ -68,7 +69,7 @@ public final class ListLiteralNode extends LiteralNode {
                 for (int i = 0; i < values.length; i++) {
                     elements[i] = values[i].execute(frame);
                 }
-                storage = new SequenceStorageFactory().createStorage(elements);
+                storage = SequenceStorageFactory.createStorage(elements);
                 if (storage instanceof IntSequenceStorage) {
                     type = ListStorageType.Int;
                 } else if (storage instanceof LongSequenceStorage) {
@@ -138,7 +139,6 @@ public final class ListLiteralNode extends LiteralNode {
                     }
                     case Generic: {
                         Object[] elements = new Object[values.length];
-                        array = elements;
                         for (; i < values.length; i++) {
                             elements[i] = values[i].execute(frame);
                         }
@@ -152,7 +152,7 @@ public final class ListLiteralNode extends LiteralNode {
                 storage = genericFallback(frame, array, i, e.getResult());
             }
         }
-        return factory().createList(storage);
+        return factory.createList(storage);
     }
 
     private SequenceStorage genericFallback(VirtualFrame frame, Object array, int count, Object result) {

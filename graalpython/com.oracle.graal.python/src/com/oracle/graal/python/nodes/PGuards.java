@@ -65,8 +65,8 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -88,6 +88,10 @@ public abstract class PGuards {
     /**
      * Specialization guards.
      */
+
+    public static boolean isSameObject(Object left, Object right) {
+        return left == right;
+    }
 
     public static boolean isEmpty(Object[] array) {
         return array.length == 0;
@@ -260,6 +264,10 @@ public abstract class PGuards {
         return !isPythonBuiltinClass(klass);
     }
 
+    public static boolean isPythonBuiltinClassType(Object klass) {
+        return klass instanceof PythonBuiltinClassType;
+    }
+
     public static boolean isPythonBuiltinClass(Object klass) {
         return klass instanceof PythonBuiltinClass;
     }
@@ -298,6 +306,10 @@ public abstract class PGuards {
 
     public static boolean isBuiltinObject(Object obj) {
         return obj instanceof PythonBuiltinObject;
+    }
+
+    public static boolean isAnyPythonObject(Object obj) {
+        return obj instanceof PythonAbstractObject;
     }
 
     public static boolean isForeignObject(Object obj) {

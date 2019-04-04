@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -670,6 +670,22 @@ class TestAbstract(CPyExtTestCase):
             (set(), 0),
             ({'a', 'b'}, 0),
             (DummyListSubclass(), 1),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* sequence", "Py_ssize_t idx"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_ITEM = CPyExtFunction(
+        _reference_getitem,
+        lambda: (
+            (tuple(), 10),
+            ((1, 2, 3), 2),
+            ((None,), 0),
+            ([], 10),
+            (['a', 'b', 'c'], 2),
+            ([None], 0),
         ),
         resultspec="O",
         argspec='On',

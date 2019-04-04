@@ -3,6 +3,20 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 1.0.0 RC15
+
+* Implement PEP 487 `__init_subclass__`
+* Implement PEP 560 `__class_getitem__` and `__mro_entries__`
+* Migrate to Truffle libraries for interop
+* Support the buffer protocol for mmap
+* Support importing java classes using normal Python import syntax
+* Improve performance of literal dictionary creation when the first but not all keys are strings
+* Improve performance of getting the length of a string
+* Improve performance of accessing defaults, keyword-defaults, and code of a function
+* Fix getting file separator from the Truffle filesystem rather than the operating system
+* Fix constructing and calling methods with non-function callables
+* Fix execution of subprocesses with non-default python homes on JVM
+
 ## Version 1.0.0 RC14
 
 * Mark a subset of the Graal Python launcher options as "stable". All other options are subject to change and need to be unlocked explicitly on the commandline.

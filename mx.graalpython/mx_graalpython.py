@@ -111,7 +111,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         elif check_vm_env == '0':
             check_vm()
 
-    dists = ['GRAALPYTHON']
+    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
@@ -119,28 +119,21 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
     if '--python.WithJavaStacktrace' not in graalpython_args:
         graalpython_args.insert(0, '--python.WithJavaStacktrace')
 
-    if SUITE_SULONG:
-        dists.append('SULONG')
-        if mx.suite("sulong-managed", fatalIfMissing=False):
-            dists.append('SULONG_MANAGED')
-            graalpython_args.insert(0, mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_MANAGED_LIBS>'))
+    if mx.suite("sulong-managed", fatalIfMissing=False):
+        dists.append('SULONG_MANAGED')
+
+    # Try eagerly to include tools for convenience when running Python
+    if not mx.suite("tools", fatalIfMissing=False):
+        SUITE.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
+    if mx.suite("tools", fatalIfMissing=False):
+        if os.path.exists(mx.suite("tools").dependency("CHROMEINSPECTOR").path):
+            # CHROMEINSPECTOR was built, put it on the classpath
+            dists.append('CHROMEINSPECTOR')
+            graalpython_args.insert(0, "--llvm.enableLVI=true")
         else:
-            graalpython_args.insert(0, mx_subst.path_substitutions.substitute('--llvm.libraryPath=<path:SULONG_LIBS>'))
+            mx.logv("CHROMEINSPECTOR was not built, not including it automatically")
 
     graalpython_args.insert(0, '--experimental-options=true')
-
-    # Try eagerly to include tools on Tim's computer
-    if not mx.suite("/tools", fatalIfMissing=False):
-        def _is_user(user, home=None):
-            if home:
-                return os.environ.get("USER") == user and os.environ.get(home)
-            return os.environ.get("USER") == user
-
-        if _is_user("tim", "MAGLEV_HOME") or _is_user("cbasca") or _is_user("fa"):
-            SUITE.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
-            dists.append('CHROMEINSPECTOR')
-            if SUITE_SULONG:
-                vm_args.append("-Dpolyglot.llvm.enableLVI=true")
 
     vm_args += mx.get_runtime_jvm_args(dists, jdk=jdk)
 
@@ -164,18 +157,30 @@ def punittest(args):
     # IMPORTANT! This must not be --suite graalpython, because a
     # --dynamicimports sulong will otherwise not put sulong.jar on the
     # classpath, which means we cannot run our C extension tests!
-    unittest(args + ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)', "-Dgraal.TraceTruffleCompilation=true"])
+    unittest(args + ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)', "-Dgraal.TraceTruffleCompilation=true", "-Dgraal.TruffleCompilationExceptionsAreFatal=false", "-Dgraal.TrufflePerformanceWarningsAreFatal=false"])
+
+
+PYTHON_ARCHIVES = ["GRAALPYTHON-LAUNCHER",
+                   "GRAALPYTHON",
+                   "GRAALPYTHON_UNIT_TESTS",
+                   "GRAALPYTHON_GRAALVM_SUPPORT"]
+PYTHON_NATIVE_PROJECTS = ["com.oracle.graal.python.parser.antlr",
+                          "com.oracle.graal.python.cext"]
 
 
 def nativebuild(args):
-    mx.build(["--only", "com.oracle.graal.python.cext,GRAALPYTHON,GRAALPYTHON_GRAALVM_SUPPORT"])
+    "Build the non-Java Python projects and archives"
+    mx.build(["--only", ",".join(PYTHON_NATIVE_PROJECTS + PYTHON_ARCHIVES)])
+    mx.archive(["@" + a for a in PYTHON_ARCHIVES])
 
 
 def nativeclean(args):
-    mx.run(['find', SUITE.dir, '-name', '*.bc', '-delete'])
+    "Clean the non-Java Python projects"
+    mx.clean(["--dependencies", ",".join(PYTHON_NATIVE_PROJECTS)])
 
 
 def python3_unittests(args):
+    """run the cPython stdlib unittests"""
     mx.run(["python3", "graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
 
 
@@ -192,8 +197,9 @@ class GraalPythonTags(object):
     cpyext_managed = 'python-cpyext-managed'
     cpyext_sandboxed = 'python-cpyext-sandboxed'
     svmunit = 'python-svm-unittest'
-    downstream = 'python-downstream'
     graalvm = 'python-graalvm'
+    shared_object = 'python-so'
+    svm = 'python-svm'
     license = 'python-license'
 
 
@@ -205,6 +211,9 @@ def python_gate(args):
     if "--tags" not in args:
         args += ["--tags", "fullbuild,style,python-junit,python-unittest,python-license,python-downstream"]
     return mx.command_function("gate")(args)
+
+
+python_gate.__doc__ = 'Custom gates are %s' % ", ".join([getattr(GraalPythonTags, t) for t in dir(GraalPythonTags) if not t.startswith("__")])
 
 
 def find_jdt():
@@ -242,10 +251,12 @@ _SVM_ARGS = ["--dynamicimports", "/vm,/tools,/substratevm",
 
 
 def python_svm(args):
+    "Build and run the native graalpython image"
     mx.run_mx(_SVM_ARGS + ["build"])
     out = mx.OutputCapture()
     mx.run_mx(_SVM_ARGS + ["graalvm-home"], out=mx.TeeOutputCapture(out))
     svm_image = os.path.join(out.data.strip(), "bin", "graalpython")
+    mx.log(svm_image)
     mx.run([svm_image] + args)
     return svm_image
 
@@ -345,13 +356,13 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
-            python_checkcopyrights([])
+            python_checkcopyrights(["--fix"])
 
-    with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.graalvm]) as task:
+    with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.shared_object, GraalPythonTags.graalvm]) as task:
         if task:
             run_shared_lib_test()
 
-    with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.graalvm]) as task:
+    with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm]) as task:
         if task:
             svm_image = python_svm(["--version"])
             benchmark = os.path.join(PATH_MESO, "image-magix.py")
@@ -606,23 +617,39 @@ def update_import(name, rev="origin/master", callback=None):
 
 
 def update_import_cmd(args):
-    for name in args:
+    """Update our mx imports"""
+    if not args:
+        args = ["truffle"]
+    if "sulong" in args:
+        args.append("regex")
+    if "regex" in args:
+        args.append("sulong")
+    if "truffle" in args:
+        args.remove("truffle")
+        args += ["sulong", "regex"]
+    if "sulong" in args:
+        join = os.path.join
+        callback = lambda: shutil.copy(
+            join(mx.dependency("SULONG_LEGACY").output, "include", "truffle.h"),
+            join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "truffle.h")
+        ) and shutil.copy(
+            join(mx.dependency("SULONG_LIBS").output, "polyglot.h"),
+            join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h")
+        )
+    else:
         callback = None
-        if name == "sulong":
-            join = os.path.join
-            callback = lambda: shutil.copy(
-                join(SUITE_SULONG.dir, "include", "truffle.h"),
-                join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "truffle.h")
-            ) and shutil.copy(
-                join(mx.dependency("SULONG_LIBS").output, "polyglot.h"),
-                join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h")
-            )
-        # make sure that sulong and regex are the same version
-        if name == "regex":
-            update_import("sulong", callback=callback)
-        elif name == "sulong":
-            update_import("regex", callback=callback)
+    for name in set(args):
         update_import(name, callback=callback)
+
+
+def python_style_checks(args):
+    "Check (and fix where possible) copyrights, eclipse formatting, and spotbugs"
+    python_checkcopyrights(["--fix"])
+    if not os.environ.get("ECLIPSE_EXE"):
+        find_eclipse()
+    if os.environ.get("ECLIPSE_EXE"):
+        mx.command_function("eclipseformat")([])
+    mx.command_function("spotbugs")([])
 
 
 def python_checkcopyrights(args):
@@ -648,6 +675,8 @@ def python_checkcopyrights(args):
 
 
 def import_python_sources(args):
+    "Update the inlined files from PyPy and CPython"
+
     # mappings for files that are renamed
     mapping = {
         "_memoryview.c": "memoryobject.c",
@@ -730,7 +759,7 @@ def import_python_sources(args):
     SUITE.vc.git_command(SUITE.dir, ["clean", "-fdx"])
     shutil.rmtree("graalpython")
 
-    for inlined_file in (pypy_files + extra_pypy_files):
+    for inlined_file in pypy_files + extra_pypy_files:
         original_file = None
         name = os.path.basename(inlined_file)
         name = mapping.get(name, name)
@@ -862,6 +891,13 @@ def mx_post_parse_cmd_line(namespace):
     _register_bench_suites(namespace)
 
 
+def python_coverage(args):
+    "Generate coverage report running args"
+    mx.run_mx(['--jacoco=on', '--jacoco-whitelist-package=com.oracle.graal.python'] + args)
+    mx.command_function("jacocoreport")(["--omit-excluded", "--format=html"])
+
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # register the suite commands (if any)
@@ -871,18 +907,14 @@ mx.update_commands(SUITE, {
     'python': [python, '[Python args|@VM options]'],
     'python3': [python, '[Python args|@VM options]'],
     'deploy-binary-if-master': [deploy_binary_if_master, ''],
-    'python-gate': [python_gate, ''],
-    'python-update-import': [update_import_cmd, 'import name'],
-    'delete-graalpython-if-testdownstream': [delete_self_if_testdownstream, ''],
-    'python-checkcopyrights': [python_checkcopyrights, 'Make sure code files have copyright notices'],
-    'python-build-svm': [python_build_svm, 'build svm image if it is outdated'],
-    'python-svm': [python_svm, 'run python svm image (building it if it is outdated'],
-    'punittest': [punittest, ''],
-    'python3-unittests': [python3_unittests, 'run the cPython stdlib unittests'],
-    'python-unittests': [python3_unittests, 'run the cPython stdlib unittests'],
-    'python-gate-unittests': [gate_unittests, ''],
+    'python-gate': [python_gate, '--tags [gates]'],
+    'python-update-import': [update_import_cmd, '[import-name, default: truffle]'],
+    'python-style': [python_style_checks, ''],
+    'python-svm': [python_svm, ''],
+    'python-build-svm': [python_build_svm, ''],
+    'python-unittests': [python3_unittests, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
-    'python-so-test': [run_shared_lib_test, ''],
     'python-src-import': [import_python_sources, ''],
+    'python-coverage': [python_coverage, '[gate-tag]'],
 })

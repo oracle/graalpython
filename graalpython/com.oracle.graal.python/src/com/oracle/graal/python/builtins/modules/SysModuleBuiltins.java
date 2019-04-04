@@ -83,6 +83,8 @@ import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -216,7 +218,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             path[pathIdx++] = getScriptPath(env, args);
         }
         path[pathIdx++] = PythonCore.getStdlibHome(env);
-        path[pathIdx++] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
+        path[pathIdx++] = PythonCore.getCoreHome(env) + env.getFileNameSeparator() + "modules";
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
     }
@@ -302,8 +304,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Child private DirectCallNode call;
 
         @Specialization
-        Object first(@SuppressWarnings("unused") PNone arg) {
-            return counted(0);
+        Object first(@SuppressWarnings("unused") PNone arg,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+            return counted(0, lang);
         }
 
         /*
@@ -332,10 +335,11 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object counted(int num) {
+        Object counted(int num,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
             if (call == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                GetStackTraceRootNode rootNode = new GetStackTraceRootNode(getRootNode().getLanguage(PythonLanguage.class));
+                GetStackTraceRootNode rootNode = new GetStackTraceRootNode(lang);
                 call = insert(Truffle.getRuntime().createDirectCallNode(Truffle.getRuntime().createCallTarget(rootNode)));
             }
             int actual = num + 1; // skip dummy frame
@@ -355,28 +359,32 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        Object countedLong(long num) {
-            return counted(PInt.intValueExact(num));
+        Object countedLong(long num,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+            return counted(PInt.intValueExact(num), lang);
         }
 
         @Specialization
-        Object countedLongOvf(long num) {
+        Object countedLongOvf(long num,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
             try {
-                return counted(PInt.intValueExact(num));
+                return counted(PInt.intValueExact(num), lang);
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        Object countedPInt(PInt num) {
-            return counted(num.intValueExact());
+        Object countedPInt(PInt num,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+            return counted(num.intValueExact(), lang);
         }
 
         @Specialization
-        Object countedPIntOvf(PInt num) {
+        Object countedPIntOvf(PInt num,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
             try {
-                return counted(num.intValueExact());
+                return counted(num.intValueExact(), lang);
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }

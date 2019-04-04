@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,12 +43,17 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 
 public final class LookupInheritedAttributeNode extends PNodeWithContext {
 
-    @Child private GetLazyClassNode getClassNode = GetLazyClassNode.create();
     @Child private LookupAttributeInMRONode lookupInMRONode;
+    @Child private GetLazyClassNode getClassNode = GetLazyClassNode.create();
 
     private LookupInheritedAttributeNode(String key) {
         lookupInMRONode = LookupAttributeInMRONode.create(key);
@@ -72,5 +77,26 @@ public final class LookupInheritedAttributeNode extends PNodeWithContext {
      */
     public Object execute(Object object) {
         return lookupInMRONode.execute(getClassNode.execute(object));
+    }
+
+    @GenerateUncached
+    public abstract static class Dynamic extends Node {
+        public abstract Object execute(Object object, String key);
+
+        @Specialization
+        Object doCached(Object object, String key,
+                        @Exclusive @Cached GetLazyClassNode getClassNode,
+                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic lookupAttrInMroNode) {
+
+            return lookupAttrInMroNode.execute(getClassNode.execute(object), key);
+        }
+
+        public static Dynamic create() {
+            return LookupInheritedAttributeNodeFactory.DynamicNodeGen.create();
+        }
+
+        public static Dynamic getUncached() {
+            return LookupInheritedAttributeNodeFactory.DynamicNodeGen.getUncached();
+        }
     }
 }

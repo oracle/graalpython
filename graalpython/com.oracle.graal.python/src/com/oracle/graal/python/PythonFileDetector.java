@@ -41,16 +41,22 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.spi.FileTypeDetector;
+import com.oracle.truffle.api.TruffleFile;
+import java.nio.charset.Charset;
 
-public final class PythonFileDetector extends FileTypeDetector {
+public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
+
     @Override
-    public String probeContentType(Path path) throws IOException {
-        Path fileName = path.getFileName();
-        if (fileName != null && fileName.toString().endsWith(".py")) {
+    public String findMimeType(TruffleFile file) throws IOException {
+        String fileName = file.getName();
+        if (fileName != null && fileName.endsWith(".py")) {
             return PythonLanguage.MIME_TYPE;
         }
+        return null;
+    }
+
+    @Override
+    public Charset findEncoding(TruffleFile file) throws IOException {
         return null;
     }
 }

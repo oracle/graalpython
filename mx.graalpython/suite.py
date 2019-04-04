@@ -9,8 +9,8 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "1.0.0-rc14",
-    "release": True,
+    "version": "1.0.0-rc15",
+    "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
 
@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "e9873eb1423154f09a5a60a89bc9321ffef93f91",
+                "version": "8312de35e6d63e8be21634a3ffc177bdbc3092e2",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "e9873eb1423154f09a5a60a89bc9321ffef93f91",
+                "version": "8312de35e6d63e8be21634a3ffc177bdbc3092e2",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -113,12 +113,6 @@ suite = {
             "source": []
         },
 
-        "python.include": {
-            "type": "python",
-            "path": 'graalpython/include',
-            "source": []
-        },
-
         "python.site-packages": {
             "type": "python",
             "path": 'graalpython/site-packages',
@@ -158,15 +152,15 @@ suite = {
             "buildEnv": {
                 "ANTLR_JAR": "<path:truffle:ANTLR4_COMPLETE>",
                 "PARSER_PATH": "<src_dir:com.oracle.graal.python>/com/oracle/graal/python/parser/antlr",
-                "OUTPUT_PATH": "<src_dir:com.oracle.graal.python>/com/oracle/graal/python/parser/antlr",
                 "PARSER_PKG": "com.oracle.graal.python.parser.antlr",
                 "POSTPROCESSOR": "<suite:graalpython>/graalpython/com.oracle.graal.python.parser.antlr/postprocess.py",
             },
             "dependencies": [
                 "truffle:ANTLR4_COMPLETE",
             ],
+            "jacoco": "include",
             "native": True,
-            "vpath": True,
+            "vpath": False,
         },
 
         "com.oracle.graal.python.shell": {
@@ -176,6 +170,7 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
             ],
+            "jacoco": "include",
             "javaCompliance": "8+",
             "checkstyle": "com.oracle.graal.python",
         },
@@ -188,9 +183,10 @@ suite = {
                 "truffle:TRUFFLE_API",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
-                "regex:TREGEX",
+                "sulong:SULONG",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
+            "jacoco": "include",
             "javaCompliance" : "8+",
             "checkstyleVersion" : "8.8",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
@@ -208,6 +204,7 @@ suite = {
                 "truffle:TRUFFLE_TCK",
                 "mx:JUNIT"
             ],
+            "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "8+",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
@@ -232,11 +229,12 @@ suite = {
         "com.oracle.graal.python.cext": {
             "subDir": "graalpython",
             "native": True,
-            "vpath": True,
+            "vpath": False,
             "results": ["graalpython/lib-graalpython"],
             "output": ".",
             "buildDependencies": [
                 "sulong:SULONG_LIBS",
+                "sulong:SULONG_LEGACY",
             ],
             "buildEnv": {
                 "POLYGLOT_INC": "<path:SULONG_LIBS>",
@@ -311,6 +309,7 @@ suite = {
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
+                "sulong:SULONG",
             ],
             "sourcesPath": "graalpython.src.zip",
             "description": "GraalPython engine",

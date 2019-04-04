@@ -40,12 +40,16 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class IsHashableNode extends PDataModelEmulationNode {
@@ -71,13 +75,15 @@ public abstract class IsHashableNode extends PDataModelEmulationNode {
 
     @Specialization
     protected boolean isHashableGeneric(Object object,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Cached PRaiseNode raiseNode,
                     @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
                     @Cached("create()") BuiltinFunctions.IsInstanceNode isInstanceNode) {
         Object hashValue = lookupHashAttributeNode.executeObject(object);
-        if (isInstanceNode.executeWith(hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {
+        if (isInstanceNode.executeWith(hashValue, context.getCore().lookupType(PythonBuiltinClassType.PInt))) {
             return true;
         }
-        throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
+        throw raiseNode.raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
     }
 
     public static IsHashableNode create() {

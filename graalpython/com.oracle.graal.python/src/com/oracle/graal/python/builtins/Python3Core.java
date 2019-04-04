@@ -209,7 +209,7 @@ public final class Python3Core implements PythonCore {
                         "set",
                         "itertools",
                         "base_exception",
-                        "python_cext",
+                        TruffleCextBuiltins.PYTHON_CEXT,
                         "_collections",
                         "memoryview",
                         "list",
@@ -230,6 +230,7 @@ public final class Python3Core implements PythonCore {
                         "mmap",
                         "_queue",
                         "_ast",
+                        "java",
                         "_contextvars"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);
@@ -345,7 +346,7 @@ public final class Python3Core implements PythonCore {
                         new RLockBuiltins(),
                         new ContextvarsModuleBuiltins()));
         if (!TruffleOptions.AOT) {
-            ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class);
+            ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {
                 builtins.add(builtin);
             }
@@ -372,7 +373,7 @@ public final class Python3Core implements PythonCore {
      */
     private boolean initialized;
 
-    private final PythonObjectFactory objectFactory = PythonObjectFactory.create();
+    private final PythonObjectFactory objectFactory = PythonObjectFactory.getUncached();
 
     public Python3Core(PythonParser parser) {
         this.parser = parser;
@@ -420,7 +421,6 @@ public final class Python3Core implements PythonCore {
         for (String s : coreFiles) {
             loadFile(s, coreHome);
         }
-        exportCInterface(getContext());
         initialized = true;
     }
 
@@ -476,20 +476,6 @@ public final class Python3Core implements PythonCore {
         PDict sysModules = (PDict) sysModule.getAttribute("modules");
         for (Entry<String, PythonModule> entry : builtinModules.entrySet()) {
             sysModules.setItem(entry.getKey(), entry.getValue());
-        }
-    }
-
-    public void exportCInterface(PythonContext context) {
-        Env env = context.getEnv();
-        if (env != null) {
-            env.exportSymbol("python_cext", builtinModules.get("python_cext"));
-            env.exportSymbol("python_builtins", builtinsModule);
-
-            // export all exception classes for the C API
-            for (PythonBuiltinClassType errorType : PythonBuiltinClassType.EXCEPTIONS) {
-                PythonBuiltinClass errorClass = lookupType(errorType);
-                env.exportSymbol("python_" + GetNameNode.doSlowPath(errorClass), errorClass);
-            }
         }
     }
 
@@ -599,9 +585,9 @@ public final class Python3Core implements PythonCore {
 
     @TruffleBoundary
     private Source getSource(String basename, String prefix) {
-        String suffix = FILE_SEPARATOR + basename + ".py";
         PythonContext ctxt = getContext();
         Env env = ctxt.getEnv();
+        String suffix = env.getFileNameSeparator() + basename + ".py";
         TruffleFile file = env.getTruffleFile(prefix + suffix);
         try {
             if (file.exists()) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,13 +40,17 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class GeneratorTryFinallyNode extends TryFinallyNode implements GeneratorControlNode {
-
+    @CompilationFinal ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
 
     private final int finallyFlag;
@@ -58,7 +62,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        PException exceptionState = getContext().getCaughtException();
+        PException exceptionState = contextRef.get().getCaughtException();
         PException exception = null;
         if (gen.isActive(frame, finallyFlag)) {
             getFinalbody().executeVoid(frame);
@@ -75,7 +79,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
         if (exception != null) {
             throw exception;
         }
-        getContext().setCaughtException(exceptionState);
+        contextRef.get().setCaughtException(exceptionState);
     }
 
     public void reset(VirtualFrame frame) {

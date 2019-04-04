@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.code;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -52,16 +51,13 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
-import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
@@ -201,26 +197,6 @@ public final class PCode extends PythonBuiltinObject {
             name = rootNode.getName();
         }
         return name;
-    }
-
-    @TruffleBoundary
-    private static Set<String> getKeywordArgumentNames(List<ReadIndexedArgumentNode> readKeywordNodes) {
-        return extractArgumentNames(readKeywordNodes);
-    }
-
-    @TruffleBoundary
-    private static Set<String> extractArgumentNames(List<? extends ReadIndexedArgumentNode> readIndexedArgumentNodes) {
-        Set<String> argNames = new HashSet<>();
-        for (ReadIndexedArgumentNode node : readIndexedArgumentNodes) {
-            Node parent = node.getParent();
-            if (parent instanceof WriteIdentifierNode) {
-                Object identifier = ((WriteIdentifierNode) parent).getIdentifier();
-                if (identifier instanceof String) {
-                    argNames.add((String) identifier);
-                }
-            }
-        }
-        return argNames;
     }
 
     private static int extractStackSize(RootNode rootNode) {

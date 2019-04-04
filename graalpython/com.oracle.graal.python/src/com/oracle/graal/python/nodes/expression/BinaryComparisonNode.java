@@ -30,8 +30,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -45,6 +47,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
 
     @Child private LookupAndCallBinaryNode callNode;
     @Child private CastToBooleanNode castToBoolean;
+    @Child private PRaiseNode raiseNode;
 
     BinaryComparisonNode(String magicMethod, String magicReverseMethod, String operation) {
         this.magicMethod = magicMethod;
@@ -71,7 +74,11 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         } else if (magicMethod == __NE__) {
             return left != right;
         } else {
-            throw raise(TypeError, "'%s' not supported between instances of '%p' and '%p'", operation, left, right);
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            throw raiseNode.raise(TypeError, "'%s' not supported between instances of '%p' and '%p'", operation, left, right);
         }
     }
 

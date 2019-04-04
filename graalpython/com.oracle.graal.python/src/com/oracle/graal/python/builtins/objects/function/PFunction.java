@@ -34,10 +34,10 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -50,17 +50,14 @@ public class PFunction extends PythonObject {
     private static final Object[] EMPTY_DEFAULTS = new Object[0];
     private final String name;
     private final String enclosingClassName;
-    private final Assumption codeStableAssumption = Truffle.getRuntime().createAssumption("function code unchanged for " + getQualifiedName());
-    private final Assumption defaultsStableAssumption = Truffle.getRuntime().createAssumption("function defaults unchanged " + getQualifiedName());
+    private final Assumption codeStableAssumption = Truffle.getRuntime().createAssumption();
+    private final Assumption defaultsStableAssumption = Truffle.getRuntime().createAssumption();
     private final PythonObject globals;
     private final PCell[] closure;
     private final boolean isStatic;
     @CompilationFinal private PCode code;
-    private PCode uncachedCode;
     @CompilationFinal(dimensions = 1) private Object[] defaultValues;
-    private Object[] uncachedDefaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
-    private PKeyword[] uncachedKwDefaultValues;
 
     public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
         this(clazz, name, enclosingClassName, callTarget, globals, EMPTY_DEFAULTS, PKeyword.EMPTY_KEYWORDS, closure);
@@ -68,22 +65,31 @@ public class PFunction extends PythonObject {
 
     public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
+        this(clazz, name, enclosingClassName, callTarget, globals, defaultValues, kwDefaultValues, closure, null);
+    }
+
+    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+                    PCell[] closure, WriteAttributeToDynamicObjectNode writeAttrNode) {
         super(clazz);
         this.name = name;
-        this.code = this.uncachedCode = new PCode(PythonBuiltinClassType.PCode, callTarget);
+        this.code = new PCode(PythonBuiltinClassType.PCode, callTarget);
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingClassName = enclosingClassName;
         this.globals = globals;
-        this.defaultValues = this.uncachedDefaultValues = defaultValues == null ? EMPTY_DEFAULTS : defaultValues;
-        this.kwDefaultValues = this.uncachedKwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
+        this.defaultValues = defaultValues == null ? EMPTY_DEFAULTS : defaultValues;
+        this.kwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
         this.closure = closure;
-        addDefaultConstants(this.getStorage(), name, enclosingClassName);
+        addDefaultConstants(writeAttrNode, getStorage(), name, enclosingClassName);
     }
 
-    @TruffleBoundary
-    private static void addDefaultConstants(DynamicObject storage, String name, String enclosingClassName) {
-        storage.define(__NAME__, name);
-        storage.define(__QUALNAME__, enclosingClassName != null ? enclosingClassName + "." + name : name);
+    private static void addDefaultConstants(WriteAttributeToDynamicObjectNode writeAttrNode, DynamicObject storage, String name, String enclosingClassName) {
+        if (writeAttrNode != null) {
+            writeAttrNode.execute(storage, __NAME__, name);
+            writeAttrNode.execute(storage, __QUALNAME__, enclosingClassName != null ? enclosingClassName + "." + name : name);
+        } else {
+            storage.define(__NAME__, name);
+            storage.define(__QUALNAME__, enclosingClassName != null ? enclosingClassName + "." + name : name);
+        }
     }
 
     public boolean isStatic() {
@@ -145,22 +151,12 @@ public class PFunction extends PythonObject {
     }
 
     public PCode getCode() {
-        Assumption assumption = this.codeStableAssumption;
-        if (CompilerDirectives.isCompilationConstant(this) && CompilerDirectives.isCompilationConstant(assumption)) {
-            if (assumption.isValid()) {
-                return code;
-            }
-        }
-        return uncachedCode;
-    }
-
-    public PCode getUncachedCode() {
-        return uncachedCode;
+        return code;
     }
 
     public void setCode(PCode code) {
         codeStableAssumption.invalidate("code changed for function " + getName());
-        this.code = this.uncachedCode = code;
+        this.code = code;
     }
 
     public String getEnclosingClassName() {
@@ -168,41 +164,21 @@ public class PFunction extends PythonObject {
     }
 
     public Object[] getDefaults() {
-        Assumption assumption = this.defaultsStableAssumption;
-        if (CompilerDirectives.isCompilationConstant(this) && CompilerDirectives.isCompilationConstant(assumption)) {
-            if (assumption.isValid()) {
-                return defaultValues;
-            }
-        }
-        return uncachedDefaultValues;
-    }
-
-    public Object[] getUncachedDefaultValues() {
-        return uncachedDefaultValues;
+        return defaultValues;
     }
 
     public void setDefaults(Object[] defaults) {
         this.defaultsStableAssumption.invalidate("defaults changed for function " + getName());
-        this.defaultValues = this.uncachedDefaultValues = defaults;
+        this.defaultValues = defaults;
     }
 
     public PKeyword[] getKwDefaults() {
-        Assumption assumption = this.defaultsStableAssumption;
-        if (CompilerDirectives.isCompilationConstant(this) && CompilerDirectives.isCompilationConstant(assumption)) {
-            if (assumption.isValid()) {
-                return kwDefaultValues;
-            }
-        }
-        return uncachedKwDefaultValues;
-    }
-
-    public PKeyword[] getUncachedKwDefaults() {
-        return uncachedKwDefaultValues;
+        return kwDefaultValues;
     }
 
     public void setKwDefaults(PKeyword[] defaults) {
         this.defaultsStableAssumption.invalidate("kw defaults changed for function " + getName());
-        this.kwDefaultValues = this.uncachedKwDefaultValues = defaults;
+        this.kwDefaultValues = defaults;
     }
 
     @TruffleBoundary
