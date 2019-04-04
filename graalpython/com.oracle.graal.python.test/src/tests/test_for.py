@@ -98,7 +98,7 @@ def test_else_break():
         else:
             iters += 1
             break
-    assert iters == 2, "if the for-loop doesn't break, the else should be executed and break out of the outer loop"
+    assert iters == 1, "if the for-loop doesn't break, the else should be executed and break out of the outer loop"
 
 
 def test_else_break_from_while():
