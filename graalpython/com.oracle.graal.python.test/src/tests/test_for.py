@@ -101,7 +101,7 @@ def test_else_break():
     assert iters == 2, "if the for-loop doesn't break, the else should be executed and break out of the outer loop"
 
 
-def test_else_break():
+def test_else_break_from_while():
     iters = 0
     while iters < 40:
         while iters < 10:
