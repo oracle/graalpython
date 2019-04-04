@@ -174,7 +174,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Override
         public double doPI(PInt value) {
             BigInteger bValue = value.getValue();
-            checkMathDomainError(bValue.compareTo(BigInteger.ZERO) == -1);
+            checkMathDomainError(bValue.compareTo(BigInteger.ZERO) < 0);
             return sqrtBigNumber(bValue).doubleValue();
         }
 
@@ -1252,7 +1252,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Override
         public double doPI(PInt value) {
             BigInteger bValue = value.getValue();
-            checkMathDomainError(bValue.compareTo(BigInteger.ONE) == -1);
+            checkMathDomainError(bValue.compareTo(BigInteger.ONE) < 0);
 
             BigDecimal sqrt = SqrtNode.sqrtBigNumber(bValue.multiply(bValue).subtract(BigInteger.ONE));
             BigDecimal bd = new BigDecimal(bValue);
@@ -1526,7 +1526,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public double logPIN(PInt value, @SuppressWarnings("unused") PNone novalue,
                         @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
             BigInteger bValue = value.getValue();
-            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) == -1);
+            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) < 0);
             return logBigInteger(bValue);
         }
 
@@ -1584,7 +1584,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile doNotFit,
                         @Cached("createBinaryProfile()") ConditionProfile divByZero) {
             BigInteger bValue = value.getValue();
-            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) == -1 || base <= 0);
+            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || base <= 0);
             double logBase = countBase(base, divByZero);
             return logBigInteger(bValue) / logBase;
         }
@@ -1607,7 +1607,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile divByZero) {
             BigInteger bValue = value.getValue();
             BigInteger bBase = base.getValue();
-            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) == -1 || bBase.compareTo(BigInteger.ZERO) <= 0);
+            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
             double logBase = countBase(bBase, divByZero);
             return logBigInteger(bValue) / logBase;
         }
