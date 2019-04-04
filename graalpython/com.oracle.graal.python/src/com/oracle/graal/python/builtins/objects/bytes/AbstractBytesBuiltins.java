@@ -932,7 +932,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
             return factory().createByteArray(self.getSequenceStorage().copy());
         }
 
-        @Specialization
+        @Specialization(guards = "!isNone(table)")
         public PBytes translate(PBytes self, Object table, @SuppressWarnings("unused") PNone delete) {
             byte[] bTable = getToBytesNode().execute(table);
             checkLengthOfTable(bTable);
@@ -945,7 +945,7 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization
+        @Specialization(guards = "!isNone(table)")
         public PByteArray translate(PByteArray self, Object table, @SuppressWarnings("unused") PNone delete) {
             byte[] bTable = getToBytesNode().execute(table);
             checkLengthOfTable(bTable);
