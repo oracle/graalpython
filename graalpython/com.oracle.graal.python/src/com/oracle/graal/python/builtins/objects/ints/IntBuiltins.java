@@ -1786,7 +1786,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private byte getSingByte(BigInteger value, boolean signed) {
-            if (value.compareTo(BigInteger.ZERO) == -1) {
+            if (value.compareTo(BigInteger.ZERO) < 0) {
                 if (!signed) {
                     throw raise(PythonErrorType.OverflowError, MESSAGE_CONVERT_NEGATIVE);
                 }
