@@ -2230,6 +2230,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                     den = den / x + LANCZOS_DEN_COEFFS[i];
                 }
             }
+            assert den > 0.0 : "den cannot be zero, because LANCZOS_DEN_COEFFS are added";
             return num / den;
         }
 
