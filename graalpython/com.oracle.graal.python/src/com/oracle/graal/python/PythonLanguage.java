@@ -112,7 +112,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
 
-    public Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
+    public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
     private final NodeFactory nodeFactory;
     public final ConcurrentHashMap<Class<? extends PythonBuiltinBaseNode>, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
