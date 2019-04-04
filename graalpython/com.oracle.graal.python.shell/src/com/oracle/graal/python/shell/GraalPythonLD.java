@@ -176,6 +176,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
             }
             nmProc.waitFor();
         } catch (InterruptedException | IOException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
     }
@@ -196,6 +197,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
                             try {
                                 bcFiles.addAll(arMembers(pathString));
                             } catch (IOException | InterruptedException e) {
+                                Thread.currentThread().interrupt();
                                 throw new RuntimeException(e);
                             }
                         } else {

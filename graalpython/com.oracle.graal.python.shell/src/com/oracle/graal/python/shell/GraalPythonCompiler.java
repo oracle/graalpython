@@ -64,6 +64,7 @@ public class GraalPythonCompiler {
                 System.exit(status);
             }
         } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
     }
