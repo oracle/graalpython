@@ -98,6 +98,6 @@ endif
 
 # compile_flags.txt is useful with clangd as language server
 compile_flags.txt: Makefile
-	$(QUIETLY) rm -f $@
+	$(QUIETLY) $(file > $@,-O1)
 	$(QUIETLY) $(foreach var,$(WARNINGS),$(file >> $@,$(var)))
 	$(QUIETLY) $(foreach var,$(INCLUDES),$(file >> $@,$(var)))
