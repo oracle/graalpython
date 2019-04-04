@@ -36,9 +36,11 @@ public final class BreakTargetNode extends StatementNode {
     private final BranchProfile defaultExitProfile = BranchProfile.create();
 
     @Child private StatementNode statement;
+    @Child private StatementNode orelse;
 
-    public BreakTargetNode(StatementNode statement) {
+    public BreakTargetNode(StatementNode statement, StatementNode orelse) {
         this.statement = statement;
+        this.orelse = orelse;
     }
 
     public StatementNode getStatement() {
@@ -52,6 +54,10 @@ public final class BreakTargetNode extends StatementNode {
             defaultExitProfile.enter();
         } catch (BreakException ex) {
             breakProfile.enter();
+            return;
+        }
+        if (orelse != null) {
+            orelse.executeVoid(frame);
         }
     }
 }

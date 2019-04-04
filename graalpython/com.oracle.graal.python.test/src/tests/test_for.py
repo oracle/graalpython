@@ -86,3 +86,29 @@ def test_else_continue():
             continue
 
     assert ["continue", "break"] == sequence
+
+
+def test_else_break():
+    iters = 0
+    while iters < 4:
+        for i in range(iters):
+            if False:
+                break
+            iters += 1
+        else:
+            iters += 1
+            break
+    assert iters == 2, "if the for-loop doesn't break, the else should be executed and break out of the outer loop"
+
+
+def test_else_break():
+    iters = 0
+    while iters < 40:
+        while iters < 10:
+            if False:
+                break
+            iters += 1
+        else:
+            iters += 1
+            break
+    assert iters == 11, "if the while-loop doesn't break, the else should be executed and break out of the outer loop"

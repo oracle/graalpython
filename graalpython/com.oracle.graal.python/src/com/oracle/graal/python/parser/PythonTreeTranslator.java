@@ -1255,15 +1255,17 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         StatementNode whileNode = factory.createWhile(factory.toBooleanCastNode(test), wrappedBody);
         // assignSourceFromNode(node, whileNode);
 
-        if (!EmptyNode.isEmpty(orelse)) {
+        if (info.hasBreak()) {
+            if (!EmptyNode.isEmpty(orelse)) {
+                whileNode = factory.createBreakTarget(whileNode, orelse);
+            } else {
+                whileNode = factory.createBreakTarget(whileNode);
+            }
+        } else if (!EmptyNode.isEmpty(orelse)) {
             whileNode = factory.createElse(whileNode, orelse);
         }
 
-        if (info.hasBreak()) {
-            return factory.createBreakTarget(whileNode);
-        } else {
-            return whileNode;
-        }
+        return whileNode;
     }
 
     @Override
@@ -1288,15 +1290,17 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         StatementNode forNode = createForInScope(target, iter, wrappedBody);
         // assignSourceFromNode(node, forNode);
 
-        if (!EmptyNode.isEmpty(orelse)) {
+        if (info.hasBreak()) {
+            if (!EmptyNode.isEmpty(orelse)) {
+                forNode = factory.createBreakTarget(forNode, orelse);
+            } else {
+                forNode = factory.createBreakTarget(forNode);
+            }
+        } else if (!EmptyNode.isEmpty(orelse)) {
             forNode = factory.createElse(forNode, orelse);
         }
 
-        if (info.hasBreak()) {
-            return factory.createBreakTarget(forNode);
-        } else {
-            return forNode;
-        }
+        return forNode;
     }
 
     private LoopNode createForInScope(StatementNode target, ExpressionNode iterator, StatementNode body) {
