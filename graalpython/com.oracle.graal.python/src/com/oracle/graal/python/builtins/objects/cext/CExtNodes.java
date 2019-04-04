@@ -68,7 +68,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcall
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeClassNodeFactory.GetNativeClassCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetTypeMemberNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeFactory.IsPointerCachedNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCompareNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeFactory.ToJavaCachedNodeGen;
@@ -141,6 +141,7 @@ import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class CExtNodes {
 
@@ -475,9 +476,8 @@ public abstract class CExtNodes {
         Object doNativeObject(TruffleObject object,
                         @Cached PythonObjectFactory factory,
                         @SuppressWarnings("unused") @Cached("create()") GetLazyClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached("create()") IsBuiltinClassProfile isForeignClassProfile,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            return factory.createNativeObjectWrapper(object, context);
+                        @SuppressWarnings("unused") @Cached("create()") IsBuiltinClassProfile isForeignClassProfile) {
+            return factory.createNativeObjectWrapper(object);
         }
 
         @Specialization
@@ -1596,42 +1596,73 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    @GenerateUncached
     public abstract static class IsPointerNode extends com.oracle.graal.python.nodes.PNodeWithContext {
 
         public abstract boolean execute(PythonNativeWrapper obj);
 
-        abstract static class IsPointerCachedNode extends IsPointerNode {
-
-            @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
-            boolean doFalse(@SuppressWarnings("unused") PythonNativeWrapper obj) {
-                return false;
-            }
-
-            @Specialization
-            boolean doGeneric(PythonNativeWrapper obj) {
-                return obj.isNative();
-            }
-
-            protected static Assumption nativeObjectsAllManagedAssumption() {
-                return PythonLanguage.getContextRef().get().getNativeObjectsAllManagedAssumption();
-            }
+        @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
+        boolean doFalse(@SuppressWarnings("unused") PythonNativeWrapper obj) {
+            return false;
         }
 
-        static final class IsPointerUncachedNode extends IsPointerNode {
-            private static final IsPointerUncachedNode INSTANCE = new IsPointerUncachedNode();
-
-            @Override
-            public boolean execute(PythonNativeWrapper obj) {
-                return obj.isNative();
+        @Specialization
+        boolean doGeneric(PythonNativeWrapper obj,
+                        @Cached GetSpecialSingletonPtrNode getSpecialSingletonPtrNode,
+                        @Cached("createClassProfile()") ValueProfile singletonProfile) {
+            if (obj.isNative()) {
+                return true;
             }
+            Object delegate = singletonProfile.profile(obj.getDelegate());
+            if (isSpecialSingleton(delegate)) {
+                return getSpecialSingletonPtrNode.execute(delegate) != null;
+            }
+            return false;
+        }
+
+        private static boolean isSpecialSingleton(Object delegate) {
+            return PythonLanguage.getSingletonNativePtrIdx(delegate) != -1;
+        }
+
+        protected static Assumption nativeObjectsAllManagedAssumption() {
+            return PythonLanguage.getContextRef().get().getNativeObjectsAllManagedAssumption();
         }
 
         public static IsPointerNode create() {
-            return IsPointerCachedNodeGen.create();
+            return IsPointerNodeGen.create();
         }
 
         public static IsPointerNode getUncached() {
-            return IsPointerUncachedNode.INSTANCE;
+            return IsPointerNodeGen.getUncached();
+        }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    @GenerateUncached
+    public abstract static class GetSpecialSingletonPtrNode extends Node {
+
+        public abstract Object execute(Object obj);
+
+        @Specialization
+        Object doGeneric(Object obj,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            if (obj instanceof PythonAbstractObject) {
+                return context.getSingletonNativePtr((PythonAbstractObject) obj);
+            }
+            return null;
+        }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    @GenerateUncached
+    public abstract static class SetSpecialSingletonPtrNode extends Node {
+
+        public abstract void execute(Object obj, Object ptr);
+
+        @Specialization
+        void doGeneric(PythonAbstractObject obj, Object ptr,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            context.setSingletonNativePtr(obj, ptr);
         }
     }
 
