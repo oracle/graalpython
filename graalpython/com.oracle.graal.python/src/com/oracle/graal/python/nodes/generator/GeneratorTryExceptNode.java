@@ -69,7 +69,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         PException exceptionState = getContext().getCurrentException();
 
         if (gen.isActive(frame, exceptFlag)) {
-            catchException(frame, gen.getActiveException(frame), exceptionState);
+            catchExceptionInGenerator(frame, gen.getActiveException(frame), exceptionState);
             reset(frame);
             return;
         }
@@ -85,7 +85,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         } catch (PException ex) {
             gen.setActive(frame, exceptFlag, true);
             gen.setActiveException(frame, ex);
-            catchException(frame, ex, exceptionState);
+            catchExceptionInGenerator(frame, ex, exceptionState);
             reset(frame);
             return;
         }
@@ -97,7 +97,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     }
 
     @ExplodeLoop
-    private void catchException(VirtualFrame frame, PException exception, PException exceptionState) {
+    private void catchExceptionInGenerator(VirtualFrame frame, PException exception, PException exceptionState) {
         ExceptNode[] exceptNodes = getExceptNodes();
         final int matchingExceptNodeIndex = gen.getIndex(frame, exceptIndex);
         boolean wasHandled = false;
