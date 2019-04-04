@@ -94,14 +94,14 @@ public class SREModuleBuiltins extends PythonBuiltins {
     abstract static class BuildRegexEngine extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!getFlag(context, WithTRegex)")
         Object useSRE(@SuppressWarnings("unused") String code,
-                      @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context) {
             return PNone.NONE;
         }
 
         @Specialization(guards = "getFlag(context, WithTRegex)")
         @TruffleBoundary
         Object run(String code,
-                   @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context) {
             return getContext().getEnv().parse(Source.newBuilder("regex", code, "build-regex-engine").build()).call();
         }
     }
