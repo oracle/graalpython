@@ -43,8 +43,8 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
@@ -78,7 +78,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Children private final ExceptNode[] exceptNodes;
     @Child private StatementNode orelse;
     @Child private PythonObjectFactory ofactory;
-    @Child private GetCaughtExceptionNode getCaughtExceptionNode = GetCaughtExceptionNode.create();
+    @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
 
     private final boolean shouldCatchAll;
@@ -113,7 +113,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Override
     public void executeVoid(VirtualFrame frame) {
         // store current exception state for later restore
-        ExceptionState exceptionState = getCaughtExceptionNode.execute(frame);
+        ExceptionState exceptionState = saveExceptionStateNode.execute(frame);
         try {
             body.executeVoid(frame);
         } catch (PException ex) {
@@ -306,10 +306,12 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     }
 
     private void restoreExceptionState(VirtualFrame frame, ExceptionState e) {
-        if (restoreExceptionStateNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
+        if (e != null) {
+            if (restoreExceptionStateNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
+            }
+            restoreExceptionStateNode.execute(frame, e);
         }
-        restoreExceptionStateNode.execute(frame, e);
     }
 }

@@ -43,15 +43,15 @@ package com.oracle.graal.python.nodes.generator;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class GeneratorTryFinallyNode extends TryFinallyNode implements GeneratorControlNode {
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
-    @Child private GetCaughtExceptionNode getCaughtExceptionNode = GetCaughtExceptionNode.create();
+    @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
 
     private final int finallyFlag;
@@ -63,7 +63,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        ExceptionState exceptionState = getCaughtExceptionNode.execute(frame);
+        ExceptionState exceptionState = saveExceptionStateNode.execute(frame);
         PException exception = null;
         if (gen.isActive(frame, finallyFlag)) {
             executeFinalBody(frame);

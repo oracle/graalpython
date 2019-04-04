@@ -26,10 +26,9 @@
 package com.oracle.graal.python.nodes.statement;
 
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.GetCaughtExceptionNodeGen;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -38,7 +37,7 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 public class TryFinallyNode extends StatementNode {
     @Child private StatementNode body;
     @Child private StatementNode finalbody;
-    @Child private GetCaughtExceptionNode getCaughtExceptionNode;
+    @Child private SaveExceptionStateNode getCaughtExceptionNode;
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
     @Child private SetCaughtExceptionNode setCaughtExceptionNode;
 
@@ -79,11 +78,13 @@ public class TryFinallyNode extends StatementNode {
     }
 
     private void restoreExceptionState(VirtualFrame frame, ExceptionState exceptionState) {
-        if (restoreExceptionStateNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
+        if (exceptionState != null) {
+            if (restoreExceptionStateNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
+            }
+            restoreExceptionStateNode.execute(frame, exceptionState);
         }
-        restoreExceptionStateNode.execute(frame, exceptionState);
     }
 
     public StatementNode getBody() {
@@ -94,10 +95,10 @@ public class TryFinallyNode extends StatementNode {
         return finalbody;
     }
 
-    private GetCaughtExceptionNode ensureGetCaughtExceptionNode() {
+    private SaveExceptionStateNode ensureGetCaughtExceptionNode() {
         if (getCaughtExceptionNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getCaughtExceptionNode = insert(GetCaughtExceptionNodeGen.create());
+            getCaughtExceptionNode = insert(SaveExceptionStateNode.create());
         }
         return getCaughtExceptionNode;
     }

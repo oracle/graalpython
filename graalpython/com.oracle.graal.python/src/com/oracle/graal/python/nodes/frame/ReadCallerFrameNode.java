@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -90,10 +90,11 @@ public final class ReadCallerFrameNode extends Node {
             cachedCallerFrameProfile = ConditionProfile.createBinaryProfile();
             // executed the first time - don't pollute the profile
             for (int i = 0; i <= level; i++) {
-                callerFrame = PArguments.getCallerFrame(callerFrame);
-                if (callerFrame == null) {
+                Object candidate = PArguments.getCallerFrameOrException(callerFrame);
+                if (!(candidate instanceof Frame)) {
                     return getCallerFrame();
                 }
+                callerFrame = (Frame) candidate;
             }
         } else {
             callerFrame = walkLevels(callerFrame);
@@ -105,10 +106,11 @@ public final class ReadCallerFrameNode extends Node {
     private Frame walkLevels(Frame frame) {
         Frame callerFrame = frame;
         for (int i = 0; i <= level; i++) {
-            callerFrame = PArguments.getCallerFrame(callerFrame);
-            if (cachedCallerFrameProfile.profile(callerFrame == null)) {
+            Object candidate = PArguments.getCallerFrameOrException(callerFrame);
+            if (cachedCallerFrameProfile.profile(!(candidate instanceof Frame))) {
                 return getCallerFrame();
             }
+            callerFrame = (Frame) candidate;
         }
         return callerFrame;
     }

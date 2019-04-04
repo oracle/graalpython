@@ -1,9 +1,11 @@
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.GetCaughtExceptionNodeGen;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.ReadExceptionStateFromFrameNodeGen;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.RestoreExceptionStateNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -30,6 +32,7 @@ import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ExceptionStateNodes {
 
@@ -75,10 +78,12 @@ public abstract class ExceptionStateNodes {
         }
 
         private static boolean shouldStoreException(RootNode rootNode) {
-            if (rootNode instanceof PRootNode) {
-                return ((PRootNode) rootNode).storeExceptionState();
-            }
-            return true;
+            // TODO
+// if (rootNode instanceof PRootNode) {
+// return ((PRootNode) rootNode).storeExceptionState();
+// }
+// return true;
+            return false;
         }
 
         public static SetCaughtExceptionNode create() {
@@ -86,7 +91,7 @@ public abstract class ExceptionStateNodes {
         }
     }
 
-    abstract static class ReadExceptionStateFromFrameNode extends Node {
+    public abstract static class ReadExceptionStateFromFrameNode extends Node {
 
         public abstract PException execute(Frame frame);
 
@@ -114,9 +119,30 @@ public abstract class ExceptionStateNodes {
 
     }
 
-    public abstract static class GetCaughtExceptionNode extends Node {
+    public static final class ReadExceptionStateFromArgsNode extends Node {
 
-        private static final ExceptionStateException INSTANCE = new ExceptionStateException();
+        @Child ReadExceptionStateFromFrameNode readFrameNode;
+
+        public PException execute(Object callerFrameOrExceptionArg) {
+            if (callerFrameOrExceptionArg == null || callerFrameOrExceptionArg instanceof PException) {
+                return (PException) callerFrameOrExceptionArg;
+            } else if (callerFrameOrExceptionArg instanceof Frame) {
+                if (readFrameNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    readFrameNode = insert(ReadExceptionStateFromFrameNodeGen.create());
+                }
+                return readFrameNode.execute((Frame) callerFrameOrExceptionArg);
+            }
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException();
+        }
+
+        public static ReadExceptionStateFromArgsNode create() {
+            return new ReadExceptionStateFromArgsNode();
+        }
+    }
+
+    public abstract static class GetCaughtExceptionNode extends Node {
 
         public abstract ExceptionState execute(VirtualFrame frame);
 
@@ -124,33 +150,19 @@ public abstract class ExceptionStateNodes {
             return execute(frame).exc;
         }
 
-        @Specialization(guards = "excSlot != null", rewriteOn = ExceptionStateException.class)
-        ExceptionState doFrame(VirtualFrame frame,
-                        @Cached("findSlot(frame)") FrameSlot excSlot) throws ExceptionStateException {
-            PException e = (PException) FrameUtil.getObjectSafe(frame, excSlot);
-            if (e != null) {
-                return new ExceptionState(e, ExceptionState.SOURCE_FRAME);
-            }
-            throw INSTANCE;
-        }
-
-        @Specialization(guards = "excSlot != null", replaces = "doFrame")
-        ExceptionState doFrameAndContext(VirtualFrame frame,
+        @Specialization
+        ExceptionState doFrameAndArgs(@SuppressWarnings("unused") VirtualFrame frame,
                         @Cached("findSlot(frame)") FrameSlot excSlot,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached ReadExceptionStateFromArgsNode readFromArgsNode) {
+
             PException e = (PException) FrameUtil.getObjectSafe(frame, excSlot);
-            if (e != null) {
+            if (profile.profile(e != null)) {
                 return new ExceptionState(e, ExceptionState.SOURCE_FRAME);
             }
-            return doContext(frame, null, context);
-        }
 
-        @Specialization(guards = "excSlot == null", replaces = "doFrame")
-        ExceptionState doContext(@SuppressWarnings("unused") VirtualFrame frame,
-                        @Cached("findSlot(frame)") @SuppressWarnings("unused") FrameSlot excSlot,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            PException e = context.getCaughtException();
-            if (e == PException.LAZY_FETCH_EXCEPTION) {
+            e = readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
+            if (e == null) {
                 // The very-slow path: This is the first time we want to fetch the exception state
                 // from the context. The caller didn't know that it is necessary to provide the
                 // exception in the context. So, we do a full stack walk until the first frame
@@ -158,11 +170,11 @@ public abstract class ExceptionStateNodes {
                 // on the root node such that the next time, we will find the exception state in the
                 // context immediately.
                 CompilerDirectives.transferToInterpreter();
+
+                // TODO How to prevent this case to be repeated?
                 e = fullStackWalk();
-                context.setCaughtException(e);
             }
-            assert e != PException.LAZY_FETCH_EXCEPTION;
-            return new ExceptionState(e, ExceptionState.SOURCE_CONTEXT);
+            return new ExceptionState(ensure(e), ExceptionState.SOURCE_CALLER);
         }
 
         @TruffleBoundary
@@ -174,6 +186,7 @@ public abstract class ExceptionStateNodes {
                     RootNode rootNode = target.getRootNode();
                     if (rootNode instanceof PRootNode) {
                         PRootNode pRootNode = (PRootNode) rootNode;
+                        pRootNode.setStoreExceptionState();
                         FrameDescriptor fd = rootNode.getFrameDescriptor();
                         FrameSlot excSlot = fd.findFrameSlot(FrameSlotIDs.CAUGHT_EXCEPTION);
                         if (excSlot != null) {
@@ -181,7 +194,6 @@ public abstract class ExceptionStateNodes {
                             try {
                                 Object object = frame.getObject(excSlot);
                                 if (object instanceof PException) {
-                                    pRootNode.setStoreExceptionState();
                                     return (PException) object;
                                 }
                             } catch (FrameSlotTypeException e) {
@@ -195,14 +207,14 @@ public abstract class ExceptionStateNodes {
 
         }
 
+        private static PException ensure(PException e) {
+            return e != PException.NO_EXCEPTION ? e : null;
+        }
+
         protected FrameSlot findSlot(VirtualFrame frame) {
             RootNode rootNode = getRootNode();
             if (rootNode != null) {
-                FrameDescriptor frameDescriptor = rootNode.getFrameDescriptor();
-
-                FrameSlot excSlot = frameDescriptor.findFrameSlot(FrameSlotIDs.CAUGHT_EXCEPTION);
-                assert excSlot == null || frame.getFrameDescriptor().getFrameSlotKind(excSlot) == FrameSlotKind.Object;
-                return excSlot;
+                return SetCaughtExceptionNode.findFameSlot(frame, rootNode);
             }
             return null;
         }
@@ -213,9 +225,47 @@ public abstract class ExceptionStateNodes {
 
     }
 
+    public static final class SaveExceptionStateNode extends Node {
+
+        @CompilationFinal private FrameSlot excSlot;
+        @CompilationFinal private ConditionProfile profile;
+
+        public ExceptionState execute(VirtualFrame frame) {
+
+            if (excSlot == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                excSlot = findSlot(frame);
+                profile = ConditionProfile.createBinaryProfile();
+            }
+            PException e = (PException) FrameUtil.getObjectSafe(frame, excSlot);
+            if (profile.profile(e != null)) {
+                return new ExceptionState(e, ExceptionState.SOURCE_FRAME);
+            }
+            return new ExceptionState(e, ExceptionState.SOURCE_CALLER);
+        }
+
+        protected FrameSlot findSlot(VirtualFrame frame) {
+            RootNode rootNode = getRootNode();
+            if (rootNode != null) {
+                return SetCaughtExceptionNode.findFameSlot(frame, rootNode);
+            }
+            return null;
+        }
+
+        public static SaveExceptionStateNode create() {
+            return new SaveExceptionStateNode();
+        }
+
+    }
+
     public abstract static class RestoreExceptionStateNode extends Node {
 
         public abstract void execute(VirtualFrame frame, ExceptionState state);
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "state == null")
+        void doNothing(VirtualFrame frame, ExceptionState state) {
+        }
 
         @Specialization(guards = "fromFrame(e)")
         void doFrame(VirtualFrame frame, ExceptionState e,
@@ -233,13 +283,16 @@ public abstract class ExceptionStateNodes {
         void doGeneric(VirtualFrame frame, ExceptionState e,
                         @Cached("findFrameSlot(frame)") @SuppressWarnings("unused") FrameSlot excSlot,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            if (e == null) {
+                return;
+            }
             if (fromFrame(e)) {
                 if (excSlot == null) {
                     CompilerDirectives.transferToInterpreter();
                     throw new IllegalStateException();
                 }
                 doFrame(frame, e, excSlot);
-            } else {
+            } else if (fromContext(e)) {
                 doContext(frame, e, context);
             }
         }
@@ -270,6 +323,7 @@ public abstract class ExceptionStateNodes {
         public static final int SOURCE_FRAME = 0;
         public static final int SOURCE_CONTEXT = 1;
         public static final int SOURCE_GENERATOR = 2;
+        public static final int SOURCE_CALLER = 3;
 
         public final PException exc;
         public final int source;
@@ -279,9 +333,4 @@ public abstract class ExceptionStateNodes {
             this.source = source;
         }
     }
-
-    static final class ExceptionStateException extends Exception {
-        private static final long serialVersionUID = 1L;
-    }
-
 }

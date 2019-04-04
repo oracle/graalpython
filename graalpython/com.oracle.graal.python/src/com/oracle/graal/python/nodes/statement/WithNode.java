@@ -41,8 +41,8 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -61,7 +61,7 @@ public class WithNode extends StatementNode {
     @Child private GetClassNode getClassNode = GetClassNode.create();
     @Child private PRaiseNode raiseNode;
     @Child private PythonObjectFactory factory;
-    @Child private GetCaughtExceptionNode getCaughtExceptionNode = GetCaughtExceptionNode.create();
+    @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
 
     private final BranchProfile noEnter = BranchProfile.create();
@@ -157,7 +157,7 @@ public class WithNode extends StatementNode {
      * statement
      */
     protected ExceptionState doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
-        ExceptionState caughtException = getCaughtExceptionNode.execute(frame);
+        ExceptionState caughtException = saveExceptionStateNode.execute(frame);
         applyValues(frame, enterDispatch.execute(frame, enterCallable, new Object[]{withObject}, PKeyword.EMPTY_KEYWORDS));
         return caughtException;
     }
@@ -189,10 +189,12 @@ public class WithNode extends StatementNode {
     }
 
     private void restoreExceptionState(VirtualFrame frame, ExceptionState exceptionState) {
-        if (restoreExceptionStateNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
+        if (exceptionState != null) {
+            if (restoreExceptionStateNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
+            }
+            restoreExceptionStateNode.execute(frame, exceptionState);
         }
-        restoreExceptionStateNode.execute(frame, exceptionState);
     }
 }

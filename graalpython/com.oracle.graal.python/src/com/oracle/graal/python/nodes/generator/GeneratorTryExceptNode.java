@@ -44,8 +44,8 @@ import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -55,7 +55,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorControlNode {
 
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
-    @Child private GetCaughtExceptionNode getCaughtExceptionNode = GetCaughtExceptionNode.create();
+    @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
     @Child private RestoreExceptionStateNode restoreExceptionState = RestoreExceptionStateNode.create();
 
     private final int exceptFlag;
@@ -71,7 +71,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        ExceptionState exceptionState = getCaughtExceptionNode.execute(frame);
+        ExceptionState exceptionState = saveExceptionStateNode.execute(frame);
 
         if (gen.isActive(frame, exceptFlag)) {
             catchExceptionInGenerator(frame, gen.getActiveException(frame).exc, exceptionState);

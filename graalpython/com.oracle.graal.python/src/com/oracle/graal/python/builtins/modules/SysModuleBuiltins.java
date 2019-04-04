@@ -287,7 +287,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode) {
             PException currentException = getCaughtExceptionNode.executeException(frame);
-            assert currentException != PException.LAZY_FETCH_EXCEPTION;
+            assert currentException != PException.NO_EXCEPTION;
             if (currentException == null) {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {

@@ -14,6 +14,20 @@ def fun0(test_obj, expected_error):
 def fun1(test_obj, expected_error):
     fun0(test_obj, expected_error)
 
+def fun2(test_obj, expected_error):
+    test_obj.assertNotEqual(globals(), None)
+    typ, val, tb = sys.exc_info()
+    test_obj.assertEqual(typ, expected_error)
+
+def fun3(test_obj, expected_error):
+    fun2(test_obj, expected_error)
+
+def fun4(test_obj):
+    try:
+        raise ValueError
+    except:
+        fun3(test_obj, ValueError)
+
 class ExceptionTests(unittest.TestCase):
     
     def test_exc_info(self):
@@ -29,6 +43,26 @@ class ExceptionTests(unittest.TestCase):
             raise ValueError
         except:
             fun1(self, ValueError)
+
+    def test_nested(self):
+        typ, val, tb = (None,) * 3
+        try:
+            raise TypeError
+        except:
+            typ, val, tb = sys.exc_info()
+            self.assertEqual(typ, TypeError)
+            try:
+                raise ValueError
+            except:
+                typ, val, tb = sys.exc_info()
+                self.assertEqual(typ, ValueError)
+            typ, val, tb = sys.exc_info()
+            self.assertEqual(typ, TypeError)
+
+    def test_exc_info_with_caller_frame(self):
+        # call twice because the first time, we do a stack walk
+        fun4(self)
+        fun4(self)
 
     def testInvalidTraceback(self):
         try:
