@@ -104,6 +104,7 @@ public final class PRLock extends AbstractPythonLock {
         try {
             return lock.tryLock(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             return false;
         }
     }

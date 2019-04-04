@@ -68,6 +68,7 @@ public final class PLock extends AbstractPythonLock {
             semaphore.acquire();
             return true;
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             return false;
         }
     }
@@ -78,6 +79,7 @@ public final class PLock extends AbstractPythonLock {
         try {
             return semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             return false;
         }
     }
