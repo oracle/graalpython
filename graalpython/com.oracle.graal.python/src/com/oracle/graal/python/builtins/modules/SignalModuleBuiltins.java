@@ -114,6 +114,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
                     poll = signalQueue.poll();
                 }
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
             return poll;
         });
@@ -314,6 +315,7 @@ final class Signals {
                 try {
                     Thread.sleep(seconds * 1000);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
             }
             sun.misc.Signal.raise(new sun.misc.Signal("ALRM"));
