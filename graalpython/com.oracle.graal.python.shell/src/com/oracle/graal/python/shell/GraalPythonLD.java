@@ -212,16 +212,13 @@ public class GraalPythonLD extends GraalPythonCompiler {
 
     private Collection<? extends String> arMembers(String path) throws IOException, InterruptedException {
         List<String> members = new ArrayList<>();
-        File temp = File.createTempFile(path, Long.toString(System.nanoTime()));
-        temp.delete();
-        temp.mkdir();
-        temp.deleteOnExit();
+        Path temp = Files.createTempDirectory(Long.toString(System.nanoTime()));
 
         ProcessBuilder extractAr = new ProcessBuilder();
         extractAr.redirectInput(Redirect.INHERIT);
         extractAr.redirectError(Redirect.INHERIT);
         extractAr.redirectOutput(Redirect.PIPE);
-        extractAr.directory(temp);
+        extractAr.directory(temp.toFile());
         logV("ar", path);
         // "ar t" lists the members one per line
         extractAr.command("ar", "t", path);
@@ -229,7 +226,7 @@ public class GraalPythonLD extends GraalPythonCompiler {
         try (BufferedReader buffer = new BufferedReader(new InputStreamReader(start.getInputStream()))) {
             String line = null;
             while ((line = buffer.readLine()) != null) {
-                members.add(temp.getAbsolutePath() + File.separator + line);
+                members.add(temp.toFile().getAbsolutePath() + File.separator + line);
             }
         }
         start.waitFor();
