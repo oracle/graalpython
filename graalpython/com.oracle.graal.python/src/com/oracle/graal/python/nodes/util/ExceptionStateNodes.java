@@ -228,20 +228,15 @@ public abstract class ExceptionStateNodes {
     public static final class SaveExceptionStateNode extends Node {
 
         @CompilationFinal private FrameSlot excSlot;
-        @CompilationFinal private ConditionProfile profile;
 
         public ExceptionState execute(VirtualFrame frame) {
 
             if (excSlot == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 excSlot = findSlot(frame);
-                profile = ConditionProfile.createBinaryProfile();
             }
             PException e = (PException) FrameUtil.getObjectSafe(frame, excSlot);
-            if (profile.profile(e != null)) {
-                return new ExceptionState(e, ExceptionState.SOURCE_FRAME);
-            }
-            return new ExceptionState(e, ExceptionState.SOURCE_CALLER);
+            return new ExceptionState(e, ExceptionState.SOURCE_FRAME);
         }
 
         protected FrameSlot findSlot(VirtualFrame frame) {

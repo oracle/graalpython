@@ -153,6 +153,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -708,8 +709,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object doIt(VirtualFrame frame,
                         @Exclusive @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Exclusive @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
+                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
+                        @Cached GetCaughtExceptionNode getCaughtExceptionNode,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
+                        @Cached PRaiseNode raiseNode) {
             Object[] frameArgs = PArguments.getVariableArguments(frame);
             try {
                 TruffleObject fun;
@@ -725,21 +728,24 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                     arguments = new Object[frameArgs.length];
                     toSulongNode.executeInto(frameArgs, 0, arguments, 0);
                 }
-                // save current exception state
-                PException exceptionState = context.getCurrentException();
-                // clear current exception such that native code has clean environment
-                context.setCurrentException(null);
+                // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
+                // it to the context since we cannot propagate it through the native frames.
+                if (storeExceptionState()) {
+                    contextRef.get().setCaughtException(getCaughtExceptionNode.executeException(frame));
+                }
 
                 Object result;
                 result = fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(fun, arguments))));
 
-                // restore previous exception state
-                context.setCurrentException(exceptionState);
+                if (storeExceptionState()) {
+                    contextRef.get().setCaughtException(null);
+                }
+
                 return result;
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
-                throw context.getCore().raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
             } catch (ArityException e) {
-                throw context.getCore().raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
             }
         }
 
@@ -1784,6 +1790,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         Object upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args,
                         @Cached CExtNodes.CextUpcallNode upcallNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            exceptionHandling(frame);
             return toSulongNode.execute(upcallNode.execute(frame, cextModule, name, args));
         }
 
@@ -1791,7 +1798,16 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object callable, Object[] args,
                         @Cached("create()") CExtNodes.DirectUpcallNode upcallNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            exceptionHandling(frame);
             return toSulongNode.execute(upcallNode.execute(frame, callable, args));
+        }
+
+        private void exceptionHandling(VirtualFrame frame) {
+            RootNode rootNode = getRootNode();
+            if (rootNode instanceof PRootNode && ((PRootNode) rootNode).storeExceptionState()) {
+                PArguments.setCaughtException(frame.getArguments(), getContext().getCaughtException());
+            }
+
         }
     }
 

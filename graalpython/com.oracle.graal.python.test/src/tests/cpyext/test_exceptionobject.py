@@ -69,6 +69,10 @@ class TestExceptionobject(object):
         except:
             exc_type = tester.get_exc_info()
             assert exc_type == IndexError
+
+            # do a second time because this time we won't do a stack walk
+            exc_type = tester.get_exc_info()
+            assert exc_type == IndexError
         else:
             assert False
 

@@ -262,7 +262,7 @@ public final class PArguments {
     }
 
     public static void setCaughtException(Object[] arguments, PException caughtException) {
-        assert arguments[INDEX_CALLER_FRAME_OR_EXCEPTION] == null;
+        assert !(arguments[INDEX_CALLER_FRAME_OR_EXCEPTION] instanceof Frame);
         arguments[INDEX_CALLER_FRAME_OR_EXCEPTION] = caughtException;
     }
 
