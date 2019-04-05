@@ -984,8 +984,8 @@ public abstract class CExtNodes {
         }
 
         public static int findOp(String specialMethodName) {
-            for (int i = 0; i < SpecialMethodNames.COMPARE_OPNAMES.length; i++) {
-                if (SpecialMethodNames.COMPARE_OPNAMES[i].equals(specialMethodName)) {
+            for (int i = 0; i < SpecialMethodNames.COMPARE_OP_COUNT; i++) {
+                if (SpecialMethodNames.getCompareName(i).equals(specialMethodName)) {
                     return i;
                 }
             }
