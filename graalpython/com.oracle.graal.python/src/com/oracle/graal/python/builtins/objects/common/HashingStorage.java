@@ -64,7 +64,7 @@ public abstract class HashingStorage {
     public static class UnmodifiableStorageException extends ControlFlowException {
         private static final long serialVersionUID = 9102544480293222401L;
 
-        public static UnmodifiableStorageException INSTANCE = new UnmodifiableStorageException();
+        protected static final UnmodifiableStorageException INSTANCE = new UnmodifiableStorageException();
     }
 
     @ValueType
