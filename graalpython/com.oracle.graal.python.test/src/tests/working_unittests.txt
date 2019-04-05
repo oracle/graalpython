@@ -32,5 +32,53 @@ test.test_longexp
 test.doctest_aliases
 test.test_univnewlines
 test.test_dynamic
-test.math:
- testAcos
+test.test_math:
+  testAcos
+  testAsin
+  testAtan
+  testAtan2
+  testAtanh
+  testCeil
+  testConstants
+  testCopysign
+  testDegrees
+  testExp
+  testFabs
+  testFactorial
+  testFactorialHugeInputs
+  testFloor
+  testFmod
+  testFrexp
+  testFsum
+  testGcd
+  testHypot
+  testIsfinite
+  testIsinf
+  testIsnan
+  testLdexp
+  testLog
+  testLog10
+  testLog1p
+  testLog2
+  testLog2Exact
+  testModf
+  testPow
+  testRadians
+  testSin
+  testSqrt
+  testTanhSign
+  test_exceptions
+  test_inf_constant
+  test_nan_constant
+  test_trunc
+  test_asymmetry
+  test_decimals
+  test_eight_decimal_places
+  test_fractions
+  test_identical
+  test_identical_infinite
+  test_inf_ninf_nan
+  test_integers
+  test_near_zero
+  test_negative_tolerances
+  test_zero_tolerance
