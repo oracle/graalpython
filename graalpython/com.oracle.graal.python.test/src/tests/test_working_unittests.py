@@ -103,12 +103,12 @@ if __name__ == "__main__":
             testmod = "test.%s" % os.path.splitext(os.path.basename(testfile))[0]
             print("Testing", testmod)
             try:
-                subprocess.check_call(["/usr/bin/timeout", "100"] + executable + ["-m", testmod, "-f"])
+                subprocess.check_call(["/usr/bin/timeout", "-s", "9", "60"] + executable + ["-m", testmod, "-f"])
                 f.write(testmod)
                 f.write("\n")
             except BaseException as e:
                 print(e)
-                p = subprocess.run(["/usr/bin/timeout", "100"] + executable + ["-m", testmod, "-v"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
+                p = subprocess.run(["/usr/bin/timeout", "-s", "9", "60"] + executable + ["-m", testmod, "-v"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
                 print("***")
                 print(p.stdout)
                 print("***")
