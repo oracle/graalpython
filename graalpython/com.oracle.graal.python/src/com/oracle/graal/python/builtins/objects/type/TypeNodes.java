@@ -719,12 +719,10 @@ public abstract class TypeNodes {
                 MROMergeState[] toMerge = new MROMergeState[baseClasses.length + 1];
 
                 for (int i = 0; i < baseClasses.length; i++) {
-                    toMerge[i] = new MROMergeState();
-                    toMerge[i].mro = GetMroNode.getUncached().execute(baseClasses[i]);
+                    toMerge[i] = new MROMergeState(GetMroNode.getUncached().execute(baseClasses[i]));
                 }
 
-                toMerge[baseClasses.length] = new MROMergeState();
-                toMerge[baseClasses.length].mro = baseClasses;
+                toMerge[baseClasses.length] = new MROMergeState(baseClasses);
                 ArrayList<PythonAbstractClass> mro = new ArrayList<>();
                 mro.add(cls);
                 currentMRO = mergeMROs(toMerge, mro);

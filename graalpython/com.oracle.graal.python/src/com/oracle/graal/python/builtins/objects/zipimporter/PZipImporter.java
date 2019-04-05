@@ -75,10 +75,10 @@ public class PZipImporter extends PythonBuiltinObject {
 
     private static class SearchOrderEntry {
 
-        public String suffix;
-        public EnumSet<EntryType> type;
+        String suffix;
+        EnumSet<EntryType> type;
 
-        public SearchOrderEntry(String suffix, EnumSet<EntryType> type) {
+        SearchOrderEntry(String suffix, EnumSet<EntryType> type) {
             this.suffix = suffix;
             this.type = type;
         }
@@ -86,11 +86,11 @@ public class PZipImporter extends PythonBuiltinObject {
 
     protected static class ModuleCodeData {
 
-        public String code;
-        public boolean isPackage;
-        public String path;
+        String code;
+        boolean isPackage;
+        String path;
 
-        public ModuleCodeData(String code, boolean isPackage, String path) {
+        ModuleCodeData(String code, boolean isPackage, String path) {
             this.code = code;
             this.isPackage = isPackage;
             this.path = path;

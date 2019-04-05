@@ -45,8 +45,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxEr
 import java.util.ArrayList;
 import java.util.List;
 
-import org.antlr.v4.runtime.ParserRuleContext;
-
 import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser.DefparameterContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.KwargsparameterContext;
@@ -56,8 +54,10 @@ import com.oracle.graal.python.parser.antlr.Python3Parser.VkwargsparameterContex
 import com.oracle.graal.python.parser.antlr.Python3Parser.VsplatparameterContext;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 
+import org.antlr.v4.runtime.ParserRuleContext;
+
 public class ArgListCompiler<T> extends Python3BaseVisitor<T> {
-    public boolean arglist, keywordlist;
+    private boolean arglist, keywordlist;
     public final List<String> names;
     public final List<String> fpnames;
     public final List<ParserRuleContext> init_code;
