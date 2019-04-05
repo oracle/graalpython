@@ -633,55 +633,6 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "translate", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class TranslateNode extends PythonBuiltinNode {
-
-        @Child private SequenceStorageNodes.GetItemNode getSelfItemNode;
-        @Child private SequenceStorageNodes.GetItemNode getTableItemNode;
-
-        @Specialization
-        PByteArray translate(PByteArray self, PBytes table, @SuppressWarnings("unused") PNone delete) {
-            return translate(self.getSequenceStorage(), table.getSequenceStorage());
-        }
-
-        @Specialization
-        PByteArray translate(PByteArray self, PByteArray table, @SuppressWarnings("unused") PNone delete) {
-            return translate(self.getSequenceStorage(), table.getSequenceStorage());
-        }
-
-        private PByteArray translate(SequenceStorage selfStorage, SequenceStorage tableStorage) {
-            if (tableStorage.length() != 256) {
-                throw raise(ValueError, "translation table must be 256 characters long");
-            }
-            byte[] result = new byte[selfStorage.length()];
-            for (int i = 0; i < selfStorage.length(); i++) {
-                int b = getGetSelfItemNode().executeInt(selfStorage, i);
-                int t = getGetTableItemNode().executeInt(tableStorage, b);
-                assert t >= 0 && t < 256;
-                result[i] = (byte) t;
-            }
-            return factory().createByteArray(result);
-        }
-
-        private SequenceStorageNodes.GetItemNode getGetSelfItemNode() {
-            if (getSelfItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getSelfItemNode = insert(SequenceStorageNodes.GetItemNode.create());
-            }
-            return getSelfItemNode;
-        }
-
-        private SequenceStorageNodes.GetItemNode getGetTableItemNode() {
-            if (getTableItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getTableItemNode = insert(SequenceStorageNodes.GetItemNode.create());
-            }
-            return getTableItemNode;
-        }
-
-    }
-
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {

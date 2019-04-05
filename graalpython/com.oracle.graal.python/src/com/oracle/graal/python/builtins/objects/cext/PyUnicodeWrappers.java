@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -226,10 +225,14 @@ public abstract class PyUnicodeWrappers {
 
         private boolean onlyAscii(String value) {
             if (asciiEncoder == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asciiEncoder = Charset.forName("US-ASCII").newEncoder();
+                asciiEncoder = newAsciiEncoder();
             }
             return doCheck(value, asciiEncoder);
+        }
+
+        @TruffleBoundary
+        private static CharsetEncoder newAsciiEncoder() {
+            return Charset.forName("US-ASCII").newEncoder();
         }
 
         @TruffleBoundary
