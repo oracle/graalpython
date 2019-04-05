@@ -211,8 +211,9 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return new PythonClassAssumptionPair(attrAssumption, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = {"isSameType(cachedKlass, klass)", "cachedClassInMROInfo != null"}, limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = {
-                    "cachedClassInMROInfo.assumption"})
+    @Specialization(guards = {"isSameType(cachedKlass, klass)", "cachedClassInMROInfo != null"}, //
+                    limit = "getAttributeAccessInlineCacheMaxDepth()", //
+                    assumptions = {"cachedClassInMROInfo.assumption", "singleContextAssumption()"})
     protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonAbstractClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonAbstractClass cachedKlass,
                     @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") PythonClassAssumptionPair cachedClassInMROInfo) {
@@ -227,7 +228,9 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return nodes;
     }
 
-    @Specialization(guards = {"isSameType(cachedKlass, klass)", "mroLength < 32"}, limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "lookupStable")
+    @Specialization(guards = {"isSameType(cachedKlass, klass)", "mroLength < 32"}, //
+                    limit = "getAttributeAccessInlineCacheMaxDepth()", //
+                    assumptions = {"lookupStable", "singleContextAssumption()"})
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
     protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonAbstractClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonAbstractClass cachedKlass,

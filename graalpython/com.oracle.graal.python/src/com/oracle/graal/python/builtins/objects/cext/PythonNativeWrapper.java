@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 public abstract class PythonNativeWrapper implements TruffleObject {
@@ -69,6 +70,10 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     public void setNativePointer(Object nativePointer) {
         // we should set the pointer just once
         assert this.nativePointer == null || this.nativePointer.equals(nativePointer) || nativePointer == null;
+
+        // we must not set the pointer for one of the context-insensitive singletons
+        assert PythonLanguage.getSingletonNativePtrIdx(delegate) == -1;
+
         this.nativePointer = nativePointer;
     }
 

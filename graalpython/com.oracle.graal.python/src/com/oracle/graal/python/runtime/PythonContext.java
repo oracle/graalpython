@@ -37,7 +37,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
+import org.graalvm.options.OptionValues;
+
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -55,8 +58,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
-
-import org.graalvm.options.OptionValues;
 
 public final class PythonContext {
 
@@ -97,6 +98,9 @@ public final class PythonContext {
 
     /** The thread-local state object. */
     private ThreadLocal<PThreadState> customThreadState;
+
+    /* native pointers for context-insensitive singletons like PNone.NONE */
+    private final Object[] singletonNativePtrs = new Object[PythonLanguage.getNumberOfSpecialSingletons()];
 
     // The context-local resources
     private final PosixResources resources;
@@ -352,5 +356,19 @@ public final class PythonContext {
             nativeClassStableAssumptions.put(cls, assumption);
         }
         return assumption;
+    }
+
+    public void setSingletonNativePtr(PythonAbstractObject obj, Object nativePtr) {
+        assert PythonLanguage.getSingletonNativePtrIdx(obj) != -1 : "invalid special singleton object";
+        assert singletonNativePtrs[PythonLanguage.getSingletonNativePtrIdx(obj)] == null;
+        singletonNativePtrs[PythonLanguage.getSingletonNativePtrIdx(obj)] = nativePtr;
+    }
+
+    public Object getSingletonNativePtr(PythonAbstractObject obj) {
+        int singletonNativePtrIdx = PythonLanguage.getSingletonNativePtrIdx(obj);
+        if (singletonNativePtrIdx != -1) {
+            return singletonNativePtrs[singletonNativePtrIdx];
+        }
+        return null;
     }
 }
