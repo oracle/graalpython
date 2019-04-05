@@ -54,7 +54,11 @@ public final class PTraceback extends PythonBuiltinObject {
     public static final String TB_LASTI = "tb_lasti";
     public static final String TB_LINENO = "tb_lineno";
 
-    @CompilationFinal(dimensions = 1) public static final Object[] TB_DIR_FIELDS = new Object[]{TB_FRAME, TB_NEXT, TB_LASTI, TB_LINENO};
+    @CompilationFinal(dimensions = 1) private static final Object[] TB_DIR_FIELDS = new Object[]{TB_FRAME, TB_NEXT, TB_LASTI, TB_LINENO};
+
+    static Object[] getTbFieldNames() {
+        return TB_DIR_FIELDS.clone();
+    }
 
     private final PBaseException exception;
     private final int index;
