@@ -97,7 +97,7 @@ if __name__ == "__main__":
     import re
 
     executable = sys.executable.split(" ") # HACK: our sys.executable on Java is a cmdline
-    re_success = re.compile("^(test[^ ]+).* ... ok")
+    re_success = re.compile("(test[^ ]+).* ... ok")
     with open(TAGS_FILE, "w") as f:
         for testfile in glob.glob(os.path.join(os.path.dirname(test.__file__), "test_*.py")):
             testmod = "test.%s" % os.path.splitext(os.path.basename(testfile))[0]
@@ -108,7 +108,7 @@ if __name__ == "__main__":
                 f.write("\n")
             except BaseException as e:
                 print(e)
-                p = subprocess.run(["/usr/bin/timeout", "100", sys.executable, "-m", testmod, "-v"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
+                p = subprocess.run(["/usr/bin/timeout", "100"] + executable + ["-m", testmod, "-v"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
                 print("***")
                 print(p.stdout)
                 print("***")
