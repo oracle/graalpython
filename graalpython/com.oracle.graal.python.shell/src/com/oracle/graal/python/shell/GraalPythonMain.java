@@ -715,6 +715,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         try {
             System.exit(new ProcessBuilder(cmd.toArray(new String[0])).inheritIO().start().waitFor());
         } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
             System.err.println(e.getMessage());
             System.exit(-1);
         }

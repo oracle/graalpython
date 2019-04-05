@@ -496,7 +496,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RichCompareNode extends PythonBuiltinNode {
         protected static BinaryComparisonNode create(int op) {
-            return BinaryComparisonNode.create(SpecialMethodNames.COMPARE_OPNAMES[op], SpecialMethodNames.COMPARE_REVERSALS[op], SpecialMethodNames.COMPARE_OPSTRINGS[op]);
+            return BinaryComparisonNode.create(SpecialMethodNames.getCompareName(op), SpecialMethodNames.getCompareReversal(op), SpecialMethodNames.getCompareOpString(op));
         }
 
         @Specialization(guards = "op == 0")

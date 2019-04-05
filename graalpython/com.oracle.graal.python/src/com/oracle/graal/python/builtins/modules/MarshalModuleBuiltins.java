@@ -512,7 +512,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int ch2 = readByte() & 0xFF;
             int ch3 = readByte() & 0xFF;
             int ch4 = readByte() & 0xFF;
-            return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
+            return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + ch4);
         }
 
         private long read_long64() { // cpython calls this r_long64

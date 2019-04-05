@@ -82,7 +82,7 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_GET_THREAD_STATE_TYPE_ID = "get_thread_state_typeid";
     public static final String FUN_ADD_NATIVE_SLOTS = "PyTruffle_Type_AddSlots";
 
-    @CompilationFinal(dimensions = 1) public static final String[] values;
+    @CompilationFinal(dimensions = 1) private static final String[] values;
     static {
         Field[] declaredFields = NativeCAPISymbols.class.getDeclaredFields();
         values = new String[declaredFields.length - 1]; // omit the values field

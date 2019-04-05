@@ -282,7 +282,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         public String doPI(PInt x) {
             BigInteger value = x.getValue();
-            return buildString(value.compareTo(BigInteger.ZERO) == -1, value.abs().toString(2));
+            return buildString(value.compareTo(BigInteger.ZERO) < 0, value.abs().toString(2));
         }
 
         @Specialization
@@ -336,7 +336,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         public String doPI(PInt x) {
             BigInteger value = x.getValue();
-            return buildString(value.compareTo(BigInteger.ZERO) == -1, value.abs().toString(8));
+            return buildString(value.compareTo(BigInteger.ZERO) < 0, value.abs().toString(8));
         }
 
         @Specialization
@@ -390,7 +390,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         public String doPI(PInt x) {
             BigInteger value = x.getValue();
-            return buildString(value.compareTo(BigInteger.ZERO) == -1, value.abs().toString(8));
+            return buildString(value.compareTo(BigInteger.ZERO) < 0, value.abs().toString(8));
         }
 
         @Specialization

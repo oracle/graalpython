@@ -232,6 +232,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 try {
                     Thread.sleep(seconds * 1000);
                 } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
                 }
 
                 secs = deadline - (long) timeSeconds();
@@ -257,6 +258,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 try {
                     Thread.sleep(millis, nanos);
                 } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
                 }
                 secs = deadline - timeSeconds();
                 if (secs < 0) {
