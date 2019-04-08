@@ -47,7 +47,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
@@ -86,24 +85,16 @@ abstract class AbstractInvokeNode extends Node {
         return callTarget;
     }
 
-    protected final MaterializedFrame getCallerFrame(VirtualFrame frame, CallTarget callTarget) {
+    protected final Object getCallerFrameOrException(VirtualFrame frame, CallTarget callTarget) {
         if (frame == null) {
             return null;
         }
 
-        RootNode rootNode = ((RootCallTarget) callTarget).getRootNode();
-        if (needsFrameProfile.profile(rootNode instanceof PRootNode && ((PRootNode) rootNode).needsCallerFrame())) {
+        RootNode calleeRootNode = ((RootCallTarget) callTarget).getRootNode();
+        if (needsFrameProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsCallerFrame())) {
             return frame.materialize();
         }
-        return null;
-    }
 
-    protected final PException getCaughtException(VirtualFrame frame, CallTarget callTarget) {
-        if (frame == null) {
-            return PException.NO_EXCEPTION;
-        }
-
-        RootNode calleeRootNode = ((RootCallTarget) callTarget).getRootNode();
         if (needsExceptionStateProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsExceptionState())) {
             RootNode rootNode = getRootNode();
             if (!excSlotInitialized) {
@@ -176,12 +167,7 @@ final class GenericInvokeNode extends AbstractInvokeNode {
 
     protected Object execute(VirtualFrame frame, PFunction callee, Object[] arguments) {
         RootCallTarget callTarget = getCallTarget(callee);
-        MaterializedFrame callerFrame = getCallerFrame(frame, callTarget);
-        PArguments.setCallerFrame(arguments, callerFrame);
-        if (callerFrame == null) {
-            // set exception if available
-            PArguments.setCaughtException(arguments, getCaughtException(frame, callTarget));
-        }
+        PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, callTarget));
         optionallySetClassBodySpecial(arguments, callTarget);
         PArguments.setGlobals(arguments, callee.getGlobals());
         PArguments.setClosure(arguments, callee.getClosure());
@@ -191,12 +177,7 @@ final class GenericInvokeNode extends AbstractInvokeNode {
 
     protected Object execute(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments) {
         RootCallTarget callTarget = getCallTarget(callee);
-        MaterializedFrame callerFrame = getCallerFrame(frame, callTarget);
-        PArguments.setCallerFrame(arguments, callerFrame);
-        if (callerFrame == null) {
-            // set exception if available
-            PArguments.setCaughtException(arguments, getCaughtException(frame, callTarget));
-        }
+        PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, callTarget));
         optionallySetClassBodySpecial(arguments, callTarget);
         return callNode.call(callTarget, arguments);
     }
@@ -237,12 +218,7 @@ abstract class CallTargetInvokeNode extends AbstractInvokeNode {
     protected Object doNoKeywords(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        MaterializedFrame callerFrame = getCallerFrame(frame, callNode.getCallTarget());
-        PArguments.setCallerFrame(arguments, callerFrame);
-        if (callerFrame == null) {
-            // set exception if available
-            PArguments.setCaughtException(arguments, getCaughtException(frame, callNode.getCallTarget()));
-        }
+        PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, callNode.getCallTarget()));
         optionallySetClassBodySpecial(arguments, callNode.getCallTarget());
         return callNode.call(arguments);
     }
@@ -296,12 +272,7 @@ public abstract class InvokeNode extends AbstractInvokeNode {
     protected Object doNoKeywords(VirtualFrame frame, Object[] arguments) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        MaterializedFrame callerFrame = getCallerFrame(frame, callNode.getCallTarget());
-        PArguments.setCallerFrame(arguments, callerFrame);
-        if (callerFrame == null) {
-            // set exception if available
-            PArguments.setCaughtException(arguments, getCaughtException(frame, callNode.getCallTarget()));
-        }
+        PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, callNode.getCallTarget()));
         optionallySetClassBodySpecial(arguments, callNode.getCallTarget());
         return callNode.call(arguments);
     }

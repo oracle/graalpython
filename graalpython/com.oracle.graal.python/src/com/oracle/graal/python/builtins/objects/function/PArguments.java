@@ -257,6 +257,10 @@ public final class PArguments {
         return frame.getArguments()[INDEX_CALLER_FRAME_OR_EXCEPTION];
     }
 
+    public static void setCallerFrameOrException(Object[] arguments, Object callerFrameOrException) {
+        arguments[INDEX_CALLER_FRAME_OR_EXCEPTION] = callerFrameOrException;
+    }
+
     public static void setCallerFrame(Object[] arguments, Frame callerFrame) {
         arguments[INDEX_CALLER_FRAME_OR_EXCEPTION] = callerFrame;
     }
