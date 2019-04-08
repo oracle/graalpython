@@ -120,7 +120,7 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     Object __import__(String name, Object globals, String[] fromList, int level) {
-        PMethod builtinImport = (PMethod) getContext().getBuiltins().getAttribute(__IMPORT__);
+        PMethod builtinImport = (PMethod) getContext().getCore().lookupBuiltinModule("builtins").getAttribute(__IMPORT__);
         assert fromList != null;
         assert globals != null;
         return getCallNode().execute(null, builtinImport, new Object[]{name}, new PKeyword[]{
