@@ -1,0 +1,5 @@
+test_basics
+test_global_visibility
+test_local_visibility
+test_scope_isolation
+test_scope_isolation_from_global

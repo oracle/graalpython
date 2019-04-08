@@ -1,0 +1,7 @@
+test_bool
+test_constructor
+test_getitem
+test_items
+test_len
+test_popitem
+test_setdefault

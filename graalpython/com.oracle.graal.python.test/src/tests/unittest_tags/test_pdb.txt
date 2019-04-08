@@ -1,0 +1,2 @@
+test_find_function_empty_file
+test_find_function_found

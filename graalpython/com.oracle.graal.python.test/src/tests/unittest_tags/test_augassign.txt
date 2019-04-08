@@ -1,0 +1,6 @@
+testBasic
+testCustomMethods1
+testInDict
+testInList
+testSequences
+test_with_unpacking

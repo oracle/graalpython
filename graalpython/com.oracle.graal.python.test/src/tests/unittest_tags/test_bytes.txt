@@ -1,0 +1,13 @@
+test_basics
+test_compare_to_str
+test_concat
+test_constructor_value_errors
+test_copy
+test_empty_sequence
+test_extended_getslice
+test_from_int
+test_from_list
+test_from_ssize
+test_getslice
+test_join
+test_maketrans

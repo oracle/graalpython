@@ -1,0 +1,7 @@
+test_do_longs
+test_do_shorts
+test_getopt
+test_gnu_getopt
+test_issue4629
+test_long_has_args
+test_short_has_arg

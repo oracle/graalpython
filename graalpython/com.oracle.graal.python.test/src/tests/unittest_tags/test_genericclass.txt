@@ -1,0 +1,12 @@
+test_mro_entry
+test_mro_entry_errors
+test_mro_entry_errors_2
+test_mro_entry_metaclass
+test_mro_entry_none
+test_mro_entry_signature
+test_mro_entry_with_builtins
+test_mro_entry_with_builtins_2
+test_class_getitem_errors
+test_class_getitem_errors_2
+test_class_getitem_metaclass_2
+test_class_getitem_with_builtins

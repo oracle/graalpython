@@ -1,0 +1,8 @@
+test_lseek
+test_osstat
+test_seek_read
+test_seekable
+test_lseek
+test_osstat
+test_seek_read
+test_seekable
