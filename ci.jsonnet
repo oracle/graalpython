@@ -212,6 +212,9 @@
   local testGate = function(type, platform)
     baseGraalGate + {tags:: "python-"+type} + getPlatform(platform) + {name: "python-"+ type +"-"+platform},
 
+  local testGateTime = function(type, platform, timelimit)
+    baseGraalGate + {tags:: "python-"+type} + getPlatform(platform) + {name: "python-"+ type +"-"+platform} + {timelimit: timelimit},
+
   local styleGate = baseGraalGate + eclipseMixin + linuxMixin + {
     tags:: "style,fullbuild,python-license",
     name: "python-style",
@@ -251,7 +254,7 @@
           // cannot run with excluded "GeneratedBy" since that would lead to "command line too long"
           // ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--jacoco-exclude-annotation', '@GeneratedBy', '--strict-compliance', "--dynamicimports", super.dynamicImports, "--primary", 'gate', '-B=--force-deprecation-as-warning-for-dependencies', '--strict-mode', '--tags', "python-junit", '--jacocout', 'html'],
           // ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--jacoco-exclude-annotation', '@GeneratedBy', 'sonarqube-upload', "-Dsonar.host.url=$SONAR_HOST_URL", "-Dsonar.projectKey=com.oracle.graalvm.python", "-Dsonar.projectName=GraalVM - Python", '--exclude-generated'],
-          ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--strict-compliance', "--dynamicimports", super.dynamicImports, "--primary", 'gate', '-B=--force-deprecation-as-warning-for-dependencies', '--strict-mode', '--tags', "python-unittest,python-junit", '--jacocout', 'html'],
+          ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--strict-compliance', "--dynamicimports", super.dynamicImports, "--primary", 'gate', '-B=--force-deprecation-as-warning-for-dependencies', '--strict-mode', '--tags', "python-unittest,python-tagged-unittest,python-junit", '--jacocout', 'html'],
           ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', 'sonarqube-upload', "-Dsonar.host.url=$SONAR_HOST_URL", "-Dsonar.projectKey=com.oracle.graalvm.python", "-Dsonar.projectName=GraalVM - Python", '--exclude-generated'],
       ],
       name: "python-coverage"
@@ -265,6 +268,8 @@
     // unittests
     testGate(type="unittest", platform="linux"),
     testGate(type="unittest", platform="darwin"),
+    testGateTime(type="tagged-unittest", platform="linux", timelimit=TIME_LIMIT["2h"]),
+    testGateTime(type="tagged-unittest", platform="darwin", timelimit=TIME_LIMIT["2h"]),
     testGate(type="svm-unittest", platform="linux"),
     testGate(type="svm-unittest", platform="darwin"),
 

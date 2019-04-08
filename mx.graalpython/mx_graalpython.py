@@ -184,6 +184,15 @@ def python3_unittests(args):
     mx.run(["python3", "graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
 
 
+def retag_unittests(args):
+    """run the cPython stdlib unittests"""
+    os.environ["ENABLE_CPYTHON_TAGGED_UNITTESTS"] = "true"
+    try:
+        python(["graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py"] + args)
+    finally:
+        del os.environ["ENABLE_CPYTHON_TAGGED_UNITTESTS"]
+
+
 # mx gate --tags pythonbenchmarktest
 # mx gate --tags pythontest
 # mx gate --tags fulltest
@@ -193,6 +202,7 @@ AOT_INCOMPATIBLE_TESTS = ["test_interop.py"]
 class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
+    tagged = 'python-tagged-unittest'
     cpyext = 'python-cpyext'
     cpyext_managed = 'python-cpyext-managed'
     cpyext_sandboxed = 'python-cpyext-sandboxed'
@@ -327,6 +337,14 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
             gate_unittests()
+
+    with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged-unittest]) as task:
+        if task:
+            os.environ["ENABLE_CPYTHON_TAGGED_UNITTESTS"] = "true"
+            try:
+                gate_unittests(subdir="test_tagged_unittests.py")
+            finally:
+                del os.environ["ENABLE_CPYTHON_TAGGED_UNITTESTS"]
 
     with Task('GraalPython C extension tests', tasks, tags=[GraalPythonTags.cpyext]) as task:
         if task:
@@ -909,6 +927,7 @@ mx.update_commands(SUITE, {
     'python-svm': [python_svm, ''],
     'python-build-svm': [python_build_svm, ''],
     'python-unittests': [python3_unittests, ''],
+    'python-retag-unittests': [retag_unittests, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-src-import': [import_python_sources, ''],

@@ -44,7 +44,12 @@ import sys
 import test
 
 
-TAGS_DIR = os.path.join(os.path.dirname(__file__), "unittest_tags")
+if os.environ.get("ENABLE_CPYTHON_TAGGED_UNITTESTS") == "true" or os.environ.get("CI") is None:
+    # On the CI, I'd like to explicitly enable these, so we can run them in a
+    # separate job easily. But it's not important for local execution
+    TAGS_DIR = os.path.join(os.path.dirname(__file__), "unittest_tags")
+else:
+    TAGS_DIR = "null"
 
 
 def working_selectors(tagfile):
