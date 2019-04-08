@@ -1,0 +1,16 @@
+test_getline
+test_getlines
+test_getline
+test_getlines
+test_getline
+test_getlines
+test_checkcache
+test_clearcache
+test_getline
+test_lazycache_bad_filename
+test_lazycache_check
+test_lazycache_no_globals
+test_lazycache_provide_after_failed_lookup
+test_lazycache_smoke
+test_memoryerror
+test_no_ending_newline

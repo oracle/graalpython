@@ -1,0 +1,3 @@
+test_legacy_block_size_warnings
+test_dot_new_with_str_key
+test_with_str_key

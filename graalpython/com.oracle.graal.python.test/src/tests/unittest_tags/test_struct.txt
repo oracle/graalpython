@@ -1,0 +1,3 @@
+test_Struct_reinitialization
+test_calcsize
+test_format_attr

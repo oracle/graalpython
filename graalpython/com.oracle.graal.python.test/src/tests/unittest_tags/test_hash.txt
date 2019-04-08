@@ -1,0 +1,4 @@
+test_default_hash
+test_fixed_hash
+test_hashable
+test_hashes

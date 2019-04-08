@@ -1,0 +1,15 @@
+test_and
+test_clear
+test_constructor_identity
+test_copy
+test_eq
+test_gc
+test_init
+test_ior
+test_isdisjoint
+test_isub
+test_methods
+test_new_or_init
+test_or
+test_pop
+test_sub

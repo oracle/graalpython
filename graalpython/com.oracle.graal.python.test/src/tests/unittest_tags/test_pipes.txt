@@ -1,0 +1,2 @@
+testEmptyPipeline1
+testSimplePipe2

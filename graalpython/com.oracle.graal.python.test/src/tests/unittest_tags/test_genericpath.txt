@@ -1,0 +1,2 @@
+test_commonprefix
+test_exists

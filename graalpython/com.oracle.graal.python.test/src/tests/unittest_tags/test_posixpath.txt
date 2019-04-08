@@ -1,0 +1,3 @@
+test_abspath_issue3426
+test_commonprefix
+test_exists

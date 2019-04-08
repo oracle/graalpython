@@ -1,0 +1,9 @@
+test_abspath
+test_isabs
+test_ismount
+test_join
+test_split
+test_splitext
+test_abspath_issue3426
+test_commonprefix
+test_exists

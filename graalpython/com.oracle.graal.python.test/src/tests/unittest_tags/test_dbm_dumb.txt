@@ -1,0 +1,8 @@
+test_check_closed
+test_close_twice
+test_create_new
+test_dumbdbm_creation
+test_invalid_flag
+test_missing_index
+test_warn_on_ignored_flags
+test_write_contains

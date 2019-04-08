@@ -37,44 +37,38 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import glob
 import os
 import subprocess
 import sys
 import test
 
 
-TAGS_FILE = os.path.join(os.path.dirname(__file__), "working_unittests.txt")
+TAGS_DIR = os.path.join(os.path.dirname(__file__), "unittest_tags")
+
+
+def working_selectors(tagfile):
+    if os.path.exists(tagfile):
+        with open(tagfile) as f:
+            return [line.strip() for line in f if line]
+    else:
+        return []
 
 
 def working_tests():
     working_tests = []
-
-    def parse_line(iterator, line):
-        line = line.strip()
-        if line.endswith(":"):
-            test_selectors = []
-            for testline in iterator:
-                if testline.startswith(" "):
-                    test_selectors.append(testline.strip())
-                else:
-                    parse_line(iterator, testline)
-            working_tests.append((line[:-1], test_selectors))
-        elif line:
-            working_tests.append(line)
-
-    with open(TAGS_FILE) as f:
-        fiter = iter(f)
-        for line in fiter:
-            parse_line(fiter, line)
-
+    for tagfile in glob.glob(os.path.join(TAGS_DIR, "*.txt")):
+        test = os.path.splitext(os.path.basename(tagfile))[0]
+        working_tests.append((test, working_selectors(tagfile)))
     return working_tests
 
 
 for working_test in working_tests():
     def make_test_func(working_test):
         def fun():
-            if isinstance(working_test, str):
-                subprocess.check_call([sys.executable, "-m", working_test])
+            if not working_test[1]: # no selectors, run entire test module
+                # TODO: remove branch
+                subprocess.check_call([sys.executable, "-m", "test." + working_test[0]])
             else:
                 cmd = [sys.executable, "-m", "unittest"]
                 for testpattern in working_test[1]:
@@ -83,7 +77,7 @@ for working_test in working_tests():
                 cmd.append(os.path.join(os.path.dirname(test.__file__), "%s.py" % testmod))
                 subprocess.check_call(cmd)
 
-        fun.__name__ = working_test if isinstance(working_test, str) else working_test[0]
+        fun.__name__ = working_test[0]
         return fun
 
     test_f = make_test_func(working_test)
@@ -93,36 +87,53 @@ for working_test in working_tests():
 
 if __name__ == "__main__":
     # find working tests
-    import glob
     import re
 
     executable = sys.executable.split(" ") # HACK: our sys.executable on Java is a cmdline
-    re_success = re.compile("(test[^ ]+).* ... ok")
-    with open(TAGS_FILE, "w") as f:
-        for testfile in glob.glob(os.path.join(os.path.dirname(test.__file__), "test_*.py")):
-            testmod = "test.%s" % os.path.splitext(os.path.basename(testfile))[0]
+    re_success = re.compile("^(test\S+)[^\r\n]* \.\.\. ok$", re.MULTILINE)
+    kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "text": True, "check": False}
+
+    if len(sys.argv) > 1:
+        glob_pattern = sys.argv[1]
+    else:
+        glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
+
+    for testfile in glob.glob(glob_pattern):
+        testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
+        testmod = "test." + testfile_stem
+        cmd = ["/usr/bin/timeout", "-s", "9", "60"] + executable + ["-m"]
+        tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
+        test_selectors = working_selectors(tagfile)
+
+        if not test_selectors:
+            # TODO: remove branch
             print("Testing", testmod)
-            try:
-                subprocess.check_call(["/usr/bin/timeout", "-s", "9", "60"] + executable + ["-m", testmod, "-f"])
-                f.write(testmod)
-                f.write("\n")
-            except BaseException as e:
-                print(e)
-                p = subprocess.run(["/usr/bin/timeout", "-s", "9", "60"] + executable + ["-m", testmod, "-v"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
-                print("***")
-                print(p.stdout)
-                print("***")
-                print(p.stderr)
-                print("***")
-                passing_tests = []
-                for m in re_success.findall(p.stdout):
-                    passing_tests.append(m)
-                for m in re_success.findall(p.stderr):
-                    passing_tests.append(m)
-                if passing_tests:
-                    f.write(testmod)
-                    f.write(":\n")
-                    for passing_test in passing_tests:
-                        f.write("  ")
-                        f.write(passing_test)
-                        f.write("\n")
+            cmd += [testmod, "-v"]
+        else:
+            print("Testing tagged subset of", testmod)
+            cmd += ["unittest", "-v"]
+            for selector in test_selectors:
+                cmd += ["-k", selector]
+            cmd.append(testfile)
+
+        p = subprocess.run(cmd, **kwargs)
+        print("*stdout*")
+        print(p.stdout)
+        print("*stderr*")
+        print(p.stderr)
+
+        if p.returncode == 0:
+            with open(tagfile, "w") as f:
+                pass
+        else:
+            passing_tests = []
+            for m in re_success.findall(p.stdout):
+                passing_tests.append(m)
+            for m in re_success.findall(p.stderr):
+                passing_tests.append(m)
+            with open(tagfile, "w") as f:
+                for passing_test in passing_tests:
+                    f.write(passing_test)
+                    f.write("\n")
+            if not passing_tests:
+                os.unlink(tagfile)

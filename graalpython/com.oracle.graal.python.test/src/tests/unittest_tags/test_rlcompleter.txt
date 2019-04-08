@@ -1,0 +1,5 @@
+test_complete
+test_duplicate_globals
+test_excessive_getattr
+test_namespace
+test_uncreated_attr
