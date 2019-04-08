@@ -111,7 +111,7 @@
   // ------------------------------------------------------------------------------------------------------
   local pypyMixin = {
     downloads +: {
-      PYPY_HOME: utils.download("pypy3", "5.8.0-minimal"),
+      PYPY_HOME: utils.download("pypy3", "7.1.0.beta"),
     },
   },
   pypyMixin: pypyMixin,
