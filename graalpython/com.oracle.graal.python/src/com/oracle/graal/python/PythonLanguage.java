@@ -493,7 +493,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
         // This is not a good place to report inconsistencies in any of the above conditions. Just
         // return a String
-        return ((PythonAbstractObject) value).toString();
+        if (value instanceof PythonAbstractObject) {
+            return ((PythonAbstractObject) value).toString();
+        } else {
+            return "illegal object";
+        }
     }
 
     public static TruffleLogger getLogger() {
