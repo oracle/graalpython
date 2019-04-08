@@ -1,10 +1,49 @@
+/*
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ *
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.GetCaughtExceptionNodeGen;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.ReadExceptionStateFromFrameNodeGen;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.RestoreExceptionStateNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -36,28 +75,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ExceptionStateNodes {
 
-    public static final class SetCaughtExceptionNode extends Node {
-
-        @CompilationFinal private FrameSlot excSlot;
-        @CompilationFinal private ContextReference<PythonContext> contextRef;
-
-        public void execute(VirtualFrame frame, PException e) {
-            RootNode rootNode = getRootNode();
-            if (rootNode != null && !shouldStoreException(rootNode)) {
-                doFrame(frame, e, rootNode);
-                doContext(PException.LAZY_FETCH_EXCEPTION);
-            } else {
-                doContext(e);
-            }
-        }
-
-        private void doFrame(VirtualFrame frame, PException e, RootNode rootNode) {
-            if (excSlot == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                excSlot = findFameSlot(frame, rootNode);
-            }
-            frame.setObject(excSlot, e);
-        }
+    protected abstract static class ExceptionStateBaseNode extends Node {
 
         protected static FrameSlot findFameSlot(VirtualFrame frame, RootNode rootNode) {
             FrameDescriptor frameDescriptor = rootNode.getFrameDescriptor();
@@ -69,21 +87,21 @@ public abstract class ExceptionStateNodes {
             return frameSlot;
         }
 
-        private void doContext(PException e) {
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = PythonLanguage.getContextRef();
-            }
-            contextRef.get().setCaughtException(e);
-        }
+    }
 
-        private static boolean shouldStoreException(RootNode rootNode) {
-            // TODO
-// if (rootNode instanceof PRootNode) {
-// return ((PRootNode) rootNode).storeExceptionState();
-// }
-// return true;
-            return false;
+    public static final class SetCaughtExceptionNode extends ExceptionStateBaseNode {
+
+        @CompilationFinal private FrameSlot excSlot;
+        @CompilationFinal private ContextReference<PythonContext> contextRef;
+
+        public void execute(VirtualFrame frame, PException e) {
+            RootNode rootNode = getRootNode();
+            assert rootNode != null;
+            if (excSlot == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                excSlot = findFameSlot(frame, rootNode);
+            }
+            frame.setObject(excSlot, e);
         }
 
         public static SetCaughtExceptionNode create() {
@@ -142,25 +160,29 @@ public abstract class ExceptionStateNodes {
         }
     }
 
-    public abstract static class GetCaughtExceptionNode extends Node {
+    public static final class GetCaughtExceptionNode extends Node {
 
-        public abstract ExceptionState execute(VirtualFrame frame);
+        @Child private ReadExceptionStateFromArgsNode readFromArgsNode;
 
-        public final PException executeException(VirtualFrame frame) {
-            return execute(frame).exc;
-        }
+        @CompilationFinal private FrameSlot excSlot;
+        private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
-        @Specialization
-        ExceptionState doFrameAndArgs(@SuppressWarnings("unused") VirtualFrame frame,
-                        @Cached("findSlot(frame)") FrameSlot excSlot,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
-                        @Cached ReadExceptionStateFromArgsNode readFromArgsNode) {
+        public PException execute(@SuppressWarnings("unused") VirtualFrame frame) {
+
+            if (excSlot == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                excSlot = findSlot(frame);
+            }
 
             PException e = (PException) FrameUtil.getObjectSafe(frame, excSlot);
             if (profile.profile(e != null)) {
-                return new ExceptionState(e, ExceptionState.SOURCE_FRAME);
+                return e;
             }
 
+            if (readFromArgsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readFromArgsNode = insert(ReadExceptionStateFromArgsNode.create());
+            }
             e = readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
             if (e == null) {
                 // The very-slow path: This is the first time we want to fetch the exception state
@@ -171,10 +193,10 @@ public abstract class ExceptionStateNodes {
                 // context immediately.
                 CompilerDirectives.transferToInterpreter();
 
-                // TODO How to prevent this case to be repeated?
+                // TODO(fa) performance warning ?
                 e = fullStackWalk();
             }
-            return new ExceptionState(ensure(e), ExceptionState.SOURCE_CALLER);
+            return ensure(e);
         }
 
         @TruffleBoundary
@@ -220,7 +242,7 @@ public abstract class ExceptionStateNodes {
         }
 
         public static GetCaughtExceptionNode create() {
-            return GetCaughtExceptionNodeGen.create();
+            return new GetCaughtExceptionNode();
         }
 
     }
@@ -253,7 +275,7 @@ public abstract class ExceptionStateNodes {
 
     }
 
-    public abstract static class RestoreExceptionStateNode extends Node {
+    public abstract static class RestoreExceptionStateNode extends ExceptionStateBaseNode {
 
         public abstract void execute(VirtualFrame frame, ExceptionState state);
 

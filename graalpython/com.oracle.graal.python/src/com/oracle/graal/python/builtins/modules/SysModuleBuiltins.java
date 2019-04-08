@@ -68,7 +68,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinWithFrameNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
@@ -278,15 +277,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
         return os;
     }
 
-    @Builtin(name = "exc_info", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Builtin(name = "exc_info")
     @GenerateNodeFactory
-    public abstract static class ExcInfoNode extends PythonUnaryBuiltinWithFrameNode {
+    public abstract static class ExcInfoNode extends PythonBuiltinNode {
 
         @Specialization
-        public Object run(VirtualFrame frame, Object self,
+        public Object run(VirtualFrame frame,
                         @Cached GetClassNode getClassNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode) {
-            PException currentException = getCaughtExceptionNode.executeException(frame);
+            PException currentException = getCaughtExceptionNode.execute(frame);
             assert currentException != PException.NO_EXCEPTION;
             if (currentException == null) {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});

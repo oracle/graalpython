@@ -63,7 +63,7 @@ public abstract class RaiseNode extends StatementNode {
                     @Cached PRaiseNode raise,
                     @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                     @Cached("createBinaryProfile()") ConditionProfile hasCurrentException) {
-        PException currentException = getCaughtExceptionNode.executeException(frame);
+        PException currentException = getCaughtExceptionNode.execute(frame);
         if (hasCurrentException.profile(currentException == null)) {
             throw raise.raise(RuntimeError, "No active exception to reraise");
         }
