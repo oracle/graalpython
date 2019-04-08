@@ -104,7 +104,7 @@ abstract class AbstractInvokeNode extends Node {
         }
 
         RootNode calleeRootNode = ((RootCallTarget) callTarget).getRootNode();
-        if (needsExceptionStateProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).storeExceptionState())) {
+        if (needsExceptionStateProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsExceptionState())) {
             RootNode rootNode = getRootNode();
             if (!excSlotInitialized) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();

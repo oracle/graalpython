@@ -730,14 +730,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 }
                 // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
                 // it to the context since we cannot propagate it through the native frames.
-                if (storeExceptionState()) {
+                if (needsExceptionState()) {
                     contextRef.get().setCaughtException(getCaughtExceptionNode.execute(frame));
                 }
 
                 Object result;
                 result = fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(fun, arguments))));
 
-                if (storeExceptionState()) {
+                if (needsExceptionState()) {
                     contextRef.get().setCaughtException(null);
                 }
 

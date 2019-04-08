@@ -208,7 +208,7 @@ public abstract class ExceptionStateNodes {
                     RootNode rootNode = target.getRootNode();
                     if (rootNode instanceof PRootNode) {
                         PRootNode pRootNode = (PRootNode) rootNode;
-                        pRootNode.setStoreExceptionState();
+                        pRootNode.setNeedsExceptionState();
                         FrameDescriptor fd = rootNode.getFrameDescriptor();
                         FrameSlot excSlot = fd.findFrameSlot(FrameSlotIDs.CAUGHT_EXCEPTION);
                         if (excSlot != null) {

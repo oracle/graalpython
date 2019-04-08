@@ -51,10 +51,10 @@ public abstract class PRootNode extends RootNode {
     @CompilationFinal private boolean needsCallerFrame = false;
 
     /**
-     * Flag indicating if the except nodes in this root node should write the exception state to the
-     * context because any of its transitive callees needs the state.
+     * Flag indicating if some child node of this root node eventually needs the exception state.
+     * Hence, the caller of this root node should provide the exception state in the arguments.
      */
-    @CompilationFinal private boolean storeExceptionState = false;
+    @CompilationFinal private boolean needsExceptionState = false;
 
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
@@ -75,14 +75,14 @@ public abstract class PRootNode extends RootNode {
         }
     }
 
-    public boolean storeExceptionState() {
-        return storeExceptionState;
+    public boolean needsExceptionState() {
+        return needsExceptionState;
     }
 
-    public void setStoreExceptionState() {
+    public void setNeedsExceptionState() {
         CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
-        if (!this.storeExceptionState) {
-            this.storeExceptionState = true;
+        if (!this.needsExceptionState) {
+            this.needsExceptionState = true;
         }
     }
 
