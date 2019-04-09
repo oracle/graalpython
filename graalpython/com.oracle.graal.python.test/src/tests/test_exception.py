@@ -15,7 +15,7 @@ def fun1(test_obj, expected_error):
     fun0(test_obj, expected_error)
 
 def fun2(test_obj, expected_error):
-    test_obj.assertNotEqual(globals(), None)
+    test_obj.assertNotEqual(sys._getframe(2), None)
     typ, val, tb = sys.exc_info()
     test_obj.assertEqual(typ, expected_error)
 
