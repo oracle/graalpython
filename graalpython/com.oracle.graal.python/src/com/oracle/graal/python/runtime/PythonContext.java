@@ -41,7 +41,6 @@ import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -256,8 +255,6 @@ public final class PythonContext {
         mainModule.setDict(core.factory().createDictFixedStorage(mainModule));
 
         sysModules.setItem(__MAIN__, mainModule);
-
-        OpaqueBytes.initializeForNewContext(this);
 
         currentException = null;
         isInitialized = true;

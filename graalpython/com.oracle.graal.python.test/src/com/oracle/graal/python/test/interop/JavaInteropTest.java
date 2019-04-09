@@ -528,7 +528,6 @@ public class JavaInteropTest {
         @Parameters(name = "{0}")
         public static OptionsChecker[] input() {
             return new OptionsChecker[]{
-                            new OptionsChecker("OpaqueFilesystem", "import sys; sys.graal_python_opaque_filesystem", "true", "false"),
                             new OptionsChecker("InspectFlag", "import sys; sys.flags.inspect", "true", "false"),
                             new OptionsChecker("QuietFlag", "import sys; sys.flags.quiet", "true", "false"),
                             new OptionsChecker("VerboseFlag", "import sys; sys.flags.verbose", "true", "false"),

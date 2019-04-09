@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -152,24 +152,23 @@ class TestPyNumber(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    if not getattr(sys, "graal_python_opaque_filesystem", False):
-        test_PyErr_PrintEx = CPyExtFunction(
-            lambda args: None,
-            lambda: (
-                (True,),
-            ),
-            code="""PyObject* wrap_PyErr_PrintEx(int n) {
-                 PyErr_SetString(PyExc_KeyError, "unknown key whatsoever");
-                 PyErr_PrintEx(n);
-                 return Py_None;
-             }
-             """,
-            resultspec="O",
-            argspec='i',
-            arguments=["int n"],
-            callfunction="wrap_PyErr_PrintEx",
-            cmpfunc=unhandled_error_compare
-        )
+    test_PyErr_PrintEx = CPyExtFunction(
+        lambda args: None,
+        lambda: (
+            (True,),
+        ),
+        code="""PyObject* wrap_PyErr_PrintEx(int n) {
+             PyErr_SetString(PyExc_KeyError, "unknown key whatsoever");
+             PyErr_PrintEx(n);
+             return Py_None;
+         }
+         """,
+        resultspec="O",
+        argspec='i',
+        arguments=["int n"],
+        callfunction="wrap_PyErr_PrintEx",
+        cmpfunc=unhandled_error_compare
+    )
 
     test_PyErr_GivenExceptionMatches = CPyExtFunction(
         _reference_givenexceptionmatches,
@@ -267,17 +266,16 @@ class TestPyNumber(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    if not getattr(sys, "graal_python_opaque_filesystem", False):
-        test_PyErr_WarnEx = CPyExtFunctionVoid(
-            lambda args: warnings.warn(args[1], args[0], args[2]),
-            lambda: (
-                (UserWarning, "custom warning", 1),
-            ),
-            resultspec="O",
-            argspec='Osn',
-            arguments=["PyObject* category", "char* msg", "Py_ssize_t level"],
-            cmpfunc=unhandled_error_compare
-        )
+    test_PyErr_WarnEx = CPyExtFunctionVoid(
+        lambda args: warnings.warn(args[1], args[0], args[2]),
+        lambda: (
+            (UserWarning, "custom warning", 1),
+        ),
+        resultspec="O",
+        argspec='Osn',
+        arguments=["PyObject* category", "char* msg", "Py_ssize_t level"],
+        cmpfunc=unhandled_error_compare
+    )
 
     test_PyErr_NoMemory = CPyExtFunctionVoid(
         _reference_nomemory,

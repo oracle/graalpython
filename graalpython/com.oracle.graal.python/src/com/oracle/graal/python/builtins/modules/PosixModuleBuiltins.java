@@ -101,7 +101,6 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.Conve
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
-import com.oracle.graal.python.builtins.objects.bytes.OpaqueBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
@@ -1118,19 +1117,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @CompilationFinal private BranchProfile tooLargeProfile = BranchProfile.create();
 
-        @Specialization(guards = "readOpaque(frame)")
-        Object readOpaque(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Cached("create()") ReadFromChannelNode readNode) {
-            if (OpaqueBytes.isInOpaqueFilesystem(getResources().getFilePath(fd), getContext())) {
-                Channel channel = getResources().getFileChannel(fd, channelClassProfile);
-                ByteSequenceStorage bytes = readNode.execute(channel, ReadFromChannelNode.MAX_READ);
-                return new OpaqueBytes(Arrays.copyOf(bytes.getInternalByteArray(), bytes.length()));
-            }
-            return read(frame, fd, requestedSize, channelClassProfile, readNode);
-        }
-
-        @Specialization(guards = "!readOpaque(frame)")
+        @Specialization
         Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Cached("create()") ReadFromChannelNode readNode) {
@@ -1144,13 +1131,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
             ByteSequenceStorage array = readNode.execute(channel, size);
             return factory().createBytes(array);
-        }
-
-        /**
-         * @param frame - only used so the DSL sees this as a dynamic check
-         */
-        protected boolean readOpaque(VirtualFrame frame) {
-            return OpaqueBytes.isEnabled(getContext());
         }
     }
 

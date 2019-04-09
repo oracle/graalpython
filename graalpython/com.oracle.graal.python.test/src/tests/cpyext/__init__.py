@@ -71,12 +71,6 @@ class CPyExtTestCase():
 
 
 def ccompile(self, name):
-    if getattr(sys, "graal_python_opaque_filesystem", False):
-        # distutils won't fully work with an opaque filesystem,
-        # because we cannot read bytes from files and manipulate
-        # them. We hope the code was already compiled.
-        return
-
     from distutils.core import setup, Extension
     source_file = '%s/%s.c' % (__dir__, name)
     file_not_empty(source_file)
