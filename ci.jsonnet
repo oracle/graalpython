@@ -71,7 +71,7 @@
       "mercurial": ">=3.2.4",
       "gcc": "==4.9.1",
       "llvm": "==4.0.1",
-      "python": "==3.4.1",
+      "python": "==3.6.5",
       "libffi": ">=3.2.1",
       "bzip2": ">=1.0.6",
     },
@@ -111,7 +111,7 @@
   // ------------------------------------------------------------------------------------------------------
   local pypyMixin = {
     downloads +: {
-      PYPY_HOME: utils.download("pypy3", "5.8.0-minimal"),
+      PYPY_HOME: utils.download("pypy3", "7.1.0.beta"),
     },
   },
   pypyMixin: pypyMixin,
