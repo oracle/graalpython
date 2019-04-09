@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -51,20 +53,13 @@ public class LazyString implements CharSequence {
     protected static final int MinLazyStringLength;
     protected static final boolean UseLazyStrings;
     static {
-        boolean useLazyStrings;
-        int minLazyStringLength;
-        try {
-            useLazyStrings = PythonOptions.useLazyString();
-            minLazyStringLength = PythonOptions.getMinLazyStringLength();
-        } catch (AssertionError e) {
-            // This can happen e.g. when we build a native image without
-            // a pre-initialized Python context
-            assert e.getMessage().equals("No current context available");
-            useLazyStrings = PythonOptions.LazyStrings.getDefaultValue();
-            minLazyStringLength = PythonOptions.MinLazyStringLength.getDefaultValue();
+        if (ImageInfo.inImageBuildtimeCode()) {
+            MinLazyStringLength = PythonOptions.MinLazyStringLength.getDefaultValue();
+            UseLazyStrings = PythonOptions.LazyStrings.getDefaultValue();
+        } else {
+            MinLazyStringLength = PythonOptions.getMinLazyStringLength();
+            UseLazyStrings = PythonOptions.useLazyString();
         }
-        MinLazyStringLength = minLazyStringLength;
-        UseLazyStrings = useLazyStrings;
     }
 
     public static int length(CharSequence cs, ConditionProfile profile1, ConditionProfile profile2) {
