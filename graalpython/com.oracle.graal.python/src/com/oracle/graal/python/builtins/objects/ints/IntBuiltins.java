@@ -649,7 +649,18 @@ public class IntBuiltins extends PythonBuiltins {
             return factory().createInt(r);
         }
 
-        @Specialization
+        @Specialization(guards = "right == 0")
+        int doPIntLongZero(@SuppressWarnings("unused") PInt left, @SuppressWarnings("unused") long right) {
+            return 0;
+        }
+
+        @Specialization(guards = "right == 1")
+        PInt doPIntLongOne(PInt left, @SuppressWarnings("unused") long right) {
+            // we must return a new object with the same value
+            return factory().createInt(left.getValue());
+        }
+
+        @Specialization(guards = {"right != 0", "right != 1"})
         PInt doPIntLong(PInt left, long right) {
             return factory().createInt(mul(left.getValue(), BigInteger.valueOf(right)));
         }
@@ -661,7 +672,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         BigInteger mul(BigInteger a, BigInteger b) {
-            if (b.and(b.subtract(BigInteger.ONE)).equals(BigInteger.ZERO)) {
+            if (!BigInteger.ZERO.equals(b) && b.and(b.subtract(BigInteger.ONE)).equals(BigInteger.ZERO)) {
                 return bigIntegerShift(a, b.getLowestSetBit());
             } else {
                 return bigIntegerMul(a, b);
