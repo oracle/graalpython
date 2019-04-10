@@ -859,10 +859,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             destination='bin/<exe:graalpython>',
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
             main_class='com.oracle.graal.python.shell.GraalPythonMain',
-            build_args=[
-                '--language:python',
-                '--language:llvm',
-            ]
+            build_args=[],
+            language='python',
         )
     ],
 ))
