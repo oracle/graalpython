@@ -30,7 +30,6 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 from os.path import join
 
 import mx
-import mx_subst
 import mx_benchmark
 from mx_benchmark import StdOutRule, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
 from mx_graalpython_bench_param import HARNESS_PATH
