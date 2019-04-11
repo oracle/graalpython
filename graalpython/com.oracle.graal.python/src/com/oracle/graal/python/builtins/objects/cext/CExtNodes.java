@@ -1797,11 +1797,11 @@ public abstract class CExtNodes {
 
         public abstract boolean execute(PythonAbstractNativeObject left, PythonAbstractNativeObject right);
 
-        protected static boolean doNativeFast(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
+        protected static boolean doNativeFast(PythonAbstractNativeObject left, PythonAbstractNativeObject right, ValueProfile profile) {
             // This check is a bit dangerous since we cannot be sure about the code that is running.
             // Currently, we assume that the pointer object is a Sulong pointer and for this it's
             // fine.
-            return left.equals(right);
+            return left.equalsProfiled(right, profile);
         }
 
     }
@@ -1810,8 +1810,9 @@ public abstract class CExtNodes {
     public abstract static class IsSameNativeObjectFastNode extends IsSameNativeObjectNode {
 
         @Specialization
-        boolean doSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
-            return IsSameNativeObjectNode.doNativeFast(left, right);
+        boolean doSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
+                        @Cached("createClassProfile()") ValueProfile foreignTypeProfile) {
+            return IsSameNativeObjectNode.doNativeFast(left, right, foreignTypeProfile);
         }
     }
 
@@ -1820,8 +1821,10 @@ public abstract class CExtNodes {
 
         @Specialization
         boolean doSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
+                        @Cached("createBinaryProfile()") ConditionProfile isEqualProfile,
+                        @Cached("createClassProfile()") ValueProfile foreignTypeProfile,
                         @Cached PointerCompareNode pointerCompareNode) {
-            if (IsSameNativeObjectNode.doNativeFast(left, right)) {
+            if (isEqualProfile.profile(IsSameNativeObjectNode.doNativeFast(left, right, foreignTypeProfile))) {
                 return true;
             }
             return pointerCompareNode.execute(SpecialMethodNames.__EQ__, left, right);

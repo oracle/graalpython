@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeFactory.CachedNodeGen;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -55,13 +56,12 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "cpython://Objects/abstract.c/recursive_issubclass")
 @ImportStatic(PythonOptions.class)
-public abstract class IsSubtypeNode extends Node {
+public abstract class IsSubtypeNode extends PNodeWithContext {
 
     private static final UncachedNode UNCACHED = new UncachedNode();
 
@@ -86,6 +86,58 @@ public abstract class IsSubtypeNode extends Node {
         private final ConditionProfile exceptionDerivedProfile = ConditionProfile.createBinaryProfile();
         private final ConditionProfile exceptionClsProfile = ConditionProfile.createBinaryProfile();
 
+        protected static boolean isSameType(IsSameTypeNode isSameTypeNode, LazyPythonClass cls, LazyPythonClass cachedCls) {
+            return isSameTypeNode.execute(cls, cachedCls);
+        }
+
+        @Specialization(guards = { //
+                        "isSameType(isSameDerivedNode, derived, cachedDerived)", //
+                        "isSameType(isSameClsNode, cls, cachedCls)", //
+                        "mro.getInternalClassArray().length < 32" //
+        }, //
+                        limit = "getVariableArgumentInlineCacheLimit()", //
+                        assumptions = { //
+                                        "mro.getLookupStableAssumption()", //
+                                        "singleContextAssumption()"
+                        })
+        @ExplodeLoop
+        boolean isSubtypeOfCached(@SuppressWarnings("unused") LazyPythonClass derived, @SuppressWarnings("unused") PythonAbstractClass cls,
+                        @Cached("derived") @SuppressWarnings("unused") LazyPythonClass cachedDerived,
+                        @Cached("cls") PythonAbstractClass cachedCls,
+                        @Cached("getMro(cachedDerived)") MroSequenceStorage mro,
+                        @Cached("createFast()") @SuppressWarnings("unused") IsSameTypeNode isSameDerivedNode,
+                        @Cached("createFast()") @SuppressWarnings("unused") IsSameTypeNode isSameClsNode) {
+            for (PythonAbstractClass n : mro.getInternalClassArray()) {
+                if (isSameType(n, cachedCls)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Specialization(guards = { //
+                        "isSameType(isSameDerivedNode, derived, cachedDerived)", //
+                        "mro.getInternalClassArray().length < 32" //
+        }, //
+                        limit = "getVariableArgumentInlineCacheLimit()", //
+                        replaces = "isSubtypeOfCached", //
+                        assumptions = { //
+                                        "mro.getLookupStableAssumption()", //
+                                        "singleContextAssumption()"
+                        })
+        @ExplodeLoop
+        boolean isSubtypeOfVariableTypeCached(@SuppressWarnings("unused") LazyPythonClass derived, LazyPythonClass cls,
+                        @Cached("derived") @SuppressWarnings("unused") LazyPythonClass cachedDerived,
+                        @Cached("getMro(cachedDerived)") MroSequenceStorage mro,
+                        @Cached("createFast()") @SuppressWarnings("unused") IsSameTypeNode isSameDerivedNode) {
+            for (PythonAbstractClass n : mro.getInternalClassArray()) {
+                if (isSameType(n, cls)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         @Specialization(guards = { //
                         "derived == cachedDerived", //
                         "cls == cachedCls", //
@@ -94,8 +146,8 @@ public abstract class IsSubtypeNode extends Node {
                         limit = "getVariableArgumentInlineCacheLimit()", //
                         assumptions = "mro.getLookupStableAssumption()")
         @ExplodeLoop
-        boolean isSubtypeOfConstantType(@SuppressWarnings("unused") PythonAbstractClass derived, @SuppressWarnings("unused") PythonAbstractClass cls,
-                        @Cached("derived") @SuppressWarnings("unused") PythonAbstractClass cachedDerived,
+        boolean isSubtypeOfConstantType(@SuppressWarnings("unused") LazyPythonClass derived, @SuppressWarnings("unused") PythonAbstractClass cls,
+                        @Cached("derived") @SuppressWarnings("unused") LazyPythonClass cachedDerived,
                         @Cached("cls") PythonAbstractClass cachedCls,
                         @Cached("getMro(cachedDerived)") MroSequenceStorage mro) {
             for (PythonAbstractClass n : mro.getInternalClassArray()) {
@@ -126,7 +178,7 @@ public abstract class IsSubtypeNode extends Node {
             return false;
         }
 
-        @Specialization(replaces = {"isSubtypeOfConstantType", "isSubtypeOfVariableType"})
+        @Specialization(replaces = {"isSubtypeOfCached", "isSubtypeOfVariableTypeCached", "isSubtypeOfConstantType", "isSubtypeOfVariableType"})
         boolean issubTypeGeneric(LazyPythonClass derived, LazyPythonClass cls) {
             for (PythonAbstractClass n : getMro(derived).getInternalClassArray()) {
                 if (isSameType(n, cls)) {
@@ -165,7 +217,7 @@ public abstract class IsSubtypeNode extends Node {
         private boolean isSameType(LazyPythonClass left, LazyPythonClass right) {
             if (isSameTypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSameTypeNode = insert(IsSameTypeNode.create());
+                isSameTypeNode = insert(IsSameTypeNode.createFast());
             }
             return isSameTypeNode.execute(left, right);
         }
