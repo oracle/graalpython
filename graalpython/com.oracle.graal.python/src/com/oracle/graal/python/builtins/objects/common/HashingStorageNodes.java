@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.LazyString;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
@@ -294,7 +295,7 @@ public abstract class HashingStorageNodes {
         }
 
         protected static boolean exceedsLimit(DynamicObjectStorage storage) {
-            return storage instanceof FastDictStorage && storage.length() + 1 >= DynamicObjectStorage.SIZE_THRESHOLD;
+            return storage instanceof FastDictStorage && ((FastDictStorage) storage).length() + 1 >= DynamicObjectStorage.SIZE_THRESHOLD;
         }
     }
 
@@ -683,6 +684,7 @@ public abstract class HashingStorageNodes {
     public abstract static class SetItemNode extends SetItemBaseNode {
 
         @Child private DynamicObjectSetItemNode dynamicObjectSetItemNode;
+        @Child private CastPStringToJavaStringNode castPStringToStringNode;
 
         public abstract HashingStorage execute(HashingStorage storage, Object key, Object value);
 
@@ -695,7 +697,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "wrappedString(key)")
         protected HashingStorage doEmptyStorage(EmptyStorage storage, PString key, Object value) {
             // immediately replace storage since empty storage is immutable
-            return ensureDynamicObjectSetItemNode().execute(switchToFastDictStorage(storage), key.getValue(), value);
+            return ensureDynamicObjectSetItemNode().execute(switchToFastDictStorage(storage), cast(key), value);
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
@@ -713,7 +715,7 @@ public abstract class HashingStorageNodes {
 
         @Specialization(guards = "wrappedString(key)")
         protected HashingStorage doDynamicObjectPString(DynamicObjectStorage storage, PString key, Object value) {
-            return ensureDynamicObjectSetItemNode().execute(storage, key.getValue(), value);
+            return ensureDynamicObjectSetItemNode().execute(storage, cast(key), value);
         }
 
         @Specialization
@@ -726,7 +728,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "wrappedString(key)")
         protected HashingStorage doLocalsPStringGeneralize(LocalsStorage storage, PString key, Object value) {
             HashingStorage newStorage = switchToFastDictStorage(storage);
-            newStorage.setItem(key.getValue(), value, DEFAULT_EQIVALENCE);
+            newStorage.setItem(cast(key), value, DEFAULT_EQIVALENCE);
             return newStorage;
         }
 
@@ -790,6 +792,14 @@ public abstract class HashingStorageNodes {
         @SuppressWarnings("unused")
         protected HashingStorage doUnhashable(HashingStorage storage, Object key, Object value) {
             throw unhashable(key);
+        }
+
+        private String cast(PString obj) {
+            if (castPStringToStringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castPStringToStringNode = insert(CastPStringToJavaStringNode.create());
+            }
+            return castPStringToStringNode.execute(obj);
         }
 
         private DynamicObjectSetItemNode ensureDynamicObjectSetItemNode() {
@@ -1589,5 +1599,30 @@ public abstract class HashingStorageNodes {
         public static LenNode getUncached() {
             return LenNodeGen.getUncached();
         }
+    }
+
+    private static final class CastPStringToJavaStringNode extends Node {
+
+        private final ValueProfile profile = ValueProfile.createClassProfile();
+
+        public String execute(PString obj) {
+            CharSequence profiled = profile.profile(obj.getCharSequence());
+            if (profiled instanceof String) {
+                return (String) profiled;
+            } else if (profiled instanceof LazyString) {
+                return ((LazyString) profiled).toString();
+            }
+            return generic(profiled);
+        }
+
+        @TruffleBoundary
+        private static String generic(CharSequence profiled) {
+            return profiled.toString();
+        }
+
+        public static CastPStringToJavaStringNode create() {
+            return new CastPStringToJavaStringNode();
+        }
+
     }
 }
