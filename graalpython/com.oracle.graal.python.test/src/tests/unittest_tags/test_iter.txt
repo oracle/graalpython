@@ -1,18 +1,10 @@
 test_builtin_filter
-test_builtin_list
-test_builtin_map
-test_builtin_max_min
-test_builtin_tuple
-test_builtin_zip
-test_countOf
 test_exception_function
 test_exception_sequence
 test_extending_list_with_iterator_does_not_segfault
-test_indexOf
 test_iter_callable
 test_iter_class_for
 test_iter_class_iter
-test_iter_file
 test_iter_function
 test_iter_function_stop
 test_iter_idempotency
@@ -29,4 +21,3 @@ test_sinkstate_string
 test_sinkstate_tuple
 test_sinkstate_yield
 test_stop_sequence
-test_unicode_join_endcase

@@ -108,3 +108,9 @@ test_iteration
 test_read
 test_readline
 test_readlines
+test_close
+test_initialize
+test_iteration
+test_read
+test_readline
+test_readlines
