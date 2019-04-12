@@ -30,7 +30,6 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
-import com.oracle.graal.python.nodes.cell.CellSupplier;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -50,7 +49,7 @@ import com.oracle.truffle.api.source.SourceSection;
 /**
  * RootNode of a Python Function body. It is invoked by a CallTarget.
  */
-public class FunctionRootNode extends PClosureFunctionRootNode implements CellSupplier {
+public class FunctionRootNode extends PClosureFunctionRootNode {
     private final ContextReference<PythonContext> contextRef;
     private final PCell[] cells;
     private final ExecutionCellSlots executionCellSlots;
@@ -88,12 +87,10 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
         return functionName;
     }
 
-    @Override
     public PCell[] getCells() {
         return cells;
     }
 
-    @Override
     public FrameSlot[] getCellVarSlots() {
         return cellVarSlots;
     }
