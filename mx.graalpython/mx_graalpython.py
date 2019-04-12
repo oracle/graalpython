@@ -285,7 +285,7 @@ def _python_graalvm_launcher(args):
     mx.run_mx(dy + ["build"])
     out = mx.OutputCapture()
     mx.run_mx(dy + ["graalvm-home"], out=mx.TeeOutputCapture(out))
-    launcher = os.path.join(out.data.strip(), "bin", "graalpython")
+    launcher = os.path.join(out.data.strip(), "bin", "graalpython").split("\n")[-1].strip()
     mx.log(launcher)
     if args:
         mx.run([launcher] + args)

@@ -100,14 +100,15 @@ if __name__ == "__main__":
     else:
         glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
 
-    for testfile in glob.glob(glob_pattern):
+    testfiles = glob.glob(glob_pattern)
+    for idx, testfile in enumerate(testfiles):
         testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
         testmod = "test." + testfile_stem
         cmd = ["/usr/bin/timeout", "-s", "9", "60"] + executable + ["-m"]
         tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
         test_selectors = working_selectors(tagfile)
 
-        print("Testing ", testmod)
+        print("[%d/%d] Testing %s" %(idx, len(testfiles), testmod))
         cmd += ["unittest", "-v"]
         for selector in test_selectors:
             cmd += ["-k", selector]
