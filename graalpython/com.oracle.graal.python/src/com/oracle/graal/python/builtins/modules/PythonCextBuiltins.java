@@ -311,6 +311,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyTuple_New", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTuple_New extends PythonUnaryBuiltinNode {
+        @Specialization
+        PTuple doGeneric(Object size,
+                        @Cached CastToIndexNode castToIntNode) {
+            return factory().createTuple(new Object[castToIntNode.execute(size)]);
+        }
+    }
+
     @Builtin(name = "PyTuple_SetItem", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyTuple_SetItem extends NativeBuiltin {
@@ -644,7 +654,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isPythonObjectNativeWrapper(result)", "!isPNone(result)"})
         Object doForeign(String name, Object result,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile isNullProfile,
-                        @Exclusive @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("rais") @Cached PRaiseNode raise) {
@@ -1368,7 +1378,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doPythonObject(PythonManagedClass obj, Object getBufferProc, Object releaseBufferProc) {
-            return doNativeWrapper(obj.getNativeWrapper(), getBufferProc, releaseBufferProc);
+            return doNativeWrapper(obj.getClassNativeWrapper(), getBufferProc, releaseBufferProc);
         }
     }
 

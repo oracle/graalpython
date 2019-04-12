@@ -860,10 +860,6 @@ def PyObject_Repr(o):
     return repr(o)
 
 
-def PyTuple_New(size):
-    return (None,) * size
-
-
 @may_raise(-1)
 def PyTuple_Size(t):
     if not isinstance(t, tuple):
