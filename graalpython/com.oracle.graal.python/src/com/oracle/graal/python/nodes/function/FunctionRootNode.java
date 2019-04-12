@@ -111,7 +111,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
                 cell = (PCell) FrameUtil.getObjectSafe(frame, frameSlot);
             }
             if (cell == null) {
-                cell = new PCell();
+                cell = new PCell(cellEffectivelyFinalAssumptions[i]);
             }
 
             // store the cell as a local var
