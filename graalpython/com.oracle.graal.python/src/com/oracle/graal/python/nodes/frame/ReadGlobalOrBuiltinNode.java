@@ -62,8 +62,9 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     protected final String attributeId;
     protected final ConditionProfile isGlobalProfile = ConditionProfile.createBinaryProfile();
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
-    protected final ConditionProfile isInitializedProfile = ConditionProfile.createBinaryProfile();
+
     @CompilationFinal private ContextReference<PythonContext> contextRef;
+    @CompilationFinal private boolean coreInitialized;
 
     protected ReadGlobalOrBuiltinNode(String attributeId) {
         this.attributeId = attributeId;
@@ -125,13 +126,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
                 contextRef = PythonLanguage.getContextRef();
             }
             PythonContext context = contextRef.get();
-            PythonCore core = context.getCore();
-            PythonModule builtins;
-            if (isInitializedProfile.profile(core.isInitialized())) {
-                builtins = context.getBuiltins();
-            } else {
-                builtins = core.lookupBuiltinModule("builtins");
-            }
+            PythonModule builtins = coreInitialized(context);
             Object builtin = readFromBuiltinsNode.execute(builtins, attributeId);
             if (isBuiltinProfile.profile(builtin != PNone.NO_VALUE)) {
                 return builtin;
@@ -143,6 +138,24 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
                 throw raiseNode.raise(NameError, "name '%s' is not defined", attributeId);
             }
         }
+    }
+
+    private PythonModule coreInitialized(PythonContext context) {
+        PythonModule builtins;
+        PythonCore core;
+        if (!coreInitialized) {
+            core = context.getCore();
+            if (core.isInitialized()) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                coreInitialized = true;
+                builtins = context.getBuiltins();
+            } else {
+                builtins = core.lookupBuiltinModule("builtins");
+            }
+        } else {
+            builtins = context.getBuiltins();
+        }
+        return builtins;
     }
 
     public String getAttributeId() {
