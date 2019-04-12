@@ -1262,7 +1262,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof PrimitiveNativeWrapper && ((PrimitiveNativeWrapper)obj).state == state && ((PrimitiveNativeWrapper)obj).value == value && ((PrimitiveNativeWrapper)obj).dvalue == dvalue;
+            return obj instanceof PrimitiveNativeWrapper && ((PrimitiveNativeWrapper) obj).state == state && ((PrimitiveNativeWrapper) obj).value == value &&
+                            ((PrimitiveNativeWrapper) obj).dvalue == dvalue;
         }
 
         @Override
