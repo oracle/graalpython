@@ -354,7 +354,7 @@ def graalpython_gate_runner(args, tasks):
         if task:
             run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.sandboxed"])
 
-    with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged-unittest]) as task:
+    with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
             with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true"):
                 gate_unittests(subdir="test_tagged_unittests.py")
