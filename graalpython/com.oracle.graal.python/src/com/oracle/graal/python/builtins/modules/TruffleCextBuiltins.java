@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
@@ -2138,6 +2139,23 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyBytes_FromStringAndSize", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class PyBytes_FromStringAndSize extends NativeBuiltin {
+        // n.b.: the specializations for PBytes/PByteArray are quite common on
+        // managed, when the PySequenceArrayWrapper that we used never went
+        // native, and during the upcall to here it was simply unwrapped again
+        // with the ToJava (rather than mapped from a native pointer back into a
+        // PythonNativeObject)
+
+        @Specialization
+        Object doGeneric(Object module, PByteArray object,
+                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
+            return factory().createBytes(getByteArrayNode.execute(object));
+        }
+
+        @Specialization
+        Object doGeneric(Object module, PBytes object,
+                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
+            return factory().createBytes(getByteArrayNode.execute(object));
+        }
 
         @Specialization
         Object doGeneric(Object module, PythonNativeObject object,
