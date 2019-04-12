@@ -2146,13 +2146,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         // PythonNativeObject)
 
         @Specialization
-        Object doGeneric(Object module, PByteArray object,
+        Object doGeneric(@SuppressWarnings("unused") Object module, PByteArray object,
                         @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
             return factory().createBytes(getByteArrayNode.execute(object));
         }
 
         @Specialization
-        Object doGeneric(Object module, PBytes object,
+        Object doGeneric(@SuppressWarnings("unused") Object module, PBytes object,
                         @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
             return factory().createBytes(getByteArrayNode.execute(object));
         }
