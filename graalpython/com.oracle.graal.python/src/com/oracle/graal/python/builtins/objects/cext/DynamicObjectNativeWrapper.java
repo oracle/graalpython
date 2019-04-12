@@ -301,7 +301,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_NAME, key)")
         Object doTpName(PythonManagedClass object, @SuppressWarnings("unused") String key) {
             // return a C string wrapper that really allocates 'char*' on TO_NATIVE
-            return object.getNativeWrapper().getNameWrapper();
+            return object.getClassNativeWrapper().getNameWrapper();
         }
 
         @Specialization(guards = "eq(TP_BASE, key)")

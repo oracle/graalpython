@@ -108,11 +108,11 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     private static final String PRIVATE_PREFIX = "__";
     private DynamicObjectNativeWrapper nativeWrapper;
 
-    public DynamicObjectNativeWrapper getNativeWrapper() {
+    public final DynamicObjectNativeWrapper getNativeWrapper() {
         return nativeWrapper;
     }
 
-    public void setNativeWrapper(DynamicObjectNativeWrapper nativeWrapper) {
+    public final void setNativeWrapper(DynamicObjectNativeWrapper nativeWrapper) {
         assert this.nativeWrapper == null;
         this.nativeWrapper = nativeWrapper;
     }
