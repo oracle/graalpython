@@ -1,1 +1,3 @@
 test_b2a_base64_newline
+test_b2a_base64_newline
+test_b2a_base64_newline

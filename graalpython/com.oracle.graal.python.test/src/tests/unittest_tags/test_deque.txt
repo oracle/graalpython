@@ -13,17 +13,3 @@ test_count
 test_delitem
 test_extend
 test_extendleft
-test_gc_doesnt_blowup
-test_getitem
-test_hash
-test_iadd
-test_imul
-test_index
-test_index_bug_24913
-test_init
-test_len
-test_long_steadystate_queue_popleft
-test_long_steadystate_queue_popright
-test_maxlen_attribute
-test_maxlen_zero
-test_mul

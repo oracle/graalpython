@@ -3,7 +3,6 @@ test_infer_return_type_multiples_and_none
 test_infer_return_type_singles
 test_exports
 test_get_six_char_str
-test'
 test_wanted_dirs
 test_no_files_left_behind
 test_retval

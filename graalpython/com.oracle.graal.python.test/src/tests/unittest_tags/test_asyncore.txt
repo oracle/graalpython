@@ -7,4 +7,3 @@ test_log_info
 test_repr
 test_strerror
 test_unhandled
-test_close_twice

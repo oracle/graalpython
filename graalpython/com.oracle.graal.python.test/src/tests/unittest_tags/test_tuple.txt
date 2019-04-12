@@ -21,6 +21,3 @@ test_pickle
 test_repr
 test_repr_large
 test_subscript
-test_track_subtypes
-test_truth
-test_tupleresizebug
