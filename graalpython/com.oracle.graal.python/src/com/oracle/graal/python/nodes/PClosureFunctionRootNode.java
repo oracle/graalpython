@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -49,11 +50,13 @@ import com.oracle.truffle.api.frame.FrameSlot;
 
 public abstract class PClosureFunctionRootNode extends PClosureRootNode {
     @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] cellVarSlots;
+    @CompilerDirectives.CompilationFinal(dimensions = 1) protected final Assumption[] cellEffectivelyFinalAssumptions;
     private final Signature signature;
 
     protected PClosureFunctionRootNode(TruffleLanguage<?> language, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots, Signature signature) {
         super(language, frameDescriptor, executionCellSlots.getFreeVarSlots());
         this.cellVarSlots = executionCellSlots.getCellVarSlots();
+        this.cellEffectivelyFinalAssumptions = executionCellSlots.getCellVarAssumptions();
         this.signature = signature;
     }
 

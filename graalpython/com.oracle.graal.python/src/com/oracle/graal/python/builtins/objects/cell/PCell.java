@@ -44,11 +44,14 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.Truffle;
 
 public final class PCell extends PythonAbstractObject {
-    private Assumption effectivelyFinal;
+    private final Assumption effectivelyFinal;
     private Object ref;
+
+    public PCell(Assumption effectivelyFinalAssumption) {
+        this.effectivelyFinal = effectivelyFinalAssumption;
+    }
 
     public Object getRef() {
         return ref;
@@ -59,7 +62,7 @@ public final class PCell extends PythonAbstractObject {
     }
 
     public void setRef(Object ref) {
-        if (effectivelyFinal != null && effectivelyFinal.isValid()) {
+        if (effectivelyFinal.isValid()) {
             if (this.ref != null) {
                 effectivelyFinal.invalidate();
             }
@@ -68,10 +71,6 @@ public final class PCell extends PythonAbstractObject {
     }
 
     public Assumption isEffectivelyFinalAssumption() {
-        CompilerAsserts.neverPartOfCompilation();
-        if (effectivelyFinal == null) {
-            effectivelyFinal = Truffle.getRuntime().createAssumption("cell is effectively final");
-        }
         return effectivelyFinal;
     }
 
