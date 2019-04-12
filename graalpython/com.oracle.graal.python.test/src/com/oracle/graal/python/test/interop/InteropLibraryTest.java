@@ -59,6 +59,7 @@ public class InteropLibraryTest extends PythonTests {
     @Before
     public void setUpTest() {
         Builder builder = Context.newBuilder();
+        builder.allowExperimentalOptions(true);
         builder.allowAllAccess(true);
         context = builder.build();
     }
