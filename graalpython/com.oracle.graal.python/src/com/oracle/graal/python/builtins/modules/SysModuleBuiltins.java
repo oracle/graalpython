@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -316,17 +317,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
          * behavior. (it only captures the frames if a CallTarget boundary is crossed)
          */
         private static final class GetStackTraceRootNode extends RootNode {
-            private final ContextReference<PythonContext> contextRef;
+            @Child private PRaiseNode raiseNode = PRaiseNode.create();
 
             protected GetStackTraceRootNode(PythonLanguage language) {
                 super(language);
-                this.contextRef = language.getContextReference();
             }
 
             @Override
             public Object execute(VirtualFrame frame) {
-                CompilerDirectives.transferToInterpreter();
-                throw contextRef.get().getCore().raise(ValueError, null);
+                throw raiseNode.raise(ValueError);
             }
 
             @Override
