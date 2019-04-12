@@ -71,16 +71,12 @@ def working_tests():
 for working_test in working_tests():
     def make_test_func(working_test):
         def fun():
-            if not working_test[1]: # no selectors, run entire test module
-                # TODO: remove branch
-                subprocess.check_call([sys.executable, "-m", "test." + working_test[0]])
-            else:
-                cmd = [sys.executable, "-m", "unittest"]
-                for testpattern in working_test[1]:
-                    cmd.extend(["-k", testpattern])
-                testmod = working_test[0].rpartition(".")[2]
-                cmd.append(os.path.join(os.path.dirname(test.__file__), "%s.py" % testmod))
-                subprocess.check_call(cmd)
+            cmd = [sys.executable, "-m", "unittest"]
+            for testpattern in working_test[1]:
+                cmd.extend(["-k", testpattern])
+            testmod = working_test[0].rpartition(".")[2]
+            cmd.append(os.path.join(os.path.dirname(test.__file__), "%s.py" % testmod))
+            subprocess.check_call(cmd)
 
         fun.__name__ = working_test[0]
         return fun
@@ -110,24 +106,21 @@ if __name__ == "__main__":
         tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
         test_selectors = working_selectors(tagfile)
 
-        if not test_selectors:
-            # TODO: remove branch
-            print("Testing", testmod)
-            cmd += [testmod, "-v"]
-        else:
-            print("Testing tagged subset of", testmod)
-            cmd += ["unittest", "-v"]
-            for selector in test_selectors:
-                cmd += ["-k", selector]
-            cmd.append(testfile)
+        print("Testing ", testmod)
+        cmd += ["unittest", "-v"]
+        for selector in test_selectors:
+            cmd += ["-k", selector]
+        cmd.append(testfile)
 
+        print(" ".join(cmd))
         p = subprocess.run(cmd, **kwargs)
         print("*stdout*")
         print(p.stdout)
         print("*stderr*")
         print(p.stderr)
 
-        if p.returncode == 0:
+        if p.returncode == 0 and not os.path.exists(tagfile):
+            # if we're re-tagging a test without tags, all passed
             with open(tagfile, "w") as f:
                 pass
         else:
