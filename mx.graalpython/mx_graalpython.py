@@ -188,7 +188,7 @@ def retag_unittests(args):
     """run the cPython stdlib unittests"""
     os.environ["ENABLE_CPYTHON_TAGGED_UNITTESTS"] = "true"
     try:
-        python(["graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py"] + args)
+        python_svm(["graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py"] + args)
     finally:
         del os.environ["ENABLE_CPYTHON_TAGGED_UNITTESTS"]
 
@@ -265,7 +265,7 @@ def python_svm(args):
     mx.run_mx(_SVM_ARGS + ["build"])
     out = mx.OutputCapture()
     mx.run_mx(_SVM_ARGS + ["graalvm-home"], out=mx.TeeOutputCapture(out))
-    svm_image = os.path.join(out.data.strip(), "bin", "graalpython")
+    svm_image = os.path.join(out.data.strip(), "bin", "graalpython").split("\n")[-1].strip()
     mx.log(svm_image)
     mx.run([svm_image] + args)
     return svm_image
