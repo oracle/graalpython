@@ -323,7 +323,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTuple_SetItem", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class PyTuple_SetItem extends NativeBuiltin {
+    abstract static class PyTuple_SetItem extends PythonTernaryBuiltinNode {
         @Specialization
         int doI(PTuple tuple, Object position, Object element,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
@@ -357,7 +357,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, LazyPythonClass type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            CompilerDirectives.transferToInterpreter();
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, null, callable, SIGNATURE));
             return factory().createBuiltinFunction(name, type, 0, callTarget);
         }
@@ -366,7 +365,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, @SuppressWarnings("unused") PNone type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            CompilerDirectives.transferToInterpreter();
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, null, callable, SIGNATURE));
             return factory().createBuiltinFunction(name, null, 0, callTarget);
         }
@@ -375,7 +373,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, TruffleObject cwrapper, @SuppressWarnings("unused") PNone type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            CompilerDirectives.transferToInterpreter();
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, cwrapper, callable, SIGNATURE));
             return factory().createBuiltinFunction(name, null, 0, callTarget);
         }
@@ -384,7 +381,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         PBuiltinFunction run(String name, TruffleObject callable, TruffleObject cwrapper, LazyPythonClass type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            CompilerDirectives.transferToInterpreter();
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, cwrapper, callable, SIGNATURE));
             return factory().createBuiltinFunction(name, type, 0, callTarget);
         }
