@@ -338,7 +338,7 @@ def graalpython_gate_runner(args, tasks):
         if task:
             gate_unittests()
 
-    with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged-unittest]) as task:
+    with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
             os.environ["ENABLE_CPYTHON_TAGGED_UNITTESTS"] = "true"
             try:

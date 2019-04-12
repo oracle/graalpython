@@ -75,6 +75,7 @@ for working_test in working_tests():
             for testpattern in working_test[1]:
                 cmd.extend(["-k", testpattern])
             testmod = working_test[0].rpartition(".")[2]
+            print()
             cmd.append(os.path.join(os.path.dirname(test.__file__), "%s.py" % testmod))
             subprocess.check_call(cmd)
 
