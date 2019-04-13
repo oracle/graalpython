@@ -642,7 +642,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                 }
             } catch (UnknownIdentifierException | UnsupportedMessageException ignore) {
             }
-            throw raise(PythonErrorType.AttributeError, "foreign object %s has no attribute %s", object, key);
+            throw raise(PythonErrorType.AttributeError, "foreign object has no attribute %s", key);
         }
     }
 
@@ -655,7 +655,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             try {
                 lib.writeMember(object, key, value);
             } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException e) {
-                throw raise(PythonErrorType.AttributeError, "foreign object %s has no attribute %s", object, key);
+                throw raise(PythonErrorType.AttributeError, "foreign object has no attribute %s", key);
             }
             return PNone.NONE;
         }
@@ -682,7 +682,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             try {
                 lib.removeMember(object, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.AttributeError, "foreign object %s has no attribute %s", object, key);
+                throw raise(PythonErrorType.AttributeError, "foreign object has no attribute %s", key);
             }
             return PNone.NONE;
         }
