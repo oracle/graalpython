@@ -1160,15 +1160,23 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return GetByteArrayNodeGen.create();
         }
 
-        @Specialization
-        byte[] doCArrayWrapper(CByteArrayWrapper o, @SuppressWarnings("unused") long n) {
-            return o.getByteArray();
+        private static byte[] subRangeIfNeeded(byte[] ary, long n) {
+            if (ary.length > n && n >= 0 && n < Integer.MAX_VALUE) {
+                return Arrays.copyOf(ary, (int)n);
+            } else {
+                return ary;
+            }
         }
 
         @Specialization
-        byte[] doSequenceArrayWrapper(PySequenceArrayWrapper obj, @SuppressWarnings("unused") long n,
+        byte[] doCArrayWrapper(CByteArrayWrapper o, long n) {
+            return subRangeIfNeeded(o.getByteArray(), n);
+        }
+
+        @Specialization
+        byte[] doSequenceArrayWrapper(PySequenceArrayWrapper obj, long n,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return toBytesNode.execute(obj.getDelegate());
+            return subRangeIfNeeded(toBytesNode.execute(obj.getDelegate()), n);
         }
 
         @Specialization(guards = "n < 0")
@@ -2158,11 +2166,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doGeneric(Object module, PythonNativeObject object, @SuppressWarnings("unused") long size,
+        Object doGeneric(Object module, PythonNativeObject object, long size,
                         @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
                         @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
             try {
-                return factory().createBytes(getByteArrayNode.execute(object.getPtr(), -1));
+                return factory().createBytes(getByteArrayNode.execute(object.getPtr(), size));
             } catch (InteropException e) {
                 return raiseNative(getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
             }
