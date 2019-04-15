@@ -1162,7 +1162,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         private static byte[] subRangeIfNeeded(byte[] ary, long n) {
             if (ary.length > n && n >= 0 && n < Integer.MAX_VALUE) {
-                return Arrays.copyOf(ary, (int)n);
+                return Arrays.copyOf(ary, (int) n);
             } else {
                 return ary;
             }
@@ -2159,7 +2159,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                         @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
             byte[] ary = getByteArrayNode.execute(object);
             if (size < Integer.MAX_VALUE && size >= 0 && size < ary.length) {
-                return factory().createBytes(Arrays.copyOf(ary, (int)size));
+                return factory().createBytes(Arrays.copyOf(ary, (int) size));
             } else {
                 return factory().createBytes(ary);
             }
