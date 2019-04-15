@@ -71,6 +71,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -130,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
@@ -169,6 +171,7 @@ import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -184,6 +187,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
@@ -1234,42 +1238,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(keywordArg)", "!isNoValue(obj)", "!isHandledType(obj)"})
-        public Object createInt(LazyPythonClass cls, Object obj, PNone keywordArg,
-                        @Cached("create(__INT__)") LookupAndCallUnaryNode callIntNode,
-                        @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTruncNode,
-                        @Cached("createBinaryProfile()") ConditionProfile isIntProfile) {
-            try {
-                // at first try __int__ method
-                return createInt(cls, callIntNode.executeLong(obj), keywordArg, isIntProfile);
-            } catch (UnexpectedResultException e) {
-                Object result = e.getResult();
-                if (result == PNone.NO_VALUE) {
-                    try {
-                        // now try __trunc__ method
-                        return createInt(cls, callTruncNode.executeLong(obj), keywordArg, isIntProfile);
-                    } catch (UnexpectedResultException ee) {
-                        result = ee.getResult();
-                    }
-                }
-                if (result == PNone.NO_VALUE) {
-                    throw raise(TypeError, "an integer is required (got type %p)", obj);
-                } else if (result instanceof Integer) {
-                    return createInt(cls, (int) result, keywordArg);
-                } else if (result instanceof Long) {
-                    return createInt(cls, (long) result, keywordArg, isIntProfile);
-                } else if (result instanceof Boolean) {
-                    return createInt(cls, (boolean) result ? 1 : 0, keywordArg, isIntProfile);
-                } else if (result instanceof PInt) {
-                    // TODO warn if 'result' not of exact Python type 'int'
-                    return isPrimitiveInt(cls) ? result : factory().createInt(cls, ((PInt) result).getValue());
-                } else {
-                    throw raise(TypeError, "__int__ returned non-int (type %p)", result);
-                }
-            }
+        public Object createInt(LazyPythonClass cls, Object obj, @SuppressWarnings("unused") PNone keywordArg,
+                        @Cached("createGeneric()") CreateIntFromObjectNode createIntFromObjectNode) {
+            return createIntFromObjectNode.execute(cls, obj);
         }
 
         protected static boolean isHandledType(Object obj) {
             return PGuards.isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj) || obj instanceof PythonNativeVoidPtr;
+        }
+
+        protected static CreateIntFromObjectNode createGeneric() {
+            return CreateIntFromObjectNode.create(true, () -> LookupAndCallUnaryNode.create(SpecialMethodNames.__INT__));
         }
 
         private String toString(PIBytesLike pByteArray) {
@@ -1283,6 +1262,135 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @TruffleBoundary
         private static String toString(byte[] barr) {
             return new String(barr);
+        }
+
+    }
+
+    protected static final class CreateIntFromObjectNode extends Node {
+
+        private static final int STATE_INT = 0;
+        private static final int STATE_LONG = 1;
+        private static final int STATE_GENERIC = 2;
+
+        @Child private PythonObjectFactory objectFactory;
+        @Child private LookupAndCallUnaryNode callNode;
+        @Child private CreateIntFromObjectNode recursive;
+        @Child private PRaiseNode raiseNode;
+
+        @CompilationFinal private int state;
+        private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
+        private final boolean allowRecursive;
+        private final Supplier<LookupAndCallUnaryNode> callNodeSupplier;
+
+        public CreateIntFromObjectNode(boolean allowRecursive, Supplier<LookupAndCallUnaryNode> callNodeSupplier) {
+            this.allowRecursive = allowRecursive;
+            this.callNodeSupplier = callNodeSupplier;
+        }
+
+        public Object execute(LazyPythonClass cls, Object obj) {
+            try {
+                switch (state) {
+                    case STATE_INT:
+                        return createInt(cls, ensureCallNode().executeInt(obj));
+                    case STATE_LONG:
+                        return createLong(cls, ensureCallNode().executeLong(obj));
+                    case STATE_GENERIC:
+                        return createGeneric(cls, obj, ensureCallNode().executeObject(obj));
+                }
+            } catch (UnexpectedResultException e) {
+                return executeAndSpecialize(cls, obj, e.getResult());
+            }
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException();
+        }
+
+        private Object executeAndSpecialize(LazyPythonClass cls, Object obj, Object result) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            switch (state) {
+                case STATE_INT:
+                    state = STATE_LONG;
+                    return createGeneric(cls, obj, result);
+                case STATE_LONG:
+                    state = STATE_GENERIC;
+                    return createGeneric(cls, obj, result);
+                case STATE_GENERIC:
+                    assert false;
+            }
+            throw new IllegalStateException();
+        }
+
+        private Object createInt(LazyPythonClass cls, int ival) {
+            if (isPrimitiveInt(cls)) {
+                return ival;
+            }
+            return factory().createInt(cls, ival);
+        }
+
+        private Object createLong(LazyPythonClass cls, long lval) {
+            if (isPrimitiveInt(cls)) {
+                return lval;
+            }
+            return factory().createInt(cls, lval);
+        }
+
+        private Object createGeneric(LazyPythonClass cls, Object obj, Object result) {
+            if (result == PNone.NO_VALUE && ensureRecursive()) {
+                return recursive.execute(cls, obj);
+            }
+            if (result == PNone.NO_VALUE) {
+                throw ensureRaiseNode().raise(TypeError, "an integer is required (got type %p)", obj);
+            } else if (result instanceof Integer) {
+                return createInt(cls, (int) result);
+            } else if (result instanceof Long) {
+                return createLong(cls, (long) result);
+            } else if (result instanceof Boolean) {
+                return createInt(cls, (boolean) result ? 1 : 0);
+            } else if (result instanceof PInt) {
+                // TODO warn if 'result' not of exact Python type 'int'
+                return isPrimitiveInt(cls) ? result : factory().createInt(cls, ((PInt) result).getValue());
+            } else {
+                throw ensureRaiseNode().raise(TypeError, "__int__ returned non-int (type %p)", result);
+            }
+        }
+
+        private LookupAndCallUnaryNode ensureCallNode() {
+            if (callNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNode = insert(callNodeSupplier.get());
+            }
+            return callNode;
+        }
+
+        private boolean ensureRecursive() {
+            if (allowRecursive && recursive == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                recursive = insert(CreateIntFromObjectNode.create(false, () -> LookupAndCallUnaryNode.create(SpecialMethodNames.__TRUNC__)));
+            }
+            return allowRecursive;
+        }
+
+        private PRaiseNode ensureRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
+        }
+
+        private static CreateIntFromObjectNode create(boolean allowRecursive, Supplier<LookupAndCallUnaryNode> callNode) {
+            return new CreateIntFromObjectNode(allowRecursive, callNode);
+        }
+
+        protected boolean isPrimitiveInt(LazyPythonClass cls) {
+            return isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PInt);
+        }
+
+        protected final PythonObjectFactory factory() {
+            if (objectFactory == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                objectFactory = insert(PythonObjectFactory.create());
+            }
+            return objectFactory;
         }
 
     }
