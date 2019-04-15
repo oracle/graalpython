@@ -55,6 +55,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -70,8 +71,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
@@ -2136,29 +2137,28 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyBytes_FromStringAndSize", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "PyBytes_FromStringAndSize", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class PyBytes_FromStringAndSize extends NativeBuiltin {
-        // n.b.: the specializations for PBytes/PByteArray are quite common on
+        // n.b.: the specializations for PIBytesLike are quite common on
         // managed, when the PySequenceArrayWrapper that we used never went
         // native, and during the upcall to here it was simply unwrapped again
         // with the ToJava (rather than mapped from a native pointer back into a
         // PythonNativeObject)
 
         @Specialization
-        Object doGeneric(@SuppressWarnings("unused") Object module, PByteArray object,
+        Object doGeneric(@SuppressWarnings("unused") Object module, PIBytesLike object, long size,
                         @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
-            return factory().createBytes(getByteArrayNode.execute(object));
+            byte[] ary = getByteArrayNode.execute(object);
+            if (size < Integer.MAX_VALUE && size >= 0 && size < ary.length) {
+                return factory().createBytes(Arrays.copyOf(ary, (int)size));
+            } else {
+                return factory().createBytes(ary);
+            }
         }
 
         @Specialization
-        Object doGeneric(@SuppressWarnings("unused") Object module, PBytes object,
-                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
-            return factory().createBytes(getByteArrayNode.execute(object));
-        }
-
-        @Specialization
-        Object doGeneric(Object module, PythonNativeObject object,
+        Object doGeneric(Object module, PythonNativeObject object, @SuppressWarnings("unused") long size,
                         @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
                         @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
             try {
