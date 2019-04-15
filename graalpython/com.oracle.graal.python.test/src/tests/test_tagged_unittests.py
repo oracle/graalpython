@@ -100,11 +100,17 @@ if __name__ == "__main__":
     else:
         glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
 
+    p = subprocess.run(["/usr/bin/which", "timeout"], **kwargs)
+    if p.returncode != 0:
+        print("Cannot find the 'timeout' GNU tool. Do you have coreutils installed?")
+        sys.exit(1)
+    timeout = p.stdout.strip()
+
     testfiles = glob.glob(glob_pattern)
     for idx, testfile in enumerate(testfiles):
         testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
         testmod = "test." + testfile_stem
-        cmd = ["/usr/bin/timeout", "-s", "9", "60"] + executable + ["-m"]
+        cmd = [timeout, "-s", "9", "60"] + executable + ["-m"]
         tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
         test_selectors = working_selectors(tagfile)
 
