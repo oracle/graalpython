@@ -69,6 +69,6 @@ public class MultiContextTest extends PythonTests {
     }
 
     private static Context newContext(Engine engine) {
-        return Context.newBuilder().allowAllAccess(true).engine(engine).build();
+        return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine).build();
     }
 }

@@ -1177,7 +1177,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
     }
 
-    public static class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
+    public static final class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
 
         public static final byte PRIMITIVE_STATE_BOOL = 1 << 0;
         public static final byte PRIMITIVE_STATE_BYTE = 1 << 1;
@@ -1258,6 +1258,17 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         // this method exists just for readability
         public void setMaterializedObject(Object materializedPrimitive) {
             setDelegate(materializedPrimitive);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof PrimitiveNativeWrapper && ((PrimitiveNativeWrapper) obj).state == state && ((PrimitiveNativeWrapper) obj).value == value &&
+                            ((PrimitiveNativeWrapper) obj).dvalue == dvalue;
+        }
+
+        @Override
+        public int hashCode() {
+            return (int) (value ^ Double.doubleToRawLongBits(dvalue) ^ state);
         }
 
         public static PrimitiveNativeWrapper createBool(boolean val) {

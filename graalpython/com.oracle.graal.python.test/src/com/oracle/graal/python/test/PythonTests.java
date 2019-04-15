@@ -99,7 +99,7 @@ public class PythonTests {
         PythonTests.outArray.reset();
         PythonTests.errArray.reset();
         Context prevContext = context;
-        context = Context.newBuilder().engine(engine).allowAllAccess(true).arguments("python", newArgs).option("python.Executable", executable).build();
+        context = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).arguments("python", newArgs).option("python.Executable", executable).build();
         context.initialize("python");
         if (prevContext != null) {
             closeContext(prevContext);

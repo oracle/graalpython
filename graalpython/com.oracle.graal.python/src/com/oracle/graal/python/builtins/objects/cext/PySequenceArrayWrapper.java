@@ -63,7 +63,6 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -166,7 +165,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                         @Cached("createClassProfile()") ValueProfile profile,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
+                        @Shared("castToLongNode") @Cached CastToJavaLongNode castToJavaLongNode) {
             PIBytesLike profiled = profile.profile(bytesLike);
             int len = lenNode.execute(profiled.getSequenceStorage());
             // simulate sentinel value
@@ -176,27 +175,27 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             int i = (int) byteIdx;
             long result = 0;
             SequenceStorage store = profiled.getSequenceStorage();
-            result |= castToByteNode.execute(getItemNode.execute(store, i));
+            result |= castToJavaLongNode.execute(getItemNode.execute(store, i));
             if (i + 1 < len) {
-                result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 1)) << 8L) & 0xFF00L;
+                result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + 1)) << 8L) & 0xFF00L;
             }
             if (i + 2 < len) {
-                result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 2)) << 16L) & 0xFF0000L;
+                result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + 2)) << 16L) & 0xFF0000L;
             }
             if (i + 3 < len) {
-                result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 3)) << 24L) & 0xFF000000L;
+                result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + 3)) << 24L) & 0xFF000000L;
             }
             if (i + 4 < len) {
-                result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 4)) << 32L) & 0xFF00000000L;
+                result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + 4)) << 32L) & 0xFF00000000L;
             }
             if (i + 5 < len) {
-                result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 5)) << 40L) & 0xFF0000000000L;
+                result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + 5)) << 40L) & 0xFF0000000000L;
             }
             if (i + 6 < len) {
-                result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 6)) << 48L) & 0xFF000000000000L;
+                result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + 6)) << 48L) & 0xFF000000000000L;
             }
             if (i + 7 < len) {
-                result |= ((long) castToByteNode.execute(getItemNode.execute(store, i + 7)) << 56L) & 0xFF00000000000000L;
+                result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + 7)) << 56L) & 0xFF00000000000000L;
             }
             return result;
         }
@@ -205,34 +204,34 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         long doPMmapI64(PMMap mmap, long byteIdx,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
                         @Exclusive @Cached CallNode callGetItemNode,
-                        @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
+                        @Shared("castToLongNode") @Cached CastToJavaLongNode castToJavaLongNode) {
 
             long len = mmap.getLength();
             Object attrGetItem = lookupGetItemNode.execute(mmap, SpecialMethodNames.__GETITEM__);
 
             int i = (int) byteIdx;
             long result = 0;
-            result |= castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx));
+            result |= castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx));
             if (i + 1 < len) {
-                result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 8L) & 0xFF00L;
+                result |= (castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 8L) & 0xFF00L;
             }
             if (i + 2 < len) {
-                result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 16L) & 0xFF0000L;
+                result |= (castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 16L) & 0xFF0000L;
             }
             if (i + 3 < len) {
-                result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 24L) & 0xFF000000L;
+                result |= (castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 24L) & 0xFF000000L;
             }
             if (i + 4 < len) {
-                result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 32L) & 0xFF00000000L;
+                result |= (castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 32L) & 0xFF00000000L;
             }
             if (i + 5 < len) {
-                result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 40L) & 0xFF0000000000L;
+                result |= (castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 40L) & 0xFF0000000000L;
             }
             if (i + 6 < len) {
-                result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 48L) & 0xFF000000000000L;
+                result |= (castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 48L) & 0xFF000000000000L;
             }
             if (i + 7 < len) {
-                result |= ((long) castToByteNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 56L) & 0xFF00000000000000L;
+                result |= (castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 56L) & 0xFF00000000000000L;
             }
             return result;
         }

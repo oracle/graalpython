@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,7 +49,11 @@ static PyObject* demo_system(PyObject *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "s", &command))
         return NULL;
-    sts = system(command);
+    if (!strcmp("echo 1", command)) {
+        sts = 0;
+    } else {
+        sts = 1;
+    }
     return Py_BuildValue("i", sts);
 }
 
