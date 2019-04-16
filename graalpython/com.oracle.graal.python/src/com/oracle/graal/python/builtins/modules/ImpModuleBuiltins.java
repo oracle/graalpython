@@ -52,7 +52,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.CheckFunctionResultNode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -241,13 +241,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = insert(ReadAttributeFromObjectNode.create());
                 CallUnaryMethodNode callNode = insert(CallUnaryMethodNode.create());
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(TruffleCextBuiltins.PYTHON_CEXT), INITIALIZE_CAPI), capi);
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT), INITIALIZE_CAPI), capi);
                 ctxt.setCapiWasLoaded(capi);
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(TruffleCextBuiltins.PYTHON_CEXT), RUN_CAPI_LOADED_HOOKS), capi);
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT), RUN_CAPI_LOADED_HOOKS), capi);
 
                 // initialization needs to be finished already but load memoryview implemenation
                 // immediately
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(TruffleCextBuiltins.PYTHON_CEXT), IMPORT_NATIVE_MEMORYVIEW), capi);
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT), IMPORT_NATIVE_MEMORYVIEW), capi);
             }
         }
 

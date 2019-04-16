@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
@@ -84,7 +85,6 @@ import com.oracle.graal.python.builtins.modules.SysConfigModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
@@ -209,7 +209,7 @@ public final class Python3Core implements PythonCore {
                         "set",
                         "itertools",
                         "base_exception",
-                        TruffleCextBuiltins.PYTHON_CEXT,
+                        PythonCextBuiltins.PYTHON_CEXT,
                         "_collections",
                         "memoryview",
                         "list",
@@ -301,7 +301,7 @@ public final class Python3Core implements PythonCore {
                         new MarshalModuleBuiltins(),
                         new RandomModuleBuiltins(),
                         new RandomBuiltins(),
-                        new TruffleCextBuiltins(),
+                        new PythonCextBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new IOModuleBuiltins(),
