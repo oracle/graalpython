@@ -79,12 +79,12 @@ print(al) # prints [1, 12]
 In addition to the `type` builtin method, the `java` module, exposes the following 
 methods as well:
 
-Builtin | Specification
---- | ---
+Builtin                  | Specification
+---                      | ---
 `instanceof(obj, class)` | returns `True` if `obj` is an instance of `class` (`class` must be a foreign object class)
-`is_function(obj)` | returns `True` if `obj` is a Java host language function wrapped using Truffle interop
-`is_object(obj)` | returns `True` if `obj` if the argument is Java host language object wrapped using Truffle interop
-`is_symbol(obj)` | returns `True` if `obj` if the argument is a Java host symbol, representing the constructor and static members of a Java class, as obtained by `java.type`
+`is_function(obj)`       | returns `True` if `obj` is a Java host language function wrapped using Truffle interop
+`is_object(obj)`         | returns `True` if `obj` if the argument is Java host language object wrapped using Truffle interop
+`is_symbol(obj)`         | returns `True` if `obj` if the argument is a Java host symbol, representing the constructor and static members of a Java class, as obtained by `java.type`
 
 ```python
 import java
