@@ -535,14 +535,14 @@ public abstract class CExtNodes {
         }
 
         protected static boolean isForeignObject(TruffleObject obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
-            return isForeignClassProfile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.TruffleObject);
+            return isForeignClassProfile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.ForeignObject);
         }
 
         @TruffleBoundary
         public static Object doSlowPath(Object object, boolean forceNativeClass) {
             if (object instanceof PythonNativeWrapper) {
                 return ((PythonNativeWrapper) object).getDelegate();
-            } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(object), PythonBuiltinClassType.TruffleObject)) {
+            } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(object), PythonBuiltinClassType.ForeignObject)) {
                 if (forceNativeClass) {
                     return PythonObjectFactory.getUncached().createNativeClassWrapper((TruffleObject) object);
                 }

@@ -103,12 +103,12 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.TruffleObject)
-public class TruffleObjectBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignObject)
+public class ForeignObjectBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return TruffleObjectBuiltinsFactory.getFactories();
+        return ForeignObjectBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
@@ -612,7 +612,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         public static CallNode create() {
-            return TruffleObjectBuiltinsFactory.CallNodeFactory.create(null);
+            return ForeignObjectBuiltinsFactory.CallNodeFactory.create(null);
         }
     }
 

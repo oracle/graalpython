@@ -109,7 +109,7 @@ import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
-import com.oracle.graal.python.builtins.objects.foreign.TruffleObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinFunctionBuiltins;
@@ -257,7 +257,7 @@ public final class Python3Core implements PythonCore {
                         new AbstractBytesBuiltins(),
                         new TypeBuiltins(),
                         new IntBuiltins(),
-                        new TruffleObjectBuiltins(),
+                        new ForeignObjectBuiltins(),
                         new ListBuiltins(),
                         new DictBuiltins(),
                         new DictViewBuiltins(),
