@@ -1204,9 +1204,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
 
         private static final Supplier<NoAttributeHandler> NO_LEN = () -> new NoAttributeHandler() {
+            @Child private PRaiseNode raiseNode;
+
             @Override
             public Object execute(Object receiver) {
-                throw PRaiseNode.getUncached().raise(TypeError, "object of type '%p' has no len()", receiver);
+                if (raiseNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    raiseNode = insert(PRaiseNode.create());
+                }
+                throw raiseNode.raise(TypeError, "object of type '%p' has no len()", receiver);
             }
         };
 
