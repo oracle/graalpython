@@ -322,12 +322,15 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
         if not os.path.exists(path):
             # allow paths relative to the test root
             path = os.path.join(_graalpytest_root(), path)
-        for testfile in glob.glob(os.path.join(path, "**/test_*.py")):
-            if is_included(testfile):
-                testfiles.append(testfile)
-        for testfile in glob.glob(os.path.join(path, "test_*.py")):
-            if is_included(testfile):
-                testfiles.append(testfile)
+        if os.path.isfile(path):
+            testfiles.append(path)
+        else:
+            for testfile in glob.glob(os.path.join(path, "**/test_*.py")):
+                if is_included(testfile):
+                    testfiles.append(testfile)
+            for testfile in glob.glob(os.path.join(path, "test_*.py")):
+                if is_included(testfile):
+                    testfiles.append(testfile)
 
     args += [_graalpytest_driver(), "-v"]
     args += testfiles
@@ -357,7 +360,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
             with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true"):
-                gate_unittests(subdir="test_tagged_unittests.py")
+                run_python_unittests(python_gvm(), paths=["test_tagged_unittests.py"])
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
