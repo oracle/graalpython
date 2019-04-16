@@ -135,15 +135,15 @@ if __name__ == "__main__":
             testmod = "test." + testfile_stem
             cmd = [timeout, "-s", "9", "60"] + executable + ["-S", "-m"]
             tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
-            test_selectors = working_selectors(tagfile)
+            if retag:
+                test_selectors = []
+            else:
+                test_selectors = working_selectors(tagfile)
 
             if test_selectors is None:
-                if retag:
-                    test_selectors = []
-                else:
-                    # there's no tagfile for this, so it's not working at all
-                    # (or has not been tried).
-                    continue
+                # there's no tagfile for this, so it's not working at all (or
+                # shouldn't be tried).
+                continue
 
             print("[%d/%d, Try %d] Testing %s" %(idx + 1, len(testfiles), repeat + 1, testmod))
             cmd += ["unittest", "-v"]
