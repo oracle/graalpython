@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.InteropModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
@@ -69,6 +68,7 @@ import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
@@ -246,7 +246,7 @@ public final class Python3Core implements PythonCore {
                         new DecoratedMethodBuiltins(),
                         new ClassmethodBuiltins(),
                         new StaticmethodBuiltins(),
-                        new InteropModuleBuiltins(),
+                        new PolyglotModuleBuiltins(),
                         new ObjectBuiltins(),
                         new CellBuiltins(),
                         new BoolBuiltins(),
