@@ -100,6 +100,7 @@ if __name__ == "__main__":
 
     executable = sys.executable.split(" ") # HACK: our sys.executable on Java is a cmdline
     re_success = re.compile("(test\S+) \(([^\s]+)\) \.\.\. ok$", re.MULTILINE)
+    re_failure = re.compile("(test\S+) \(([^\s]+)\) \.\.\. (?:ERROR|FAIL)$", re.MULTILINE)
     kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "text": True, "check": False}
 
     glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
@@ -169,15 +170,15 @@ if __name__ == "__main__":
                 # we failed the first run, create a tag file with the passing
                 # tests (if any)
                 passing_tests = []
-
-                try:
-                    imported_test_module = __import__(testmod)
-                except:
-                    imported_test_module = None
+                failed_tests = []
 
                 def get_pass_name(funcname, classname):
-                    # try hard to get a most specific pattern
-                    if imported_test_module:
+                    try:
+                        imported_test_module = __import__(testmod)
+                    except:
+                        imported_test_module = None
+                    else:
+                        # try hard to get a most specific pattern
                         classname = "".join(classname.rpartition(testmod)[1:])
                         clazz = imported_test_module
                         path_to_class = classname.split(".")[1:]
@@ -191,13 +192,24 @@ if __name__ == "__main__":
 
                 # n.b.: we add a '*' in the front, so that unittests doesn't add
                 # its own asterisks, because now this is already a pattern
+
+                for funcname,classname in re_failure.findall(p.stdout):
+                    failed_tests.append("*" + get_pass_name(funcname, classname))
+                for funcname,classname in re_failure.findall(p.stderr):
+                    failed_tests.append("*" + get_pass_name(funcname, classname))
+
                 for funcname,classname in re_success.findall(p.stdout):
                     passing_tests.append("*" + get_pass_name(funcname, classname))
                 for funcname,classname in re_success.findall(p.stderr):
                     passing_tests.append("*" + get_pass_name(funcname, classname))
 
+                # n.b.: unittests uses the __qualname__ of the function as
+                # pattern, which we're trying to do as well. however, sometimes
+                # the same function is shared in multiple test classes, and
+                # fails in some. so we always subtract the failed patterns from
+                # the passed patterns
                 with open(tagfile, "w") as f:
-                    for passing_test in passing_tests:
+                    for passing_test in set(passing_tests) - set(failed_tests):
                         f.write(passing_test)
                         f.write("\n")
                 if not passing_tests:

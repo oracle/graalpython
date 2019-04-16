@@ -1,7 +1,7 @@
-test_do_longs
-test_do_shorts
-test_getopt
-test_gnu_getopt
-test_issue4629
-test_long_has_args
-test_short_has_arg
+*GetoptTests.test_do_longs
+*GetoptTests.test_do_shorts
+*GetoptTests.test_getopt
+*GetoptTests.test_gnu_getopt
+*GetoptTests.test_issue4629
+*GetoptTests.test_long_has_args
+*GetoptTests.test_short_has_arg

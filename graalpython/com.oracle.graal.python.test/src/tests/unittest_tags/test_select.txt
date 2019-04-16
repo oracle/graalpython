@@ -1,2 +1,2 @@
-test_returned_list_identity
-test_select
+*SelectTestCase.test_returned_list_identity
+*SelectTestCase.test_select

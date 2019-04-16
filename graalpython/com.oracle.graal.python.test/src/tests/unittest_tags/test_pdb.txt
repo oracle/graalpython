@@ -1,2 +1,2 @@
-test_find_function_empty_file
-test_find_function_found
+*PdbTestCase.test_find_function_empty_file
+*PdbTestCase.test_find_function_found

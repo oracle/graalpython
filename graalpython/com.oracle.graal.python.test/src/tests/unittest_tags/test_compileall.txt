@@ -1,2 +1,2 @@
-test_compile_dir_pathlike
-test_compile_file_pathlike
+*CompileallTests.test_compile_dir_pathlike
+*CompileallTests.test_compile_file_pathlike

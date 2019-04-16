@@ -1,2 +1,2 @@
-test_commonprefix
-test_exists
+*GenericTest.test_commonprefix
+*GenericTest.test_exists

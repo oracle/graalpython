@@ -1,5 +1,4 @@
-test_badsyntax_1
-test_badsyntax_4
-test_comp_7
-test_for_tuple
-test_gen_1
+*AsyncBadSyntaxTest.test_badsyntax_4
+*CoroutineTest.test_comp_7
+*CoroutineTest.test_for_tuple
+*CoroutineTest.test_gen_1
