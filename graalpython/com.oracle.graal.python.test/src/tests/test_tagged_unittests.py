@@ -208,11 +208,12 @@ if __name__ == "__main__":
                 # the same function is shared in multiple test classes, and
                 # fails in some. so we always subtract the failed patterns from
                 # the passed patterns
+                passing_only_patterns = set(passing_tests) - set(failed_tests)
                 with open(tagfile, "w") as f:
-                    for passing_test in set(passing_tests) - set(failed_tests):
+                    for passing_test in passing_only_patterns:
                         f.write(passing_test)
                         f.write("\n")
-                if not passing_tests:
+                if not passing_only_patterns:
                     os.unlink(tagfile)
             else:
                 # we tried the last time and failed, so our tags don't work for
