@@ -193,7 +193,7 @@ public class TopLevelExceptionHandler extends RootNode {
         } else if (attribute instanceof PNone) {
             exitcode = 0; // "goto done" case in CPython
         } else if (attribute instanceof Boolean) {
-            exitcode = ((boolean)attribute) ? 1 : 0;
+            exitcode = ((boolean) attribute) ? 1 : 0;
         }
         if (exitcode != null) {
             throw new PythonExitException(this, exitcode);
