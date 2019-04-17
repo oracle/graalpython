@@ -28,9 +28,6 @@
 *StrptimeTests.test_unconverteddata
 *StrptimeTests.test_year
 *JulianTests.test_all_julian_days
-*CalculationTests.test_day_of_week_calculation
-*CalculationTests.test_gregorian_calculation
-*CalculationTests.test_julian_calculation
 *CalculationTests.test_week_0
 *CacheTests.test_regex_cleanup
 *CacheTests.test_time_re_recreation

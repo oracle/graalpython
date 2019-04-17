@@ -1,4 +1,3 @@
-*BaseQueueTestMixin.test_basic
 *BaseQueueTestMixin.test_negative_timeout_raises_exception
 *BaseQueueTestMixin.test_nowait
 *BaseQueueTestMixin.test_queue_task_done

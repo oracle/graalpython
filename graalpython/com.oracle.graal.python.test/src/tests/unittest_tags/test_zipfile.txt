@@ -4,5 +4,3 @@
 *StoredTestsWithSourceFile.test_ignores_newline_at_end
 *StoredTestsWithSourceFile.test_ignores_stuff_appended_past_comments
 *StoredTestsWithSourceFile.test_read_concatenated_zip_file
-*AbstractTestsWithSourceFile.test_writestr_compression
-*AbstractTestsWithSourceFile.test_writestr_compresslevel
