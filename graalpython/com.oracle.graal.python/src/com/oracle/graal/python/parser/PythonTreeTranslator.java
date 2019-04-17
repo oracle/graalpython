@@ -1390,7 +1390,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         StatementNode tryNode = asBlock(ctx.suite(0).accept(this));
         List<ExceptNode> exceptClauses = new ArrayList<>();
         StatementNode elseNode = factory.createBlock();
-        StatementNode finallyNode = factory.createBlock();
+        StatementNode finallyNode = null;
         int i = 3; // 0 == 'try', 1 == ':', 2 == tryNode
         boolean gotDefaultExcept = false;
         while (i < ctx.getChildCount()) {

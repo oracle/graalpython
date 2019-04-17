@@ -517,10 +517,6 @@ public class NodeFactory {
         return CastToBooleanNode.createIfTrueNode(operand);
     }
 
-    public StatementNode createTryFinallyNode(StatementNode body, StatementNode finalbody) {
-        return new TryFinallyNode(body, finalbody);
-    }
-
     public StatementNode createTryExceptElseFinallyNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode elseNode, StatementNode finalbody) {
         return new TryFinallyNode(new TryExceptNode(body, exceptNodes, elseNode), finalbody);
     }

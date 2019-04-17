@@ -37,6 +37,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
+import com.oracle.graal.python.parser.antlr.Python3Parser.Except_clauseContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.Single_inputContext;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.frame.Frame;
@@ -440,5 +441,15 @@ public final class ScopeTranslator<T> extends Python3BaseVisitor<T> {
             registerPossibleCell(identifier);
         }
         return super.visitAtom(ctx);
+    }
+
+    @Override
+    public T visitExcept_clause(Except_clauseContext ctx) {
+        TerminalNode name = ctx.NAME();
+        if (name != null) {
+            String identifier = name.getText();
+            environment.createLocal(identifier);
+        }
+        return super.visitExcept_clause(ctx);
     }
 }
