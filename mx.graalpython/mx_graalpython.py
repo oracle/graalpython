@@ -42,7 +42,7 @@ import mx_subst
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, GraalPythonVm, \
-    CONFIGURATION_DEFAULT, CONFIG_EXPERIMENTAL_SPLITTING, CONFIGURATION_SANDBOXED
+    CONFIGURATION_DEFAULT, CONFIG_EXPERIMENTAL_SPLITTING, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE
 
 SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
@@ -870,10 +870,14 @@ if not os.getenv("GRAAL_PYTHONHOME"):
 # post init
 #
 # ----------------------------------------------------------------------------------------------------------------------
-
 def _register_vms(namespace):
-    python_vm_registry.add_vm(CPythonVm(CONFIGURATION_DEFAULT), SUITE)
-    python_vm_registry.add_vm(PyPyVm(CONFIGURATION_DEFAULT), SUITE)
+    # cpython
+    python_vm_registry.add_vm(CPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE)
+
+    # pypy
+    python_vm_registry.add_vm(PyPyVm(config_name=CONFIGURATION_DEFAULT), SUITE)
+
+    # graalpython
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIG_EXPERIMENTAL_SPLITTING, extra_vm_args=[
         '-Dgraal.TruffleExperimentalSplitting=true',
@@ -881,6 +885,9 @@ def _register_vms(namespace):
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED, extra_polyglot_args=[
         '--llvm.sandboxed',
+    ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE, extra_polyglot_args=[
+        "--llvm.sandboxed=false"
     ]), SUITE, 10)
 
 
@@ -899,7 +906,6 @@ def python_coverage(args):
     "Generate coverage report running args"
     mx.run_mx(['--jacoco=on', '--jacoco-whitelist-package=com.oracle.graal.python'] + args)
     mx.command_function("jacocoreport")(["--omit-excluded", "--format=html"])
-
 
 
 # ----------------------------------------------------------------------------------------------------------------------
