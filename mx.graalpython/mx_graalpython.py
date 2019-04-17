@@ -344,7 +344,7 @@ def graalpython_gate_runner(args, tasks):
             punittest(['--verbose'])
 
     # Unittests on JVM
-    with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.unittest]) as task:
+    with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
             if platform.system() != 'Darwin':
                 # TODO: drop condition when python3 is available on darwin
