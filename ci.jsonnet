@@ -249,7 +249,7 @@
 
   local coverageGate = commonBuilder + {
       targets: TARGET.weekly,
-      timelimit: TIME_LIMIT["2h"],
+      timelimit: TIME_LIMIT["4h"],
       run +: [
           // cannot run with excluded "GeneratedBy" since that would lead to "command line too long"
           // ['mx', '--jacoco-whitelist-package', 'com.oracle.graal.python', '--jacoco-exclude-annotation', '@GeneratedBy', '--strict-compliance', "--dynamicimports", super.dynamicImports, "--primary", 'gate', '-B=--force-deprecation-as-warning-for-dependencies', '--strict-mode', '--tags', "python-junit", '--jacocout', 'html'],
