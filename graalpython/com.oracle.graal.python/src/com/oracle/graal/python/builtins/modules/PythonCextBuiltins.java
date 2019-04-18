@@ -1193,23 +1193,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return subRangeIfNeeded(toBytesNode.execute(obj.getDelegate()), n);
         }
 
-        @Specialization(guards = "n < 0")
-        byte[] doForeign(Object obj, @SuppressWarnings("unused") long n,
-                        @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) throws InteropException {
-            return readWithSize(interopLib, obj, interopLib.getArraySize(obj));
+        @Specialization(limit = "5")
+        byte[] doForeign(Object obj, long n,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @CachedLibrary("obj") InteropLibrary interopLib,
+                        @Cached CastToByteNode castToByteNode) throws InteropException {
+            long size;
+            if (profile.profile(n < 0)) {
+                size = interopLib.getArraySize(obj);
+            } else {
+                size = n;
+            }
+            return readWithSize(interopLib, castToByteNode, obj, size);
         }
 
-        @Specialization(guards = "n >= 0")
-        byte[] doForeignWithSize(Object obj, long n,
-                        @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) throws InteropException {
-            return readWithSize(interopLib, obj, n);
-        }
-
-        private static byte[] readWithSize(InteropLibrary interopLib, Object o, long size) throws UnsupportedMessageException, InvalidArrayIndexException {
+        private static byte[] readWithSize(InteropLibrary interopLib, CastToByteNode castToByteNode, Object o, long size) throws UnsupportedMessageException, InvalidArrayIndexException {
             byte[] bytes = new byte[(int) size];
             for (long i = 0; i < size; i++) {
                 Object elem = interopLib.readArrayElement(o, i);
-                bytes[(int) i] = interopLib.asByte(elem);
+                bytes[(int) i] = castToByteNode.execute(elem);
             }
             return bytes;
         }
