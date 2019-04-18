@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.cell;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -36,10 +37,10 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @NodeInfo(shortName = "write_cellvar")
 public abstract class WriteCellVarNode extends StatementNode {
     private int cellIndex = -1;
-    private final CellSupplier cellSupplier;
+    private final FunctionRootNode cellSupplier;
     @Child private ExpressionNode readNode;
 
-    WriteCellVarNode(ExpressionNode readNode, CellSupplier cellSupplier, String identifier) {
+    WriteCellVarNode(ExpressionNode readNode, FunctionRootNode cellSupplier, String identifier) {
         this.readNode = readNode;
         this.cellSupplier = cellSupplier;
 
@@ -53,7 +54,7 @@ public abstract class WriteCellVarNode extends StatementNode {
         }
     }
 
-    public static WriteCellVarNode create(ExpressionNode readNode, CellSupplier cellSupplier, String identifier) {
+    public static WriteCellVarNode create(ExpressionNode readNode, FunctionRootNode cellSupplier, String identifier) {
         return WriteCellVarNodeGen.create(readNode, cellSupplier, identifier);
     }
 

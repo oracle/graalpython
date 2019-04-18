@@ -50,8 +50,8 @@ public class PFunction extends PythonObject {
     private static final Object[] EMPTY_DEFAULTS = new Object[0];
     private final String name;
     private final String enclosingClassName;
-    private final Assumption codeStableAssumption = Truffle.getRuntime().createAssumption();
-    private final Assumption defaultsStableAssumption = Truffle.getRuntime().createAssumption();
+    private final Assumption codeStableAssumption;
+    private final Assumption defaultsStableAssumption;
     private final PythonObject globals;
     private final PCell[] closure;
     private final boolean isStatic;
@@ -65,11 +65,11 @@ public class PFunction extends PythonObject {
 
     public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
-        this(clazz, name, enclosingClassName, callTarget, globals, defaultValues, kwDefaultValues, closure, null);
+        this(clazz, name, enclosingClassName, callTarget, globals, defaultValues, kwDefaultValues, closure, null, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
     }
 
     public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                    PCell[] closure, WriteAttributeToDynamicObjectNode writeAttrNode) {
+                    PCell[] closure, WriteAttributeToDynamicObjectNode writeAttrNode, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
         super(clazz);
         this.name = name;
         this.code = new PCode(PythonBuiltinClassType.PCode, callTarget);
@@ -79,6 +79,8 @@ public class PFunction extends PythonObject {
         this.defaultValues = defaultValues == null ? EMPTY_DEFAULTS : defaultValues;
         this.kwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
         this.closure = closure;
+        this.codeStableAssumption = codeStableAssumption;
+        this.defaultsStableAssumption = defaultsStableAssumption;
         addDefaultConstants(writeAttrNode, getStorage(), name, enclosingClassName);
     }
 
