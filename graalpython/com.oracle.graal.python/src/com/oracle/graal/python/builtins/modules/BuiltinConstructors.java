@@ -1638,8 +1638,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isBytes(obj)", "!isMemoryView(obj)", "!isNoValue(encoding)"})
-        public Object strNonBytesArgAndEncodingArg(LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode callNode) {
+        public Object strNonBytesArgAndEncodingArg(@SuppressWarnings("unused") LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
             throw raise(PythonErrorType.TypeError, "decoding to str: need a bytes-like object, %p found", obj);
         }
 
