@@ -115,8 +115,8 @@ public final class ReadCallerFrameNode extends Node {
         return callerFrame;
     }
 
-    @TruffleBoundary
     private Frame getCallerFrame() {
+        CompilerDirectives.transferToInterpreter();
         if (level == 0) {
             RootNode rootNode = this.getRootNode();
             if (rootNode instanceof PRootNode) {
