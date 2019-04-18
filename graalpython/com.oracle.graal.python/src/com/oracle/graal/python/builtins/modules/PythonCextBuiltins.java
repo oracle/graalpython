@@ -168,6 +168,7 @@ import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -739,7 +740,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
                 // it to the context since we cannot propagate it through the native frames.
                 if (needsExceptionState()) {
-                    contextRef.get().setCaughtException(getCaughtExceptionNode.execute(frame));
+                    PException execute = getCaughtExceptionNode.execute(frame);
+                    contextRef.get().setCaughtException(execute != null ? execute : PException.NO_EXCEPTION);
                 }
 
                 Object result;
@@ -1431,6 +1433,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Child protected DirectCallNode directCallNode;
         @Child protected ReadIndexedArgumentNode readSelfNode;
         protected final PythonObjectFactory factory;
+        @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         @TruffleBoundary
         protected MethodDescriptorRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
@@ -1455,6 +1458,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
         public String toString() {
             return "<METH root " + directCallNode.getCurrentRootNode().getName() + ">";
         }
+
+        protected final void exceptionHandling(VirtualFrame frame) {
+            if (needsExceptionState()) {
+                PArguments.setCaughtException(frame.getArguments(), getContext().getCaughtException());
+            }
+        }
+
+        private final PythonContext getContext() {
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = PythonLanguage.getContextRef();
+            }
+            return contextRef.get();
+        }
     }
 
     static class MethKeywordsRoot extends MethodDescriptorRoot {
@@ -1476,6 +1493,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
             Object[] arguments = PArguments.create();
             PArguments.setVariableArguments(arguments, self, factory.createTuple(args), factory.createDict(kwargs));
+            exceptionHandling(frame);
             return directCallNode.call(arguments);
         }
 
@@ -1501,6 +1519,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object[] args = readVarargsNode.executeObjectArray(frame);
             Object[] arguments = PArguments.create();
             PArguments.setVariableArguments(arguments, self, factory.createTuple(args));
+            exceptionHandling(frame);
             return directCallNode.call(arguments);
         }
 
@@ -1522,6 +1541,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object self = readSelfNode.execute(frame);
             Object[] arguments = PArguments.create();
             PArguments.setVariableArguments(arguments, self, PNone.NONE);
+            exceptionHandling(frame);
             return directCallNode.call(arguments);
         }
 
@@ -1547,6 +1567,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object arg = readArgNode.execute(frame);
             Object[] arguments = PArguments.create();
             PArguments.setVariableArguments(arguments, self, arg);
+            exceptionHandling(frame);
             return directCallNode.call(arguments);
         }
 
@@ -1572,6 +1593,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object[] args = readVarargsNode.executeObjectArray(frame);
             Object[] arguments = PArguments.create();
             PArguments.setVariableArguments(arguments, self, factory.createTuple(args), args.length);
+            exceptionHandling(frame);
             return directCallNode.call(arguments);
         }
 
@@ -1600,6 +1622,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
             Object[] arguments = PArguments.create();
             PArguments.setVariableArguments(arguments, self, factory.createTuple(args), args.length, factory.createDict(kwargs));
+            exceptionHandling(frame);
             return directCallNode.call(arguments);
         }
 
