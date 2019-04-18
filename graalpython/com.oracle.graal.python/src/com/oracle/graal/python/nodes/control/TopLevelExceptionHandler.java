@@ -230,6 +230,7 @@ public class TopLevelExceptionHandler extends RootNode {
             PHashingCollection mainDict = mainModule.getDict();
             PArguments.setGlobals(arguments, mainModule);
             PArguments.setPFrame(arguments, pythonContext.getCore().factory().createPFrame(mainDict));
+            PArguments.setCallerFrameOrException(arguments, PException.NO_EXCEPTION);
         }
         return innerCallTarget.call(arguments);
     }
