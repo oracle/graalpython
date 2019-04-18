@@ -231,6 +231,7 @@ public final class Python3Core implements PythonCore {
                         "_queue",
                         "_ast",
                         "java",
+                        "pyio_patches",
                         "_contextvars"));
 
         return coreFiles.toArray(new String[coreFiles.size()]);

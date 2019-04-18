@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -86,3 +86,29 @@ def test_else_continue():
             continue
 
     assert ["continue", "break"] == sequence
+
+
+def test_else_break():
+    iters = 0
+    while iters < 4:
+        for i in range(iters):
+            if False:
+                break
+            iters += 1
+        else:
+            iters += 1
+            break
+    assert iters == 1, "if the for-loop doesn't break, the else should be executed and break out of the outer loop"
+
+
+def test_else_break_from_while():
+    iters = 0
+    while iters < 40:
+        while iters < 10:
+            if False:
+                break
+            iters += 1
+        else:
+            iters += 1
+            break
+    assert iters == 11, "if the while-loop doesn't break, the else should be executed and break out of the outer loop"

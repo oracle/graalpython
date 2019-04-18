@@ -32,7 +32,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -80,6 +82,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.ProvidedTags;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.nodes.ExecutableNode;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Layout;
@@ -112,13 +115,29 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
 
-    public Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
+    public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
     private final NodeFactory nodeFactory;
     public final ConcurrentHashMap<Class<? extends PythonBuiltinBaseNode>, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
 
     private static final Layout objectLayout = Layout.newLayout().build();
     private static final Shape newShape = objectLayout.createShape(new ObjectType());
+
+    private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
+
+    public static int getNumberOfSpecialSingletons() {
+        return CONTEXT_INSENSITIVE_SINGLETONS.length;
+    }
+
+    @ExplodeLoop
+    public static int getSingletonNativePtrIdx(Object obj) {
+        for (int i = 0; i < CONTEXT_INSENSITIVE_SINGLETONS.length; i++) {
+            if (CONTEXT_INSENSITIVE_SINGLETONS[i] == obj) {
+                return i;
+            }
+        }
+        return -1;
+    }
 
     public PythonLanguage() {
         this.nodeFactory = NodeFactory.create(this);
@@ -474,7 +493,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
         // This is not a good place to report inconsistencies in any of the above conditions. Just
         // return a String
-        return ((PythonAbstractObject) value).toString();
+        if (value instanceof PythonAbstractObject) {
+            return ((PythonAbstractObject) value).toString();
+        } else {
+            return "illegal object";
+        }
     }
 
     public static TruffleLogger getLogger() {

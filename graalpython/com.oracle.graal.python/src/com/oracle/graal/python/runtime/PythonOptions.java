@@ -54,13 +54,6 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Set the location of lib-python/3. Overrides any environment variables or Java options.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> StdLibHome = new OptionKey<>("");
 
-    @Option(category = OptionCategory.USER, help = "This option makes reading from files return opaque objects. Imports can work with such data, " +
-                    "but all other access to the contents of the file is disabled, so the files are kept secret.") //
-    public static final OptionKey<Boolean> OpaqueFilesystem = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.USER, help = "List of root paths for the opaque file system (default: '/'); use system-specific path separator.") //
-    public static final OptionKey<String> OpaqueFilesystemPrefixes = new OptionKey<>("/");
-
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -i flag. Inspect interactively after running a script.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> InspectFlag = new OptionKey<>(false);
 
@@ -129,6 +122,9 @@ public final class PythonOptions {
 
     @Option(category = OptionCategory.EXPERT, help = "This option control builtin _thread module support") //
     public static final OptionKey<Boolean> WithThread = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "Use the optimized TRegex engine and call the CPython sre engine only as a fallback. Default true") //
+    public static final OptionKey<Boolean> WithTRegex = new OptionKey<>(true);
 
     @Option(category = OptionCategory.EXPERT, help = "Switch on/off using lazy strings for performance reasons. Default true.") //
     public static final OptionKey<Boolean> LazyStrings = new OptionKey<>(true);

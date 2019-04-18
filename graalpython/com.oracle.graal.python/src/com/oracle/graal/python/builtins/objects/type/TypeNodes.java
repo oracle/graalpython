@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,6 +53,9 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.IsSameNativeObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsSameNativeObjectFastNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsSameNativeObjectSlowNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -604,18 +606,9 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        boolean doNativeSlow(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
-            if (fastCheck) {
-                return doNativeFast(left, right);
-            }
-            if (doNativeFast(left, right)) {
-                return true;
-            }
-            if (pointerCompareNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                pointerCompareNode = insert(CExtNodes.PointerCompareNode.create());
-            }
-            return pointerCompareNode.execute(__EQ__, left, right);
+        boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
+                        @Cached("createNativeEquals()") IsSameNativeObjectNode isSameNativeObjectNode) {
+            return isSameNativeObjectNode.execute(left, right);
         }
 
         @Fallback
@@ -623,11 +616,11 @@ public abstract class TypeNodes {
             return false;
         }
 
-        private static boolean doNativeFast(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
-            // This check is a bit dangerous since we cannot be sure about the code that is running.
-            // Currently, we assume that the pointer object is a Sulong pointer and for this it's
-            // fine.
-            return left.object.equals(right.object);
+        protected IsSameNativeObjectNode createNativeEquals() {
+            if (fastCheck) {
+                return IsSameNativeObjectFastNodeGen.create();
+            }
+            return IsSameNativeObjectSlowNodeGen.create();
         }
 
         @TruffleBoundary
@@ -635,7 +628,7 @@ public abstract class TypeNodes {
             if (left instanceof PythonManagedClass && right instanceof PythonManagedClass) {
                 return left == right;
             } else if (left instanceof PythonAbstractNativeObject && right instanceof PythonAbstractNativeObject) {
-                return CExtNodes.PointerCompareNode.getUncached().execute(__EQ__, left, right);
+                return IsSameNativeObjectFastNodeGen.getUncached().execute((PythonAbstractNativeObject) left, (PythonAbstractNativeObject) right);
             }
             return false;
         }
@@ -719,12 +712,10 @@ public abstract class TypeNodes {
                 MROMergeState[] toMerge = new MROMergeState[baseClasses.length + 1];
 
                 for (int i = 0; i < baseClasses.length; i++) {
-                    toMerge[i] = new MROMergeState();
-                    toMerge[i].mro = GetMroNode.getUncached().execute(baseClasses[i]);
+                    toMerge[i] = new MROMergeState(GetMroNode.getUncached().execute(baseClasses[i]));
                 }
 
-                toMerge[baseClasses.length] = new MROMergeState();
-                toMerge[baseClasses.length].mro = baseClasses;
+                toMerge[baseClasses.length] = new MROMergeState(baseClasses);
                 ArrayList<PythonAbstractClass> mro = new ArrayList<>();
                 mro.add(cls);
                 currentMRO = mergeMROs(toMerge, mro);

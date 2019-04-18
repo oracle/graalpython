@@ -688,8 +688,8 @@ class BytesTest(BaseLikeBytes, unittest.TestCase):
 
 class ByteArrayTest(BaseLikeBytes, unittest.TestCase):
     type2test = bytearray
-    
-    def test_translate_no_change(self):
+
+    def test_translate_no_change2(self):
         b = bytearray(b'ahoj')
         self.assertIsNot(b, b.translate(None))
         self.assertIsNot(b, b.translate(None, b''))

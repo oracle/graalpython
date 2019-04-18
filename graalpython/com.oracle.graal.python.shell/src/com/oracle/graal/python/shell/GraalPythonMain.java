@@ -189,6 +189,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         subprocessArgs.add("Dgraal.TruffleCompilationExceptionsArePrinted=true");
                         subprocessArgs.add("Dgraal.TraceTruffleInlining=true");
                         subprocessArgs.add("Dgraal.TruffleTraceSplittingSummary=true");
+                        subprocessArgs.add("Dgraal.TraceTruffleTransferToInterpreter=true");
+                        subprocessArgs.add("Dgraal.TraceTruffleAssumptions=true");
                         inputArgs.remove("-debug-perf");
                     } else {
                         unrecognized.add(arg);
@@ -715,6 +717,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         try {
             System.exit(new ProcessBuilder(cmd.toArray(new String[0])).inheritIO().start().waitFor());
         } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
             System.err.println(e.getMessage());
             System.exit(-1);
         }

@@ -55,6 +55,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -71,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
@@ -496,7 +498,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RichCompareNode extends PythonBuiltinNode {
         protected static BinaryComparisonNode create(int op) {
-            return BinaryComparisonNode.create(SpecialMethodNames.COMPARE_OPNAMES[op], SpecialMethodNames.COMPARE_REVERSALS[op], SpecialMethodNames.COMPARE_OPSTRINGS[op]);
+            return BinaryComparisonNode.create(SpecialMethodNames.getCompareName(op), SpecialMethodNames.getCompareReversal(op), SpecialMethodNames.getCompareOpString(op));
         }
 
         @Specialization(guards = "op == 0")
@@ -1158,15 +1160,23 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return GetByteArrayNodeGen.create();
         }
 
-        @Specialization
-        byte[] doCArrayWrapper(CByteArrayWrapper o, @SuppressWarnings("unused") long n) {
-            return o.getByteArray();
+        private static byte[] subRangeIfNeeded(byte[] ary, long n) {
+            if (ary.length > n && n >= 0 && n < Integer.MAX_VALUE) {
+                return Arrays.copyOf(ary, (int) n);
+            } else {
+                return ary;
+            }
         }
 
         @Specialization
-        byte[] doSequenceArrayWrapper(PySequenceArrayWrapper obj, @SuppressWarnings("unused") long n,
+        byte[] doCArrayWrapper(CByteArrayWrapper o, long n) {
+            return subRangeIfNeeded(o.getByteArray(), n);
+        }
+
+        @Specialization
+        byte[] doSequenceArrayWrapper(PySequenceArrayWrapper obj, long n,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return toBytesNode.execute(obj.getDelegate());
+            return subRangeIfNeeded(toBytesNode.execute(obj.getDelegate()), n);
         }
 
         @Specialization(guards = "n < 0")
@@ -2135,16 +2145,32 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyBytes_FromStringAndSize", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "PyBytes_FromStringAndSize", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class PyBytes_FromStringAndSize extends NativeBuiltin {
+        // n.b.: the specializations for PIBytesLike are quite common on
+        // managed, when the PySequenceArrayWrapper that we used never went
+        // native, and during the upcall to here it was simply unwrapped again
+        // with the ToJava (rather than mapped from a native pointer back into a
+        // PythonNativeObject)
 
         @Specialization
-        Object doGeneric(Object module, PythonNativeObject object,
+        Object doGeneric(@SuppressWarnings("unused") Object module, PIBytesLike object, long size,
+                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
+            byte[] ary = getByteArrayNode.execute(object);
+            if (size < Integer.MAX_VALUE && size >= 0 && size < ary.length) {
+                return factory().createBytes(Arrays.copyOf(ary, (int) size));
+            } else {
+                return factory().createBytes(ary);
+            }
+        }
+
+        @Specialization
+        Object doGeneric(Object module, PythonNativeObject object, long size,
                         @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
                         @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
             try {
-                return factory().createBytes(getByteArrayNode.execute(object.getPtr(), -1));
+                return factory().createBytes(getByteArrayNode.execute(object.getPtr(), size));
             } catch (InteropException e) {
                 return raiseNative(getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
             }

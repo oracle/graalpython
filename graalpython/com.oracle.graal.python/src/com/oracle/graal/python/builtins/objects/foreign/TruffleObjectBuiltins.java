@@ -230,7 +230,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"lib.fitsInDouble(left)"})
+        @Specialization(guards = {"!lib.fitsInLong(left)", "lib.fitsInDouble(left)"})
         Object doComparisonDouble(Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {

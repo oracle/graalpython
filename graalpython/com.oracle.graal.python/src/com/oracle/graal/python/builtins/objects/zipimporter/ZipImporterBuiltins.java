@@ -466,8 +466,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             long streamPosition = (long) tocEntry.getArray()[6];
             ZipInputStream zis = null;
             TruffleFile tfile = getContext().getEnv().getTruffleFile(archive);
-            try {
-                InputStream in = tfile.newInputStream(StandardOpenOption.READ);
+            try (InputStream in = tfile.newInputStream(StandardOpenOption.READ)) {
                 in.skip(streamPosition); // we can fast skip bytes, because there is cached position
                                          // of the zip entry
                 zis = new ZipInputStream(in);

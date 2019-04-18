@@ -68,7 +68,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcall
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeClassNodeFactory.GetNativeClassCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetTypeMemberNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeFactory.IsPointerCachedNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCompareNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeFactory.ToJavaCachedNodeGen;
@@ -141,6 +141,7 @@ import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class CExtNodes {
 
@@ -543,13 +544,13 @@ public abstract class CExtNodes {
                 return ((PythonNativeWrapper) object).getDelegate();
             } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(object), PythonBuiltinClassType.TruffleObject)) {
                 if (forceNativeClass) {
-                    return PythonLanguage.getCore().factory().createNativeClassWrapper((TruffleObject) object);
+                    return PythonObjectFactory.getUncached().createNativeClassWrapper((TruffleObject) object);
                 }
-                return PythonLanguage.getCore().factory().createNativeObjectWrapper((TruffleObject) object);
+                return PythonObjectFactory.getUncached().createNativeObjectWrapper((TruffleObject) object);
             } else if (object instanceof String || object instanceof Number || object instanceof Boolean || object instanceof PythonNativeNull || object instanceof PythonAbstractObject) {
                 return object;
             }
-            throw PythonLanguage.getCore().raise(PythonErrorType.SystemError, "invalid object from native: %s", object);
+            throw PRaiseNode.getUncached().raise(PythonErrorType.SystemError, "invalid object from native: %s", object);
         }
 
         // TODO(fa): Workaround for DSL bug: did not import factory at users
@@ -984,8 +985,8 @@ public abstract class CExtNodes {
         }
 
         public static int findOp(String specialMethodName) {
-            for (int i = 0; i < SpecialMethodNames.COMPARE_OPNAMES.length; i++) {
-                if (SpecialMethodNames.COMPARE_OPNAMES[i].equals(specialMethodName)) {
+            for (int i = 0; i < SpecialMethodNames.COMPARE_OP_COUNT; i++) {
+                if (SpecialMethodNames.getCompareName(i).equals(specialMethodName)) {
                     return i;
                 }
             }
@@ -1595,42 +1596,73 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    @GenerateUncached
     public abstract static class IsPointerNode extends com.oracle.graal.python.nodes.PNodeWithContext {
 
         public abstract boolean execute(PythonNativeWrapper obj);
 
-        abstract static class IsPointerCachedNode extends IsPointerNode {
-
-            @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
-            boolean doFalse(@SuppressWarnings("unused") PythonNativeWrapper obj) {
-                return false;
-            }
-
-            @Specialization
-            boolean doGeneric(PythonNativeWrapper obj) {
-                return obj.isNative();
-            }
-
-            protected static Assumption nativeObjectsAllManagedAssumption() {
-                return PythonLanguage.getContextRef().get().getNativeObjectsAllManagedAssumption();
-            }
+        @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
+        boolean doFalse(@SuppressWarnings("unused") PythonNativeWrapper obj) {
+            return false;
         }
 
-        static final class IsPointerUncachedNode extends IsPointerNode {
-            private static final IsPointerUncachedNode INSTANCE = new IsPointerUncachedNode();
-
-            @Override
-            public boolean execute(PythonNativeWrapper obj) {
-                return obj.isNative();
+        @Specialization
+        boolean doGeneric(PythonNativeWrapper obj,
+                        @Cached GetSpecialSingletonPtrNode getSpecialSingletonPtrNode,
+                        @Cached("createClassProfile()") ValueProfile singletonProfile) {
+            if (obj.isNative()) {
+                return true;
             }
+            Object delegate = singletonProfile.profile(obj.getDelegate());
+            if (isSpecialSingleton(delegate)) {
+                return getSpecialSingletonPtrNode.execute(delegate) != null;
+            }
+            return false;
+        }
+
+        private static boolean isSpecialSingleton(Object delegate) {
+            return PythonLanguage.getSingletonNativePtrIdx(delegate) != -1;
+        }
+
+        protected static Assumption nativeObjectsAllManagedAssumption() {
+            return PythonLanguage.getContextRef().get().getNativeObjectsAllManagedAssumption();
         }
 
         public static IsPointerNode create() {
-            return IsPointerCachedNodeGen.create();
+            return IsPointerNodeGen.create();
         }
 
         public static IsPointerNode getUncached() {
-            return IsPointerUncachedNode.INSTANCE;
+            return IsPointerNodeGen.getUncached();
+        }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    @GenerateUncached
+    public abstract static class GetSpecialSingletonPtrNode extends Node {
+
+        public abstract Object execute(Object obj);
+
+        @Specialization
+        Object doGeneric(Object obj,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            if (obj instanceof PythonAbstractObject) {
+                return context.getSingletonNativePtr((PythonAbstractObject) obj);
+            }
+            return null;
+        }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    @GenerateUncached
+    public abstract static class SetSpecialSingletonPtrNode extends Node {
+
+        public abstract void execute(Object obj, Object ptr);
+
+        @Specialization
+        void doGeneric(PythonAbstractObject obj, Object ptr,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            context.setSingletonNativePtr(obj, ptr);
         }
     }
 
@@ -1673,11 +1705,14 @@ public abstract class CExtNodes {
          * native context, so we can be sure that the "nativeClassStableAssumption" (which is
          * per-context) is from the context in which this native object was created.
          */
-        @Specialization(guards = {"cachedObj.equals(obj)", "memberName == cachedMemberName"}, limit = "1", assumptions = "getNativeClassStableAssumption(cachedObj)")
-        public Object doCachedObj(@SuppressWarnings("unused") PythonNativeClass obj, @SuppressWarnings("unused") String memberName,
+        @Specialization(guards = {"isSameNativeObjectNode.execute(cachedObj, obj)", "memberName == cachedMemberName"}, //
+                        limit = "1", //
+                        assumptions = {"getNativeClassStableAssumption(cachedObj)", "singleContextAssumption()"})
+        public Object doCachedObj(@SuppressWarnings("unused") PythonAbstractNativeObject obj, @SuppressWarnings("unused") String memberName,
+                        @SuppressWarnings("unused") @Cached IsSameNativeObjectFastNode isSameNativeObjectNode,
                         @SuppressWarnings("unused") @Cached("memberName") String cachedMemberName,
                         @SuppressWarnings("unused") @Cached("getterFuncName(memberName)") String getterFuncName,
-                        @Cached("obj") @SuppressWarnings("unused") PythonNativeClass cachedObj,
+                        @Cached("obj") @SuppressWarnings("unused") PythonAbstractNativeObject cachedObj,
                         @Cached("doSlowPath(obj, getterFuncName)") Object result) {
             return result;
         }
@@ -1756,5 +1791,40 @@ public abstract class CExtNodes {
             return wrapper;
         }
 
+    }
+
+    public abstract static class IsSameNativeObjectNode extends CExtBaseNode {
+
+        public abstract boolean execute(PythonAbstractNativeObject left, PythonAbstractNativeObject right);
+
+        protected static boolean doNativeFast(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
+            // This check is a bit dangerous since we cannot be sure about the code that is running.
+            // Currently, we assume that the pointer object is a Sulong pointer and for this it's
+            // fine.
+            return left.equals(right);
+        }
+
+    }
+
+    @GenerateUncached
+    public abstract static class IsSameNativeObjectFastNode extends IsSameNativeObjectNode {
+
+        @Specialization
+        boolean doSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
+            return IsSameNativeObjectNode.doNativeFast(left, right);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class IsSameNativeObjectSlowNode extends IsSameNativeObjectNode {
+
+        @Specialization
+        boolean doSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
+                        @Cached PointerCompareNode pointerCompareNode) {
+            if (IsSameNativeObjectNode.doNativeFast(left, right)) {
+                return true;
+            }
+            return pointerCompareNode.execute(SpecialMethodNames.__EQ__, left, right);
+        }
     }
 }

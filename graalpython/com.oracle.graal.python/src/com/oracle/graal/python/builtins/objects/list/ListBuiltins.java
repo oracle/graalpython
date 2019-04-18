@@ -390,9 +390,9 @@ public class ListBuiltins extends PythonBuiltins {
         private static int normalizePIntForIndex(PInt index) {
             int where = 0;
             BigInteger bigIndex = index.getValue();
-            if (bigIndex.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) == -1) {
+            if (bigIndex.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0) {
                 where = 0;
-            } else if (bigIndex.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) == 1) {
+            } else if (bigIndex.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0) {
                 where = Integer.MAX_VALUE;
             } else {
                 where = bigIndex.intValue();

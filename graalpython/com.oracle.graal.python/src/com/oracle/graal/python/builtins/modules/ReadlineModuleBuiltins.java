@@ -83,7 +83,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         private final HashMap<String, String> bindings = new HashMap<>();
         private final List<String> history = new ArrayList<>();
         protected Object completer = null;
-        public boolean autoHistory = true;
+        protected boolean autoHistory = true;
         protected String completerDelims = null;
     }
 

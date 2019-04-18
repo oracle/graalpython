@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
-import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_DIR_FIELDS;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_FRAME;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_LASTI;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_LINENO;
@@ -57,7 +56,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
     public abstract static class DirNode extends PythonBuiltinNode {
         @Specialization
         public Object dir(@SuppressWarnings("unused") PTraceback self) {
-            return factory().createList(TB_DIR_FIELDS.clone());
+            return factory().createList(PTraceback.getTbFieldNames());
         }
     }
 

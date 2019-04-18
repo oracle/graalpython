@@ -44,6 +44,7 @@ import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -114,6 +115,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             try {
                 reference = weakRefQueue.remove();
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
             if (reference instanceof PReferenceType.WeakRefStorage) {
                 return new WeakrefCallbackAction((PReferenceType.WeakRefStorage) reference);
@@ -182,7 +184,14 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
                 ReferenceQueue<Object> queue = (ReferenceQueue<Object>) queueObject;
                 return queue;
             } else {
-                throw new IllegalStateException("the weak reference queue was modified!");
+                CompilerDirectives.transferToInterpreter();
+                if (PythonLanguage.getContextRef().get().getCore().isInitialized()) {
+                    throw new IllegalStateException("the weak reference queue was modified!");
+                } else {
+                    // returning a null reference queue is fine, it just means
+                    // that the finalizer won't run
+                    return null;
+                }
             }
         }
     }

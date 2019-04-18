@@ -114,6 +114,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
                     poll = signalQueue.poll();
                 }
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
             return poll;
         });
@@ -306,18 +307,29 @@ final class Signals {
         }
     }
 
-    @TruffleBoundary
-    synchronized static void scheduleAlarm(long seconds) {
-        new Thread(() -> {
+    private static class Alarm implements Runnable {
+        private final long seconds;
+
+        Alarm(long seconds) {
+            this.seconds = seconds;
+        }
+
+        public void run() {
             long t0 = System.currentTimeMillis();
             while ((System.currentTimeMillis() - t0) < seconds * 1000) {
                 try {
                     Thread.sleep(seconds * 1000);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
             }
             sun.misc.Signal.raise(new sun.misc.Signal("ALRM"));
-        }).start();
+        }
+    }
+
+    @TruffleBoundary
+    synchronized static void scheduleAlarm(long seconds) {
+        new Thread(new Alarm(seconds)).start();
     }
 
     private static class PythonSignalHandler implements sun.misc.SignalHandler {

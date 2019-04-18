@@ -78,6 +78,7 @@ public class PythonDebugTest {
     @Before
     public void before() {
         Builder newBuilder = Context.newBuilder();
+        newBuilder.allowExperimentalOptions(true);
         newBuilder.allowAllAccess(true);
         PythonTests.closeContext();
         tester = new DebuggerTester(newBuilder);

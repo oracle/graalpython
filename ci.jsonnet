@@ -1,5 +1,5 @@
 {
-  overlay: "d20cc2abdeb3cfb022e1a8035e40e350e5cfe5fc",
+  overlay: "627f30447cbecc2e4f5d16553cbfc6b669396c5d",
 
   // ======================================================================================================
   //
@@ -71,7 +71,7 @@
       "mercurial": ">=3.2.4",
       "gcc": "==4.9.1",
       "llvm": "==4.0.1",
-      "python": "==3.4.1",
+      "python": "==3.6.5",
       "libffi": ">=3.2.1",
       "bzip2": ">=1.0.6",
     },
@@ -111,7 +111,7 @@
   // ------------------------------------------------------------------------------------------------------
   local pypyMixin = {
     downloads +: {
-      PYPY_HOME: utils.download("pypy3", "5.8.0-minimal"),
+      PYPY_HOME: utils.download("pypy3", "7.1.0.beta"),
     },
   },
   pypyMixin: pypyMixin,
@@ -128,8 +128,8 @@
 
   local labsjdk8Mixin = {
     downloads +: {
-      JAVA_HOME: utils.download("labsjdk", "8u202-jvmci-0.57"),
-      EXTRA_JAVA_HOMES : { pathlist: [utils.download("oraclejdk", "11+20")] },
+      JAVA_HOME: utils.download("labsjdk", "8u202-jvmci-0.58"),
+      EXTRA_JAVA_HOMES : { pathlist: [utils.download("oraclejdk", "11+28")] },
     },
     environment +: {
       CI: "true",

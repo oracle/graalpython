@@ -71,7 +71,10 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetSpecialSingletonPtrNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SetSpecialSingletonPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapperFactory.ReadTypeNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -106,7 +109,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -995,71 +997,78 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     // TO NATIVE, IS POINTER, AS POINTER
     @GenerateUncached
     abstract static class ToNativeNode extends Node {
-        public abstract Object execute(PythonNativeWrapper obj);
+        public abstract void execute(PythonNativeWrapper obj);
 
         protected static boolean isClassInitNativeWrapper(PythonNativeWrapper obj) {
             return obj instanceof PythonClassInitNativeWrapper;
         }
 
         @Specialization
-        public Object executeClsInit(PythonClassInitNativeWrapper obj,
-                        @Cached.Shared("toPyObjectNode") @Cached DynamicObjectNativeWrapper.ToPyObjectNode toPyObjectNode,
-                        @Cached.Shared("invalidateNode") @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+        public void executeClsInit(PythonClassInitNativeWrapper obj,
+                        @Shared("toPyObjectNode") @Cached ToPyObjectNode toPyObjectNode,
+                        @Shared("invalidateNode") @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
             if (!obj.isNative()) {
                 obj.setNativePointer(toPyObjectNode.execute(obj));
             }
-            return obj;
         }
 
         @Specialization(guards = "!isClassInitNativeWrapper(obj)")
-        public Object execute(PythonNativeWrapper obj,
-                        @Cached.Shared("toPyObjectNode") @Cached DynamicObjectNativeWrapper.ToPyObjectNode toPyObjectNode,
-                        @Cached.Shared("invalidateNode") @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+        public void execute(PythonNativeWrapper obj,
+                        @Shared("toPyObjectNode") @Cached ToPyObjectNode toPyObjectNode,
+                        @Cached SetSpecialSingletonPtrNode setSpecialSingletonPtrNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Shared("invalidateNode") @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
+                        @Cached IsPointerNode isPointerNode) {
             invalidateNode.execute();
-            if (!obj.isNative()) {
-                obj.setNativePointer(toPyObjectNode.execute(obj));
+            if (!isPointerNode.execute(obj)) {
+                Object ptr = toPyObjectNode.execute(obj);
+                Object delegate = obj.getDelegate();
+                if (profile.profile(PythonLanguage.getSingletonNativePtrIdx(delegate) != -1)) {
+                    setSpecialSingletonPtrNode.execute(delegate, ptr);
+                } else {
+                    obj.setNativePointer(ptr);
+                }
             }
-            return obj;
-        }
-    }
-
-    abstract static class IsPointerNode extends Node {
-        public abstract boolean execute(PythonNativeWrapper obj);
-
-        @Specialization
-        public boolean execute(PythonNativeWrapper obj,
-                        @Cached.Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
-            return pIsPointerNode.execute(obj);
         }
     }
 
     @GenerateUncached
-    abstract static class PAsPointerNode extends PNodeWithContext {
+    abstract static class PAsPointerNode extends Node {
 
         public abstract long execute(PythonNativeWrapper o);
 
         @Specialization(guards = {"obj.isBool()", "!obj.isNative()"})
-        long doBoolNotNative(DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+        long doBoolNotNative(PrimitiveNativeWrapper obj,
                         @Cached CExtNodes.MaterializeDelegateNode materializeNode,
                         @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
             // special case for True and False singletons
             PInt boxed = (PInt) materializeNode.execute(obj);
             assert obj.getNativePointer() == boxed.getNativeWrapper().getNativePointer();
-            return doFast(obj, interopLib);
+            return ensureLong(interopLib, obj.getNativePointer());
         }
 
         @Specialization(guards = {"obj.isBool()", "obj.isNative()"})
-        long doBoolNative(DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+        long doBoolNative(PrimitiveNativeWrapper obj,
                         @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
-            return doFast(obj, interopLib);
+            return ensureLong(interopLib, obj.getNativePointer());
         }
 
         @Specialization(guards = "!isBoolNativeWrapper(obj)")
         long doFast(PythonNativeWrapper obj,
-                        @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+                        @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached GetSpecialSingletonPtrNode getSpecialSingletonPtrNode) {
             // the native pointer object must either be a TruffleObject or a primitive
-            return ensureLong(interopLib, obj.getNativePointer());
+            Object nativePointer = obj.getNativePointer();
+            if (profile.profile(nativePointer == null)) {
+                // We assume that before someone calls 'asPointer' on the wrapper, 'isPointer' was
+                // checked and returned true. So, for this case we assume that it is one of the
+                // special singletons where we store the pointer in the context.
+                nativePointer = getSpecialSingletonPtrNode.execute(obj.getDelegate());
+                assert nativePointer != null : createAssertionMessage(obj.getDelegate());
+            }
+            return ensureLong(interopLib, nativePointer);
         }
 
         private static long ensureLong(InteropLibrary interopLib, Object nativePointer) {
@@ -1076,8 +1085,18 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         protected static boolean isBoolNativeWrapper(Object obj) {
-            return obj instanceof DynamicObjectNativeWrapper.PrimitiveNativeWrapper && ((DynamicObjectNativeWrapper.PrimitiveNativeWrapper) obj).isBool();
+            return obj instanceof PrimitiveNativeWrapper && ((PrimitiveNativeWrapper) obj).isBool();
         }
+
+        private static String createAssertionMessage(Object delegate) {
+            CompilerAsserts.neverPartOfCompilation();
+            int singletonNativePtrIdx = PythonLanguage.getSingletonNativePtrIdx(delegate);
+            if (singletonNativePtrIdx == -1) {
+                return "invalid special singleton object " + delegate;
+            }
+            return "expected special singleton '" + delegate + "' to have a native pointer";
+        }
+
     }
 
     @GenerateUncached
@@ -1158,7 +1177,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
     }
 
-    public static class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
+    public static final class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
 
         public static final byte PRIMITIVE_STATE_BOOL = 1 << 0;
         public static final byte PRIMITIVE_STATE_BYTE = 1 << 1;
@@ -1241,6 +1260,17 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             setDelegate(materializedPrimitive);
         }
 
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof PrimitiveNativeWrapper && ((PrimitiveNativeWrapper) obj).state == state && ((PrimitiveNativeWrapper) obj).value == value &&
+                            ((PrimitiveNativeWrapper) obj).dvalue == dvalue;
+        }
+
+        @Override
+        public int hashCode() {
+            return (int) (value ^ Double.doubleToRawLongBits(dvalue) ^ state);
+        }
+
         public static PrimitiveNativeWrapper createBool(boolean val) {
             return new PrimitiveNativeWrapper(PRIMITIVE_STATE_BOOL, PInt.intValue(val));
         }
@@ -1270,7 +1300,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected boolean isPointer(
-                    @Cached.Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
+                    @Cached CExtNodes.IsPointerNode pIsPointerNode) {
         return pIsPointerNode.execute(this);
     }
 

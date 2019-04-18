@@ -209,7 +209,11 @@ public class NodeFactory {
     }
 
     public StatementNode createBreakTarget(StatementNode forNode) {
-        return new BreakTargetNode(forNode);
+        return new BreakTargetNode(forNode, null);
+    }
+
+    public StatementNode createBreakTarget(StatementNode forNode, StatementNode orelse) {
+        return new BreakTargetNode(forNode, orelse);
     }
 
     public YieldNode createYield(ExpressionNode right, FrameSlot returnSlot) {
