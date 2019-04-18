@@ -503,7 +503,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "do_richcompare", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class RichCompareNode extends PythonBuiltinNode {
+    abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
         protected static BinaryComparisonNode create(int op) {
             return BinaryComparisonNode.create(SpecialMethodNames.getCompareName(op), SpecialMethodNames.getCompareReversal(op), SpecialMethodNames.getCompareOpString(op));
         }
@@ -608,7 +608,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object doPrimitiveWrapper(String name, @SuppressWarnings("unused") PythonNativeWrapper result,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("rais") @Cached PRaiseNode raise) {
+                        @Shared("raise") @Cached PRaiseNode raise) {
             checkFunctionResult(name, false, context, raise, factory);
             return result;
         }
@@ -617,7 +617,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object doNoValue(String name, @SuppressWarnings("unused") PNone result,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("rais") @Cached PRaiseNode raise) {
+                        @Shared("raise") @Cached PRaiseNode raise) {
             checkFunctionResult(name, true, context, raise, factory);
             return PNone.NO_VALUE;
         }
@@ -626,7 +626,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object doPythonObject(String name, @SuppressWarnings("unused") PythonAbstractObject result,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("rais") @Cached PRaiseNode raise) {
+                        @Shared("raise") @Cached PRaiseNode raise) {
             checkFunctionResult(name, false, context, raise, factory);
             return result;
         }
@@ -635,7 +635,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object doPythonNativeNull(String name, @SuppressWarnings("unused") PythonNativeNull result,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("rais") @Cached PRaiseNode raise) {
+                        @Shared("raise") @Cached PRaiseNode raise) {
             checkFunctionResult(name, true, context, raise, factory);
             return result;
         }
@@ -652,7 +652,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("rais") @Cached PRaiseNode raise) {
+                        @Shared("raise") @Cached PRaiseNode raise) {
             checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), context, raise, factory);
             return result;
         }
