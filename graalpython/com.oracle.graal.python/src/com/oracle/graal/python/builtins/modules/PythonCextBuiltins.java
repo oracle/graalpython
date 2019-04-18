@@ -168,7 +168,6 @@ import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -698,10 +697,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
         private final TruffleObject cwrapper;
         private final TruffleObject callable;
         private final String name;
-        @CompilationFinal private ContextReference<PythonContext> ctxt;
         @Child private CExtNodes.AllToSulongNode toSulongNode = CExtNodes.AllToSulongNode.create();
         @Child private CheckFunctionResultNode checkResultNode = CheckFunctionResultNode.create();
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
+        @Child private InteropLibrary lib;
 
         ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable, Signature signature) {
             super(lang);
@@ -709,6 +708,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             this.name = name;
             this.cwrapper = cwrapper;
             this.callable = callable;
+            this.lib = InteropLibrary.getFactory().create(cwrapper != null ? cwrapper : callable);
         }
 
         public TruffleObject getCallable() {
@@ -717,7 +717,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIt(VirtualFrame frame,
-                        @Exclusive @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
