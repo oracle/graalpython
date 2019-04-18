@@ -1,2 +1,0 @@
-*SelectTestCase.test_returned_list_identity
-*SelectTestCase.test_select
