@@ -163,7 +163,6 @@ public class AsyncHandler {
         // Uses weakCompareAndSet because we just want to do it in a timely manner, but we don't
         // need the ordering guarantees.
         if (hasScheduledAction) {
-            CompilerDirectives.transferToInterpreter();
             processAsyncActions();
         }
     }
