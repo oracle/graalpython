@@ -161,6 +161,14 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         return callTarget.getRootNode();
     }
 
+    public ExpressionNode[] getDefaults() {
+        return defaults;
+    }
+
+    public KwDefaultExpressionNode[] getKwDefaults() {
+        return kwDefaults;
+    }
+
     public static final class KwDefaultExpressionNode extends ExpressionNode {
         @Child public ExpressionNode exprNode;
 

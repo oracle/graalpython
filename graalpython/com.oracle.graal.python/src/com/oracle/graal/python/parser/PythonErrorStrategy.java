@@ -122,4 +122,11 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
     protected void reportNoViableAlternative(Parser recognizer, NoViableAltException e) {
         handlePythonSyntaxError(recognizer, e);
     }
+
+    @Override
+    public void reportError(Parser recognizer, RecognitionException e) {
+        handlePythonSyntaxError(recognizer, e);
+    }
+    
+    
 }

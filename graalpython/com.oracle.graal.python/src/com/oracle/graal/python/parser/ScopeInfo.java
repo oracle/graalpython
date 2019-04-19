@@ -47,7 +47,10 @@ public final class ScopeInfo {
         // generator expression or generator function
         Generator,
         // list comprehension
-        ListComp
+        ListComp,
+        
+        // new
+        Transparent
     }
 
     private final String scopeId;
@@ -239,6 +242,10 @@ public final class ScopeInfo {
     public void setDefaultKwArgumentNodes(List<KwDefaultExpressionNode> defaultArgs) {
         this.kwDefaultArgumentNodes = defaultArgs;
 
+    }
+    
+    public boolean isInClassScope() {
+        return getScopeKind() == ScopeKind.Class;
     }
 
     public List<ExpressionNode> getDefaultArgumentNodes() {

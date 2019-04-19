@@ -47,23 +47,40 @@ TARGETS=${PARSER_PATH}/Python3BaseVisitor.java \
 	${PARSER_PATH}/Python3Parser.java \
 	${PARSER_PATH}/Python3Lexer.java
 
+TARGETS_NEW=${PARSER_PATH}/Python3NewParser.java \
+	${PARSER_PATH}/Python3NewLexer.java 
+
 SOURCE=${PARSER_PATH}/Python3.g4
 STAMP=${SOURCE}.stamp
 
+SOURCE_NEW=${PARSER_PATH}/Python3New.g4
+STAMP_NEW=${SOURCE_NEW}.stamp
+
 .PHONY: default clean
-default: ${TARGETS}
+default: ${TARGETS_NEW} ${TARGETS}
+
+${STAMP_NEW}: ${SOURCE_NEW} ${POSTPROCESSOR}
+	$(QUIETLY) touch $@
+	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -no-listener -no-visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE_NEW}
 
 ${STAMP}: ${SOURCE} ${POSTPROCESSOR}
 	$(QUIETLY) touch $@
 	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${PARSER_PATH} ${SOURCE}
 
 # postprocessing to make source compile without warnings
+${PARSER_PATH}/%.java: ${STAMP_NEW}
+	$(QUIETLY) python ${POSTPROCESSOR} $@
 ${PARSER_PATH}/%.java: ${STAMP}
 	$(QUIETLY) python ${POSTPROCESSOR} $@
 
 clean:
+ifeq ($(wildcard ${SOURCE_NEW}),)
+	$(error ${SOURCE_NEW} is not in the location I expected it to be, not cleaning antlr parser)
+endif
 ifeq ($(wildcard ${SOURCE}),)
 	$(error ${SOURCE} is not in the location I expected it to be, not cleaning antlr parser)
 endif
+	$(QUIETLY) rm -f ${TARGETS_NEW}
+	$(QUIETLY) rm -f ${STAMP_NEW}
 	$(QUIETLY) rm -f ${TARGETS}
 	$(QUIETLY) rm -f ${STAMP}
