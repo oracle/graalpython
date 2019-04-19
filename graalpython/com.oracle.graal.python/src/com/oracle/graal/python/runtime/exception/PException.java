@@ -91,6 +91,11 @@ public final class PException extends RuntimeException implements TruffleExcepti
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
+        if (this == PException.NO_EXCEPTION) {
+            return "NO_EXCEPTION";
+        } else if (this == PException.LAZY_FETCH_EXCEPTION) {
+            return "LAZY_FETCH_EXCEPTION";
+        }
         return getMessage();
     }
 
