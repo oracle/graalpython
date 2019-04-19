@@ -139,7 +139,7 @@ public abstract class ExceptionStateNodes {
 
     public static final class ReadExceptionStateFromArgsNode extends Node {
 
-        @Child ReadExceptionStateFromFrameNode readFrameNode;
+        @Child private ReadExceptionStateFromFrameNode readFrameNode;
 
         public PException execute(Object callerFrameOrExceptionArg) {
             if (callerFrameOrExceptionArg == null || callerFrameOrExceptionArg instanceof PException) {
@@ -149,7 +149,10 @@ public abstract class ExceptionStateNodes {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     readFrameNode = insert(ReadExceptionStateFromFrameNodeGen.create());
                 }
-                return readFrameNode.execute((Frame) callerFrameOrExceptionArg);
+                // In order to provide the same semantics when reading the exception state from the
+                // materialized caller frame, we need to return 'NO_EXCEPTION' if we got 'null'.
+                PException fromCallerFrame = readFrameNode.execute((Frame) callerFrameOrExceptionArg);
+                return fromCallerFrame != null ? PException.NO_EXCEPTION : fromCallerFrame;
             }
             CompilerDirectives.transferToInterpreter();
             throw new IllegalStateException();
@@ -200,7 +203,7 @@ public abstract class ExceptionStateNodes {
         }
 
         @TruffleBoundary
-        private static PException fullStackWalk() {
+        public static PException fullStackWalk() {
 
             return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<PException>() {
                 public PException visitFrame(FrameInstance frameInstance) {
