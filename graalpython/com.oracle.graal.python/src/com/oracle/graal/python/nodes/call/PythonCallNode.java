@@ -117,7 +117,7 @@ public abstract class PythonCallNode extends ExpressionNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return callUnary.executeObject(getCallable.execute(frame), argumentNode.execute(frame));
+            return callUnary.executeObject(frame, getCallable.execute(frame), argumentNode.execute(frame));
         }
     }
 
@@ -134,7 +134,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         @Override
         public Object execute(VirtualFrame frame) {
             Object[] evaluatedArguments = PositionalArgumentsNode.evaluateArguments(frame, argumentNodes);
-            return callBinary.executeObject(getCallable.execute(frame), evaluatedArguments[0], evaluatedArguments[1]);
+            return callBinary.executeObject(frame, getCallable.execute(frame), evaluatedArguments[0], evaluatedArguments[1]);
         }
     }
 
@@ -150,7 +150,7 @@ public abstract class PythonCallNode extends ExpressionNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return callTernary.execute(getCallable.execute(frame), argumentNodes[0].execute(frame), argumentNodes[1].execute(frame), argumentNodes[2].execute(frame));
+            return callTernary.executeWithFrame(frame, getCallable.execute(frame), argumentNodes[0].execute(frame), argumentNodes[1].execute(frame), argumentNodes[2].execute(frame));
         }
     }
 
