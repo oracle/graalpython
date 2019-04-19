@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ReadExceptionStateFromArgsNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -129,6 +130,14 @@ abstract class AbstractInvokeNode extends Node {
                 PException fromArgs = readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
                 if (fromArgs != null) {
                     return fromArgs;
+                } else {
+                    // bad but we must provide the exception state
+                    CompilerDirectives.transferToInterpreter();
+                    PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                    PException result = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
+                    // now, set in our args, such that we won't do this again
+                    PArguments.setCallerFrameOrException(frame.getArguments(), result);
+                    return result;
                 }
             } else {
                 return PException.NO_EXCEPTION;
