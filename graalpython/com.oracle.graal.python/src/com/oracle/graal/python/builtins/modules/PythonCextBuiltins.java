@@ -439,7 +439,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
             PException currentException = getContext().getCurrentException();
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
-                exceptionObject.reifyException();
                 return getClass.execute(exceptionObject);
             }
             return errorMarker;
@@ -666,7 +665,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 if (!errOccurred) {
                     throw raise.raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
                 } else {
-                    currentException.getExceptionObject().reifyException();
                     throw currentException;
                 }
             } else if (errOccurred) {

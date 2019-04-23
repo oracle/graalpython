@@ -1973,7 +1973,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
                 return newType;
             } catch (PException e) {
-                e.getExceptionObject().reifyException();
                 throw e;
             }
         }
