@@ -123,6 +123,7 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -365,8 +366,9 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PFunction createFunction(String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                    PCell[] closure, WriteAttributeToDynamicObjectNode writeAttrNode) {
-        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, callTarget, globals, defaultValues, kwDefaultValues, closure, writeAttrNode));
+                    PCell[] closure, WriteAttributeToDynamicObjectNode writeAttrNode, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
+        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, callTarget, globals, defaultValues, kwDefaultValues, closure, writeAttrNode, codeStableAssumption,
+                        defaultsStableAssumption));
     }
 
     public PBuiltinFunction createBuiltinFunction(String name, LazyPythonClass type, int numDefaults, RootCallTarget callTarget) {

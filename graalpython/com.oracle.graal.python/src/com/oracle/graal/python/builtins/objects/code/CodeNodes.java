@@ -115,7 +115,7 @@ public abstract class CodeNodes {
                             Object ident = freevars[i];
                             FrameSlot slot = frameDescriptor.addFrameSlot(ident);
                             frameDescriptor.setFrameSlotKind(slot, FrameSlotKind.Object);
-                            frame.setObject(slot, new PCell());
+                            frame.setObject(slot, new PCell(Truffle.getRuntime().createAssumption("cell is effectively final")));
                         }
                     }
                     rootNode = (RootNode) core.getParser().parse(ParserMode.File, core, Source.newBuilder(PythonLanguage.ID, new String(codestring), name).build(), frame);

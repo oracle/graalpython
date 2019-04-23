@@ -31,6 +31,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -61,6 +62,7 @@ public final class PGenerator extends PythonBuiltinObject {
         // set generator closure to the generator frame locals
         FrameSlot[] freeVarSlots = cellSlots.getFreeVarSlots();
         FrameSlot[] cellVarSlots = cellSlots.getCellVarSlots();
+        Assumption[] cellVarAssumptions = cellSlots.getCellVarAssumptions();
 
         if (closure != null) {
             assert closure.length == freeVarSlots.length : "generator creation: the closure must have the same length as the free var slots array";
@@ -72,8 +74,8 @@ public final class PGenerator extends PythonBuiltinObject {
         }
         // initialize own cell vars to new cells (these cells will be used by nested functions to
         // create their own closures)
-        for (FrameSlot frameSlot : cellVarSlots) {
-            generatorFrame.setObject(frameSlot, new PCell());
+        for (int i = 0; i < cellVarSlots.length; i++) {
+            generatorFrame.setObject(cellVarSlots[i], new PCell(cellVarAssumptions[i]));
         }
         return new PGenerator(clazz, name, callTarget, frameDescriptor, arguments, closure);
     }
