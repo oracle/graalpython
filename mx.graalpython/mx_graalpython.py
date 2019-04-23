@@ -637,7 +637,7 @@ def update_import_cmd(args):
             join(mx.dependency("SULONG_LEGACY").output, "include", "truffle.h"),
             join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "truffle.h")
         ) and shutil.copy(
-            join(mx.dependency("SULONG_LIBS").output, "polyglot.h"),
+            join(mx.dependency("SULONG_HOME").output, "include", "polyglot.h"),
             join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h")
         )
     else:
