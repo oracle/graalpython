@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -77,6 +78,11 @@ public final class PythonContext {
     private final Assumption nativeObjectsAllManagedAssumption = Truffle.getRuntime().createAssumption("all C API objects are managed");
 
     @CompilationFinal private TruffleLanguage.Env env;
+
+    // TODO: frame: make these three ThreadLocal
+
+    /* the reference to the top frame if escaped */
+    private PFrame[] topframeref = null;
 
     /* corresponds to 'PyThreadState.curexc_*' */
     private PException currentException;
@@ -230,6 +236,21 @@ public final class PythonContext {
 
     public PException getCaughtException() {
         return caughtException;
+    }
+
+    public PFrame[] getEscapedTopFrameRef() {
+        return topframeref;
+    }
+
+    public void clearEscapedTopFrameRef() {
+        topframeref = null;
+    }
+
+    public PFrame[] markEscapedTopFrameRef() {
+        if (topframeref == null) {
+            topframeref = new PFrame[1];
+        }
+        return topframeref;
     }
 
     public boolean isInitialized() {

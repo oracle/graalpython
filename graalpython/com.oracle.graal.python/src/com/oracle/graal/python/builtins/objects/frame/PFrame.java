@@ -70,6 +70,8 @@ public final class PFrame extends PythonBuiltinObject {
     private RootCallTarget callTarget;
     private int line = -2;
 
+    private PFrame[] backref = null;
+
     public PFrame(LazyPythonClass cls, Frame frame) {
         super(cls);
         this.exception = null;
@@ -144,6 +146,22 @@ public final class PFrame extends PythonBuiltinObject {
 
     public Object getLocalsDict() {
         return localsDict;
+    }
+
+    public PFrame getBackref() {
+        if (backref != null) {
+            return backref[0];
+        } else {
+            // TODO: frames: Use ReadCallerFrameNode in caller.
+            // TODO: frames: Update ReadCallerFrameNode to also store PFrame in
+            // the caller arguments at this point
+            return null;
+        }
+    }
+
+    public void setBackref(PFrame[] frame) {
+        assert backref == null : "do not overwrite backref";
+        backref = frame;
     }
 
     @TruffleBoundary
