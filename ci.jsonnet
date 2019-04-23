@@ -128,7 +128,7 @@
 
   local labsjdk8Mixin = {
     downloads +: {
-      JAVA_HOME: utils.download("labsjdk", "8u202-jvmci-0.58"),
+      JAVA_HOME: utils.download("labsjdk", "8u202-jvmci-0.59"),
       EXTRA_JAVA_HOMES : { pathlist: [utils.download("oraclejdk", "11+28")] },
     },
     environment +: {
