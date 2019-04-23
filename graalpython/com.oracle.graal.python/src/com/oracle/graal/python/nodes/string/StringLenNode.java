@@ -76,4 +76,8 @@ public abstract class StringLenNode extends Node {
     public static StringLenNode create() {
         return StringLenNodeGen.create();
     }
+
+    public static StringLenNode getUncached() {
+        return StringLenNodeGen.getUncached();
+    }
 }

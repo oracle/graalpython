@@ -1054,9 +1054,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object doUnicode(PString s, String errors, Object error_marker,
-                        @Cached StringLenNode stringLenNode) {
+        Object doUnicode(PString s, String errors, Object error_marker) {
             try {
+                StringLenNode stringLenNode = StringLenNode.getUncached();
                 CharsetEncoder encoder = charset.newEncoder();
                 CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
                 encoder.onMalformedInput(action).onUnmappableCharacter(action);
