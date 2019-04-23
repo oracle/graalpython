@@ -120,6 +120,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.string.StringLenNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
@@ -559,24 +560,27 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(UNICODE_WSTR, key)")
         Object doWstr(PString object, @SuppressWarnings("unused") String key,
                         @Shared("asWideCharNode") @Cached(value = "createNativeOrder()", uncached = "getUncachedNativeOrder()") UnicodeAsWideCharNode asWideCharNode,
-                        @Shared("sizeofWcharNode") @Cached CExtNodes.SizeofWCharNode sizeofWcharNode) {
+                        @Shared("sizeofWcharNode") @Cached CExtNodes.SizeofWCharNode sizeofWcharNode,
+                        @Shared("strLen") @Cached StringLenNode stringLenNode) {
             int elementSize = (int) sizeofWcharNode.execute();
-            return new PySequenceArrayWrapper(asWideCharNode.execute(object, elementSize, object.len()), elementSize);
+            return new PySequenceArrayWrapper(asWideCharNode.execute(object, elementSize, stringLenNode.execute(object)), elementSize);
         }
 
         @Specialization(guards = "eq(UNICODE_WSTR_LENGTH, key)")
         long doWstrLength(PString object, @SuppressWarnings("unused") String key,
                         @Shared("asWideCharNode") @Cached(value = "createNativeOrder()", uncached = "getUncachedNativeOrder()") UnicodeAsWideCharNode asWideCharNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Shared("sizeofWcharNode") @Cached CExtNodes.SizeofWCharNode sizeofWcharNode) {
+                        @Shared("sizeofWcharNode") @Cached CExtNodes.SizeofWCharNode sizeofWcharNode,
+                        @Shared("strLen") @Cached StringLenNode stringLenNode) {
             long sizeofWchar = sizeofWcharNode.execute();
-            PBytes result = asWideCharNode.execute(object, sizeofWchar, object.len());
+            PBytes result = asWideCharNode.execute(object, sizeofWchar, stringLenNode.execute(object));
             return lenNode.execute(result.getSequenceStorage()) / sizeofWchar;
         }
 
         @Specialization(guards = "eq(UNICODE_LENGTH, key)")
-        long doUnicodeLength(PString object, @SuppressWarnings("unused") String key) {
-            return object.len();
+        long doUnicodeLength(PString object, @SuppressWarnings("unused") String key,
+                        @Shared("strLen") @Cached StringLenNode stringLenNode) {
+            return stringLenNode.execute(object);
         }
 
         @Specialization(guards = "eq(UNICODE_DATA, key)")

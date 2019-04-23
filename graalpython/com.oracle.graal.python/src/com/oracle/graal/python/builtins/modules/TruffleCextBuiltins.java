@@ -151,6 +151,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.string.StringLenNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
@@ -1053,12 +1054,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object doUnicode(PString s, String errors, Object error_marker) {
+        Object doUnicode(PString s, String errors, Object error_marker,
+                        @Cached StringLenNode stringLenNode) {
             try {
                 CharsetEncoder encoder = charset.newEncoder();
                 CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
                 encoder.onMalformedInput(action).onUnmappableCharacter(action);
-                CharBuffer buf = CharBuffer.allocate(s.len());
+                CharBuffer buf = CharBuffer.allocate(stringLenNode.execute(s));
                 buf.put(s.getValue());
                 buf.flip();
                 ByteBuffer encoded = encoder.encode(buf);
