@@ -147,6 +147,7 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -185,6 +186,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
@@ -1947,18 +1949,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = "locals", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class LocalsNode extends PythonBuiltinNode {
-        @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
-        @Child private GetLocalsNode getLocalsNode = GetLocalsNode.create();
         private final ConditionProfile inGenerator = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        public Object locals(VirtualFrame frame) {
-            Frame callerFrame = readCallerFrameNode.executeWith(frame);
-            Frame generatorFrame = PArguments.getGeneratorFrame(callerFrame);
+        public Object locals(VirtualFrame frame,
+                             @Cached ReadLocalsNode readLocalsNode,
+                             @Cached ReadCallerFrameNode readCallerFrameNode) {
+            MaterializedFrame callerFrame = readCallerFrameNode.executeWith(frame);
+            MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(callerFrame);
             if (inGenerator.profile(generatorFrame == null)) {
-                return getLocalsNode.execute(frame, callerFrame);
+                return readLocalsNode.execute(callerFrame);
             } else {
-                return getLocalsNode.execute(frame, generatorFrame);
+                return readLocalsNode.execute(generatorFrame);
             }
         }
     }
