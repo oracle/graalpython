@@ -81,7 +81,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
@@ -448,16 +447,16 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Child private CastToIntegerFromIntNode castToIntNode = CastToIntegerFromIntNode.create();
 
         @Specialization(guards = "isNoValue(dflt)")
-        protected Object doGeneric(Object object, @SuppressWarnings("unused") PNone dflt,
+        protected Object doGeneric(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone dflt,
                         @Cached("createWithError()") LookupAndCallUnaryNode callSizeofNode) {
-            Object result = castToIntNode.execute(callSizeofNode.executeObject(object));
+            Object result = castToIntNode.execute(callSizeofNode.executeObject(frame, object));
             return checkResult(result);
         }
 
         @Specialization(guards = "!isNoValue(dflt)")
-        protected Object doGeneric(Object object, Object dflt,
+        protected Object doGeneric(VirtualFrame frame, Object object, Object dflt,
                         @Cached("createWithoutError()") LookupAndCallUnaryNode callSizeofNode) {
-            Object result = castToIntNode.execute(callSizeofNode.executeObject(object));
+            Object result = castToIntNode.execute(callSizeofNode.executeObject(frame, object));
             if (result == PNone.NO_VALUE) {
                 return dflt;
             }

@@ -107,6 +107,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -132,11 +133,14 @@ public abstract class HashingStorageNodes {
         public int hashCode(Object o) {
             try {
                 if (state == 0) { // int hash
-                    return callHashNode.executeInt(o);
+                    // TODO(fa): FRAME MIGRATION
+                    return callHashNode.executeInt(null, o);
                 } else if (state == 1) { // long hash
-                    return (int) (callHashNode.executeLong(o));
+                    // TODO(fa): FRAME MIGRATION
+                    return (int) (callHashNode.executeLong(null, o));
                 } else if (state == 2) { // object hash
-                    Object hash = callHashNode.executeObject(o);
+                    // TODO(fa): FRAME MIGRATION
+                    Object hash = callHashNode.executeObject(null, o);
                     if (hash instanceof Integer) {
                         return (int) hash;
                     } else if (hash instanceof Long) {
@@ -180,7 +184,8 @@ public abstract class HashingStorageNodes {
 
         @Override
         public boolean equals(Object left, Object right) {
-            return castToBoolean.executeWith(callEqNode.executeWith(left, right));
+            // TODO(fa): FRAME MIGRATION
+            return castToBoolean.executeBoolean(null, callEqNode.executeWith(null, left, right));
         }
 
         public static PythonEquivalence create() {
@@ -302,7 +307,7 @@ public abstract class HashingStorageNodes {
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class InitNode extends DictStorageBaseNode {
 
-        public abstract HashingStorage execute(Object mapping, PKeyword[] kwargs);
+        public abstract HashingStorage execute(VirtualFrame frame, Object mapping, PKeyword[] kwargs);
 
         @Child private GetNextNode nextNode;
         @Child private SetItemNode setItemNode;
@@ -313,12 +318,12 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"isNoValue(iterable)", "isEmpty(kwargs)"})
-        public HashingStorage doEmpty(@SuppressWarnings("unused") PNone iterable, @SuppressWarnings("unused") PKeyword[] kwargs) {
+        HashingStorage doEmpty(@SuppressWarnings("unused") PNone iterable, @SuppressWarnings("unused") PKeyword[] kwargs) {
             return new EmptyStorage();
         }
 
         @Specialization(guards = {"isNoValue(iterable)", "!isEmpty(kwargs)"})
-        public HashingStorage doKeywords(@SuppressWarnings("unused") PNone iterable, PKeyword[] kwargs) {
+        HashingStorage doKeywords(@SuppressWarnings("unused") PNone iterable, PKeyword[] kwargs) {
             return new KeywordsStorage(kwargs);
         }
 
@@ -335,20 +340,20 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "isEmpty(kwargs)")
-        public HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs,
+        HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached("create()") HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
             return getDictStorageNode.execute(dictLike).copy(HashingStorage.DEFAULT_EQIVALENCE);
         }
 
         @Specialization(guards = "!isEmpty(kwargs)", rewriteOn = HashingStorage.UnmodifiableStorageException.class)
-        public HashingStorage doPDictKwargs(PHashingCollection dictLike, PKeyword[] kwargs,
+        HashingStorage doPDictKwargs(PHashingCollection dictLike, PKeyword[] kwargs,
                         @Cached("create()") UnionNode unionNode,
                         @Cached("create()") HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
             return unionNode.execute(getDictStorageNode.execute(dictLike), new KeywordsStorage(kwargs));
         }
 
         @Specialization(guards = "!isEmpty(kwargs)")
-        public HashingStorage doPDictKwargs(PDict iterable, PKeyword[] kwargs,
+        HashingStorage doPDictKwargs(PDict iterable, PKeyword[] kwargs,
                         @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
             HashingStorage dictStorage = iterable.getDictStorage().copy(HashingStorage.DEFAULT_EQIVALENCE);
             unionNode.execute(dictStorage, new KeywordsStorage(kwargs));
@@ -356,7 +361,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isPDict(mapping)", "hasKeysAttribute(mapping)"})
-        public HashingStorage doMapping(PythonObject mapping, @SuppressWarnings("unused") PKeyword[] kwargs,
+        HashingStorage doMapping(VirtualFrame frame, PythonObject mapping, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
                         @Cached("create()") GetIteratorNode getIteratorNode,
@@ -366,13 +371,13 @@ public abstract class HashingStorageNodes {
 
             // That call must work since 'hasKeysAttribute' checks if it has the 'keys' attribute
             // before.
-            Object keysIterable = callKeysNode.executeObject(mapping);
+            Object keysIterable = callKeysNode.executeObject(frame, mapping);
 
-            Object keysIt = getIteratorNode.executeWith(keysIterable);
+            Object keysIt = getIteratorNode.executeWith(frame, keysIterable);
             while (true) {
                 try {
-                    Object keyObj = getNextNode().execute(keysIt);
-                    Object valueObj = callGetItemNode.executeObject(mapping, keyObj);
+                    Object keyObj = getNextNode().execute(frame, keysIt);
+                    Object valueObj = callGetItemNode.executeObject(frame, mapping, keyObj);
 
                     // TODO remove 'null'
                     curStorage = getSetItemNode().execute(curStorage, keyObj, valueObj);
@@ -400,8 +405,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"})
-        @TruffleBoundary
-        public HashingStorage doSequence(PythonObject iterable, PKeyword[] kwargs,
+        HashingStorage doSequence(VirtualFrame frame, PythonObject iterable, PKeyword[] kwargs,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") FastConstructListNode createListNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
@@ -410,13 +414,13 @@ public abstract class HashingStorageNodes {
                         @Cached("create()") IsBuiltinClassProfile errorProfile,
                         @Cached("create()") IsBuiltinClassProfile isTypeErrorProfile) {
 
-            Object it = getIterator.executeWith(iterable);
+            Object it = getIterator.executeWith(frame, iterable);
 
             ArrayList<PSequence> elements = new ArrayList<>();
             boolean isStringKey = false;
             try {
                 while (true) {
-                    Object next = getNextNode().execute(it);
+                    Object next = getNextNode().execute(frame, it);
                     PSequence element = null;
                     int len = 1;
                     element = createListNode.execute(next);
@@ -426,31 +430,46 @@ public abstract class HashingStorageNodes {
                     len = seqLenNode.execute(element);
 
                     if (lengthTwoProfile.profile(len != 2)) {
-                        throw getRaise().raise(ValueError, "dictionary update sequence element #%d has length %d; 2 is required", elements.size(), len);
+                        throw getRaise().raise(ValueError, "dictionary update sequence element #%d has length %d; 2 is required", arrayListSize(elements), len);
                     }
 
                     // really check for Java String since PString can be subclassed
-                    isStringKey = isStringKey || getItemNode.executeObject(element, 0) instanceof String;
+                    isStringKey = isStringKey || getItemNode.executeObject(frame, element, 0) instanceof String;
 
-                    elements.add(element);
+                    arrayListAdd(elements, element);
                 }
             } catch (PException e) {
                 if (isTypeErrorProfile.profileException(e, TypeError)) {
-                    throw getRaise().raise(TypeError, "cannot convert dictionary update sequence element #%d to a sequence", elements.size());
+                    throw getRaise().raise(TypeError, "cannot convert dictionary update sequence element #%d to a sequence", arrayListSize(elements));
                 } else {
                     e.expectStopIteration(errorProfile);
                 }
             }
 
-            HashingStorage storage = PDict.createNewStorage(isStringKey, elements.size() + kwargs.length);
-            for (int j = 0; j < elements.size(); j++) {
-                PSequence element = elements.get(j);
-                storage = getSetItemNode().execute(storage, getItemNode.executeObject(element, 0), getItemNode.executeObject(element, 1));
+            HashingStorage storage = PDict.createNewStorage(isStringKey, arrayListSize(elements) + kwargs.length);
+            for (int j = 0; j < arrayListSize(elements); j++) {
+                PSequence element = arrayListGet(elements, j);
+                storage = getSetItemNode().execute(storage, getItemNode.executeObject(frame, element, 0), getItemNode.executeObject(frame, element, 1));
             }
             if (kwargs.length > 0) {
                 storage.addAll(new KeywordsStorage(kwargs));
             }
             return storage;
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static PSequence arrayListGet(ArrayList<PSequence> elements, int j) {
+            return elements.get(j);
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static boolean arrayListAdd(ArrayList<PSequence> elements, PSequence element) {
+            return elements.add(element);
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static int arrayListSize(ArrayList<PSequence> elements) {
+            return elements.size();
         }
 
         public static InitNode create() {

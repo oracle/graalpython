@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorWithoutFrameNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -117,7 +117,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     @TruffleBoundary(allowInlining = true)
     Object[] starargs(Object object,
                     @Cached PRaiseNode raise,
-                    @Cached GetIteratorNode getIterator,
+                    @Cached GetIteratorWithoutFrameNode getIterator,
                     @Cached GetNextNode next,
                     @Cached IsBuiltinClassProfile errorProfile) {
         Object iterator = getIterator.executeWith(object);
@@ -125,7 +125,8 @@ public abstract class ExecutePositionalStarargsNode extends Node {
             ArrayList<Object> internalStorage = new ArrayList<>();
             while (true) {
                 try {
-                    internalStorage.add(next.execute(iterator));
+                    // TODO(fa): FRAME MIGRATION
+                    internalStorage.add(next.execute(null, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return internalStorage.toArray();

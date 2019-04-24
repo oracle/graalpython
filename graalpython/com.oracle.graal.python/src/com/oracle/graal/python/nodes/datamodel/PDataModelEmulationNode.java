@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.truffle.api.dsl.ImportStatic;
 

@@ -77,6 +77,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "_codecs")
@@ -341,11 +342,11 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class UnicodeEscapeDecode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isBytes(bytes)")
-        Object encode(Object bytes, @SuppressWarnings("unused") PNone errors,
+        Object encode(VirtualFrame frame, Object bytes, @SuppressWarnings("unused") PNone errors,
                         @Cached("create()") BytesNodes.ToBytesNode toBytes) {
             // for now we'll just parse this as a String, ignoring any error strategies
             PythonCore core = getCore();
-            byte[] byteArray = toBytes.execute(bytes);
+            byte[] byteArray = toBytes.execute(frame, bytes);
             String string = strFromBytes(byteArray);
             String unescapedString = core.getParser().unescapeJavaString(string);
             return factory().createTuple(new Object[]{unescapedString, byteArray.length});

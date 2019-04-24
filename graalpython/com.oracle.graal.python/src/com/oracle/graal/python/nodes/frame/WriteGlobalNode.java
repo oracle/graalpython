@@ -137,13 +137,13 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
     @Specialization(replaces = {"writeDictBoolean", "writeDictInt", "writeDictLong", "writeDictDouble", "writeDictObject"}, guards = "isInDict(frame)")
     void writeGenericDict(VirtualFrame frame, Object value,
                     @Cached("create()") SetItemNode storeNode) {
-        storeNode.executeWith(PArguments.getGlobals(frame), attributeId, value);
+        storeNode.executeWith(frame, PArguments.getGlobals(frame), attributeId, value);
     }
 
     @Specialization(guards = "isInModule(frame)")
     void writeModule(VirtualFrame frame, Object value,
                     @Cached("create(attributeId)") SetAttributeNode storeNode) {
-        storeNode.executeVoid(PArguments.getGlobals(frame), value);
+        storeNode.executeVoid(frame, PArguments.getGlobals(frame), value);
     }
 
     public Object getAttributeId() {

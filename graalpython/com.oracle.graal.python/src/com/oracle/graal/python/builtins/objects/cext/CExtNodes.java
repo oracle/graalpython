@@ -1129,7 +1129,7 @@ public abstract class CExtNodes {
                         @Cached("create()") CallTernaryMethodNode callNode,
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
             Object[] converted = allToJavaNode.execute(args);
-            return callNode.executeWithFrame(frame, callable, converted[0], converted[1], converted[2]);
+            return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
         }
 
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
@@ -1187,7 +1187,7 @@ public abstract class CExtNodes {
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
             Object[] converted = allToJavaNode.execute(args);
             Object callable = getAttrNode.execute(cextModule, name);
-            return callNode.executeWithFrame(frame, callable, converted[0], converted[1], converted[2]);
+            return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
         }
 
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
@@ -1213,7 +1213,7 @@ public abstract class CExtNodes {
         Object upcall0(VirtualFrame frame, Object cextModule, String name, @SuppressWarnings("unused") Object[] args,
                         @Cached("create()") CallNode callNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object callable = getAttrNode.execute(cextModule, name, PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
             return callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS);
         }
 
@@ -1222,7 +1222,7 @@ public abstract class CExtNodes {
                         @Cached("create()") CallUnaryMethodNode callNode,
                         @Cached("create()") CExtNodes.AsPythonObjectNode toJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object callable = getAttrNode.execute(cextModule, name, PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
             return callNode.executeObject(frame, callable, toJavaNode.execute(args[0]));
         }
 
@@ -1232,7 +1232,7 @@ public abstract class CExtNodes {
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object[] converted = allToJavaNode.execute(args);
-            Object callable = getAttrNode.execute(cextModule, name, PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
             return callNode.executeObject(frame, callable, converted[0], converted[1]);
         }
 
@@ -1242,8 +1242,8 @@ public abstract class CExtNodes {
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object[] converted = allToJavaNode.execute(args);
-            Object callable = getAttrNode.execute(cextModule, name, PNone.NO_VALUE);
-            return callNode.executeWithFrame(frame, callable, converted[0], converted[1], converted[2]);
+            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
+            return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
         }
 
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
@@ -1252,7 +1252,7 @@ public abstract class CExtNodes {
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object[] converted = allToJavaNode.execute(args);
-            Object callable = getAttrNode.execute(cextModule, name, PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
             return callNode.execute(frame, callable, converted, PKeyword.EMPTY_KEYWORDS);
         }
     }

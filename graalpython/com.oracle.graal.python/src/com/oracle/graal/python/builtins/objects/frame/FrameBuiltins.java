@@ -54,6 +54,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -68,10 +69,10 @@ public final class FrameBuiltins extends PythonBuiltins {
     @Builtin(name = "f_globals", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetGlobalsNode extends PythonBuiltinNode {
-        @Child DictNode getDictNode;
+        @Child private DictNode getDictNode;
 
         @Specialization
-        Object get(PFrame self) {
+        Object get(VirtualFrame curFrame, PFrame self) {
             Frame frame = self.getFrame();
             if (frame != null) {
                 PythonObject globals = PArguments.getGlobals(frame);
@@ -80,7 +81,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         getDictNode = insert(DictNodeFactory.create());
                     }
-                    return getDictNode.execute(globals, PNone.NO_VALUE);
+                    return getDictNode.execute(curFrame, globals, PNone.NO_VALUE);
                 } else {
                     return globals;
                 }
@@ -92,11 +93,11 @@ public final class FrameBuiltins extends PythonBuiltins {
     @Builtin(name = "f_builtins", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetBuiltinsNode extends PythonBuiltinNode {
-        @Child DictNode dictNode = DictNodeFactory.create();
+        @Child private DictNode dictNode = DictNodeFactory.create();
 
         @Specialization
-        Object get(@SuppressWarnings("unused") PFrame self) {
-            return dictNode.execute(getContext().getBuiltins(), PNone.NO_VALUE);
+        Object get(VirtualFrame frame, @SuppressWarnings("unused") PFrame self) {
+            return dictNode.execute(frame, getContext().getBuiltins(), PNone.NO_VALUE);
         }
     }
 
@@ -152,7 +153,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Child SetItemNode setItemNode;
 
         @Specialization
-        Object get(PFrame self) {
+        Object get(VirtualFrame curFrame, PFrame self) {
             Frame frame = self.getFrame();
             Object locals = self.getLocals(factory());
             if (!self.inClassScope()) {
@@ -162,14 +163,14 @@ public final class FrameBuiltins extends PythonBuiltins {
                 }
                 PDict currentDictLocals = factory().createDictLocals(frame, false);
                 for (DictEntry entry : currentDictLocals.entries()) {
-                    setItemNode.executeWith(locals, entry.getKey(), entry.getValue());
+                    setItemNode.executeWith(curFrame, locals, entry.getKey(), entry.getValue());
                 }
             }
             return locals;
         }
 
         @Specialization
-        Object getFromFrame(Frame owner,
+        Object getFromFrame(VirtualFrame curFrame, Frame owner,
                         @Cached("createBinaryProfile()") ConditionProfile noPFrame,
                         @Cached("create()") BranchProfile noFrameOnPFrame) {
             PFrame pFrame = PArguments.getPFrame(owner);
@@ -187,7 +188,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                 pFrame = factory().createPFrame(owner, pFrame.getLocalsDict());
                 PArguments.setPFrame(owner, pFrame);
             }
-            return get(pFrame);
+            return get(curFrame, pFrame);
         }
 
         public static GetLocalsNode create() {

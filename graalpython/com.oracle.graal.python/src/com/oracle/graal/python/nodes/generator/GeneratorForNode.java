@@ -86,7 +86,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
             iterator = getIterator.execute(frame);
             Object value;
             try {
-                value = getNext.execute(iterator);
+                value = getNext.execute(frame, iterator);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 return;
@@ -104,7 +104,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                 body.executeVoid(frame);
                 Object value;
                 try {
-                    value = getNext.execute(iterator);
+                    value = getNext.execute(frame, iterator);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     break;

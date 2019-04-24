@@ -101,7 +101,7 @@ public enum BinaryArithmetic {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return callNode.executeObject(left.execute(frame), right.execute(frame));
+            return callNode.executeObject(frame, left.execute(frame), right.execute(frame));
         }
 
         @Override

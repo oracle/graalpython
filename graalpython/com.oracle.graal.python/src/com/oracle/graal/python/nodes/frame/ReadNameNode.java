@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -97,7 +97,7 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode, A
                     @Cached("create()") GetItemNode getItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         try {
-            return getItem.execute(frameLocals, attributeId);
+            return getItem.execute(frame, frameLocals, attributeId);
         } catch (PException e) {
             return readGlobalsIfKeyError(frame, e);
         }

@@ -510,39 +510,39 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "op == 0")
-        Object op0(Object a, Object b, @SuppressWarnings("unused") int op,
+        Object op0(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached("create(op)") BinaryComparisonNode compNode) {
-            return compNode.executeWith(a, b);
+            return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 1")
-        Object op1(Object a, Object b, @SuppressWarnings("unused") int op,
+        Object op1(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached("create(op)") BinaryComparisonNode compNode) {
-            return compNode.executeWith(a, b);
+            return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 2")
-        Object op2(Object a, Object b, @SuppressWarnings("unused") int op,
+        Object op2(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached("create(op)") BinaryComparisonNode compNode) {
-            return compNode.executeWith(a, b);
+            return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 3")
-        Object op3(Object a, Object b, @SuppressWarnings("unused") int op,
+        Object op3(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached("create(op)") BinaryComparisonNode compNode) {
-            return compNode.executeWith(a, b);
+            return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 4")
-        Object op4(Object a, Object b, @SuppressWarnings("unused") int op,
+        Object op4(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached("create(op)") BinaryComparisonNode compNode) {
-            return compNode.executeWith(a, b);
+            return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 5")
-        Object op5(Object a, Object b, @SuppressWarnings("unused") int op,
+        Object op5(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached("create(op)") BinaryComparisonNode compNode) {
-            return compNode.executeWith(a, b);
+            return compNode.executeWith(frame, a, b);
         }
     }
 
@@ -1002,7 +1002,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object doBytes(TruffleObject o, long elementSize, Object errorMarker,
                         @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
             try {
-                ByteBuffer bytes = wrap(getByteArrayNode.execute(o, -1));
+                // TODO(fa): FRAME MIGRATION
+                ByteBuffer bytes = wrap(getByteArrayNode.execute(null, o, -1));
                 CharBuffer decoded;
                 if (elementSize == 2L) {
                     decoded = bytes.asCharBuffer();
@@ -1043,7 +1044,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
             try {
                 CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
-                CharBuffer cbuf = decoder.decode(wrap(getByteArrayNode.execute(o, -1)));
+                // TODO(fa): FRAME MIGRATION
+                CharBuffer cbuf = decoder.decode(wrap(getByteArrayNode.execute(null, o, -1)));
                 return cbuf.toString();
             } catch (CharacterCodingException e) {
                 return raiseNative(errorMarker, PythonErrorType.UnicodeError, "%m", e);
@@ -1154,7 +1156,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 CharsetDecoder decoder = getUTF32Charset(byteorder).newDecoder();
                 CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
-                CharBuffer decode = decoder.onMalformedInput(action).onUnmappableCharacter(action).decode(wrap(getByteArrayNode.execute(o, size), 0, (int) size));
+                // TODO(fa): FRAME MIGRATION
+                CharBuffer decode = decoder.onMalformedInput(action).onUnmappableCharacter(action).decode(wrap(getByteArrayNode.execute(null, o, size), 0, (int) size));
                 return toSulongNode.execute(decode.toString());
             } catch (CharacterCodingException e) {
                 return raiseNative(errorMarker, PythonErrorType.UnicodeEncodeError, "%m", e);
@@ -1169,7 +1172,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     abstract static class GetByteArrayNode extends PNodeWithContext {
 
-        public abstract byte[] execute(Object obj, long n) throws InteropException;
+        public abstract byte[] execute(VirtualFrame frame, Object obj, long n) throws InteropException;
 
         public static GetByteArrayNode create() {
             return GetByteArrayNodeGen.create();
@@ -1189,9 +1192,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        byte[] doSequenceArrayWrapper(PySequenceArrayWrapper obj, long n,
+        byte[] doSequenceArrayWrapper(VirtualFrame frame, PySequenceArrayWrapper obj, long n,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return subRangeIfNeeded(toBytesNode.execute(obj.getDelegate()), n);
+            return subRangeIfNeeded(toBytesNode.execute(frame, obj.getDelegate()), n);
         }
 
         @Specialization(limit = "5")
@@ -2241,9 +2244,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         // PythonNativeObject)
 
         @Specialization
-        Object doGeneric(@SuppressWarnings("unused") Object module, PIBytesLike object, long size,
+        Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object module, PIBytesLike object, long size,
                         @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
-            byte[] ary = getByteArrayNode.execute(object);
+            byte[] ary = getByteArrayNode.execute(frame, object);
             if (size < Integer.MAX_VALUE && size >= 0 && size < ary.length) {
                 return factory().createBytes(Arrays.copyOf(ary, (int) size));
             } else {
@@ -2252,11 +2255,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doGeneric(Object module, PythonNativeObject object, long size,
+        Object doGeneric(VirtualFrame frame, Object module, PythonNativeObject object, long size,
                         @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
                         @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
             try {
-                return factory().createBytes(getByteArrayNode.execute(object.getPtr(), size));
+                return factory().createBytes(getByteArrayNode.execute(frame, object.getPtr(), size));
             } catch (InteropException e) {
                 return raiseNative(getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
             }
@@ -2315,23 +2318,23 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = PException.class)
-        Object doGeneric(@SuppressWarnings("unused") Object module, Object object,
+        Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object module, Object object,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             if (floatNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 floatNode = insert(BuiltinConstructorsFactory.FloatNodeFactory.create(null));
             }
-            return toSulongNode.execute(floatNode.executeWith(PythonBuiltinClassType.PFloat, asPythonObjectNode.execute(object)));
+            return toSulongNode.execute(floatNode.executeWith(frame, PythonBuiltinClassType.PFloat, asPythonObjectNode.execute(object)));
         }
 
         @Specialization(replaces = "doGeneric")
-        Object doGenericErr(Object module, Object object,
+        Object doGenericErr(VirtualFrame frame, Object module, Object object,
                         @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             try {
-                return doGeneric(module, object, toSulongNode, asPythonObjectNode);
+                return doGeneric(frame, module, object, toSulongNode, asPythonObjectNode);
             } catch (PException e) {
                 transformToNative(e);
                 return getNativeNullNode.execute(module);

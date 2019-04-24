@@ -56,6 +56,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -195,15 +196,18 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                 raise = insert(PRaiseNode.create());
             }
 
-            if (exceptionDerivedProfile.profile(getBasesNode.execute(derived) == null)) {
+            // TODO(fa): FRAME MIGRATION
+            if (exceptionDerivedProfile.profile(getBasesNode.execute(null, derived) == null)) {
                 throw raise.raise(PythonErrorType.TypeError, "issubclass() arg 1 must be a class");
             }
 
-            if (exceptionClsProfile.profile(getBasesNode.execute(cls) == null)) {
+            // TODO(fa): FRAME MIGRATION
+            if (exceptionClsProfile.profile(getBasesNode.execute(null, cls) == null)) {
                 throw raise.raise(PythonErrorType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
             }
 
-            return abstractIsSubclassNode.execute(derived, cls);
+            // TODO(fa): FRAME MIGRATION
+            return abstractIsSubclassNode.execute(null, derived, cls);
         }
 
         protected MroSequenceStorage getMro(LazyPythonClass clazz) {
@@ -232,6 +236,16 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     return true;
                 }
             }
+            return false;
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.MEGAMORPHIC;
+        }
+
+        @Override
+        public boolean isAdoptable() {
             return false;
         }
 

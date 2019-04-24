@@ -51,6 +51,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -75,8 +77,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-
-import org.graalvm.nativeimage.ImageInfo;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "_posixsubprocess")
 public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
@@ -163,7 +164,8 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             Map<String, String> environment = pb.environment();
             for (Object keyValue : env.getSequenceStorage().getInternalArray()) {
                 if (keyValue instanceof PBytes) {
-                    String[] string = new String(toBytes.execute(keyValue)).split("=", 2);
+                    // TODO(fa): FRAME MIGRATION
+                    String[] string = new String(toBytes.execute(null, keyValue)).split("=", 2);
                     if (string.length == 2) {
                         environment.put(string[0], string[1]);
                     }
@@ -207,7 +209,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "forkExec")
-        int forkExecDefault(Object args, Object executable_list, Object close_fds,
+        int forkExecDefault(VirtualFrame frame, Object args, Object executable_list, Object close_fds,
                         Object fdsToKeep, Object cwd, Object env,
                         Object p2cread, Object p2cwrite, Object c2pread, Object c2pwrite,
                         Object errread, Object errwrite, Object errpipe_read, Object errpipe_write,
@@ -233,7 +235,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             if (cwd instanceof PNone) {
                 actualCwd = getContext().getEnv().getCurrentWorkingDirectory().getPath();
             } else {
-                actualCwd = castCwd.execute(cwd);
+                actualCwd = castCwd.execute(frame, cwd);
             }
 
             PList actualEnv;
@@ -243,11 +245,11 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 actualEnv = castEnv.executeWith(env);
             }
 
-            return forkExec(castArgs.executeWith(args), castExecList.executeWith(executable_list), castCloseFds.executeWith(close_fds),
+            return forkExec(castArgs.executeWith(args), castExecList.executeWith(executable_list), castCloseFds.executeBoolean(frame, close_fds),
                             castFdsToKeep.executeWith(fdsToKeep), actualCwd, actualEnv,
                             castP2cread.execute(p2cread), castP2cwrite.execute(p2cwrite), castC2pread.execute(c2pread), castC2pwrite.execute(c2pwrite),
                             castErrread.execute(errread), castErrwrite.execute(errwrite), castErrpipeRead.execute(errpipe_read), castErrpipeWrite.execute(errpipe_write),
-                            castRestoreSignals.executeWith(restore_signals), castSetsid.executeWith(call_setsid), preexec_fn);
+                            castRestoreSignals.executeBoolean(frame, restore_signals), castSetsid.executeBoolean(frame, call_setsid), preexec_fn);
         }
     }
 }

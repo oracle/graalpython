@@ -75,7 +75,8 @@ public class StringFormatter {
                 argIndex = -2;
                 return args;
             default:
-                ret = getItemNode.executeObject(args, argIndex++);
+                // TODO(fa): FRAME MIGRATION
+                ret = getItemNode.executeObject(null, args, argIndex++);
                 break;
         }
         if (ret == null) {

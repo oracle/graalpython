@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -67,15 +68,15 @@ public abstract class GetNextNode extends PNodeWithContext {
         return UNCACHED;
     }
 
-    public abstract Object execute(Object iterator);
+    public abstract Object execute(VirtualFrame frame, Object iterator);
 
-    public abstract boolean executeBoolean(Object iterator) throws UnexpectedResultException;
+    public abstract boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
 
-    public abstract int executeInt(Object iterator) throws UnexpectedResultException;
+    public abstract int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
 
-    public abstract long executeLong(Object iterator) throws UnexpectedResultException;
+    public abstract long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
 
-    public abstract double executeDouble(Object iterator) throws UnexpectedResultException;
+    public abstract double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
 
     private static final class GetNextCachedNode extends GetNextNode {
 
@@ -97,41 +98,41 @@ public abstract class GetNextNode extends PNodeWithContext {
         }
 
         @Override
-        public Object execute(Object iterator) {
-            return checkResult(nextCall.executeObject(iterator), iterator);
+        public Object execute(VirtualFrame frame, Object iterator) {
+            return checkResult(nextCall.executeObject(frame, iterator), iterator);
         }
 
         @Override
-        public boolean executeBoolean(Object iterator) throws UnexpectedResultException {
+        public boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
             try {
-                return nextCall.executeBoolean(iterator);
+                return nextCall.executeBoolean(frame, iterator);
             } catch (UnexpectedResultException e) {
                 throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
             }
         }
 
         @Override
-        public int executeInt(Object iterator) throws UnexpectedResultException {
+        public int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
             try {
-                return nextCall.executeInt(iterator);
+                return nextCall.executeInt(frame, iterator);
             } catch (UnexpectedResultException e) {
                 throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
             }
         }
 
         @Override
-        public long executeLong(Object iterator) throws UnexpectedResultException {
+        public long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
             try {
-                return nextCall.executeLong(iterator);
+                return nextCall.executeLong(frame, iterator);
             } catch (UnexpectedResultException e) {
                 throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
             }
         }
 
         @Override
-        public double executeDouble(Object iterator) throws UnexpectedResultException {
+        public double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
             try {
-                return nextCall.executeDouble(iterator);
+                return nextCall.executeDouble(frame, iterator);
             } catch (UnexpectedResultException e) {
                 throw new UnexpectedResultException(checkResult(e.getResult(), iterator));
             }
@@ -148,13 +149,13 @@ public abstract class GetNextNode extends PNodeWithContext {
         }
 
         @Override
-        public Object execute(Object iterator) {
+        public Object execute(VirtualFrame frame, Object iterator) {
             return checkResult(LookupAndCallUnaryDynamicNode.getUncached().executeObject(iterator, __NEXT__), iterator);
         }
 
         @Override
-        public boolean executeBoolean(Object iterator) throws UnexpectedResultException {
-            Object res = execute(iterator);
+        public boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+            Object res = execute(frame, iterator);
             try {
                 return (boolean) res;
             } catch (ClassCastException e) {
@@ -163,8 +164,8 @@ public abstract class GetNextNode extends PNodeWithContext {
         }
 
         @Override
-        public int executeInt(Object iterator) throws UnexpectedResultException {
-            Object res = execute(iterator);
+        public int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+            Object res = execute(frame, iterator);
             try {
                 return (int) res;
             } catch (ClassCastException e) {
@@ -173,8 +174,8 @@ public abstract class GetNextNode extends PNodeWithContext {
         }
 
         @Override
-        public long executeLong(Object iterator) throws UnexpectedResultException {
-            Object res = execute(iterator);
+        public long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+            Object res = execute(frame, iterator);
             try {
                 return (long) res;
             } catch (ClassCastException e) {
@@ -183,8 +184,8 @@ public abstract class GetNextNode extends PNodeWithContext {
         }
 
         @Override
-        public double executeDouble(Object iterator) throws UnexpectedResultException {
-            Object res = execute(iterator);
+        public double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+            Object res = execute(frame, iterator);
             try {
                 return (double) res;
             } catch (ClassCastException e) {

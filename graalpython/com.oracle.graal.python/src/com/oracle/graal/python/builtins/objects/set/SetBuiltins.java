@@ -48,6 +48,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSet)
@@ -101,9 +102,9 @@ public final class SetBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doReverse(PBaseSet self, Object other,
+        Object doReverse(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached("create(__OR__)") LookupAndCallBinaryNode callOr) {
-            return callOr.executeObject(other, self);
+            return callOr.executeObject(frame, other, self);
         }
     }
 

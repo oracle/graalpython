@@ -79,7 +79,7 @@ public class ImportFromNode extends AbstractImportNode {
             String attr = fromlist[i];
             WriteNode writeNode = aslist[i];
             try {
-                writeNode.doWrite(frame, readNode.executeObject(importedModule, attr));
+                writeNode.doWrite(frame, readNode.executeObject(frame, importedModule, attr));
             } catch (PException e) {
                 e.expectAttributeError(attrErrorProfile);
                 if (getName == null) {
@@ -88,7 +88,7 @@ public class ImportFromNode extends AbstractImportNode {
                 }
                 try {
                     String pkgname;
-                    Object pkgname_o = getName.executeObject(importedModule);
+                    Object pkgname_o = getName.executeObject(frame, importedModule);
                     if (pkgname_o instanceof PString) {
                         pkgname = ((PString) pkgname_o).getValue();
                     } else if (pkgname_o instanceof String) {
@@ -103,7 +103,7 @@ public class ImportFromNode extends AbstractImportNode {
                         readModules = insert(ReadAttributeFromObjectNode.create());
                     }
                     Object sysModules = readModules.execute(getContext().getCore().lookupBuiltinModule("sys"), "modules");
-                    writeNode.doWrite(frame, getItem.execute(sysModules, fullname));
+                    writeNode.doWrite(frame, getItem.execute(frame, sysModules, fullname));
                 } catch (PException e2) {
                     if (raiseNode == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();

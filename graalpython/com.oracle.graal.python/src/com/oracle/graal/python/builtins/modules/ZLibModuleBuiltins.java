@@ -77,6 +77,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -424,7 +425,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object deflateCompress(DeflaterWrapper stream, PIBytesLike pb, int mode) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            byte[] data = toBytes.execute(pb);
+            // TODO(fa): FRAME MIGRATION
+            byte[] data = toBytes.execute(null, pb);
             byte[] result = new byte[DEF_BUF_SIZE];
 
             stream.deflater.setInput(data);
@@ -468,7 +470,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                 inflater = new Inflater(false);
             }
 
-            inflater.setDictionary(toBytes.execute(zdict));
+            // TODO(fa): FRAME MIGRATION
+            inflater.setDictionary(toBytes.execute(null, zdict));
             return new InflaterWrapper(inflater);
         }
     }
@@ -492,7 +495,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             int maxLength = maxLen == 0 ? Integer.MAX_VALUE : maxLen;
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            byte[] data = toBytes.execute(pb);
+            // TODO(fa): FRAME MIGRATION
+            byte[] data = toBytes.execute(null, pb);
             byte[] result = new byte[DEF_BUF_SIZE];
             stream.inflater.setInput(data);
 
@@ -638,10 +642,10 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes decompress(PIBytesLike data, long wbits, Object bufsize,
+        public PBytes decompress(VirtualFrame frame, PIBytesLike data, long wbits, Object bufsize,
                         @Cached("create()") DecompressNode recursiveNode) {
             Object bufferLen = getCastToIntNode().execute(bufsize);
-            return (PBytes) recursiveNode.execute(data, wbits, bufferLen);
+            return (PBytes) recursiveNode.execute(frame, data, wbits, bufferLen);
         }
 
         protected static DecompressNode create() {

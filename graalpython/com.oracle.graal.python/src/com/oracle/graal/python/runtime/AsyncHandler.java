@@ -54,7 +54,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFrameNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -142,7 +141,7 @@ public class AsyncHandler {
             int frameIndex = (int) frameArguments[1];
             Object[] arguments = Arrays.copyOfRange(frameArguments, 2, frameArguments.length);
             if (frameIndex >= 0) {
-                arguments[frameIndex] = getFrameNode.execute(1);
+                arguments[frameIndex] = getFrameNode.execute(frame, 1);
             }
             return callNode.execute(frame, callable, arguments);
         }

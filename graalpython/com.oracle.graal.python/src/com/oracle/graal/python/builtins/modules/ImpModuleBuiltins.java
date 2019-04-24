@@ -144,8 +144,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         protected static final String IMPORT_NATIVE_MEMORYVIEW = "import_native_memoryview";
         protected static final String RUN_CAPI_LOADED_HOOKS = "run_capi_loaded_hooks";
         private static final String LLVM_LANGUAGE = "llvm";
+
         @Child private SetItemNode setItemNode;
         @Child private CheckFunctionResultNode checkResultNode;
+        @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__REPR__);
 
         @Specialization
         @TruffleBoundary
@@ -240,14 +242,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 }
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = insert(ReadAttributeFromObjectNode.create());
-                CallUnaryMethodNode callNode = insert(CallUnaryMethodNode.create());
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT), INITIALIZE_CAPI), capi);
-                ctxt.setCapiWasLoaded(capi);
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT), RUN_CAPI_LOADED_HOOKS), capi);
+                PythonModule builtinModule = ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
 
-                // initialization needs to be finished already but load memoryview implemenation
+                CallUnaryMethodNode callNode = CallUnaryMethodNode.getUncached();
+                callNode.executeObject(null, readNode.execute(builtinModule, INITIALIZE_CAPI), capi);
+                ctxt.setCapiWasLoaded(capi);
+                callNode.executeObject(null, readNode.execute(builtinModule, RUN_CAPI_LOADED_HOOKS), capi);
+
+                // initialization needs to be finished already but load memoryview implementation
                 // immediately
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT), IMPORT_NATIVE_MEMORYVIEW), capi);
+                callNode.executeObject(null, readNode.execute(builtinModule, IMPORT_NATIVE_MEMORYVIEW), capi);
             }
         }
 
@@ -267,8 +271,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             return checkResultNode;
         }
 
-        @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__REPR__);
-
         @TruffleBoundary
         private PException reportImportError(RuntimeException e, String path) {
             StringBuilder sb = new StringBuilder();
@@ -276,7 +278,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             if (e instanceof PException) {
                 PBaseException excObj = ((PException) e).getExceptionObject();
                 pythonCause = excObj;
-                sb.append(callReprNode.executeObject(excObj));
+                sb.append(callReprNode.executeObject(null, excObj));
             } else {
                 // that call will cause problems if the format string contains '%p'
                 sb.append(e.getMessage());
@@ -299,7 +301,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             importExc.setAttribute(__CAUSE__, pythonCause);
             throw raise(importExc);
         }
-
     }
 
     @Builtin(name = "exec_dynamic", minNumOfPositionalArgs = 1)

@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.GetIteratorNodeGen;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.GetIteratorWithoutFrameNodeGen;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.IsIteratorObjectNodeGen;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
@@ -65,6 +66,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -74,8 +76,8 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
     @Child private GetIteratorNode getIteratorNode = GetIteratorNode.create();
 
     @Specialization
-    Object doGeneric(Object value) {
-        return getIteratorNode.executeWith(value);
+    Object doGeneric(VirtualFrame frame, Object value) {
+        return getIteratorNode.executeWith(frame, value);
     }
 
     public static GetIteratorExpressionNode create(ExpressionNode collection) {
@@ -84,16 +86,55 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
 
     @GenerateUncached
     @ImportStatic(PGuards.class)
-    public abstract static class GetIteratorNode extends Node {
+    public abstract static class GetIteratorWithoutFrameNode extends Node {
         public abstract Object executeWith(Object value);
 
         @Specialization
-        PythonObject doPZip(PZip value) {
+        static PythonObject doPZip(PZip value) {
+            return GetIteratorNode.doPZip(value);
+        }
+
+        @Specialization(guards = {"!isNoValue(value)"})
+        static Object doGeneric(Object value,
+                        @Cached("createIdentityProfile()") ValueProfile getattributeProfile,
+                        @Cached GetLazyClassNode getClassNode,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrMroNode,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupGetitemAttrMroNode,
+                        @Cached CallUnaryMethodNode dispatchGetattribute,
+                        @Cached IsIteratorObjectNode isIteratorObjectNode,
+                        @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            // TODO(fa): FRAME MIGRATION
+            return GetIteratorNode.doGeneric(null, value, getattributeProfile, getClassNode, lookupAttrMroNode, lookupGetitemAttrMroNode, dispatchGetattribute, isIteratorObjectNode, factory,
+                            raiseNode);
+        }
+
+        @Specialization
+        static PythonObject doNone(PNone none,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            return GetIteratorNode.doNone(none, raiseNode);
+        }
+
+        public static GetIteratorWithoutFrameNode create() {
+            return GetIteratorWithoutFrameNodeGen.create();
+        }
+
+        public static GetIteratorWithoutFrameNode getUncached() {
+            return GetIteratorWithoutFrameNodeGen.getUncached();
+        }
+    }
+
+    @ImportStatic(PGuards.class)
+    public abstract static class GetIteratorNode extends Node {
+        public abstract Object executeWith(VirtualFrame frame, Object value);
+
+        @Specialization
+        static PythonObject doPZip(PZip value) {
             return value;
         }
 
         @Specialization(guards = {"!isNoValue(value)"})
-        Object doGeneric(Object value,
+        static Object doGeneric(VirtualFrame frame, Object value,
                         @Cached("createIdentityProfile()") ValueProfile getattributeProfile,
                         @Cached GetLazyClassNode getClassNode,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttrMroNode,
@@ -105,7 +146,7 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
             LazyPythonClass clazz = getClassNode.execute(value);
             Object attrObj = getattributeProfile.profile(lookupAttrMroNode.execute(clazz, SpecialMethodNames.__ITER__));
             if (attrObj != PNone.NO_VALUE && attrObj != PNone.NONE) {
-                Object iterObj = dispatchGetattribute.executeObject(attrObj, value);
+                Object iterObj = dispatchGetattribute.executeObject(frame, attrObj, value);
                 if (isIteratorObjectNode.execute(iterObj)) {
                     return iterObj;
                 } else {
@@ -121,7 +162,7 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
         }
 
         @Specialization
-        PythonObject doNone(PNone none,
+        static PythonObject doNone(PNone none,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             throw notIterable(raiseNode, none);
         }
@@ -136,10 +177,6 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
 
         public static GetIteratorNode create() {
             return GetIteratorNodeGen.create();
-        }
-
-        public static GetIteratorNode getUncached() {
-            return GetIteratorNodeGen.getUncached();
         }
     }
 

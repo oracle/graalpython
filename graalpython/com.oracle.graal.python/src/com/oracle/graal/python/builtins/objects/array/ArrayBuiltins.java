@@ -70,6 +70,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PArray)
 public class ArrayBuiltins extends PythonBuiltins {
@@ -108,9 +109,9 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean contains(PArray self, Object other,
+        boolean contains(VirtualFrame frame, PArray self, Object other,
                         @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
-            return containsNode.execute(self.getSequenceStorage(), other);
+            return containsNode.execute(frame, self.getSequenceStorage(), other);
         }
     }
 
@@ -118,9 +119,9 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean lessThan(PArray left, PArray right,
+        boolean lessThan(VirtualFrame frame, PArray left, PArray right,
                         @Cached("createLt()") SequenceStorageNodes.CmpNode eqNode) {
-            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 
@@ -128,9 +129,9 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean lessThan(PArray left, PArray right,
+        boolean lessThan(VirtualFrame frame, PArray left, PArray right,
                         @Cached("createLe()") SequenceStorageNodes.CmpNode eqNode) {
-            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 
@@ -138,9 +139,9 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean lessThan(PArray left, PArray right,
+        boolean lessThan(VirtualFrame frame, PArray left, PArray right,
                         @Cached("createGt()") SequenceStorageNodes.CmpNode eqNode) {
-            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 
@@ -148,9 +149,9 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean lessThan(PArray left, PArray right,
+        boolean lessThan(VirtualFrame frame, PArray left, PArray right,
                         @Cached("createGe()") SequenceStorageNodes.CmpNode eqNode) {
-            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 
@@ -158,9 +159,9 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean lessThan(PArray left, PArray right,
+        boolean lessThan(VirtualFrame frame, PArray left, PArray right,
                         @Cached("createEq()") SequenceStorageNodes.CmpNode eqNode) {
-            return !eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return !eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 
@@ -168,12 +169,12 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
 
-        protected abstract boolean executeWith(Object left, Object right);
+        protected abstract boolean executeWith(VirtualFrame frame, Object left, Object right);
 
         @Specialization
-        boolean eq(PArray left, PArray right,
+        boolean eq(VirtualFrame frame, PArray left, PArray right,
                         @Cached("createEq()") SequenceStorageNodes.CmpNode eqNode) {
-            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 

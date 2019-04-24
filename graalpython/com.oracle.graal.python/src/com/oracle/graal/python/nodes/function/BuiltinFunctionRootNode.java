@@ -86,7 +86,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return node.execute(arg.execute(frame));
+            return node.execute(frame, arg.execute(frame));
         }
     }
 
@@ -118,7 +118,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return node.execute(arg1.execute(frame), arg2.execute(frame));
+            return node.execute(frame, arg1.execute(frame), arg2.execute(frame));
         }
     }
 
@@ -137,7 +137,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return node.execute(arg1.execute(frame), arg2.execute(frame), arg3.execute(frame));
+            return node.execute(frame, arg1.execute(frame), arg2.execute(frame), arg3.execute(frame));
         }
     }
 

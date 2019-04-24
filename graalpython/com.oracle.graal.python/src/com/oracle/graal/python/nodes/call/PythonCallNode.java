@@ -150,7 +150,7 @@ public abstract class PythonCallNode extends ExpressionNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return callTernary.executeWithFrame(frame, getCallable.execute(frame), argumentNodes[0].execute(frame), argumentNodes[1].execute(frame), argumentNodes[2].execute(frame));
+            return callTernary.execute(frame, getCallable.execute(frame), argumentNodes[0].execute(frame), argumentNodes[1].execute(frame), argumentNodes[2].execute(frame));
         }
     }
 
@@ -191,9 +191,9 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
 
         @Specialization(guards = "!isForeignObject(object)")
-        Object getCallAttribute(Object object,
+        Object getCallAttribute(VirtualFrame frame, Object object,
                         @Cached("create(key)") GetAttributeNode getAttributeNode) {
-            return getAttributeNode.executeObject(object);
+            return getAttributeNode.executeObject(frame, object);
         }
     }
 
@@ -247,7 +247,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         } catch (UnknownIdentifierException | UnsupportedMessageException e) {
             invokeError.enter();
             // the interop contract is to revert to readMember and then execute
-            Object member = getAttrNode.executeObject(callable.receiver, callable.identifier);
+            Object member = getAttrNode.executeObject(frame, callable.receiver, callable.identifier);
             return callNode.execute(frame, member, arguments, keywords);
         }
     }

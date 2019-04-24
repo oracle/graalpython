@@ -176,7 +176,7 @@ public class WithNode extends StatementNode {
         Object trace = e.getExceptionObject().getTraceback(factory);
         Object returnValue = exitDispatch.execute(frame, exitCallable, new Object[]{withObject, type, value, trace}, PKeyword.EMPTY_KEYWORDS);
         // If exit handler returns 'true', suppress
-        if (toBooleanNode.executeWith(returnValue)) {
+        if (toBooleanNode.executeBoolean(frame, returnValue)) {
             return;
         } else {
             // else re-raise exception

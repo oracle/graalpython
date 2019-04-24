@@ -80,7 +80,7 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
                     @Cached("getLocalsDict(frame)") Object localsDict,
                     @Cached("create()") DeleteItemNode delItemNode) {
         // class namespace overrides closure
-        delItemNode.executeWith(localsDict, identifier);
+        delItemNode.executeWith(frame, localsDict, identifier);
     }
 
     @Specialization

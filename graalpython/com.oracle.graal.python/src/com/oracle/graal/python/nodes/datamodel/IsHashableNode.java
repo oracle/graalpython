@@ -79,8 +79,9 @@ public abstract class IsHashableNode extends PDataModelEmulationNode {
                     @Cached PRaiseNode raiseNode,
                     @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
                     @Cached("create()") BuiltinFunctions.IsInstanceNode isInstanceNode) {
-        Object hashValue = lookupHashAttributeNode.executeObject(object);
-        if (isInstanceNode.executeWith(hashValue, context.getCore().lookupType(PythonBuiltinClassType.PInt))) {
+        // TODO(fa): FRAME MIGRATION
+        Object hashValue = lookupHashAttributeNode.executeObject(null, object);
+        if (isInstanceNode.executeWith(null, hashValue, context.getCore().lookupType(PythonBuiltinClassType.PInt))) {
             return true;
         }
         throw raiseNode.raise(PythonErrorType.TypeError, "__hash__ method should return an integer");

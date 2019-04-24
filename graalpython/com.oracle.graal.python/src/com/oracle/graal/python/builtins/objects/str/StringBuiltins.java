@@ -108,6 +108,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -784,9 +785,9 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class JoinNode extends PythonBuiltinNode {
 
         @Specialization
-        protected String join(Object self, Object iterable,
+        protected String join(VirtualFrame frame, Object self, Object iterable,
                         @Cached("create()") JoinInternalNode join) {
-            return join.execute(self, iterable);
+            return join.execute(frame, self, iterable);
         }
     }
 
@@ -834,7 +835,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class TranslateNode extends PythonBuiltinNode {
         @Specialization
-        public String translate(String self, String table) {
+        String translate(String self, String table) {
             char[] translatedChars = new char[self.length()];
 
             for (int i = 0; i < self.length(); i++) {
@@ -847,7 +848,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String translate(String self, PDict table,
+        String translate(VirtualFrame frame, String self, PDict table,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile,
                         @Cached("create()") SpliceNode spliceNode) {
@@ -858,7 +859,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 char original = self.charAt(i);
                 Object translated = null;
                 try {
-                    translated = getItemNode.executeObject(table, (int) original);
+                    translated = getItemNode.executeObject(frame, table, (int) original);
                 } catch (PException e) {
                     e.expect(KeyError, errorProfile);
                 }
@@ -890,15 +891,15 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String translate(String self, PIBytesLike table,
+        String translate(VirtualFrame frame, String self, PIBytesLike table,
                         @Cached("create()") BytesNodes.ToBytesNode getBytesNode) {
-            return translateFromByteTable(self, getBytesNode.execute(table));
+            return translateFromByteTable(self, getBytesNode.execute(frame, table));
         }
 
         @Specialization
-        public String translate(String self, PMemoryView table,
+        String translate(VirtualFrame frame, String self, PMemoryView table,
                         @Cached("create()") BytesNodes.ToBytesNode getBytesNode) {
-            return translateFromByteTable(self, getBytesNode.execute(table));
+            return translateFromByteTable(self, getBytesNode.execute(frame, table));
         }
 
     }
@@ -1186,17 +1187,17 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        public PList doSplit(String self, PNone sep, PNone maxsplit) {
-            return rsplitfields(self, -1);
+        PList doSplit(VirtualFrame frame, String self, PNone sep, PNone maxsplit) {
+            return rsplitfields(frame, self, -1);
         }
 
         @Specialization
-        public PList doSplit(String self, String sep, @SuppressWarnings("unused") PNone maxsplit) {
-            return doSplit(self, sep, Integer.MAX_VALUE);
+        PList doSplit(VirtualFrame frame, String self, String sep, @SuppressWarnings("unused") PNone maxsplit) {
+            return doSplit(frame, self, sep, Integer.MAX_VALUE);
         }
 
         @Specialization
-        public PList doSplit(String self, String sep, int maxsplit) {
+        PList doSplit(VirtualFrame frame, String self, String sep, int maxsplit) {
             if (sep.length() == 0) {
                 throw raise(ValueError, "empty separator");
             }
@@ -1219,13 +1220,13 @@ public final class StringBuiltins extends PythonBuiltins {
             }
 
             getAppendNode().execute(list, remainder);
-            getReverseNode().execute(list);
+            getReverseNode().execute(frame, list);
             return list;
         }
 
         @Specialization
-        public PList doSplit(String self, @SuppressWarnings("unused") PNone sep, int maxsplit) {
-            return rsplitfields(self, maxsplit);
+        public PList doSplit(VirtualFrame frame, String self, @SuppressWarnings("unused") PNone sep, int maxsplit) {
+            return rsplitfields(frame, self, maxsplit);
         }
 
         @TruffleBoundary
@@ -1234,7 +1235,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         // See {@link PyString}
-        private PList rsplitfields(String s, int maxsplit) {
+        private PList rsplitfields(VirtualFrame frame, String s, int maxsplit) {
             /*
              * Result built here is a list of split parts, exactly as required for s.split(None,
              * maxsplit). If there are to be n splits, there will be n+1 elements in L.
@@ -1290,7 +1291,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 end = index - 1;
             }
 
-            getReverseNode().execute(list);
+            getReverseNode().execute(frame, list);
             return list;
         }
     }
@@ -1810,24 +1811,24 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ZFillNode extends PythonBinaryBuiltinNode {
 
-        public abstract String executeObject(String self, Object x);
+        public abstract String executeObject(VirtualFrame frame, String self, Object x);
 
         @Specialization
-        public String doString(String self, long width) {
+        String doString(String self, long width) {
             return zfill(self, (int) width);
         }
 
         @Specialization
-        public String doString(String self, PInt width,
+        String doString(String self, PInt width,
                         @Cached("create()") CastToIndexNode toIndexNode) {
             return zfill(self, toIndexNode.execute(width));
         }
 
         @Specialization
-        public String doString(String self, Object width,
+        String doString(VirtualFrame frame, String self, Object width,
                         @Cached("create()") CastToIntegerFromIndexNode widthCast,
                         @Cached("create()") ZFillNode recursiveNode) {
-            return recursiveNode.executeObject(self, widthCast.execute(width));
+            return recursiveNode.executeObject(frame, self, widthCast.execute(frame, width));
         }
 
         private static String zfill(String self, int width) {

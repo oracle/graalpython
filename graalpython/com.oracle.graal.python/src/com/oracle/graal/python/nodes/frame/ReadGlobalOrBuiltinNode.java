@@ -97,7 +97,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     @Specialization(guards = "isInDict(frame)", rewriteOn = PException.class)
     protected Object readGlobalDict(VirtualFrame frame,
                     @Cached("create()") GetItemNode getItemNode) {
-        return returnGlobalOrBuiltin(getItemNode.execute(PArguments.getGlobals(frame), attributeId));
+        return returnGlobalOrBuiltin(getItemNode.execute(frame, PArguments.getGlobals(frame), attributeId));
     }
 
     @Specialization(guards = "isInDict(frame)")
@@ -105,7 +105,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
                     @Cached("create()") GetItemNode getItemNode,
                     @Cached("create()") IsBuiltinClassProfile errorProfile) {
         try {
-            Object result = getItemNode.execute(PArguments.getGlobals(frame), attributeId);
+            Object result = getItemNode.execute(frame, PArguments.getGlobals(frame), attributeId);
             return returnGlobalOrBuiltin(result);
         } catch (PException e) {
             e.expect(KeyError, errorProfile);

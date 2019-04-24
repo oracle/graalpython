@@ -95,6 +95,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -115,18 +116,18 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean doForeignObject(Object self,
+        boolean doForeignObject(VirtualFrame frame, Object self,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached("createIfTrueNode()") CastToBooleanNode cast) {
             try {
                 if (lib.isBoolean(self)) {
                     return lib.asBoolean(self);
                 } else if (lib.fitsInLong(self)) {
-                    return cast.executeWith(lib.asLong(self));
+                    return cast.executeBoolean(frame, lib.asLong(self));
                 } else if (lib.fitsInDouble(self)) {
-                    return cast.executeWith(lib.asDouble(self));
+                    return cast.executeBoolean(frame, lib.asDouble(self));
                 } else if (lib.hasArrayElements(self)) {
-                    return cast.executeWith(lib.getArraySize(self));
+                    return cast.executeBoolean(frame, lib.getArraySize(self));
                 } else {
                     return !lib.isNull(self);
                 }
@@ -203,13 +204,13 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"lib.isBoolean(left)"})
-        Object doComparisonBool(Object left, Object right,
+        Object doComparisonBool(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 if (!reverse) {
-                    return op.executeObject(lib.asBoolean(left), right);
+                    return op.executeObject(frame, lib.asBoolean(left), right);
                 } else {
-                    return op.executeObject(right, lib.asBoolean(left));
+                    return op.executeObject(frame, right, lib.asBoolean(left));
                 }
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("object does not unpack to boolean as it claims to");
@@ -217,13 +218,13 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"lib.fitsInLong(left)"})
-        Object doComparisonLong(Object left, Object right,
+        Object doComparisonLong(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 if (!reverse) {
-                    return op.executeObject(lib.asLong(left), right);
+                    return op.executeObject(frame, lib.asLong(left), right);
                 } else {
-                    return op.executeObject(right, lib.asLong(left));
+                    return op.executeObject(frame, right, lib.asLong(left));
                 }
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("3object does not unpack to long as it claims to");
@@ -231,13 +232,13 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!lib.fitsInLong(left)", "lib.fitsInDouble(left)"})
-        Object doComparisonDouble(Object left, Object right,
+        Object doComparisonDouble(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 if (!reverse) {
-                    return op.executeObject(lib.asDouble(left), right);
+                    return op.executeObject(frame, lib.asDouble(left), right);
                 } else {
-                    return op.executeObject(right, lib.asDouble(left));
+                    return op.executeObject(frame, right, lib.asDouble(left));
                 }
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("object does not unpack to double as it claims to");
@@ -245,13 +246,13 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"lib.isString(left)"})
-        Object doComparisonString(Object left, Object right,
+        Object doComparisonString(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 if (!reverse) {
-                    return op.executeObject(lib.asString(left), right);
+                    return op.executeObject(frame, lib.asString(left), right);
                 } else {
-                    return op.executeObject(right, lib.asString(left));
+                    return op.executeObject(frame, right, lib.asString(left));
                 }
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("object does not unpack to String as it claims to");
@@ -424,39 +425,39 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"lib.isBoolean(left)"})
-        Object doComparisonBool(Object left, Object right,
+        Object doComparisonBool(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return comparisonNode.executeBool(lib.asBoolean(left), right);
+                return comparisonNode.executeBool(frame, lib.asBoolean(left), right);
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("object does not unpack to boolean for comparison as it claims to");
             }
         }
 
         @Specialization(guards = {"lib.fitsInLong(left)"})
-        Object doComparisonLong(Object left, Object right,
+        Object doComparisonLong(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return comparisonNode.executeWith(lib.asLong(left), right);
+                return comparisonNode.executeWith(frame, lib.asLong(left), right);
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("object does not unpack to long for comparison as it claims to");
             }
         }
 
         @Specialization(guards = {"lib.fitsInDouble(left)"})
-        Object doComparisonDouble(Object left, Object right,
+        Object doComparisonDouble(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return comparisonNode.executeWith(lib.asDouble(left), right);
+                return comparisonNode.executeWith(frame, lib.asDouble(left), right);
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("object does not unpack to double for comparison as it claims to");
             }
         }
 
         @Specialization(guards = "lib.isNull(left)")
-        Object doComparison(@SuppressWarnings("unused") Object left, Object right,
+        Object doComparison(VirtualFrame frame, @SuppressWarnings("unused") Object left, Object right,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return comparisonNode.executeWith(PNone.NONE, right);
+            return comparisonNode.executeWith(frame, PNone.NONE, right);
         }
 
         @SuppressWarnings("unused")
@@ -667,8 +668,8 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Child private AccessForeignItemNodes.SetForeignItemNode setForeignItemNode = AccessForeignItemNodes.SetForeignItemNode.create();
 
         @Specialization
-        Object doit(Object object, Object key, Object value) {
-            setForeignItemNode.execute(object, key, value);
+        Object doit(VirtualFrame frame, Object object, Object key, Object value) {
+            setForeignItemNode.execute(frame, object, key, value);
             return PNone.NONE;
         }
     }
@@ -743,70 +744,70 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Child protected PythonUnaryBuiltinNode objectStrNode;
 
         @Specialization(guards = {"lib.isNull(object)"})
-        protected Object doNull(@SuppressWarnings("unused") Object object,
+        protected Object doNull(VirtualFrame frame, @SuppressWarnings("unused") Object object,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return getCallStrNode().executeObject(PNone.NONE);
+            return getCallStrNode().executeObject(frame, PNone.NONE);
         }
 
         @Specialization(guards = {"lib.isBoolean(object)"})
-        protected Object doBool(Object object,
+        protected Object doBool(VirtualFrame frame, Object object,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return getCallStrNode().executeObject(lib.asBoolean(object));
+                return getCallStrNode().executeObject(frame, lib.asBoolean(object));
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the appropriate unbox message");
             }
         }
 
         @Specialization(guards = {"lib.isString(object)"})
-        protected Object doStr(Object object,
+        protected Object doStr(VirtualFrame frame, Object object,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return getCallStrNode().executeObject(lib.asString(object));
+                return getCallStrNode().executeObject(frame, lib.asString(object));
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the appropriate unbox message");
             }
         }
 
         @Specialization(guards = {"lib.fitsInLong(object)"})
-        protected Object doLong(Object object,
+        protected Object doLong(VirtualFrame frame, Object object,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return getCallStrNode().executeObject(lib.asLong(object));
+                return getCallStrNode().executeObject(frame, lib.asLong(object));
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the appropriate unbox message");
             }
         }
 
         @Specialization(guards = {"lib.fitsInDouble(object)"})
-        protected Object doDouble(Object object,
+        protected Object doDouble(VirtualFrame frame, Object object,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return getCallStrNode().executeObject(lib.asDouble(object));
+                return getCallStrNode().executeObject(frame, lib.asDouble(object));
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the appropriate unbox message");
             }
         }
 
         @Specialization(guards = {"lib.hasArrayElements(object)"})
-        protected Object doArray(Object object,
+        protected Object doArray(VirtualFrame frame, Object object,
                         @Cached("create()") CastToListNode asList,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 long size = lib.getArraySize(object);
                 if (size <= Integer.MAX_VALUE && size >= 0) {
                     PForeignArrayIterator iterable = factory().createForeignArrayIterator(object, (int) size);
-                    return getCallStrNode().executeObject(asList.executeWith(iterable));
+                    return getCallStrNode().executeObject(frame, asList.executeWith(iterable));
                 }
             } catch (UnsupportedMessageException e) {
                 // fall through
             }
-            return doIt(object);
+            return doIt(frame, object);
         }
 
         @Fallback
-        protected Object doIt(Object object) {
-            return getObjectStrNode().execute(object);
+        protected Object doIt(VirtualFrame frame, Object object) {
+            return getObjectStrNode().execute(frame, object);
         }
 
         private LookupAndCallUnaryNode getCallStrNode() {

@@ -135,11 +135,11 @@ public class TypeBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        String repr(PythonAbstractClass self,
+        String repr(VirtualFrame frame, PythonAbstractClass self,
                         @Cached("create(__MODULE__)") GetFixedAttributeNode readModuleNode,
                         @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
-            Object moduleName = readModuleNode.executeObject(self);
-            Object qualName = readQualNameNode.executeObject(self);
+            Object moduleName = readModuleNode.executeObject(frame, self);
+            Object qualName = readQualNameNode.executeObject(frame, self);
             return concat(moduleName, qualName);
         }
 
@@ -330,7 +330,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private TypeNodes.GetNameNode getNameNode;
 
         @Specialization
-        protected Object doIt(LazyPythonClass object, Object key) {
+        protected Object doIt(VirtualFrame frame, LazyPythonClass object, Object key) {
             LazyPythonClass type = getObjectClassNode.execute(object);
             Object descr = lookup.execute(type, key);
             Object get = null;
@@ -351,7 +351,7 @@ public class TypeBuiltins extends PythonBuiltins {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             invokeGet = insert(CallTernaryMethodNode.create());
                         }
-                        return invokeGet.execute(get, descr, object, getPythonClass(type, getClassProfile));
+                        return invokeGet.execute(frame, get, descr, object, getPythonClass(type, getClassProfile));
                     }
                 }
             }
@@ -366,7 +366,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         invokeValueGet = insert(CallTernaryMethodNode.create());
                     }
-                    return invokeValueGet.execute(valueGet, value, PNone.NONE, object);
+                    return invokeValueGet.execute(frame, valueGet, value, PNone.NONE, object);
                 }
             }
             if (descr != PNone.NO_VALUE) {
@@ -378,7 +378,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         invokeGet = insert(CallTernaryMethodNode.create());
                     }
-                    return invokeGet.execute(get, descr, object, getPythonClass(type, getClassProfile));
+                    return invokeGet.execute(frame, get, descr, object, getPythonClass(type, getClassProfile));
                 }
             }
             errorProfile.enter();
@@ -496,40 +496,40 @@ public class TypeBuiltins extends PythonBuiltins {
 
         private final ConditionProfile typeErrorProfile = ConditionProfile.createBinaryProfile();
 
+        public abstract boolean executeWith(VirtualFrame frame, Object cls, Object instance);
+
         public static InstanceCheckNode create() {
             return TypeBuiltinsFactory.InstanceCheckNodeFactory.create();
         }
 
-        private PythonObject getInstanceClassAttr(Object instance) {
-            Object classAttr = getAttributeNode.executeObject(instance, __CLASS__);
+        private PythonObject getInstanceClassAttr(VirtualFrame frame, Object instance) {
+            Object classAttr = getAttributeNode.executeObject(frame, instance, __CLASS__);
             if (classAttr instanceof PythonObject) {
                 return (PythonObject) classAttr;
             }
             return null;
         }
 
-        public abstract boolean executeWith(Object cls, Object instance);
-
         @Specialization
-        public boolean isInstance(PythonAbstractClass cls, Object instance,
+        boolean isInstance(VirtualFrame frame, PythonAbstractClass cls, Object instance,
                         @Cached("create()") IsSubtypeNode isSubtypeNode,
                         @Cached("create()") GetClassNode getClass) {
             if (instance instanceof PythonObject && isSubtypeNode.execute(getClass.execute(instance), cls)) {
                 return true;
             }
 
-            Object instanceClass = getAttributeNode.executeObject(instance, __CLASS__);
+            Object instanceClass = getAttributeNode.executeObject(frame, instance, __CLASS__);
             return PGuards.isManagedClass(instanceClass) && isSubtypeNode.execute(instanceClass, cls);
         }
 
         @Fallback
-        public boolean isInstance(Object cls, Object instance) {
-            if (typeErrorProfile.profile(getBasesNode.execute(cls) == null)) {
+        boolean isInstance(VirtualFrame frame, Object cls, Object instance) {
+            if (typeErrorProfile.profile(getBasesNode.execute(frame, cls) == null)) {
                 throw raise(TypeError, "isinstance() arg 2 must be a type or tuple of types (was: %s)", instance);
             }
 
-            PythonObject instanceClass = getInstanceClassAttr(instance);
-            return instanceClass != null && abstractIsSubclassNode.execute(instanceClass, cls);
+            PythonObject instanceClass = getInstanceClassAttr(frame, instance);
+            return instanceClass != null && abstractIsSubclassNode.execute(frame, instanceClass, cls);
         }
     }
 
@@ -550,7 +550,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doObjectObject(Object cls, Object derived,
+        boolean doObjectObject(VirtualFrame frame, Object cls, Object derived,
                         @Cached("create()") TypeNodes.IsTypeNode isClsTypeNode,
                         @Cached("create()") TypeNodes.IsTypeNode isDerivedTypeNode) {
             if (isSameType(cls, derived)) {
@@ -561,10 +561,10 @@ public class TypeBuiltins extends PythonBuiltins {
             if (isClsTypeNode.execute(cls) && isDerivedTypeNode.execute(derived)) {
                 return isSubtypeNode.execute(derived, cls);
             }
-            if (!checkClass(derived)) {
+            if (!checkClass(frame, derived)) {
                 throw raise(PythonBuiltinClassType.TypeError, "issubclass() arg 1 must be a class");
             }
-            if (!checkClass(cls)) {
+            if (!checkClass(frame, cls)) {
                 throw raise(PythonBuiltinClassType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
             }
             return false;
@@ -572,7 +572,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         // checks if object has '__bases__' (see CPython 'abstract.c' function
         // 'recursive_issubclass')
-        private boolean checkClass(Object obj) {
+        private boolean checkClass(VirtualFrame frame, Object obj) {
             if (getBasesAttrNode == null || isAttrErrorProfile == null || isTupleProfile == null || getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getBasesAttrNode = insert(GetFixedAttributeNode.create(SpecialAttributeNames.__BASES__));
@@ -582,7 +582,7 @@ public class TypeBuiltins extends PythonBuiltins {
             }
             Object basesObj;
             try {
-                basesObj = getBasesAttrNode.executeObject(obj);
+                basesObj = getBasesAttrNode.executeObject(frame, obj);
             } catch (PException e) {
                 e.expectAttributeError(isAttrErrorProfile);
                 return false;

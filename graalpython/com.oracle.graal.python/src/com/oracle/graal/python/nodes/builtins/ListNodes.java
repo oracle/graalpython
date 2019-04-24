@@ -66,7 +66,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNode
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.FastConstructListNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.IndexNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorWithoutFrameNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -93,6 +93,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -110,16 +111,16 @@ public abstract class ListNodes {
             return CreateStorageFromIteratorUncachedNode.INSTANCE;
         }
 
-        public abstract SequenceStorage execute(Object iterator);
+        public abstract SequenceStorage execute(VirtualFrame frame, Object iterator);
 
-        private static SequenceStorage doIt(Object iterator, ListStorageType type, GetNextNode next, IsBuiltinClassProfile errorProfile) {
+        private static SequenceStorage doIt(VirtualFrame frame, Object iterator, ListStorageType type, GetNextNode next, IsBuiltinClassProfile errorProfile) {
             SequenceStorage storage;
             if (type == ListStorageType.Uninitialized) {
                 Object[] elements = new Object[START_SIZE];
                 int i = 0;
                 while (true) {
                     try {
-                        Object value = next.execute(iterator);
+                        Object value = next.execute(frame, iterator);
                         if (i >= elements.length) {
                             elements = Arrays.copyOf(elements, elements.length * 2);
                         }
@@ -140,7 +141,7 @@ public abstract class ListNodes {
                             array = elements;
                             while (true) {
                                 try {
-                                    boolean value = next.executeBoolean(iterator);
+                                    boolean value = next.executeBoolean(frame, iterator);
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
                                         array = elements;
@@ -159,7 +160,7 @@ public abstract class ListNodes {
                             array = elements;
                             while (true) {
                                 try {
-                                    int value = next.executeInt(iterator);
+                                    int value = next.executeInt(frame, iterator);
                                     byte bvalue;
                                     try {
                                         bvalue = PInt.byteValueExact(value);
@@ -184,7 +185,7 @@ public abstract class ListNodes {
                             array = elements;
                             while (true) {
                                 try {
-                                    int value = next.executeInt(iterator);
+                                    int value = next.executeInt(frame, iterator);
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
                                         array = elements;
@@ -203,7 +204,7 @@ public abstract class ListNodes {
                             array = elements;
                             while (true) {
                                 try {
-                                    long value = next.executeLong(iterator);
+                                    long value = next.executeLong(frame, iterator);
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
                                         array = elements;
@@ -222,7 +223,7 @@ public abstract class ListNodes {
                             array = elements;
                             while (true) {
                                 try {
-                                    double value = next.executeDouble(iterator);
+                                    double value = next.executeDouble(frame, iterator);
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
                                         array = elements;
@@ -241,7 +242,7 @@ public abstract class ListNodes {
                             array = elements;
                             while (true) {
                                 try {
-                                    PList value = PList.expect(next.execute(iterator));
+                                    PList value = PList.expect(next.execute(frame, iterator));
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
                                         array = elements;
@@ -260,7 +261,7 @@ public abstract class ListNodes {
                             array = elements;
                             while (true) {
                                 try {
-                                    PTuple value = PTuple.expect(next.execute(iterator));
+                                    PTuple value = PTuple.expect(next.execute(frame, iterator));
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
                                         array = elements;
@@ -278,7 +279,7 @@ public abstract class ListNodes {
                             Object[] elements = new Object[START_SIZE];
                             while (true) {
                                 try {
-                                    Object value = next.execute(iterator);
+                                    Object value = next.execute(frame, iterator);
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
                                     }
@@ -295,13 +296,13 @@ public abstract class ListNodes {
                             throw new RuntimeException("unexpected state");
                     }
                 } catch (UnexpectedResultException e) {
-                    storage = genericFallback(iterator, array, i, e.getResult(), next, errorProfile);
+                    storage = genericFallback(frame, iterator, array, i, e.getResult(), next, errorProfile);
                 }
             }
             return storage;
         }
 
-        private static SequenceStorage genericFallback(Object iterator, Object array, int count, Object result, GetNextNode next, IsBuiltinClassProfile errorProfile) {
+        private static SequenceStorage genericFallback(VirtualFrame frame, Object iterator, Object array, int count, Object result, GetNextNode next, IsBuiltinClassProfile errorProfile) {
             Object[] elements = new Object[Array.getLength(array) * 2];
             int i = 0;
             for (; i < count; i++) {
@@ -310,7 +311,7 @@ public abstract class ListNodes {
             elements[i++] = result;
             while (true) {
                 try {
-                    Object value = next.execute(iterator);
+                    Object value = next.execute(frame, iterator);
                     if (i >= elements.length) {
                         elements = Arrays.copyOf(elements, elements.length * 2);
                     }
@@ -334,8 +335,9 @@ public abstract class ListNodes {
         @CompilationFinal private ListStorageType expectedElementType = ListStorageType.Uninitialized;
 
         @Override
-        public SequenceStorage execute(Object iterator) {
-            SequenceStorage doIt = CreateStorageFromIteratorNode.doIt(iterator, expectedElementType, getNextNode, errorProfile);
+        public SequenceStorage execute(VirtualFrame frame, Object iterator) {
+            // TODO(fa): FRAME MIGRATION
+            SequenceStorage doIt = CreateStorageFromIteratorNode.doIt(null, iterator, expectedElementType, getNextNode, errorProfile);
             ListStorageType actualElementType = doIt.getElementType();
             if (expectedElementType != actualElementType) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -349,8 +351,8 @@ public abstract class ListNodes {
         public static final CreateStorageFromIteratorNode INSTANCE = new CreateStorageFromIteratorUncachedNode();
 
         @Override
-        public SequenceStorage execute(Object iterator) {
-            return CreateStorageFromIteratorNode.doIt(iterator, ListStorageType.Uninitialized, GetNextNode.getUncached(), IsBuiltinClassProfile.getUncached());
+        public SequenceStorage execute(VirtualFrame frame, Object iterator) {
+            return CreateStorageFromIteratorNode.doIt(null, iterator, ListStorageType.Uninitialized, GetNextNode.getUncached(), IsBuiltinClassProfile.getUncached());
         }
 
     }
@@ -366,14 +368,14 @@ public abstract class ListNodes {
         public abstract PList execute(LazyPythonClass cls, Object value);
 
         @Specialization
-        public PList listString(LazyPythonClass cls, PString arg,
+        PList listString(LazyPythonClass cls, PString arg,
                         @Shared("appendNode") @Cached AppendNode appendNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return listString(cls, arg.getValue(), appendNode, factory);
         }
 
         @Specialization
-        public PList listString(LazyPythonClass cls, String arg,
+        PList listString(LazyPythonClass cls, String arg,
                         @Shared("appendNode") @Cached AppendNode appendNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             char[] chars = arg.toCharArray();
@@ -387,24 +389,25 @@ public abstract class ListNodes {
         }
 
         @Specialization(guards = "isNoValue(none)")
-        public PList listIterable(LazyPythonClass cls, @SuppressWarnings("unused") PNone none,
+        PList listIterable(LazyPythonClass cls, @SuppressWarnings("unused") PNone none,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createList(cls);
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
-        public PList listIterable(LazyPythonClass cls, Object iterable,
-                        @Cached GetIteratorNode getIteratorNode,
+        PList listIterable(LazyPythonClass cls, Object iterable,
+                        @Cached GetIteratorWithoutFrameNode getIteratorNode,
                         @Cached CreateStorageFromIteratorNode createStorageFromIteratorNode,
                         @Cached PythonObjectFactory factory) {
 
             Object iterObj = getIteratorNode.executeWith(iterable);
-            SequenceStorage storage = createStorageFromIteratorNode.execute(iterObj);
+            // TODO(fa): FRAME MIGRATION
+            SequenceStorage storage = createStorageFromIteratorNode.execute(null, iterObj);
             return factory.createList(cls, storage);
         }
 
         @Fallback
-        public PList listObject(@SuppressWarnings("unused") LazyPythonClass cls, Object value) {
+        PList listObject(@SuppressWarnings("unused") LazyPythonClass cls, Object value) {
             CompilerDirectives.transferToInterpreter();
             throw new RuntimeException("list does not support iterable object " + value);
         }
@@ -480,7 +483,7 @@ public abstract class ListNodes {
             return IndexNodeGen.create(msg, CheckType.NUMBER);
         }
 
-        public abstract Object execute(Object object);
+        public abstract Object execute(VirtualFrame frame, Object object);
 
         protected boolean isSubscript() {
             return checkType == CheckType.SUBSCRIPT;
@@ -516,8 +519,8 @@ public abstract class ListNodes {
         }
 
         @Fallback
-        Object doGeneric(Object object) {
-            Object idx = getIndexNode.executeObject(object);
+        Object doGeneric(VirtualFrame frame, Object object) {
+            Object idx = getIndexNode.executeObject(frame, object);
             boolean valid = false;
             switch (checkType) {
                 case SUBSCRIPT:

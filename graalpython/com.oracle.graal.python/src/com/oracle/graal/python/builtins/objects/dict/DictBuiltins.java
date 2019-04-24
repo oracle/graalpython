@@ -75,6 +75,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDict)
@@ -100,19 +101,19 @@ public final class DictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length == 1")
-        public Object doVarargs(PDict self, Object[] args, PKeyword[] kwargs) {
-            self.setDictStorage(getInitNode().execute(args[0], kwargs));
+        Object doVarargs(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs) {
+            self.setDictStorage(getInitNode().execute(frame, args[0], kwargs));
             return PNone.NONE;
         }
 
         @Specialization(guards = "args.length == 0")
-        public Object doKeywords(PDict self, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs) {
-            self.setDictStorage(getInitNode().execute(NO_VALUE, kwargs));
+        Object doKeywords(VirtualFrame frame, PDict self, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs) {
+            self.setDictStorage(getInitNode().execute(frame, NO_VALUE, kwargs));
             return PNone.NONE;
         }
 
         @Specialization(guards = "args.length > 1")
-        public Object doGeneric(@SuppressWarnings("unused") PDict self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
+        Object doGeneric(@SuppressWarnings("unused") PDict self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
             throw raise(TypeError, "dict expected at most 1 arguments, got %d", args.length);
         }
     }
@@ -262,12 +263,12 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object getItem(PDict self, Object key,
+        Object getItem(VirtualFrame frame, PDict self, Object key,
                         @Cached("create()") HashingStorageNodes.GetItemNode getItemNode,
                         @Cached("create(__MISSING__)") LookupAndCallBinaryNode specialNode) {
             final Object result = getItemNode.execute(self.getDictStorage(), key);
             if (result == null) {
-                return specialNode.executeObject(self, key);
+                return specialNode.executeObject(frame, self, key);
             }
             return result;
         }
@@ -290,9 +291,9 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isString(key)")
-        Object run(Object self, Object key,
+        Object run(VirtualFrame frame, Object self, Object key,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode specialNode) {
-            Object name = specialNode.executeObject(key);
+            Object name = specialNode.executeObject(frame, key);
             if (!PGuards.isString(name)) {
                 throw raise(TypeError, "__repr__ returned non-string (type %p)", name);
             }
@@ -444,18 +445,18 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        public Object repr(PDict self,
+        public Object repr(VirtualFrame frame, PDict self,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode reprKeyNode,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode reprValueNode,
                         @Cached("create()") HashingStorageNodes.GetItemNode next) {
 
-            StringBuilder result = new StringBuilder("{");
+            StringBuilder result = new StringBuilder();
+            sbAppend(result, "{");
             boolean initial = true;
             for (Object key : self.keys()) {
                 Object value = next.execute(self.getDictStorage(), key);
-                Object keyReprString = unwrap(reprKeyNode.executeObject(key));
-                Object valueReprString = value != self ? unwrap(reprValueNode.executeObject(value)) : "{...}";
+                Object keyReprString = unwrap(reprKeyNode.executeObject(frame, key));
+                Object valueReprString = value != self ? unwrap(reprValueNode.executeObject(frame, value)) : "{...}";
 
                 checkString(keyReprString);
                 checkString(valueReprString);
@@ -463,17 +464,22 @@ public final class DictBuiltins extends PythonBuiltins {
                 if (initial) {
                     initial = false;
                 } else {
-                    result.append(", ");
+                    sbAppend(result, ", ");
                 }
                 result.append((String) keyReprString).append(": ").append((String) valueReprString);
             }
-            return result.append('}').toString();
+            return sbAppend(result, "}").toString();
         }
 
         private void checkString(Object strObj) {
             if (!(strObj instanceof String)) {
                 throw raise(PythonErrorType.TypeError, "__repr__ returned non-string (type %s)", strObj);
             }
+        }
+
+        @TruffleBoundary
+        private static StringBuilder sbAppend(StringBuilder sb, String s) {
+            return sb.append(s);
         }
 
         private static Object unwrap(Object valueReprString) {

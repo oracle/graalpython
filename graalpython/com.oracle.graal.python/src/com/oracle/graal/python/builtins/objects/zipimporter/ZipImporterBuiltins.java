@@ -25,9 +25,19 @@
  */
 package com.oracle.graal.python.builtins.objects.zipimporter;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -67,15 +77,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PZipImporter)
 public class ZipImporterBuiltins extends PythonBuiltins {
@@ -87,17 +90,17 @@ public class ZipImporterBuiltins extends PythonBuiltins {
      * this is to find location of the first local file header in the zipfile, which doesn't have to
      * be as ZipInputStream expects. Some of zip files (like .egg files) don't start with location
      * signature `PK\003\004` but with a code, that should be executed.
-     * 
+     *
      * In such case ZipInptuStream doesn't work, it just expects that the stream starts with the
      * location signature.
-     * 
+     *
      * This stream also improve performance of unzipping files in ZipImporter case. A content of
      * file is obtained from the zip, when it's needed (imported). The locations of zip entry
      * positions are cached in the zip directory cache. When content of a file is needed, then
      * previous zip entries are skipped and ZipInputStream is created from the required position.
-     * 
+     *
      * New ZipInputStream from this stream can be created after calling findFirstEntryPostion.
-     * 
+     *
      * It locates all occurrences of LOC signatures, even if a signature is a part of a content of a
      * file. This situation has to be handled separately.
      */
@@ -320,7 +323,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PNone init(PZipImporter self, PythonObject path) {
+        public PNone init(VirtualFrame frame, PZipImporter self, PythonObject path) {
             // at first we need to find out, whether path object has __fspath__ method
             if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -338,7 +341,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 convertPathNode = insert(PosixModuleBuiltins.ConvertPathlikeObjectNode.create());
             }
-            initZipImporter(self, convertPathNode.execute(path));
+            initZipImporter(self, convertPathNode.execute(frame, path));
             return PNone.NONE;
         }
 
@@ -411,7 +414,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         @Child private CompileNode compileNode;
 
         @Specialization
-        public PCode doit(PZipImporter self, String fullname,
+        public PCode doit(VirtualFrame frame, PZipImporter self, String fullname,
                         @Cached("createBinaryProfile()") ConditionProfile canNotFind,
                         @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
             if (initWasNotCalled.profile(self.getPrefix() == null)) {
@@ -425,7 +428,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             if (canNotFind.profile(md == null)) {
                 throw raise(PythonErrorType.ZipImportError, " can't find module '%s'", fullname);
             }
-            PCode code = compileNode.execute(md.code, md.path, "exec", 0, false, -1);
+            PCode code = compileNode.execute(frame, md.code, md.path, "exec", 0, false, -1);
             return code;
         }
 
@@ -568,11 +571,11 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     public abstract static class LoadModuleNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public Object doit(PZipImporter self, String fullname,
+        public Object doit(VirtualFrame frame, PZipImporter self, String fullname,
                         @Cached("create()") GetCodeNode getCodeNode,
                         @Cached("createBinaryProfile()") ConditionProfile canNotFind,
                         @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
-            PCode code = getCodeNode.doit(self, fullname, canNotFind, initWasNotCalled);
+            PCode code = getCodeNode.doit(frame, self, fullname, canNotFind, initWasNotCalled);
 
             PythonModule sysModule = getCore().lookupBuiltinModule("sys");
             PDict sysModules = (PDict) sysModule.getAttribute("modules");

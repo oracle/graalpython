@@ -63,10 +63,8 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
 
     public abstract Object execute(VirtualFrame frame, Object primary, Object slice);
 
-    public abstract Object execute(Object primary, Object slice);
-
     @Specialization
-    public Object doSpecialObject(Object primary, Object index) {
+    Object doSpecialObject(VirtualFrame frame, Object primary, Object index) {
         if (callGetitemNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callGetitemNode = insert(LookupAndCallBinaryNode.create(__GETITEM__, null, () -> new LookupAndCallBinaryNode.NotImplementedHandler() {
@@ -85,7 +83,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
                         }
                         Object classGetItem = null;
                         try {
-                            classGetItem = getClassGetItemNode.executeObject(arg);
+                            classGetItem = getClassGetItemNode.executeObject(frame, arg);
                         } catch (PException e) {
                             e.expect(AttributeError, isBuiltinClassProfile);
                             // fall through to normal error handling
@@ -106,7 +104,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
                 }
             }));
         }
-        return callGetitemNode.executeObject(primary, index);
+        return callGetitemNode.executeObject(frame, primary, index);
     }
 
     public static GetItemNode create() {

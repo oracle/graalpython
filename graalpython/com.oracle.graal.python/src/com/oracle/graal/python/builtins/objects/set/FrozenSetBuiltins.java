@@ -75,6 +75,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -210,17 +211,17 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBaseSet doPBaseSet(PSet left, PDictView right,
+        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PDictView right,
                         @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
-            PSet rightSet = constructSetNode.executeWith(right);
+            PSet rightSet = constructSetNode.executeWith(frame, right);
             HashingStorage intersectedStorage = getIntersectNode().execute(left.getDictStorage(), rightSet.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
 
         @Specialization
-        PBaseSet doPBaseSet(PFrozenSet left, PDictView right,
+        PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, PDictView right,
                         @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
-            PSet rightSet = constructSetNode.executeWith(right);
+            PSet rightSet = constructSetNode.executeWith(frame, right);
             HashingStorage intersectedStorage = getIntersectNode().execute(left.getDictStorage(), rightSet.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
@@ -286,17 +287,17 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBaseSet doPBaseSet(PSet left, PDictView right,
+        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PDictView right,
                         @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
-            PSet rightSet = constructSetNode.executeWith(right);
+            PSet rightSet = constructSetNode.executeWith(frame, right);
             HashingStorage intersectedStorage = getUnionNode().execute(left.getDictStorage(), rightSet.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
 
         @Specialization
-        PBaseSet doPBaseSet(PFrozenSet left, PDictView right,
+        PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, PDictView right,
                         @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
-            PSet rightSet = constructSetNode.executeWith(right);
+            PSet rightSet = constructSetNode.executeWith(frame, right);
             HashingStorage intersectedStorage = getUnionNode().execute(left.getDictStorage(), rightSet.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
@@ -373,22 +374,22 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
-        PBaseSet doCached(PBaseSet self, Object[] args,
+        PBaseSet doCached(VirtualFrame frame, PBaseSet self, Object[] args,
                         @Cached("args.length") int len,
                         @Cached("create()") HashingStorageNodes.CopyNode copyNode) {
             PBaseSet result = create(self, copyNode.execute(self.getDictStorage()));
             for (int i = 0; i < len; i++) {
-                getBinaryUnionNode().execute(result, result.getDictStorage(), args[i]);
+                getBinaryUnionNode().execute(frame, result, result.getDictStorage(), args[i]);
             }
             return result;
         }
 
         @Specialization(replaces = "doCached")
-        PBaseSet doGeneric(PBaseSet self, Object[] args,
+        PBaseSet doGeneric(VirtualFrame frame, PBaseSet self, Object[] args,
                         @Cached("create()") HashingStorageNodes.CopyNode copyNode) {
             PBaseSet result = create(self, copyNode.execute(self.getDictStorage()));
             for (int i = 0; i < args.length; i++) {
-                getBinaryUnionNode().execute(result, result.getDictStorage(), args[i]);
+                getBinaryUnionNode().execute(frame, result, result.getDictStorage(), args[i]);
             }
             return result;
         }
@@ -404,7 +405,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     abstract static class BinaryUnionNode extends PNodeWithContext {
         @Child private Equivalence equivalenceNode;
 
-        public abstract PBaseSet execute(PBaseSet container, HashingStorage left, Object right);
+        public abstract PBaseSet execute(VirtualFrame frame, PBaseSet container, HashingStorage left, Object right);
 
         protected Equivalence getEquivalence() {
             if (equivalenceNode == null) {
@@ -423,18 +424,18 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBaseSet doIterable(PBaseSet container, HashingStorage dictStorage, Object iterable,
+        PBaseSet doIterable(VirtualFrame frame, PBaseSet container, HashingStorage dictStorage, Object iterable,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode next,
                         @Cached("create()") IsBuiltinClassProfile errorProfile,
                         @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
 
             HashingStorage curStorage = dictStorage;
-            Object iterator = getIteratorNode.executeWith(iterable);
+            Object iterator = getIteratorNode.executeWith(frame, iterable);
             while (true) {
                 Object value;
                 try {
-                    value = next.execute(iterator);
+                    value = next.execute(frame, iterator);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     container.setDictStorage(curStorage);
@@ -459,10 +460,10 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean isSubSet(PBaseSet self, String other,
+        boolean isSubSet(VirtualFrame frame, PBaseSet self, String other,
                         @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
                         @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
-            PSet otherSet = constructSetNode.executeWith(other);
+            PSet otherSet = constructSetNode.executeWith(frame, other);
             return isSubsetNode.execute(self.getDictStorage(), otherSet.getDictStorage());
         }
     }
@@ -477,10 +478,10 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean isSuperSet(PBaseSet self, String other,
+        boolean isSuperSet(VirtualFrame frame, PBaseSet self, String other,
                         @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
                         @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
-            PSet otherSet = constructSetNode.executeWith(other);
+            PSet otherSet = constructSetNode.executeWith(frame, other);
             return isSupersetNode.execute(self.getDictStorage(), otherSet.getDictStorage());
         }
     }
@@ -489,9 +490,9 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LessEqualNode extends IsSubsetNode {
         @Specialization
-        Object isLessEqual(PBaseSet self, Object other,
+        Object isLessEqual(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached("create(__GE__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
-            Object result = lookupAndCallBinaryNode.executeObject(other, self);
+            Object result = lookupAndCallBinaryNode.executeObject(frame, other, self);
             if (result != PNone.NO_VALUE) {
                 return result;
             }
@@ -503,9 +504,9 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GreaterEqualNode extends IsSupersetNode {
         @Specialization
-        Object isGreaterEqual(PBaseSet self, Object other,
+        Object isGreaterEqual(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached("create(__LE__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
-            Object result = lookupAndCallBinaryNode.executeObject(other, self);
+            Object result = lookupAndCallBinaryNode.executeObject(frame, other, self);
             if (result != PNone.NO_VALUE) {
                 return result;
             }
@@ -516,7 +517,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LessThanNode extends PythonBinaryBuiltinNode {
-        @Child LessEqualNode lessEqualNode;
+        @Child private LessEqualNode lessEqualNode;
 
         private LessEqualNode getLessEqualNode() {
             if (lessEqualNode == null) {
@@ -527,27 +528,27 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean isLessThan(PBaseSet self, PBaseSet other,
+        boolean isLessThan(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
             if (sizeProfile.profile(self.size() >= other.size())) {
                 return false;
             }
-            return (Boolean) getLessEqualNode().execute(self, other);
+            return (Boolean) getLessEqualNode().execute(frame, self, other);
         }
 
         @Specialization
-        boolean isLessThan(PBaseSet self, String other,
+        boolean isLessThan(VirtualFrame frame, PBaseSet self, String other,
                         @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
             if (sizeProfile.profile(self.size() >= other.length())) {
                 return false;
             }
-            return (Boolean) getLessEqualNode().execute(self, other);
+            return (Boolean) getLessEqualNode().execute(frame, self, other);
         }
 
         @Specialization
-        Object isLessThan(PBaseSet self, Object other,
+        Object isLessThan(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached("create(__GT__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
-            Object result = lookupAndCallBinaryNode.executeObject(other, self);
+            Object result = lookupAndCallBinaryNode.executeObject(frame, other, self);
             if (result != PNone.NO_VALUE) {
                 return result;
             }
@@ -569,27 +570,27 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean isGreaterThan(PBaseSet self, PBaseSet other,
+        boolean isGreaterThan(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
             if (sizeProfile.profile(self.size() <= other.size())) {
                 return false;
             }
-            return (Boolean) getGreaterEqualNode().execute(self, other);
+            return (Boolean) getGreaterEqualNode().execute(frame, self, other);
         }
 
         @Specialization
-        boolean isGreaterThan(PBaseSet self, String other,
+        boolean isGreaterThan(VirtualFrame frame, PBaseSet self, String other,
                         @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
             if (sizeProfile.profile(self.size() <= other.length())) {
                 return false;
             }
-            return (Boolean) getGreaterEqualNode().execute(self, other);
+            return (Boolean) getGreaterEqualNode().execute(frame, self, other);
         }
 
         @Specialization
-        Object isLessThan(PBaseSet self, Object other,
+        Object isLessThan(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached("create(__LT__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
-            Object result = lookupAndCallBinaryNode.executeObject(other, self);
+            Object result = lookupAndCallBinaryNode.executeObject(frame, other, self);
             if (result != PNone.NO_VALUE) {
                 return result;
             }

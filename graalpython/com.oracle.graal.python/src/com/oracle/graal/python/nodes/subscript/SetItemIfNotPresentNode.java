@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,24 +47,25 @@ import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(SpecialMethodNames.class)
 public abstract class SetItemIfNotPresentNode extends Node {
     @Child private SetItemNode setItemNode = SetItemNode.create();
 
-    public abstract Object execute(Object namespace, Object attribute, Object value);
+    public abstract Object execute(VirtualFrame frame, Object namespace, Object attribute, Object value);
 
     public static SetItemIfNotPresentNode create() {
         return SetItemIfNotPresentNodeGen.create();
     }
 
     @Specialization
-    public Object doDictLike(Object namespace, Object attribute, Object value,
+    Object doDictLike(VirtualFrame frame, Object namespace, Object attribute, Object value,
                     @Cached("createIfFalseNode()") CastToBooleanNode notNode,
                     @Cached("create(__CONTAINS__)") LookupAndCallBinaryNode containsNode) {
-        if (value != null && notNode.executeWith(containsNode.executeObject(namespace, value))) {
-            setItemNode.executeWith(namespace, attribute, value);
+        if (value != null && notNode.executeBoolean(frame, containsNode.executeObject(frame, namespace, value))) {
+            setItemNode.executeWith(frame, namespace, attribute, value);
         }
         return PNone.NONE;
     }

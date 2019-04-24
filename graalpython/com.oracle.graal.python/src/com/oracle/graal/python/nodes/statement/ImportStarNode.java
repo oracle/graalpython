@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -45,19 +45,19 @@ public class ImportStarNode extends AbstractImportNode {
 
     // TODO: remove once we removed PythonModule globals
 
-    public void writeAttribute(PythonObject globals, String name, Object value) {
+    private void writeAttribute(VirtualFrame frame, PythonObject globals, String name, Object value) {
         if (globals instanceof PDict || globals instanceof PMappingproxy) {
             if (dictWriteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 dictWriteNode = insert(SetItemNode.create());
             }
-            dictWriteNode.executeWith(globals, name, value);
+            dictWriteNode.executeWith(frame, globals, name, value);
         } else {
             if (setAttributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 setAttributeNode = insert(new SetAttributeNode.Dynamic());
             }
-            setAttributeNode.execute(globals, name, value);
+            setAttributeNode.execute(frame, globals, name, value);
         }
     }
 
@@ -76,7 +76,7 @@ public class ImportStarNode extends AbstractImportNode {
                 continue;
             }
             Object attr = ((PythonModule) importedModule).getAttribute(name);
-            writeAttribute(globals, name, attr);
+            writeAttribute(frame, globals, name, attr);
         }
     }
 

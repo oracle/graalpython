@@ -166,7 +166,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetModuleNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
-        Object getModule(PFunction self, @SuppressWarnings("unused") PNone none,
+        Object getModule(VirtualFrame frame, PFunction self, @SuppressWarnings("unused") PNone none,
                         @Cached("create()") ReadAttributeFromObjectNode readObject,
                         @Cached("create()") GetItemNode getItem,
                         @Cached("create()") WriteAttributeToObjectNode writeObject) {
@@ -177,7 +177,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
                 if (globals instanceof PythonModule) {
                     module = globals.getAttribute(__NAME__);
                 } else {
-                    module = getItem.execute(globals, __NAME__);
+                    module = getItem.execute(frame, globals, __NAME__);
                 }
                 writeObject.execute(self, __MODULE__, module);
             }

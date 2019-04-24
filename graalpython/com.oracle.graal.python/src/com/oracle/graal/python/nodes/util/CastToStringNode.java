@@ -51,6 +51,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
  * Converts an arbitrary object to a java String
@@ -69,13 +70,13 @@ public abstract class CastToStringNode extends PNodeWithContext {
         this.coerce = coerce;
     }
 
-    public abstract String execute(Object x);
+    public abstract String execute(VirtualFrame frame, Object x);
 
-    public abstract String execute(int x);
+    public abstract String execute(VirtualFrame frame, int x);
 
-    public abstract String execute(long x);
+    public abstract String execute(VirtualFrame frame, long x);
 
-    public abstract String execute(boolean x);
+    public abstract String execute(VirtualFrame frame, boolean x);
 
     @Specialization(guards = "coerce")
     String doBoolean(boolean x) {
@@ -105,13 +106,13 @@ public abstract class CastToStringNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "coerce")
-    String doGeneric(Object x,
+    String doGeneric(VirtualFrame frame, Object x,
                     @Cached PRaiseNode raise) {
         if (callStrNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callStrNode = insert(LookupAndCallUnaryNode.create(__STR__));
         }
-        Object result = callStrNode.executeObject(x);
+        Object result = callStrNode.executeObject(frame, x);
         if (result instanceof String) {
             return (String) result;
         } else if (result instanceof PString) {

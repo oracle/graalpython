@@ -153,7 +153,8 @@ public abstract class CastToIndexNode extends PNodeWithContext {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     callIndexNode = insert(LookupAndCallUnaryNode.create(__INDEX__));
                 }
-                Object result = callIndexNode.executeObject(x);
+                // TODO(fa): FRAME MIGRATION
+                Object result = callIndexNode.executeObject(null, x);
                 if (result == PNone.NO_VALUE) {
                     return handleError("'%p' object cannot be interpreted as an integer", x);
                 }

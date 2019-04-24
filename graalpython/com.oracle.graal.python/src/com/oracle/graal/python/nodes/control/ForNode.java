@@ -141,7 +141,7 @@ abstract class ForNextElementNode extends PNodeWithContext {
                     @Cached("create()") GetNextNode next,
                     @Cached("create()") IsBuiltinClassProfile errorProfile) {
         try {
-            ((WriteNode) target).doWrite(frame, next.execute(object));
+            ((WriteNode) target).doWrite(frame, next.execute(frame, object));
             return true;
         } catch (PException e) {
             e.expectStopIteration(errorProfile);

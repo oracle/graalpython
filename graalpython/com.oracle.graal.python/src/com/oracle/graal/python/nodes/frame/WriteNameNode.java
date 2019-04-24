@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -74,7 +74,7 @@ public abstract class WriteNameNode extends StatementNode implements WriteNode, 
     protected void writeLocal(VirtualFrame frame, Object value,
                     @Cached("create()") SetItemNode setItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
-        setItem.executeWith(frameLocals, attributeId, value);
+        setItem.executeWith(frame, frameLocals, attributeId, value);
     }
 
     @Specialization(guards = "!hasLocals(frame)")
