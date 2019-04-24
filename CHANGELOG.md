@@ -3,6 +3,10 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 1.0.0 RC16
+
+* No user-facing changes
+
 ## Version 1.0.0 RC15
 
 * Implement PEP 487 `__init_subclass__`
