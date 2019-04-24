@@ -51,9 +51,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFrameNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -130,7 +130,7 @@ public class AsyncHandler {
 
     private static class CallRootNode extends RootNode {
         @Child private CallNode callNode = CallNode.create();
-        @Child private GetFrameNode getFrameNode = GetFrameNode.create();
+        @Child private ReadCallerFrameNode getFrameNode = ReadCallerFrameNode.create();
 
         protected CallRootNode(TruffleLanguage<?> language) {
             super(language);
@@ -143,7 +143,7 @@ public class AsyncHandler {
             int frameIndex = (int) PArguments.getArgument(frameArguments, 1);
             Object[] arguments = Arrays.copyOfRange(frameArguments, PArguments.USER_ARGUMENTS_OFFSET + 2, frameArguments.length);
             if (frameIndex >= 0) {
-                arguments[frameIndex] = getFrameNode.execute(frame, 1);
+                arguments[frameIndex] = getFrameNode.executeWith(frame, 1);
             }
             return callNode.execute(frame, callable, arguments);
         }

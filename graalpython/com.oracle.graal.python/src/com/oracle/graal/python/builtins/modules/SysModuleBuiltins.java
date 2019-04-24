@@ -55,20 +55,19 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsFactory.GetFrameNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
@@ -76,8 +75,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
@@ -85,13 +82,10 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.DirectCallNode;
-import com.oracle.truffle.api.nodes.RootNode;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
@@ -298,93 +292,52 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_getframe", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class GetFrameNode extends PythonUnaryBuiltinNode {
-        public static GetFrameNode create() {
-            return GetFrameNodeFactory.create();
-        }
-
-        @Child private DirectCallNode call;
-
+    public abstract static class GetFrameNode extends PythonBuiltinNode {
         @Specialization
-        Object first(@SuppressWarnings("unused") PNone arg,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return counted(0, lang);
-        }
-
-        /*
-         * This is necessary for the time being to be compatible with the old TruffleException
-         * behavior. (it only captures the frames if a CallTarget boundary is crossed)
-         */
-        private static final class GetStackTraceRootNode extends RootNode {
-            @Child private PRaiseNode raiseNode = PRaiseNode.create();
-
-            protected GetStackTraceRootNode(PythonLanguage language) {
-                super(language);
-            }
-
-            @Override
-            public Object execute(VirtualFrame frame) {
-                throw raiseNode.raise(ValueError);
-            }
-
-            @Override
-            public boolean isCaptureFramesForTrace() {
-                return true;
-            }
+        Object first(VirtualFrame frame, @SuppressWarnings("unused") PNone arg,
+                     @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
+                     @Shared("materiaize") @Cached MaterializeFrameNode materializeNode) {
+            return materializeNode.execute(readCallerNode.executeWith(frame));
         }
 
         @Specialization
-        @TruffleBoundary
-        Object counted(int num,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            if (call == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                GetStackTraceRootNode rootNode = new GetStackTraceRootNode(lang);
-                call = insert(Truffle.getRuntime().createDirectCallNode(Truffle.getRuntime().createCallTarget(rootNode)));
-            }
-            int actual = num + 1; // skip dummy frame
-            try {
-                @SuppressWarnings("unused")
-                Object r = call.call(new Object[0]);
-                // r is just assigned to make spotbugs happy
-                throw raise(PythonErrorType.SystemError, "should not reach here");
-            } catch (PException e) {
-                PBaseException exception = e.getExceptionObject();
-                exception.reifyException();
-                if (actual >= exception.getStackTrace().size()) {
-                    throw raiseCallStackDepth();
-                }
-                return exception.getPFrame(factory(), Math.max(0, actual));
-            }
+        Object counted(VirtualFrame frame, int num,
+                     @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
+                     @Shared("materiaize") @Cached MaterializeFrameNode materializeNode) {
+            return materializeNode.execute(readCallerNode.executeWith(frame, num));
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        Object countedLong(long num,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return counted(PInt.intValueExact(num), lang);
+        Object countedLong(VirtualFrame frame, long num,
+                     @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
+                     @Shared("materiaize") @Cached MaterializeFrameNode materializeNode) {
+            return counted(frame, PInt.intValueExact(num), readCallerNode, materializeNode);
         }
 
         @Specialization
-        Object countedLongOvf(long num,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+        Object countedLongOvf(VirtualFrame frame, long num,
+                     @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
+                     @Shared("materiaize") @Cached MaterializeFrameNode materializeNode) {
             try {
-                return counted(PInt.intValueExact(num), lang);
+                return counted(frame, PInt.intValueExact(num), readCallerNode, materializeNode);
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        Object countedPInt(PInt num,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return counted(num.intValueExact(), lang);
+        Object countedPInt(VirtualFrame frame, PInt num,
+                     @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
+                     @Shared("materiaize") @Cached MaterializeFrameNode materializeNode) {
+            return counted(frame, num.intValueExact(), readCallerNode, materializeNode);
         }
 
         @Specialization
-        Object countedPIntOvf(PInt num,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+        Object countedPIntOvf(VirtualFrame frame, PInt num,
+                     @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
+                     @Shared("materiaize") @Cached MaterializeFrameNode materializeNode) {
             try {
-                return counted(num.intValueExact(), lang);
+                return counted(frame, num.intValueExact(), readCallerNode, materializeNode);
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
@@ -393,7 +346,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         private PException raiseCallStackDepth() {
             return raise(ValueError, "call stack is not deep enough");
         }
-
     }
 
     @Builtin(name = "getfilesystemencoding", minNumOfPositionalArgs = 0)

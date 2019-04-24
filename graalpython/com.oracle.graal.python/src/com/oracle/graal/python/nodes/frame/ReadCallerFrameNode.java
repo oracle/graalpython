@@ -49,6 +49,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
@@ -57,32 +58,24 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "read_caller_fame")
 public final class ReadCallerFrameNode extends Node {
-    private final FrameInstance.FrameAccess frameAccess;
     @CompilationFinal private ConditionProfile cachedCallerFrameProfile;
-    private final int level;
 
-    protected ReadCallerFrameNode(FrameInstance.FrameAccess frameAccess, int level) {
-        this.frameAccess = frameAccess;
-        this.level = level;
+    protected ReadCallerFrameNode() {
     }
 
     public static ReadCallerFrameNode create() {
-        return create(FrameInstance.FrameAccess.MATERIALIZE, 0);
+        return new ReadCallerFrameNode();
     }
 
-    public static ReadCallerFrameNode create(int level) {
-        return create(FrameInstance.FrameAccess.MATERIALIZE, level);
+    public MaterializedFrame executeWith(Frame frame) {
+        return executeWith(frame, FrameInstance.FrameAccess.MATERIALIZE, 0);
     }
 
-    public static ReadCallerFrameNode create(FrameInstance.FrameAccess access, int level) {
-        return new ReadCallerFrameNode(access, level);
+    public MaterializedFrame executeWith(Frame frame, int level) {
+        return executeWith(frame, FrameInstance.FrameAccess.MATERIALIZE, level);
     }
 
-    public FrameInstance.FrameAccess getFrameAccess() {
-        return frameAccess;
-    }
-
-    public Frame executeWith(Frame frame) {
+    public MaterializedFrame executeWith(Frame frame, FrameInstance.FrameAccess frameAccess, int level) {
         Frame callerFrame = frame;
         if (cachedCallerFrameProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -90,31 +83,31 @@ public final class ReadCallerFrameNode extends Node {
             // executed the first time - don't pollute the profile
             for (int i = 0; i <= level; i++) {
                 Object candidate = PArguments.getCallerFrameOrException(callerFrame);
-                if (!(candidate instanceof Frame)) {
-                    return getCallerFrame();
+                if (!(candidate instanceof MaterializedFrame)) {
+                    return getCallerFrame(frameAccess, level);
                 }
-                callerFrame = (Frame) candidate;
+                callerFrame = (MaterializedFrame) candidate;
             }
         } else {
-            callerFrame = walkLevels(callerFrame);
+            callerFrame = walkLevels(callerFrame, frameAccess, level);
         }
-        return callerFrame;
+        return callerFrame.materialize();
     }
 
     @ExplodeLoop
-    private Frame walkLevels(Frame frame) {
+    private Frame walkLevels(Frame frame, FrameInstance.FrameAccess frameAccess, int level) {
         Frame callerFrame = frame;
         for (int i = 0; i <= level; i++) {
             Object candidate = PArguments.getCallerFrameOrException(callerFrame);
-            if (cachedCallerFrameProfile.profile(!(candidate instanceof Frame))) {
-                return getCallerFrame();
+            if (cachedCallerFrameProfile.profile(!(candidate instanceof MaterializedFrame))) {
+                return getCallerFrame(frameAccess, level);
             }
-            callerFrame = (Frame) candidate;
+            callerFrame = (MaterializedFrame) candidate;
         }
         return callerFrame;
     }
 
-    private Frame getCallerFrame() {
+    private MaterializedFrame getCallerFrame(FrameInstance.FrameAccess frameAccess, int level) {
         CompilerDirectives.transferToInterpreter();
         if (level == 0) {
             RootNode rootNode = this.getRootNode();
@@ -141,7 +134,7 @@ public final class ReadCallerFrameNode extends Node {
                     }
                     return null;
                 }
-            });
+            }).materialize();
         }
     }
 }
