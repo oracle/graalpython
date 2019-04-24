@@ -276,6 +276,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object run(VirtualFrame frame,
                         @Cached GetClassNode getClassNode,
+                        @Cached MaterializeFrameNode frameNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode) {
             PException currentException = getCaughtExceptionNode.execute(frame);
             assert currentException != PException.NO_EXCEPTION;
@@ -283,7 +284,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
                 PBaseException exception = currentException.getExceptionObject();
-                exception.reifyException();
+                frameNode.execute(frame);
                 return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback(factory())});
             }
         }

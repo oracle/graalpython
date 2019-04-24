@@ -32,9 +32,9 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -165,21 +165,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
                 if (backrefFromChild[0] == null) {
                     // whatever call site requested that we escape, we didn't
                     // fill in our information at that point, so we do it now
-
-                    if (escapedFrame == null) {
-                        escapedFrame = PythonObjectFactory.getUncached().createPFrame(frame.materialize());
-                    } else if (!escapedFrame.hasFrame()) {
-                        // The only way this happens is when we created a PFrame
-                        // for custom locals or a PFrame from the C API with
-                        // custom thread state and without a frame. In the first
-                        // case, there's no reference to the PFrame object
-                        // anywhere else, yet. In the second case, the custom
-                        // created frame must have escaped somewhere else.
-                        // TODO: frames: Think about how to ensure this
-                        escapedFrame = PythonObjectFactory.getUncached().createPFrame(frame.materialize(), escapedFrame.getLocalsDict());
-                    }
-                    PArguments.setPFrame(frame, escapedFrame);
-
+                    escapedFrame = MaterializeFrameNodeGen.getUncached().execute(frame);
                     backrefFromChild[0] = escapedFrame;
                 }
 

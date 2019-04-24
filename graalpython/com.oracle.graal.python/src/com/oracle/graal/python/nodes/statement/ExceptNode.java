@@ -36,6 +36,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -64,6 +66,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     @Child private IsTypeNode isTypeNode;
     @Child private PRaiseNode raiseNode;
     @Child private SetCaughtExceptionNode setCaughtExceptionNode;
+    @Child private MaterializeFrameNode materializeFrameNode;
 
     // "object" is the uninitialized value (since it's not a valid error type)
     @CompilationFinal private PythonBuiltinClassType singleBuiltinError = PythonBuiltinClassType.PythonObject;
@@ -175,7 +178,11 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         if (matchesProfile.profile(matches)) {
             if (exceptName != null) {
                 exceptName.doWrite(frame, e.getExceptionObject());
-                e.getExceptionObject().reifyException();
+                if (materializeFrameNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    materializeFrameNode = insert(MaterializeFrameNodeGen.create());
+                }
+                materializeFrameNode.execute(frame);
             }
             return true;
         } else {
