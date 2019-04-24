@@ -33,20 +33,16 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.frame.FrameBuiltinsFactory.GetLocalsNodeFactory;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
+import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -55,8 +51,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFrame)
 public final class FrameBuiltins extends PythonBuiltins {
@@ -150,49 +144,17 @@ public final class FrameBuiltins extends PythonBuiltins {
     @Builtin(name = "f_locals", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetLocalsNode extends PythonUnaryBuiltinNode {
-        @Child SetItemNode setItemNode;
+        @Specialization(guards = "!self.inClassScope()")
+        Object get(VirtualFrame frame, PFrame self) {
+            return self.getLocals(factory());
+        }
 
-        @Specialization
-        Object get(VirtualFrame curFrame, PFrame self) {
+        @Specialization(guards = "self.inClassScope()")
+        Object getUpdating(VirtualFrame frame, PFrame self,
+                           @Cached ReadLocalsNode readLocals) {
             Frame frame = self.getFrame();
-            Object locals = self.getLocals(factory());
-            if (!self.inClassScope()) {
-                if (setItemNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    setItemNode = insert(SetItemNode.create());
-                }
-                PDict currentDictLocals = factory().createDictLocals(frame, false);
-                for (DictEntry entry : currentDictLocals.entries()) {
-                    setItemNode.executeWith(curFrame, locals, entry.getKey(), entry.getValue());
-                }
-            }
-            return locals;
-        }
-
-        @Specialization
-        Object getFromFrame(VirtualFrame curFrame, Frame owner,
-                        @Cached("createBinaryProfile()") ConditionProfile noPFrame,
-                        @Cached("create()") BranchProfile noFrameOnPFrame) {
-            PFrame pFrame = PArguments.getPFrame(owner);
-            if (noPFrame.profile(pFrame == null)) {
-                Object specialArgument = PArguments.getSpecialArgument(owner);
-                if (specialArgument instanceof ClassBodyRootNode) {
-                    // the namespace argument stores the locals
-                    pFrame = factory().createPFrame(owner, PArguments.getArgument(owner, 0));
-                } else {
-                    pFrame = factory().createPFrame(owner);
-                }
-                PArguments.setPFrame(owner, pFrame);
-            } else if (!pFrame.hasFrame()) {
-                noFrameOnPFrame.enter();
-                pFrame = factory().createPFrame(owner, pFrame.getLocalsDict());
-                PArguments.setPFrame(owner, pFrame);
-            }
-            return get(curFrame, pFrame);
-        }
-
-        public static GetLocalsNode create() {
-            return GetLocalsNodeFactory.create();
+            assert frame != null : "It's impossible to call f_locals on a frame without that frame having escaped";
+            return readLocals.execute(frame);
         }
     }
 
