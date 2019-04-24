@@ -87,16 +87,18 @@ abstract class AbstractInvokeNode extends Node {
     }
 
     protected final Object getCallerFrameOrException(VirtualFrame frame, CallTarget callTarget) {
-        if (frame == null) {
-            return null;
-        }
 
         RootNode calleeRootNode = ((RootCallTarget) callTarget).getRootNode();
         if (needsFrameProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsCallerFrame())) {
-            return frame.materialize();
+            if (frame != null) {
+                return frame.materialize();
+            }
         }
 
         if (needsExceptionStateProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsExceptionState())) {
+            if (frame == null) {
+                return PException.NO_EXCEPTION;
+            }
             RootNode rootNode = getRootNode();
             if (!excSlotInitialized) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
