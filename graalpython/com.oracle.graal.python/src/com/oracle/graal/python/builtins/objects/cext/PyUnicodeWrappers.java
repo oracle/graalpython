@@ -47,9 +47,11 @@ import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.string.StringLenNode;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -147,7 +149,8 @@ public abstract class PyUnicodeWrappers {
         @ExportMessage
         protected Object readMember(String member,
                         @Cached(value = "createNativeOrder()", uncached = "getUncachedNativeOrder()") UnicodeAsWideCharNode asWideCharNode,
-                        @Cached CExtNodes.SizeofWCharNode sizeofWcharNode) throws UnknownIdentifierException {
+                        @Cached CExtNodes.SizeofWCharNode sizeofWcharNode,
+                        @Exclusive @Cached StringLenNode stringLenNode) throws UnknownIdentifierException {
             switch (member) {
                 case NativeMemberNames.UNICODE_DATA_ANY:
                 case NativeMemberNames.UNICODE_DATA_LATIN1:
@@ -155,7 +158,7 @@ public abstract class PyUnicodeWrappers {
                 case NativeMemberNames.UNICODE_DATA_UCS4:
                     int elementSize = (int) sizeofWcharNode.execute();
                     PString s = this.getPString();
-                    return new PySequenceArrayWrapper(asWideCharNode.execute(s, elementSize, s.len()), elementSize);
+                    return new PySequenceArrayWrapper(asWideCharNode.execute(s, elementSize, stringLenNode.execute(s)), elementSize);
             }
             throw UnknownIdentifierException.create(member);
         }

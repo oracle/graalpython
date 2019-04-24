@@ -9,7 +9,7 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "1.0.0-rc16",
+    "version": "1.0.0-rc17",
     "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "e5758dcf7584501e37cb67e0aaf73fe61977d18a",
+                "version": "636e1ca4fa50df0b7741aa1e1e12f474bee3dd5a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "e5758dcf7584501e37cb67e0aaf73fe61977d18a",
+                "version": "636e1ca4fa50df0b7741aa1e1e12f474bee3dd5a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -233,11 +233,11 @@ suite = {
             "results": ["graalpython/lib-graalpython"],
             "output": ".",
             "buildDependencies": [
-                "sulong:SULONG_LIBS",
+                "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
             ],
             "buildEnv": {
-                "POLYGLOT_INC": "<path:SULONG_LIBS>",
+                "POLYGLOT_INC": "<path:SULONG_HOME>/include",
             },
         },
 

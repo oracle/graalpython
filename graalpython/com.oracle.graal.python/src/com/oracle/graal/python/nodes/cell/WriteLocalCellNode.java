@@ -33,11 +33,14 @@ import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "write_cell")
 @NodeChild(value = "rhs", type = ExpressionNode.class)
@@ -63,15 +66,12 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
     public abstract void executeWithValue(VirtualFrame frame, Object value);
 
     @Specialization
-    void writeObject(VirtualFrame frame, Object value) {
+    void writeObject(VirtualFrame frame, Object value,
+                    @Cached WriteToCellNode writeToCellNode,
+                    @Cached("createBinaryProfile()") ConditionProfile profile) {
         Object localValue = readLocal.execute(frame);
-        if (localValue instanceof PCell) {
-            PCell cell = (PCell) localValue;
-            if (value == NO_VALUE) {
-                cell.clearRef();
-            } else {
-                cell.setRef(value);
-            }
+        if (profile.profile(localValue instanceof PCell)) {
+            writeToCellNode.execute((PCell) localValue, value);
             return;
         }
         CompilerDirectives.transferToInterpreter();
@@ -81,5 +81,25 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
     @Override
     public Object getIdentifier() {
         return frameSlot.getIdentifier();
+    }
+
+    abstract static class WriteToCellNode extends Node {
+
+        public abstract void execute(PCell cell, Object value);
+
+        @Specialization(guards = "cell == cachedCell", limit = "1")
+        void doWriteCached(@SuppressWarnings("unused") PCell cell, Object value,
+                        @Cached("cell") PCell cachedCell) {
+            doWriteGeneric(cachedCell, value);
+        }
+
+        @Specialization(replaces = "doWriteCached")
+        void doWriteGeneric(PCell cell, Object value) {
+            if (value == NO_VALUE) {
+                cell.clearRef();
+            } else {
+                cell.setRef(value);
+            }
+        }
     }
 }

@@ -38,7 +38,10 @@ import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -56,6 +59,9 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     @Child private WriteAttributeToObjectNode writeDocNode = WriteAttributeToObjectNode.create();
     @Child private WriteAttributeToDynamicObjectNode writeNameNode = WriteAttributeToDynamicObjectNode.create();
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
+
+    private final Assumption sharedCodeStableAssumption = Truffle.getRuntime().createAssumption("shared code stable assumption");
+    private final Assumption sharedDefaultsStableAssumption = Truffle.getRuntime().createAssumption("shared defaults stable assumption");
 
     public FunctionDefinitionNode(String functionName, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
                     RootCallTarget callTarget,
@@ -94,7 +100,26 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         Object[] defaultValues = computeDefaultValues(frame);
         PKeyword[] kwDefaultValues = computeKwDefaultValues(frame);
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, callTarget, PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure, writeNameNode));
+        Assumption codeStableAssumption;
+        Assumption defaultsStableAssumption;
+        if (CompilerDirectives.inCompiledCode()) {
+            codeStableAssumption = getSharedCodeStableAssumption();
+            defaultsStableAssumption = getSharedDefaultsStableAssumption();
+        } else {
+            codeStableAssumption = Truffle.getRuntime().createAssumption();
+            defaultsStableAssumption = Truffle.getRuntime().createAssumption();
+        }
+        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, callTarget, PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure, writeNameNode,
+                        codeStableAssumption, defaultsStableAssumption));
+
+    }
+
+    private Assumption getSharedDefaultsStableAssumption() {
+        return sharedDefaultsStableAssumption;
+    }
+
+    private Assumption getSharedCodeStableAssumption() {
+        return sharedCodeStableAssumption;
     }
 
     @ExplodeLoop

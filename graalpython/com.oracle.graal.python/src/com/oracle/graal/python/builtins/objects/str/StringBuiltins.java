@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory.StringLenNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -94,6 +93,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.string.StringLenNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
@@ -110,7 +110,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
 public final class StringBuiltins extends PythonBuiltins {
@@ -1407,29 +1406,11 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class StringLenNode extends PythonUnaryBuiltinNode {
+    public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int len(String self) {
-            return self.length();
-        }
-
-        @Specialization
-        public int len(PString self,
-                        @Cached("createClassProfile()") ValueProfile classProfile,
-                        @Cached("create()") BranchProfile uncommonStringTypeProfile) {
-            Object profiled = classProfile.profile(self.getCharSequence());
-            if (profiled instanceof String) {
-                return ((String) profiled).length();
-            } else if (profiled instanceof LazyString) {
-                return ((LazyString) profiled).length();
-            } else {
-                uncommonStringTypeProfile.enter();
-                return ((CharSequence) profiled).length();
-            }
-        }
-
-        public static StringLenNode create() {
-            return StringLenNodeFactory.create();
+        public int len(Object self,
+                        @Cached StringLenNode stringLenNode) {
+            return stringLenNode.execute(self);
         }
     }
 

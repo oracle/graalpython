@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,38 +38,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes;
+package com.oracle.graal.python.nodes.string;
 
-import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.graal.python.builtins.objects.str.LazyString;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
-public abstract class PClosureFunctionRootNode extends PClosureRootNode {
-    @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] cellVarSlots;
-    @CompilerDirectives.CompilationFinal(dimensions = 1) protected final Assumption[] cellEffectivelyFinalAssumptions;
-    private final Signature signature;
+@GenerateUncached
+public abstract class StringLenNode extends Node {
+    public abstract int execute(Object self);
 
-    protected PClosureFunctionRootNode(TruffleLanguage<?> language, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots, Signature signature) {
-        super(language, frameDescriptor, executionCellSlots.getFreeVarSlots());
-        this.cellVarSlots = executionCellSlots.getCellVarSlots();
-        this.cellEffectivelyFinalAssumptions = executionCellSlots.getCellVarAssumptions();
-        this.signature = signature;
+    @Specialization
+    public int len(String self) {
+        return self.length();
     }
 
-    public String[] getCellVars() {
-        String[] cellVars = new String[cellVarSlots.length];
-        for (int i = 0; i < cellVars.length; i++) {
-            cellVars[i] = (String) cellVarSlots[i].getIdentifier();
+    @Specialization
+    public int len(PString self,
+                    @Cached("createClassProfile()") ValueProfile classProfile,
+                    @Cached("create()") BranchProfile uncommonStringTypeProfile) {
+        Object profiled = classProfile.profile(self.getCharSequence());
+        if (profiled instanceof String) {
+            return ((String) profiled).length();
+        } else if (profiled instanceof LazyString) {
+            return ((LazyString) profiled).length();
+        } else {
+            uncommonStringTypeProfile.enter();
+            return ((CharSequence) profiled).length();
         }
-        return cellVars;
     }
 
-    @Override
-    public Signature getSignature() {
-        return signature;
+    public static StringLenNode create() {
+        return StringLenNodeGen.create();
+    }
+
+    public static StringLenNode getUncached() {
+        return StringLenNodeGen.getUncached();
     }
 }
