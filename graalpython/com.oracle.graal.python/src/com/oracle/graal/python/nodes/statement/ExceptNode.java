@@ -26,6 +26,8 @@
 package com.oracle.graal.python.nodes.statement;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -45,6 +47,7 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtException
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -67,6 +70,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     @Child private PRaiseNode raiseNode;
     @Child private SetCaughtExceptionNode setCaughtExceptionNode;
     @Child private MaterializeFrameNode materializeFrameNode;
+    @Child private PythonObjectFactory factory;
 
     // "object" is the uninitialized value (since it's not a valid error type)
     @CompilationFinal private PythonBuiltinClassType singleBuiltinError = PythonBuiltinClassType.PythonObject;
@@ -177,12 +181,18 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     private boolean writeResult(VirtualFrame frame, PException e, boolean matches) {
         if (matchesProfile.profile(matches)) {
             if (exceptName != null) {
-                exceptName.doWrite(frame, e.getExceptionObject());
+                PBaseException exceptionObject = e.getExceptionObject();
+                exceptName.doWrite(frame, exceptionObject);
                 if (materializeFrameNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     materializeFrameNode = insert(MaterializeFrameNodeGen.create());
                 }
-                materializeFrameNode.execute(frame);
+                PFrame escapedFrame = materializeFrameNode.execute(frame);
+                if (factory == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    factory = insert(PythonObjectFactory.create());
+                }
+                exceptionObject.setTraceback(factory.createTraceback(escapedFrame, e));
             }
             return true;
         } else {

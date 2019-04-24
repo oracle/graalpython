@@ -41,8 +41,8 @@
 package com.oracle.graal.python.builtins.objects.frame;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -53,17 +53,12 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PFrame extends PythonBuiltinObject {
-
-    private final PBaseException exception;
-    private final int index;
     private Object localsDict;
-
     private final boolean inClassScope;
     private final MaterializedFrame frame;
     private final Node location;
@@ -72,10 +67,17 @@ public final class PFrame extends PythonBuiltinObject {
 
     private PFrame[] backref = null;
 
+    private static final PFrame NO_FRAME_MARKER = new PFrame();
+
+    private PFrame() {
+        super(PythonBuiltinClassType.PFrame);
+        this.frame = null;
+        this.location = null;
+        this.inClassScope = false;
+    }
+
     public PFrame(LazyPythonClass cls, MaterializedFrame frame) {
         super(cls);
-        this.exception = null;
-        this.index = -1;
         this.frame = frame;
         this.location = null;
         this.inClassScope = PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
@@ -83,8 +85,6 @@ public final class PFrame extends PythonBuiltinObject {
 
     public PFrame(LazyPythonClass cls, MaterializedFrame frame, Object locals) {
         super(cls);
-        this.exception = null;
-        this.index = -1;
         this.frame = frame;
         this.localsDict = locals;
         this.location = null;
@@ -93,35 +93,15 @@ public final class PFrame extends PythonBuiltinObject {
 
     public PFrame(LazyPythonClass cls, Object locals) {
         super(cls);
-        this.exception = null;
-        this.index = -1;
         this.frame = null;
         this.location = null;
         this.inClassScope = false;
         this.localsDict = locals;
     }
 
-    public PFrame(LazyPythonClass cls, PBaseException exception, int index) {
-        super(cls);
-        this.exception = exception;
-        this.index = index;
-
-        TruffleStackTraceElement truffleStackTraceElement = exception.getStackTrace().get(index);
-        this.frame = (MaterializedFrame) truffleStackTraceElement.getFrame();
-        this.location = truffleStackTraceElement.getLocation();
-        this.inClassScope = truffleStackTraceElement.getTarget().getRootNode() instanceof ClassBodyRootNode;
-    }
-
-    public PFrame(PythonBuiltinClassType cls, PBaseException exception, int index, Object locals) {
-        this(cls, exception, index);
-        this.localsDict = locals;
-    }
-
     public PFrame(LazyPythonClass cls, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object locals) {
         super(cls);
-        this.exception = null;
-        this.index = -1;
-
+        // TODO: frames: extract the information from the threadState object
         Object[] frameArgs = PArguments.create();
         PArguments.setGlobals(frameArgs, globals);
         this.frame = Truffle.getRuntime().createMaterializedFrame(frameArgs);
@@ -132,14 +112,6 @@ public final class PFrame extends PythonBuiltinObject {
         localsDict = locals;
     }
 
-    public PBaseException getException() {
-        return exception;
-    }
-
-    public int getIndex() {
-        return index;
-    }
-
     public MaterializedFrame getFrame() {
         return frame;
     }
@@ -148,9 +120,27 @@ public final class PFrame extends PythonBuiltinObject {
         return localsDict;
     }
 
-    public PFrame getBackref() {
+    /**
+     * If this frame has a backref container, it is escaped, because it expects
+     * its Python caller to fill in that container. However, the backref may not
+     * be filled in, yet, because this frame might still be live. In that case,
+     * {@link #getBackref()} will still return <tt>null</tt>.
+     */
+    public boolean isEscaped() {
+        return backref != null;
+    }
+
+    /**
+     * Returns the Python caller of this frame, provided that it has already
+     * been filled in.
+     */
+    public Object getBackref() {
         if (backref != null) {
-            return backref[0];
+            if (backref[0] == NO_FRAME_MARKER) {
+                return PNone.NONE;
+            } else {
+                return backref[0];
+            }
         } else {
             // TODO: frames: Use ReadCallerFrameNode in caller.
             // TODO: frames: Update ReadCallerFrameNode to also store PFrame in
@@ -159,9 +149,23 @@ public final class PFrame extends PythonBuiltinObject {
         }
     }
 
+    public void setBackref(PFrame frame) {
+        assert backref == null || backref[0] == null : "do not overwrite backref";
+        if (backref == null) {
+            backref = new PFrame[] { frame };
+        } else {
+            backref[0] = frame;
+        }
+    }
+
     public void setBackref(PFrame[] frame) {
-        assert backref == null : "do not overwrite backref";
+        assert backref == null : "do not overwrite backref container";
         backref = frame;
+    }
+
+    public void setNoBackref() {
+        assert backref != null && backref[0] == null : "do not overwrite backref to mark a top frame";
+        backref[0] = NO_FRAME_MARKER;
     }
 
     @TruffleBoundary
@@ -223,20 +227,14 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public RootCallTarget getTarget() {
-        if (callTarget == null) {
-            callTarget = createCallTarget();
+        if (callTarget == null && location != null) {
+            callTarget = createCallTarget(location);
         }
         return callTarget;
     }
 
     @TruffleBoundary
-    private RootCallTarget createCallTarget() {
-        if (location != null) {
-            return Truffle.getRuntime().createCallTarget(location.getRootNode());
-        } else if (exception != null) {
-            return exception.getStackTrace().get(index).getTarget();
-        } else {
-            return null;
-        }
+    private static RootCallTarget createCallTarget(Node location) {
+        return Truffle.getRuntime().createCallTarget(location.getRootNode());
     }
 }

@@ -102,6 +102,11 @@ public final class PArguments {
         return new Object[]{EMPTY_VARARGS, PKeyword.EMPTY_KEYWORDS, null, null, null, null, getPFrameWrapper(), null};
     }
 
+    public static boolean isPythonFrame(Frame frame) {
+        Object[] frameArgs = frame.getArguments();
+        return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_PFRAME_ARGUMENT] instanceof PFrame[];
+    }
+
     public static Object[] withGlobals(PythonObject globals) {
         Object[] arguments = iInitArguments();
         setGlobals(arguments, globals);

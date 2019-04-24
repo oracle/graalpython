@@ -163,12 +163,11 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
         PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException currentException = context.getCurrentException();
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
-                return exceptionObject.getTraceback(factory);
+                return exceptionObject.getTraceback();
             }
             return null;
         }
@@ -198,12 +197,11 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, EXC_TRACEBACK)")
         PTraceback doExcTraceback(@SuppressWarnings("unused") String key,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException currentException = context.getCaughtException();
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
-                return exceptionObject.getTraceback(factory);
+                return exceptionObject.getTraceback();
             }
             return null;
         }
@@ -319,9 +317,11 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
         PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            setCurrentException(raiseNode, context, value.getException());
+            PException e = context.getCurrentException();
+            if (e != null) {
+                e.getExceptionObject().setTraceback(value);
+            }
             return value;
         }
 
@@ -344,9 +344,11 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, EXC_TRACEBACK)")
         PTraceback doExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            setCaughtException(raiseNode, context, value.getException());
+            PException e = context.getCurrentException();
+            if (e != null) {
+                e.getExceptionObject().setTraceback(value);
+            }
             return value;
         }
 

@@ -181,7 +181,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                             _y = getCallThrowNode().execute(frame, _m,
                                             new Object[]{_i, getExceptionClassNode().execute(((PException) _s).getExceptionObject()),
                                                             ((PException) _s).getExceptionObject(),
-                                                            ((PException) _s).getExceptionObject().getTraceback(factory())},
+                                                            ((PException) _s).getExceptionObject().getTraceback()},
                                             PKeyword.EMPTY_KEYWORDS);
                         } catch (PException _e2) {
                             access.setIterator(frame, iteratorSlot, null);

@@ -40,30 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
-import java.util.Iterator;
-import java.util.List;
-
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
-import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleStackTrace;
-import com.oracle.truffle.api.TruffleStackTraceElement;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.nodes.RootNode;
 
 public final class PBaseException extends PythonObject {
 
@@ -76,9 +63,7 @@ public final class PBaseException extends PythonObject {
     private final Object[] messageArgs;
 
     private PException exception;
-
-    private List<TruffleStackTraceElement> stackTrace;
-    private PTraceback[] traceback;
+    private PTraceback traceback;
 
     public PBaseException(LazyPythonClass cls, PTuple args) {
         super(cls);
@@ -102,37 +87,16 @@ public final class PBaseException extends PythonObject {
         this.exception = exception;
     }
 
-    public PTraceback getTraceback(PythonObjectFactory factory, int index) {
-        if (index < 0 || index >= traceback.length) {
-            return null;
-        }
-        if (traceback[index] == null) {
-            traceback[index] = factory.createTraceback(this, index);
-        }
-        return traceback[index];
-    }
-
-    public PTraceback getTraceback(PythonObjectFactory factory) {
-        reifyException();
-        return getTraceback(factory, traceback.length - 1);
+    public PTraceback getTraceback() {
+        return traceback;
     }
 
     public void setTraceback(PTraceback traceback) {
-        this.traceback = traceback.getException().traceback;
+        this.traceback = traceback;
     }
 
     public void clearTraceback() {
-        this.traceback = new PTraceback[0];
-    }
-
-    public PTraceback putTracebackOnTop(PythonObjectFactory factory) {
-        CompilerAsserts.neverPartOfCompilation();
-        PTraceback[] newTb = new PTraceback[this.traceback.length + 1];
-        System.arraycopy(this.traceback, 0, newTb, 0, this.traceback.length);
-        PTraceback tb = factory.createTraceback(this, traceback.length);
-        newTb[this.traceback.length] = tb;
-        this.traceback = newTb;
-        return tb;
+        this.traceback = null;
     }
 
     /**
@@ -177,55 +141,5 @@ public final class PBaseException extends PythonObject {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return getFormattedMessage(null);
-    }
-
-    public List<TruffleStackTraceElement> getStackTrace() {
-        return stackTrace;
-    }
-
-    /**
-     * This function must be called before handing out exceptions into the Python value space,
-     * because otherwise the stack will not be correct if the exception object escapes the current
-     * function.
-     */
-    @TruffleBoundary
-    public void reifyException() {
-        if (stackTrace == null && traceback == null) {
-            TruffleStackTrace.fillIn(exception);
-            stackTrace = TruffleStackTrace.getStackTrace(exception);
-            Iterator<TruffleStackTraceElement> iter = stackTrace.iterator();
-            while (iter.hasNext()) {
-                TruffleStackTraceElement element = iter.next();
-                // remove all top level exception handlers - they shouldn't show up
-                if (element.getTarget() != null) {
-                    RootNode rootNode = element.getTarget().getRootNode();
-                    if (rootNode instanceof TopLevelExceptionHandler || rootNode instanceof BuiltinFunctionRootNode) {
-                        iter.remove();
-                    }
-                }
-            }
-
-            traceback = new PTraceback[stackTrace.size()];
-        }
-    }
-
-    @TruffleBoundary
-    public PFrame getPFrame(PythonObjectFactory factory, int index) {
-        assert index >= 0 && index < stackTrace.size() : "PBaseException.getPFrame index out of bounds";
-        Frame frame = stackTrace.get(index).getFrame();
-        PFrame pFrame;
-        if (frame != null) {
-            // we have a frame, try to get the pFrame from the magic arguments first
-            pFrame = PArguments.getPFrame(frame);
-            if (pFrame == null) {
-                pFrame = factory.createPFrame(this, index);
-            } else if (pFrame.isIncomplete()) {
-                pFrame = factory.createPFrame(this, index, pFrame.getLocalsDict());
-            }
-            PArguments.setPFrame(frame, pFrame);
-        } else {
-            pFrame = factory.createPFrame(this, index);
-        }
-        return pFrame;
     }
 }

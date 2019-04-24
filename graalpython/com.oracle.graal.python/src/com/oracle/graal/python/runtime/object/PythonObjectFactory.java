@@ -116,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.CharSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -555,20 +556,16 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PFrame(PythonBuiltinClassType.PFrame, frame, locals));
     }
 
-    public PFrame createPFrame(PBaseException exception, int index) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, exception, index));
-    }
-
-    public PFrame createPFrame(PBaseException exception, int index, Object locals) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, exception, index, locals));
-    }
-
     public PFrame createPFrame(Object threadState, PCode code, PythonObject globals, Object locals) {
         return trace(new PFrame(PythonBuiltinClassType.PFrame, threadState, code, globals, locals));
     }
 
-    public PTraceback createTraceback(PBaseException exception, int index) {
-        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, exception, index));
+    public PTraceback createTraceback(PFrame frame, PException exception) {
+        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, exception));
+    }
+
+    public PTraceback createTraceback(PFrame frame, PTraceback next) {
+        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, next));
     }
 
     public PBaseException createBaseException(LazyPythonClass cls, PTuple args) {

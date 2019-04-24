@@ -46,7 +46,6 @@ import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
@@ -55,7 +54,6 @@ import com.oracle.truffle.api.nodes.Node;
  * This node makes sure that the current frame has a filled-in PFrame object
  * with a backref container that will be filled in by the caller.
  **/
-@GenerateUncached
 public abstract class MaterializeFrameNode extends Node {
     public abstract PFrame execute(Frame frame);
 

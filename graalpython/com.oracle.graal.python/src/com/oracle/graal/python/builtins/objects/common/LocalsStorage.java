@@ -56,20 +56,15 @@ public class LocalsStorage extends HashingStorage {
 
     private final Frame frame;
     private int len = -1;
-    private final boolean skipCells;
 
-    public LocalsStorage(Frame frame, boolean skipCells) {
+    public LocalsStorage(Frame frame) {
         this.frame = frame;
-        this.skipCells = skipCells;
     }
 
     private Object getValue(FrameSlot slot) {
         if (slot != null) {
             Object value = frame.getValue(slot);
             if (value instanceof PCell) {
-                if (skipCells) {
-                    return null;
-                }
                 return ((PCell) value).getRef();
             }
             return value;
@@ -181,7 +176,7 @@ public class LocalsStorage extends HashingStorage {
     @Override
     public HashingStorage copy(Equivalence eq) {
         assert eq == DEFAULT_EQIVALENCE;
-        return new LocalsStorage(frame, skipCells);
+        return new LocalsStorage(frame);
     }
 
     private abstract class LocalsIterator<T> implements Iterator<T> {
@@ -219,9 +214,6 @@ public class LocalsStorage extends HashingStorage {
                 if (identifier instanceof String) {
                     if (!RETURN_SLOT_ID.equals(identifier) && !isTempLocal(identifier)) {
                         Object nextValue = frame.getValue(nextCandidate);
-                        if (skipCells && nextValue instanceof PCell) {
-                            continue;
-                        }
                         if (nextValue != null) {
                             nextFrameSlot = nextCandidate;
                             return true;

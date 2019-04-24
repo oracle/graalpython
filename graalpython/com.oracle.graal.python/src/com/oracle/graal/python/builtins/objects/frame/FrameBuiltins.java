@@ -38,19 +38,26 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameInstance;
+import com.oracle.truffle.api.frame.FrameInstanceVisitor;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFrame)
 public final class FrameBuiltins extends PythonBuiltins {
@@ -118,11 +125,9 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class GetTraceNode extends PythonBuiltinNode {
         @Specialization
         Object get(PFrame self) {
-            PTraceback traceback = self.getException().getTraceback(factory(), self.getIndex());
-            if (traceback == null) {
-                return PNone.NONE;
-            }
-            return traceback;
+            // TODO: frames: This must return the traceback if there is a
+            // handled exception here
+            return PNone.NONE;
         }
     }
 
@@ -161,13 +166,65 @@ public final class FrameBuiltins extends PythonBuiltins {
     @Builtin(name = "f_back", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetBackrefNode extends PythonBuiltinNode {
+        @Child MaterializeFrameNode escapeFrame;
+
         @Specialization
         Object get(PFrame self) {
-            PTraceback traceback = self.getException().getTraceback(factory(), self.getIndex() + 1);
-            if (traceback == null) {
-                return PNone.NONE;
+            Object backref = self.getBackref();
+            if (backref != null) {
+                return backref;
+            } else {
+                // The backref is not there. There's two cases:
+                // a) self is still on the stack and the caller isn't filled in
+                // b) this frame has returned, but not (yet) to a Python caller
+                //    b.1) there's no Python caller on the stack at all, so this is the top Python frame
+                //    b.2) there's a Python frame on the stack below
+                //         b.2.1) the next Python frame on the stack is the one that should be the backref for this
+                //
+
+                MaterializedFrame selfFrame = self.getFrame();
+                Object possibleCaller = PArguments.getCallerFrameOrException(selfFrame);
+                if (possibleCaller instanceof MaterializedFrame) {
+                    if (escapeFrame == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        escapeFrame = insert(MaterializeFrameNodeGen.create());
+                    }
+                    PFrame callerFrame = escapeFrame.execute((MaterializedFrame) possibleCaller);
+                    // If our caller is still on the stack it is now escaped
+                    self.setBackref(callerFrame);
+                } else {
+                    CompilerDirectives.transferToInterpreter();
+                    MaterializedFrame callerFrame = Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<MaterializedFrame>() {
+                            boolean foundMyself = false;
+                            boolean foundForeignFrame = false;
+                            int idx = 0;
+
+                            public MaterializedFrame visitFrame(FrameInstance frameInstance) {
+                                Frame frame = frameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY);
+                                if (!foundMyself) {
+                                    if (PArguments.isPythonFrame(frame)) {
+                                        if (PArguments.getPFrame(frame) == self) {
+                                            RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
+                                            RootNode rootNode = target.getRootNode();
+                                            assert rootNode instanceof PRootNode : "What's this, a Python frame without a PRootNode?";
+                                            ((PRootNode) rootNode).setNeedsCallerFrame();
+                                            foundMyself = true;
+                                        }
+                                    } else {
+                                        foundForeignFrame = true;
+                                    }
+                                    return null;
+                                } else if (PArguments.isPythonFrame(frame)) {
+                                    return frameInstance.getFrame(FrameInstance.FrameAccess.MATERIALIZE).materialize();
+                                }
+                            }
+                        });
+                    if (callerFrame == null) {
+                        // there's no caller, mark this frame as a top
+                        self.setNoBackref();
+                    }
+                }
             }
-            return traceback.getPFrame(factory());
         }
     }
 

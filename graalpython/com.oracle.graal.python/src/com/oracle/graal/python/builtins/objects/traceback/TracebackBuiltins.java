@@ -65,7 +65,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
     public abstract static class GetTracebackFrameNode extends PythonBuiltinNode {
         @Specialization
         Object get(PTraceback self) {
-            return self.getPFrame(factory());
+            return self.getPFrame();
         }
     }
 
@@ -83,8 +83,8 @@ public final class TracebackBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetTracebackLastINode extends PythonBuiltinNode {
         @Specialization
-        Object get(@SuppressWarnings("unused") PTraceback self) {
-            return -1;
+        Object get(PTraceback self) {
+            return self.getLasti();
         }
     }
 
@@ -93,8 +93,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
     public abstract static class GetTracebackLinenoNode extends PythonBuiltinNode {
         @Specialization
         int get(PTraceback self) {
-            // TODO: tb_lineno and tb_frame.f_lineno produce different results
-            return self.getPFrame(factory()).getLine();
+            return self.getLineno();
         }
     }
 }

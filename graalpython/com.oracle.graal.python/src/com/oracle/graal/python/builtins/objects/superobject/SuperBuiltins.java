@@ -245,7 +245,7 @@ public final class SuperBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
         PNone init(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
-                        @Cached("create(0)") ReadCallerFrameNode readCaller) {
+                        @Cached ReadCallerFrameNode readCaller) {
             Frame target = readCaller.executeWith(frame);
             if (target == null) {
                 throw raise(PythonErrorType.RuntimeError, "super(): no current frame");

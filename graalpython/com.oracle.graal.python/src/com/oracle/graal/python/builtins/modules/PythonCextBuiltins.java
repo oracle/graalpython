@@ -143,6 +143,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -390,14 +391,21 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyErrRestoreNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object run(PNone typ, PNone val, PNone tb) {
+        Object run(VirtualFrame frame, PNone typ, PNone val, PNone tb) {
             getContext().setCurrentException(null);
             return PNone.NONE;
         }
 
         @Specialization
-        Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, @SuppressWarnings("unused") PTraceback tb) {
-            val.reifyException();
+        Object run(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, PTraceback tb,
+                   @Cached MaterializeFrameNode matFrameNode) {
+            val.setTraceback(tb);
+            // In case the frame attached to this traceback has not been
+            // materialized, yet, we do so now. if, e.g., it is from some frame
+            // lower down the stack (Smalltalk-style top-of-stack exception
+            // handling in C) we'll start attaching the backrefs when we leave
+            // it
+            matFrameNode.execute(tb.getPFrame().getFrame());
             if (val.getException() != null) {
                 getContext().setCurrentException(val.getException());
             } else {
@@ -412,9 +420,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyErrFetchNode extends NativeBuiltin {
         @Specialization
-        public Object run(Object module,
+        public Object run(VirtualFrame frame, Object module,
                         @Exclusive @Cached GetClassNode getClassNode,
-                        @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
+                        @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
+                        @Cached MaterializeFrameNode frameNode) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
             Object result;
@@ -422,8 +431,18 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 result = getNativeNullNode.execute(module);
             } else {
                 PBaseException exception = currentException.getExceptionObject();
-                exception.reifyException();
-                result = factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback(factory())});
+                // There is almost no way this exception hasn't been reified if
+                // it has to be. If it came from Python land, it's frame was
+                // reified on the boundary to C. BUT, that being said, someone
+                // could (since this is python_cext API) call this from Python
+                // instead of sys.exc_info() and then it should also work. So we
+                // do do it here if it hasn't been done already.
+                PTraceback storedTraceback = exception.getTraceback();
+                if (storedTraceback == null) {
+                    PFrame escapedFrame = frameNode.execute(frame);
+                    exception.setTraceback(factory().createTraceback(escapedFrame, currentException));
+                }
+                result = factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback()});
                 context.setCurrentException(null);
             }
             return result;
@@ -456,13 +475,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, @SuppressWarnings("unused") PTraceback tb) {
-            val.reifyException();
+        Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, PTraceback tb,
+                   @Cached MaterializeFrameNode matFrameNode) {
+            val.setTraceback(tb);
+            matFrameNode.execute(tb.getPFrame().getFrame());
             if (val.getException() != null) {
-                getContext().setCaughtException(val.getException());
+                getContext().setCurrentException(val.getException());
             } else {
                 PException pException = PException.fromObject(val, this);
-                getContext().setCaughtException(pException);
+                getContext().setCurrentException(pException);
             }
             return PNone.NONE;
         }
@@ -671,7 +692,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 // consume exception
                 context.setCurrentException(null);
                 PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, "%s returned a result with an error set", new Object[]{name});
-                currentException.getExceptionObject().reifyException();
+                // the exception here must have already been reified, because we
+                // got it from the context
                 sysExc.setAttribute(SpecialAttributeNames.__CAUSE__, currentException.getExceptionObject());
                 throw PException.fromObject(sysExc, this);
             }
@@ -1321,9 +1343,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffleTraceBack_HereNode extends PythonBuiltinNode {
         @Specialization
-        Object tbHere(PTraceback next, PFrame frame) {
-            PTraceback newTb = next.getException().putTracebackOnTop(factory());
-            newTb.setPFrame(frame);
+        Object tbHere(PFrame frame, PTraceback tb) {
+            PTraceback newTb = factory().createTraceback(frame, tb);
             return 0;
         }
     }

@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -284,8 +285,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
                 PBaseException exception = currentException.getExceptionObject();
-                frameNode.execute(frame);
-                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback(factory())});
+                PFrame escapedFrame = frameNode.execute(frame);
+                exception.setTraceback(factory().createTraceback(escapedFrame, currentException));
+                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback()});
             }
         }
 
