@@ -200,13 +200,13 @@ public abstract class GetLazyClassNode extends PNodeWithContext {
 
         @Specialization(guards = "isForeignObject(object)")
         protected static LazyPythonClass getIt(@SuppressWarnings("unused") TruffleObject object) {
-            return PythonBuiltinClassType.TruffleObject;
+            return PythonBuiltinClassType.ForeignObject;
         }
 
         @TruffleBoundary
         private static LazyPythonClass getItSlowPath(Object o) {
             if (PGuards.isForeignObject(o)) {
-                return PythonBuiltinClassType.TruffleObject;
+                return PythonBuiltinClassType.ForeignObject;
             } else if (o instanceof String) {
                 return PythonBuiltinClassType.PString;
             } else if (o instanceof Boolean) {

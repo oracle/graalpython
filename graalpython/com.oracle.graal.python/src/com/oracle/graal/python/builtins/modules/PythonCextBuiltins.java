@@ -63,10 +63,10 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.CheckFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.ExternalFunctionNodeGen;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.GetByteArrayNodeGen;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.TrufflePInt_AsPrimitiveFactory;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ExternalFunctionNodeGen;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.GetByteArrayNodeGen;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.TrufflePInt_AsPrimitiveFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -201,9 +201,9 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
-@CoreFunctions(defineModule = TruffleCextBuiltins.PYTHON_CEXT)
+@CoreFunctions(defineModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
-public class TruffleCextBuiltins extends PythonBuiltins {
+public class PythonCextBuiltins extends PythonBuiltins {
 
     public static final String PYTHON_CEXT = "python_cext";
 
@@ -212,7 +212,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return TruffleCextBuiltinsFactory.getFactories();
+        return PythonCextBuiltinsFactory.getFactories();
     }
 
     @Override
@@ -298,7 +298,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                     return core.lookupType(type);
                 }
             }
-            Object attribute = core.lookupBuiltinModule(TruffleCextBuiltins.PYTHON_CEXT).getAttribute(typeName);
+            Object attribute = core.lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT).getAttribute(typeName);
             if (attribute != PNone.NO_VALUE) {
                 return attribute;
             }
@@ -1982,7 +1982,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object doIt(Object object,
                         @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
-            Object wrapper = readAttrNode.execute(getCore().lookupBuiltinModule(TruffleCextBuiltins.PYTHON_CEXT), NATIVE_NULL);
+            Object wrapper = readAttrNode.execute(getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT), NATIVE_NULL);
             if (wrapper instanceof PythonNativeNull) {
                 ((PythonNativeNull) wrapper).setPtr(object);
             }

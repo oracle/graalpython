@@ -36,7 +36,7 @@ import com.oracle.truffle.api.object.Shape;
 
 public enum PythonBuiltinClassType implements LazyPythonClass {
 
-    TruffleObject(BuiltinNames.FOREIGN),
+    ForeignObject(BuiltinNames.FOREIGN),
     Boolean("bool", "builtins"),
     GetSetDescriptor("get_set_desc"),
     PArray("array", "array"),
