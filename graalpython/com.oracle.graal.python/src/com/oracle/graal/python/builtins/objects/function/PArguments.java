@@ -227,19 +227,19 @@ public final class PArguments {
         return arguments.length - USER_ARGUMENTS_OFFSET;
     }
 
-    public static Frame getGeneratorFrame(Frame frame) {
-        return (Frame) frame.getArguments()[INDEX_GENERATOR_FRAME];
+    public static MaterializedFrame getGeneratorFrame(Frame frame) {
+        return (MaterializedFrame) frame.getArguments()[INDEX_GENERATOR_FRAME];
     }
 
     public static Frame getGeneratorFrameSafe(Frame frame) {
-        if (frame.getArguments()[INDEX_GENERATOR_FRAME] instanceof Frame) {
+        if (frame.getArguments()[INDEX_GENERATOR_FRAME] instanceof MaterializedFrame) {
             return getGeneratorFrame(frame);
         } else {
             return null;
         }
     }
 
-    public static void setGeneratorFrame(Object[] arguments, Frame generatorFrame) {
+    public static void setGeneratorFrame(Object[] arguments, MaterializedFrame generatorFrame) {
         arguments[INDEX_GENERATOR_FRAME] = generatorFrame;
     }
 

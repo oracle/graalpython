@@ -50,11 +50,12 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleStackTraceElement;
-import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -65,14 +66,14 @@ public final class PFrame extends PythonBuiltinObject {
     private Object localsDict;
 
     private final boolean inClassScope;
-    private final Frame frame;
+    private final MaterializedFrame frame;
     private final Node location;
     private RootCallTarget callTarget;
     private int line = -2;
 
     private PFrame[] backref = null;
 
-    public PFrame(LazyPythonClass cls, Frame frame) {
+    public PFrame(LazyPythonClass cls, MaterializedFrame frame) {
         super(cls);
         this.exception = null;
         this.index = -1;
@@ -81,7 +82,7 @@ public final class PFrame extends PythonBuiltinObject {
         this.inClassScope = PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
     }
 
-    public PFrame(LazyPythonClass cls, Frame frame, Object locals) {
+    public PFrame(LazyPythonClass cls, MaterializedFrame frame, Object locals) {
         super(cls);
         this.exception = null;
         this.index = -1;
@@ -107,7 +108,7 @@ public final class PFrame extends PythonBuiltinObject {
         this.index = index;
 
         TruffleStackTraceElement truffleStackTraceElement = exception.getStackTrace().get(index);
-        this.frame = truffleStackTraceElement.getFrame();
+        this.frame = (MaterializedFrame) truffleStackTraceElement.getFrame();
         this.location = truffleStackTraceElement.getLocation();
         this.inClassScope = truffleStackTraceElement.getTarget().getRootNode() instanceof ClassBodyRootNode;
     }
@@ -140,7 +141,7 @@ public final class PFrame extends PythonBuiltinObject {
         return index;
     }
 
-    public Frame getFrame() {
+    public MaterializedFrame getFrame() {
         return frame;
     }
 
@@ -196,7 +197,7 @@ public final class PFrame extends PythonBuiltinObject {
     public Object getLocals(PythonObjectFactory factory) {
         if (localsDict == null) {
             assert frame != null;
-            return localsDict = factory.createDictLocals(frame, inClassScope);
+            return localsDict = factory.createDictLocals(frame);
         } else {
             return localsDict;
         }
@@ -211,6 +212,9 @@ public final class PFrame extends PythonBuiltinObject {
         return location == null;
     }
 
+    /**
+     * When this is true, the frame has escaped
+     **/
     public boolean hasFrame() {
         return frame != null;
     }
