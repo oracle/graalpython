@@ -1,0 +1,6 @@
+test_bad_major_version
+test_bindtextdomain
+test_textdomain
+test_unicode_msgid
+test_unicode_msgstr
+test__all__

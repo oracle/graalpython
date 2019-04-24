@@ -1,0 +1,3 @@
+*CommonTest.test_abspath_issue3426
+*GenericTest.test_commonprefix
+*GenericTest.test_exists

@@ -313,6 +313,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw raise(PythonErrorType.FileNotFoundError, "No such file or directory: '%s'", spath);
             }
         }
+
+        @Specialization
+        PNone chdirPString(PString spath) {
+            return chdir(spath.getValue());
+        }
     }
 
     @Builtin(name = "getpid", minNumOfPositionalArgs = 0)

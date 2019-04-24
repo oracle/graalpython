@@ -175,12 +175,19 @@ def python3_unittests(args):
     mx.run(["python3", "graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
 
 
+def retag_unittests(args):
+    """run the cPython stdlib unittests"""
+    with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true"):
+        python(["graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py"] + args)
+
+
 AOT_INCOMPATIBLE_TESTS = ["test_interop.py"]
 
 class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
     unittest_sandboxed = 'python-unittest-sandboxed'
+    tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
     shared_object = 'python-so'
@@ -278,7 +285,7 @@ def _python_graalvm_launcher(args):
     mx.run_mx(dy + ["build"])
     out = mx.OutputCapture()
     mx.run_mx(dy + ["graalvm-home"], out=mx.TeeOutputCapture(out))
-    launcher = os.path.join(out.data.strip(), "bin", "graalpython")
+    launcher = os.path.join(out.data.strip(), "bin", "graalpython").split("\n")[-1].strip()
     mx.log(launcher)
     if args:
         mx.run([launcher] + args)
@@ -315,12 +322,15 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
         if not os.path.exists(path):
             # allow paths relative to the test root
             path = os.path.join(_graalpytest_root(), path)
-        for testfile in glob.glob(os.path.join(path, "**/test_*.py")):
-            if is_included(testfile):
-                testfiles.append(testfile)
-        for testfile in glob.glob(os.path.join(path, "test_*.py")):
-            if is_included(testfile):
-                testfiles.append(testfile)
+        if os.path.isfile(path):
+            testfiles.append(path)
+        else:
+            for testfile in glob.glob(os.path.join(path, "**/test_*.py")):
+                if is_included(testfile):
+                    testfiles.append(testfile)
+            for testfile in glob.glob(os.path.join(path, "test_*.py")):
+                if is_included(testfile):
+                    testfiles.append(testfile)
 
     args += [_graalpytest_driver(), "-v"]
     args += testfiles
@@ -334,7 +344,7 @@ def graalpython_gate_runner(args, tasks):
             punittest(['--verbose'])
 
     # Unittests on JVM
-    with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.unittest]) as task:
+    with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
             if platform.system() != 'Darwin':
                 # TODO: drop condition when python3 is available on darwin
@@ -346,6 +356,11 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
             run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.sandboxed"])
+
+    with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
+        if task:
+            with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true"):
+                run_python_unittests(python_gvm(), paths=["test_tagged_unittests.py"])
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
@@ -917,6 +932,7 @@ mx.update_commands(SUITE, {
     'python-svm': [python_svm, ''],
     'python-gvm': [python_gvm, ''],
     'python-unittests': [python3_unittests, ''],
+    'python-retag-unittests': [retag_unittests, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-src-import': [import_python_sources, ''],

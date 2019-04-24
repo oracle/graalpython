@@ -1,0 +1,12 @@
+test_all
+test_bool
+test_clear
+test_constructor
+test_contains
+test_copy
+test_eq
+test_fromkeys
+test_init
+test_items
+test_len
+test_missing

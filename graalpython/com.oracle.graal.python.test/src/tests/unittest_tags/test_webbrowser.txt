@@ -1,0 +1,5 @@
+test_register
+test_register_default
+test_register_preferred
+test_get
+test_register
