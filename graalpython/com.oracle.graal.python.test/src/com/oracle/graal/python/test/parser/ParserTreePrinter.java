@@ -44,6 +44,7 @@ package com.oracle.graal.python.test.parser;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
@@ -51,6 +52,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.InnerRootNode;
+import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -86,6 +88,12 @@ public class ParserTreePrinter implements NodeVisitor {
             level--;
             return true;
         } 
+        
+        private void addInfoPClosureFunctionRootNode(PClosureFunctionRootNode node) {
+            addSignature(node.getSignature());
+            indent(level); sb.append("CelVars: "); add(node.getCellVars()); newLine();
+            addInfoPCloserRootNode(node);
+        }
         
         private void addInfoPCloserRootNode(PClosureRootNode node) {
             indent(level);sb.append("FreeVars: "); add(node.getFreeVars()); newLine();
@@ -129,6 +137,20 @@ public class ParserTreePrinter implements NodeVisitor {
                 }
                 level--;
             }
+            indent(level); sb.append("Documentation:");
+            ExpressionNode doc = node.getDoc();
+            if (doc == null) {
+                sb.append(" None"); newLine();
+            } else if (doc instanceof StringLiteralNode) {
+                sb.append(" StringLiteralNode: "); add(((StringLiteralNode)doc).getValue()); newLine();
+            } else {
+                newLine();
+                level++;
+                visit(node.getDoc());
+                level--;
+            }
+            indent(level); sb.append("FreeVarSlots: "); add(node.getFreeVarDefinitionSlots()); newLine();
+            add(node.getExecutionCellSlots());
             visit(node.getFunctionRoot());
             level--;
             return false;
@@ -137,30 +159,8 @@ public class ParserTreePrinter implements NodeVisitor {
         public boolean visit (FunctionRootNode node) {
             nodeHeader(node);
             level++;
-            addSignature(node.getSignature());
-            addFrameDescriptor(node.getFrameDescriptor());
-            indent(level);sb.append("CellVars: ");
-            add(node.getCellVars());
-            sb.append("\n");
-            PCell[] cells = node.getCells();
-            indent(level);sb.append("Cells: ");
-            if (cells == null || cells.length == 0) {
-                sb.append("None");
-            }
-            for (PCell cell: cells) {
-                sb.append(cell.toString()).append(", ");
-            }
-            sb.append("\n");
-            ExecutionCellSlots executionCellSlots = node.getExecutionCellSlots();
-            FrameSlot[] freeVarSlots = executionCellSlots.getFreeVarSlots();
-            indent(level);sb.append("FreeVars: ");
-            if (freeVarSlots == null || freeVarSlots.length == 0) {
-                sb.append("None");
-            }
-            for(FrameSlot slot: freeVarSlots) {
-                sb.append((String)slot.getIdentifier()).append(", ");
-            }
-            sb.append("\n");
+            addInfoPClosureFunctionRootNode(node);
+            add(node.getExecutionCellSlots());
             level--;
             return true;
         }
@@ -266,10 +266,13 @@ public class ParserTreePrinter implements NodeVisitor {
                 String textToPrint = text.length() < MAX_TEXT_LENGTH ? text : text.subSequence(0, MAX_TEXT_LENGTH).toString() + "...";
                 textToPrint = textToPrint.replaceAll("\\r\\n|\\r|\\n", "\u21b5");
                 sb.append("`").append(textToPrint).append("`");
-            } else {
+            } else if (text == null) {
                 sb.append("None");
+            } else {
+                sb.append("Empty");
             }
         }
+        
         private void add(String[] array) {
             if (array == null || array.length == 0) {
                 sb.append("None");
@@ -284,6 +287,29 @@ public class ParserTreePrinter implements NodeVisitor {
                     sb.append(text);
                 }
             }
+        }
+        private void add(FrameSlot[] slots) {
+            if (slots == null || slots.length == 0) {
+                sb.append("None");
+            } else {
+                boolean first = true;
+                for(FrameSlot slot: slots) {
+                    if (!first) {
+                        sb.append(", ");
+                    } else {
+                        first = false;
+                    }
+                    sb.append((String)slot.getIdentifier()).append(", ");
+                }
+            }
+        }
+        
+        private void add(ExecutionCellSlots executionCellSlots) {
+            indent(level);sb.append("ExecutionSlots:"); newLine();
+            level++;
+            indent(level);sb.append("FreeVarsSlots: "); add(executionCellSlots.getFreeVarSlots()); newLine();
+            indent(level);sb.append("CellVarsSlots: "); add(executionCellSlots.getCellVarSlots()); newLine();
+            level--;
         }
         
         private void add(boolean value) {

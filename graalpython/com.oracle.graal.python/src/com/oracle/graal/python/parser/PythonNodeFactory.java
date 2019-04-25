@@ -408,7 +408,18 @@ public final class PythonNodeFactory {
         StatementNode argumentLoads = BlockNode.create();
         
         ExpressionNode doc = null;
-        doc = nodeFactory.createStringLiteral("");
+        doc = (new DocExtractor()).extract(body);
+        if (doc != null && body instanceof BlockNode) {
+            StatementNode[] st = ((BlockNode)body).getStatements();
+            if (st.length == 1) {
+                body = BlockNode.create();
+            } else {
+                body = BlockNode.create(Arrays.copyOfRange(st, 1, st.length));
+            }
+        }
+        if (doc == null) {
+            doc = nodeFactory.createStringLiteral("");
+        }
         ExpressionNode funcDef;
         
         body = nodeFactory.createBlock(argumentLoads, body);
@@ -783,10 +794,14 @@ public final class PythonNodeFactory {
     
     public ModuleRootNode createModuleRoot(String name, ExpressionNode file, FrameDescriptor fd) {
         log(name, file);
-        String doc = (new DocExtractor()).extract(file);
-        if (doc != null) {
-            int cut = doc.startsWith("'''") || doc.startsWith("\"\"\"") ? 3 : 1;
-            doc = doc.substring(cut, doc.length() - cut);
+        StringLiteralNode sln = (new DocExtractor()).extract(file);
+        String doc = null;
+        if (sln != null) {
+            doc = sln.getValue();
+            if (doc != null && doc.length() > 0) {
+                int cut = doc.startsWith("'''") || doc.startsWith("\"\"\"") ? 3 : 1;
+                doc = doc.substring(cut, doc.length() - cut);
+            }
         }
 //        if (file instanceof ExpressionNode.ExpressionWithSideEffect) { 
 //                && ((ExpressionNode.ExpressionWithSideEffect)file).getSideEffect() instanceof StringLiteralNode)
@@ -861,20 +876,22 @@ public final class PythonNodeFactory {
         
         private boolean firstStatement = true;
         
-        public String extract(StringLiteralNode node) {
-            return node.getValue();
-        }
-        
-        public String extract(StatementNode node) {
+        public StringLiteralNode extract(StatementNode node) {
             if (node instanceof ExpressionNode.ExpressionStatementNode) {
                 return extract(((ExpressionNode.ExpressionStatementNode) node).getExpression());
+            } else if (node instanceof BlockNode) {
+                StatementNode[] statements = ((BlockNode)node).getStatements();
+                if (statements != null && statements.length > 0) {
+                    return extract(statements[0]);
+                }
+                return null;
             }
             return null;
         }
         
-        public String extract(ExpressionNode node) {
+        public StringLiteralNode extract(ExpressionNode node) {
             if (node instanceof StringLiteralNode) {
-                return extract((StringLiteralNode) node);
+                return (StringLiteralNode) node;
             } else if (node instanceof ExpressionNode.ExpressionWithSideEffect) {
                 return extract(((ExpressionNode.ExpressionWithSideEffect)node).getSideEffect());
             } else if (node instanceof ExpressionNode.ExpressionWithSideEffects) {

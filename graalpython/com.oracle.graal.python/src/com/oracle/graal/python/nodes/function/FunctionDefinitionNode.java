@@ -188,4 +188,9 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
             return new KwDefaultExpressionNode(name, exprNode);
         }
     }
+
+    public ExpressionNode getDoc() {
+        return doc;
+    }
+    
 }

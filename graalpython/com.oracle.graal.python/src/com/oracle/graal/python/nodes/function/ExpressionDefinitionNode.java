@@ -78,4 +78,14 @@ abstract class ExpressionDefinitionNode extends ExpressionNode {
         }
         return closure;
     }
+
+    public ExecutionCellSlots getExecutionCellSlots() {
+        return executionCellSlots;
+    }
+
+    public FrameSlot[] getFreeVarDefinitionSlots() {
+        return freeVarDefinitionSlots;
+    }
+    
+    
 }

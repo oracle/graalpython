@@ -242,6 +242,12 @@ public class BasicTests extends ParserTestBase {
                 + "  return a\n");
     }
     
+    @Test
+    public void functionDef04() throws Exception {
+        // checking doc of a function
+        checkFile();
+    }
+    
 //    @Test
 //    public void scope01() throws Exception {
 //        checkTreeResult("a = 1\n"

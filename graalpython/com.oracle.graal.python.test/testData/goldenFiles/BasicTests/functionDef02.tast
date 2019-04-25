@@ -13,12 +13,20 @@ ModuleRootNode Name: <module 'foo'> SourceSection: [0,24]`def foo(): ↵  return
           FunctionDefinitionNode Name: foo SourceSection: None
             Arguments: None
             KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
             FunctionRootNode SourceSection: [0,24]`def foo(): ↵  return...`
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-              FrameDescriptor: 1 slots [<return_val>]
-              CellVars: None
-              Cells: None
+              CelVars: None
               FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 1 slots [<return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
               InnerRootNode SourceSection: [0,24]`def foo(): ↵  return...`
                 ReturnTargetNode SourceSection: [0,24]`def foo(): ↵  return...`
                   Body: BlockNode SourceSection: None
