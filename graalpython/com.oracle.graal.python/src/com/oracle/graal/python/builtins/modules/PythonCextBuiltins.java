@@ -739,16 +739,19 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 }
                 // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
                 // it to the context since we cannot propagate it through the native frames.
+                PException savedExceptionState = null;
                 if (needsExceptionState()) {
                     PException execute = getCaughtExceptionNode.execute(frame);
-                    contextRef.get().setCaughtException(execute != null ? execute : PException.NO_EXCEPTION);
+                    PythonContext ctx = contextRef.get();
+                    savedExceptionState = ctx.getCaughtException();
+                    ctx.setCaughtException(execute != null ? execute : PException.NO_EXCEPTION);
                 }
 
                 Object result;
                 result = fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(fun, arguments))));
 
                 if (needsExceptionState()) {
-                    contextRef.get().setCaughtException(null);
+                    contextRef.get().setCaughtException(savedExceptionState);
                 }
 
                 return result;
@@ -1775,7 +1778,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
         protected final void exceptionHandling(VirtualFrame frame) {
             RootNode rootNode = getRootNode();
             if (rootNode instanceof PRootNode && ((PRootNode) rootNode).needsExceptionState()) {
-                PArguments.setCaughtException(frame.getArguments(), getContext().getCaughtException());
+                PException caughtException = getContext().getCaughtException();
+                if (caughtException == null) {
+                    CompilerDirectives.transferToInterpreter();
+                    PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                    caughtException = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
+                    getContext().setCaughtException(caughtException);
+                }
+                PArguments.setCaughtException(frame.getArguments(), caughtException);
             }
         }
     }
