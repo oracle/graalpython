@@ -156,6 +156,7 @@ import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.parser.ParserCtxInfo;
 
 import com.oracle.truffle.api.frame.FrameDescriptor;
 
@@ -252,41 +253,7 @@ import java.util.Arrays;
 			stringStackIndex = start;
 		}
 	}
-
-    private ExpressionNode asExpression(PNode node) {
-        if (node instanceof ExpressionNode.ExpressionStatementNode) {
-            return ((ExpressionNode.ExpressionStatementNode) node).getExpression();
-        }
-        if (node instanceof ExpressionNode) {
-            return (ExpressionNode) node;
-        }
-        if (node instanceof StatementNode) {
-            ExpressionNode emptyNode = EmptyNode.create().withSideEffect((StatementNode) node);
-            emptyNode.assignSourceSection(node.getSourceSection());
-            return emptyNode;
-        }
-        if (node == null) {
-            return EmptyNode.create();
-        } else {
-            throw new IllegalArgumentException("unexpected class: " + node.getClass());
-        }
-    }
     
-    private ExpressionNode asExpression(StatementNode[] statements) {
-        if (statements == null || statements.length == 0) {
-            return EmptyNode.create();
-        }
-        int len = statements.length;
-        if (len == 1) {
-            return asExpression(statements[0]);
-        }
-        // two and more
-        ExpressionNode en = asExpression(statements[len - 1]);
-        if (len == 2 ) {
-            return en.withSideEffect(statements[0]);
-        }
-        return en.withSideEffect(Arrays.copyOf(statements, len - 1));
-    }
 
     private static class PythonRecognitionException extends RecognitionException{
                     
@@ -311,10 +278,23 @@ import java.util.Arrays;
     }
 
     private int getStopIndex(Token token) {
+        int stopIndex;
+        if (token.getType() != NEWLINE) {
+            stopIndex = token.getStopIndex();
+        } else {
+            // We don't have to have new lines in the source section
+            int tokenIndex = token.getTokenIndex();
+            Token tmp = token;
+            while(tmp.getType() == NEWLINE && tokenIndex > -1) {
+                tmp = getTokenStream().get(--tokenIndex);
+            }
+            stopIndex = tmp.getStopIndex();
+        }
         // add 1 to fit truffle source sections
-        return token.getStopIndex() + 1;
+        return stopIndex + 1;
     }
-
+ 
+    private final ParserCtxInfo parserInfo = new ParserCtxInfo();
 }
 
 /*
@@ -356,7 +336,7 @@ locals
 		NEWLINE
 		| stmt
 	)* EOF
-	{ $result = asExpression(getArray(start, StatementNode[].class)); }
+	{ $result = factory.asExpression(getArray(start, StatementNode[].class), getStartIndex($ctx), getStopIndex($stmt.stop)); }
 	{ factory.leaveScope(); }
 ;
 
@@ -388,7 +368,7 @@ funcdef
         }
 	s = suite
 	{ 
-            ExpressionNode funcDef = factory.createFunction(name, enclosingClassName, getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
+            ExpressionNode funcDef = factory.createFunction(name, enclosingClassName, $s.result, getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
             factory.leaveScope();
             push(factory.createReadNodeForFuncDef(funcDef, name));
         }
@@ -549,10 +529,11 @@ small_stmt
 ;
 
 expr_stmt
-:
+:       { parserInfo.isVarDefinition = true;}
 	lhs=testlist_star_expr
 	{ ExpressionNode rhs = null; 
           int rhsStopIndex = 0;
+          parserInfo.isVarDefinition = false;
         }
 	(
 		':' t=test
@@ -621,7 +602,10 @@ del_stmt
 	{ push(factory.createDel($exprlist.result)); }
 ;
 
-pass_stmt: 'pass';
+pass_stmt: 
+        p='pass'
+        {push(factory.createPass(getStartIndex($p), getStopIndex($p)));}
+;
 
 flow_stmt
 :
@@ -641,7 +625,7 @@ return_stmt
 	'return'
 	{ ExpressionNode value = null; }
 	( testlist { value = $testlist.result; } )?
-	{ push(factory.createReturn(value)); }
+	{ push(factory.createReturn(value, getStartIndex($ctx), getStopIndex($testlist.stop))); }
 ;
 
 yield_stmt
@@ -1066,7 +1050,7 @@ atom_expr returns [ExpressionNode result]
 	atom
 	{ $result = $atom.result; }
 	(
-		'(' arglist ')' { $result = factory.createCall($result, $arglist.result); }
+		'(' arglist CloseB=')' { $result = factory.createCall($result, $arglist.result, getStartIndex($ctx), getStopIndex($CloseB)); }
 		| '[' subscriptlist ']' { $result = factory.createSubscript($result, $subscriptlist.result); }
 		| '.' NAME { $result = factory.createGetAttribute($result, $NAME.text); }
 	)*
@@ -1106,7 +1090,7 @@ atom returns [ExpressionNode result]
 		{ $result = factory.createCollection(ExpressionNode.EMPTY_ARRAY, PythonBuiltinClassType.PDict); }
 	)
 	'}'
-	| NAME { $result = factory.createVariableLookup($NAME.text, getStartIndex($NAME), getStopIndex($NAME)); }
+	| NAME { $result = factory.createVariableLookup(parserInfo, $NAME.text, getStartIndex($NAME), getStopIndex($NAME)); }
 	| DECIMAL_INTEGER { $result = factory.createNumberLiteral($DECIMAL_INTEGER.text, 0, 10, getStartIndex($DECIMAL_INTEGER), getStopIndex($DECIMAL_INTEGER)); }
 	| OCT_INTEGER { $result = factory.createNumberLiteral($OCT_INTEGER.text, 2, 8, getStartIndex($OCT_INTEGER), getStopIndex($OCT_INTEGER)); }
 	| HEX_INTEGER { $result = factory.createNumberLiteral($HEX_INTEGER.text, 2, 16, getStartIndex($HEX_INTEGER), getStopIndex($HEX_INTEGER)); }

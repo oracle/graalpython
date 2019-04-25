@@ -1,0 +1,29 @@
+ModuleRootNode Name: <module 'foo'> SourceSection: [0,15]`def foo(): pass`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,15]`def foo(): pass`
+    ExpressionWithSideEffect SourceSection: [0,15]`def foo(): pass`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,15]`def foo(): pass`
+          FunctionDefinitionNode Name: foo SourceSection: None
+            Arguments: None
+            KwArguments: None
+            FunctionRootNode SourceSection: [0,15]`def foo(): pass`
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              FrameDescriptor: 1 slots [<return_val>]
+              CellVars: None
+              Cells: None
+              FreeVars: None
+              InnerRootNode SourceSection: [0,15]`def foo(): pass`
+                ReturnTargetNode SourceSection: [0,15]`def foo(): pass`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    ExpressionStatementNode SourceSection: [11,15]`pass`
+                      EmptyNode SourceSection: [11,15]`pass`
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    ReadVariableFromFrameNodeGen SourceSection: None

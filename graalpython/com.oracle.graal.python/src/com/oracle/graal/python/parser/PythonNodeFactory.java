@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
@@ -45,6 +46,7 @@ import com.oracle.graal.python.nodes.control.BreakTargetNode;
 import com.oracle.graal.python.nodes.control.ContinueNode;
 import com.oracle.graal.python.nodes.control.ContinueTargetNode;
 import com.oracle.graal.python.nodes.control.IfNode;
+import com.oracle.graal.python.nodes.control.ReturnNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.control.WhileNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
@@ -80,6 +82,7 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import java.util.Arrays;
 import java.util.List;
 import org.antlr.v4.runtime.ParserRuleContext;
 
@@ -260,6 +263,46 @@ public final class PythonNodeFactory {
         
     }
 
+    public ExpressionNode asExpression(StatementNode[] statements, int start, int stop) {
+        if (statements == null || statements.length == 0) {
+            return EmptyNode.create();
+        }
+        int len = statements.length;
+        ExpressionNode result;
+        if (len == 1) {
+            result = asExpression(statements[0]);
+            result.assignSourceSection(createSourceSection(start, stop));
+        } else {
+            // two and more
+            ExpressionNode en = asExpression(statements[len - 1]);
+            if (len == 2 ) {
+                result = en.withSideEffect(statements[0]);
+            } else {
+                result = en.withSideEffect(Arrays.copyOf(statements, len - 1));
+            }
+        }
+        result.assignSourceSection(createSourceSection(start, stop));
+        return result;
+    }
+    
+    public ExpressionNode asExpression(PNode node) {
+        if (node instanceof ExpressionNode.ExpressionStatementNode) {
+            return ((ExpressionNode.ExpressionStatementNode) node).getExpression();
+        }
+        if (node instanceof ExpressionNode) {
+            return (ExpressionNode) node;
+        }
+        if (node instanceof StatementNode) {
+            ExpressionNode emptyNode = EmptyNode.create().withSideEffect((StatementNode) node);
+            return emptyNode;
+        }
+        if (node == null) {
+            return EmptyNode.create();
+        } else {
+            throw new IllegalArgumentException("unexpected class: " + node.getClass());
+        }
+    }
+    
     public ArgDefListBuilder argDefListBuilder() {
         log();
         return new ArgDefListBuilder();
@@ -326,9 +369,11 @@ public final class PythonNodeFactory {
         return expression == null ? null : expression.asStatement();
     }
 
-    public StatementNode createReturn(ExpressionNode value) {
+    public StatementNode createReturn(ExpressionNode value, int start, int stop) {
         log(value);
-        return null;
+        StatementNode result = new ReturnNode.FrameReturnNode(nodeFactory.createWriteLocal(value, scopeEnvironment.getReturnSlot()));
+        result.assignSourceSection(createSourceSection(start, stop));
+        return result;
     }
 
     public StatementNode createBreak() {
@@ -341,6 +386,12 @@ public final class PythonNodeFactory {
         return new ContinueNode();
     }
 
+    public StatementNode createPass(int start, int stop) {
+        log();
+        EmptyNode result = EmptyNode.create();
+        result.assignSourceSection(createSourceSection(start, stop));
+        return result.asStatement();
+    }
     public StatementNode createDel(ExpressionNode[] result) {
         log((Object) result);
         return null;
@@ -352,18 +403,18 @@ public final class PythonNodeFactory {
         return null;
     }
 
-    public ExpressionNode createFunction(String name, String enclosingClassName, int startIndex, int stopIndex) {
+    public ExpressionNode createFunction(String name, String enclosingClassName, StatementNode body, int startIndex, int stopIndex) {
         Signature signature = Signature.EMPTY;
         StatementNode argumentLoads = BlockNode.create();
         
         ExpressionNode doc = null;
         doc = nodeFactory.createStringLiteral("");
         ExpressionNode funcDef;
-        StatementNode body = BlockNode.create();
         
         body = nodeFactory.createBlock(argumentLoads, body);
         ReturnTargetNode returnTarget = new ReturnTargetNode(body, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
-        // TODO source section
+        SourceSection sourceSection = createSourceSection(startIndex, stopIndex);
+        returnTarget.assignSourceSection(sourceSection);
         
         ExpressionNode[] defaults = null;
         KwDefaultExpressionNode[] kwDefaults = null;
@@ -372,7 +423,7 @@ public final class PythonNodeFactory {
          * Function root
          */
         FrameDescriptor fd = scopeEnvironment.getCurrentFrame();
-        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(createSourceSection(startIndex, stopIndex), name, scopeEnvironment.isInGeneratorScope(), fd, returnTarget, scopeEnvironment.getExecutionCellSlots(), signature);
+        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(sourceSection, name, scopeEnvironment.isInGeneratorScope(), fd, returnTarget, scopeEnvironment.getExecutionCellSlots(), signature);
         if(scopeEnvironment.isInGeneratorScope()) {
             // todo
             funcDef = null;
@@ -385,7 +436,10 @@ public final class PythonNodeFactory {
     
     public StatementNode createReadNodeForFuncDef(ExpressionNode funcDef, String name) {
         ReadNode funcVar = scopeEnvironment.findVariable(name);
-        return funcVar.makeWriteNode(funcDef);
+        StatementNode result = funcVar.makeWriteNode(funcDef);
+        // TODO I'm not sure, whether this assingning of sourcesection is right. 
+        result.assignSourceSection(((FunctionDefinitionNode)funcDef).getFunctionRoot().getSourceSection());
+        return result;
     }
     
     public StatementNode createIf(ExpressionNode test, StatementNode thenStatement, StatementNode elseStatement, int start, int stop) {
@@ -495,7 +549,7 @@ public final class PythonNodeFactory {
         return result;
     }
 
-    public ExpressionNode createCall(ExpressionNode target, ArgListBuilder parameters) {
+    public ExpressionNode createCall(ExpressionNode target, ArgListBuilder parameters, int start, int stop) {
         log(target, parameters);
 //        List<ExpressionNode> argumentNodes = new ArrayList<>();
 //        List<ExpressionNode> keywords = new ArrayList<>();
@@ -507,6 +561,10 @@ public final class PythonNodeFactory {
 //            environment.registerSpecialClassCellVar();
 //        }
         PythonCallNode callNode = PythonCallNode.create(target, parameters.getArgs(), parameters.getNameArgs(), parameters.getStarArgs(), parameters.getKwArgs());
+        callNode.assignSourceSection(createSourceSection(start, stop));
+        // remove source section for the taget to be comaptiable with old parser behavior
+        // TODO check, whether we really need to delete the source sections
+        target.assignSourceSection(null);
         return callNode;
     }
 
@@ -602,8 +660,11 @@ public final class PythonNodeFactory {
         return result;
     }
 
-    public ExpressionNode createVariableLookup(String name, int start, int stop) {
+    public ExpressionNode createVariableLookup(ParserCtxInfo parserInfo, String name, int start, int stop) {
         log(name);
+        if (parserInfo.isVarDefinition) {
+            scopeEnvironment.createLocal(name);
+        }
         ExpressionNode result = (ExpressionNode)scopeEnvironment.findVariable(name);
         result.assignSourceSection(createSourceSection(start, stop));
         return result;
@@ -720,9 +781,16 @@ public final class PythonNodeFactory {
         return null;
     }
     
-    public ModuleRootNode createModuleRoot(String name, String doc, ExpressionNode file, FrameDescriptor fd) {
+    public ModuleRootNode createModuleRoot(String name, ExpressionNode file, FrameDescriptor fd) {
         log(name, file);
-        return new ModuleRootNode(language, name, doc, file, fd, null);
+        String doc = (new DocExtractor()).extract(file);
+        if (doc != null) {
+            int cut = doc.startsWith("'''") || doc.startsWith("\"\"\"") ? 3 : 1;
+            doc = doc.substring(cut, doc.length() - cut);
+        }
+//        if (file instanceof ExpressionNode.ExpressionWithSideEffect) { 
+//                && ((ExpressionNode.ExpressionWithSideEffect)file).getSideEffect() instanceof StringLiteralNode)
+        return nodeFactory.createModuleRoot(name, doc, file, fd);
     }
 
 //    public Scope createScope(ScopeKind kind) {
@@ -787,5 +855,35 @@ public final class PythonNodeFactory {
     
     public void assignSourceSection(PNode node, int start, int stop) {
         node.assignSourceSection(createSourceSection(start, stop));
+    }
+    
+    private static class DocExtractor {
+        
+        private boolean firstStatement = true;
+        
+        public String extract(StringLiteralNode node) {
+            return node.getValue();
+        }
+        
+        public String extract(StatementNode node) {
+            if (node instanceof ExpressionNode.ExpressionStatementNode) {
+                return extract(((ExpressionNode.ExpressionStatementNode) node).getExpression());
+            }
+            return null;
+        }
+        
+        public String extract(ExpressionNode node) {
+            if (node instanceof StringLiteralNode) {
+                return extract((StringLiteralNode) node);
+            } else if (node instanceof ExpressionNode.ExpressionWithSideEffect) {
+                return extract(((ExpressionNode.ExpressionWithSideEffect)node).getSideEffect());
+            } else if (node instanceof ExpressionNode.ExpressionWithSideEffects) {
+                StatementNode[] sideEffects = ((ExpressionNode.ExpressionWithSideEffects)node).getSideEffects();
+                if (sideEffects != null && sideEffects.length > 0) {
+                    return extract(sideEffects[0]);
+                }
+            }
+            return null;
+        }
     }
 }

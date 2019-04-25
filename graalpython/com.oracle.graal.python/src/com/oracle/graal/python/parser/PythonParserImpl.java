@@ -137,8 +137,8 @@ public final class PythonParserImpl implements PythonParser {
                     Python3NewParser.File_inputContext file_input = newParser.file_input();
                     parserResult = file_input.result;
                     PythonLanguage lang = errors.getLanguage();
-                    NodeFactory factory = lang.getNodeFactory();
-                    return factory.createModuleRoot(source.getName(), "Not implemented yet", file_input.result, inlineLocals);
+                    PythonNodeFactory factory = newParser.factory;
+                    return factory.createModuleRoot(source.getName(), file_input.result, file_input.scope.getFrameDescriptor());
                 case InteractiveStatement:
                 case InlineEvaluation:
                 case Statement:

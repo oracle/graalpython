@@ -62,6 +62,10 @@ public class ModuleRootNode extends PClosureRootNode {
         return writeModuleDoc;
     }
 
+    public String getDoc() {
+        return doc;
+    }
+    
     @Override
     public Object execute(VirtualFrame frame) {
         return body.execute(frame);

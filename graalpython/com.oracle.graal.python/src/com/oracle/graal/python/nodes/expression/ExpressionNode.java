@@ -208,6 +208,10 @@ public abstract class ExpressionNode extends PNode {
         public boolean hasSideEffectAsAnExpression() {
             return true;
         }
+        
+        public StatementNode[] getSideEffects() {
+            return this.sideEffects;
+        }
     }
 
     /**

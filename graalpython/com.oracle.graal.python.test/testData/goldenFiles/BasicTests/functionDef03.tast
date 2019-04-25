@@ -1,0 +1,36 @@
+ModuleRootNode Name: <module 'foo'> SourceSection: [0,32]`def foo(): ↵  a = 10...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,32]`def foo(): ↵  a = 10...`
+    ExpressionWithSideEffect SourceSection: [0,32]`def foo(): ↵  a = 10...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,32]`def foo(): ↵  a = 10...`
+          FunctionDefinitionNode Name: foo SourceSection: None
+            Arguments: None
+            KwArguments: None
+            FunctionRootNode SourceSection: [0,32]`def foo(): ↵  a = 10...`
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              FrameDescriptor: 2 slots [a, <return_val>]
+              CellVars: None
+              Cells: None
+              FreeVars: None
+              InnerRootNode SourceSection: [0,32]`def foo(): ↵  a = 10...`
+                ReturnTargetNode SourceSection: [0,32]`def foo(): ↵  a = 10...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: [14,20]`a = 10`
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                        IntegerLiteralNode SourceSection: [18,20]`10`
+                      FrameReturnNode SourceSection: [23,31]`return a`
+                        WriteLocalVariableNodeGen SourceSection: None
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [30,31]`a`
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    ReadVariableFromFrameNodeGen SourceSection: None
