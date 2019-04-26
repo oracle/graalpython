@@ -453,7 +453,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         Object run(PNone typ, PNone val, PNone tb) {
-            getContext().setCaughtException(null);
+            getContext().setCaughtException(PException.NO_EXCEPTION);
             return PNone.NONE;
         }
 
