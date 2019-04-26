@@ -273,10 +273,11 @@ public abstract class SequenceStorageNodes {
 
         protected static final int DEFAULT_CAPACITY = 8;
 
-        protected static final int MAX_SEQUENCE_STORAGES = 12;
+        protected static final int MAX_SEQUENCE_STORAGES = 13;
         protected static final int MAX_ARRAY_STORAGES = 9;
 
         @Child private GetElementType getElementType;
+        @Child private LenNode lenNode;
 
         protected static boolean isByteStorage(NativeSequenceStorage store) {
             return store.getElementType() == ListStorageType.Byte;
@@ -311,8 +312,11 @@ public abstract class SequenceStorageNodes {
         }
 
         protected boolean isEmpty(SequenceStorage left) {
-            // TODO use a node or profile
-            return left instanceof EmptySequenceStorage || left.length() == 0;
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(LenNode.create());
+            }
+            return lenNode.execute(left) == 0;
         }
 
         protected static boolean isBoolean(GetElementType getElementTypeNode, SequenceStorage s) {
