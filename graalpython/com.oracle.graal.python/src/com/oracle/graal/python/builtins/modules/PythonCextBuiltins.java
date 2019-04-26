@@ -172,7 +172,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -720,7 +719,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object doIt(VirtualFrame frame,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached PRaiseNode raiseNode) {
             Object[] frameArgs = PArguments.getVariableArguments(frame);
             try {
@@ -739,11 +738,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 }
                 // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
                 // it to the context since we cannot propagate it through the native frames.
-                PException savedExceptionState = null;
+                PException savedExceptionState = ctx.getCaughtException();
                 if (needsExceptionState()) {
                     PException execute = getCaughtExceptionNode.execute(frame);
-                    PythonContext ctx = contextRef.get();
-                    savedExceptionState = ctx.getCaughtException();
                     ctx.setCaughtException(execute != null ? execute : PException.NO_EXCEPTION);
                 }
 
@@ -751,7 +748,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 result = fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(fun, arguments))));
 
                 if (needsExceptionState()) {
-                    contextRef.get().setCaughtException(savedExceptionState);
+                    ctx.setCaughtException(savedExceptionState);
                 }
 
                 return result;
