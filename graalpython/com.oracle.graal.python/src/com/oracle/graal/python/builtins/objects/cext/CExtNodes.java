@@ -710,11 +710,16 @@ public abstract class CExtNodes {
                 return b;
             }
 
-            @Specialization
+            @Specialization(guards = "isForeignObject(value)")
             static Object doForeign(Object value,
                             @Exclusive @Cached PCallCapiFunction callNativeNode,
                             @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
                 return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_TO_JAVA, value));
+            }
+
+            protected static boolean isForeignObject(Object obj) {
+                return !(obj instanceof PythonAbstractObject || obj instanceof PythonNativeWrapper || obj instanceof String || obj instanceof Boolean || obj instanceof Integer ||
+                                obj instanceof Long || obj instanceof Byte);
             }
 
         }
