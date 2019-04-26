@@ -2178,8 +2178,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         int doGeneric(Object a, Object b,
-                        @Cached CExtNodes.ToJavaNode toJavaNode) {
-            return isSubtypeNode.execute(toJavaNode.execute(a), toJavaNode.execute(b)) ? 1 : 0;
+                        @Cached CExtNodes.ToJavaNode leftToJavaNode,
+                        @Cached CExtNodes.ToJavaNode rightToJavaNode) {
+            return isSubtypeNode.execute(leftToJavaNode.execute(a), rightToJavaNode.execute(b)) ? 1 : 0;
         }
 
         protected int isNativeSubtype(PythonNativeWrapper a, PythonNativeWrapper b) {
