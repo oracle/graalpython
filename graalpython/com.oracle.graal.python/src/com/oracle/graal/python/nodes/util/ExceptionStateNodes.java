@@ -168,9 +168,15 @@ public abstract class ExceptionStateNodes {
         @Child private ReadExceptionStateFromArgsNode readFromArgsNode;
 
         @CompilationFinal private FrameSlot excSlot;
-        private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
+        @CompilationFinal private ContextReference<PythonContext> contextRef;
+
+        private final ConditionProfile notInFrameProfile = ConditionProfile.createBinaryProfile();
 
         public PException execute(@SuppressWarnings("unused") VirtualFrame frame) {
+
+            if (frame == null) {
+                return getFromContext();
+            }
 
             if (excSlot == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -178,7 +184,7 @@ public abstract class ExceptionStateNodes {
             }
 
             PException e = (PException) FrameUtil.getObjectSafe(frame, excSlot);
-            if (profile.profile(e != null)) {
+            if (notInFrameProfile.profile(e != null)) {
                 return e;
             }
 
@@ -188,18 +194,39 @@ public abstract class ExceptionStateNodes {
             }
             e = readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
             if (e == null) {
-                // The very-slow path: This is the first time we want to fetch the exception state
-                // from the context. The caller didn't know that it is necessary to provide the
-                // exception in the context. So, we do a full stack walk until the first frame
-                // having the exception state in the special slot. And we set the appropriate flag
-                // on the root node such that the next time, we will find the exception state in the
-                // context immediately.
-                CompilerDirectives.transferToInterpreter();
-
-                // TODO(fa) performance warning ?
-                e = fullStackWalk();
+                e = fromStackWalk();
             }
             return ensure(e);
+        }
+
+        private PException getFromContext() {
+            // contextRef acts as a branch profile
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = lookupContextReference(PythonLanguage.class);
+            }
+            PythonContext ctx = contextRef.get();
+            PException fromContext = ctx.getCaughtException();
+            if (fromContext == null) {
+                fromContext = fromStackWalk();
+
+                // important: set into context to avoid stack walk next time
+                ctx.setCaughtException(fromContext != null ? fromContext : PException.NO_EXCEPTION);
+            }
+            return ensure(fromContext);
+        }
+
+        private static PException fromStackWalk() {
+            // The very-slow path: This is the first time we want to fetch the exception state
+            // from the context. The caller didn't know that it is necessary to provide the
+            // exception in the context. So, we do a full stack walk until the first frame
+            // having the exception state in the special slot. And we set the appropriate flag
+            // on the root node such that the next time, we will find the exception state in the
+            // context immediately.
+            CompilerDirectives.transferToInterpreter();
+
+            // TODO(fa) performance warning ?
+            return fullStackWalk();
         }
 
         @TruffleBoundary
