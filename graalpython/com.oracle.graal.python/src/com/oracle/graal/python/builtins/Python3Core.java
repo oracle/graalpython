@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.InteropModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
@@ -69,9 +68,11 @@ import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
@@ -84,7 +85,6 @@ import com.oracle.graal.python.builtins.modules.SysConfigModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
@@ -109,7 +109,7 @@ import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
-import com.oracle.graal.python.builtins.objects.foreign.TruffleObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinFunctionBuiltins;
@@ -209,7 +209,7 @@ public final class Python3Core implements PythonCore {
                         "set",
                         "itertools",
                         "base_exception",
-                        TruffleCextBuiltins.PYTHON_CEXT,
+                        PythonCextBuiltins.PYTHON_CEXT,
                         "_collections",
                         "memoryview",
                         "list",
@@ -246,7 +246,7 @@ public final class Python3Core implements PythonCore {
                         new DecoratedMethodBuiltins(),
                         new ClassmethodBuiltins(),
                         new StaticmethodBuiltins(),
-                        new InteropModuleBuiltins(),
+                        new PolyglotModuleBuiltins(),
                         new ObjectBuiltins(),
                         new CellBuiltins(),
                         new BoolBuiltins(),
@@ -257,7 +257,7 @@ public final class Python3Core implements PythonCore {
                         new AbstractBytesBuiltins(),
                         new TypeBuiltins(),
                         new IntBuiltins(),
-                        new TruffleObjectBuiltins(),
+                        new ForeignObjectBuiltins(),
                         new ListBuiltins(),
                         new DictBuiltins(),
                         new DictViewBuiltins(),
@@ -301,7 +301,7 @@ public final class Python3Core implements PythonCore {
                         new MarshalModuleBuiltins(),
                         new RandomModuleBuiltins(),
                         new RandomBuiltins(),
-                        new TruffleCextBuiltins(),
+                        new PythonCextBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new IOModuleBuiltins(),

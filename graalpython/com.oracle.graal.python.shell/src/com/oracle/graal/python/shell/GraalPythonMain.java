@@ -80,6 +80,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
+
         ArrayList<String> unrecognized = new ArrayList<>();
         ArrayList<String> inputArgs = new ArrayList<>();
         inputArgs.addAll(givenArgs);

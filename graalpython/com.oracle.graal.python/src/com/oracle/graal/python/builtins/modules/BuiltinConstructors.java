@@ -1620,19 +1620,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public abstract Object executeWith(Object strClass, Object arg, Object encoding, Object errors);
 
         @SuppressWarnings("unused")
-        @Specialization
-        public Object str(LazyPythonClass strClass, PNone arg, PNone encoding, PNone errors) {
+        @Specialization(guards = {"isNoValue(arg)", "isNoValue(encoding)", "isNoValue(errors)"})
+        public Object strNoArgs(LazyPythonClass strClass, PNone arg, PNone encoding, PNone errors) {
             return asPString(strClass, "");
         }
 
-        @SuppressWarnings("unused")
-        @Specialization
-        public Object str(LazyPythonClass strClass, double arg, PNone encoding, PNone errors) {
-            return asPString(strClass, PFloat.doubleToString(arg));
-        }
-
-        @Specialization(guards = {"!isNoValue(obj)", "!isNone(obj)"})
-        public Object str(LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+        @Specialization(guards = {"!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"})
+        public Object strOneArg(LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode callNode) {
             Object result = callNode.executeObject(obj);
             if (getIsStringProfile().profile(result instanceof String)) {
@@ -1643,8 +1637,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(PythonErrorType.TypeError, "__str__ returned non-string (type %p)", result);
         }
 
+        @Specialization(guards = {"!isBytes(obj)", "!isMemoryView(obj)", "!isNoValue(encoding)"})
+        public Object strNonBytesArgAndEncodingArg(@SuppressWarnings("unused") LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") Object encoding,
+                        @SuppressWarnings("unused") Object errors) {
+            throw raise(PythonErrorType.TypeError, "decoding to str: need a bytes-like object, %p found", obj);
+        }
+
         @Specialization(guards = "!isNoValue(encoding)")
-        public Object doBytesLike(LazyPythonClass strClass, PIBytesLike obj, Object encoding, Object errors) {
+        public Object strBytesDecode(LazyPythonClass strClass, PIBytesLike obj, Object encoding, Object errors) {
             Object result = getCallDecodeNode().execute(obj, encoding, errors);
             if (getIsStringProfile().profile(result instanceof String)) {
                 return asPString(strClass, (String) result);
@@ -1655,12 +1655,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(encoding)")
-        public Object doMemoryView(LazyPythonClass strClass, PMemoryView obj, Object encoding, Object errors,
+        public Object strMemoryViewDecode(LazyPythonClass strClass, PMemoryView obj, Object encoding, Object errors,
                         @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
                         @Cached("create(TOBYTES)") LookupAndCallUnaryNode callToBytes) {
             Object result = callToBytes.executeObject(obj);
             if (isBytesProfile.profile(result instanceof PBytes)) {
-                return doBytesLike(strClass, (PBytes) result, encoding, errors);
+                return strBytesDecode(strClass, (PBytes) result, encoding, errors);
             }
             throw raise(PythonErrorType.TypeError, "%p.tobytes returned non-bytes object (type %p)", obj, result);
         }

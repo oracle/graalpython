@@ -89,10 +89,10 @@ import com.oracle.truffle.api.source.Source.LiteralBuilder;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 
 @CoreFunctions(defineModule = "polyglot")
-public final class InteropModuleBuiltins extends PythonBuiltins {
+public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
-        return InteropModuleBuiltinsFactory.getFactories();
+        return PolyglotModuleBuiltinsFactory.getFactories();
     }
 
     @Override

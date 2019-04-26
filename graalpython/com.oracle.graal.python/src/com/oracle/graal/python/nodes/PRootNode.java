@@ -50,6 +50,12 @@ import com.oracle.truffle.api.nodes.RootNode;
 public abstract class PRootNode extends RootNode {
     @CompilationFinal private boolean needsCallerFrame = false;
 
+    /**
+     * Flag indicating if some child node of this root node eventually needs the exception state.
+     * Hence, the caller of this root node should provide the exception state in the arguments.
+     */
+    @CompilationFinal private boolean needsExceptionState = false;
+
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
     }
@@ -66,6 +72,17 @@ public abstract class PRootNode extends RootNode {
         CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
         if (!this.needsCallerFrame) {
             this.needsCallerFrame = true;
+        }
+    }
+
+    public boolean needsExceptionState() {
+        return needsExceptionState;
+    }
+
+    public void setNeedsExceptionState() {
+        CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
+        if (!this.needsExceptionState) {
+            this.needsExceptionState = true;
         }
     }
 

@@ -259,7 +259,7 @@ public abstract class GetClassNode extends PNodeWithContext {
         @SuppressWarnings("unused")
         @Specialization(guards = "isForeignObject(object)")
         protected PythonBuiltinClass getIt(TruffleObject object) {
-            return contextRef.get().getCore().lookupType(PythonBuiltinClassType.TruffleObject);
+            return contextRef.get().getCore().lookupType(PythonBuiltinClassType.ForeignObject);
         }
     }
 
@@ -295,7 +295,7 @@ public abstract class GetClassNode extends PNodeWithContext {
     private static PythonAbstractClass getItSlowPath(Object o) {
         PythonCore core = PythonLanguage.getContextRef().get().getCore();
         if (PGuards.isForeignObject(o)) {
-            return core.lookupType(PythonBuiltinClassType.TruffleObject);
+            return core.lookupType(PythonBuiltinClassType.ForeignObject);
         } else if (o instanceof String) {
             return core.lookupType(PythonBuiltinClassType.PString);
         } else if (o instanceof Boolean) {

@@ -58,7 +58,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToJavaNodeGen;
@@ -535,14 +535,14 @@ public abstract class CExtNodes {
         }
 
         protected static boolean isForeignObject(TruffleObject obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
-            return isForeignClassProfile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.TruffleObject);
+            return isForeignClassProfile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.ForeignObject);
         }
 
         @TruffleBoundary
         public static Object doSlowPath(Object object, boolean forceNativeClass) {
             if (object instanceof PythonNativeWrapper) {
                 return ((PythonNativeWrapper) object).getDelegate();
-            } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(object), PythonBuiltinClassType.TruffleObject)) {
+            } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(object), PythonBuiltinClassType.ForeignObject)) {
                 if (forceNativeClass) {
                     return PythonObjectFactory.getUncached().createNativeClassWrapper((TruffleObject) object);
                 }
@@ -1776,7 +1776,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "module != null")
         static Object getNativeNullWithModule(Object module,
                         @Shared("readAttrNode") @Cached ReadAttributeFromObjectNode readAttrNode) {
-            Object wrapper = readAttrNode.execute(module, TruffleCextBuiltins.NATIVE_NULL);
+            Object wrapper = readAttrNode.execute(module, PythonCextBuiltins.NATIVE_NULL);
             assert wrapper instanceof PythonNativeNull;
             return wrapper;
         }
@@ -1785,8 +1785,8 @@ public abstract class CExtNodes {
         static Object getNativeNullWithoutModule(@SuppressWarnings("unused") Object module,
                         @Shared("readAttrNode") @Cached ReadAttributeFromObjectNode readAttrNode,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
-            PythonModule pythonCextModule = context.getCore().lookupBuiltinModule(TruffleCextBuiltins.PYTHON_CEXT);
-            Object wrapper = readAttrNode.execute(pythonCextModule, TruffleCextBuiltins.NATIVE_NULL);
+            PythonModule pythonCextModule = context.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+            Object wrapper = readAttrNode.execute(pythonCextModule, PythonCextBuiltins.NATIVE_NULL);
             assert wrapper instanceof PythonNativeNull;
             return wrapper;
         }

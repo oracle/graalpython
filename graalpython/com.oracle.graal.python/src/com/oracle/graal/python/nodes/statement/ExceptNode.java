@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -40,13 +39,12 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
@@ -65,6 +63,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     @Child private IsSameTypeNode isSameTypeNode;
     @Child private IsTypeNode isTypeNode;
     @Child private PRaiseNode raiseNode;
+    @Child private SetCaughtExceptionNode setCaughtExceptionNode;
 
     // "object" is the uninitialized value (since it's not a valid error type)
     @CompilationFinal private PythonBuiltinClassType singleBuiltinError = PythonBuiltinClassType.PythonObject;
@@ -76,7 +75,6 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     private final ConditionProfile equalsProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile errorProfile = BranchProfile.create();
     private final ConditionProfile matchesProfile = ConditionProfile.createBinaryProfile();
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     public ExceptNode(StatementNode body, ExpressionNode exceptType, WriteNode exceptName) {
         this.body = body;
@@ -91,11 +89,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     }
 
     public void executeExcept(VirtualFrame frame, PException e) {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = PythonLanguage.getContextRef();
-        }
-        contextRef.get().setCaughtException(e);
+        ensureSetCaughtExceptionNode().execute(frame, e);
         body.executeVoid(frame);
         throw ExceptionHandledException.INSTANCE;
     }
@@ -319,5 +313,13 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
             isTypeNode = insert(IsTypeNode.create());
         }
         return isTypeNode.execute(expectedType);
+    }
+
+    private SetCaughtExceptionNode ensureSetCaughtExceptionNode() {
+        if (setCaughtExceptionNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            setCaughtExceptionNode = insert(SetCaughtExceptionNode.create());
+        }
+        return setCaughtExceptionNode;
     }
 }
