@@ -58,24 +58,24 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateUncached
 public abstract class ExecutePositionalStarargsNode extends Node {
-    public abstract Object[] executeWith(Object starargs);
+    public abstract Object[] executeWith(VirtualFrame frame, Object starargs);
 
     @Specialization
-    Object[] starargs(Object[] starargs) {
+    static Object[] starargs(Object[] starargs) {
         return starargs;
     }
 
     @Specialization
-    Object[] starargs(PTuple starargs) {
+    static Object[] starargs(PTuple starargs) {
         return starargs.getArray();
     }
 
     @Specialization
-    Object[] starargs(PList starargs) {
+    static Object[] starargs(PList starargs) {
         int length = starargs.getSequenceStorage().length();
         Object[] internalArray = starargs.getSequenceStorage().getInternalArray();
         if (internalArray.length != length) {
@@ -85,7 +85,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     @Specialization
-    Object[] starargs(PDict starargs) {
+    static Object[] starargs(PDict starargs) {
         int length = starargs.size();
         Object[] args = new Object[length];
         Iterator<Object> iterator = starargs.getDictStorage().keys().iterator();
@@ -97,7 +97,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     @Specialization
-    Object[] starargs(PSet starargs) {
+    static Object[] starargs(PSet starargs) {
         int length = starargs.size();
         Object[] args = new Object[length];
         Iterator<Object> iterator = starargs.getDictStorage().keys().iterator();
@@ -109,13 +109,12 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     @Specialization
-    Object[] starargs(@SuppressWarnings("unused") PNone none) {
+    static Object[] starargs(@SuppressWarnings("unused") PNone none) {
         return new Object[0];
     }
 
     @Specialization
-    @TruffleBoundary(allowInlining = true)
-    Object[] starargs(Object object,
+    static Object[] starargs(VirtualFrame frame, Object object,
                     @Cached PRaiseNode raise,
                     @Cached GetIteratorWithoutFrameNode getIterator,
                     @Cached GetNextNode next,
@@ -125,18 +124,72 @@ public abstract class ExecutePositionalStarargsNode extends Node {
             ArrayList<Object> internalStorage = new ArrayList<>();
             while (true) {
                 try {
-                    // TODO(fa): FRAME MIGRATION
-                    internalStorage.add(next.execute(null, iterator));
+                    addToList(internalStorage, next.execute(frame, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
-                    return internalStorage.toArray();
+                    return toArray(internalStorage);
                 }
             }
         }
         throw raise.raise(PythonErrorType.TypeError, "argument after * must be an iterable, not %p", object);
     }
 
+    @TruffleBoundary(allowInlining = true)
+    private static void addToList(ArrayList<Object> internalStorage, Object element) {
+        internalStorage.add(element);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static Object[] toArray(ArrayList<Object> internalStorage) {
+        return internalStorage.toArray();
+    }
+
     public static ExecutePositionalStarargsNode create() {
         return ExecutePositionalStarargsNodeGen.create();
+    }
+
+    @GenerateUncached
+    public abstract static class ExecutePositionalStarargsInteropNode extends Node {
+        public abstract Object[] executeWith(Object starargs);
+
+        @Specialization
+        static Object[] starargs(Object[] starargs) {
+            return ExecutePositionalStarargsNode.starargs(starargs);
+        }
+
+        @Specialization
+        static Object[] starargs(PTuple starargs) {
+            return ExecutePositionalStarargsNode.starargs(starargs);
+        }
+
+        @Specialization
+        static Object[] starargs(PList starargs) {
+            return ExecutePositionalStarargsNode.starargs(starargs);
+        }
+
+        @Specialization
+        static Object[] starargs(PDict starargs) {
+            return ExecutePositionalStarargsNode.starargs(starargs);
+        }
+
+        @Specialization
+        static Object[] starargs(PSet starargs) {
+            return ExecutePositionalStarargsNode.starargs(starargs);
+        }
+
+        @Specialization
+        static Object[] starargs(@SuppressWarnings("unused") PNone none) {
+            return ExecutePositionalStarargsNode.starargs(none);
+        }
+
+        @Specialization
+        static Object[] starargs(Object object,
+                        @Cached PRaiseNode raise,
+                        @Cached GetIteratorWithoutFrameNode getIterator,
+                        @Cached GetNextNode next,
+                        @Cached IsBuiltinClassProfile errorProfile) {
+            return ExecutePositionalStarargsNode.starargs(null, object, raise, getIterator, next, errorProfile);
+        }
+
     }
 }
