@@ -37,6 +37,7 @@ import java.math.MathContext;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -57,6 +58,8 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -64,7 +67,9 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -1050,6 +1055,30 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FsumNode extends PythonUnaryBuiltinNode {
 
+        @Specialization
+        double doIt(VirtualFrame frame, Object iterable,
+                        @Cached GetIteratorNode getIterator,
+                        @Cached("create(__NEXT__)") LookupAndCallUnaryNode next,
+                        @Cached CastToDoubleNode toFloat,
+                        @Cached IsBuiltinClassProfile stopProfile,
+                        @Cached PassCaughtExceptionNode passExceptionNode,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
+                        @Cached("createBinaryProfile()") ConditionProfile exceptionStateProfile) {
+            Object iterator = getIterator.executeWith(frame, iterable);
+            PException exc = passExceptionNode.execute(frame);
+            boolean saveAndRestoreExceptionState = exceptionStateProfile.profile(exc != null);
+            try {
+                if (saveAndRestoreExceptionState) {
+                    ctxRef.get().setCaughtException(exc);
+                }
+                return fsum(iterator, next, toFloat, stopProfile);
+            } finally {
+                if (saveAndRestoreExceptionState) {
+                    ctxRef.get().setCaughtException(exc);
+                }
+            }
+        }
+
         /*
          * This implementation is taken from CPython. The performance is not good. Should be faster.
          * It can be easily replace with much simpler code based on BigDecimal:
@@ -1060,22 +1089,16 @@ public class MathModuleBuiltins extends PythonBuiltins {
          * is little bit faster. The testFSum in test_math.py takes in different implementations:
          * CPython ~0.6s CurrentImpl: ~14.3s Using BigDecimal: ~15.1
          */
-        @Specialization
         @TruffleBoundary
-        public double doIt(Object iterable,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create(__NEXT__)") LookupAndCallUnaryNode next,
-                        @Cached("create()") CastToDoubleNode toFloat,
-                        @Cached("create()") IsBuiltinClassProfile stopProfile) {
-            // TODO(fa): FRAME MIGRATION
-            Object iterator = getIterator.executeWith(null, iterable);
+        private double fsum(Object iterator, LookupAndCallUnaryNode next, CastToDoubleNode toFloat, IsBuiltinClassProfile stopProfile) {
             double x, y, t, hi, lo = 0, yr, inf_sum = 0, special_sum = 0, sum;
             double xsave;
             int i, j, n = 0, arayLength = 32;
             double[] p = new double[arayLength];
             while (true) {
                 try {
-                    // TODO(fa): FRAME MIGRATION
+                    // NOTE: passing 'null' frame is fine because we take care of the global state
+                    // in the caller
                     x = toFloat.execute(null, next.executeObject(null, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(stopProfile);

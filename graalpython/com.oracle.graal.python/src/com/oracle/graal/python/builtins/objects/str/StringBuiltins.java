@@ -58,6 +58,7 @@ import java.nio.charset.CodingErrorAction;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -97,11 +98,14 @@ import com.oracle.graal.python.nodes.string.StringLenNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -1584,13 +1588,14 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class ModNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        Object doGeneric(String left, Object right,
+        Object doGeneric(VirtualFrame frame, String left, Object right,
                         @Cached("create()") CallNode callNode,
                         @Cached("create()") GetLazyClassNode getClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic lookupAttrNode,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
-            return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode);
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx,
+                        @Cached PassCaughtExceptionNode passExceptionNode) {
+            return new StringFormatter(getCore(), left).format(frame, ctx, right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode, passExceptionNode);
         }
     }
 
