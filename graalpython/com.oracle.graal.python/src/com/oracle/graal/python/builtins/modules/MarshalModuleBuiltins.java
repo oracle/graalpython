@@ -102,34 +102,37 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DumpsNode extends PythonBuiltinNode {
 
-        private @Child MarshallerNode marshaller = MarshallerNode.create();
+        @Child private MarshallerNode marshaller = MarshallerNode.create();
 
-        @TruffleBoundary
-        private byte[] dump(Object o, int version) {
+        private byte[] dump(VirtualFrame frame, Object o, int version) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             DataOutputStream buffer = new DataOutputStream(baos);
             marshaller.resetRecursionDepth();
-            // TODO(fa): FRAME MIGRATION
-            marshaller.execute(null, o, version, buffer);
+            marshaller.execute(frame, o, version, buffer);
             try {
-                buffer.flush();
-                byte[] result = baos.toByteArray();
-                baos.close();
-                buffer.close();
-                return result;
+                return getByteArrayFromStream(baos, buffer);
             } catch (IOException e) {
                 throw raise(ValueError, "Was not possible to marshal %p", o);
             }
         }
 
-        @Specialization
-        Object doit(Object value, int version) {
-            return factory().createBytes(dump(value, version));
+        @TruffleBoundary
+        private static byte[] getByteArrayFromStream(ByteArrayOutputStream baos, DataOutputStream buffer) throws IOException {
+            buffer.flush();
+            byte[] result = baos.toByteArray();
+            baos.close();
+            buffer.close();
+            return result;
         }
 
         @Specialization
-        Object doit(Object value, @SuppressWarnings("unused") PNone version) {
-            return factory().createBytes(dump(value, CURRENT_VERSION));
+        Object doit(VirtualFrame frame, Object value, int version) {
+            return factory().createBytes(dump(frame, value, version));
+        }
+
+        @Specialization
+        Object doit(VirtualFrame frame, Object value, @SuppressWarnings("unused") PNone version) {
+            return factory().createBytes(dump(frame, value, CURRENT_VERSION));
         }
     }
 
@@ -248,6 +251,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @TruffleBoundary
         void writeByte(char v, @SuppressWarnings("unused") int version, DataOutputStream buffer) {
             try {
                 buffer.write(v);
@@ -266,11 +270,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        // private void writeShort(short x, int version, DataOutputStream buffer) {
-        // writeByte((char) (x & 0xff), version, buffer);
-        // writeByte((char) ((x >> 8) & 0xff), version, buffer);
-        // }
-
+        @TruffleBoundary
         private void writeInt(int v, @SuppressWarnings("unused") int version, DataOutputStream buffer) {
             try {
                 buffer.writeInt(v);
@@ -339,6 +339,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        @TruffleBoundary
         private void writeString(String v, int version, DataOutputStream buffer) {
             byte[] bytes = v.getBytes();
             writeInt(bytes.length, version, buffer);

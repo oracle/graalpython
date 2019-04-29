@@ -1946,7 +1946,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             try {
-                PythonClass newType = typeMetaclass(name, bases, namespace, metaclass);
+                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass);
 
                 // TODO: Call __set_name__ on all descriptors in a newly generated type
 
@@ -1988,8 +1988,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return ensureCastToStringNode().execute(frame, nameAttr);
         }
 
-        @TruffleBoundary
-        private PythonClass typeMetaclass(String name, PTuple bases, PDict namespace, PythonAbstractClass metaclass) {
+        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, PythonAbstractClass metaclass) {
 
             Object[] array = bases.getArray();
 
@@ -2048,8 +2047,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             boolean addDict = false;
             if (slots == null) {
                 // takes care of checking if we may_add_dict and adds it if needed
-                // TODO(fa): FRAME MIGRATION
-                addDictIfNative(null, pythonClass);
+                addDictIfNative(frame, pythonClass);
                 // TODO: tfel - also deal with weaklistoffset
             } else {
                 // have slots
@@ -2076,8 +2074,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                     if (__DICT__.equals(slotName)) {
                         // check that the native base does not already have tp_dictoffset
-                        // TODO(fa): FRAME MIGRATION
-                        if (addDictIfNative(null, pythonClass)) {
+                        if (addDictIfNative(frame, pythonClass)) {
                             throw raise(TypeError, "__dict__ slot disallowed: we already got one");
                         }
                         addDict = true;
@@ -2106,6 +2103,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return pythonClass;
         }
 
+        @TruffleBoundary
         private PTuple copySlots(String className, SequenceStorage slotList, int slotlen, boolean add_dict, boolean add_weak, PDict namespace) {
             SequenceStorage newSlots = new ObjectSequenceStorage(slotlen - PInt.intValue(add_dict) - PInt.intValue(add_weak));
             int j = 0;

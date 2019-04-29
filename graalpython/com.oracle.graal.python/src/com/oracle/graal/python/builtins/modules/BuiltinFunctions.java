@@ -1765,11 +1765,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = __BUILTIN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
-        @Child GetItemNode getNameNode = GetItemNode.create();
+        @Child private GetItemNode getNameNode = GetItemNode.create();
 
         @Specialization
-        @TruffleBoundary
-        public synchronized Object doIt(PFunction func) {
+        public Object doIt(VirtualFrame frame, PFunction func) {
+            PFunction builtinFunc = convertToBuiltin(func);
+            PythonObject globals = func.getGlobals();
+            PythonModule builtinModule;
+            if (globals instanceof PythonModule) {
+                builtinModule = (PythonModule) globals;
+            } else {
+                String moduleName = (String) getNameNode.execute(frame, globals, __NAME__);
+                builtinModule = getCore().lookupBuiltinModule(moduleName);
+                assert builtinModule != null;
+            }
+            return factory().createBuiltinMethod(builtinModule, builtinFunc);
+        }
+
+        public synchronized PFunction convertToBuiltin(PFunction func) {
             /*
              * (tfel): To be compatible with CPython, builtin module functions must be bound to
              * their respective builtin module. We ignore that builtin functions should really be
@@ -1824,17 +1837,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                                 func.getGlobals(), func.getDefaults(), func.getKwDefaults(), func.getClosure());
             }
 
-            PythonObject globals = func.getGlobals();
-            PythonModule builtinModule;
-            if (globals instanceof PythonModule) {
-                builtinModule = (PythonModule) globals;
-            } else {
-                // TODO(fa): FRAME MIGRATION
-                String moduleName = (String) getNameNode.execute(null, globals, __NAME__);
-                builtinModule = getContext().getCore().lookupBuiltinModule(moduleName);
-                assert builtinModule != null;
-            }
-            return factory().createBuiltinMethod(builtinModule, builtinFunc);
+            return builtinFunc;
         }
     }
 

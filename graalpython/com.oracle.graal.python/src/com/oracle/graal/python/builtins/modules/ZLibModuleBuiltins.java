@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -419,16 +419,21 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "zlib_deflateCompress", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class DeflateCompress extends PythonTernaryBuiltinNode {
-        @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+        @Child private ToBytesNode toBytes = ToBytesNode.create();
 
         @Specialization
-        @TruffleBoundary
-        Object deflateCompress(DeflaterWrapper stream, PIBytesLike pb, int mode) {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            // TODO(fa): FRAME MIGRATION
-            byte[] data = toBytes.execute(null, pb);
+        Object deflateCompress(VirtualFrame frame, DeflaterWrapper stream, PIBytesLike pb, int mode) {
+            byte[] data = toBytes.execute(frame, pb);
             byte[] result = new byte[DEF_BUF_SIZE];
 
+            ByteArrayOutputStream baos = deflate(stream, mode, data, result);
+
+            return factory().createBytes(baos.toByteArray());
+        }
+
+        @TruffleBoundary
+        private static ByteArrayOutputStream deflate(DeflaterWrapper stream, int mode, byte[] data, byte[] result) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
             stream.deflater.setInput(data);
             int deflateMode = mode;
             if (mode == Z_FINISH) {
@@ -445,19 +450,23 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             if (mode == Z_FINISH) {
                 stream.deflater.end();
             }
-
-            return factory().createBytes(baos.toByteArray());
+            return baos;
         }
     }
 
     @Builtin(name = "zlib_inflateInit", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InflateInitNode extends PythonBinaryBuiltinNode {
-        @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+        @Child private ToBytesNode toBytes = ToBytesNode.create();
 
         @Specialization
+        Object init(VirtualFrame frame, int wbits, PBytes zdict) {
+            byte[] bytes = toBytes.execute(frame, zdict);
+            return new InflaterWrapper(inflate(wbits, bytes));
+        }
+
         @TruffleBoundary
-        Object init(int wbits, PBytes zdict) {
+        private Inflater inflate(int wbits, byte[] bytes) {
             Inflater inflater;
             if (wbits < 0) {
                 // generate a RAW stream, i.e., no wrapping
@@ -470,9 +479,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                 inflater = new Inflater(false);
             }
 
-            // TODO(fa): FRAME MIGRATION
-            inflater.setDictionary(toBytes.execute(null, zdict));
-            return new InflaterWrapper(inflater);
+            inflater.setDictionary(bytes);
+            return inflater;
         }
     }
 
@@ -482,24 +490,42 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         public InflaterWrapper(Inflater inflater) {
             this.inflater = inflater;
         }
+
+        @TruffleBoundary(allowInlining = true)
+        private boolean needsInput() {
+            return inflater.needsInput();
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private int getRemaining() {
+            return inflater.getRemaining();
+        }
     }
 
     @Builtin(name = "zlib_inflateDecompress", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class InflaterDecompress extends PythonTernaryBuiltinNode {
-        @Child BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+        @Child private ToBytesNode toBytes = ToBytesNode.create();
 
         @Specialization
-        @TruffleBoundary
-        Object decompress(InflaterWrapper stream, PIBytesLike pb, int maxLen) {
+        Object decompress(VirtualFrame frame, InflaterWrapper stream, PIBytesLike pb, int maxLen) {
             int maxLength = maxLen == 0 ? Integer.MAX_VALUE : maxLen;
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            // TODO(fa): FRAME MIGRATION
-            byte[] data = toBytes.execute(null, pb);
+            byte[] data = toBytes.execute(frame, pb);
             byte[] result = new byte[DEF_BUF_SIZE];
-            stream.inflater.setInput(data);
+            byte[] decompressed = decompress(stream, maxLength, baos, data, result);
 
+            return factory().createTuple(new Object[]{
+                            factory().createBytes(decompressed),
+                            stream.needsInput(),
+                            stream.getRemaining()
+            });
+        }
+
+        @TruffleBoundary
+        private byte[] decompress(InflaterWrapper stream, int maxLength, ByteArrayOutputStream baos, byte[] data, byte[] result) {
+            stream.inflater.setInput(data);
             int bytesWritten = result.length;
             while (baos.size() < maxLength && bytesWritten == result.length) {
                 try {
@@ -509,12 +535,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                 }
                 baos.write(result, 0, bytesWritten);
             }
-
-            return factory().createTuple(new Object[]{
-                            factory().createBytes(baos.toByteArray()),
-                            stream.inflater.needsInput(),
-                            stream.inflater.getRemaining()
-            });
+            byte[] decompressed = baos.toByteArray();
+            return decompressed;
         }
     }
 

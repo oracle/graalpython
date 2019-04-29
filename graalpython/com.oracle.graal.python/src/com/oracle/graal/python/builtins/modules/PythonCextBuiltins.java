@@ -998,21 +998,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
         @Specialization
-        @TruffleBoundary
-        Object doBytes(TruffleObject o, long elementSize, Object errorMarker,
+        Object doBytes(VirtualFrame frame, TruffleObject o, long elementSize, Object errorMarker,
                         @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
             try {
-                // TODO(fa): FRAME MIGRATION
-                ByteBuffer bytes = wrap(getByteArrayNode.execute(null, o, -1));
-                CharBuffer decoded;
+                ByteBuffer bytes = wrap(getByteArrayNode.execute(frame, o, -1));
                 if (elementSize == 2L) {
-                    decoded = bytes.asCharBuffer();
+                    return decode2(bytes);
                 } else if (elementSize == 4L) {
-                    decoded = getUTF32Charset(0).newDecoder().decode(bytes);
-                } else {
-                    return raiseNative(errorMarker, PythonErrorType.ValueError, "unsupported 'wchar_t' size; was: %d", elementSize);
+                    return decode4(bytes);
                 }
-                return decoded.toString();
+                return raiseNative(errorMarker, PythonErrorType.ValueError, "unsupported 'wchar_t' size; was: %d", elementSize);
             } catch (CharacterCodingException e) {
                 return raiseNative(errorMarker, PythonErrorType.UnicodeError, "%m", e);
             } catch (IllegalArgumentException e) {
@@ -1023,15 +1018,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        Object doBytes(TruffleObject o, PInt elementSize, Object errorMarker,
+        Object doBytes(VirtualFrame frame, TruffleObject o, PInt elementSize, Object errorMarker,
                         @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
             try {
-                return doBytes(o, elementSize.longValueExact(), errorMarker, getByteArrayNode);
+                return doBytes(frame, o, elementSize.longValueExact(), errorMarker, getByteArrayNode);
             } catch (ArithmeticException e) {
                 return raiseNative(errorMarker, PythonErrorType.ValueError, "invalid parameters");
             }
         }
+
+        @TruffleBoundary
+        private static String decode2(ByteBuffer bytes) {
+            return bytes.asCharBuffer().toString();
+        }
+
+        @TruffleBoundary
+        private static String decode4(ByteBuffer bytes) throws CharacterCodingException {
+            return getUTF32Charset(0).newDecoder().decode(bytes).toString();
+        }
+
     }
 
     @Builtin(name = "PyTruffle_Unicode_FromUTF8", minNumOfPositionalArgs = 2)
@@ -1039,19 +1044,21 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_Unicode_FromUTF8 extends NativeBuiltin {
 
         @Specialization
-        @TruffleBoundary
-        Object doBytes(TruffleObject o, Object errorMarker,
+        Object doBytes(VirtualFrame frame, TruffleObject o, Object errorMarker,
                         @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
             try {
-                CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
-                // TODO(fa): FRAME MIGRATION
-                CharBuffer cbuf = decoder.decode(wrap(getByteArrayNode.execute(null, o, -1)));
-                return cbuf.toString();
+                return decodeUTF8(getByteArrayNode.execute(frame, o, -1));
             } catch (CharacterCodingException e) {
                 return raiseNative(errorMarker, PythonErrorType.UnicodeError, "%m", e);
             } catch (InteropException e) {
                 return raiseNative(errorMarker, PythonErrorType.TypeError, "%m", e);
             }
+        }
+
+        @TruffleBoundary
+        private static String decodeUTF8(byte[] data) throws CharacterCodingException {
+            CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+            return decoder.decode(wrap(data)).toString();
         }
     }
 
@@ -1142,23 +1149,18 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_Unicode_DecodeUTF32 extends NativeUnicodeBuiltin {
 
         @Specialization(guards = "isNoValue(errors)")
-        Object doUnicode(TruffleObject o, long size, @SuppressWarnings("unused") PNone errors, int byteorder, Object errorMarker,
+        Object doUnicode(VirtualFrame frame, TruffleObject o, long size, @SuppressWarnings("unused") PNone errors, int byteorder, Object errorMarker,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
-            return doUnicode(o, size, "strict", byteorder, errorMarker, toSulongNode, getByteArrayNode);
+            return doUnicode(frame, o, size, "strict", byteorder, errorMarker, toSulongNode, getByteArrayNode);
         }
 
         @Specialization
-        @TruffleBoundary
-        Object doUnicode(TruffleObject o, long size, String errors, int byteorder, Object errorMarker,
+        Object doUnicode(VirtualFrame frame, TruffleObject o, long size, String errors, int byteorder, Object errorMarker,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
             try {
-                CharsetDecoder decoder = getUTF32Charset(byteorder).newDecoder();
-                CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
-                // TODO(fa): FRAME MIGRATION
-                CharBuffer decode = decoder.onMalformedInput(action).onUnmappableCharacter(action).decode(wrap(getByteArrayNode.execute(null, o, size), 0, (int) size));
-                return toSulongNode.execute(decode.toString());
+                return toSulongNode.execute(decodeUTF32(getByteArrayNode.execute(frame, o, size), (int) size, errors, byteorder));
             } catch (CharacterCodingException e) {
                 return raiseNative(errorMarker, PythonErrorType.UnicodeEncodeError, "%m", e);
             } catch (IllegalArgumentException e) {
@@ -1167,6 +1169,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
             } catch (InteropException e) {
                 return raiseNative(errorMarker, PythonErrorType.TypeError, "%m", e);
             }
+        }
+
+        @TruffleBoundary
+        private String decodeUTF32(byte[] data, int size, String errors, int byteorder) throws CharacterCodingException {
+            CharsetDecoder decoder = getUTF32Charset(byteorder).newDecoder();
+            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
+            CharBuffer decode = decoder.onMalformedInput(action).onUnmappableCharacter(action).decode(wrap(data, 0, size));
+            return decode.toString();
         }
     }
 
