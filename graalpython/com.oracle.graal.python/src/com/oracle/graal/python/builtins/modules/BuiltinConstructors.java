@@ -151,6 +151,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
+import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -167,6 +168,7 @@ import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -2536,12 +2538,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        Object methodGeneric(@SuppressWarnings("unused") LazyPythonClass cls, Object func, Object self,
-                        @Cached("create()") IsCallableNode isCallable) {
-            if (isCallable.execute(func)) {
-                return factory().createMethod(self, func);
-            } else {
-                throw raise(TypeError, "first argument must be callable");
+        Object methodGeneric(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object func, Object self,
+                        @Cached("create()") IsCallableNode isCallable,
+                        @Cached PassCaughtExceptionNode passExceptionNode) {
+            try (PDataModelEmulationContextManager ctxManager = isCallable.withGlobalState(getContext(), passExceptionNode.execute(frame))) {
+                if (ctxManager.execute(func)) {
+                    return factory().createMethod(self, func);
+                } else {
+                    throw raise(TypeError, "first argument must be callable");
+                }
             }
         }
     }
@@ -2662,13 +2667,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
         @Child private IsSequenceNode isMappingNode;
+        @Child private PassCaughtExceptionNode passExceptionStateNode;
 
         @Specialization
         Object doMapping(LazyPythonClass klass, PHashingCollection obj) {
             return factory().createMappingproxy(klass, obj.getDictStorage());
         }
 
-        @Specialization(guards = {"isMapping(obj)", "!isBuiltinMapping(obj)"})
+        @Specialization(guards = {"isMapping(frame, obj)", "!isBuiltinMapping(obj)"})
         Object doMapping(VirtualFrame frame, LazyPythonClass klass, PythonObject obj,
                         @Cached("create()") HashingStorageNodes.InitNode initNode) {
             return factory().createMappingproxy(klass, initNode.execute(frame, obj, PKeyword.EMPTY_KEYWORDS));
@@ -2680,8 +2686,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, "mappingproxy() missing required argument 'mapping' (pos 1)");
         }
 
-        @Specialization(guards = {"!isMapping(obj)", "!isNoValue(obj)"})
-        Object doInvalid(@SuppressWarnings("unused") LazyPythonClass klass, Object obj) {
+        @Specialization(guards = {"!isMapping(frame, obj)", "!isNoValue(obj)"})
+        Object doInvalid(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass klass, Object obj) {
             throw raise(TypeError, "mappingproxy() argument must be a mapping, not %p", obj);
         }
 
@@ -2689,12 +2695,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return o instanceof PHashingCollection;
         }
 
-        protected boolean isMapping(Object o) {
+        protected boolean isMapping(VirtualFrame frame, Object o) {
             if (isMappingNode == null) {
                 CompilerDirectives.transferToInterpreter();
                 isMappingNode = insert(IsSequenceNode.create());
             }
-            return isMappingNode.execute(o);
+            if (passExceptionStateNode == null) {
+                CompilerDirectives.transferToInterpreter();
+                passExceptionStateNode = insert(PassCaughtExceptionNode.create());
+            }
+            try (PDataModelEmulationContextManager ctxManager = isMappingNode.withGlobalState(getContext(), passExceptionStateNode.execute(frame))) {
+                return ctxManager.execute(o);
+            }
         }
     }
 

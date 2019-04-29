@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,57 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
+import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.ImportStatic;
 
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
-public abstract class PDataModelEmulationNode extends PNodeWithContext {
-    public abstract boolean execute(Object object);
+public abstract class PDataModelEmulationNode extends PNodeWithGlobalState<PDataModelEmulationContextManager> {
+
+    protected abstract boolean execute(Object object);
+
+    @Override
+    public PDataModelEmulationContextManager withGlobalState(PythonContext context, PException exceptionState) {
+        context.setCaughtException(exceptionState);
+        return new PDataModelEmulationContextManager(this, context);
+    }
+
+    public static boolean check(PDataModelEmulationNode isMapping, PythonContext context, PException caughtException, Object obj) {
+        try (PDataModelEmulationContextManager ctxManager = isMapping.withGlobalState(context, caughtException)) {
+            return ctxManager.execute(obj);
+        }
+    }
+
+    @ValueType
+    public static final class PDataModelEmulationContextManager extends NodeContextManager {
+
+        private final PDataModelEmulationNode delegate;
+        private final PythonContext context;
+
+        public PDataModelEmulationContextManager(PDataModelEmulationNode delegate, PythonContext context) {
+            this.delegate = delegate;
+            this.context = context;
+        }
+
+        public boolean execute(Object object) {
+            return delegate.execute(object);
+        }
+
+        @Override
+        public void close() {
+            if (context != null) {
+                context.setCaughtException(null);
+            }
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("node context already closed");
+        }
+
+    }
 }

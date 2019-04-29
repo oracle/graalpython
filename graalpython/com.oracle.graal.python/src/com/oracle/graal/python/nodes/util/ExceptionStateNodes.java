@@ -163,6 +163,12 @@ public abstract class ExceptionStateNodes {
         }
     }
 
+    /**
+     * Use this node to forcefully get the current exception state. If the exception state is not
+     * provided in the frame, in the arguments or in the context, it will do a full stack walk and
+     * request the exception state for the next time from the callers. The returned object may
+     * escape to the value space.
+     */
     public static final class GetCaughtExceptionNode extends Node {
 
         @Child private ReadExceptionStateFromArgsNode readFromArgsNode;
@@ -172,7 +178,7 @@ public abstract class ExceptionStateNodes {
 
         private final ConditionProfile notInFrameProfile = ConditionProfile.createBinaryProfile();
 
-        public PException execute(@SuppressWarnings("unused") VirtualFrame frame) {
+        public PException execute(VirtualFrame frame) {
 
             if (frame == null) {
                 return getFromContext();
@@ -273,6 +279,51 @@ public abstract class ExceptionStateNodes {
 
         public static GetCaughtExceptionNode create() {
             return new GetCaughtExceptionNode();
+        }
+
+    }
+
+    /**
+     * Use this node to pass the exception state if provided. This node won't do a full stack walk
+     * and may return {@link PException#NO_EXCEPTION}.
+     */
+    public static final class PassCaughtExceptionNode extends Node {
+
+        @Child private ReadExceptionStateFromArgsNode readFromArgsNode;
+
+        @CompilationFinal private FrameSlot excSlot;
+
+        private final ConditionProfile notInFrameProfile = ConditionProfile.createBinaryProfile();
+
+        public PException execute(VirtualFrame frame) {
+
+            if (excSlot == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                excSlot = findSlot(frame);
+            }
+
+            PException e = (PException) FrameUtil.getObjectSafe(frame, excSlot);
+            if (notInFrameProfile.profile(e != null)) {
+                return e;
+            }
+
+            if (readFromArgsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readFromArgsNode = insert(ReadExceptionStateFromArgsNode.create());
+            }
+            return readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
+        }
+
+        protected FrameSlot findSlot(VirtualFrame frame) {
+            RootNode rootNode = getRootNode();
+            if (rootNode != null) {
+                return SetCaughtExceptionNode.findFameSlot(frame, rootNode);
+            }
+            return null;
+        }
+
+        public static PassCaughtExceptionNode create() {
+            return new PassCaughtExceptionNode();
         }
 
     }

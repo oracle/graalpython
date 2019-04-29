@@ -76,6 +76,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.datamodel.IsIterableNode;
+import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -85,11 +86,14 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -1435,12 +1439,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        boolean eqPiL(long b, PInt a) {
+        boolean eqLPi(long b, PInt a) {
             return a.longValueExact() != b;
         }
 
         @Specialization
-        boolean eqPiLOvf(long b, PInt a) {
+        boolean eqLPiOvf(long b, PInt a) {
             try {
                 return a.longValueExact() != b;
             } catch (ArithmeticException e) {
@@ -2099,12 +2103,16 @@ public class IntBuiltins extends PythonBuiltins {
 
         // rest objects
         @Specialization
-        public Object fromObject(VirtualFrame frame, LazyPythonClass cl, PythonObject object, String byteorder, @SuppressWarnings("unused") PNone signed) {
-            return fromObject(frame, cl, object, byteorder, false);
+        public Object fromObject(VirtualFrame frame, LazyPythonClass cl, PythonObject object, String byteorder, @SuppressWarnings("unused") PNone signed,
+                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
+                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
+            return fromObject(frame, cl, object, byteorder, false, ctxRef, passExceptionNode);
         }
 
         @Specialization
-        public Object fromObject(VirtualFrame frame, LazyPythonClass cl, PythonObject object, String byteorder, boolean signed) {
+        public Object fromObject(VirtualFrame frame, LazyPythonClass cl, PythonObject object, String byteorder, boolean signed,
+                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
+                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
             if (callBytesNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callBytesNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__BYTES__));
@@ -2121,7 +2129,7 @@ public class IntBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isIterableNode = insert(IsIterableNode.create());
             }
-            if (isIterableNode.execute(object)) {
+            if (PDataModelEmulationNode.check(isIterableNode, ctxRef.get(), passExceptionNode.execute(frame), this)) {
                 byte[] bytes = getFromIteratorNode().execute(frame, getGetIteratorNode().executeWith(frame, object));
                 return compute(cl, bytes, byteorder, signed);
             }

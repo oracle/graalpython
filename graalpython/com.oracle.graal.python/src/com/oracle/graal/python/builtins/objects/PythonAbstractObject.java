@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
 import java.util.HashSet;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
@@ -78,18 +79,23 @@ import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.datamodel.IsIterableNode;
 import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
+import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode;
+import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -124,7 +130,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Cached PInteropSetAttributeNode writeNode,
-                    @Exclusive @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+                    @Exclusive @Cached IsBuiltinClassProfile attrErrorProfile,
+                    @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) throws UnsupportedMessageException, UnknownIdentifierException {
         try {
             String attrKey = getAttributeKey.execute(key);
             if (attrKey != null) {
@@ -144,7 +151,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     return;
                 }
             }
-            if (isMapping.execute(this)) {
+            if (check(isMapping, ctxRef.get(), this)) {
                 setItemNode.execute(this, key, value);
             } else {
                 writeNode.execute(this, key, value);
@@ -164,7 +171,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Shared("toForeign") @Cached PTypeToForeignNode toForeign,
-                    @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode) throws UnknownIdentifierException {
+                    @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
+                    @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) throws UnknownIdentifierException {
         String attrKey = getAttributeKey.execute(key);
         Object attrGetattribute = null;
         if (attrKey != null) {
@@ -189,7 +197,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         } catch (PException e) {
             // pass
         }
-        if (isSequenceNode.execute(this)) {
+        if (check(isSequenceNode, ctxRef.get(), this)) {
             try {
                 return toForeign.executeConvert(getItemNode.execute(this, key));
             } catch (PException e) {
@@ -204,8 +212,10 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public boolean hasArrayElements(
                     @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
                     @Shared("isMapping") @Cached IsMappingNode isMapping,
-                    @Shared("isIterableNode") @Cached IsIterableNode isIterableNode) {
-        return (isSequenceNode.execute(this) || isIterableNode.execute(this)) && !isMapping.execute(this);
+                    @Shared("isIterableNode") @Cached IsIterableNode isIterableNode,
+                    @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) {
+        PythonContext ctx = ctxRef.get();
+        return (check(isSequenceNode, ctx, this) || check(isIterableNode, ctx, this)) && !check(isMapping, ctx, this);
     }
 
     @ExportMessage
@@ -218,12 +228,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupNextNode,
                     @Exclusive @Cached CallNode callIterNode,
                     @Exclusive @Cached CallNode callNextNode,
-                    @Shared("toForeign") @Cached PTypeToForeignNode toForeign) throws UnsupportedMessageException, InvalidArrayIndexException {
-        if (isSequenceNode.execute(this)) {
+                    @Shared("toForeign") @Cached PTypeToForeignNode toForeign,
+                    @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) throws UnsupportedMessageException, InvalidArrayIndexException {
+        if (check(isSequenceNode, ctxRef.get(), this)) {
             try {
                 return toForeign.executeConvert(getItemNode.execute(this, key));
             } catch (PException e) {
-                if (isMapping.execute(this)) {
+                if (check(isMapping, ctxRef.get(), this)) {
                     throw UnsupportedMessageException.create();
                 } else {
                     // TODO(fa) refine exception handling
@@ -233,7 +244,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
         }
 
-        if (isIterableNode.execute(this)) {
+        if (check(isIterableNode, ctxRef.get(), this)) {
             Object attrIter = lookupIterNode.execute(this, SpecialMethodNames.__ITER__);
             Object iter = callIterNode.execute(null, attrIter, this);
             if (iter != this) {
@@ -254,8 +265,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public void writeArrayElement(long key, Object value,
                     @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
-                    @Exclusive @Cached PInteropSubscriptAssignNode setItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
-        if (isSequenceNode.execute(this)) {
+                    @Exclusive @Cached PInteropSubscriptAssignNode setItemNode,
+                    @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) throws UnsupportedMessageException, InvalidArrayIndexException {
+        if (check(isSequenceNode, ctxRef.get(), this)) {
             try {
                 setItemNode.execute(this, key, value);
             } catch (PException e) {
@@ -271,8 +283,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public void removeArrayElement(long key,
                     @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
-                    @Exclusive @Cached PInteropDeleteItemNode deleteItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
-        if (isSequenceNode.execute(this)) {
+                    @Exclusive @Cached PInteropDeleteItemNode deleteItemNode,
+                    @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) throws UnsupportedMessageException, InvalidArrayIndexException {
+        if (check(isSequenceNode, ctxRef.get(), this)) {
             try {
                 deleteItemNode.execute(this, key);
             } catch (PException e) {
@@ -432,8 +445,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean isExecutable(
-                    @Cached IsCallableNode isCallableNode) {
-        return isCallableNode.execute(this);
+                    @Cached IsCallableNode isCallableNode,
+                    @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) {
+        return check(isCallableNode, ctxRef.get(), this);
     }
 
     @ExportMessage
@@ -451,7 +465,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Shared("isMapping") @Cached IsMappingNode isMapping,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
-                    @Cached TypeNodes.GetMroNode getMroNode) {
+                    @Cached TypeNodes.GetMroNode getMroNode,
+                    @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) {
 
         HashSet<String> keys = new HashSet<>();
         PythonAbstractClass klass = getClass.execute(this);
@@ -466,7 +481,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         }
         if (includeInternal) {
             // we use the internal flag to also return dictionary keys for mappings
-            if (isMapping.execute(this)) {
+            if (check(isMapping, ctxRef.get(), this)) {
                 PList mapKeys = castToList.executeWith(keysNode.executeObject(this, SpecialMethodNames.KEYS));
                 int len = lenNode.execute(mapKeys);
                 for (int i = 0; i < len; i++) {
@@ -491,7 +506,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getDelItemNode,
                     @Cached PInteropDeleteAttributeNode deleteAttributeNode,
                     @Exclusive @Cached PInteropDeleteItemNode delItemNode,
-                    @Exclusive @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+                    @Exclusive @Cached IsBuiltinClassProfile attrErrorProfile,
+                    @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) throws UnsupportedMessageException, UnknownIdentifierException {
         try {
             String attrKey = getAttributeKey.execute(member);
             if (attrKey != null) {
@@ -511,7 +527,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     return;
                 }
             }
-            if (isMapping.execute(this) && getDelItemNode.execute(this, SpecialMethodNames.__DELITEM__) != PNone.NO_VALUE) {
+            if (check(isMapping, ctxRef.get(), this) && getDelItemNode.execute(this, SpecialMethodNames.__DELITEM__) != PNone.NO_VALUE) {
                 delItemNode.execute(this, member);
             } else {
                 deleteAttributeNode.execute(this, member);
@@ -576,7 +592,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         @Cached KeyForItemAccess itemKey,
                         @Cached KeyForAttributeAccess attrKey,
                         @Cached GetMroNode getMroNode,
-                        @Cached IsMappingNode isMapping) {
+                        @Cached IsMappingNode isMapping,
+                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) {
 
             String itemFieldName = itemKey.execute(fieldName);
             if (itemFieldName != null) {
@@ -627,16 +644,17 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 }
             }
 
+            PythonContext ctx = ctxRef.get();
             if (attr != PNone.NO_VALUE) {
                 if (!isImmutable.execute(owner)) {
                     info |= REMOVABLE;
                     info |= MODIFIABLE;
-                } else if (isMapping.execute(object)) {
+                } else if (check(isMapping, ctx, object)) {
                     // Even if the attribute's owner is immutable, if the object is a mapping, it
                     // may be inserted.
                     info |= INSERTABLE;
                 }
-            } else if (!isImmutable.execute(object) || isMapping.execute(object)) {
+            } else if (!isImmutable.execute(object) || check(isMapping, ctx, object)) {
                 // If the member does not exist yet, it is insertable if this object is mutable,
                 // i.e., it's not a builtin object or it is a mapping.
                 info |= INSERTABLE;
@@ -645,7 +663,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             if ((info & READ_SIDE_EFFECTS) == 0 && (info & INVOCABLE) == 0) {
                 // if this is not a getter, we check if the value inherits a __call__ attr
                 // if it is a getter, we just cannot really tell if the attr is invocable
-                if (isCallableNode.execute(attr)) {
+                if (check(isCallableNode, ctx, attr)) {
                     info |= INVOCABLE;
                 }
             }
@@ -1049,6 +1067,12 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @TruffleBoundary
     private static boolean objectHasAttribute(Object object, Object field) {
         return ((PythonObject) object).getAttributeNames().contains(field);
+    }
+
+    public static boolean check(PDataModelEmulationNode isMapping, PythonContext context, Object obj) {
+        try (PDataModelEmulationContextManager ctxManager = isMapping.withGlobalState(context, null)) {
+            return ctxManager.execute(obj);
+        }
     }
 
 }

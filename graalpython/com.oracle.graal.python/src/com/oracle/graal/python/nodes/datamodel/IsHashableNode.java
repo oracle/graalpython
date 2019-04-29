@@ -51,8 +51,16 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class IsHashableNode extends PDataModelEmulationNode {
+
+    @Override
+    public final boolean execute(Object obj) {
+        return execute(null, obj);
+    }
+
+    public abstract boolean execute(VirtualFrame frame, Object obj);
 
     protected boolean isDouble(Object object) {
         return object instanceof Double || PGuards.isPFloat(object);
@@ -74,13 +82,12 @@ public abstract class IsHashableNode extends PDataModelEmulationNode {
     }
 
     @Specialization
-    protected boolean isHashableGeneric(Object object,
+    protected boolean isHashableGeneric(VirtualFrame frame, Object object,
                     @CachedContext(PythonLanguage.class) PythonContext context,
                     @Cached PRaiseNode raiseNode,
                     @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
                     @Cached("create()") BuiltinFunctions.IsInstanceNode isInstanceNode) {
-        // TODO(fa): FRAME MIGRATION
-        Object hashValue = lookupHashAttributeNode.executeObject(null, object);
+        Object hashValue = lookupHashAttributeNode.executeObject(frame, object);
         if (isInstanceNode.executeWith(null, hashValue, context.getCore().lookupType(PythonBuiltinClassType.PInt))) {
             return true;
         }
