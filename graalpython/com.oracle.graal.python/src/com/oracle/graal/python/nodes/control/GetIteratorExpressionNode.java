@@ -47,7 +47,9 @@ import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -59,6 +61,7 @@ import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.IsIter
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
@@ -86,8 +89,8 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
 
     @GenerateUncached
     @ImportStatic(PGuards.class)
-    public abstract static class GetIteratorWithoutFrameNode extends Node {
-        public abstract Object executeWith(Object value);
+    public abstract static class GetIteratorWithoutFrameNode extends PNodeWithGlobalState<GetIteratorContextManager> {
+        protected abstract Object execute(Object value);
 
         @Specialization
         static PythonObject doPZip(PZip value) {
@@ -104,7 +107,8 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
                         @Cached IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            // TODO(fa): FRAME MIGRATION
+            // NOTE: it's fine to pass 'null' frame since the caller must already take care of the
+            // global state
             return GetIteratorNode.doGeneric(null, value, getattributeProfile, getClassNode, lookupAttrMroNode, lookupGetitemAttrMroNode, dispatchGetattribute, isIteratorObjectNode, factory,
                             raiseNode);
         }
@@ -115,12 +119,47 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
             return GetIteratorNode.doNone(none, raiseNode);
         }
 
+        @Override
+        public GetIteratorContextManager withGlobalState(PythonContext context, PException exceptionState) {
+            if (exceptionState != null) {
+                return new GetIteratorContextManager(this, context);
+            }
+            return passState();
+        }
+
+        @Override
+        public GetIteratorContextManager passState() {
+            return new GetIteratorContextManager(this, null);
+        }
+
         public static GetIteratorWithoutFrameNode create() {
             return GetIteratorWithoutFrameNodeGen.create();
         }
 
         public static GetIteratorWithoutFrameNode getUncached() {
             return GetIteratorWithoutFrameNodeGen.getUncached();
+        }
+    }
+
+    public static final class GetIteratorContextManager extends NodeContextManager {
+
+        private final GetIteratorWithoutFrameNode delegate;
+        private final PythonContext context;
+
+        public GetIteratorContextManager(GetIteratorWithoutFrameNode delegate, PythonContext context) {
+            this.delegate = delegate;
+            this.context = context;
+        }
+
+        public Object execute(Object x) {
+            return delegate.execute(x);
+        }
+
+        @Override
+        public void close() {
+            if (context != null) {
+                context.setCaughtException(null);
+            }
         }
     }
 

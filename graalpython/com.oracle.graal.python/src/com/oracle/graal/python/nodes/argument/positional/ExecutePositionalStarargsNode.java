@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorWithoutFrameNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.control.GetNextNode.GetNextWithoutFrameNode;
@@ -120,10 +121,10 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     @Specialization
     static Object[] starargs(VirtualFrame frame, Object object,
                     @Cached PRaiseNode raise,
-                    @Cached GetIteratorWithoutFrameNode getIterator,
+                    @Cached GetIteratorNode getIterator,
                     @Cached GetNextNode next,
                     @Cached IsBuiltinClassProfile errorProfile) {
-        Object iterator = getIterator.executeWith(object);
+        Object iterator = getIterator.executeWith(frame, object);
         if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
             ArrayList<Object> internalStorage = new ArrayList<>();
             while (true) {
@@ -192,12 +193,12 @@ public abstract class ExecutePositionalStarargsNode extends Node {
                         @Cached GetIteratorWithoutFrameNode getIterator,
                         @Cached GetNextWithoutFrameNode next,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            Object iterator = getIterator.executeWith(object);
+            Object iterator = getIterator.passState().execute(object);
             if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
                 ArrayList<Object> internalStorage = new ArrayList<>();
                 while (true) {
                     try {
-                        addToList(internalStorage, next.execute(iterator));
+                        addToList(internalStorage, next.passState().execute(iterator));
                     } catch (PException e) {
                         e.expectStopIteration(errorProfile);
                         return toArray(internalStorage);

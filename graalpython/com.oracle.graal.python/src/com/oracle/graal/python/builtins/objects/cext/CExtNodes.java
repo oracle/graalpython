@@ -260,18 +260,18 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     public abstract static class FromNativeSubclassNode extends CExtBaseNode {
 
-        public abstract Double execute(PythonNativeObject object);
+        public abstract Double execute(VirtualFrame frame, PythonNativeObject object);
 
         @Specialization
         @SuppressWarnings("unchecked")
-        public Double execute(PythonNativeObject object,
+        public Double execute(VirtualFrame frame, PythonNativeObject object,
                         @Exclusive @Cached GetClassNode getClass,
                         @Exclusive @Cached IsSubtypeNode isSubtype,
                         @Exclusive @Cached ToSulongNode toSulongNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            if (isFloatSubtype(object, getClass, isSubtype, context)) {
+            if (isFloatSubtype(frame, object, getClass, isSubtype, context)) {
                 try {
                     return (Double) interopLibrary.execute(importCAPISymbolNode.execute(FUN_PY_FLOAT_AS_DOUBLE), toSulongNode.execute(object));
                 } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
@@ -281,8 +281,8 @@ public abstract class CExtNodes {
             return null;
         }
 
-        public boolean isFloatSubtype(PythonNativeObject object, GetClassNode getClass, IsSubtypeNode isSubtype, PythonContext context) {
-            return isSubtype.execute(getClass.execute(object), context.getCore().lookupType(PythonBuiltinClassType.PFloat));
+        public boolean isFloatSubtype(VirtualFrame frame, PythonNativeObject object, GetClassNode getClass, IsSubtypeNode isSubtype, PythonContext context) {
+            return isSubtype.execute(frame, getClass.execute(object), context.getCore().lookupType(PythonBuiltinClassType.PFloat));
         }
 
         public static FromNativeSubclassNode create() {

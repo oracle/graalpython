@@ -839,20 +839,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return CExtNodes.FloatSubtypeNew.create();
         }
 
-        protected PythonBuiltinClass getBuiltinFloatClass() {
-            return getCore().lookupType(PythonBuiltinClassType.PFloat);
-        }
-
         // logic similar to float_subtype_new(PyTypeObject *type, PyObject *x) from CPython
         // floatobject.c we have to first create a temporary float, then fill it into
         // a natively allocated subtype structure
-        @Specialization(guards = "isSubtype.execute(cls, getBuiltinFloatClass())", limit = "1")
+        @Specialization(guards = "isSubtypeOfFloat(frame, isSubtype, cls)", limit = "1")
         Object doPythonObject(VirtualFrame frame, PythonNativeClass cls, Object obj,
-                        @SuppressWarnings("unused") @Cached("create()") IsSubtypeNode isSubtype,
+                        @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode callFloatNode,
-                        @Cached("create()") BranchProfile gotException,
+                        @Cached BranchProfile gotException,
                         @Cached("createSubtypeNew()") CExtNodes.SubtypeNew subtypeNew) {
-            double realFloat = doubleFromObject(frame, getBuiltinFloatClass(), obj, callFloatNode, gotException);
+            double realFloat = doubleFromObject(frame, PythonBuiltinClassType.PFloat, obj, callFloatNode, gotException);
             return subtypeNew.execute(cls, realFloat);
         }
 
@@ -860,6 +856,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @TruffleBoundary
         public Object floatFromObject(@SuppressWarnings("unused") Object cls, Object arg) {
             throw raise(TypeError, "can't convert %s to float", arg.getClass().getSimpleName());
+        }
+
+        protected static boolean isSubtypeOfFloat(VirtualFrame frame, IsSubtypeNode isSubtypeNode, PythonNativeClass cls) {
+            return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PFloat);
         }
 
         private byte[] getByteArray(VirtualFrame frame, PIBytesLike pByteArray) {
@@ -1936,7 +1936,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached("create()") CallNode callInitSubclassNode,
                         @Cached("create()") CallNode callNewFuncNode) {
             // Determine the proper metatype to deal with this
-            PythonAbstractClass metaclass = calculate_metaclass(cls, bases, getMetaclassNode);
+            PythonAbstractClass metaclass = calculate_metaclass(frame, cls, bases, getMetaclassNode);
             if (metaclass != cls) {
                 Object newFunc = getNewFuncNode.execute(metaclass);
                 if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
@@ -2264,13 +2264,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return getMroNode.execute(pythonClass);
         }
 
-        private PythonAbstractClass calculate_metaclass(PythonAbstractClass cls, PTuple bases, GetClassNode getMetaclassNode) {
+        private PythonAbstractClass calculate_metaclass(VirtualFrame frame, PythonAbstractClass cls, PTuple bases, GetClassNode getMetaclassNode) {
             PythonAbstractClass winner = cls;
             for (Object base : bases.getArray()) {
                 PythonAbstractClass typ = getMetaclassNode.execute(base);
-                if (isSubType(winner, typ)) {
+                if (isSubType(frame, winner, typ)) {
                     continue;
-                } else if (isSubType(typ, winner)) {
+                } else if (isSubType(frame, typ, winner)) {
                     winner = typ;
                     continue;
                 }
@@ -2280,12 +2280,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return winner;
         }
 
-        private boolean isSubType(PythonAbstractClass subclass, PythonAbstractClass superclass) {
+        protected boolean isSubType(VirtualFrame frame, PythonAbstractClass subclass, PythonAbstractClass superclass) {
             if (isSubtypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isSubtypeNode = insert(IsSubtypeNode.create());
             }
-            return isSubtypeNode.execute(subclass, superclass);
+            return isSubtypeNode.execute(frame, subclass, superclass);
         }
 
         protected abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);

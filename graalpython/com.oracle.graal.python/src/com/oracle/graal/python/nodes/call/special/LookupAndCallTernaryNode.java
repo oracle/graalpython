@@ -175,7 +175,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
             }
         }
         if (leftCallable != PNone.NO_VALUE) {
-            if (rightCallable != PNone.NO_VALUE && isSubtype.execute(rightClass, leftClass)) {
+            if (rightCallable != PNone.NO_VALUE && isSubtype.execute(frame, rightClass, leftClass)) {
                 result = ensureReverseDispatch().execute(frame, rightCallable, v, w, z);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
                     return result;

@@ -301,7 +301,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
             rightCallable = PNone.NO_VALUE;
         }
         if (leftCallable != PNone.NO_VALUE) {
-            if (rightCallable != PNone.NO_VALUE && !isSameTypeNode.execute(leftClass, rightClass) && isSubtype.execute(rightClass, leftClass)) {
+            if (rightCallable != PNone.NO_VALUE && !isSameTypeNode.execute(leftClass, rightClass) && isSubtype.execute(frame, rightClass, leftClass)) {
                 result = ensureReverseDispatch().executeObject(frame, rightCallable, right, left);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
                     return result;

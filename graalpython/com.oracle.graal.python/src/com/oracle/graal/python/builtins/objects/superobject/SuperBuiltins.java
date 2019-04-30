@@ -357,7 +357,7 @@ public final class SuperBuiltins extends PythonBuiltins {
              * proxy for obj.
              */
             if (ensureIsTypeNode().execute(object)) {
-                if (getIsSubtype().execute(object, cls)) {
+                if (getIsSubtype().execute(frame, object, cls)) {
                     return (PythonAbstractClass) object;
                 }
             }
@@ -368,7 +368,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                 try {
                     Object classObject = getGetAttr().executeObject(frame, object, SpecialAttributeNames.__CLASS__);
                     if (ensureIsTypeNode().execute(classObject)) {
-                        if (getIsSubtype().execute(classObject, cls)) {
+                        if (getIsSubtype().execute(frame, classObject, cls)) {
                             return (PythonAbstractClass) classObject;
                         }
                     }

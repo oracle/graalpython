@@ -260,6 +260,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        @TruffleBoundary
         private void writeBytes(byte[] bytes, int version, DataOutputStream buffer) {
             int len = bytes.length;
             writeInt(len, version, buffer);

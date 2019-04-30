@@ -2174,29 +2174,29 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodesFactory.AsPythonObjectNodeGen.create();
 
         @Specialization(guards = {"a == cachedA", "b == cachedB"})
-        int doCached(@SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
+        int doCached(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
                         @Cached("a") @SuppressWarnings("unused") PythonNativeWrapper cachedA,
                         @Cached("b") @SuppressWarnings("unused") PythonNativeWrapper cachedB,
-                        @Cached("isNativeSubtype(a, b)") int result) {
+                        @Cached("isNativeSubtype(frame, a, b)") int result) {
             return result;
         }
 
         @Specialization(replaces = "doCached")
-        int doUncached(PythonNativeWrapper a, PythonNativeWrapper b) {
-            return isNativeSubtype(a, b);
+        int doUncached(VirtualFrame frame, PythonNativeWrapper a, PythonNativeWrapper b) {
+            return isNativeSubtype(frame, a, b);
         }
 
         @Specialization
-        int doGeneric(Object a, Object b,
+        int doGeneric(VirtualFrame frame, Object a, Object b,
                         @Cached CExtNodes.ToJavaNode leftToJavaNode,
                         @Cached CExtNodes.ToJavaNode rightToJavaNode) {
-            return isSubtypeNode.execute(leftToJavaNode.execute(a), rightToJavaNode.execute(b)) ? 1 : 0;
+            return isSubtypeNode.execute(frame, leftToJavaNode.execute(a), rightToJavaNode.execute(b)) ? 1 : 0;
         }
 
-        protected int isNativeSubtype(PythonNativeWrapper a, PythonNativeWrapper b) {
+        protected int isNativeSubtype(VirtualFrame frame, PythonNativeWrapper a, PythonNativeWrapper b) {
             assert a instanceof PythonClassNativeWrapper || a instanceof PythonClassInitNativeWrapper;
             assert b instanceof PythonClassNativeWrapper || b instanceof PythonClassInitNativeWrapper;
-            return isSubtypeNode.execute(asPythonObjectNode.execute(a), asPythonObjectNode.execute(b)) ? 1 : 0;
+            return isSubtypeNode.execute(frame, asPythonObjectNode.execute(a), asPythonObjectNode.execute(b)) ? 1 : 0;
         }
     }
 

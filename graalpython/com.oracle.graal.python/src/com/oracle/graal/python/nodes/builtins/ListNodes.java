@@ -105,7 +105,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class ListNodes {
 
-    public abstract static class CreateStorageFromIteratorHelper<T extends Node> extends PNodeWithContext {
+    public abstract static class CreateStorageFromIteratorHelper<T extends Node> {
 
         private static final int START_SIZE = 2;
 
@@ -389,7 +389,7 @@ public abstract class ListNodes {
 
         @Override
         protected boolean nextBoolean(VirtualFrame frame, GetNextWithoutFrameNode nextNode, Object iterator) throws UnexpectedResultException {
-            Object value = nextNode.execute(iterator);
+            Object value = nextNode.passState().execute(iterator);
             if (value instanceof Boolean) {
                 return (boolean) value;
             }
@@ -398,7 +398,7 @@ public abstract class ListNodes {
 
         @Override
         protected int nextInt(VirtualFrame frame, GetNextWithoutFrameNode nextNode, Object iterator) throws UnexpectedResultException {
-            Object value = nextNode.execute(iterator);
+            Object value = nextNode.passState().execute(iterator);
             if (value instanceof Integer) {
                 return (int) value;
             }
@@ -407,7 +407,7 @@ public abstract class ListNodes {
 
         @Override
         protected long nextLong(VirtualFrame frame, GetNextWithoutFrameNode nextNode, Object iterator) throws UnexpectedResultException {
-            Object value = nextNode.execute(iterator);
+            Object value = nextNode.passState().execute(iterator);
             if (value instanceof Long) {
                 return (long) value;
             }
@@ -416,7 +416,7 @@ public abstract class ListNodes {
 
         @Override
         protected double nextDouble(VirtualFrame frame, GetNextWithoutFrameNode nextNode, Object iterator) throws UnexpectedResultException {
-            Object value = nextNode.execute(iterator);
+            Object value = nextNode.passState().execute(iterator);
             if (value instanceof Double) {
                 return (double) value;
             }
@@ -425,7 +425,7 @@ public abstract class ListNodes {
 
         @Override
         protected Object nextObject(VirtualFrame frame, GetNextWithoutFrameNode nextNode, Object iterator) {
-            return nextNode.execute(iterator);
+            return nextNode.passState().execute(iterator);
         }
     }
 
@@ -556,7 +556,7 @@ public abstract class ListNodes {
                         @Cached CreateStorageFromIteratorInteropNode createStorageFromIteratorNode,
                         @Cached PythonObjectFactory factory) {
 
-            Object iterObj = getIteratorNode.executeWith(iterable);
+            Object iterObj = getIteratorNode.passState().execute(iterable);
             SequenceStorage storage = createStorageFromIteratorNode.execute(iterObj);
             return factory.createList(cls, storage);
         }

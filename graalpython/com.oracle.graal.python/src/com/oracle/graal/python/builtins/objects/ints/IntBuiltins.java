@@ -1502,34 +1502,34 @@ public class IntBuiltins extends PythonBuiltins {
             return left.getValue().compareTo(right.getValue()) < 0;
         }
 
-        @Specialization(guards = "fromNativeNode.isFloatSubtype(y, getClass, isSubtype, context)", limit = "1")
-        boolean doDN(long x, PythonNativeObject y,
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype, context)", limit = "1")
+        boolean doDN(VirtualFrame frame, long x, PythonNativeObject y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode fromNativeNode) {
-            return x < fromNativeNode.execute(y);
+            return x < fromNativeNode.execute(frame, y);
         }
 
         @Specialization(guards = {
-                        "nativeLeft.isFloatSubtype(x, getClass, isSubtype, context)",
-                        "nativeRight.isFloatSubtype(y, getClass, isSubtype, context)"}, limit = "1")
-        boolean doDN(PythonNativeObject x, PythonNativeObject y,
+                        "nativeLeft.isFloatSubtype(frame, x, getClass, isSubtype, context)",
+                        "nativeRight.isFloatSubtype(frame, y, getClass, isSubtype, context)"}, limit = "1")
+        boolean doDN(VirtualFrame frame, PythonNativeObject x, PythonNativeObject y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode nativeLeft,
                         @Cached FromNativeSubclassNode nativeRight) {
-            return nativeLeft.execute(x) < nativeRight.execute(y);
+            return nativeLeft.execute(frame, x) < nativeRight.execute(frame, y);
         }
 
-        @Specialization(guards = "fromNativeNode.isFloatSubtype(x, getClass, isSubtype, context)", limit = "1")
-        boolean doDN(PythonNativeObject x, double y,
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, x, getClass, isSubtype, context)", limit = "1")
+        boolean doDN(VirtualFrame frame, PythonNativeObject x, double y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode fromNativeNode) {
-            return fromNativeNode.execute(x) < y;
+            return fromNativeNode.execute(frame, x) < y;
         }
 
         @Specialization

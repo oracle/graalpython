@@ -514,12 +514,12 @@ public class TypeBuiltins extends PythonBuiltins {
         boolean isInstance(VirtualFrame frame, PythonAbstractClass cls, Object instance,
                         @Cached("create()") IsSubtypeNode isSubtypeNode,
                         @Cached("create()") GetClassNode getClass) {
-            if (instance instanceof PythonObject && isSubtypeNode.execute(getClass.execute(instance), cls)) {
+            if (instance instanceof PythonObject && isSubtypeNode.execute(frame, getClass.execute(instance), cls)) {
                 return true;
             }
 
             Object instanceClass = getAttributeNode.executeObject(frame, instance, __CLASS__);
-            return PGuards.isManagedClass(instanceClass) && isSubtypeNode.execute(instanceClass, cls);
+            return PGuards.isManagedClass(instanceClass) && isSubtypeNode.execute(frame, instanceClass, cls);
         }
 
         @Fallback
@@ -545,8 +545,8 @@ public class TypeBuiltins extends PythonBuiltins {
         @CompilationFinal private IsBuiltinClassProfile isTupleProfile;
 
         @Specialization(guards = {"!isNativeClass(cls)", "!isNativeClass(derived)"})
-        boolean doManagedManaged(LazyPythonClass cls, LazyPythonClass derived) {
-            return isSameType(cls, derived) || isSubtypeNode.execute(derived, cls);
+        boolean doManagedManaged(VirtualFrame frame, LazyPythonClass cls, LazyPythonClass derived) {
+            return isSameType(cls, derived) || isSubtypeNode.execute(frame, derived, cls);
         }
 
         @Specialization
@@ -559,7 +559,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
             // no profiles required because IsTypeNode profiles already
             if (isClsTypeNode.execute(cls) && isDerivedTypeNode.execute(derived)) {
-                return isSubtypeNode.execute(derived, cls);
+                return isSubtypeNode.execute(frame, derived, cls);
             }
             if (!checkClass(frame, derived)) {
                 throw raise(PythonBuiltinClassType.TypeError, "issubclass() arg 1 must be a class");

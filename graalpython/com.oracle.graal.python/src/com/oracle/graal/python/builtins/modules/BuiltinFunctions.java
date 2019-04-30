@@ -1129,7 +1129,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
                         @Cached("create()") IsSubtypeNode isSubtypeNode) {
             PythonAbstractClass instanceClass = getClassNode.execute(instance);
-            return isSameTypeNode.execute(instanceClass, cls) || isSubtypeNode.execute(instanceClass, cls) || isInstanceCheckInternal(frame, instance, cls);
+            return isSameTypeNode.execute(instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls) || isInstanceCheckInternal(frame, instance, cls);
         }
 
         @Specialization(guards = "getLength(clsTuple) == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
@@ -1220,7 +1220,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Fallback
         public boolean isSubclass(VirtualFrame frame, Object derived, Object cls) {
-            return isSubclassCheckInternal(frame, derived, cls) || isSubtypeNode.execute(derived, cls);
+            return isSubclassCheckInternal(frame, derived, cls) || isSubtypeNode.execute(frame, derived, cls);
         }
 
         protected int getLength(PTuple t) {

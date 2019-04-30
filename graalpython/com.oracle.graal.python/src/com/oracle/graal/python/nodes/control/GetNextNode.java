@@ -117,7 +117,7 @@ public final class GetNextNode extends PNodeWithContext {
     @GenerateUncached
     public abstract static class GetNextWithoutFrameNode extends PNodeWithGlobalState<NodeContextManager> {
 
-        public abstract Object execute(Object iterator);
+        protected abstract Object execute(Object iterator);
 
         private static Object checkResult(PRaiseNode raiseNode, ConditionProfile notAnIterator, Object result, Object iterator) {
             if (notAnIterator.profile(result == PNone.NO_VALUE)) {
