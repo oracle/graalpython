@@ -1455,6 +1455,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    // This is only used during bootstrap and then replaced with Python code
     @Builtin(name = "encode", minNumOfPositionalArgs = 1, parameterNames = {"self", "encoding", "errors"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)

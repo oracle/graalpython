@@ -84,8 +84,6 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "_codecs")
 public class CodecsModuleBuiltins extends PythonBuiltins {
-    public static final String DEFAULT_ENCODING = "utf-8";
-
     private static final Charset UTF32 = Charset.forName("utf-32");
 
     // python to java codecs mapping
