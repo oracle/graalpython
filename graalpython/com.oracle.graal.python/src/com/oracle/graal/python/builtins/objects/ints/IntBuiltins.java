@@ -2129,7 +2129,7 @@ public class IntBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isIterableNode = insert(IsIterableNode.create());
             }
-            if (PDataModelEmulationNode.check(isIterableNode, ctxRef.get(), passExceptionNode.execute(frame), this)) {
+            if (PDataModelEmulationNode.check(isIterableNode, ctxRef.get(), passExceptionNode.execute(frame), object)) {
                 byte[] bytes = getFromIteratorNode().execute(frame, getGetIteratorNode().executeWith(frame, object));
                 return compute(cl, bytes, byteorder, signed);
             }
