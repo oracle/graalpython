@@ -475,13 +475,13 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         // split(sep=...)
         // rsplit(sep=...)
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PBytes bytes, Object sep, @SuppressWarnings("unused") PNone maxsplit) {
-            return split(bytes, sep, -1);
+        PList split(VirtualFrame frame, PBytes bytes, Object sep, @SuppressWarnings("unused") PNone maxsplit) {
+            return split(frame, bytes, sep, -1);
         }
 
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PByteArray bytes, Object sep, @SuppressWarnings("unused") PNone maxsplit) {
-            return split(bytes, sep, -1);
+        PList split(VirtualFrame frame, PByteArray bytes, Object sep, @SuppressWarnings("unused") PNone maxsplit) {
+            return split(frame, bytes, sep, -1);
         }
 
         // split(sep=..., maxsplit=...)
@@ -497,13 +497,13 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PBytes bytes, Object sep, long maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PBytes bytes, Object sep, long maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PBytes bytes, Object sep, PInt maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PBytes bytes, Object sep, PInt maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization(guards = "!isPNone(sep)")
@@ -522,13 +522,13 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PByteArray bytes, Object sep, long maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PByteArray bytes, Object sep, long maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization(guards = "!isPNone(sep)")
-        PList split(PByteArray bytes, Object sep, PInt maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PByteArray bytes, Object sep, PInt maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization(guards = "!isPNone(sep)")
@@ -545,13 +545,13 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PList split(PBytes bytes, PNone sep, long maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PBytes bytes, PNone sep, long maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization
-        PList split(PBytes bytes, PNone sep, PInt maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PBytes bytes, PNone sep, PInt maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization
@@ -566,13 +566,13 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PList split(PByteArray bytes, PNone sep, long maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PByteArray bytes, PNone sep, long maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization
-        PList split(PByteArray bytes, PNone sep, PInt maxsplit) {
-            return split(bytes, sep, getIntValue(maxsplit));
+        PList split(VirtualFrame frame, PByteArray bytes, PNone sep, PInt maxsplit) {
+            return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
         @Specialization
