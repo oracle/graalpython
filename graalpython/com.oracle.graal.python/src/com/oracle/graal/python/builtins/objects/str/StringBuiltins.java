@@ -1818,21 +1818,21 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         boolean doString(String self) {
-            int spaces = 0;
+            int uncased = 0;
             if (self.length() == 0) {
                 return false;
             }
             for (int i = 0; i < self.length(); i++) {
                 int codePoint = self.codePointAt(i);
                 if (!Character.isUpperCase(codePoint)) {
-                    if (Character.isWhitespace(codePoint)) {
-                        spaces++;
+                    if (Character.toLowerCase(codePoint) == Character.toUpperCase(codePoint)) {
+                        uncased++;
                     } else {
                         return false;
                     }
                 }
             }
-            return spaces == 0 || self.length() > spaces;
+            return uncased == 0 || self.length() > uncased;
 
         }
     }
