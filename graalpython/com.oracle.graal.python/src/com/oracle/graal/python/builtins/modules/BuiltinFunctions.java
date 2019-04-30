@@ -1782,6 +1782,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return factory().createBuiltinMethod(builtinModule, builtinFunc);
         }
 
+        @TruffleBoundary
         public synchronized PFunction convertToBuiltin(PFunction func) {
             /*
              * (tfel): To be compatible with CPython, builtin module functions must be bound to
