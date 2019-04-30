@@ -152,7 +152,7 @@ import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
-import com.oracle.graal.python.nodes.expression.CastToListNode;
+import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -2059,7 +2059,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 if (slots instanceof String) {
                     slotList = factory().createList(new Object[]{slots}).getSequenceStorage();
                 } else {
-                    slotList = getCastToListNode().executeWith(slots).getSequenceStorage();
+                    slotList = getCastToListNode().execute(frame, slots).getSequenceStorage();
                 }
                 int slotlen = getListLenNode().execute(slotList);
                 // TODO: tfel - check if slots are allowed. They are not if the base class is var

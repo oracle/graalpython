@@ -104,9 +104,10 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -1593,7 +1594,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached("create()") GetLazyClassNode getClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctx,
                         @Cached PassCaughtExceptionNode passExceptionNode) {
             return new StringFormatter(getCore(), left).format(frame, ctx, right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode, passExceptionNode);
         }

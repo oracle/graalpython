@@ -44,11 +44,15 @@ import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -221,9 +225,9 @@ public abstract class LookupAndCallUnaryNode extends Node {
     }
 
     @GenerateUncached
-    public abstract static class LookupAndCallUnaryDynamicNode extends Node {
+    public abstract static class LookupAndCallUnaryDynamicNode extends PNodeWithGlobalState<NodeContextManager> {
 
-        public abstract Object executeObject(Object receiver, String name);
+        protected abstract Object executeObject(Object receiver, String name);
 
         @Specialization
         static Object doObject(Object receiver, String name,
@@ -233,10 +237,25 @@ public abstract class LookupAndCallUnaryNode extends Node {
 
             Object attr = getattr.execute(receiver, name);
             if (profile.profile(attr != PNone.NO_VALUE)) {
-                // TODO(fa): FRAME MIGRATION
+                // NOTE: it's safe to pass a 'null' frame since this node can only be used via a
+                // global state context manager
                 return dispatchNode.executeObject(null, attr, receiver);
             }
             return PNone.NO_VALUE;
+        }
+
+        @Override
+        public CallUnaryContextManager withGlobalState(PythonContext context, PException exceptionState) {
+            if (exceptionState != null) {
+                context.setCaughtException(exceptionState);
+                return new CallUnaryContextManager(this, context);
+            }
+            return new CallUnaryContextManager(this, null);
+        }
+
+        @Override
+        public CallUnaryContextManager passState() {
+            return new CallUnaryContextManager(this, null);
         }
 
         public static LookupAndCallUnaryDynamicNode create() {
@@ -245,6 +264,28 @@ public abstract class LookupAndCallUnaryNode extends Node {
 
         public static LookupAndCallUnaryDynamicNode getUncached() {
             return LookupAndCallUnaryNodeGen.LookupAndCallUnaryDynamicNodeGen.getUncached();
+        }
+    }
+
+    public static final class CallUnaryContextManager extends NodeContextManager {
+
+        private final LookupAndCallUnaryDynamicNode delegate;
+        private final PythonContext context;
+
+        public CallUnaryContextManager(LookupAndCallUnaryDynamicNode delegate, PythonContext context) {
+            this.delegate = delegate;
+            this.context = context;
+        }
+
+        public Object executeObject(Object receiver, String name) {
+            return delegate.executeObject(receiver, name);
+        }
+
+        @Override
+        public void close() {
+            if (context != null) {
+                context.setCaughtException(null);
+            }
         }
     }
 }

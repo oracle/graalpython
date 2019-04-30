@@ -513,7 +513,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(OB_SIZE, key)")
         long doObSize(Object object, @SuppressWarnings("unused") String key,
                         @Exclusive @Cached LookupAndCallUnaryDynamicNode callLenNode) {
-            Object res = callLenNode.executeObject(object, SpecialMethodNames.__LEN__);
+            Object res = callLenNode.passState().executeObject(object, SpecialMethodNames.__LEN__);
             if (res instanceof Number) {
                 return ((Number) res).intValue();
             }
@@ -523,7 +523,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(MA_USED, key)")
         int doMaUsed(PDict object, @SuppressWarnings("unused") String key,
                         @Exclusive @Cached LookupAndCallUnaryDynamicNode callLenNode) {
-            Object res = callLenNode.executeObject(object, SpecialMethodNames.__LEN__);
+            Object res = callLenNode.passState().executeObject(object, SpecialMethodNames.__LEN__);
             if (res instanceof Number) {
                 return ((Number) res).intValue();
             }

@@ -48,10 +48,14 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.NodeContextManager;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorWithoutFrameNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.control.GetNextNode.GetNextWithoutFrameNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -149,8 +153,8 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     @GenerateUncached
-    public abstract static class ExecutePositionalStarargsInteropNode extends Node {
-        public abstract Object[] executeWith(Object starargs);
+    public abstract static class ExecutePositionalStarargsInteropNode extends PNodeWithGlobalState<ExecutePositionalStarargsContextManager> {
+        protected abstract Object[] executeWith(Object starargs);
 
         @Specialization
         static Object[] starargs(Object[] starargs) {
@@ -186,10 +190,57 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         static Object[] starargs(Object object,
                         @Cached PRaiseNode raise,
                         @Cached GetIteratorWithoutFrameNode getIterator,
-                        @Cached GetNextNode next,
+                        @Cached GetNextWithoutFrameNode next,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            return ExecutePositionalStarargsNode.starargs(null, object, raise, getIterator, next, errorProfile);
+            Object iterator = getIterator.executeWith(object);
+            if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
+                ArrayList<Object> internalStorage = new ArrayList<>();
+                while (true) {
+                    try {
+                        addToList(internalStorage, next.execute(iterator));
+                    } catch (PException e) {
+                        e.expectStopIteration(errorProfile);
+                        return toArray(internalStorage);
+                    }
+                }
+            }
+            throw raise.raise(PythonErrorType.TypeError, "argument after * must be an iterable, not %p", object);
         }
 
+        @Override
+        public ExecutePositionalStarargsContextManager withGlobalState(PythonContext context, PException exceptionState) {
+            if (exceptionState != null) {
+                return new ExecutePositionalStarargsContextManager(this, context);
+            }
+            return passState();
+        }
+
+        @Override
+        public ExecutePositionalStarargsContextManager passState() {
+            return new ExecutePositionalStarargsContextManager(this, null);
+        }
+
+    }
+
+    public static final class ExecutePositionalStarargsContextManager extends NodeContextManager {
+
+        private final ExecutePositionalStarargsInteropNode delegate;
+        private final PythonContext context;
+
+        public ExecutePositionalStarargsContextManager(ExecutePositionalStarargsInteropNode delegate, PythonContext context) {
+            this.delegate = delegate;
+            this.context = context;
+        }
+
+        public Object[] executeWith(Object starargs) {
+            return delegate.executeWith(starargs);
+        }
+
+        @Override
+        public void close() {
+            if (context != null) {
+                context.setCaughtException(null);
+            }
+        }
     }
 }

@@ -1854,7 +1854,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CExtNodes.ObjectUpcallNode upcallNode) {
             try {
                 exceptionHandling(frame);
-                return asDoubleNode.execute(upcallNode.execute(frame, toJavaNode.execute(receiver), name, args));
+                return asDoubleNode.execute(frame, upcallNode.execute(frame, toJavaNode.execute(receiver), name, args));
             } catch (PException e) {
                 errorProfile.enter();
                 getContext().setCurrentException(e);
@@ -1914,14 +1914,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
         double upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args,
                         @Cached("create()") CExtNodes.CextUpcallNode upcallNode) {
             exceptionHandling(frame);
-            return asDoubleNode.execute(upcallNode.execute(frame, cextModule, name, args));
+            return asDoubleNode.execute(frame, upcallNode.execute(frame, cextModule, name, args));
         }
 
         @Specialization(guards = "!isString(callable)")
         double doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object callable, Object[] args,
                         @Cached("create()") CExtNodes.DirectUpcallNode upcallNode) {
             exceptionHandling(frame);
-            return asDoubleNode.execute(upcallNode.execute(frame, callable, args));
+            return asDoubleNode.execute(frame, upcallNode.execute(frame, callable, args));
         }
     }
 
@@ -2045,11 +2045,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "to_double", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class AsDouble extends PythonBuiltinNode {
-        @Child CExtNodes.AsDouble asDoubleNode = CExtNodes.AsDouble.create();
+        @Child private CExtNodes.AsDouble asDoubleNode = CExtNodes.AsDouble.create();
 
         @Specialization
-        double doIt(Object object) {
-            return asDoubleNode.execute(object);
+        double doIt(VirtualFrame frame, Object object) {
+            return asDoubleNode.execute(frame, object);
         }
     }
 
@@ -2299,18 +2299,18 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = PException.class)
-        double doGeneric(Object object,
+        double doGeneric(VirtualFrame frame, Object object,
                         @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Shared("asDoubleNode") @Cached CExtNodes.AsDouble asDoubleNode) {
-            return asDoubleNode.execute(asPythonObjectNode.execute(object));
+            return asDoubleNode.execute(frame, asPythonObjectNode.execute(object));
         }
 
         @Specialization(replaces = "doGeneric")
-        double doGenericErr(Object object,
+        double doGenericErr(VirtualFrame frame, Object object,
                         @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Shared("asDoubleNode") @Cached CExtNodes.AsDouble asDoubleNode) {
             try {
-                return doGeneric(object, asPythonObjectNode, asDoubleNode);
+                return doGeneric(frame, object, asPythonObjectNode, asDoubleNode);
             } catch (PException e) {
                 transformToNative(e);
                 return -1.0;

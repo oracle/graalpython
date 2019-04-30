@@ -97,6 +97,7 @@ import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.CallUnaryContextManager;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -109,6 +110,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -1265,15 +1267,15 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class AsDouble extends PNodeWithContext {
-        public abstract double execute(boolean arg);
+        public abstract double execute(VirtualFrame frame, boolean arg);
 
-        public abstract double execute(int arg);
+        public abstract double execute(VirtualFrame frame, int arg);
 
-        public abstract double execute(long arg);
+        public abstract double execute(VirtualFrame frame, long arg);
 
-        public abstract double execute(double arg);
+        public abstract double execute(VirtualFrame frame, double arg);
 
-        public abstract double execute(Object arg);
+        public abstract double execute(VirtualFrame frame, Object arg);
 
         public static AsDouble create() {
             return CExtNodesFactory.AsDoubleNodeGen.create();
@@ -1322,19 +1324,23 @@ public abstract class CExtNodes {
         // TODO: this should just use the builtin constructor node so we don't duplicate the corner
         // cases
         @Specialization
-        double runGeneric(PythonAbstractObject value,
+        double runGeneric(VirtualFrame frame, PythonAbstractObject value,
                         @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PassCaughtExceptionNode passExceptionNode,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
             if (PGuards.isPFloat(value)) {
                 return ((PFloat) value).getValue();
             }
-            Object result = callFloatFunc.executeObject(value, __FLOAT__);
-            if (PGuards.isPFloat(result)) {
-                return ((PFloat) result).getValue();
-            } else if (result instanceof Double) {
-                return (double) result;
-            } else {
-                throw raiseNode.raise(PythonErrorType.TypeError, "%p.%s returned non-float (type %p)", value, __FLOAT__, result);
+            try (CallUnaryContextManager ctxManager = callFloatFunc.withGlobalState(ctx, passExceptionNode.execute(frame))) {
+                Object result = ctxManager.executeObject(value, __FLOAT__);
+                if (PGuards.isPFloat(result)) {
+                    return ((PFloat) result).getValue();
+                } else if (result instanceof Double) {
+                    return (double) result;
+                } else {
+                    throw raiseNode.raise(PythonErrorType.TypeError, "%p.%s returned non-float (type %p)", value, __FLOAT__, result);
+                }
             }
         }
     }

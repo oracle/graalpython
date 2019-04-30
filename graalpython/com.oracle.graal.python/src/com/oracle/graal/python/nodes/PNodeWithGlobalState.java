@@ -47,4 +47,6 @@ public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends
 
     public abstract T withGlobalState(PythonContext context, PException exceptionState);
 
+    public abstract T passState();
+
 }

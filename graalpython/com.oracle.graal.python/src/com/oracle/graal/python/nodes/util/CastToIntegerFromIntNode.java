@@ -47,12 +47,16 @@ import java.util.function.Function;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNodeFactory.DynamicNodeGen;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -90,9 +94,35 @@ public class CastToIntegerFromIntNode extends Node {
         return new CastToIntegerFromIntNode(typeErrorHandler);
     }
 
+    public static final class CastToIntegerContextManager extends NodeContextManager {
+
+        private final Dynamic delegate;
+        private final PythonContext context;
+
+        public CastToIntegerContextManager(Dynamic delegate, PythonContext context) {
+            this.delegate = delegate;
+            this.context = context;
+        }
+
+        public Object execute(Object x) {
+            return delegate.execute(x);
+        }
+
+        public Object execute(Object x, Function<Object, Byte> typeErrorHandler) {
+            return delegate.execute(x, typeErrorHandler);
+        }
+
+        @Override
+        public void close() {
+            if (context != null) {
+                context.setCaughtException(null);
+            }
+        }
+    }
+
     @GenerateUncached
     @ImportStatic(MathGuards.class)
-    public abstract static class Dynamic extends Node {
+    public abstract static class Dynamic extends PNodeWithGlobalState<CastToIntegerContextManager> {
 
         public abstract Object execute(Object x, Function<Object, Byte> typeErrorHandler);
 
@@ -129,7 +159,7 @@ public class CastToIntegerFromIntNode extends Node {
         Object fromObject(Object x, Function<Object, Byte> typeErrorHandler,
                         @Cached LookupAndCallUnaryDynamicNode callIndexNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            Object result = callIndexNode.executeObject(x, SpecialMethodNames.__INT__);
+            Object result = callIndexNode.passState().executeObject(x, SpecialMethodNames.__INT__);
             if (result == PNone.NO_VALUE) {
                 if (typeErrorHandler != null) {
                     return typeErrorHandler.apply(x);
@@ -143,6 +173,19 @@ public class CastToIntegerFromIntNode extends Node {
             return result;
         }
 
+        @Override
+        public CastToIntegerContextManager withGlobalState(PythonContext context, PException exceptionState) {
+            if (exceptionState != null) {
+                return new CastToIntegerContextManager(this, context);
+            }
+            return passState();
+        }
+
+        @Override
+        public CastToIntegerContextManager passState() {
+            return new CastToIntegerContextManager(this, null);
+        }
+
         public static Dynamic create() {
             return DynamicNodeGen.create();
         }
@@ -151,4 +194,5 @@ public class CastToIntegerFromIntNode extends Node {
             return DynamicNodeGen.getUncached();
         }
     }
+
 }

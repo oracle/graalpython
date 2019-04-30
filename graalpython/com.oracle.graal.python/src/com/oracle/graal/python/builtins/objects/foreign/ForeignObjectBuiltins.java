@@ -79,7 +79,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
-import com.oracle.graal.python.nodes.expression.CastToListNode;
+import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -791,13 +791,13 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.hasArrayElements(object)"})
         protected Object doArray(VirtualFrame frame, Object object,
-                        @Cached("create()") CastToListNode asList,
+                        @Cached CastToListNode asList,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 long size = lib.getArraySize(object);
                 if (size <= Integer.MAX_VALUE && size >= 0) {
                     PForeignArrayIterator iterable = factory().createForeignArrayIterator(object, (int) size);
-                    return getCallStrNode().executeObject(frame, asList.executeWith(iterable));
+                    return getCallStrNode().executeObject(frame, asList.execute(frame, iterable));
                 }
             } catch (UnsupportedMessageException e) {
                 // fall through

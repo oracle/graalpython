@@ -47,8 +47,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.ImportStatic;
 
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
@@ -58,8 +56,16 @@ public abstract class PDataModelEmulationNode extends PNodeWithGlobalState<PData
 
     @Override
     public PDataModelEmulationContextManager withGlobalState(PythonContext context, PException exceptionState) {
-        context.setCaughtException(exceptionState);
-        return new PDataModelEmulationContextManager(this, context);
+        if (exceptionState != null) {
+            context.setCaughtException(exceptionState);
+            return new PDataModelEmulationContextManager(this, context);
+        }
+        return passState();
+    }
+
+    @Override
+    public PDataModelEmulationContextManager passState() {
+        return new PDataModelEmulationContextManager(this, null);
     }
 
     public static boolean check(PDataModelEmulationNode isMapping, PythonContext context, PException caughtException, Object obj) {
@@ -68,7 +74,6 @@ public abstract class PDataModelEmulationNode extends PNodeWithGlobalState<PData
         }
     }
 
-    @ValueType
     public static final class PDataModelEmulationContextManager extends NodeContextManager {
 
         private final PDataModelEmulationNode delegate;
@@ -88,8 +93,6 @@ public abstract class PDataModelEmulationNode extends PNodeWithGlobalState<PData
             if (context != null) {
                 context.setCaughtException(null);
             }
-            CompilerDirectives.transferToInterpreter();
-            throw new IllegalStateException("node context already closed");
         }
 
     }

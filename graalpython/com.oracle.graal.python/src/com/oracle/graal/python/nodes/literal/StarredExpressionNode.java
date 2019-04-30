@@ -40,20 +40,20 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
-import com.oracle.graal.python.nodes.expression.CastToListNode;
-import com.oracle.graal.python.nodes.expression.CastToListNodeGen;
+import com.oracle.graal.python.nodes.expression.CastToListExpressionNode;
+import com.oracle.graal.python.nodes.expression.CastToListExpressionNodeGen;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public final class StarredExpressionNode extends LiteralNode {
-    @Child private CastToListNode childNode;
+    @Child private CastToListExpressionNode childNode;
 
-    private StarredExpressionNode(CastToListNode childNode) {
+    private StarredExpressionNode(CastToListExpressionNode childNode) {
         this.childNode = childNode;
     }
 
     public static StarredExpressionNode create(ExpressionNode child) {
-        return new StarredExpressionNode(CastToListNodeGen.create(child));
+        return new StarredExpressionNode(CastToListExpressionNodeGen.create(child));
     }
 
     public ExpressionNode getValue() {
