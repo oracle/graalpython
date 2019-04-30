@@ -50,7 +50,9 @@ import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -411,15 +413,18 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private PBytes encodeString(String self, String encoding, String errors) {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
+            Charset charset;
             try {
-                Charset charset = getCharset(encoding);
+                charset = getCharset(encoding);
+            } catch (UnsupportedCharsetException | IllegalCharsetNameException e) {
+                throw raise(LookupError, "unknown encoding: %s", encoding);
+            }
+            try {
                 ByteBuffer encoded = charset.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
                 int n = encoded.remaining();
                 byte[] data = new byte[n];
                 encoded.get(data);
                 return factory().createBytes(data);
-            } catch (IllegalArgumentException e) {
-                throw raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
                 throw raise(UnicodeEncodeError, e);
             }
@@ -541,12 +546,15 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         String decodeBytes(ByteBuffer bytes, String encoding, String errors) {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
+            Charset charset;
             try {
-                Charset charset = getCharset(encoding);
+                charset = getCharset(encoding);
+            } catch (UnsupportedCharsetException | IllegalCharsetNameException e) {
+                throw raise(LookupError, "unknown encoding: %s", encoding);
+            }
+            try {
                 CharBuffer decoded = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(bytes);
                 return String.valueOf(decoded);
-            } catch (IllegalArgumentException e) {
-                throw raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
                 throw raise(UnicodeDecodeError, e);
             }
@@ -623,7 +631,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             try {
                 getCharset(encoding);
                 return true;
-            } catch (IllegalArgumentException e) {
+            } catch (UnsupportedCharsetException | IllegalCharsetNameException e) {
                 return PNone.NONE;
             }
         }
