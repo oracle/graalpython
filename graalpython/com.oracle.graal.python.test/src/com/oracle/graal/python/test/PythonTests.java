@@ -49,6 +49,7 @@ import java.nio.file.Paths;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Value;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -219,6 +220,12 @@ public class PythonTests {
         assertEquals(expected.replaceAll(" at 0x[0-9a-f]*>", " at 0xabcd>"), result.replaceAll(" at 0x[0-9a-f]*>", " at 0xabcd>"));
     }
 
+    public static Value eval(String code) {
+        final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
+        final PrintStream printStream = new PrintStream(byteArray);
+        return PythonTests.runScript(new String[0], code, printStream, System.err);
+    }
+
     public static VirtualFrame createVirtualFrame() {
         return Truffle.getRuntime().createVirtualFrame(null, new FrameDescriptor());
     }
@@ -314,10 +321,10 @@ public class PythonTests {
         }
     }
 
-    public static void runScript(String[] args, File path, OutputStream out, OutputStream err) {
+    public static Value runScript(String[] args, File path, OutputStream out, OutputStream err) {
         try {
             enterContext(args);
-            context.eval(org.graalvm.polyglot.Source.newBuilder("python", path).build());
+            return context.eval(org.graalvm.polyglot.Source.newBuilder("python", path).build());
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -326,28 +333,28 @@ public class PythonTests {
         }
     }
 
-    public static void runScript(String[] args, String source, OutputStream out, OutputStream err) {
+    public static Value runScript(String[] args, String source, OutputStream out, OutputStream err) {
         try {
             enterContext(args);
-            context.eval(org.graalvm.polyglot.Source.create("python", source));
+            return context.eval(org.graalvm.polyglot.Source.create("python", source));
         } finally {
             flush(out, err);
         }
     }
 
-    public static void runScript(String[] args, org.graalvm.polyglot.Source source, OutputStream out, OutputStream err) {
+    public static Value runScript(String[] args, org.graalvm.polyglot.Source source, OutputStream out, OutputStream err) {
         try {
             enterContext(args);
-            context.eval(source);
+            return context.eval(source);
         } finally {
             flush(out, err);
         }
     }
 
-    public static void runScript(String[] args, String source, OutputStream out, OutputStream err, Runnable cb) {
+    public static Value runScript(String[] args, String source, OutputStream out, OutputStream err, Runnable cb) {
         try {
             enterContext(args);
-            context.eval(org.graalvm.polyglot.Source.create("python", source));
+            return context.eval(org.graalvm.polyglot.Source.create("python", source));
         } finally {
             cb.run();
             flush(out, err);
