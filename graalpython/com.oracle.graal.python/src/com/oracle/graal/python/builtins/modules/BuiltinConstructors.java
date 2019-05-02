@@ -1734,7 +1734,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return asPString(strClass, PFloat.doubleToString(arg));
         }
 
-        @Specialization(guards = {"!isNoValue(obj)", "!isNone(obj)", "isNoValue(encoding)", "isNoValue(errors)"})
+        @Specialization(guards = {"!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"})
         public Object strOneArg(VirtualFrame frame, LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode callNode) {
             Object result = callNode.executeObject(frame, obj);
