@@ -66,6 +66,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -266,36 +267,50 @@ public abstract class GetClassNode extends PNodeWithContext {
     private static final class UncachedNode extends GetClassNode {
         private static final UncachedNode INSTANCE = new UncachedNode();
 
+        private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
+
         @Override
         public PythonBuiltinClass execute(boolean object) {
-            return PythonLanguage.getContextRef().get().getCore().lookupType(PythonBuiltinClassType.Boolean);
+            return contextRef.get().getCore().lookupType(PythonBuiltinClassType.Boolean);
         }
 
         @Override
         public PythonBuiltinClass execute(int object) {
-            return PythonLanguage.getContextRef().get().getCore().lookupType(PythonBuiltinClassType.PInt);
+            return contextRef.get().getCore().lookupType(PythonBuiltinClassType.PInt);
         }
 
         @Override
         public PythonBuiltinClass execute(long object) {
-            return PythonLanguage.getContextRef().get().getCore().lookupType(PythonBuiltinClassType.PInt);
+            return contextRef.get().getCore().lookupType(PythonBuiltinClassType.PInt);
         }
 
         @Override
         public PythonBuiltinClass execute(double object) {
-            return PythonLanguage.getContextRef().get().getCore().lookupType(PythonBuiltinClassType.PFloat);
+            return contextRef.get().getCore().lookupType(PythonBuiltinClassType.PFloat);
         }
 
         @Override
         protected PythonAbstractClass executeGetClass(Object object) {
-            return GetClassNode.getItSlowPath(object);
+            return GetClassNode.getItSlowPath(contextRef, object);
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.MEGAMORPHIC;
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
         }
     }
 
-    private static PythonAbstractClass getItSlowPath(Object o) {
-        PythonCore core = PythonLanguage.getContextRef().get().getCore();
+    private static PythonAbstractClass getItSlowPath(ContextReference<PythonContext> contextRef, Object o) {
+        PythonCore core = contextRef.get().getCore();
         if (PGuards.isForeignObject(o)) {
             return core.lookupType(PythonBuiltinClassType.ForeignObject);
+        } else if (o instanceof PCell) {
+            return core.lookupType(PythonBuiltinClassType.PCell);
         } else if (o instanceof String) {
             return core.lookupType(PythonBuiltinClassType.PString);
         } else if (o instanceof Boolean) {
