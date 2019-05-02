@@ -67,6 +67,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -75,6 +76,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeCost;
 
 public abstract class CastToListExpressionNode extends UnaryOpNode {
 
@@ -246,12 +248,24 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
     private static final class CastToListUncachedNode extends CastToListInteropNode {
         private static final CastToListUncachedNode UNCACHED = new CastToListUncachedNode();
 
+        private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
+
         @Override
         protected PList execute(Object list) {
-            Object builtins = PythonLanguage.getContextRef().get().getCore().lookupBuiltinModule("builtins");
+            Object builtins = contextRef.get().getBuiltins();
             Object listType = ReadAttributeFromObjectNode.getUncached().execute(builtins, "list");
             LookupInheritedAttributeNode.Dynamic getCall = LookupInheritedAttributeNode.Dynamic.getUncached();
             return (PList) CallNode.getUncached().execute(null, getCall.execute(listType, SpecialMethodNames.__CALL__), listType, list);
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.MEGAMORPHIC;
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
         }
     }
 }
