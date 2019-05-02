@@ -131,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -168,7 +169,6 @@ import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -884,11 +884,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        public PFrozenSet frozenset(LazyPythonClass cls, String arg) {
+        public PFrozenSet frozenset(VirtualFrame frame, LazyPythonClass cls, String arg) {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
-            for (int i = 0; i < arg.length(); i++) {
-                getSetItemNode().execute(frozenSet, String.valueOf(arg.charAt(i)), PNone.NO_VALUE);
+            for (int i = 0; i < PString.length(arg); i++) {
+                getSetItemNode().execute(frame, frozenSet, PString.valueOf(PString.charAt(arg, i)), PNone.NO_VALUE);
             }
             return frozenSet;
         }
@@ -903,7 +902,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
             while (true) {
                 try {
-                    getSetItemNode().execute(frozenSet, next.execute(frame, iterator), PNone.NO_VALUE);
+                    getSetItemNode().execute(frame, frozenSet, next.execute(frame, iterator), PNone.NO_VALUE);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return frozenSet;
@@ -1921,6 +1920,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private GetMroNode getMroNode;
         @Child private IsSubtypeNode isSubtypeNode;
 
+        protected abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
+
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
         public Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
@@ -1982,7 +1983,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (globals instanceof PythonModule) {
                 nameAttr = ensureReadAttrNode().execute(globals, __NAME__);
             } else if (globals instanceof PDict) {
-                nameAttr = ensureGetDictItemNode().execute(((PDict) globals).getDictStorage(), __NAME__);
+                nameAttr = ensureGetDictItemNode().execute(frame, ((PDict) globals).getDictStorage(), __NAME__);
             } else {
                 CompilerDirectives.transferToInterpreter();
                 throw new IllegalStateException("invalid globals object");
@@ -2089,16 +2090,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                     // Make slots into a tuple
                 }
-                PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace);
-                pythonClass.setAttribute(__SLOTS__, newSlots);
-                if (basesArray.length > 1) {
-                    // TODO: tfel - check if secondary bases provide weakref or dict when we don't
-                    // already have one
-                }
+                try (DefaultContextManager cm = withGlobalState(frame)) {
+                    PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace);
+                    pythonClass.setAttribute(__SLOTS__, newSlots);
+                    if (basesArray.length > 1) {
+                        // TODO: tfel - check if secondary bases provide weakref or dict when we
+                        // don't already have one
+                    }
 
-                // add native slot descriptors
-                if (pythonClass.needsNativeAllocation()) {
-                    addNativeSlots(pythonClass, newSlots);
+                    // add native slot descriptors
+                    if (pythonClass.needsNativeAllocation()) {
+                        addNativeSlots(pythonClass, newSlots);
+                    }
                 }
             }
 
@@ -2122,7 +2125,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
 
                 setSlotItemNode().execute(newSlots, slotName, NoGeneralizationNode.DEFAULT);
-                if (getContainsKeyNode().execute(namespace.getDictStorage(), slotName)) {
+                // Passing 'null' frame is fine because the caller already transfers the exception
+                // state to the context.
+                if (getContainsKeyNode().execute(null, namespace.getDictStorage(), slotName)) {
                     throw raise(PythonBuiltinClassType.ValueError, "%s in __slots__ conflicts with class variable", slotName);
                 }
                 j++;
@@ -2287,8 +2292,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
             return isSubtypeNode.execute(frame, subclass, superclass);
         }
-
-        protected abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
 
         protected static TypeNode create() {
             return BuiltinConstructorsFactory.TypeNodeFactory.create(null);
@@ -2539,9 +2542,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         Object methodGeneric(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object func, Object self,
-                        @Cached("create()") IsCallableNode isCallable,
-                        @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (PDataModelEmulationContextManager ctxManager = isCallable.withGlobalState(getContext(), passExceptionNode.execute(frame))) {
+                        @Cached("create()") IsCallableNode isCallable) {
+            try (PDataModelEmulationContextManager ctxManager = withGlobalState(isCallable, frame)) {
                 if (ctxManager.execute(func)) {
                     return factory().createMethod(self, func);
                 } else {
@@ -2582,14 +2584,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
         @Specialization
-        Object call(LazyPythonClass cls, int argcount, int kwonlyargcount,
+        Object call(VirtualFrame frame, LazyPythonClass cls, int argcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         String codestring, PTuple constants, PTuple names,
                         PTuple varnames, Object filename, Object name,
                         int firstlineno, String lnotab,
                         PTuple freevars, PTuple cellvars,
                         @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
-            return createCodeNode.execute(cls, argcount, kwonlyargcount,
+            return createCodeNode.execute(frame, cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
                             toBytes(codestring), constants.getArray(), names.getArray(),
                             varnames.getArray(), freevars.getArray(), cellvars.getArray(),
@@ -2598,7 +2600,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        Object call(LazyPythonClass cls, int argcount, int kwonlyargcount,
+        Object call(VirtualFrame frame, LazyPythonClass cls, int argcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         PBytes codestring, PTuple constants, PTuple names,
                         PTuple varnames, Object filename, Object name,
@@ -2609,7 +2611,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             byte[] codeBytes = toByteArrayNode.execute(codestring.getSequenceStorage());
             byte[] lnotabBytes = toByteArrayNode.execute(lnotab.getSequenceStorage());
 
-            return createCodeNode.execute(cls, argcount, kwonlyargcount,
+            return createCodeNode.execute(frame, cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
                             codeBytes, constants.getArray(), names.getArray(),
                             varnames.getArray(), freevars.getArray(), cellvars.getArray(),
@@ -2667,7 +2669,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
         @Child private IsSequenceNode isMappingNode;
-        @Child private PassCaughtExceptionNode passExceptionStateNode;
 
         @Specialization
         Object doMapping(LazyPythonClass klass, PHashingCollection obj) {
@@ -2700,11 +2701,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreter();
                 isMappingNode = insert(IsSequenceNode.create());
             }
-            if (passExceptionStateNode == null) {
-                CompilerDirectives.transferToInterpreter();
-                passExceptionStateNode = insert(PassCaughtExceptionNode.create());
-            }
-            try (PDataModelEmulationContextManager ctxManager = isMappingNode.withGlobalState(getContext(), passExceptionStateNode.execute(frame))) {
+            try (PDataModelEmulationContextManager ctxManager = withGlobalState(isMappingNode, frame)) {
                 return ctxManager.execute(o);
             }
         }

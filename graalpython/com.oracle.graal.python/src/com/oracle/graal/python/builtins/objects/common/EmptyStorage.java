@@ -77,6 +77,7 @@ public class EmptyStorage extends HashingStorage {
     }
 
     @Override
+    @TruffleBoundary
     public Iterable<Object> keys() {
         return Collections.emptyList();
     }

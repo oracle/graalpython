@@ -96,7 +96,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
                     @Cached @SuppressWarnings("unused") IsBuiltinClassProfile builtinProfile,
                     @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
         PythonObject globals = PArguments.getGlobals(frame);
-        Object result = getItemNode.execute(((PDict) globals).getDictStorage(), attributeId);
+        Object result = getItemNode.execute(frame, ((PDict) globals).getDictStorage(), attributeId);
         return returnGlobalOrBuiltin(contextRef, result == null ? PNone.NO_VALUE : result);
     }
 

@@ -76,9 +76,9 @@ public final class SetBuiltins extends PythonBuiltins {
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public Object add(PSet self, Object o,
+        public Object add(VirtualFrame frame, PSet self, Object o,
                         @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
-            setItemNode.execute(self, o, PNone.NO_VALUE);
+            setItemNode.execute(frame, self, o, PNone.NO_VALUE);
             return PNone.NONE;
         }
     }
@@ -96,9 +96,9 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object doSet(PBaseSet self, PBaseSet other,
+        Object doSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
-            return factory().createSet(unionNode.execute(self.getDictStorage(), other.getDictStorage()));
+            return factory().createSet(unionNode.execute(frame, self.getDictStorage(), other.getDictStorage()));
         }
 
         @Specialization
@@ -112,10 +112,10 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RemoveNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object remove(PBaseSet self, Object other,
+        Object remove(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
 
-            if (!delItemNode.execute(self, self.getDictStorage(), other)) {
+            if (!delItemNode.execute(frame, self, self.getDictStorage(), other)) {
                 throw raise(PythonErrorType.KeyError, "%s", other);
             }
             return PNone.NONE;
@@ -126,10 +126,10 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DiscardNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object discard(PBaseSet self, Object other,
+        Object discard(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
 
-            delItemNode.execute(self, self.getDictStorage(), other);
+            delItemNode.execute(frame, self, self.getDictStorage(), other);
             return PNone.NONE;
         }
     }
@@ -138,13 +138,13 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PopNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object remove(PBaseSet self,
+        Object remove(VirtualFrame frame, PBaseSet self,
                         @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
 
             Iterator<Object> iterator = self.getDictStorage().keys().iterator();
             if (iterator.hasNext()) {
                 Object next = iterator.next();
-                delItemNode.execute(self, self.getDictStorage(), next);
+                delItemNode.execute(frame, self, self.getDictStorage(), next);
                 return next;
             }
             throw raise(PythonErrorType.KeyError, "pop from an emtpy set");

@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -84,6 +85,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -150,9 +152,15 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__REPR__);
 
         @Specialization
-        @TruffleBoundary
-        public Object run(PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
+        public Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
                         @CachedLibrary(limit = "1") InteropLibrary interop) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
+                return run(moduleSpec, interop);
+            }
+        }
+
+        @TruffleBoundary
+        private Object run(PythonObject moduleSpec, InteropLibrary interop) {
             String name = moduleSpec.getAttribute("name").toString();
             String path = moduleSpec.getAttribute("origin").toString();
 
@@ -212,7 +220,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     ((PythonObject) result).setAttribute(__FILE__, path);
                     // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
                     PDict sysModules = getContext().getSysModules();
-                    getSetItemNode().execute(sysModules, name, result);
+                    getSetItemNode().execute(null, sysModules, name, result);
                     return result;
                 }
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -317,12 +325,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsBuiltin extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        public int run(String name,
+        public int run(VirtualFrame frame, String name,
                         @Cached("create()") HashingStorageNodes.ContainsKeyNode hasKey) {
             if (getCore().lookupBuiltinModule(name) != null) {
                 return 1;
-            } else if (getContext() != null && getContext().isInitialized() && hasKey.execute(getContext().getImportedModules().getDictStorage(), name)) {
+            } else if (getContext() != null && getContext().isInitialized() && hasKey.execute(frame, getContext().getImportedModules().getDictStorage(), name)) {
                 return -1;
             } else {
                 return 0;

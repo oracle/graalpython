@@ -66,15 +66,21 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -156,21 +162,21 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(VirtualFrame frame, PBytes bytes,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return marshaller.execute(toBytesNode.execute(frame, bytes), CURRENT_VERSION);
+            return marshaller.execute(frame, toBytesNode.execute(frame, bytes), CURRENT_VERSION);
         }
 
         @SuppressWarnings("unused")
         @Specialization
         Object doit(VirtualFrame frame, PByteArray bytes,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return marshaller.execute(toBytesNode.execute(frame, bytes), CURRENT_VERSION);
+            return marshaller.execute(frame, toBytesNode.execute(frame, bytes), CURRENT_VERSION);
         }
 
         @SuppressWarnings("unused")
         @Specialization
         Object doit(VirtualFrame frame, PMemoryView bytes,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return marshaller.execute(toBytesNode.execute(frame, bytes), CURRENT_VERSION);
+            return marshaller.execute(frame, toBytesNode.execute(frame, bytes), CURRENT_VERSION);
         }
     }
 
@@ -495,7 +501,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     }
 
     public abstract static class UnmarshallerNode extends PNodeWithState {
-        public abstract Object execute(byte[] dataBytes, int version);
+        public abstract Object execute(VirtualFrame frame, byte[] dataBytes, int version);
 
         @Child private HashingStorageNodes.SetItemNode setItemNode;
         @Child private CodeNodes.CreateCodeNode createCodeNode;
@@ -572,7 +578,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int firstlineno = readInt();
             byte[] lnotab = readBytes();
 
-            return ensureCreateCodeNode().execute(PythonBuiltinClassType.PCode, argcount, kwonlyargcount,
+            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, argcount, kwonlyargcount,
                             nlocals, stacksize, flags, codestring, constants, names,
                             varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
         }
@@ -621,7 +627,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
             for (int i = 0; i < n; i++) {
                 Object key = readObject(depth + 1);
-                setItemNode.execute(newStorage, key, PNone.NO_VALUE);
+                // note: we may pass a 'null' frame here because global state is ensured to be
+                // transfered
+                setItemNode.execute(null, newStorage, key, PNone.NO_VALUE);
             }
 
             return factory().createSet(newStorage);
@@ -639,7 +647,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
             for (int i = 0; i < n; i++) {
                 Object key = readObject(depth + 1);
-                setItemNode.execute(newStorage, key, PNone.NO_VALUE);
+                // note: we may pass a 'null' frame here because global state is ensured to be
+                // transfered
+                setItemNode.execute(null, newStorage, key, PNone.NO_VALUE);
             }
 
             return factory().createFrozenSet(newStorage);
@@ -715,10 +725,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object readObject(byte[] dataBytes, @SuppressWarnings("unused") int version) {
+        public Object readObject(VirtualFrame frame, byte[] dataBytes, @SuppressWarnings("unused") int version,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
+                        @Cached PassCaughtExceptionNode passExceptionNode) {
             reset();
             this.data = dataBytes;
-            return readObject(0);
+            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+                return readObject(0);
+            }
         }
 
         public static UnmarshallerNode create() {

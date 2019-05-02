@@ -136,13 +136,13 @@ public final class FrameBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization
-        Object get(PFrame self,
+        Object get(VirtualFrame frame, PFrame self,
                         @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
             RootCallTarget ct = self.getTarget();
             if (ct != null) {
                 return factory().createCode(ct);
             }
-            return createCodeNode.execute(PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, new byte[0], new Object[0], new Object[0], new Object[0], new Object[0], new Object[0], "<internal>",
+            return createCodeNode.execute(frame, PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, new byte[0], new Object[0], new Object[0], new Object[0], new Object[0], new Object[0], "<internal>",
                             "<internal>", -1, new byte[0]);
         }
     }

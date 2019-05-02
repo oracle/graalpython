@@ -2365,10 +2365,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class PySet_Add extends PythonBinaryBuiltinNode {
 
         @Specialization
-        int add(PBaseSet self, Object o,
+        int add(VirtualFrame frame, PBaseSet self, Object o,
                         @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
             try {
-                setItemNode.execute(self, o, PNone.NO_VALUE);
+                setItemNode.execute(frame, self, o, PNone.NO_VALUE);
             } catch (PException e) {
                 NativeBuiltin.transformToNative(getContext(), e);
                 return -1;

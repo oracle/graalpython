@@ -816,7 +816,7 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class MakeTransNode extends PythonBuiltinNode {
 
         @Specialization
-        public PDict maketrans(String from, String to,
+        public PDict maketrans(VirtualFrame frame, String from, String to,
                         @Cached("create()") SetItemNode setItemNode) {
             if (from.length() != to.length()) {
                 throw new RuntimeException("maketrans arguments must have same length");
@@ -826,7 +826,7 @@ public final class StringBuiltins extends PythonBuiltins {
             for (int i = 0; i < from.length(); i++) {
                 int key = from.charAt(i);
                 int value = to.charAt(i);
-                translation.setDictStorage(setItemNode.execute(translation.getDictStorage(), key, value));
+                translation.setDictStorage(setItemNode.execute(frame, translation.getDictStorage(), key, value));
             }
 
             return translation;

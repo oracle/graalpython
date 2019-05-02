@@ -652,23 +652,23 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setPFrame(args, factory().createPFrame(locals));
         }
 
-        private void setBuiltinsInGlobals(PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
+        private void setBuiltinsInGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
             if (builtins != null) {
                 PHashingCollection builtinsDict = builtins.getDict();
                 if (builtinsDict == null) {
                     builtinsDict = factory().createDictFixedStorage(builtins);
                     builtins.setDict(builtinsDict);
                 }
-                setBuiltins.execute(globals, BuiltinNames.__BUILTINS__, builtinsDict);
+                setBuiltins.execute(frame, globals, BuiltinNames.__BUILTINS__, builtinsDict);
             } else {
                 // This happens during context initialization
                 return;
             }
         }
 
-        private void setCustomGlobals(PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, Object[] args) {
+        private void setCustomGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, Object[] args) {
             PythonModule builtins = getContext().getBuiltins();
-            setBuiltinsInGlobals(globals, setBuiltins, builtins);
+            setBuiltinsInGlobals(frame, globals, setBuiltins, builtins);
             PArguments.setGlobals(args, globals);
         }
 
@@ -690,7 +690,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("create()") HashingCollectionNodes.SetItemNode setBuiltins) {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
-            setCustomGlobals(globals, setBuiltins, args);
+            setCustomGlobals(frame, globals, setBuiltins, args);
             // here, we don't need to set any locals, since the {Write,Read,Delete}NameNodes will
             // fall back (like their CPython counterparts) to writing to the globals. We only need
             // to ensure that the `locals()` call still gives us the globals dict
@@ -720,7 +720,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("create()") HashingCollectionNodes.SetItemNode setBuiltins) {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
-            setCustomGlobals(globals, setBuiltins, args);
+            setCustomGlobals(frame, globals, setBuiltins, args);
             setCustomLocals(args, locals);
             PArguments.setCallerFrameOrException(args, getException(frame, code.getRootCallTarget()));
             return indirectCallNode.call(code.getRootCallTarget(), args);
@@ -1603,9 +1603,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = BREAKPOINT, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BreakPointNode extends PythonBuiltinNode {
-        @Child HashingStorageNodes.GetItemNode getSysModuleNode;
-        @Child ReadAttributeFromObjectNode getBreakpointhookNode;
-        @Child CallNode callNode;
+        @Child private HashingStorageNodes.GetItemNode getSysModuleNode;
+        @Child private ReadAttributeFromObjectNode getBreakpointhookNode;
+        @Child private CallNode callNode;
 
         @Specialization
         public Object doIt(VirtualFrame frame, Object[] args, PKeyword[] kwargs) {
@@ -1620,7 +1620,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     callNode = insert(CallNode.create());
                 }
                 PDict sysModules = getContext().getSysModules();
-                Object sysModule = getSysModuleNode.execute(sysModules.getDictStorage(), "sys");
+                Object sysModule = getSysModuleNode.execute(frame, sysModules.getDictStorage(), "sys");
                 Object breakpointhook = getBreakpointhookNode.execute(sysModule, BREAKPOINTHOOK);
                 if (breakpointhook == PNone.NO_VALUE) {
                     throw raise(PythonBuiltinClassType.RuntimeError, "lost sys.breakpointhook");

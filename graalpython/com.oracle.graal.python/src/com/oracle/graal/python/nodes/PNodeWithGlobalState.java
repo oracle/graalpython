@@ -49,4 +49,26 @@ public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends
 
     public abstract T passState();
 
+    public static DefaultContextManager transferToContext(PythonContext context, PException exceptionState) {
+        if (exceptionState != null) {
+            return new DefaultContextManager(context);
+        }
+        return new DefaultContextManager(null);
+    }
+
+    public static final class DefaultContextManager extends NodeContextManager {
+
+        private final PythonContext ctx;
+
+        public DefaultContextManager(PythonContext ctx) {
+            this.ctx = ctx;
+        }
+
+        @Override
+        public void close() {
+            if (ctx != null) {
+                ctx.setCaughtException(null);
+            }
+        }
+    }
 }

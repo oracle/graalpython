@@ -37,7 +37,6 @@ import java.math.MathContext;
 import java.util.Arrays;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -47,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -58,8 +58,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -67,9 +65,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -1060,22 +1056,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached GetIteratorNode getIterator,
                         @Cached("create(__NEXT__)") LookupAndCallUnaryNode next,
                         @Cached CastToDoubleNode toFloat,
-                        @Cached IsBuiltinClassProfile stopProfile,
-                        @Cached PassCaughtExceptionNode passExceptionNode,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Cached("createBinaryProfile()") ConditionProfile exceptionStateProfile) {
+                        @Cached IsBuiltinClassProfile stopProfile) {
             Object iterator = getIterator.executeWith(frame, iterable);
-            PException exc = passExceptionNode.execute(frame);
-            boolean saveAndRestoreExceptionState = exceptionStateProfile.profile(exc != null);
-            try {
-                if (saveAndRestoreExceptionState) {
-                    ctxRef.get().setCaughtException(exc);
-                }
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 return fsum(iterator, next, toFloat, stopProfile);
-            } finally {
-                if (saveAndRestoreExceptionState) {
-                    ctxRef.get().setCaughtException(exc);
-                }
             }
         }
 

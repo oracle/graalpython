@@ -48,12 +48,16 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseOSErrorNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -71,6 +75,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
     @Child private PythonObjectFactory objectFactory;
     @Child private PRaiseNode raiseNode;
     @Child private PRaiseOSErrorNode raiseOSNode;
+    @Child private PassCaughtExceptionNode passExceptionNode;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected final PythonObjectFactory factory() {
@@ -127,6 +132,22 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
             contextRef = PythonLanguage.getContextRef();
         }
         return contextRef.get();
+    }
+
+    protected final PException passException(VirtualFrame frame) {
+        if (passExceptionNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            passExceptionNode = insert(PassCaughtExceptionNode.create());
+        }
+        return passExceptionNode.execute(frame);
+    }
+
+    protected final DefaultContextManager withGlobalState(VirtualFrame frame) {
+        return PNodeWithGlobalState.transferToContext(getContext(), passException(frame));
+    }
+
+    protected final <T extends NodeContextManager> T withGlobalState(PNodeWithGlobalState<T> node, VirtualFrame frame) {
+        return node.withGlobalState(getContext(), passException(frame));
     }
 
     public final PException raise(PBaseException exc) {

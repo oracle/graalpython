@@ -45,6 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -56,7 +57,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -80,12 +80,11 @@ public abstract class SetNodes {
         }
 
         @Specialization
-        @TruffleBoundary
-        PSet setString(LazyPythonClass cls, String arg,
+        PSet setString(VirtualFrame frame, LazyPythonClass cls, String arg,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PSet set = factory.createSet(cls);
-            for (int i = 0; i < arg.length(); i++) {
-                getSetItemNode().execute(set, String.valueOf(arg.charAt(i)), PNone.NO_VALUE);
+            for (int i = 0; i < PString.length(arg); i++) {
+                getSetItemNode().execute(frame, set, PString.valueOf(PString.charAt(arg, i)), PNone.NO_VALUE);
             }
             return set;
         }
@@ -108,7 +107,7 @@ public abstract class SetNodes {
             Object iterator = getIterator.executeWith(frame, iterable);
             while (true) {
                 try {
-                    getSetItemNode().execute(set, next.execute(frame, iterator), PNone.NO_VALUE);
+                    getSetItemNode().execute(frame, set, next.execute(frame, iterator), PNone.NO_VALUE);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return set;

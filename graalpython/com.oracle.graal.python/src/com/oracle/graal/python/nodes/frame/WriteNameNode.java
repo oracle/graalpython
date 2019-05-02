@@ -67,7 +67,7 @@ public abstract class WriteNameNode extends StatementNode implements WriteNode, 
     protected void writeLocalsDict(VirtualFrame frame, Object value,
                     @Cached("create()") HashingCollectionNodes.SetItemNode setItem) {
         PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
-        setItem.execute(frameLocals, attributeId, value);
+        setItem.execute(frame, frameLocals, attributeId, value);
     }
 
     @Specialization(guards = "hasLocals(frame)")
