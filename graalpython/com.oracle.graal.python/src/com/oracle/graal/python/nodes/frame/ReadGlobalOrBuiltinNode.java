@@ -44,10 +44,13 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
@@ -62,9 +65,10 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     protected final String attributeId;
     protected final ConditionProfile isGlobalProfile = ConditionProfile.createBinaryProfile();
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
+    private final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
 
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
-    @CompilationFinal private boolean coreInitialized;
+    @CompilationFinal private boolean singleCoreInitialized;
+    @CompilationFinal private ConditionProfile isCoreInitializedProfile;
 
     protected ReadGlobalOrBuiltinNode(String attributeId) {
         this.attributeId = attributeId;
@@ -80,40 +84,44 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     }
 
     @Specialization(guards = "isInModule(frame)")
-    protected Object readGlobal(VirtualFrame frame) {
+    protected Object readGlobal(VirtualFrame frame,
+                    @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
         Object result = readFromModuleNode.execute(PArguments.getGlobals(frame), attributeId);
-        return returnGlobalOrBuiltin(result);
+        return returnGlobalOrBuiltin(contextRef, result);
     }
 
     @Specialization(guards = "isInBuiltinDict(frame, builtinProfile)")
     protected Object readGlobalDict(VirtualFrame frame,
-                    @Cached("create()") HashingStorageNodes.GetItemNode getItemNode,
-                    @Cached("create()") @SuppressWarnings("unused") IsBuiltinClassProfile builtinProfile) {
+                    @Cached HashingStorageNodes.GetItemNode getItemNode,
+                    @Cached @SuppressWarnings("unused") IsBuiltinClassProfile builtinProfile,
+                    @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
         PythonObject globals = PArguments.getGlobals(frame);
         Object result = getItemNode.execute(((PDict) globals).getDictStorage(), attributeId);
-        return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
+        return returnGlobalOrBuiltin(contextRef, result == null ? PNone.NO_VALUE : result);
     }
 
     @Specialization(guards = "isInDict(frame)", rewriteOn = PException.class)
     protected Object readGlobalDict(VirtualFrame frame,
-                    @Cached("create()") GetItemNode getItemNode) {
-        return returnGlobalOrBuiltin(getItemNode.execute(frame, PArguments.getGlobals(frame), attributeId));
+                    @Cached GetItemNode getItemNode,
+                    @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+        return returnGlobalOrBuiltin(contextRef, getItemNode.execute(frame, PArguments.getGlobals(frame), attributeId));
     }
 
     @Specialization(guards = "isInDict(frame)")
     protected Object readGlobalDictWithException(VirtualFrame frame,
-                    @Cached("create()") GetItemNode getItemNode,
-                    @Cached("create()") IsBuiltinClassProfile errorProfile) {
+                    @Cached GetItemNode getItemNode,
+                    @Cached IsBuiltinClassProfile errorProfile,
+                    @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
         try {
             Object result = getItemNode.execute(frame, PArguments.getGlobals(frame), attributeId);
-            return returnGlobalOrBuiltin(result);
+            return returnGlobalOrBuiltin(contextRef, result);
         } catch (PException e) {
             e.expect(KeyError, errorProfile);
-            return returnGlobalOrBuiltin(PNone.NO_VALUE);
+            return returnGlobalOrBuiltin(contextRef, PNone.NO_VALUE);
         }
     }
 
-    private Object returnGlobalOrBuiltin(Object result) {
+    private Object returnGlobalOrBuiltin(ContextReference<PythonContext> contextRef, Object result) {
         if (isGlobalProfile.profile(result != PNone.NO_VALUE)) {
             return result;
         } else {
@@ -121,12 +129,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readFromBuiltinsNode = insert(ReadAttributeFromObjectNode.create());
             }
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = PythonLanguage.getContextRef();
-            }
-            PythonContext context = contextRef.get();
-            PythonModule builtins = coreInitialized(context);
+            PythonModule builtins = coreInitialized(contextRef);
             Object builtin = readFromBuiltinsNode.execute(builtins, attributeId);
             if (isBuiltinProfile.profile(builtin != PNone.NO_VALUE)) {
                 return builtin;
@@ -140,22 +143,49 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         }
     }
 
-    private PythonModule coreInitialized(PythonContext context) {
+    private PythonModule coreInitialized(ContextReference<PythonContext> contextRef) {
         PythonModule builtins;
-        PythonCore core;
-        if (!coreInitialized) {
-            core = context.getCore();
-            if (core.isInitialized()) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                coreInitialized = true;
-                builtins = context.getBuiltins();
+        PythonContext context = contextRef.get();
+
+        if (singleContextAssumption.isValid()) {
+            if (!singleCoreInitialized) {
+                builtins = getBuiltinsModuleFromSingleCore(context);
             } else {
-                builtins = core.lookupBuiltinModule("builtins");
+                builtins = context.getBuiltins();
             }
         } else {
-            builtins = context.getBuiltins();
+            builtins = getBuiltinsModuleFromCore(context);
         }
+
         return builtins;
+    }
+
+    private PythonModule getBuiltinsModuleFromSingleCore(PythonContext context) {
+        PythonCore core = context.getCore();
+        if (core.isInitialized()) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            singleCoreInitialized = true;
+            return context.getBuiltins();
+        } else {
+            return core.lookupBuiltinModule("builtins");
+        }
+    }
+
+    private PythonModule getBuiltinsModuleFromCore(PythonContext context) {
+        PythonCore core = context.getCore();
+        if (ensureIsCoreInitializedProfile().profile(core.isInitialized())) {
+            return context.getBuiltins();
+        } else {
+            return core.lookupBuiltinModule("builtins");
+        }
+    }
+
+    private ConditionProfile ensureIsCoreInitializedProfile() {
+        if (isCoreInitializedProfile == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            isCoreInitializedProfile = ConditionProfile.createBinaryProfile();
+        }
+        return isCoreInitializedProfile;
     }
 
     public String getAttributeId() {
