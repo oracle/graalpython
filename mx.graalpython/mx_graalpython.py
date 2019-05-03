@@ -855,11 +855,26 @@ def import_python_sources(args):
 # ----------------------------------------------------------------------------------------------------------------------
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
-    name='Graal.Python',
-    short_name='pyn',
+    name='Graal.Python license files',
+    short_name='pynl',
     dir_name='python',
     license_files=['LICENSE_GRAALPYTHON'],
     third_party_license_files=['3rd_party_licenses_graalpython.txt'],
+    truffle_jars=[],
+    support_distributions=[
+        'graalpython:GRAALPYTHON_GRAALVM_LICENSES',
+    ],
+    priority=5
+))
+
+
+mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
+    suite=SUITE,
+    name='Graal.Python',
+    short_name='pyn',
+    dir_name='python',
+    license_files=[],
+    third_party_license_files=[],
     truffle_jars=[
         'graalpython:GRAALPYTHON',
     ],
