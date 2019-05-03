@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -575,18 +576,18 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonBuiltinNode {
-        public final Object executeWithArgs(Object callee, Object[] arguments) {
-            return this.execute(callee, arguments, PKeyword.EMPTY_KEYWORDS);
+        public final Object executeWithArgs(VirtualFrame frame, Object callee, Object[] arguments) {
+            return this.execute(frame, callee, arguments, PKeyword.EMPTY_KEYWORDS);
         }
 
-        public abstract Object execute(Object callee, Object[] arguments, PKeyword[] keywords);
+        public abstract Object execute(VirtualFrame frame, Object callee, Object[] arguments, PKeyword[] keywords);
 
         /**
          * A foreign function call specializes on the length of the passed arguments. Any
          * optimization based on the callee has to happen on the other side.
          */
         @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"})
-        protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached("create()") PTypeToForeignNode toForeignNode,
                         @Cached("create()") PForeignToPTypeNode toPTypeNode) {
@@ -596,11 +597,15 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     convertedArgs[i] = toForeignNode.executeConvert(arguments[i]);
                 }
                 if (lib.isExecutable(callee)) {
-                    Object res = lib.execute(callee, convertedArgs);
-                    return toPTypeNode.executeConvert(res);
+                    try (DefaultContextManager cm = withGlobalState(frame)) {
+                        Object res = lib.execute(callee, convertedArgs);
+                        return toPTypeNode.executeConvert(res);
+                    }
                 } else {
-                    Object res = lib.instantiate(callee, convertedArgs);
-                    return toPTypeNode.executeConvert(res);
+                    try (DefaultContextManager cm = withGlobalState(frame)) {
+                        Object res = lib.instantiate(callee, convertedArgs);
+                        return toPTypeNode.executeConvert(res);
+                    }
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable %s()", callee);
