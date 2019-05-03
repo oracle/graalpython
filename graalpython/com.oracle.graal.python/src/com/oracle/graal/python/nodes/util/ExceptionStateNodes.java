@@ -297,6 +297,10 @@ public abstract class ExceptionStateNodes {
 
         public PException execute(VirtualFrame frame) {
 
+            if (frame == null) {
+                return null;
+            }
+
             if (excSlot == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 excSlot = findSlot(frame);
