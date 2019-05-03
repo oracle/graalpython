@@ -51,7 +51,7 @@ import com.oracle.truffle.api.nodes.Node;
 public final class PException extends RuntimeException implements TruffleException {
     private static final long serialVersionUID = -6437116280384996361L;
 
-    public static final PException LAZY_FETCH_EXCEPTION = new PException(null, null);
+    /** A marker object indicating that there is for sure no exception. */
     public static final PException NO_EXCEPTION = new PException(null, null);
 
     private Node location;
@@ -93,8 +93,6 @@ public final class PException extends RuntimeException implements TruffleExcepti
         CompilerAsserts.neverPartOfCompilation();
         if (this == PException.NO_EXCEPTION) {
             return "NO_EXCEPTION";
-        } else if (this == PException.LAZY_FETCH_EXCEPTION) {
-            return "LAZY_FETCH_EXCEPTION";
         }
         return getMessage();
     }

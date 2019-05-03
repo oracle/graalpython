@@ -87,12 +87,23 @@ public abstract class ExceptionStateNodes {
             return frameSlot;
         }
 
+        protected final FrameSlot findSlot(VirtualFrame frame) {
+            RootNode rootNode = getRootNode();
+            if (rootNode != null) {
+                return findFameSlot(frame, rootNode);
+            }
+            return null;
+        }
     }
 
+    /**
+     * Writes an exception into frame slot with name {@link FrameSlotIDs#CAUGHT_EXCEPTION}. The
+     * frame slot is created if it does not yet exist. This node should primarily be used in an
+     * exception handler to make the exception accessible.
+     */
     public static final class SetCaughtExceptionNode extends ExceptionStateBaseNode {
 
         @CompilationFinal private FrameSlot excSlot;
-        @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         public void execute(VirtualFrame frame, PException e) {
             RootNode rootNode = getRootNode();
@@ -164,12 +175,12 @@ public abstract class ExceptionStateNodes {
     }
 
     /**
-     * Use this node to forcefully get the current exception state. If the exception state is not
-     * provided in the frame, in the arguments or in the context, it will do a full stack walk and
-     * request the exception state for the next time from the callers. The returned object may
-     * escape to the value space.
+     * Use this node to forcefully get the current exception state. <it>Forcefully</it> means, if
+     * the exception state is not provided in the frame, in the arguments or in the context, it will
+     * do a full stack walk and request the exception state for the next time from the callers. The
+     * returned object may escape to the value space.
      */
-    public static final class GetCaughtExceptionNode extends Node {
+    public static final class GetCaughtExceptionNode extends ExceptionStateBaseNode {
 
         @Child private ReadExceptionStateFromArgsNode readFromArgsNode;
 
@@ -269,14 +280,6 @@ public abstract class ExceptionStateNodes {
             return e != PException.NO_EXCEPTION ? e : null;
         }
 
-        protected FrameSlot findSlot(VirtualFrame frame) {
-            RootNode rootNode = getRootNode();
-            if (rootNode != null) {
-                return SetCaughtExceptionNode.findFameSlot(frame, rootNode);
-            }
-            return null;
-        }
-
         public static GetCaughtExceptionNode create() {
             return new GetCaughtExceptionNode();
         }
@@ -285,9 +288,10 @@ public abstract class ExceptionStateNodes {
 
     /**
      * Use this node to pass the exception state if provided. This node won't do a full stack walk
-     * and may return {@link PException#NO_EXCEPTION}.
+     * and may return {@link PException#NO_EXCEPTION}. This node should primarily be used to move
+     * the exception state from the frame to the context or vice versa.
      */
-    public static final class PassCaughtExceptionNode extends Node {
+    public static final class PassCaughtExceptionNode extends ExceptionStateBaseNode {
 
         @Child private ReadExceptionStateFromArgsNode readFromArgsNode;
 
@@ -318,21 +322,18 @@ public abstract class ExceptionStateNodes {
             return readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
         }
 
-        protected FrameSlot findSlot(VirtualFrame frame) {
-            RootNode rootNode = getRootNode();
-            if (rootNode != null) {
-                return SetCaughtExceptionNode.findFameSlot(frame, rootNode);
-            }
-            return null;
-        }
-
         public static PassCaughtExceptionNode create() {
             return new PassCaughtExceptionNode();
         }
 
     }
 
-    public static final class SaveExceptionStateNode extends Node {
+    /**
+     * Saves the current local exception state. This is required for nested {@code try-except}
+     * statements because all exception handlers in one function store the exception state to the
+     * same frame slot.
+     */
+    public static final class SaveExceptionStateNode extends ExceptionStateBaseNode {
 
         @CompilationFinal private FrameSlot excSlot;
 
@@ -346,20 +347,15 @@ public abstract class ExceptionStateNodes {
             return new ExceptionState(e, ExceptionState.SOURCE_FRAME);
         }
 
-        protected FrameSlot findSlot(VirtualFrame frame) {
-            RootNode rootNode = getRootNode();
-            if (rootNode != null) {
-                return SetCaughtExceptionNode.findFameSlot(frame, rootNode);
-            }
-            return null;
-        }
-
         public static SaveExceptionStateNode create() {
             return new SaveExceptionStateNode();
         }
 
     }
 
+    /**
+     * Restores the exception state.
+     */
     public abstract static class RestoreExceptionStateNode extends ExceptionStateBaseNode {
 
         public abstract void execute(VirtualFrame frame, ExceptionState state);

@@ -45,10 +45,97 @@ import com.oracle.graal.python.runtime.exception.PException;
 
 public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends PNodeWithContext {
 
+    /**
+     * Transfers the exception state to the context and unprotects the node's execute method(s).<br>
+     * Use this method to make the exception state available to nodes that cannot take a virtual
+     * frame at the last location where the virtual frame is available. The recommended usage for
+     * nodes implementing this interface is as follows:
+     * <p>
+     *
+     * <pre>
+     * {@literal @}Specialization
+     * Object doSomething(VirtualFrame frame,
+     *                    {@literal @}Cached SomeNodeWithGlobalState node,
+     *                    {@literal @}Cached PassCaughtExceptionNode passExceptionNode,
+     *                    {@literal @}CachedContext(PythonLanguage.class) ContextReference&lt;PythonContext&gt; contextRef) {
+     *     try (SomeContextManager cm = node.withGlobalState(contextRef, passExceptionNode.execute(frame))) {
+     *         cm.execute();
+     *     }
+     * </pre>
+     * </p>
+     */
     public abstract T withGlobalState(PythonContext context, PException exceptionState);
 
+    /**
+     * Use this method to unprotect the node's execute method(s) if you are already sure that the
+     * exception state was already transfered to the context.<br>
+     * There are two common (legitimate) situations where to use this:<br>
+     * <ol>
+     * <li>Using a node with global state from an interop message implementation.</li>
+     * <li>Using a node with global state from another node with global state.</li>
+     * </ol>
+     * <p>
+     * Examples for 1:
+     *
+     * <pre>
+     * {@literal @}ExportMessage
+     * Object execute(Object receiver,
+     *                    {@literal @}Cached SomeNodeWithGlobalState node) {
+     *     node.passState().execute();
+     * }
+     * </pre>
+     * </p>
+     * <p>
+     * Examples for 2:
+     *
+     * <pre>
+     * public abstract static class AnotherNodeWithGlobalState extends PNodeWithGlobalState&lt;CustomContextManager&gt; {
+     *     protected abstract Object execute(Object obj);
+     *
+     *     {@literal @}Specialization
+     *     Object doSomething(Object obj,
+     *                        {@literal @}Cached SomeNodeWithGlobalState node) {
+     *         node.passState().execute();
+     *     }
+     * </pre>
+     * </p>
+     */
     public abstract T passState();
 
+    /**
+     * A convenience method that allows to transfer the exception state from the frame to the
+     * context.
+     *
+     * This is mostly useful when using methods annotated with {@code @TruffleBoundary} that again
+     * use nodes that would require a frame. Surround the usage of the callee node by a context
+     * manager and then it is allowed to pass a {@code null} frame. For example:
+     * <p>
+     * 
+     * <pre>
+     * public abstract class SomeNode extends Node {
+     *     {@literal @}Child private OtherNode otherNode = OtherNode.create();
+     *
+     *     public abstract Object execute(VirtualFrame frame, Object arg);
+     *
+     *     {@literal @}Specialization
+     *     Object doSomething(VirtualFrame frame, Object arg,
+     *                            {@literal @}Cached PassCaughtExceptionNode passExceptionNode,
+     *                            {@literal @}CachedContext(PythonLanguage.class) ContextReference&lt;PythonContext&gt; contextRef) {
+     *         // ...
+     *         try (DefaultContextManager cm = PNodeWithGlobalState.transfertToContext(contextRef, passExceptionNode.execute(frame))) {
+     *             truffleBoundaryMethod(arg);
+     *         }
+     *         // ...
+     *     }
+     *
+     *     {@literal @}TruffleBoundary
+     *     private void truffleBoundaryMethod(Object arg) {
+     *         otherNode.execute(null, arg);
+     *     }
+     * 
+     * </pre>
+     * </p>
+     */
     public static DefaultContextManager transferToContext(PythonContext context, PException exceptionState) {
         if (exceptionState != null) {
             return new DefaultContextManager(context);
