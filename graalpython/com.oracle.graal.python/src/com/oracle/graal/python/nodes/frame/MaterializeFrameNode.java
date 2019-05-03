@@ -62,15 +62,14 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     protected static PFrame getPFrame(Frame frame) {
-        return PArguments.getPFrame(frame);
+        return PArguments.getCurrentFrameInfo(frame).getPyFrame();
     }
 
     @Specialization(guards = {"getPFrame(frame) == null", "!inClassBody(frame)"})
     static PFrame freshPFrame(Frame frame,
                        @Shared("factory") @Cached PythonObjectFactory factory) {
         PFrame escapedFrame = factory.createPFrame(frame.materialize());
-        PArguments.setPFrame(frame, escapedFrame);
-        return escapedFrame;
+        return doEscapeFrame(frame, escapedFrame);
     }
 
     @Specialization(guards = {"getPFrame(frame) == null", "inClassBody(frame)"})
@@ -78,14 +77,13 @@ public abstract class MaterializeFrameNode extends Node {
                        @Shared("factory") @Cached PythonObjectFactory factory) {
         // the namespace argument stores the locals
         PFrame escapedFrame = factory.createPFrame(frame.materialize(), PArguments.getArgument(frame, 0));
-        PArguments.setPFrame(frame, escapedFrame);
-        return escapedFrame;
+        return doEscapeFrame(frame, escapedFrame);
     }
 
     /**
-     * The only way this happens is when we created a PFrame for custom locals.
-     * In this case, there's no reference to the PFrame object anywhere else,
-     * yet, so we can replace it.
+     * The only way this happens is when we created a PFrame to access (possibly
+     * custom) locals. In this case, there can be no reference to the PFrame
+     * object anywhere else, yet, so we can replace it.
      *
      * @see PFrame#isIncomplete
      **/
@@ -93,7 +91,12 @@ public abstract class MaterializeFrameNode extends Node {
     static PFrame incompleteFrame(Frame frame,
                            @Shared("factory") @Cached PythonObjectFactory factory) {
         PFrame escapedFrame = factory.createPFrame(frame.materialize(), getPFrame(frame).getLocals(factory));
-        PArguments.setPFrame(frame, escapedFrame);
+        return doEscapeFrame(frame, escapedFrame);
+    }
+
+    private static PFrame doEscapeFrame(Frame frame, PFrame escapedFrame) {
+        PFrame.Reference topFrameRef = PArguments.getCurrentFrameInfo(frame);
+        topFrameRef.setPyFrame(escapedFrame);
         return escapedFrame;
     }
 

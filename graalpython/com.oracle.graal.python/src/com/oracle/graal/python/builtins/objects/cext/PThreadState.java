@@ -208,7 +208,7 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, DICT)")
         PDict doDict(@SuppressWarnings("unused") String key,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Cached PythonObjectFactory factory,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PThreadState customThreadState = context.getCustomThreadState();
             PDict threadStateDict = customThreadState.getThreadStateDict();

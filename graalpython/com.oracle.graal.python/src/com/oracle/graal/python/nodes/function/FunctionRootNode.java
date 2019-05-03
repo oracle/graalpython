@@ -27,13 +27,12 @@ package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -144,46 +143,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
             contextRef.get().triggerAsyncActions();
         }
-        try {
+        try (ExecutionContext ec = ExecutionContext.callee(frame)) {
             return body.execute(frame);
-        } finally {
-            // if we leave with an exception, the Truffle code will lazily
-            // attach the frames, so we only need to worry about if this frame
-            // escaped some other way
-            PFrame escapedFrame = PArguments.getPFrame(frame);
-
-            // Kind-of equivalent to PyPy's "executioncontext enter" because
-            // this is where we give the child it's backref
-            // TODO: frames: this handling should move into the places where we
-            // call, so we get accurate location information of the callsite.
-            // once all those sites are covered, the entire branch below can go
-            // away
-            PFrame[] backrefFromChild = contextRef.get().getEscapedTopFrameRef();
-            if (backrefFromChild != null) {
-                // I was marked as escaped by a call in my body.
-
-                if (backrefFromChild[0] == null) {
-                    // whatever call site requested that we escape, we didn't
-                    // fill in our information at that point, so we do it now
-                    escapedFrame = MaterializeFrameNodeGen.getUncached().execute(frame);
-                    backrefFromChild[0] = escapedFrame;
-                }
-
-                // Clear the backref container, so this frame doesn't escape if
-                // the other referent(s) to the container (any callee frames
-                // that were called from this root) do not escape
-                contextRef.get().clearEscapedTopFrameRef();
-            }
-
-            // Kind-of equivalent to PyPy's "executioncontext leave" because
-            // this is where we inform the calling Python frame that it is
-            // escaped (by setting the backref container)
-            if (escapedFrame != null && escapedFrame.hasFrame()) {
-                if (escapedFrame.getBackref() == null) {
-                    PFrame[] backref = contextRef.get().markEscapedTopFrameRef();
-                    escapedFrame.setBackref(backref);
-                }
-            }
         }
     }
 

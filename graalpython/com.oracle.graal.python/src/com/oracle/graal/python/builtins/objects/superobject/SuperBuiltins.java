@@ -251,10 +251,10 @@ public final class SuperBuiltins extends PythonBuiltins {
                 throw raise(PythonErrorType.RuntimeError, "super(): no current frame");
             }
             Object[] arguments = target.getArguments();
-            if (arguments.length <= PArguments.USER_ARGUMENTS_OFFSET) {
+            if (PArguments.getUserArgumentLength(arguments) == 0) {
                 throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
             }
-            Object obj = arguments[PArguments.USER_ARGUMENTS_OFFSET];
+            Object obj = PArguments.getArgument(arguments, 0);
             if (obj == PNone.NONE) {
                 throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
             }

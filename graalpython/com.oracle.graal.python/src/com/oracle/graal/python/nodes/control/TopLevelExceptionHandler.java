@@ -147,7 +147,7 @@ public class TopLevelExceptionHandler extends RootNode {
 
         PBaseException value = e.getExceptionObject();
         PythonAbstractClass type = value.getPythonClass();
-        PTraceback tb = value.getTraceback(core.factory());
+        PTraceback tb = value.getTraceback();
 
         PythonModule sys = core.lookupBuiltinModule("sys");
         sys.setAttribute(BuiltinNames.LAST_TYPE, type);
@@ -229,7 +229,7 @@ public class TopLevelExceptionHandler extends RootNode {
             PythonModule mainModule = pythonContext.getMainModule();
             PHashingCollection mainDict = mainModule.getDict();
             PArguments.setGlobals(arguments, mainModule);
-            PArguments.setPFrame(arguments, pythonContext.getCore().factory().createPFrame(mainDict));
+            PArguments.setCustomLocals(arguments, mainDict);
             PArguments.setCallerFrameOrException(arguments, PException.NO_EXCEPTION);
         }
         return innerCallTarget.call(arguments);

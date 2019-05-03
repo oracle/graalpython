@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.frame;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -53,6 +52,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
@@ -65,22 +65,74 @@ public final class PFrame extends PythonBuiltinObject {
     private RootCallTarget callTarget;
     private int line = -2;
 
-    private PFrame[] backref = null;
+    private PFrame.Reference backref = null;
 
-    private static final PFrame NO_FRAME_MARKER = new PFrame();
+    // TODO: frames: this is a large object, think about how to make this
+    // smaller
+    public static final class Reference {
+        public static final Reference EMPTY = new Reference();
 
-    private PFrame() {
-        super(PythonBuiltinClassType.PFrame);
-        this.frame = null;
-        this.location = null;
-        this.inClassScope = false;
+        // The Python-level frame. Can be incomplete.
+        private PFrame pyFrame = null;
+        // The materialized frame. Does not imply a Python-level frame is also
+        // set, sometimes this is just used as a stepping stone to get to the
+        // caller.
+        private MaterializedFrame frame = null;
+        // A flag wether this frame is escaped. This is implied when frame is
+        // set, but can also be set by a callee frame to inform the caller that
+        // it should materialize itself when it returns.
+        boolean escaped = false;
+
+        public void materialize(Frame targetFrame) {
+            if (this.pyFrame == null) {
+                this.frame = targetFrame.materialize();
+                // TODO: frames: this doesn't go through the factory
+                this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, this.frame);
+            }
+        }
+
+        public void setCustomLocals(Object customLocals) {
+            assert customLocals != null : "cannot set null custom locals";
+            assert pyFrame == null : "cannot set customLocals when there's already a PFrame";
+            // TODO: frames: this doesn't go through the factory
+            this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, customLocals);
+        }
+
+        public void setBackref(PFrame.Reference backref) {
+            assert pyFrame != null : "setBackref should only be called when the PFrame escaped";
+            pyFrame.setBackref(backref);
+        }
+
+        public void markAsEscaped() {
+            escaped = true;
+        }
+
+        public boolean isEscaped() {
+            return escaped;
+        }
+
+        public MaterializedFrame getFrame() {
+            return frame;
+        }
+
+        public void setFrame(MaterializedFrame frame) {
+            this.frame = frame;
+        }
+
+        public PFrame getPyFrame() {
+            return pyFrame;
+        }
+
+        public void setPyFrame(PFrame escapedFrame) {
+            assert this.pyFrame == null || this.pyFrame == escapedFrame : "cannot change the escaped frame";
+            this.pyFrame = escapedFrame;
+            this.frame = escapedFrame.getFrame();
+            this.escaped = frame == null;
+        }
     }
 
     public PFrame(LazyPythonClass cls, MaterializedFrame frame) {
-        super(cls);
-        this.frame = frame;
-        this.location = null;
-        this.inClassScope = PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
+        this(cls, frame, null);
     }
 
     public PFrame(LazyPythonClass cls, MaterializedFrame frame, Object locals) {
@@ -91,7 +143,7 @@ public final class PFrame extends PythonBuiltinObject {
         this.inClassScope = PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
     }
 
-    public PFrame(LazyPythonClass cls, Object locals) {
+    private PFrame(LazyPythonClass cls, Object locals) {
         super(cls);
         this.frame = null;
         this.location = null;
@@ -120,52 +172,24 @@ public final class PFrame extends PythonBuiltinObject {
         return localsDict;
     }
 
-    /**
-     * If this frame has a backref container, it is escaped, because it expects
-     * its Python caller to fill in that container. However, the backref may not
-     * be filled in, yet, because this frame might still be live. In that case,
-     * {@link #getBackref()} will still return <tt>null</tt>.
-     */
-    public boolean isEscaped() {
-        return backref != null;
-    }
-
-    /**
-     * Returns the Python caller of this frame, provided that it has already
-     * been filled in.
-     */
-    public Object getBackref() {
-        if (backref != null) {
-            if (backref[0] == NO_FRAME_MARKER) {
-                return PNone.NONE;
-            } else {
-                return backref[0];
-            }
+    public PFrame.Reference getRef() {
+        if (frame != null) {
+            return PArguments.getCurrentFrameInfo(this.frame);
         } else {
-            // TODO: frames: Use ReadCallerFrameNode in caller.
-            // TODO: frames: Update ReadCallerFrameNode to also store PFrame in
-            // the caller arguments at this point
             return null;
         }
     }
 
-    public void setBackref(PFrame frame) {
-        assert backref == null || backref[0] == null : "do not overwrite backref";
-        if (backref == null) {
-            backref = new PFrame[] { frame };
+    public PFrame.Reference getBackref() {
+        return backref;
+    }
+
+    public void setBackref(PFrame.Reference backref) {
+        if (this.backref == null) {
+            this.backref = backref;
         } else {
-            backref[0] = frame;
+            assert this.backref == backref : "setBackref tried to set a backref different to the one that was previously attached";
         }
-    }
-
-    public void setBackref(PFrame[] frame) {
-        assert backref == null : "do not overwrite backref container";
-        backref = frame;
-    }
-
-    public void setNoBackref() {
-        assert backref != null && backref[0] == null : "do not overwrite backref to mark a top frame";
-        backref[0] = NO_FRAME_MARKER;
     }
 
     @TruffleBoundary

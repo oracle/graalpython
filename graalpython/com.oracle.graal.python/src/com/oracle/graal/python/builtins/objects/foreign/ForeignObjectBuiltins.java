@@ -64,6 +64,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -88,10 +89,13 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
+import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -577,11 +581,6 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonBuiltinNode {
-        public final Object executeWithArgs(VirtualFrame frame, Object callee, Object[] arguments) {
-            return this.execute(frame, callee, arguments, PKeyword.EMPTY_KEYWORDS);
-        }
-
-        public abstract Object execute(VirtualFrame frame, Object callee, Object[] arguments, PKeyword[] keywords);
 
         /**
          * A foreign function call specializes on the length of the passed arguments. Any
@@ -591,6 +590,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @SuppressWarnings("try")
         protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("create()") PTypeToForeignNode toForeignNode,
                         @Cached("create()") PForeignToPTypeNode toPTypeNode) {
             try {
@@ -598,16 +598,17 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 for (int i = 0; i < arguments.length; i++) {
                     convertedArgs[i] = toForeignNode.executeConvert(arguments[i]);
                 }
+                Object res = null;
                 if (lib.isExecutable(callee)) {
-                    try (DefaultContextManager cm = withGlobalState(frame)) {
-                        Object res = lib.execute(callee, convertedArgs);
-                        return toPTypeNode.executeConvert(res);
+                    try (ExecutionContext ec = ExecutionContext.interopCall(frame, context)) {
+                        res = lib.execute(callee, convertedArgs);
                     }
+                    return toPTypeNode.executeConvert(res);
                 } else {
-                    try (DefaultContextManager cm = withGlobalState(frame)) {
-                        Object res = lib.instantiate(callee, convertedArgs);
-                        return toPTypeNode.executeConvert(res);
+                    try (ExecutionContext ec = ExecutionContext.interopCall(frame, context)) {
+                        res = lib.instantiate(callee, convertedArgs);
                     }
+                    return toPTypeNode.executeConvert(res);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable");

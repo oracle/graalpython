@@ -38,7 +38,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 //@formatter:off
 /**
- * The layout of an argument array for a normal frame.
+ * The layout of an argument array for a Python frame.
  *
  *                                         +-------------------+
  * INDEX_VARIABLE_ARGUMENTS             -> | Object[]          |
@@ -47,16 +47,17 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  *                                         +-------------------+
  * INDEX_GENERATOR_FRAME                -> | MaterializedFrame |
  *                                         +-------------------+
- * INDEX_CALLER_FRAME_OR_EXCEPTION      -> | MaterializedFrame |
- *                                         | / PException      |
- *                                         +-------------------+
  * SPECIAL_ARGUMENT                     -> | Object            |
  *                                         +-------------------+
  * INDEX_GLOBALS_ARGUMENT               -> | PythonObject      |
  *                                         +-------------------+
- * INDEX_PFRAME_ARGUMENT                -> | PFrame[1]         |
- *                                         +-------------------+
  * INDEX_CLOSURE                        -> | PCell[]           |
+ *                                         +-------------------+
+ * INDEX_CALLER_FRAME_INFO              -> | PFrame.Reference  |
+ *                                         +-------------------+
+ * INDEX_CURRENT_FRAME_INFO             -> | PFrame.Reference  |
+ *                                         +-------------------+
+ * INDEX_CURRENT_EXCEPTION              -> | PException        |
  *                                         +-------------------+
  * USER_ARGUMENTS                       -> | arg_0             |
  *                                         | arg_1             |
@@ -65,14 +66,13 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  *                                         +-------------------+
  *
  * The layout of a generator frame (stored in INDEX_GENERATOR_FRAME in the figure above)
- * is different in the second index:
+ * is different in on place:
  *
  * MaterializedFrame
  *       |
  *       |
- *       |---- arguments:     +----------------------+
- * INDEX_KEYWORD_ARGUMENTS -> | PKeyword[]           |
- *                            +----------------------+
+ *       |                    |         ....         |
+ *       |                    +----------------------+
  * INDEX_GENERATOR_FRAME   -> | GeneratorControlData |
  *                            +----------------------+
  *                            |         ....         |
@@ -81,47 +81,39 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public final class PArguments {
     public static final Object[] EMPTY_VARARGS = new Object[0];
 
-    public static final int INDEX_VARIABLE_ARGUMENTS = 0;
-    public static final int INDEX_KEYWORD_ARGUMENTS = 1;
-    public static final int INDEX_GENERATOR_FRAME = 2;
-    public static final int INDEX_CALLER_FRAME_OR_EXCEPTION = 3;
-    public static final int INDEX_SPECIAL_ARGUMENT = 4;
-    public static final int INDEX_GLOBALS_ARGUMENT = 5;
-    public static final int INDEX_PFRAME_ARGUMENT = 6;
-    public static final int INDEX_CLOSURE = 7;
-    public static final int USER_ARGUMENTS_OFFSET = 8;
-
-    private static PFrame[] getPFrameWrapper() {
-        // this is needed to bypass the fact that PFrame instances get a READONLY frame which will
-        // not allow for setting the locals
-        // TODO: a READONLY frame's is just a copy, revisit this to avoid possible flakiness
-        return new PFrame[]{null};
-    }
-
-    private static Object[] iInitArguments() {
-        return new Object[]{EMPTY_VARARGS, PKeyword.EMPTY_KEYWORDS, null, null, null, null, getPFrameWrapper(), null};
-    }
+    private static final int INDEX_VARIABLE_ARGUMENTS = 0;
+    private static final int INDEX_KEYWORD_ARGUMENTS = 1;
+    private static final int INDEX_GENERATOR_FRAME = 2;
+    private static final int INDEX_SPECIAL_ARGUMENT = 3;
+    private static final int INDEX_GLOBALS_ARGUMENT = 4;
+    private static final int INDEX_CLOSURE = 5;
+    private static final int INDEX_CALLER_FRAME_INFO = 6;
+    private static final int INDEX_CURRENT_FRAME_INFO = 7;
+    private static final int INDEX_CURRENT_EXCEPTION = 8;
+    public static final int USER_ARGUMENTS_OFFSET = 9;
 
     public static boolean isPythonFrame(Frame frame) {
-        Object[] frameArgs = frame.getArguments();
-        return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_PFRAME_ARGUMENT] instanceof PFrame[];
+        return isPythonFrame(frame.getArguments());
+    }
+
+    public static boolean isPythonFrame(Object[] frameArgs) {
+        return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_KEYWORD_ARGUMENTS] instanceof PKeyword[];
     }
 
     public static Object[] withGlobals(PythonObject globals) {
-        Object[] arguments = iInitArguments();
+        Object[] arguments = create();
         setGlobals(arguments, globals);
         return arguments;
     }
 
     public static Object[] create() {
-        return iInitArguments();
+        return create(0);
     }
 
     public static Object[] create(int userArgumentLength) {
         Object[] initialArguments = new Object[USER_ARGUMENTS_OFFSET + userArgumentLength];
         initialArguments[INDEX_VARIABLE_ARGUMENTS] = EMPTY_VARARGS;
         initialArguments[INDEX_KEYWORD_ARGUMENTS] = PKeyword.EMPTY_KEYWORDS;
-        initialArguments[INDEX_PFRAME_ARGUMENT] = getPFrameWrapper();
         return initialArguments;
     }
 
@@ -159,8 +151,6 @@ public final class PArguments {
      * <li>The value sent to a generator via <code>send</code></li>
      * <li>An exception thrown through a generator via <code>throw</code></li>
      * <li>The {@link ClassBodyRootNode} when we are executing a class body</li>
-     * <li>The custom locals mapping when executing through <code>exec</code> with a
-     * <code>locals</code> keyword argument</li>
      * </ul>
      */
     public static Object getSpecialArgument(Frame frame) {
@@ -187,16 +177,56 @@ public final class PArguments {
         }
     }
 
-    public static void setPFrame(Frame frame, PFrame pFrame) {
-        setPFrame(frame.getArguments(), pFrame);
+    public static PFrame.Reference getCallerFrameInfo(Frame frame) {
+        return getCallerFrameInfo(frame.getArguments());
     }
 
-    public static void setPFrame(Object[] args, PFrame pFrame) {
-        ((PFrame[]) args[INDEX_PFRAME_ARGUMENT])[0] = pFrame;
+    public static PFrame.Reference getCallerFrameInfo(Object[] args) {
+        return (PFrame.Reference) args[INDEX_CALLER_FRAME_INFO];
     }
 
-    public static PFrame getPFrame(Frame frame) {
-        return ((PFrame[]) frame.getArguments()[INDEX_PFRAME_ARGUMENT])[0];
+    public static void setCallerFrameInfo(Object[] arguments, PFrame.Reference info) {
+        arguments[INDEX_CALLER_FRAME_INFO] = info;
+    }
+
+    /**
+     * This is only safe before the frame has started executing.
+     */
+    public static Object getCustomLocals(Frame frame) {
+        return frame.getArguments()[INDEX_CURRENT_FRAME_INFO];
+    }
+
+    public static void setCustomLocals(Object[] args, Object locals) {
+        assert args[INDEX_CURRENT_FRAME_INFO] == null : "cannot set custom locals if the frame is already available";
+        args[INDEX_CURRENT_FRAME_INFO] = locals;
+    }
+
+    public static PFrame.Reference getCurrentFrameInfo(Frame frame) {
+        return getCurrentFrameInfo(frame.getArguments());
+    }
+
+    public static PFrame.Reference getCurrentFrameInfo(Object[] args) {
+        return (PFrame.Reference) args[INDEX_CURRENT_FRAME_INFO];
+    }
+
+    public static void setCurrentFrameInfo(Frame frame, PFrame.Reference info) {
+        setCurrentFrameInfo(frame.getArguments(), info);
+    }
+
+    public static void setCurrentFrameInfo(Object[] arguments, PFrame.Reference info) {
+        arguments[INDEX_CURRENT_FRAME_INFO] = info;
+    }
+
+    public static PException getException(Frame frame) {
+        return (PException) frame.getArguments()[INDEX_CURRENT_EXCEPTION];
+    }
+
+    public static void setException(Frame frame, PException exc) {
+        setException(frame.getArguments(), exc);
+    }
+
+    public static void setException(Object[] arguments, PException exc) {
+        arguments[INDEX_CURRENT_EXCEPTION] = exc;
     }
 
     public static void setClosure(Object[] arguments, PCell[] closure) {
@@ -259,20 +289,20 @@ public final class PArguments {
      * {@link FrameSlotIDs#CAUGHT_EXCEPTION}.
      */
     public static Object getCallerFrameOrException(Frame frame) {
-        return frame.getArguments()[INDEX_CALLER_FRAME_OR_EXCEPTION];
+        return frame.getArguments()[INDEX_CALLER_FRAME_INFO];
     }
 
     public static void setCallerFrameOrException(Object[] arguments, Object callerFrameOrException) {
-        arguments[INDEX_CALLER_FRAME_OR_EXCEPTION] = callerFrameOrException;
+        arguments[INDEX_CALLER_FRAME_INFO] = callerFrameOrException;
     }
 
     public static void setCallerFrame(Object[] arguments, Frame callerFrame) {
-        arguments[INDEX_CALLER_FRAME_OR_EXCEPTION] = callerFrame;
+        arguments[INDEX_CALLER_FRAME_INFO] = callerFrame;
     }
 
     public static void setCaughtException(Object[] arguments, PException caughtException) {
-        assert !(arguments[INDEX_CALLER_FRAME_OR_EXCEPTION] instanceof Frame);
-        arguments[INDEX_CALLER_FRAME_OR_EXCEPTION] = caughtException;
+        assert !(arguments[INDEX_CALLER_FRAME_INFO] instanceof Frame);
+        arguments[INDEX_CALLER_FRAME_INFO] = caughtException;
     }
 
     public static void setControlData(Object[] arguments, GeneratorControlData generatorArguments) {

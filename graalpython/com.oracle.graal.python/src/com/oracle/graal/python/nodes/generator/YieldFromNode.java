@@ -99,14 +99,6 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
         this.yieldWriteNode = yieldSlot;
     }
 
-    private PythonObjectFactory factory() {
-        if (ofactory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            ofactory = insert(PythonObjectFactory.create());
-        }
-        return ofactory;
-    }
-
     @Override
     public Object execute(VirtualFrame frame) {
         Object _i = access.getIterator(frame, iteratorSlot);

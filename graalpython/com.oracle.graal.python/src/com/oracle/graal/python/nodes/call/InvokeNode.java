@@ -32,16 +32,11 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ReadExceptionStateFromArgsNode;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -49,7 +44,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
@@ -67,8 +61,6 @@ abstract class AbstractInvokeNode extends Node {
     @CompilationFinal private BranchProfile illegalFrameSlotProfile;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
-    private final ConditionProfile needsExceptionStateProfile = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile needsFrameProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile isClassBodyProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile nullFrameProfile = ConditionProfile.createBinaryProfile();
 
@@ -88,82 +80,6 @@ abstract class AbstractInvokeNode extends Node {
             throw new UnsupportedOperationException("Unsupported callee type " + actualCallee);
         }
         return callTarget;
-    }
-
-    protected final Object getCallerFrameOrException(VirtualFrame frame, CallTarget callTarget) {
-
-        RootNode calleeRootNode = ((RootCallTarget) callTarget).getRootNode();
-        if (needsFrameProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsCallerFrame())) {
-            if (!nullFrameProfile.profile(frame == null)) {
-                return frame.materialize();
-            }
-        }
-
-        if (needsExceptionStateProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsExceptionState())) {
-            if (nullFrameProfile.profile(frame == null)) {
-                return fromContext(getContext());
-            }
-            if (!excSlotInitialized) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                assert excSlot == null;
-                excSlot = getRootNode().getFrameDescriptor().findFrameSlot(FrameSlotIDs.CAUGHT_EXCEPTION);
-                // The current assumption is that the 'storeExceptionState' flag is only true if the
-                // frame provides an exception and so, there must be a corresponding frame slot.
-                illegalFrameSlotProfile = BranchProfile.create();
-                excSlotInitialized = true;
-            }
-            // If there is a '<caught_exception>' frame slot, then read from it. If the value is not
-            // null, return it.
-            // Otherwise, look into the arguments. Again, if not null, return it.
-            // Otherwise, return NO_EXCEPTION (we are now sure, there was no exception set).
-            if (excSlot != null) {
-                try {
-                    PException fromSlot = (PException) frame.getObject(excSlot);
-                    if (fromSlot != null) {
-                        return fromSlot;
-                    }
-                } catch (FrameSlotTypeException e) {
-                    illegalFrameSlotProfile.enter();
-                    throw new IllegalStateException();
-                }
-            }
-            if (readFromArgsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readFromArgsNode = insert(ReadExceptionStateFromArgsNode.create());
-            }
-            PException fromArgs = readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
-            if (fromArgs != null) {
-                return fromArgs;
-            } else {
-                // bad but we must provide the exception state
-                CompilerDirectives.transferToInterpreter();
-                PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                PException result = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
-                // now, set in our args, such that we won't do this again
-                PArguments.setCallerFrameOrException(frame.getArguments(), result);
-                return result;
-            }
-        }
-        return null;
-    }
-
-    private static PException fromContext(PythonContext context) {
-        PException caughtException = context.getCaughtException();
-        if (caughtException == null) {
-            CompilerDirectives.transferToInterpreter();
-            PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-            caughtException = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
-            context.setCaughtException(caughtException);
-        }
-        return caughtException;
-    }
-
-    private PythonContext getContext() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef.get();
     }
 
     protected final void optionallySetClassBodySpecial(Object[] arguments, CallTarget callTarget) {
@@ -194,21 +110,23 @@ final class GenericInvokeNode extends AbstractInvokeNode {
         return new GenericInvokeNode();
     }
 
-    protected Object execute(VirtualFrame frame, PFunction callee, Object[] arguments) {
-        RootCallTarget callTarget = getCallTarget(callee);
-        PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, callTarget));
+    private Object doCall(VirtualFrame frame, RootCallTarget callTarget, Object[] arguments) {
         optionallySetClassBodySpecial(arguments, callTarget);
+        try (ExecutionContext ec = ExecutionContext.call(frame, arguments, callTarget)) {
+            return callNode.call(callTarget, arguments);
+        }
+    }
+
+    protected Object execute(VirtualFrame frame, PFunction callee, Object[] arguments) {
         PArguments.setGlobals(arguments, callee.getGlobals());
         PArguments.setClosure(arguments, callee.getClosure());
-        return callNode.call(callTarget, arguments);
-
+        RootCallTarget callTarget = getCallTarget(callee);
+        return doCall(frame, callTarget, arguments);
     }
 
     protected Object execute(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments) {
         RootCallTarget callTarget = getCallTarget(callee);
-        PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, callTarget));
-        optionallySetClassBodySpecial(arguments, callTarget);
-        return callNode.call(callTarget, arguments);
+        return doCall(frame, callTarget, arguments);
     }
 }
 
@@ -247,9 +165,11 @@ abstract class CallTargetInvokeNode extends AbstractInvokeNode {
     protected Object doNoKeywords(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, callNode.getCallTarget()));
-        optionallySetClassBodySpecial(arguments, callNode.getCallTarget());
-        return callNode.call(arguments);
+        RootCallTarget ct = (RootCallTarget) callNode.getCallTarget();
+        optionallySetClassBodySpecial(arguments, ct);
+        try (ExecutionContext ec = ExecutionContext.call(frame, arguments, ct)) {
+            return callNode.call(arguments);
+        }
     }
 }
 
@@ -301,8 +221,10 @@ public abstract class InvokeNode extends AbstractInvokeNode {
     protected Object doNoKeywords(VirtualFrame frame, Object[] arguments) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        PArguments.setCallerFrameOrException(arguments, getCallerFrameOrException(frame, callNode.getCallTarget()));
-        optionallySetClassBodySpecial(arguments, callNode.getCallTarget());
-        return callNode.call(arguments);
+        RootCallTarget ct = (RootCallTarget) callNode.getCallTarget();
+        optionallySetClassBodySpecial(arguments, ct);
+        try (ExecutionContext ec = ExecutionContext.call(frame, arguments, ct)) {
+            return callNode.call(arguments);
+        }
     }
 }

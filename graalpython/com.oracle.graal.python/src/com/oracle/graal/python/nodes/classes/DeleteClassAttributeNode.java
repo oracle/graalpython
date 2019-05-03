@@ -68,7 +68,7 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
     }
 
     Object getLocalsDict(VirtualFrame frame) {
-        PFrame pFrame = PArguments.getPFrame(frame);
+        PFrame pFrame = PArguments.getCurrentFrameInfo(frame).getPyFrame();
         if (pFrame != null) {
             return pFrame.getLocalsDict();
         }

@@ -81,8 +81,8 @@ public final class PythonContext {
 
     // TODO: frame: make these three ThreadLocal
 
-    /* the reference to the top frame if escaped */
-    private PFrame[] topframeref = null;
+    /* the reference to the last top frame on the Python stack during interop calls */
+    private PFrame.Reference topframeref = null;
 
     /* corresponds to 'PyThreadState.curexc_*' */
     private PException currentException;
@@ -238,19 +238,14 @@ public final class PythonContext {
         return caughtException;
     }
 
-    public PFrame[] getEscapedTopFrameRef() {
-        return topframeref;
+    public void setTopFrameInfo(PFrame.Reference topframeref) {
+        this.topframeref = topframeref;
     }
 
-    public void clearEscapedTopFrameRef() {
+    public PFrame.Reference popTopFrameInfo() {
+        PFrame.Reference ref = topframeref;
         topframeref = null;
-    }
-
-    public PFrame[] markEscapedTopFrameRef() {
-        if (topframeref == null) {
-            topframeref = new PFrame[1];
-        }
-        return topframeref;
+        return ref;
     }
 
     public boolean isInitialized() {

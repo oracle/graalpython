@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -59,6 +60,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @NodeInfo(shortName = "read_caller_fame")
 public final class ReadCallerFrameNode extends Node {
     @CompilationFinal private ConditionProfile cachedCallerFrameProfile;
+    @Child private MaterializeFrameNode materializeNode;
 
     protected ReadCallerFrameNode() {
     }
@@ -82,11 +84,11 @@ public final class ReadCallerFrameNode extends Node {
             cachedCallerFrameProfile = ConditionProfile.createBinaryProfile();
             // executed the first time - don't pollute the profile
             for (int i = 0; i <= level; i++) {
-                Object candidate = PArguments.getCallerFrameOrException(callerFrame);
-                if (!(candidate instanceof MaterializedFrame)) {
-                    return getCallerFrame(frameAccess, level);
+                PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(callerFrame);
+                if (callerInfo == null) {
+                    return getCallerFrame(PArguments.getCurrentFrameInfo(callerFrame), frameAccess, level);
                 }
-                callerFrame = (MaterializedFrame) candidate;
+                callerFrame = callerInfo.getFrame();
             }
         } else {
             callerFrame = walkLevels(callerFrame, frameAccess, level);
@@ -96,45 +98,47 @@ public final class ReadCallerFrameNode extends Node {
 
     @ExplodeLoop
     private Frame walkLevels(Frame frame, FrameInstance.FrameAccess frameAccess, int level) {
-        Frame callerFrame = frame;
+        Frame currentFrame = frame;
         for (int i = 0; i <= level; i++) {
-            Object candidate = PArguments.getCallerFrameOrException(callerFrame);
-            if (cachedCallerFrameProfile.profile(!(candidate instanceof MaterializedFrame))) {
-                return getCallerFrame(frameAccess, level);
+            PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(currentFrame);
+            if (cachedCallerFrameProfile.profile(callerInfo == null)) {
+                return getCallerFrame(PArguments.getCurrentFrameInfo(currentFrame), frameAccess, level);
             }
-            callerFrame = (MaterializedFrame) candidate;
+            currentFrame = callerInfo.getFrame();
         }
-        return callerFrame;
+        return currentFrame;
     }
 
-    private MaterializedFrame getCallerFrame(FrameInstance.FrameAccess frameAccess, int level) {
+    /**
+     * Walk up the stack to find the start frame and from then (level + 1)-times
+     * (counting only Python frames).
+     */
+    private static MaterializedFrame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, int level) {
         CompilerDirectives.transferToInterpreter();
-        if (level == 0) {
-            RootNode rootNode = this.getRootNode();
-            if (rootNode instanceof PRootNode) {
-                ((PRootNode) rootNode).setNeedsCallerFrame();
-            }
-            FrameInstance callerFrame = Truffle.getRuntime().getCallerFrame();
-            if (callerFrame != null) {
-                return callerFrame.getFrame(frameAccess).materialize();
-            }
-            return null;
-        } else {
-            return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Frame>() {
-                int i = 0;
+        return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Frame>() {
+            int i = -1;
 
-                public Frame visitFrame(FrameInstance frameInstance) {
-                    RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
-                    RootNode rootNode = target.getRootNode();
-                    if (rootNode instanceof PRootNode) {
+            public Frame visitFrame(FrameInstance frameInstance) {
+                RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
+                RootNode rootNode = target.getRootNode();
+                if (rootNode instanceof PRootNode) {
+                    if (i < 0) {
+                        Frame roFrame = frameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY);
+                        if (PArguments.getCurrentFrameInfo(roFrame) == startFrame) {
+                            i = 0;
+                        }
+                    } else {
                         ((PRootNode) rootNode).setNeedsCallerFrame();
+                        i += 1;
+                        if (i == level + 1) {
+                            Frame frame = frameInstance.getFrame(frameAccess);
+                            assert PArguments.isPythonFrame(frame);
+                            return frame;
+                        }
                     }
-                    if (i++ == (level + 1)) {
-                        return frameInstance.getFrame(frameAccess);
-                    }
-                    return null;
                 }
-            }).materialize();
-        }
+                return null;
+            }
+        }).materialize();
     }
 }

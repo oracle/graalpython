@@ -98,7 +98,6 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -118,7 +117,6 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -160,8 +158,8 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ReadExceptionStateFromArgsNode;
+import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -599,7 +597,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child protected CompileNode compileNode = CompileNode.create(false);
         @Child private IndirectCallNode indirectCallNode = IndirectCallNode.create();
         @Child private HasInheritedAttributeNode hasGetItemNode;
-        private final ConditionProfile needsExceptionStateProfile = ConditionProfile.createBinaryProfile();
         @Child private ReadExceptionStateFromArgsNode readFromArgsNode;
 
         private HasInheritedAttributeNode getHasGetItemNode() {
@@ -645,14 +642,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setGlobals(args, PArguments.getGlobals(callerFrame));
         }
 
-        private void inheritLocals(VirtualFrame frame, Frame callerFrame, Object[] args, GetLocalsNode getLocalsNode) {
+        private static void inheritLocals(VirtualFrame frame, Frame callerFrame, Object[] args, ReadLocalsNode getLocalsNode) {
             Object callerLocals = getLocalsNode.execute(frame, callerFrame);
             setCustomLocals(args, callerLocals);
         }
 
-        private void setCustomLocals(Object[] args, Object locals) {
+        private static void setCustomLocals(Object[] args, Object locals) {
             PArguments.setSpecialArgument(args, locals);
-            PArguments.setPFrame(args, factory().createPFrame(locals));
+            PArguments.setCustomLocals(args, locals);
         }
 
         private void setBuiltinsInGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
@@ -677,15 +674,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         Object execInheritGlobalsInheritLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
-                        @Cached("create()") ReadCallerFrameNode readCallerFrameNode,
-                        @Cached("create()") GetLocalsNode getLocalsNode) {
+                        @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @Cached ReadLocalsNode getLocalsNode) {
             PCode code = createAndCheckCode(frame, source);
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             inheritLocals(frame, callerFrame, args, getLocalsNode);
-            PArguments.setCallerFrameOrException(args, getException(frame, code.getRootCallTarget()));
-            return indirectCallNode.call(code.getRootCallTarget(), args);
+            try (ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget())) {
+                return indirectCallNode.call(code.getRootCallTarget(), args);
+            }
         }
 
         @Specialization
@@ -697,13 +695,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
             // here, we don't need to set any locals, since the {Write,Read,Delete}NameNodes will
             // fall back (like their CPython counterparts) to writing to the globals. We only need
             // to ensure that the `locals()` call still gives us the globals dict
-            PArguments.setPFrame(args, factory().createPFrame(globals));
+            PArguments.setCustomLocals(args, globals);
             RootCallTarget rootCallTarget = code.getRootCallTarget();
             if (rootCallTarget == null) {
                 throw raise(ValueError, "cannot create the a call target from the code object: %p", code);
             }
-            PArguments.setCallerFrameOrException(args, getException(frame, rootCallTarget));
-            return indirectCallNode.call(rootCallTarget, args);
+            try (ExecutionContext ec = ExecutionContext.call(frame, args, rootCallTarget)) {
+                return indirectCallNode.call(rootCallTarget, args);
+            }
         }
 
         @Specialization(guards = {"isMapping(locals)"})
@@ -714,8 +713,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             setCustomLocals(args, locals);
-            PArguments.setCallerFrameOrException(args, getException(frame, code.getRootCallTarget()));
-            return indirectCallNode.call(code.getRootCallTarget(), args);
+            try (ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget())) {
+                return indirectCallNode.call(code.getRootCallTarget(), args);
+            }
         }
 
         @Specialization(guards = {"isMapping(locals)"})
@@ -725,8 +725,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object[] args = PArguments.create();
             setCustomGlobals(frame, globals, setBuiltins, args);
             setCustomLocals(args, locals);
-            PArguments.setCallerFrameOrException(args, getException(frame, code.getRootCallTarget()));
-            return indirectCallNode.call(code.getRootCallTarget(), args);
+            try (ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget())) {
+                return indirectCallNode.call(code.getRootCallTarget(), args);
+            }
         }
 
         @Specialization(guards = {"!isAnyNone(globals)", "!isDict(globals)"})
@@ -737,42 +738,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = {"isAnyNone(globals) || isDict(globals)", "!isAnyNone(locals)", "!isMapping(locals)"})
         PNone badLocals(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") PDict globals, Object locals) {
             throw raise(TypeError, "%s() locals must be a mapping or None, not %p", funcname, locals);
-        }
-
-        protected final Object getException(VirtualFrame frame, RootCallTarget callTarget) {
-            if (frame == null) {
-                return null;
-            }
-
-            RootNode calleeRootNode = callTarget.getRootNode();
-            if (needsExceptionStateProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsExceptionState())) {
-                RootNode rootNode = getRootNode();
-                // If there is a '<caught_exception>' frame slot, then read from it. If the value is
-                // not null, return it. Otherwise, look into the arguments. Again, if not null,
-                // return it. Otherwise, return NO_EXCEPTION (we are now sure, there was no
-                // exception set).
-                if (rootNode instanceof PRootNode) {
-                    if (readFromArgsNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        readFromArgsNode = insert(ReadExceptionStateFromArgsNode.create());
-                    }
-                    PException fromArgs = readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
-                    if (fromArgs != null) {
-                        return fromArgs;
-                    } else {
-                        // bad but we must provide the exception state
-                        CompilerDirectives.transferToInterpreter();
-                        PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                        PException result = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
-                        // now, set in our args, such that we won't do this again
-                        PArguments.setCallerFrameOrException(frame.getArguments(), result);
-                        return result;
-                    }
-                } else {
-                    return PException.NO_EXCEPTION;
-                }
-            }
-            return null;
         }
     }
 
@@ -1958,9 +1923,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             MaterializedFrame callerFrame = readCallerFrameNode.executeWith(frame);
             MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(callerFrame);
             if (inGenerator.profile(generatorFrame == null)) {
-                return readLocalsNode.execute(callerFrame);
+                return readLocalsNode.execute(frame, callerFrame);
             } else {
-                return readLocalsNode.execute(generatorFrame);
+                return readLocalsNode.execute(frame, generatorFrame);
             }
         }
     }
