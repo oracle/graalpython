@@ -360,8 +360,6 @@ suite = {
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
                 ],
-                "LICENSE_GRAALPYTHON": "file:LICENSE",
-                "3rd_party_licenses_graalpython.txt": "file:3rd_party_licenses.txt",
             },
             "maven": False,
         },
@@ -372,6 +370,17 @@ suite = {
             "layout": {
                 "README_GRAALPYTHON.md": "file:README.md",
                 "./": "file:doc",
+            },
+            "maven": False,
+        },
+
+        "GRAALPYTHON_GRAALVM_LICENSES": {
+            "native": True,
+            "platformDependent": True,
+            "description": "Graal.Python support distribution for the GraalVM license files",
+            "layout": {
+                "LICENSE_GRAALPYTHON": "file:LICENSE",
+                "3rd_party_licenses_graalpython.txt": "file:3rd_party_licenses.txt",
             },
             "maven": False,
         },
