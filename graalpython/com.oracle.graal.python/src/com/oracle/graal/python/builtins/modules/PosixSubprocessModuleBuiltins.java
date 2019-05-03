@@ -63,21 +63,18 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -102,21 +99,11 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PList fdsToKeep, String cwd, PList env,
                         int p2cread, int p2cwrite, int c2pread, int c2pwrite,
                         int errread, int errwrite, @SuppressWarnings("unused") int errpipe_read, int errpipe_write,
-                        @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn,
-                        @Cached PassCaughtExceptionNode passExceptionNode,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) {
+                        @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn) {
 
-            PException exc = passExceptionNode.execute(frame);
-            try {
-                if (exc != null) {
-                    ctxRef.get().setCaughtException(exc);
-                }
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 return forkExec(args, execList, closeFds, fdsToKeep, cwd, env, p2cread, p2cwrite, c2pread, c2pwrite, errread, errwrite, errpipe_read, errpipe_write, restore_signals, call_setsid,
                                 preexec_fn);
-            } finally {
-                if (exc != null) {
-                    ctxRef.get().setCaughtException(null);
-                }
             }
         }
 

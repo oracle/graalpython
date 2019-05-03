@@ -108,8 +108,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -207,7 +205,9 @@ public abstract class HashingStorageNodes {
         @Child private GetLazyClassNode getClassNode;
         @Child private IsHashableNode isHashableNode;
         @Child private Equivalence equivalenceNode;
+        @Child private PassCaughtExceptionNode passExceptionNode;
 
+        @CompilationFinal private ContextReference<PythonContext> contextRef;
         @CompilationFinal private IsBuiltinClassProfile isBuiltinClassProfile;
 
         protected Equivalence getEquivalence() {
@@ -272,6 +272,26 @@ public abstract class HashingStorageNodes {
             EconomicMapStorage newStorage = EconomicMapStorage.create(storage.length() + 1, false);
             newStorage.addAll(storage, getEquivalence());
             return newStorage;
+        }
+
+        protected final PythonContext getContext() {
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = PythonLanguage.getContextRef();
+            }
+            return contextRef.get();
+        }
+
+        protected final PException passException(VirtualFrame frame) {
+            if (passExceptionNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                passExceptionNode = insert(PassCaughtExceptionNode.create());
+            }
+            return passExceptionNode.execute(frame);
+        }
+
+        protected final DefaultContextManager withGlobalState(VirtualFrame frame) {
+            return PNodeWithGlobalState.transferToContext(getContext(), passException(frame));
         }
 
         protected static EconomicMapStorage switchToEconomicMap(HashingStorage storage, Equivalence equiv) {
@@ -563,10 +583,8 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "!isJavaString(name)")
-        protected boolean readUncached(VirtualFrame frame, PythonObjectHybridDictStorage storage, Object name,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+        protected boolean readUncached(VirtualFrame frame, PythonObjectHybridDictStorage storage, Object name) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.hasKey(name, getEquivalence());
             }
         }
@@ -578,19 +596,15 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "isHashable(key)")
-        protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+        protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.hasKey(key, getEquivalence());
             }
         }
 
         @Specialization(guards = "isHashable(key)")
-        protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+        protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.hasKey(key, getEquivalence());
             }
         }
@@ -664,19 +678,15 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "isHashable(key)")
-        protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+        protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.hasKey(key, getEquivalence());
             }
         }
 
         @Specialization(guards = "isHashable(key)")
-        protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+        protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.hasKey(key, getEquivalence());
             }
         }
@@ -734,31 +744,25 @@ public abstract class HashingStorageNodes {
         public abstract HashingStorage execute(VirtualFrame frame, HashingStorage storage, Object key, Object value);
 
         @Specialization
-        protected HashingStorage doEmptyStorage(VirtualFrame frame, EmptyStorage storage, String key, Object value,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
+        protected HashingStorage doEmptyStorage(VirtualFrame frame, EmptyStorage storage, String key, Object value) {
             // immediately replace storage since empty storage is immutable
-            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(ctxRef.get(), passExceptionNode.execute(frame))) {
+            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContext(), passException(frame))) {
                 return cm.execute(switchToFastDictStorage(storage), key, value);
             }
         }
 
         @Specialization(guards = "wrappedString(key)")
-        protected HashingStorage doEmptyStorage(VirtualFrame frame, EmptyStorage storage, PString key, Object value,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
+        protected HashingStorage doEmptyStorage(VirtualFrame frame, EmptyStorage storage, PString key, Object value) {
             // immediately replace storage since empty storage is immutable
-            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(ctxRef.get(), passExceptionNode.execute(frame))) {
+            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContext(), passException(frame))) {
                 return cm.execute(switchToFastDictStorage(storage), cast(key), value);
             }
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
-        protected HashingStorage doEmptyStorage(VirtualFrame frame, @SuppressWarnings("unused") EmptyStorage storage, Object key, Object value,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
+        protected HashingStorage doEmptyStorage(VirtualFrame frame, @SuppressWarnings("unused") EmptyStorage storage, Object key, Object value) {
             // immediately replace storage since empty storage is immutable
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 EconomicMapStorage newStorage = EconomicMapStorage.create(false);
                 newStorage.setItem(key, value, getEquivalence());
                 return newStorage;
@@ -766,19 +770,15 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization
-        protected HashingStorage doDynamicObject(VirtualFrame frame, DynamicObjectStorage storage, String key, Object value,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(ctxRef.get(), passExceptionNode.execute(frame))) {
+        protected HashingStorage doDynamicObject(VirtualFrame frame, DynamicObjectStorage storage, String key, Object value) {
+            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContext(), passException(frame))) {
                 return cm.execute(storage, key, value);
             }
         }
 
         @Specialization(guards = "wrappedString(key)")
-        protected HashingStorage doDynamicObjectPString(VirtualFrame frame, DynamicObjectStorage storage, PString key, Object value,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(ctxRef.get(), passExceptionNode.execute(frame))) {
+        protected HashingStorage doDynamicObjectPString(VirtualFrame frame, DynamicObjectStorage storage, PString key, Object value) {
+            try (DynamicObjectSetItemContextManager cm = ensureDynamicObjectSetItemNode().withGlobalState(getContext(), passException(frame))) {
                 return cm.execute(storage, cast(key), value);
             }
         }
@@ -798,10 +798,8 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
-        protected HashingStorage doLocalsGeneralize(VirtualFrame frame, LocalsStorage storage, Object key, Object value,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+        protected HashingStorage doLocalsGeneralize(VirtualFrame frame, LocalsStorage storage, Object key, Object value) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 HashingStorage newStorage = switchToEconomicMap(storage);
                 newStorage.setItem(key, value, getEquivalence());
                 return newStorage;
@@ -823,21 +821,17 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
-        protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, PythonObjectDictStorage storage, Object key, Object value,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
+        protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, PythonObjectDictStorage storage, Object key, Object value) {
             HashingStorage newStorage = switchToHybridDictStorage(storage);
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 newStorage.setItem(key, value, getEquivalence());
             }
             return newStorage;
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
-        protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, FastDictStorage storage, Object key, Object value,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+        protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, FastDictStorage storage, Object key, Object value) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 HashingStorage newStorage = switchToEconomicMap(storage);
                 newStorage.setItem(key, value, getEquivalence());
                 return newStorage;
@@ -845,12 +839,10 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
-        protected HashingStorage doKeywordsGeneralize(VirtualFrame frame, KeywordsStorage storage, Object key, Object value,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
+        protected HashingStorage doKeywordsGeneralize(VirtualFrame frame, KeywordsStorage storage, Object key, Object value) {
             // immediately replace storage since keywords storage is immutable
             EconomicMapStorage newStorage = EconomicMapStorage.create(storage.length() + 1, false);
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 newStorage.addAll(storage, getEquivalence());
                 newStorage.setItem(key, value, getEquivalence());
             }
@@ -858,10 +850,8 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "isHashable(key)")
-        protected HashingStorage doHashMap(VirtualFrame frame, EconomicMapStorage storage, Object key, Object value,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+        protected HashingStorage doHashMap(VirtualFrame frame, EconomicMapStorage storage, Object key, Object value) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 storage.setItem(key, value, getEquivalence());
 
                 return storage;
@@ -869,10 +859,8 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "isHashable(key)")
-        protected HashingStorage doHashMap(VirtualFrame frame, HashMapStorage storage, Object key, Object value,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+        protected HashingStorage doHashMap(VirtualFrame frame, HashMapStorage storage, Object key, Object value) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 storage.setItem(key, value, getEquivalence());
                 return storage;
             }
@@ -1313,11 +1301,9 @@ public abstract class HashingStorageNodes {
         public abstract boolean execute(VirtualFrame frame, HashingStorage selfStorage, HashingStorage other);
 
         @Specialization(guards = "selfStorage.length() == other.length()")
-        boolean doLocals(VirtualFrame frame, LocalsStorage selfStorage, LocalsStorage other,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
+        boolean doLocals(VirtualFrame frame, LocalsStorage selfStorage, LocalsStorage other) {
             if (selfStorage.getFrame().getFrameDescriptor() == other.getFrame().getFrameDescriptor()) {
-                try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+                try (DefaultContextManager cm = withGlobalState(frame)) {
                     return equalsGeneric(selfStorage, other);
                 }
             }
@@ -1325,10 +1311,8 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "selfStorage.length() == other.length()")
-        boolean doGeneric(VirtualFrame frame, HashingStorage selfStorage, HashingStorage other,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+        boolean doGeneric(VirtualFrame frame, HashingStorage selfStorage, HashingStorage other) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 return equalsGeneric(selfStorage, other);
             }
         }
@@ -1520,19 +1504,15 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization
-        protected boolean doEconomicMap(VirtualFrame frame, @SuppressWarnings("unused") PHashingCollection container, EconomicMapStorage storage, Object key,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+        protected boolean doEconomicMap(VirtualFrame frame, @SuppressWarnings("unused") PHashingCollection container, EconomicMapStorage storage, Object key) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.remove(key, getEquivalence());
             }
         }
 
         @Specialization
-        protected boolean doHashMap(VirtualFrame frame, @SuppressWarnings("unused") PHashingCollection container, HashMapStorage storage, Object key,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+        protected boolean doHashMap(VirtualFrame frame, @SuppressWarnings("unused") PHashingCollection container, HashMapStorage storage, Object key) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.remove(key, getEquivalence());
             }
         }
@@ -1558,10 +1538,8 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isImmutableStorage(storage)", "!isDynamicObjectStorage(storage)"})
-        HashingStorage doGeneric(VirtualFrame frame, HashingStorage storage,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+        HashingStorage doGeneric(VirtualFrame frame, HashingStorage storage) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.copy(getEquivalence());
             }
         }
@@ -1621,11 +1599,9 @@ public abstract class HashingStorageNodes {
         public abstract HashingStorage execute(VirtualFrame frame, HashingStorage left, HashingStorage right);
 
         @Specialization(guards = "setUnion")
-        public HashingStorage doGenericSet(VirtualFrame frame, HashingStorage left, HashingStorage right,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
+        public HashingStorage doGenericSet(VirtualFrame frame, HashingStorage left, HashingStorage right) {
             EconomicMapStorage newStorage = EconomicMapStorage.create(setUnion);
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 for (Object key : left.keys()) {
                     newStorage.setItem(key, PNone.NO_VALUE, getEquivalence());
                 }
@@ -1637,11 +1613,9 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "!setUnion")
-        public HashingStorage doGeneric(VirtualFrame frame, HashingStorage left, HashingStorage right,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
+        public HashingStorage doGeneric(VirtualFrame frame, HashingStorage left, HashingStorage right) {
             EconomicMapStorage newStorage = EconomicMapStorage.create(setUnion);
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 newStorage.addAll(left, getEquivalence());
                 newStorage.addAll(right, getEquivalence());
                 return newStorage;
@@ -1745,10 +1719,8 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "right.length() == 0")
-        public HashingStorage doRightEmpty(VirtualFrame frame, HashingStorage left, @SuppressWarnings("unused") HashingStorage right,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+        public HashingStorage doRightEmpty(VirtualFrame frame, HashingStorage left, @SuppressWarnings("unused") HashingStorage right) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
                 return left.copy(getEquivalence());
             }
         }
