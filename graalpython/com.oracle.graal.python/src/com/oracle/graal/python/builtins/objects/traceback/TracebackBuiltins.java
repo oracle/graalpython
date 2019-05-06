@@ -74,8 +74,13 @@ public final class TracebackBuiltins extends PythonBuiltins {
     public abstract static class GetTracebackNextNode extends PythonBuiltinNode {
         @Specialization
         Object get(PTraceback self) {
-            PTraceback traceback = self.getException().getTraceback(factory(), self.getIndex() - 1);
-            return traceback == null ? PNone.NONE : traceback;
+            PTraceback tb = self.getNext();
+            if (tb != null) {
+                return tb;
+            } else {
+                // TODO: frames: need to recover the traceback
+                return PNone.NONE;
+            }
         }
     }
 
