@@ -426,7 +426,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         PBaseSet doHashingCollection(VirtualFrame frame, PBaseSet container, EconomicMapStorage selfStorage, PHashingCollection other,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (DefaultContextManager ctxManager = PNodeWithGlobalState.transferToContext(contextRef.get(), passExceptionNode.execute(frame))) {
+            try (DefaultContextManager ctxManager = PNodeWithGlobalState.transferToContext(contextRef, passExceptionNode.execute(frame))) {
                 for (Object key : other.getDictStorage().keys()) {
                     selfStorage.setItem(key, PNone.NO_VALUE, getEquivalence());
                 }

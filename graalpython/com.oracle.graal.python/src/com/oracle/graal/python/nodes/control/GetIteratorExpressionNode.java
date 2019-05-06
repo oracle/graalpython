@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -120,9 +121,10 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
         }
 
         @Override
-        public GetIteratorContextManager withGlobalState(PythonContext context, PException exceptionState) {
+        public GetIteratorContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                return new GetIteratorContextManager(this, context);
+                contextRef.get().setCaughtException(exceptionState);
+                return new GetIteratorContextManager(this, contextRef.get());
             }
             return passState();
         }
@@ -144,22 +146,14 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
     public static final class GetIteratorContextManager extends NodeContextManager {
 
         private final GetIteratorWithoutFrameNode delegate;
-        private final PythonContext context;
 
         public GetIteratorContextManager(GetIteratorWithoutFrameNode delegate, PythonContext context) {
+            super(context);
             this.delegate = delegate;
-            this.context = context;
         }
 
         public Object execute(Object x) {
             return delegate.execute(x);
-        }
-
-        @Override
-        public void close() {
-            if (context != null) {
-                context.setCaughtException(null);
-            }
         }
     }
 

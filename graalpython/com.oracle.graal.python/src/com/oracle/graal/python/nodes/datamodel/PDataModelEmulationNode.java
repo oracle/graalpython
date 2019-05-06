@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.ImportStatic;
 
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
@@ -55,10 +56,10 @@ public abstract class PDataModelEmulationNode extends PNodeWithGlobalState<PData
     protected abstract boolean execute(Object object);
 
     @Override
-    public PDataModelEmulationContextManager withGlobalState(PythonContext context, PException exceptionState) {
+    public PDataModelEmulationContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
         if (exceptionState != null) {
-            context.setCaughtException(exceptionState);
-            return new PDataModelEmulationContextManager(this, context);
+            contextRef.get().setCaughtException(exceptionState);
+            return new PDataModelEmulationContextManager(this, contextRef.get());
         }
         return passState();
     }
@@ -68,8 +69,8 @@ public abstract class PDataModelEmulationNode extends PNodeWithGlobalState<PData
         return new PDataModelEmulationContextManager(this, null);
     }
 
-    public static boolean check(PDataModelEmulationNode isMapping, PythonContext context, PException caughtException, Object obj) {
-        try (PDataModelEmulationContextManager ctxManager = isMapping.withGlobalState(context, caughtException)) {
+    public static boolean check(PDataModelEmulationNode isMapping, ContextReference<PythonContext> contextRef, PException caughtException, Object obj) {
+        try (PDataModelEmulationContextManager ctxManager = isMapping.withGlobalState(contextRef, caughtException)) {
             return ctxManager.execute(obj);
         }
     }
@@ -77,23 +78,14 @@ public abstract class PDataModelEmulationNode extends PNodeWithGlobalState<PData
     public static final class PDataModelEmulationContextManager extends NodeContextManager {
 
         private final PDataModelEmulationNode delegate;
-        private final PythonContext context;
 
         public PDataModelEmulationContextManager(PDataModelEmulationNode delegate, PythonContext context) {
+            super(context);
             this.delegate = delegate;
-            this.context = context;
         }
 
         public boolean execute(Object object) {
             return delegate.execute(object);
         }
-
-        @Override
-        public void close() {
-            if (context != null) {
-                context.setCaughtException(null);
-            }
-        }
-
     }
 }

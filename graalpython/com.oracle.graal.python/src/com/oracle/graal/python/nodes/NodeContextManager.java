@@ -40,7 +40,19 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.graal.python.runtime.PythonContext;
+
 public abstract class NodeContextManager implements AutoCloseable {
 
-    public abstract void close();
+    private final PythonContext context;
+
+    public NodeContextManager(PythonContext context) {
+        this.context = context;
+    }
+
+    public final void close() {
+        if (context != null) {
+            context.setCaughtException(null);
+        }
+    }
 }

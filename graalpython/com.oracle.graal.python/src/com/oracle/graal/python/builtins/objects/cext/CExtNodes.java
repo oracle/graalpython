@@ -119,6 +119,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -1328,11 +1329,11 @@ public abstract class CExtNodes {
                         @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
                         @Cached PRaiseNode raiseNode,
                         @Cached PassCaughtExceptionNode passExceptionNode,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (PGuards.isPFloat(value)) {
                 return ((PFloat) value).getValue();
             }
-            try (CallUnaryContextManager ctxManager = callFloatFunc.withGlobalState(ctx, passExceptionNode.execute(frame))) {
+            try (CallUnaryContextManager ctxManager = callFloatFunc.withGlobalState(contextRef, passExceptionNode.execute(frame))) {
                 Object result = ctxManager.executeObject(value, __FLOAT__);
                 if (PGuards.isPFloat(result)) {
                     return ((PFloat) result).getValue();

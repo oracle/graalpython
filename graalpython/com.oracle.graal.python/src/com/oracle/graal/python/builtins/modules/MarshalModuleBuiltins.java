@@ -730,7 +730,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         @Cached PassCaughtExceptionNode passExceptionNode) {
             reset();
             this.data = dataBytes;
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef.get(), passExceptionNode.execute(frame))) {
+            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef, passExceptionNode.execute(frame))) {
                 return readObject(0);
             }
         }

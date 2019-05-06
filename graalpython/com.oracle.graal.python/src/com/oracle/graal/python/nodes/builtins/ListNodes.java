@@ -91,6 +91,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -436,9 +437,10 @@ public abstract class ListNodes {
         protected abstract SequenceStorage execute(Object iterator);
 
         @Override
-        public CreateStorageFromIteratorContextManager withGlobalState(PythonContext context, PException exceptionState) {
+        public CreateStorageFromIteratorContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                return new CreateStorageFromIteratorContextManager(this, context);
+                contextRef.get().setCaughtException(exceptionState);
+                return new CreateStorageFromIteratorContextManager(this, contextRef.get());
             }
             return passState();
         }
@@ -460,22 +462,14 @@ public abstract class ListNodes {
     public static final class CreateStorageFromIteratorContextManager extends NodeContextManager {
 
         private final CreateStorageFromIteratorInteropNode delegate;
-        private final PythonContext context;
 
         public CreateStorageFromIteratorContextManager(CreateStorageFromIteratorInteropNode delegate, PythonContext context) {
+            super(context);
             this.delegate = delegate;
-            this.context = context;
         }
 
         public Object execute(Object x) {
             return delegate.execute(x);
-        }
-
-        @Override
-        public void close() {
-            if (context != null) {
-                context.setCaughtException(null);
-            }
         }
     }
 
@@ -576,9 +570,10 @@ public abstract class ListNodes {
         }
 
         @Override
-        public ConstructListContextManager withGlobalState(PythonContext context, PException exceptionState) {
+        public ConstructListContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                return new ConstructListContextManager(this, context);
+                contextRef.get().setCaughtException(exceptionState);
+                return new ConstructListContextManager(this, contextRef.get());
             }
             return passState();
         }
@@ -592,22 +587,14 @@ public abstract class ListNodes {
     public static final class ConstructListContextManager extends NodeContextManager {
 
         private final ConstructListNode delegate;
-        private final PythonContext context;
 
         public ConstructListContextManager(ConstructListNode delegate, PythonContext context) {
+            super(context);
             this.delegate = delegate;
-            this.context = context;
         }
 
         public PList execute(Object x) {
             return delegate.execute(x);
-        }
-
-        @Override
-        public void close() {
-            if (context != null) {
-                context.setCaughtException(null);
-            }
         }
     }
 

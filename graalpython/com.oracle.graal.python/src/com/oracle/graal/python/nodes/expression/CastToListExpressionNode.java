@@ -140,9 +140,9 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         @Specialization(rewriteOn = PException.class)
         protected PList starredIterable(VirtualFrame frame, PythonObject value,
                         @Cached ConstructListNode constructListNode,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @Shared("passExceptionNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (ConstructListContextManager ctxManager = constructListNode.withGlobalState(context, passExceptionNode.execute(frame))) {
+            try (ConstructListContextManager ctxManager = constructListNode.withGlobalState(contextRef, passExceptionNode.execute(frame))) {
                 return ctxManager.execute(value);
             }
         }
@@ -152,9 +152,9 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
                         @Cached ConstructListNode constructListNode,
                         @Cached IsBuiltinClassProfile attrProfile,
                         @Cached PRaiseNode raise,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @Shared("passExceptionNode") @Cached PassCaughtExceptionNode passExceptionNode) {
-            try (ConstructListContextManager ctxManager = constructListNode.withGlobalState(context, passExceptionNode.execute(frame))) {
+            try (ConstructListContextManager ctxManager = constructListNode.withGlobalState(contextRef, passExceptionNode.execute(frame))) {
                 return ctxManager.execute(v);
             } catch (PException e) {
                 e.expectAttributeError(attrProfile);
@@ -197,9 +197,10 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         }
 
         @Override
-        public CastToListContextManager withGlobalState(PythonContext context, PException exceptionState) {
+        public CastToListContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                return new CastToListContextManager(this, context);
+                contextRef.get().setCaughtException(exceptionState);
+                return new CastToListContextManager(this, contextRef.get());
             }
             return passState();
         }
@@ -213,22 +214,14 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
     public static final class CastToListContextManager extends NodeContextManager {
 
         private final CastToListInteropNode delegate;
-        private final PythonContext context;
 
         public CastToListContextManager(CastToListInteropNode delegate, PythonContext context) {
+            super(context);
             this.delegate = delegate;
-            this.context = context;
         }
 
         public PList execute(Object list) {
             return delegate.execute(list);
-        }
-
-        @Override
-        public void close() {
-            if (context != null) {
-                context.setCaughtException(null);
-            }
         }
     }
 

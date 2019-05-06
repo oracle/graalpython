@@ -54,6 +54,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -237,9 +238,10 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         }
 
         @Override
-        public IsSubtypeContextManager withGlobalState(PythonContext context, PException exceptionState) {
+        public IsSubtypeContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                return new IsSubtypeContextManager(this, context);
+                contextRef.get().setCaughtException(exceptionState);
+                return new IsSubtypeContextManager(this, contextRef.get());
             }
             return passState();
         }
@@ -253,22 +255,14 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     public static final class IsSubtypeContextManager extends NodeContextManager {
 
         private final IsSubtypeWithoutFrameNode delegate;
-        private final PythonContext context;
 
         public IsSubtypeContextManager(IsSubtypeWithoutFrameNode delegate, PythonContext context) {
+            super(context);
             this.delegate = delegate;
-            this.context = context;
         }
 
         public boolean execute(Object derived, Object cls) {
             return delegate.execute(derived, cls);
-        }
-
-        @Override
-        public void close() {
-            if (context != null) {
-                context.setCaughtException(null);
-            }
         }
     }
 

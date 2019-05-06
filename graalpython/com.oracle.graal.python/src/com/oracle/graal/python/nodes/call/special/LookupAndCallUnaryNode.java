@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -245,10 +246,10 @@ public abstract class LookupAndCallUnaryNode extends Node {
         }
 
         @Override
-        public CallUnaryContextManager withGlobalState(PythonContext context, PException exceptionState) {
+        public CallUnaryContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                context.setCaughtException(exceptionState);
-                return new CallUnaryContextManager(this, context);
+                contextRef.get().setCaughtException(exceptionState);
+                return new CallUnaryContextManager(this, contextRef.get());
             }
             return new CallUnaryContextManager(this, null);
         }
@@ -270,22 +271,14 @@ public abstract class LookupAndCallUnaryNode extends Node {
     public static final class CallUnaryContextManager extends NodeContextManager {
 
         private final LookupAndCallUnaryDynamicNode delegate;
-        private final PythonContext context;
 
         public CallUnaryContextManager(LookupAndCallUnaryDynamicNode delegate, PythonContext context) {
+            super(context);
             this.delegate = delegate;
-            this.context = context;
         }
 
         public Object executeObject(Object receiver, String name) {
             return delegate.executeObject(receiver, name);
-        }
-
-        @Override
-        public void close() {
-            if (context != null) {
-                context.setCaughtException(null);
-            }
         }
     }
 }

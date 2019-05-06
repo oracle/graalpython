@@ -62,6 +62,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -85,10 +86,10 @@ public abstract class CastToIndexNode extends PNodeWithGlobalState<CastToIndexCo
     public abstract int execute(boolean x);
 
     @Override
-    public CastToIndexContextManager withGlobalState(PythonContext context, PException exceptionState) {
+    public CastToIndexContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
         if (exceptionState != null) {
-            context.setCaughtException(exceptionState);
-            return new CastToIndexContextManager(this, context);
+            contextRef.get().setCaughtException(exceptionState);
+            return new CastToIndexContextManager(this, contextRef.get());
         }
         return passState();
     }
@@ -258,11 +259,10 @@ public abstract class CastToIndexNode extends PNodeWithGlobalState<CastToIndexCo
     public static final class CastToIndexContextManager extends NodeContextManager {
 
         private final CastToIndexNode delegate;
-        private final PythonContext ctx;
 
-        public CastToIndexContextManager(CastToIndexNode delegate, PythonContext ctx) {
+        public CastToIndexContextManager(CastToIndexNode delegate, PythonContext context) {
+            super(context);
             this.delegate = delegate;
-            this.ctx = ctx;
         }
 
         public int execute(Object x) {
@@ -280,13 +280,6 @@ public abstract class CastToIndexNode extends PNodeWithGlobalState<CastToIndexCo
         public int execute(boolean x) {
             return delegate.execute(x);
 
-        }
-
-        @Override
-        public void close() {
-            if (ctx != null) {
-                ctx.setCaughtException(null);
-            }
         }
     }
 }

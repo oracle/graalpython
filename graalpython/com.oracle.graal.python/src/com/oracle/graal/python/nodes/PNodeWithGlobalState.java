@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 
 public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends PNodeWithContext {
 
@@ -64,7 +65,7 @@ public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends
      * </pre>
      * </p>
      */
-    public abstract T withGlobalState(PythonContext context, PException exceptionState);
+    public abstract T withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState);
 
     /**
      * Use this method to unprotect the node's execute method(s) if you are already sure that the
@@ -136,26 +137,17 @@ public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends
      * </pre>
      * </p>
      */
-    public static DefaultContextManager transferToContext(PythonContext context, PException exceptionState) {
+    public static DefaultContextManager transferToContext(ContextReference<PythonContext> context, PException exceptionState) {
         if (exceptionState != null) {
-            return new DefaultContextManager(context);
+            return new DefaultContextManager(context.get());
         }
         return new DefaultContextManager(null);
     }
 
     public static final class DefaultContextManager extends NodeContextManager {
 
-        private final PythonContext ctx;
-
-        public DefaultContextManager(PythonContext ctx) {
-            this.ctx = ctx;
-        }
-
-        @Override
-        public void close() {
-            if (ctx != null) {
-                ctx.setCaughtException(null);
-            }
+        public DefaultContextManager(PythonContext context) {
+            super(context);
         }
     }
 }

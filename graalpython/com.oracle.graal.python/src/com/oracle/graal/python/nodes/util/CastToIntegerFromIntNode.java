@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNodeFactory.Dynami
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -97,11 +98,10 @@ public class CastToIntegerFromIntNode extends Node {
     public static final class CastToIntegerContextManager extends NodeContextManager {
 
         private final Dynamic delegate;
-        private final PythonContext context;
 
         public CastToIntegerContextManager(Dynamic delegate, PythonContext context) {
+            super(context);
             this.delegate = delegate;
-            this.context = context;
         }
 
         public Object execute(Object x) {
@@ -110,13 +110,6 @@ public class CastToIntegerFromIntNode extends Node {
 
         public Object execute(Object x, Function<Object, Byte> typeErrorHandler) {
             return delegate.execute(x, typeErrorHandler);
-        }
-
-        @Override
-        public void close() {
-            if (context != null) {
-                context.setCaughtException(null);
-            }
         }
     }
 
@@ -174,9 +167,10 @@ public class CastToIntegerFromIntNode extends Node {
         }
 
         @Override
-        public CastToIntegerContextManager withGlobalState(PythonContext context, PException exceptionState) {
+        public CastToIntegerContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                return new CastToIntegerContextManager(this, context);
+                contextRef.get().setCaughtException(exceptionState);
+                return new CastToIntegerContextManager(this, contextRef.get());
             }
             return passState();
         }

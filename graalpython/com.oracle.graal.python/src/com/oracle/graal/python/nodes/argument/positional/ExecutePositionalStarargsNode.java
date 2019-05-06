@@ -60,6 +60,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -209,9 +210,10 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         }
 
         @Override
-        public ExecutePositionalStarargsContextManager withGlobalState(PythonContext context, PException exceptionState) {
+        public ExecutePositionalStarargsContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                return new ExecutePositionalStarargsContextManager(this, context);
+                contextRef.get().setCaughtException(exceptionState);
+                return new ExecutePositionalStarargsContextManager(this, contextRef.get());
             }
             return passState();
         }
@@ -226,22 +228,14 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     public static final class ExecutePositionalStarargsContextManager extends NodeContextManager {
 
         private final ExecutePositionalStarargsInteropNode delegate;
-        private final PythonContext context;
 
         public ExecutePositionalStarargsContextManager(ExecutePositionalStarargsInteropNode delegate, PythonContext context) {
+            super(context);
             this.delegate = delegate;
-            this.context = context;
         }
 
         public Object[] executeWith(Object starargs) {
             return delegate.executeWith(starargs);
-        }
-
-        @Override
-        public void close() {
-            if (context != null) {
-                context.setCaughtException(null);
-            }
         }
     }
 }

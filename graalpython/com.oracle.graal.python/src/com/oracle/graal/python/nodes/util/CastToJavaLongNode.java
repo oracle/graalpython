@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongNodeGen.CastToJavaLongLo
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -121,29 +122,22 @@ public abstract class CastToJavaLongNode extends PNodeWithGlobalState<NodeContex
     public static final class CastToJavaLongContextManager extends NodeContextManager {
 
         private final CastToJavaLongNode delegate;
-        private final PythonContext context;
 
         public CastToJavaLongContextManager(CastToJavaLongNode delegate, PythonContext context) {
+            super(context);
             this.delegate = delegate;
-            this.context = context;
         }
 
         public Object execute(Object x) {
             return delegate.execute(x);
         }
-
-        @Override
-        public void close() {
-            if (context != null) {
-                context.setCaughtException(null);
-            }
-        }
     }
 
     @Override
-    public CastToJavaLongContextManager withGlobalState(PythonContext context, PException exceptionState) {
+    public CastToJavaLongContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
         if (exceptionState != null) {
-            return new CastToJavaLongContextManager(this, context);
+            contextRef.get().setCaughtException(exceptionState);
+            return new CastToJavaLongContextManager(this, contextRef.get());
         }
         return passState();
     }

@@ -93,7 +93,7 @@ public abstract class CodeNodes {
                         String filename, String name, int firstlineno,
                         byte[] lnotab) {
 
-            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(getContext(), passException(frame))) {
+            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(getContextRef(), passException(frame))) {
                 return createCode(cls, argcount, kwonlyargcount, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
             }
         }
@@ -229,12 +229,12 @@ public abstract class CodeNodes {
             return passExceptionNode.execute(frame);
         }
 
-        private PythonContext getContext() {
+        private ContextReference<PythonContext> getContextRef() {
             if (contextRef == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = PythonLanguage.getContextRef();
+                contextRef = lookupContextReference(PythonLanguage.class);
             }
-            return contextRef.get();
+            return contextRef;
         }
 
         public static CreateCodeNode create() {

@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttri
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -137,29 +138,22 @@ public final class GetNextNode extends PNodeWithContext {
         public static final class GetNextContextManager extends NodeContextManager {
 
             private final GetNextWithoutFrameNode delegate;
-            private final PythonContext context;
 
             public GetNextContextManager(GetNextWithoutFrameNode delegate, PythonContext context) {
+                super(context);
                 this.delegate = delegate;
-                this.context = context;
             }
 
             public Object execute(Object x) {
                 return delegate.execute(x);
             }
-
-            @Override
-            public void close() {
-                if (context != null) {
-                    context.setCaughtException(null);
-                }
-            }
         }
 
         @Override
-        public GetNextContextManager withGlobalState(PythonContext context, PException exceptionState) {
+        public GetNextContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                return new GetNextContextManager(this, context);
+                contextRef.get().setCaughtException(exceptionState);
+                return new GetNextContextManager(this, contextRef.get());
             }
             return passState();
         }

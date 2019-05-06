@@ -126,12 +126,16 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
         return getCore().lookupType(type);
     }
 
-    public final PythonContext getContext() {
+    protected final ContextReference<PythonContext> getContextRef() {
         if (contextRef == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = PythonLanguage.getContextRef();
+            contextRef = lookupContextReference(PythonLanguage.class);
         }
-        return contextRef.get();
+        return contextRef;
+    }
+
+    public final PythonContext getContext() {
+        return getContextRef().get();
     }
 
     protected final PException passException(VirtualFrame frame) {
@@ -143,11 +147,11 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
     }
 
     protected final DefaultContextManager withGlobalState(VirtualFrame frame) {
-        return PNodeWithGlobalState.transferToContext(getContext(), passException(frame));
+        return PNodeWithGlobalState.transferToContext(getContextRef(), passException(frame));
     }
 
     protected final <T extends NodeContextManager> T withGlobalState(PNodeWithGlobalState<T> node, VirtualFrame frame) {
-        return node.withGlobalState(getContext(), passException(frame));
+        return node.withGlobalState(getContextRef(), passException(frame));
     }
 
     public final PException raise(PBaseException exc) {
