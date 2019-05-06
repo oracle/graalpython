@@ -239,12 +239,12 @@ public abstract class HashingStorageNodes {
             return receiver.getShape();
         }
 
-        protected boolean isHashable(Object key) {
+        protected boolean isHashable(VirtualFrame frame, Object key) {
             if (isHashableNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isHashableNode = insert(IsHashableNode.create());
             }
-            return isHashableNode.execute(key);
+            return isHashableNode.execute(frame, key);
         }
 
         protected PRaiseNode getRaise() {
@@ -513,8 +513,8 @@ public abstract class HashingStorageNodes {
             return false;
         }
 
-        @Specialization(guards = "isHashable(key)")
-        protected boolean contains(KeywordsStorage storage, Object key,
+        @Specialization(guards = "isHashable(frame, key)")
+        protected boolean contains(@SuppressWarnings("unused") VirtualFrame frame, KeywordsStorage storage, Object key,
                         @Cached("createClassProfile()") ValueProfile keyTypeProfile) {
             Object profileKey = keyTypeProfile.profile(key);
             if (profileKey instanceof String) {
@@ -595,27 +595,27 @@ public abstract class HashingStorageNodes {
             return false;
         }
 
-        @Specialization(guards = "isHashable(key)")
+        @Specialization(guards = "isHashable(frame, key)")
         protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.hasKey(key, getEquivalence());
             }
         }
 
-        @Specialization(guards = "isHashable(key)")
+        @Specialization(guards = "isHashable(frame, key)")
         protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.hasKey(key, getEquivalence());
             }
         }
 
-        @Specialization(guards = "isHashable(key)")
-        protected boolean contains(LocalsStorage storage, Object key) {
+        @Specialization(guards = "isHashable(frame, key)")
+        protected boolean contains(@SuppressWarnings("unused") VirtualFrame frame, LocalsStorage storage, Object key) {
             return storage.hasKey(key, HashingStorage.DEFAULT_EQIVALENCE);
         }
 
-        @Specialization(guards = "!isHashable(key)")
-        protected boolean doUnhashable(@SuppressWarnings("unused") HashMapStorage storage, Object key) {
+        @Specialization(guards = "!isHashable(frame, key)")
+        protected boolean doUnhashable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") HashMapStorage storage, Object key) {
             throw unhashable(key);
         }
 
@@ -677,27 +677,27 @@ public abstract class HashingStorageNodes {
             return readUncached(storage, name);
         }
 
-        @Specialization(guards = "isHashable(key)")
+        @Specialization(guards = "isHashable(frame, key)")
         protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.hasKey(key, getEquivalence());
             }
         }
 
-        @Specialization(guards = "isHashable(key)")
+        @Specialization(guards = "isHashable(frame, key)")
         protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.hasKey(key, getEquivalence());
             }
         }
 
-        @Specialization(guards = "isHashable(key)")
-        protected boolean contains(LocalsStorage storage, Object key) {
+        @Specialization(guards = "isHashable(frame, key)")
+        protected boolean contains(@SuppressWarnings("unused") VirtualFrame frame, LocalsStorage storage, Object key) {
             return storage.hasKey(key, HashingStorage.DEFAULT_EQIVALENCE);
         }
 
-        @Specialization(guards = "!isHashable(key)")
-        protected boolean doUnhashable(@SuppressWarnings("unused") HashMapStorage storage, Object key) {
+        @Specialization(guards = "!isHashable(frame, key)")
+        protected boolean doUnhashable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") HashMapStorage storage, Object key) {
             throw unhashable(key);
         }
 
@@ -759,7 +759,7 @@ public abstract class HashingStorageNodes {
             }
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
+        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
         protected HashingStorage doEmptyStorage(VirtualFrame frame, @SuppressWarnings("unused") EmptyStorage storage, Object key, Object value) {
             // immediately replace storage since empty storage is immutable
             try (DefaultContextManager cm = withGlobalState(frame)) {
@@ -797,7 +797,7 @@ public abstract class HashingStorageNodes {
             return newStorage;
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
+        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
         protected HashingStorage doLocalsGeneralize(VirtualFrame frame, LocalsStorage storage, Object key, Object value) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 HashingStorage newStorage = switchToEconomicMap(storage);
@@ -820,7 +820,7 @@ public abstract class HashingStorageNodes {
             return newStorage;
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
+        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
         protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, PythonObjectDictStorage storage, Object key, Object value) {
             HashingStorage newStorage = switchToHybridDictStorage(storage);
             try (DefaultContextManager cm = withGlobalState(frame)) {
@@ -829,7 +829,7 @@ public abstract class HashingStorageNodes {
             return newStorage;
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
+        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
         protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, FastDictStorage storage, Object key, Object value) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 HashingStorage newStorage = switchToEconomicMap(storage);
@@ -838,7 +838,7 @@ public abstract class HashingStorageNodes {
             }
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
+        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
         protected HashingStorage doKeywordsGeneralize(VirtualFrame frame, KeywordsStorage storage, Object key, Object value) {
             // immediately replace storage since keywords storage is immutable
             EconomicMapStorage newStorage = EconomicMapStorage.create(storage.length() + 1, false);
@@ -849,7 +849,7 @@ public abstract class HashingStorageNodes {
             return storage;
         }
 
-        @Specialization(guards = "isHashable(key)")
+        @Specialization(guards = "isHashable(frame, key)")
         protected HashingStorage doHashMap(VirtualFrame frame, EconomicMapStorage storage, Object key, Object value) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 storage.setItem(key, value, getEquivalence());
@@ -858,7 +858,7 @@ public abstract class HashingStorageNodes {
             }
         }
 
-        @Specialization(guards = "isHashable(key)")
+        @Specialization(guards = "isHashable(frame, key)")
         protected HashingStorage doHashMap(VirtualFrame frame, HashMapStorage storage, Object key, Object value) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 storage.setItem(key, value, getEquivalence());
@@ -866,9 +866,9 @@ public abstract class HashingStorageNodes {
             }
         }
 
-        @Specialization(guards = "!isHashable(key)")
+        @Specialization(guards = "!isHashable(frame, key)")
         @SuppressWarnings("unused")
-        protected HashingStorage doUnhashable(HashingStorage storage, Object key, Object value) {
+        protected HashingStorage doUnhashable(VirtualFrame frame, HashingStorage storage, Object key, Object value) {
             throw unhashable(key);
         }
 
@@ -1083,9 +1083,9 @@ public abstract class HashingStorageNodes {
 
         public abstract Object execute(VirtualFrame frame, HashingStorage storage, Object key);
 
-        @Specialization(guards = "isHashable(key)")
+        @Specialization(guards = "isHashable(frame, key)")
         @SuppressWarnings("unused")
-        Object doEmptyStorage(EmptyStorage storage, Object key) {
+        Object doEmptyStorage(VirtualFrame frame, EmptyStorage storage, Object key) {
             return null;
         }
 
@@ -1148,14 +1148,14 @@ public abstract class HashingStorageNodes {
             return doDynamicObjectUncachedPString(storage, name);
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
-        Object doDynamicObject(PythonObjectHybridDictStorage storage, Object key) {
+        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        Object doDynamicObject(@SuppressWarnings("unused") VirtualFrame frame, PythonObjectHybridDictStorage storage, Object key) {
             return storage.getItem(key, getEquivalence());
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
+        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
         @SuppressWarnings("unused")
-        Object doDynamicObject(DynamicObjectStorage storage, Object key) {
+        Object doDynamicObject(VirtualFrame frame, DynamicObjectStorage storage, Object key) {
             return null;
         }
 
@@ -1169,9 +1169,9 @@ public abstract class HashingStorageNodes {
             return storage.getItem(key.getValue(), DEFAULT_EQIVALENCE);
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
+        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
         @SuppressWarnings("unused")
-        Object doKeywordsObject(KeywordsStorage storage, Object key) {
+        Object doKeywordsObject(VirtualFrame frame, KeywordsStorage storage, Object key) {
             return null;
         }
 
@@ -1185,24 +1185,24 @@ public abstract class HashingStorageNodes {
             return storage.getItem(key.getValue(), DEFAULT_EQIVALENCE);
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
+        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
         @SuppressWarnings("unused")
-        Object doLocalsObject(LocalsStorage storage, Object key) {
+        Object doLocalsObject(VirtualFrame frame, LocalsStorage storage, Object key) {
             return null;
         }
 
-        @Specialization(guards = "isHashable(key)")
-        Object doGeneric(EconomicMapStorage storage, Object key) {
+        @Specialization(guards = "isHashable(frame, key)")
+        Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, EconomicMapStorage storage, Object key) {
             return storage.getItem(key, getEquivalence());
         }
 
-        @Specialization(guards = "isHashable(key)")
-        Object doGeneric(HashMapStorage storage, Object key) {
+        @Specialization(guards = "isHashable(frame, key)")
+        Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, HashMapStorage storage, Object key) {
             return storage.getItem(key, getEquivalence());
         }
 
-        @Specialization(guards = "!isHashable(key)")
-        Object doUnhashable(@SuppressWarnings("unused") HashingStorage storage, Object key) {
+        @Specialization(guards = "!isHashable(frame, key)")
+        Object doUnhashable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") HashingStorage storage, Object key) {
             throw unhashable(key);
         }
     }

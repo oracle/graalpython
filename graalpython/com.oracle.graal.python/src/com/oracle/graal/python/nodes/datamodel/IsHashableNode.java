@@ -56,13 +56,13 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public abstract class IsHashableNode extends PDataModelEmulationNode {
 
     @Override
-    public final boolean execute(Object obj) {
+    protected final boolean execute(Object obj) {
         return execute(null, obj);
     }
 
     public abstract boolean execute(VirtualFrame frame, Object obj);
 
-    protected boolean isDouble(Object object) {
+    protected static boolean isDouble(Object object) {
         return object instanceof Double || PGuards.isPFloat(object);
     }
 
@@ -88,7 +88,7 @@ public abstract class IsHashableNode extends PDataModelEmulationNode {
                     @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
                     @Cached("create()") BuiltinFunctions.IsInstanceNode isInstanceNode) {
         Object hashValue = lookupHashAttributeNode.executeObject(frame, object);
-        if (isInstanceNode.executeWith(null, hashValue, context.getCore().lookupType(PythonBuiltinClassType.PInt))) {
+        if (isInstanceNode.executeWith(frame, hashValue, context.getCore().lookupType(PythonBuiltinClassType.PInt))) {
             return true;
         }
         throw raiseNode.raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
