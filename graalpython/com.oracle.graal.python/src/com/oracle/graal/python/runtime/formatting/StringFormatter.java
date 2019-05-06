@@ -26,6 +26,8 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
@@ -165,16 +167,8 @@ public class StringFormatter {
     public Object format(VirtualFrame frame, ContextReference<PythonContext> ctxRef, Object args1, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute,
                     LookupAndCallBinaryNode getItemNode,
                     PassCaughtExceptionNode passExceptionNode) {
-        PException exc = passExceptionNode.execute(frame);
-        try {
-            if (exc != null) {
-                ctxRef.get().setCaughtException(exc);
-            }
+        try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef, passExceptionNode.execute(frame))) {
             return format(args1, callNode, lookupAttribute, getItemNode);
-        } finally {
-            if (exc != null) {
-                ctxRef.get().setCaughtException(null);
-            }
         }
     }
 
