@@ -49,14 +49,19 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 
@@ -66,17 +71,22 @@ public abstract class AbstractImportNode extends StatementNode {
 
     @Child private CallNode callNode;
     @Child private GetDictNode getDictNode;
+    @Child private PassCaughtExceptionNode passExceptionNode;
 
     public AbstractImportNode() {
         super();
     }
 
-    protected PythonContext getContext() {
+    private ContextReference<PythonContext> getContextRef() {
         if (contextRef == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = PythonLanguage.getContextRef();
+            contextRef = lookupContextReference(PythonLanguage.class);
         }
-        return contextRef.get();
+        return contextRef;
+    }
+
+    protected PythonContext getContext() {
+        return getContextRef().get();
     }
 
     protected PythonObjectFactory factory() {
@@ -87,8 +97,8 @@ public abstract class AbstractImportNode extends StatementNode {
         return objectFactory;
     }
 
-    protected Object importModule(String name) {
-        return importModule(name, PNone.NONE, new String[0], 0);
+    protected Object importModule(VirtualFrame frame, String name) {
+        return importModule(frame, name, PNone.NONE, new String[0], 0);
     }
 
     CallNode getCallNode() {
@@ -107,8 +117,15 @@ public abstract class AbstractImportNode extends StatementNode {
         return getDictNode;
     }
 
-    @TruffleBoundary
-    protected Object importModule(String name, Object globals, String[] fromList, int level) {
+    private PException passException(VirtualFrame frame) {
+        if (passExceptionNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            passExceptionNode = insert(PassCaughtExceptionNode.create());
+        }
+        return passExceptionNode.execute(frame);
+    }
+
+    protected Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
         if (!getContext().getCore().isInitialized()) {
             PythonModule builtinModule = getContext().getCore().lookupBuiltinModule(name);
@@ -116,9 +133,12 @@ public abstract class AbstractImportNode extends StatementNode {
                 return builtinModule;
             }
         }
-        return __import__(name, globals, fromList, level);
+        try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(getContextRef(), passException(frame))) {
+            return __import__(name, globals, fromList, level);
+        }
     }
 
+    @TruffleBoundary
     Object __import__(String name, Object globals, String[] fromList, int level) {
         PMethod builtinImport = (PMethod) getContext().getCore().lookupBuiltinModule("builtins").getAttribute(__IMPORT__);
         assert fromList != null;

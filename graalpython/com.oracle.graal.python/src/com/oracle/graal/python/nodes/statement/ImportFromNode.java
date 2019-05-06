@@ -74,7 +74,7 @@ public class ImportFromNode extends AbstractImportNode {
     @ExplodeLoop
     public void executeVoid(VirtualFrame frame) {
         Object globals = PArguments.getGlobals(frame);
-        Object importedModule = importModule(importee, globals, fromlist, level);
+        Object importedModule = importModule(frame, importee, globals, fromlist, level);
         for (int i = 0; i < fromlist.length; i++) {
             String attr = fromlist[i];
             WriteNode writeNode = aslist[i];

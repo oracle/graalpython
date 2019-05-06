@@ -68,7 +68,7 @@ public class ImportStarNode extends AbstractImportNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        Object importedModule = importModule(moduleName, PArguments.getGlobals(frame), new String[]{"*"}, level);
+        Object importedModule = importModule(frame, moduleName, PArguments.getGlobals(frame), new String[]{"*"}, level);
         PythonObject globals = PArguments.getGlobals(frame);
         assert importedModule instanceof PythonModule;
         for (String name : getModuleAttrs(importedModule)) {
