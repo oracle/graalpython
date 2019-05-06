@@ -37,6 +37,7 @@ import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ReadExceptionStateFromArgsNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CallTarget;
@@ -45,6 +46,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
@@ -63,10 +65,12 @@ abstract class AbstractInvokeNode extends Node {
     @CompilationFinal private boolean excSlotInitialized;
     @CompilationFinal private FrameSlot excSlot;
     @CompilationFinal private BranchProfile illegalFrameSlotProfile;
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     private final ConditionProfile needsExceptionStateProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile needsFrameProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile isClassBodyProfile = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile nullFrameProfile = ConditionProfile.createBinaryProfile();
 
     protected static boolean shouldInlineGenerators() {
         return PythonOptions.getOption(PythonLanguage.getContextRef().get(), PythonOptions.ForceInlineGeneratorCalls);
@@ -90,14 +94,14 @@ abstract class AbstractInvokeNode extends Node {
 
         RootNode calleeRootNode = ((RootCallTarget) callTarget).getRootNode();
         if (needsFrameProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsCallerFrame())) {
-            if (frame != null) {
+            if (!nullFrameProfile.profile(frame == null)) {
                 return frame.materialize();
             }
         }
 
         if (needsExceptionStateProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsExceptionState())) {
-            if (frame == null) {
-                return PException.NO_EXCEPTION;
+            if (nullFrameProfile.profile(frame == null)) {
+                return fromContext(getContext());
             }
             RootNode rootNode = getRootNode();
             if (!excSlotInitialized) {
@@ -146,6 +150,25 @@ abstract class AbstractInvokeNode extends Node {
             }
         }
         return null;
+    }
+
+    private static PException fromContext(PythonContext context) {
+        PException caughtException = context.getCaughtException();
+        if (caughtException == null) {
+            CompilerDirectives.transferToInterpreter();
+            PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+            caughtException = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
+            context.setCaughtException(caughtException);
+        }
+        return caughtException;
+    }
+
+    private PythonContext getContext() {
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = lookupContextReference(PythonLanguage.class);
+        }
+        return contextRef.get();
     }
 
     protected final void optionallySetClassBodySpecial(Object[] arguments, CallTarget callTarget) {

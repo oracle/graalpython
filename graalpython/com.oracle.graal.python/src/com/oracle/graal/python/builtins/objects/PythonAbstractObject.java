@@ -47,10 +47,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
 import java.util.HashSet;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -85,14 +87,21 @@ import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -771,6 +780,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @GenerateUncached
     public abstract static class PExecuteNode extends Node {
+        private static final FrameDescriptor EMPTY_FD = new FrameDescriptor();
+
         public abstract Object execute(Object receiver, Object[] arguments) throws UnsupportedMessageException;
 
         @Specialization
@@ -778,13 +789,29 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         @Cached PTypeToForeignNode toForeign,
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode,
-                        @Cached ArgumentsFromForeignNode convertArgsNode) throws UnsupportedMessageException {
+                        @Cached ArgumentsFromForeignNode convertArgsNode,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) throws UnsupportedMessageException {
             Object isCallable = callAttrGetterNode.execute(receiver, SpecialMethodNames.__CALL__);
             if (isCallable == PNone.NO_VALUE) {
                 throw UnsupportedMessageException.create();
             }
             Object[] convertedArgs = convertArgsNode.execute(arguments);
-            return toForeign.executeConvert(callNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS));
+            Object[] dummyCallerArgs = PArguments.create();
+            VirtualFrame dummyCallerFrame = Truffle.getRuntime().createVirtualFrame(dummyCallerArgs, EMPTY_FD);
+            contextToFrame(contextRef, dummyCallerArgs);
+            return toForeign.executeConvert(callNode.execute(dummyCallerFrame, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS));
+        }
+
+        public static void contextToFrame(ContextReference<PythonContext> contextRef, Object[] args) {
+            PythonContext context = contextRef.get();
+            PException caughtException = context.getCaughtException();
+            if (caughtException == null) {
+                CompilerDirectives.transferToInterpreter();
+                PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                caughtException = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
+                context.setCaughtException(caughtException);
+            }
+            PArguments.setCaughtException(args, caughtException);
         }
 
         public static PExecuteNode create() {
