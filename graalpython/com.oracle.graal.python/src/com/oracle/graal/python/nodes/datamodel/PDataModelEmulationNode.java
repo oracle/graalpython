@@ -58,8 +58,12 @@ public abstract class PDataModelEmulationNode extends PNodeWithGlobalState<PData
     @Override
     public PDataModelEmulationContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
         if (exceptionState != null) {
-            contextRef.get().setCaughtException(exceptionState);
-            return new PDataModelEmulationContextManager(this, contextRef.get());
+            PythonContext context = contextRef.get();
+            PException cur = context.getCaughtException();
+            if (cur == null) {
+                context.setCaughtException(exceptionState);
+                return new PDataModelEmulationContextManager(this, context);
+            }
         }
         return passState();
     }

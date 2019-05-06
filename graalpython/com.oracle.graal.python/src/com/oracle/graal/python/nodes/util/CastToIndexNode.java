@@ -88,8 +88,13 @@ public abstract class CastToIndexNode extends PNodeWithGlobalState<CastToIndexCo
     @Override
     public CastToIndexContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
         if (exceptionState != null) {
-            contextRef.get().setCaughtException(exceptionState);
-            return new CastToIndexContextManager(this, contextRef.get());
+            PythonContext context = contextRef.get();
+            PException cur = context.getCaughtException();
+            if (cur == null) {
+                context.setCaughtException(exceptionState);
+                return new CastToIndexContextManager(this, context);
+            }
+            assert cur == exceptionState;
         }
         return passState();
     }

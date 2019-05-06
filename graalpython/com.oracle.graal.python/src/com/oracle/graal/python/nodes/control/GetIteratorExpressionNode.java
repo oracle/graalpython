@@ -123,8 +123,12 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
         @Override
         public GetIteratorContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                contextRef.get().setCaughtException(exceptionState);
-                return new GetIteratorContextManager(this, contextRef.get());
+                PythonContext context = contextRef.get();
+                PException cur = context.getCaughtException();
+                if (cur == null) {
+                    context.setCaughtException(exceptionState);
+                    return new GetIteratorContextManager(this, context);
+                }
             }
             return passState();
         }

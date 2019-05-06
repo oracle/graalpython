@@ -137,9 +137,14 @@ public abstract class PNodeWithGlobalState<T extends NodeContextManager> extends
      * </pre>
      * </p>
      */
-    public static DefaultContextManager transferToContext(ContextReference<PythonContext> context, PException exceptionState) {
+    public static DefaultContextManager transferToContext(ContextReference<PythonContext> contextRef, PException exceptionState) {
         if (exceptionState != null) {
-            return new DefaultContextManager(context.get());
+            PythonContext context = contextRef.get();
+            PException cur = context.getCaughtException();
+            if (cur == null) {
+                context.setCaughtException(exceptionState);
+                return new DefaultContextManager(context);
+            }
         }
         return new DefaultContextManager(null);
     }

@@ -1253,8 +1253,12 @@ public abstract class HashingStorageNodes {
         @Override
         public GetItemContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                contextRef.get().setCaughtException(exceptionState);
-                return new GetItemContextManager(this, contextRef.get());
+                PythonContext context = contextRef.get();
+                PException cur = context.getCaughtException();
+                if (cur == null) {
+                    context.setCaughtException(exceptionState);
+                    return new GetItemContextManager(this, context);
+                }
             }
             return passState();
         }

@@ -136,8 +136,12 @@ public abstract class CastToJavaLongNode extends PNodeWithGlobalState<NodeContex
     @Override
     public CastToJavaLongContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
         if (exceptionState != null) {
-            contextRef.get().setCaughtException(exceptionState);
-            return new CastToJavaLongContextManager(this, contextRef.get());
+            PythonContext context = contextRef.get();
+            PException cur = context.getCaughtException();
+            if (cur == null) {
+                context.setCaughtException(exceptionState);
+                return new CastToJavaLongContextManager(this, context);
+            }
         }
         return passState();
     }

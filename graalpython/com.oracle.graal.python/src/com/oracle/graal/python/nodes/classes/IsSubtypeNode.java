@@ -240,8 +240,12 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         @Override
         public IsSubtypeContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                contextRef.get().setCaughtException(exceptionState);
-                return new IsSubtypeContextManager(this, contextRef.get());
+                PythonContext context = contextRef.get();
+                PException cur = context.getCaughtException();
+                if (cur == null) {
+                    context.setCaughtException(exceptionState);
+                    return new IsSubtypeContextManager(this, context);
+                }
             }
             return passState();
         }

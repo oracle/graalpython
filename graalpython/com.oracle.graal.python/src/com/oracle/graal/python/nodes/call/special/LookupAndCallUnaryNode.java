@@ -248,8 +248,12 @@ public abstract class LookupAndCallUnaryNode extends Node {
         @Override
         public CallUnaryContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                contextRef.get().setCaughtException(exceptionState);
-                return new CallUnaryContextManager(this, contextRef.get());
+                PythonContext context = contextRef.get();
+                PException cur = context.getCaughtException();
+                if (cur == null) {
+                    context.setCaughtException(exceptionState);
+                    return new CallUnaryContextManager(this, context);
+                }
             }
             return new CallUnaryContextManager(this, null);
         }

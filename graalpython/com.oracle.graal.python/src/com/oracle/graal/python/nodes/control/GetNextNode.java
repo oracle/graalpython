@@ -152,8 +152,12 @@ public final class GetNextNode extends PNodeWithContext {
         @Override
         public GetNextContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                contextRef.get().setCaughtException(exceptionState);
-                return new GetNextContextManager(this, contextRef.get());
+                PythonContext context = contextRef.get();
+                PException cur = context.getCaughtException();
+                if (cur == null) {
+                    context.setCaughtException(exceptionState);
+                    return new GetNextContextManager(this, context);
+                }
             }
             return passState();
         }

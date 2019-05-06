@@ -439,8 +439,12 @@ public abstract class ListNodes {
         @Override
         public CreateStorageFromIteratorContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                contextRef.get().setCaughtException(exceptionState);
-                return new CreateStorageFromIteratorContextManager(this, contextRef.get());
+                PythonContext context = contextRef.get();
+                PException cur = context.getCaughtException();
+                if (cur == null) {
+                    context.setCaughtException(exceptionState);
+                    return new CreateStorageFromIteratorContextManager(this, context);
+                }
             }
             return passState();
         }
@@ -572,8 +576,12 @@ public abstract class ListNodes {
         @Override
         public ConstructListContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                contextRef.get().setCaughtException(exceptionState);
-                return new ConstructListContextManager(this, contextRef.get());
+                PythonContext context = contextRef.get();
+                PException cur = context.getCaughtException();
+                if (cur == null) {
+                    context.setCaughtException(exceptionState);
+                    return new ConstructListContextManager(this, context);
+                }
             }
             return passState();
         }

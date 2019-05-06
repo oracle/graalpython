@@ -200,16 +200,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw raise(ImportError, "no function PyInit_%s found in %s", basename, path);
             }
             try {
-                // save current exception state
-                PException exceptionState = getContext().getCaughtException();
-                // clear current exception such that native code has clean environment
-                getContext().setCaughtException(null);
-
                 Object nativeResult = interop.execute(pyinitFunc);
                 getCheckResultNode().execute("PyInit_" + basename, nativeResult);
-
-                // restore previous exception state
-                getContext().setCaughtException(exceptionState);
 
                 Object result = AsPythonObjectNode.doSlowPath(nativeResult, false);
                 if (!(result instanceof PythonModule)) {

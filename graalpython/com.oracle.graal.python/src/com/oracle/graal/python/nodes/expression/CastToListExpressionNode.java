@@ -199,8 +199,12 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         @Override
         public CastToListContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
             if (exceptionState != null) {
-                contextRef.get().setCaughtException(exceptionState);
-                return new CastToListContextManager(this, contextRef.get());
+                PythonContext context = contextRef.get();
+                PException cur = context.getCaughtException();
+                if (cur == null) {
+                    context.setCaughtException(exceptionState);
+                    return new CastToListContextManager(this, context);
+                }
             }
             return passState();
         }
