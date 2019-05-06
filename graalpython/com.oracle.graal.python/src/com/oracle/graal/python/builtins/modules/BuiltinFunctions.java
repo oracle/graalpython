@@ -1315,7 +1315,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 e.expectStopIteration(errorProfile1);
                 throw raise(PythonErrorType.ValueError, "%s() arg is an empty sequence", this instanceof MaxNode ? "max" : "min");
             }
-            Object currentKey = applyKeyFunction(keywordArg, keyCall, currentValue);
+            Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);
             while (true) {
                 Object nextValue;
                 try {
@@ -1324,7 +1324,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     e.expectStopIteration(errorProfile2);
                     break;
                 }
-                Object nextKey = applyKeyFunction(keywordArg, keyCall, nextValue);
+                Object nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
                 if (compare.executeBool(frame, nextKey, currentKey)) {
                     currentKey = nextKey;
                     currentValue = nextValue;
@@ -1346,9 +1346,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("create()") CallNode keyCall,
                         @Cached("createBinaryProfile()") ConditionProfile moreThanTwo) {
             Object currentValue = arg1;
-            Object currentKey = applyKeyFunction(keywordArg, keyCall, currentValue);
+            Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);
             Object nextValue = args[0];
-            Object nextKey = applyKeyFunction(keywordArg, keyCall, nextValue);
+            Object nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
             if (compare.executeBool(frame, nextKey, currentKey)) {
                 currentKey = nextKey;
                 currentValue = nextValue;
@@ -1356,7 +1356,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (moreThanTwo.profile(args.length > 1)) {
                 for (int i = 0; i < args.length; i++) {
                     nextValue = args[i];
-                    nextKey = applyKeyFunction(keywordArg, keyCall, nextValue);
+                    nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
                     if (compare.executeBool(frame, nextKey, currentKey)) {
                         currentKey = nextKey;
                         currentValue = nextValue;
@@ -1366,8 +1366,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return currentValue;
         }
 
-        private static Object applyKeyFunction(PythonObject keywordArg, CallNode keyCall, Object currentValue) {
-            return keyCall == null ? currentValue : keyCall.execute(null, keywordArg, new Object[]{currentValue}, PKeyword.EMPTY_KEYWORDS);
+        private static Object applyKeyFunction(VirtualFrame frame, PythonObject keywordArg, CallNode keyCall, Object currentValue) {
+            return keyCall == null ? currentValue : keyCall.execute(frame, keywordArg, new Object[]{currentValue}, PKeyword.EMPTY_KEYWORDS);
         }
     }
 
