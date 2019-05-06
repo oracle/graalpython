@@ -53,8 +53,12 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.NodeCost;
 
 public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
+
+    private static final CallUncachedVarargsMethodNode UNCACHED = new CallUncachedVarargsMethodNode();
+
     public abstract Object execute(VirtualFrame frame, Object callable, Object[] arguments, PKeyword[] keywords);
 
     public static CallVarargsMethodNode create() {
@@ -62,7 +66,7 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
     }
 
     public static CallVarargsMethodNode getUncached() {
-        return new CallUncachedVarargsMethodNode();
+        return UNCACHED;
     }
 
     abstract static class CallCachedVarargsMethodNode extends CallVarargsMethodNode {
@@ -134,12 +138,21 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
 
     }
 
-    static class CallUncachedVarargsMethodNode extends CallVarargsMethodNode {
-        private final CallNode callNode = CallNode.getUncached();
+    private static final class CallUncachedVarargsMethodNode extends CallVarargsMethodNode {
 
         @Override
         public Object execute(VirtualFrame frame, Object callable, Object[] arguments, PKeyword[] keywords) {
-            return callNode.execute(frame, callable, arguments, keywords);
+            return CallNode.getUncached().execute(frame, callable, arguments, keywords);
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.MEGAMORPHIC;
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
         }
     }
 }
