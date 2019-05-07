@@ -44,13 +44,16 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -61,6 +64,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenerator)
@@ -93,7 +97,10 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
+        @Child private GetCaughtExceptionNode getCaughtExceptionNode;
+
         private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
+        private final ConditionProfile needsExceptionStateProfile = ConditionProfile.createBinaryProfile();
 
         protected static DirectCallNode createDirectCall(CallTarget target) {
             return Truffle.getRuntime().createDirectCallNode(target);
@@ -108,13 +115,15 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "sameCallTarget(self.getCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
-        public Object nextCached(PGenerator self,
+        public Object nextCached(VirtualFrame frame, PGenerator self,
                         @Cached("createDirectCall(self.getCallTarget())") DirectCallNode call) {
             if (self.isFinished()) {
                 throw raise(StopIteration);
             }
             try {
-                return call.call(self.getArguments());
+                Object[] arguments = self.getArguments();
+                PArguments.setCallerFrameOrException(arguments, getException(frame, call.getCallTarget()));
+                return call.call(arguments);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 self.markAsFinished();
@@ -123,19 +132,35 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "nextCached")
-        public Object next(PGenerator self,
+        public Object next(VirtualFrame frame, PGenerator self,
                         @Cached("createIndirectCall()") IndirectCallNode call) {
             if (self.isFinished()) {
                 throw raise(StopIteration);
             }
             try {
-                return call.call(self.getCallTarget(), self.getArguments());
+                Object[] arguments = self.getArguments();
+                PArguments.setCallerFrameOrException(arguments, getException(frame, self.getCallTarget()));
+                return call.call(self.getCallTarget(), arguments);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 self.markAsFinished();
                 throw e;
             }
         }
+
+        private Object getException(VirtualFrame frame, CallTarget callTarget) {
+            RootNode calleeRootNode = ((RootCallTarget) callTarget).getRootNode();
+            if (needsExceptionStateProfile.profile(calleeRootNode instanceof PRootNode && ((PRootNode) calleeRootNode).needsExceptionState())) {
+                if (getCaughtExceptionNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getCaughtExceptionNode = insert(GetCaughtExceptionNode.create());
+                }
+                PException execute = getCaughtExceptionNode.execute(frame);
+                return execute != null ? execute : PException.NO_EXCEPTION;
+            }
+            return null;
+        }
+
     }
 
     @Builtin(name = "send", minNumOfPositionalArgs = 2)

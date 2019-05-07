@@ -104,14 +104,14 @@ public class TopLevelExceptionHandler extends RootNode {
     @Override
     public Object execute(VirtualFrame frame) {
         if (exception != null) {
-            printExc(exception);
+            printExc(frame, exception);
             return null;
         } else {
             assert context.get().getCurrentException() == null;
             try {
                 return run(frame);
             } catch (PException e) {
-                printExc(e);
+                printExc(frame, e);
                 if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
                     printStackTrace(e);
                 }
@@ -137,12 +137,12 @@ public class TopLevelExceptionHandler extends RootNode {
      * This function is kind-of analogous to PyErr_PrintEx. TODO (timfel): Figure out if we should
      * move this somewhere else
      */
-    private void printExc(PException e) {
+    private void printExc(VirtualFrame frame, PException e) {
         CompilerDirectives.transferToInterpreter();
         PythonContext theContext = context.get();
         PythonCore core = theContext.getCore();
         if (IsBuiltinClassProfile.profileClassSlowPath(e.getExceptionObject().getLazyPythonClass(), SystemExit)) {
-            handleSystemExit(e);
+            handleSystemExit(frame, e);
         }
 
         PBaseException value = e.getExceptionObject();
@@ -158,7 +158,7 @@ public class TopLevelExceptionHandler extends RootNode {
         if (PythonOptions.getOption(theContext, PythonOptions.AlwaysRunExcepthook)) {
             if (hook != PNone.NO_VALUE) {
                 try {
-                    callNode.execute(null, hook, new Object[]{type, value, tb}, PKeyword.EMPTY_KEYWORDS);
+                    callNode.execute(frame, hook, new Object[]{type, value, tb}, PKeyword.EMPTY_KEYWORDS);
                 } catch (PException internalError) {
                     // More complex handling of errors in exception printing is done in our
                     // Python code, if we get here, we just fall back to the launcher
@@ -178,7 +178,7 @@ public class TopLevelExceptionHandler extends RootNode {
         throw e;
     }
 
-    private void handleSystemExit(PException e) {
+    private void handleSystemExit(VirtualFrame frame, PException e) {
         PythonContext theContext = context.get();
         if (PythonOptions.getOption(theContext, PythonOptions.InspectFlag) && !getSourceSection().getSource().isInteractive()) {
             // Don't exit if -i flag was given and we're not yet running interactively
@@ -201,7 +201,7 @@ public class TopLevelExceptionHandler extends RootNode {
         if (PythonOptions.getOption(theContext, PythonOptions.AlwaysRunExcepthook)) {
             // If we failed to dig out the exit code we just print and leave
             try {
-                theContext.getEnv().err().write(callStrNode.executeObject(e.getExceptionObject()).toString().getBytes());
+                theContext.getEnv().err().write(callStrNode.executeObject(frame, e.getExceptionObject()).toString().getBytes());
                 theContext.getEnv().err().write('\n');
             } catch (IOException e1) {
             }
@@ -230,6 +230,7 @@ public class TopLevelExceptionHandler extends RootNode {
             PHashingCollection mainDict = mainModule.getDict();
             PArguments.setGlobals(arguments, mainModule);
             PArguments.setPFrame(arguments, pythonContext.getCore().factory().createPFrame(mainDict));
+            PArguments.setCallerFrameOrException(arguments, PException.NO_EXCEPTION);
         }
         return innerCallTarget.call(arguments);
     }

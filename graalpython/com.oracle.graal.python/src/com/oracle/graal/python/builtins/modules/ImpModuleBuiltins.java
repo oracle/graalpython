@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -84,6 +85,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -144,13 +146,22 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         protected static final String IMPORT_NATIVE_MEMORYVIEW = "import_native_memoryview";
         protected static final String RUN_CAPI_LOADED_HOOKS = "run_capi_loaded_hooks";
         private static final String LLVM_LANGUAGE = "llvm";
+
         @Child private SetItemNode setItemNode;
         @Child private CheckFunctionResultNode checkResultNode;
+        @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__REPR__);
 
         @Specialization
-        @TruffleBoundary
-        public Object run(PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
+        @SuppressWarnings("try")
+        public Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
                         @CachedLibrary(limit = "1") InteropLibrary interop) {
+            try (DefaultContextManager cm = withGlobalState(frame)) {
+                return run(moduleSpec, interop);
+            }
+        }
+
+        @TruffleBoundary
+        private Object run(PythonObject moduleSpec, InteropLibrary interop) {
             String name = moduleSpec.getAttribute("name").toString();
             String path = moduleSpec.getAttribute("origin").toString();
 
@@ -190,16 +201,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw raise(ImportError, "no function PyInit_%s found in %s", basename, path);
             }
             try {
-                // save current exception state
-                PException exceptionState = getContext().getCaughtException();
-                // clear current exception such that native code has clean environment
-                getContext().setCaughtException(null);
-
                 Object nativeResult = interop.execute(pyinitFunc);
                 getCheckResultNode().execute("PyInit_" + basename, nativeResult);
-
-                // restore previous exception state
-                getContext().setCaughtException(exceptionState);
 
                 Object result = AsPythonObjectNode.doSlowPath(nativeResult, false);
                 if (!(result instanceof PythonModule)) {
@@ -210,7 +213,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     ((PythonObject) result).setAttribute(__FILE__, path);
                     // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
                     PDict sysModules = getContext().getSysModules();
-                    getSetItemNode().execute(sysModules, name, result);
+                    getSetItemNode().execute(null, sysModules, name, result);
                     return result;
                 }
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -240,14 +243,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 }
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = insert(ReadAttributeFromObjectNode.create());
-                CallUnaryMethodNode callNode = insert(CallUnaryMethodNode.create());
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT), INITIALIZE_CAPI), capi);
-                ctxt.setCapiWasLoaded(capi);
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT), RUN_CAPI_LOADED_HOOKS), capi);
+                PythonModule builtinModule = ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
 
-                // initialization needs to be finished already but load memoryview implemenation
+                CallUnaryMethodNode callNode = CallUnaryMethodNode.getUncached();
+                callNode.executeObject(null, readNode.execute(builtinModule, INITIALIZE_CAPI), capi);
+                ctxt.setCapiWasLoaded(capi);
+                callNode.executeObject(null, readNode.execute(builtinModule, RUN_CAPI_LOADED_HOOKS), capi);
+
+                // initialization needs to be finished already but load memoryview implementation
                 // immediately
-                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT), IMPORT_NATIVE_MEMORYVIEW), capi);
+                callNode.executeObject(null, readNode.execute(builtinModule, IMPORT_NATIVE_MEMORYVIEW), capi);
             }
         }
 
@@ -267,8 +272,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             return checkResultNode;
         }
 
-        @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__REPR__);
-
         @TruffleBoundary
         private PException reportImportError(RuntimeException e, String path) {
             StringBuilder sb = new StringBuilder();
@@ -276,7 +279,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             if (e instanceof PException) {
                 PBaseException excObj = ((PException) e).getExceptionObject();
                 pythonCause = excObj;
-                sb.append(callReprNode.executeObject(excObj));
+                sb.append(callReprNode.executeObject(null, excObj));
             } else {
                 // that call will cause problems if the format string contains '%p'
                 sb.append(e.getMessage());
@@ -299,7 +302,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             importExc.setAttribute(__CAUSE__, pythonCause);
             throw raise(importExc);
         }
-
     }
 
     @Builtin(name = "exec_dynamic", minNumOfPositionalArgs = 1)
@@ -316,12 +318,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsBuiltin extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        public int run(String name,
+        public int run(VirtualFrame frame, String name,
                         @Cached("create()") HashingStorageNodes.ContainsKeyNode hasKey) {
             if (getCore().lookupBuiltinModule(name) != null) {
                 return 1;
-            } else if (getContext() != null && getContext().isInitialized() && hasKey.execute(getContext().getImportedModules().getDictStorage(), name)) {
+            } else if (getContext() != null && getContext().isInitialized() && hasKey.execute(frame, getContext().getImportedModules().getDictStorage(), name)) {
                 return -1;
             } else {
                 return 0;

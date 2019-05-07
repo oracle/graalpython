@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,14 +65,14 @@ public abstract class DeleteGlobalNode extends StatementNode implements GlobalNo
     @Specialization(guards = "isInDict(frame)")
     Object writeDict(VirtualFrame frame,
                     @Cached("create()") DeleteItemNode deleteNode) {
-        deleteNode.executeWith(PArguments.getGlobals(frame), attributeId);
+        deleteNode.executeWith(frame, PArguments.getGlobals(frame), attributeId);
         return PNone.NONE;
     }
 
     @Specialization(guards = "isInModule(frame)")
     Object writeDict(VirtualFrame frame,
                     @Cached("create()") DeleteAttributeNode storeNode) {
-        storeNode.execute(PArguments.getGlobals(frame), attributeId);
+        storeNode.execute(frame, PArguments.getGlobals(frame), attributeId);
         return PNone.NONE;
     }
 

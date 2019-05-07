@@ -41,20 +41,22 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public abstract class PRootNode extends RootNode {
-    @CompilationFinal private boolean needsCallerFrame = false;
+    @CompilationFinal private Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption("does not need caller frame");
 
     /**
      * Flag indicating if some child node of this root node eventually needs the exception state.
      * Hence, the caller of this root node should provide the exception state in the arguments.
      */
-    @CompilationFinal private boolean needsExceptionState = false;
+    @CompilationFinal private Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption("does not need exception state");
 
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
@@ -65,25 +67,21 @@ public abstract class PRootNode extends RootNode {
     }
 
     public boolean needsCallerFrame() {
-        return needsCallerFrame;
+        return !dontNeedCallerFrame.isValid();
     }
 
     public void setNeedsCallerFrame() {
         CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
-        if (!this.needsCallerFrame) {
-            this.needsCallerFrame = true;
-        }
+        dontNeedCallerFrame.invalidate();
     }
 
     public boolean needsExceptionState() {
-        return needsExceptionState;
+        return !dontNeedExceptionState.isValid();
     }
 
     public void setNeedsExceptionState() {
         CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
-        if (!this.needsExceptionState) {
-            this.needsExceptionState = true;
-        }
+        dontNeedExceptionState.invalidate();
     }
 
     @Override
@@ -97,4 +95,20 @@ public abstract class PRootNode extends RootNode {
     }
 
     public abstract Signature getSignature();
+
+    protected void setDontNeedCallerFrame(Assumption dontNeedCallerFrame) {
+        this.dontNeedCallerFrame = dontNeedCallerFrame;
+    }
+
+    protected void setDontNeedExceptionState(Assumption dontNeedExceptionState) {
+        this.dontNeedExceptionState = dontNeedExceptionState;
+    }
+
+    protected Assumption getDontNeedCallerFrame() {
+        return dontNeedCallerFrame;
+    }
+
+    protected Assumption getDontNeedExceptionState() {
+        return dontNeedExceptionState;
+    }
 }

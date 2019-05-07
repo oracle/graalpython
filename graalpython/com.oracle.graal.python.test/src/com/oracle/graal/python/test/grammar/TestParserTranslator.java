@@ -58,6 +58,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -143,7 +144,7 @@ public class TestParserTranslator {
     private Object runInRoot(ExpressionNode expr) {
         JUnitRootNode jUnitRootNode = new JUnitRootNode(context.getLanguage(), expr);
         RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(jUnitRootNode);
-        return callTarget.call();
+        return callTarget.call(PArguments.create());
     }
 
     RootNode parse(String src) {

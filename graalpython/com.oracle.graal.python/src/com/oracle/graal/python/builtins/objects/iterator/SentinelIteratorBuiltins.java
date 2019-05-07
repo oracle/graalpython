@@ -46,6 +46,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSentinelIterator)
 public class SentinelIteratorBuiltins extends PythonBuiltins {
@@ -70,7 +71,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        protected Object doIterator(PSentinelIterator iterator) {
+        protected Object doIterator(VirtualFrame frame, PSentinelIterator iterator) {
             if (iterator.sentinelReached()) {
                 throw raise(StopIteration);
             }
@@ -82,7 +83,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
                 iterator.markSentinelReached();
                 throw e;
             }
-            if (equalNode.executeBool(nextValue, iterator.getSentinel())) {
+            if (equalNode.executeBool(frame, nextValue, iterator.getSentinel())) {
                 iterator.markSentinelReached();
                 throw raise(StopIteration);
             }

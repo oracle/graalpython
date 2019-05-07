@@ -77,6 +77,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -245,16 +246,14 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isModule(fun.getSelf())")
-        @TruffleBoundary
-        public Object exportSymbol(PMethod fun, @SuppressWarnings("unused") PNone name) {
-            getContext().getEnv().exportSymbol(getMethodName(fun), fun);
+        Object exportSymbol(VirtualFrame frame, PMethod fun, @SuppressWarnings("unused") PNone name) {
+            export(getMethodName(frame, fun), fun);
             return fun;
         }
 
         @Specialization(guards = "isModule(fun.getSelf())")
-        @TruffleBoundary
-        public Object exportSymbol(PBuiltinMethod fun, @SuppressWarnings("unused") PNone name) {
-            getContext().getEnv().exportSymbol(getMethodName(fun), fun);
+        Object exportSymbol(VirtualFrame frame, PBuiltinMethod fun, @SuppressWarnings("unused") PNone name) {
+            export(getMethodName(frame, fun), fun);
             return fun;
         }
 
@@ -263,7 +262,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.TypeError, "expected argument types (function) or (object, str) but not (%p, %p)", value, name);
         }
 
-        private String getMethodName(Object o) {
+        private String getMethodName(VirtualFrame frame, Object o) {
             if (getNameAttributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getNameAttributeNode = insert(GetAttributeNode.create(SpecialAttributeNames.__NAME__, null));
@@ -272,11 +271,16 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 castToStringNode = insert(CastToStringNode.create());
             }
-            return castToStringNode.execute(getNameAttributeNode.executeObject(o));
+            return castToStringNode.execute(frame, getNameAttributeNode.executeObject(frame, o));
         }
 
         protected static boolean isModule(Object o) {
             return o instanceof PythonModule;
+        }
+
+        @TruffleBoundary
+        private void export(String name, Object obj) {
+            getContext().getEnv().exportSymbol(name, obj);
         }
     }
 

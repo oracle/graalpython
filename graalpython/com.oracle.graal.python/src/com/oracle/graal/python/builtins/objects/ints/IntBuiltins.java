@@ -76,6 +76,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.datamodel.IsIterableNode;
+import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -85,17 +86,21 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -792,25 +797,25 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object powModulo(Object x, Object y, long z,
+        Object powModulo(VirtualFrame frame, Object x, Object y, long z,
                         @Cached("create(__POW__)") LookupAndCallTernaryNode powNode,
                         @Cached("create(__MOD__)") LookupAndCallBinaryNode modNode) {
-            Object result = powNode.execute(x, y, PNone.NO_VALUE);
+            Object result = powNode.execute(frame, x, y, PNone.NO_VALUE);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
-            return modNode.executeObject(result, z);
+            return modNode.executeObject(frame, result, z);
         }
 
         @Specialization
-        Object powModuloPInt(Object x, Object y, PInt z,
+        Object powModuloPInt(VirtualFrame frame, Object x, Object y, PInt z,
                         @Cached("create(__POW__)") LookupAndCallTernaryNode powNode,
                         @Cached("create(__MOD__)") LookupAndCallBinaryNode modNode) {
-            Object result = powNode.execute(x, y, PNone.NO_VALUE);
+            Object result = powNode.execute(frame, x, y, PNone.NO_VALUE);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
-            return modNode.executeObject(result, z);
+            return modNode.executeObject(frame, result, z);
         }
 
         @Fallback
@@ -1434,12 +1439,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        boolean eqPiL(long b, PInt a) {
+        boolean eqLPi(long b, PInt a) {
             return a.longValueExact() != b;
         }
 
         @Specialization
-        boolean eqPiLOvf(long b, PInt a) {
+        boolean eqLPiOvf(long b, PInt a) {
             try {
                 return a.longValueExact() != b;
             } catch (ArithmeticException e) {
@@ -1497,34 +1502,34 @@ public class IntBuiltins extends PythonBuiltins {
             return left.getValue().compareTo(right.getValue()) < 0;
         }
 
-        @Specialization(guards = "fromNativeNode.isFloatSubtype(y, getClass, isSubtype, context)", limit = "1")
-        boolean doDN(long x, PythonNativeObject y,
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype, context)", limit = "1")
+        boolean doDN(VirtualFrame frame, long x, PythonNativeObject y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode fromNativeNode) {
-            return x < fromNativeNode.execute(y);
+            return x < fromNativeNode.execute(frame, y);
         }
 
         @Specialization(guards = {
-                        "nativeLeft.isFloatSubtype(x, getClass, isSubtype, context)",
-                        "nativeRight.isFloatSubtype(y, getClass, isSubtype, context)"}, limit = "1")
-        boolean doDN(PythonNativeObject x, PythonNativeObject y,
+                        "nativeLeft.isFloatSubtype(frame, x, getClass, isSubtype, context)",
+                        "nativeRight.isFloatSubtype(frame, y, getClass, isSubtype, context)"}, limit = "1")
+        boolean doDN(VirtualFrame frame, PythonNativeObject x, PythonNativeObject y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode nativeLeft,
                         @Cached FromNativeSubclassNode nativeRight) {
-            return nativeLeft.execute(x) < nativeRight.execute(y);
+            return nativeLeft.execute(frame, x) < nativeRight.execute(frame, y);
         }
 
-        @Specialization(guards = "fromNativeNode.isFloatSubtype(x, getClass, isSubtype, context)", limit = "1")
-        boolean doDN(PythonNativeObject x, double y,
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, x, getClass, isSubtype, context)", limit = "1")
+        boolean doDN(VirtualFrame frame, PythonNativeObject x, double y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
                         @Cached FromNativeSubclassNode fromNativeNode) {
-            return fromNativeNode.execute(x) < y;
+            return fromNativeNode.execute(frame, x) < y;
         }
 
         @Specialization
@@ -2030,24 +2035,24 @@ public class IntBuiltins extends PythonBuiltins {
 
         // from PBytes
         @Specialization
-        public Object fromPBytes(LazyPythonClass cl, PBytes bytes, String byteorder, boolean signed) {
-            return compute(cl, getToBytesNode().execute(bytes), byteorder, signed);
+        public Object fromPBytes(VirtualFrame frame, LazyPythonClass cl, PBytes bytes, String byteorder, boolean signed) {
+            return compute(cl, getToBytesNode().execute(frame, bytes), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPBytes(LazyPythonClass cl, PBytes bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
-            return fromPBytes(cl, bytes, byteorder, false);
+        public Object fromPBytes(VirtualFrame frame, LazyPythonClass cl, PBytes bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
+            return fromPBytes(frame, cl, bytes, byteorder, false);
         }
 
         // from PByteArray
         @Specialization
-        public Object fromPByteArray(LazyPythonClass cl, PByteArray bytes, String byteorder, boolean signed) {
-            return compute(cl, getToBytesNode().execute(bytes), byteorder, signed);
+        public Object fromPByteArray(VirtualFrame frame, LazyPythonClass cl, PByteArray bytes, String byteorder, boolean signed) {
+            return compute(cl, getToBytesNode().execute(frame, bytes), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPByteArray(LazyPythonClass cl, PByteArray bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
-            return fromPByteArray(cl, bytes, byteorder, false);
+        public Object fromPByteArray(VirtualFrame frame, LazyPythonClass cl, PByteArray bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
+            return fromPByteArray(frame, cl, bytes, byteorder, false);
         }
 
         // from PArray
@@ -2065,13 +2070,13 @@ public class IntBuiltins extends PythonBuiltins {
 
         // from PMemoryView
         @Specialization
-        public Object fromPMemoryView(LazyPythonClass cl, PMemoryView view, String byteorder, boolean signed) {
-            return compute(cl, getToBytesNode().execute(view), byteorder, signed);
+        public Object fromPMemoryView(VirtualFrame frame, LazyPythonClass cl, PMemoryView view, String byteorder, boolean signed) {
+            return compute(cl, getToBytesNode().execute(frame, view), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPMemoryView(LazyPythonClass cl, PMemoryView view, String byteorder, @SuppressWarnings("unused") PNone signed) {
-            return fromPMemoryView(cl, view, byteorder, false);
+        public Object fromPMemoryView(VirtualFrame frame, LazyPythonClass cl, PMemoryView view, String byteorder, @SuppressWarnings("unused") PNone signed) {
+            return fromPMemoryView(frame, cl, view, byteorder, false);
         }
 
         // from PList, only if it is not extended
@@ -2098,30 +2103,34 @@ public class IntBuiltins extends PythonBuiltins {
 
         // rest objects
         @Specialization
-        public Object fromObject(LazyPythonClass cl, PythonObject object, String byteorder, @SuppressWarnings("unused") PNone signed) {
-            return fromObject(cl, object, byteorder, false);
+        public Object fromObject(VirtualFrame frame, LazyPythonClass cl, PythonObject object, String byteorder, @SuppressWarnings("unused") PNone signed,
+                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
+                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
+            return fromObject(frame, cl, object, byteorder, false, ctxRef, passExceptionNode);
         }
 
         @Specialization
-        public Object fromObject(LazyPythonClass cl, PythonObject object, String byteorder, boolean signed) {
+        public Object fromObject(VirtualFrame frame, LazyPythonClass cl, PythonObject object, String byteorder, boolean signed,
+                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
+                        @Shared("passExcNode") @Cached PassCaughtExceptionNode passExceptionNode) {
             if (callBytesNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callBytesNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__BYTES__));
             }
-            Object result = callBytesNode.executeObject(object);
+            Object result = callBytesNode.executeObject(frame, object);
             if (result != PNone.NO_VALUE) { // first try o use __bytes__ call result
                 if (!(result instanceof PIBytesLike)) {
                     raise(PythonErrorType.TypeError, "__bytes__ returned non-bytes (type %p)", result);
                 }
-                BigInteger bi = createBigInteger(getToBytesNode().execute(result), isBigEndian(byteorder), false);
+                BigInteger bi = createBigInteger(getToBytesNode().execute(frame, result), isBigEndian(byteorder), false);
                 return createIntObject(cl, bi);
             }
             if (isIterableNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isIterableNode = insert(IsIterableNode.create());
             }
-            if (isIterableNode.execute(object)) {
-                byte[] bytes = getFromIteratorNode().execute(getGetIteratorNode().executeWith(object));
+            if (PDataModelEmulationNode.check(isIterableNode, ctxRef, passExceptionNode.execute(frame), object)) {
+                byte[] bytes = getFromIteratorNode().execute(frame, getGetIteratorNode().executeWith(frame, object));
                 return compute(cl, bytes, byteorder, signed);
             }
             return general(cl, object, byteorder, signed);

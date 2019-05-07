@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,56 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.NodeContextManager;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode.PDataModelEmulationContextManager;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.ImportStatic;
 
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
-public abstract class PDataModelEmulationNode extends PNodeWithContext {
-    public abstract boolean execute(Object object);
+public abstract class PDataModelEmulationNode extends PNodeWithGlobalState<PDataModelEmulationContextManager> {
+
+    protected abstract boolean execute(Object object);
+
+    @Override
+    public PDataModelEmulationContextManager withGlobalState(ContextReference<PythonContext> contextRef, PException exceptionState) {
+        if (exceptionState != null) {
+            PythonContext context = contextRef.get();
+            PException cur = context.getCaughtException();
+            if (cur == null) {
+                context.setCaughtException(exceptionState);
+                return new PDataModelEmulationContextManager(this, context);
+            }
+        }
+        return passState();
+    }
+
+    @Override
+    public PDataModelEmulationContextManager passState() {
+        return new PDataModelEmulationContextManager(this, null);
+    }
+
+    public static boolean check(PDataModelEmulationNode isMapping, ContextReference<PythonContext> contextRef, PException caughtException, Object obj) {
+        try (PDataModelEmulationContextManager ctxManager = isMapping.withGlobalState(contextRef, caughtException)) {
+            return ctxManager.execute(obj);
+        }
+    }
+
+    public static final class PDataModelEmulationContextManager extends NodeContextManager {
+
+        private final PDataModelEmulationNode delegate;
+
+        public PDataModelEmulationContextManager(PDataModelEmulationNode delegate, PythonContext context) {
+            super(context);
+            this.delegate = delegate;
+        }
+
+        public boolean execute(Object object) {
+            return delegate.execute(object);
+        }
+    }
 }

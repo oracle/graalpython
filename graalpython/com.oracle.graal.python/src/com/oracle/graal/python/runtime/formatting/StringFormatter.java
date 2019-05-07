@@ -26,12 +26,18 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class StringFormatter {
     int index;
@@ -75,7 +81,8 @@ public class StringFormatter {
                 argIndex = -2;
                 return args;
             default:
-                ret = getItemNode.executeObject(args, argIndex++);
+                // NOTE: passing 'null' frame means we already took care of the global state earlier
+                ret = getItemNode.executeObject(null, args, argIndex++);
                 break;
         }
         if (ret == null) {
@@ -156,12 +163,18 @@ public class StringFormatter {
     /**
      * Main service of this class: format one or more arguments with the format string supplied at
      * construction.
-     *
-     * @param args1 tuple or map containing objects, or a single object, to convert
-     * @return result of formatting
      */
+    @SuppressWarnings("try")
+    public Object format(VirtualFrame frame, ContextReference<PythonContext> ctxRef, Object args1, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute,
+                    LookupAndCallBinaryNode getItemNode,
+                    PassCaughtExceptionNode passExceptionNode) {
+        try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(ctxRef, passExceptionNode.execute(frame))) {
+            return format(args1, callNode, lookupAttribute, getItemNode);
+        }
+    }
+
     @TruffleBoundary
-    public Object format(Object args1, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute, LookupAndCallBinaryNode getItemNode) {
+    private Object format(Object args1, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute, LookupAndCallBinaryNode getItemNode) {
         PDict dict = null;
         this.args = args1;
 

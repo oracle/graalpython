@@ -53,7 +53,7 @@ public final class PositionalArgumentsNode extends Node {
 
     @ExplodeLoop
     public Object[] execute(VirtualFrame frame) {
-        Object[] starArgsArray = starArgs.executeWith(starArgsExpression.execute(frame));
+        Object[] starArgsArray = starArgs.executeWith(frame, starArgsExpression.execute(frame));
         int starArgsLength = starArgsLengthProfile.profile(starArgsArray.length);
         Object[] values = new Object[arguments.length + starArgsLength];
         for (int i = 0; i < arguments.length; i++) {

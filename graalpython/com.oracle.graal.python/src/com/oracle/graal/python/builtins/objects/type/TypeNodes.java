@@ -74,7 +74,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclas
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeFactory.GetTypeFlagsCachedNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeFastNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeSlowNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -575,13 +576,6 @@ public abstract class TypeNodes {
 
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class IsSameTypeNode extends PNodeWithContext {
-        @Child private CExtNodes.PointerCompareNode pointerCompareNode;
-
-        private final boolean fastCheck;
-
-        public IsSameTypeNode(boolean fastCheck) {
-            this.fastCheck = fastCheck;
-        }
 
         public abstract boolean execute(Object left, Object right);
 
@@ -607,7 +601,7 @@ public abstract class TypeNodes {
 
         @Specialization
         boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
-                        @Cached("createNativeEquals()") IsSameNativeObjectNode isSameNativeObjectNode) {
+                        @Cached(value = "createNativeEquals()", uncached = "getUncachedNativeEquals()") IsSameNativeObjectNode isSameNativeObjectNode) {
             return isSameNativeObjectNode.execute(left, right);
         }
 
@@ -617,10 +611,11 @@ public abstract class TypeNodes {
         }
 
         protected IsSameNativeObjectNode createNativeEquals() {
-            if (fastCheck) {
-                return IsSameNativeObjectFastNodeGen.create();
-            }
-            return IsSameNativeObjectSlowNodeGen.create();
+            throw new IllegalStateException();
+        }
+
+        protected IsSameNativeObjectNode getUncachedNativeEquals() {
+            throw new IllegalStateException();
         }
 
         @TruffleBoundary
@@ -634,11 +629,48 @@ public abstract class TypeNodes {
         }
 
         public static IsSameTypeNode create() {
-            return IsSameTypeNodeGen.create(false);
+            return IsSameTypeFastNodeGen.create();
+        }
+
+        public static IsSameTypeNode getUncached() {
+            return IsSameTypeSlowNodeGen.create();
         }
 
         public static IsSameTypeNode createFast() {
-            return IsSameTypeNodeGen.create(true);
+            return IsSameTypeSlowNodeGen.create();
+        }
+
+        public static IsSameTypeNode getUncachedFast() {
+            return IsSameTypeFastNodeGen.create();
+        }
+    }
+
+    @GenerateUncached
+    abstract static class IsSameTypeFastNode extends IsSameTypeNode {
+
+        @Override
+        protected IsSameNativeObjectNode createNativeEquals() {
+            return IsSameNativeObjectFastNodeGen.create();
+        }
+
+        @Override
+        protected IsSameNativeObjectNode getUncachedNativeEquals() {
+            return IsSameNativeObjectFastNodeGen.getUncached();
+        }
+
+    }
+
+    @GenerateUncached
+    abstract static class IsSameTypeSlowNode extends IsSameTypeNode {
+
+        @Override
+        protected IsSameNativeObjectNode createNativeEquals() {
+            return IsSameNativeObjectSlowNodeGen.create();
+        }
+
+        @Override
+        protected IsSameNativeObjectNode getUncachedNativeEquals() {
+            return IsSameNativeObjectSlowNodeGen.getUncached();
         }
 
     }

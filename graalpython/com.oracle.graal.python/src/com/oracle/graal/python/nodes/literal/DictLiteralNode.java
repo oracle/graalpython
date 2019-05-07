@@ -85,7 +85,7 @@ public final class DictLiteralNode extends LiteralNode {
                 setItemNode = insert(SetItemNode.create());
             }
 
-            storage = setItemNode.execute(storage, evalKeys.keys[i], val);
+            storage = setItemNode.execute(frame, storage, evalKeys.keys[i], val);
         }
         return storage;
     }

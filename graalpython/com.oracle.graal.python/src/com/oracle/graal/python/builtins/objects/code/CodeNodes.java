@@ -53,15 +53,22 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState;
+import com.oracle.graal.python.nodes.PNodeWithGlobalState.DefaultContextManager;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
@@ -75,9 +82,25 @@ public abstract class CodeNodes {
     public static class CreateCodeNode extends PNodeWithContext {
 
         @Child private HashingStorageNodes.GetItemNode getItemNode;
+        @Child private PassCaughtExceptionNode passExceptionNode;
+
+        @CompilationFinal private ContextReference<PythonContext> contextRef;
+
+        @SuppressWarnings("try")
+        public PCode execute(VirtualFrame frame, LazyPythonClass cls, int argcount, int kwonlyargcount,
+                        int nlocals, int stacksize, int flags,
+                        byte[] codestring, Object[] constants, Object[] names,
+                        Object[] varnames, Object[] freevars, Object[] cellvars,
+                        String filename, String name, int firstlineno,
+                        byte[] lnotab) {
+
+            try (DefaultContextManager cm = PNodeWithGlobalState.transferToContext(getContextRef(), passException(frame))) {
+                return createCode(cls, argcount, kwonlyargcount, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
+            }
+        }
 
         @TruffleBoundary
-        public PCode execute(LazyPythonClass cls, int argcount, int kwonlyargcount,
+        private PCode createCode(LazyPythonClass cls, int argcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         byte[] codestring, Object[] constants, Object[] names,
                         Object[] varnames, Object[] freevars, Object[] cellvars,
@@ -100,7 +123,7 @@ public abstract class CodeNodes {
                     PDict globals = factory.createDict();
                     PArguments.setGlobals(args, globals);
                     Truffle.getRuntime().createCallTarget(rootNode).call(args);
-                    Object function = ensureGetItemNode().execute(globals.getDictStorage(), name);
+                    Object function = ensureGetItemNode().execute(null, globals.getDictStorage(), name);
                     if (function instanceof PFunction) {
                         rootNode = ((PFunction) function).getFunctionRootNode();
                     } else {
@@ -197,6 +220,22 @@ public abstract class CodeNodes {
                 getItemNode = insert(HashingStorageNodes.GetItemNode.create());
             }
             return getItemNode;
+        }
+
+        private PException passException(VirtualFrame frame) {
+            if (passExceptionNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                passExceptionNode = insert(PassCaughtExceptionNode.create());
+            }
+            return passExceptionNode.execute(frame);
+        }
+
+        private ContextReference<PythonContext> getContextRef() {
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = lookupContextReference(PythonLanguage.class);
+            }
+            return contextRef;
         }
 
         public static CreateCodeNode create() {

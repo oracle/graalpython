@@ -38,41 +38,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function.builtins;
+package com.oracle.graal.python.nodes;
 
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.graal.python.runtime.PythonContext;
 
-public abstract class PythonUnaryBuiltinWithFrameNode extends PythonBuiltinBaseNode {
-    public abstract Object execute(VirtualFrame frame, Object arg);
+public abstract class NodeContextManager implements AutoCloseable {
 
-    public boolean executeBool(VirtualFrame frame, boolean arg) throws UnexpectedResultException {
-        return PGuards.expectBoolean(execute(frame, arg));
+    private final PythonContext context;
+
+    public NodeContextManager(PythonContext context) {
+        this.context = context;
     }
 
-    public int executeInt(VirtualFrame frame, int arg) throws UnexpectedResultException {
-        return PGuards.expectInteger(execute(frame, arg));
-    }
-
-    public long executeLong(VirtualFrame frame, long arg) throws UnexpectedResultException {
-        return PGuards.expectLong(execute(frame, arg));
-    }
-
-    public double executeDouble(VirtualFrame frame, double arg) throws UnexpectedResultException {
-        return PGuards.expectDouble(execute(frame, arg));
-    }
-
-    public boolean executeBool(VirtualFrame frame, int arg) throws UnexpectedResultException {
-        return PGuards.expectBoolean(execute(frame, arg));
-    }
-
-    public boolean executeBool(VirtualFrame frame, long arg) throws UnexpectedResultException {
-        return PGuards.expectBoolean(execute(frame, arg));
-    }
-
-    public boolean executeBool(VirtualFrame frame, double arg) throws UnexpectedResultException {
-        return PGuards.expectBoolean(execute(frame, arg));
+    public final void close() {
+        if (context != null) {
+            context.setCaughtException(null);
+        }
     }
 }

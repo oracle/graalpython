@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
@@ -115,8 +114,8 @@ public final class ReadCallerFrameNode extends Node {
         return callerFrame;
     }
 
-    @TruffleBoundary
     private Frame getCallerFrame() {
+        CompilerDirectives.transferToInterpreter();
         if (level == 0) {
             RootNode rootNode = this.getRootNode();
             if (rootNode instanceof PRootNode) {

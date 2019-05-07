@@ -290,8 +290,4 @@ public final class PArguments {
 
         return results;
     }
-
-    public static int getNumberOfUserArgs(Object[] arguments) {
-        return arguments.length - PArguments.USER_ARGUMENTS_OFFSET;
-    }
 }

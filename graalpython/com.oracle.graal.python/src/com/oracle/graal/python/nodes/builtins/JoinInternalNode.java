@@ -55,13 +55,14 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PGuards.class)
 @TypeSystemReference(PythonArithmeticTypes.class)
 public abstract class JoinInternalNode extends PNodeWithContext {
 
-    public abstract String execute(Object self, Object iterable);
+    public abstract String execute(VirtualFrame frame, Object self, Object iterable);
 
     @Specialization
     @TruffleBoundary
@@ -90,7 +91,7 @@ public abstract class JoinInternalNode extends PNodeWithContext {
     }
 
     @Specialization
-    protected String join(String string, Object iterable,
+    protected String join(VirtualFrame frame, String string, Object iterable,
                     @Cached PRaiseNode raise,
                     @Cached("create()") GetIteratorNode getIterator,
                     @Cached("create()") GetNextNode next,
@@ -98,10 +99,10 @@ public abstract class JoinInternalNode extends PNodeWithContext {
                     @Cached("create()") IsBuiltinClassProfile errorProfile2,
                     @Cached("createBinaryProfile()") ConditionProfile errorProfile3) {
 
-        Object iterator = getIterator.executeWith(iterable);
+        Object iterator = getIterator.executeWith(frame, iterable);
         StringBuilder str = new StringBuilder();
         try {
-            append(str, checkItem(next.execute(iterator), 0, errorProfile3, raise));
+            append(str, checkItem(next.execute(frame, iterator), 0, errorProfile3, raise));
         } catch (PException e) {
             e.expectStopIteration(errorProfile1);
             return "";
@@ -111,7 +112,7 @@ public abstract class JoinInternalNode extends PNodeWithContext {
         while (true) {
             Object value;
             try {
-                value = next.execute(iterator);
+                value = next.execute(frame, iterator);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile2);
                 return toString(str);

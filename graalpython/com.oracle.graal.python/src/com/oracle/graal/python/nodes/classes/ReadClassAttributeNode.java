@@ -117,7 +117,7 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
                 Object localsDict = pFrame.getLocalsDict();
                 if (localsDict != null) {
                     try {
-                        return getItemNode.execute(localsDict, identifier);
+                        return getItemNode.execute(frame, localsDict, identifier);
                     } catch (PException e) {
                     }
                 }
