@@ -171,8 +171,13 @@ public abstract class ExecutionContext implements AutoCloseable {
                     // it.
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     ((PRootNode) ((RootCallTarget) Truffle.getRuntime().getCurrentFrame().getCallTarget()).getRootNode()).setNeedsCallerFrame();
-                    Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
-                    callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
+                    FrameInstance callerFrameInstance = Truffle.getRuntime().getCallerFrame();
+                    if (callerFrameInstance != null) {
+                        Frame callerFrame = callerFrameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY);
+                        callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
+                    } else {
+                        callerInfo = PFrame.Reference.EMPTY;
+                    }
                 }
                 callerInfo.markAsEscaped();
                 info.setBackref(callerInfo);
