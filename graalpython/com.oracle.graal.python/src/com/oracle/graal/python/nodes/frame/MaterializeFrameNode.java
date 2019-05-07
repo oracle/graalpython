@@ -55,7 +55,7 @@ import com.oracle.truffle.api.nodes.Node;
  * with a backref container that will be filled in by the caller.
  **/
 public abstract class MaterializeFrameNode extends Node {
-    public abstract PFrame execute(Frame frame);
+    public abstract PFrame execute(Frame frame, Node location);
 
     protected static boolean inClassBody(Frame frame) {
         return PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
@@ -66,17 +66,17 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     @Specialization(guards = {"getPFrame(frame) == null", "!inClassBody(frame)"})
-    static PFrame freshPFrame(Frame frame,
+    static PFrame freshPFrame(Frame frame, Node location,
                        @Shared("factory") @Cached PythonObjectFactory factory) {
-        PFrame escapedFrame = factory.createPFrame(frame.materialize());
+        PFrame escapedFrame = factory.createPFrame(frame.materialize(), location);
         return doEscapeFrame(frame, escapedFrame);
     }
 
     @Specialization(guards = {"getPFrame(frame) == null", "inClassBody(frame)"})
-    static PFrame freshPFrameInClassBody(Frame frame,
+    static PFrame freshPFrameInClassBody(Frame frame, Node location,
                        @Shared("factory") @Cached PythonObjectFactory factory) {
         // the namespace argument stores the locals
-        PFrame escapedFrame = factory.createPFrame(frame.materialize(), PArguments.getArgument(frame, 0));
+        PFrame escapedFrame = factory.createPFrame(frame.materialize(), location, PArguments.getArgument(frame, 0));
         return doEscapeFrame(frame, escapedFrame);
     }
 
@@ -88,9 +88,9 @@ public abstract class MaterializeFrameNode extends Node {
      * @see PFrame#isIncomplete
      **/
     @Specialization(guards = {"getPFrame(frame) != null", "!getPFrame(frame).hasFrame()"})
-    static PFrame incompleteFrame(Frame frame,
+    static PFrame incompleteFrame(Frame frame, Node location,
                            @Shared("factory") @Cached PythonObjectFactory factory) {
-        PFrame escapedFrame = factory.createPFrame(frame.materialize(), getPFrame(frame).getLocals(factory));
+        PFrame escapedFrame = factory.createPFrame(frame.materialize(), location, getPFrame(frame).getLocals(factory));
         return doEscapeFrame(frame, escapedFrame);
     }
 
@@ -101,7 +101,8 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     @Specialization(guards = {"getPFrame(frame) != null", "getPFrame(frame).hasFrame()"})
-    static PFrame alreadyEscapedFrame(Frame frame) {
+    static PFrame alreadyEscapedFrame(Frame frame, @SuppressWarnings("unused") Node location) {
+        // TODO: frames: update the location so the line number is correct
         return getPFrame(frame);
     }
 }

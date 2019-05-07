@@ -285,7 +285,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
                 PBaseException exception = currentException.getExceptionObject();
-                PFrame escapedFrame = frameNode.execute(frame);
+                PFrame escapedFrame = frameNode.execute(frame, this);
                 exception.setTraceback(factory().createTraceback(escapedFrame, currentException));
                 return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback()});
             }

@@ -187,7 +187,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     materializeFrameNode = insert(MaterializeFrameNodeGen.create());
                 }
-                PFrame escapedFrame = materializeFrameNode.execute(frame);
+                PFrame escapedFrame = materializeFrameNode.execute(frame, this);
                 if (factory == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     factory = insert(PythonObjectFactory.create());

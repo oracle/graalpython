@@ -397,15 +397,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, PTraceback tb,
-                   @Cached MaterializeFrameNode matFrameNode) {
+        Object run(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, PTraceback tb) {
             val.setTraceback(tb);
-            // In case the frame attached to this traceback has not been
-            // materialized, yet, we do so now. if, e.g., it is from some frame
-            // lower down the stack (Smalltalk-style top-of-stack exception
-            // handling in C) we'll start attaching the backrefs when we leave
-            // it
-            matFrameNode.execute(tb.getPFrame().getFrame());
+            assert tb.getPFrame().getRef().isEscaped() : "It's impossible to have an unescaped PFrame";
             if (val.getException() != null) {
                 getContext().setCurrentException(val.getException());
             } else {
@@ -439,7 +433,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 // do do it here if it hasn't been done already.
                 PTraceback storedTraceback = exception.getTraceback();
                 if (storedTraceback == null) {
-                    PFrame escapedFrame = frameNode.execute(frame);
+                    PFrame escapedFrame = frameNode.execute(frame, this);
                     exception.setTraceback(factory().createTraceback(escapedFrame, currentException));
                 }
                 result = factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback()});
@@ -475,10 +469,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, PTraceback tb,
-                   @Cached MaterializeFrameNode matFrameNode) {
+        Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, PTraceback tb) {
             val.setTraceback(tb);
-            matFrameNode.execute(tb.getPFrame().getFrame());
+            assert tb.getPFrame().getRef().isEscaped() : "It's impossible to have an unescaped PFrame";
             if (val.getException() != null) {
                 getContext().setCurrentException(val.getException());
             } else {
