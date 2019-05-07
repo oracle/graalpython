@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1320,8 +1321,18 @@ public abstract class HashingStorageNodes {
             return storage.remove(key, DEFAULT_EQIVALENCE);
         }
 
+        @Specialization
+        protected boolean doDynamicObjectString(@SuppressWarnings("unused") PSet container, DynamicObjectStorage storage, String key) {
+            return storage.remove(key, DEFAULT_EQIVALENCE);
+        }
+
         @Specialization(guards = "wrappedString(key)")
         protected boolean doDynamicObjectPString(@SuppressWarnings("unused") PDict container, DynamicObjectStorage storage, PString key) {
+            return storage.remove(key.getValue(), DEFAULT_EQIVALENCE);
+        }
+
+        @Specialization(guards = "wrappedString(key)")
+        protected boolean doDynamicObjectPString(@SuppressWarnings("unused") PSet container, DynamicObjectStorage storage, PString key) {
             return storage.remove(key.getValue(), DEFAULT_EQIVALENCE);
         }
 
