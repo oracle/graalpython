@@ -316,7 +316,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 }
             }
         }
-        try (ExecutionContext ec = ExecutionContext.callee(frame)) {
+        try (ExecutionContext ec = ExecutionContext.callee(frame, this)) {
             return body.execute(frame);
         }
     }

@@ -65,7 +65,7 @@ public class ModuleRootNode extends PClosureRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        try (ExecutionContext ec = ExecutionContext.callee(frame)) {
+        try (ExecutionContext ec = ExecutionContext.callee(frame, this)) {
             return body.execute(frame);
         }
     }

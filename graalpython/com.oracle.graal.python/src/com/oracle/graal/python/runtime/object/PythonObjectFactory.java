@@ -544,12 +544,12 @@ public abstract class PythonObjectFactory extends Node {
      * Frames, traces and exceptions
      */
 
-    public PFrame createPFrame(MaterializedFrame frame) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, frame));
+    public PFrame createPFrame(MaterializedFrame frame, Node location) {
+        return trace(new PFrame(PythonBuiltinClassType.PFrame, frame, location));
     }
 
-    public PFrame createPFrame(MaterializedFrame frame, Object locals) {
-        return trace(new PFrame(PythonBuiltinClassType.PFrame, frame, locals));
+    public PFrame createPFrame(MaterializedFrame frame, Node location, Object locals) {
+        return trace(new PFrame(PythonBuiltinClassType.PFrame, frame, location, locals));
     }
 
     public PFrame createPFrame(Object threadState, PCode code, PythonObject globals, Object locals) {

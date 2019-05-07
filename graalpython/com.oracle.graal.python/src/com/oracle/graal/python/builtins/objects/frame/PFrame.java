@@ -83,11 +83,11 @@ public final class PFrame extends PythonBuiltinObject {
         // it should materialize itself when it returns.
         boolean escaped = false;
 
-        public void materialize(Frame targetFrame) {
+        public void materialize(Frame targetFrame, Node location) {
             if (this.pyFrame == null) {
                 this.frame = targetFrame.materialize();
                 // TODO: frames: this doesn't go through the factory
-                this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, this.frame);
+                this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, this.frame, location);
             }
         }
 
@@ -127,19 +127,19 @@ public final class PFrame extends PythonBuiltinObject {
             assert this.pyFrame == null || this.pyFrame.isIncomplete() || this.pyFrame == escapedFrame : "cannot change the escaped frame";
             this.pyFrame = escapedFrame;
             this.frame = escapedFrame.getFrame();
-            this.escaped = frame == null;
+            this.escaped = frame != null;
         }
     }
 
-    public PFrame(LazyPythonClass cls, MaterializedFrame frame) {
-        this(cls, frame, null);
+    public PFrame(LazyPythonClass cls, MaterializedFrame frame, Node location) {
+        this(cls, frame, location, null);
     }
 
-    public PFrame(LazyPythonClass cls, MaterializedFrame frame, Object locals) {
+    public PFrame(LazyPythonClass cls, MaterializedFrame frame, Node location, Object locals) {
         super(cls);
         this.frame = frame;
         this.localsDict = locals;
-        this.location = null;
+        this.location = location;
         this.inClassScope = PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
     }
 
@@ -207,10 +207,6 @@ public final class PFrame extends PythonBuiltinObject {
             }
         }
         return line;
-    }
-
-    public Node getCallNode() {
-        return location;
     }
 
     /**

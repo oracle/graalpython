@@ -53,6 +53,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 
 /**
  * An ExecutionContext ensures proper entry and exit for Python calls on both
@@ -78,8 +79,8 @@ public abstract class ExecutionContext implements AutoCloseable {
     /**
      * Wrap the execution of a Python callee called from a Python frame.
      */
-    public static final ExecutionContext callee(VirtualFrame frame) {
-        return new CalleeContext(frame);
+    public static final ExecutionContext callee(VirtualFrame frame, RootNode node) {
+        return new CalleeContext(frame, node);
     }
 
     /**
@@ -134,9 +135,11 @@ public abstract class ExecutionContext implements AutoCloseable {
 
     private static final class CalleeContext extends ExecutionContext {
         private final VirtualFrame frame;
+        private final RootNode node;
 
-        private CalleeContext(VirtualFrame frame) {
+        private CalleeContext(VirtualFrame frame, RootNode node) {
             this.frame = frame;
+            this.node = node;
             // tfel: Create our frame reference here and store it so that
             // there's no reference to it from the caller side.
             PFrame.Reference thisFrameRef = new PFrame.Reference();
@@ -160,7 +163,7 @@ public abstract class ExecutionContext implements AutoCloseable {
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
             if (info.isEscaped()) {
                 // force the frame so that it can be accessed later
-                info.materialize(frame);
+                info.materialize(frame, node);
                 // if this frame escaped we must ensure that also f_back does
                 PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(frame);
                 if (callerInfo == null) {

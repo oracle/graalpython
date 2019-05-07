@@ -143,7 +143,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
             contextRef.get().triggerAsyncActions();
         }
-        try (ExecutionContext ec = ExecutionContext.callee(frame)) {
+        try (ExecutionContext ec = ExecutionContext.callee(frame, this)) {
             return body.execute(frame);
         }
     }
