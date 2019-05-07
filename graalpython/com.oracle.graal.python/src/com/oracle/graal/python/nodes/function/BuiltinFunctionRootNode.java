@@ -41,6 +41,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -315,7 +316,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 }
             }
         }
-        return body.execute(frame);
+        try (ExecutionContext ec = ExecutionContext.callee(frame)) {
+            return body.execute(frame);
+        }
     }
 
     public String getFunctionName() {
