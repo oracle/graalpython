@@ -103,11 +103,10 @@ abstract class AbstractInvokeNode extends Node {
             if (nullFrameProfile.profile(frame == null)) {
                 return fromContext(getContext());
             }
-            RootNode rootNode = getRootNode();
             if (!excSlotInitialized) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 assert excSlot == null;
-                excSlot = rootNode.getFrameDescriptor().findFrameSlot(FrameSlotIDs.CAUGHT_EXCEPTION);
+                excSlot = getRootNode().getFrameDescriptor().findFrameSlot(FrameSlotIDs.CAUGHT_EXCEPTION);
                 // The current assumption is that the 'storeExceptionState' flag is only true if the
                 // frame provides an exception and so, there must be a corresponding frame slot.
                 illegalFrameSlotProfile = BranchProfile.create();
@@ -128,25 +127,21 @@ abstract class AbstractInvokeNode extends Node {
                     throw new IllegalStateException();
                 }
             }
-            if (rootNode instanceof PRootNode) {
-                if (readFromArgsNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    readFromArgsNode = insert(ReadExceptionStateFromArgsNode.create());
-                }
-                PException fromArgs = readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
-                if (fromArgs != null) {
-                    return fromArgs;
-                } else {
-                    // bad but we must provide the exception state
-                    CompilerDirectives.transferToInterpreter();
-                    PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                    PException result = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
-                    // now, set in our args, such that we won't do this again
-                    PArguments.setCallerFrameOrException(frame.getArguments(), result);
-                    return result;
-                }
+            if (readFromArgsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readFromArgsNode = insert(ReadExceptionStateFromArgsNode.create());
+            }
+            PException fromArgs = readFromArgsNode.execute(PArguments.getCallerFrameOrException(frame));
+            if (fromArgs != null) {
+                return fromArgs;
             } else {
-                return PException.NO_EXCEPTION;
+                // bad but we must provide the exception state
+                CompilerDirectives.transferToInterpreter();
+                PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                PException result = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
+                // now, set in our args, such that we won't do this again
+                PArguments.setCallerFrameOrException(frame.getArguments(), result);
+                return result;
             }
         }
         return null;
