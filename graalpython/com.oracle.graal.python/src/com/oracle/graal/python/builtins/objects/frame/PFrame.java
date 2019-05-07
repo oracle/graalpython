@@ -89,6 +89,7 @@ public final class PFrame extends PythonBuiltinObject {
                 // TODO: frames: this doesn't go through the factory
                 this.pyFrame = new PFrame(PythonBuiltinClassType.PFrame, this.frame, location);
             }
+            // TODO: frames: update location
         }
 
         public void setCustomLocals(Object customLocals) {
@@ -108,6 +109,7 @@ public final class PFrame extends PythonBuiltinObject {
         }
 
         public boolean isEscaped() {
+            assert frame == null != escaped : "inconsistent escaped reference";
             return escaped;
         }
 

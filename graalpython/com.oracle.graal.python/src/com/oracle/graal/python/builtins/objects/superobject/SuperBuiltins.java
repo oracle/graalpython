@@ -90,6 +90,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -246,7 +247,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
         PNone init(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
                         @Cached ReadCallerFrameNode readCaller) {
-            Frame target = readCaller.executeWith(frame);
+            Frame target = readCaller.executeWith(frame, FrameInstance.FrameAccess.READ_ONLY, 0);
             if (target == null) {
                 throw raise(PythonErrorType.RuntimeError, "super(): no current frame");
             }

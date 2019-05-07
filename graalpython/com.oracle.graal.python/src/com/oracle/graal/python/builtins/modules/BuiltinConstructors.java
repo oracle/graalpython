@@ -188,6 +188,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -1961,7 +1962,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // set '__module__' attribute
                 Object moduleAttr = ensureReadAttrNode().execute(newType, __MODULE__);
                 if (moduleAttr == PNone.NO_VALUE) {
-                    Frame callerFrame = getReadCallerFrameNode().executeWith(frame);
+                    Frame callerFrame = getReadCallerFrameNode().executeWith(frame, FrameInstance.FrameAccess.READ_ONLY, 0);
                     PythonObject globals = PArguments.getGlobals(callerFrame);
                     if (globals != null) {
                         String moduleName = getModuleNameFromGlobals(frame, globals);

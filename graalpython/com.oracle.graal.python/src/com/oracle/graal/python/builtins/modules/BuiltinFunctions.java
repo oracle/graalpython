@@ -183,6 +183,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -677,7 +678,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Cached ReadLocalsNode getLocalsNode) {
             PCode code = createAndCheckCode(frame, source);
-            Frame callerFrame = readCallerFrameNode.executeWith(frame);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame, FrameInstance.FrameAccess.READ_ONLY, 0);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             inheritLocals(frame, callerFrame, args, getLocalsNode);
@@ -709,7 +710,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         Object execInheritGlobalsCustomLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, Object locals,
                         @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
             PCode code = createAndCheckCode(frame, source);
-            Frame callerFrame = readCallerFrameNode.executeWith(frame);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame, FrameInstance.FrameAccess.READ_ONLY, 0);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             setCustomLocals(args, locals);
@@ -1896,7 +1897,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public Object globals(VirtualFrame frame) {
-            Frame callerFrame = readCallerFrameNode.executeWith(frame);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame, FrameInstance.FrameAccess.READ_ONLY, 0);
             PythonObject globals = PArguments.getGlobals(callerFrame);
             if (condProfile.profile(globals instanceof PythonModule)) {
                 PHashingCollection dict = globals.getDict();
@@ -1920,8 +1921,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public Object locals(VirtualFrame frame,
                              @Cached ReadLocalsNode readLocalsNode,
                              @Cached ReadCallerFrameNode readCallerFrameNode) {
-            MaterializedFrame callerFrame = readCallerFrameNode.executeWith(frame);
-            MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(callerFrame);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame, FrameInstance.FrameAccess.READ_ONLY, 0);
+            Frame generatorFrame = PArguments.getGeneratorFrame(callerFrame);
             if (inGenerator.profile(generatorFrame == null)) {
                 return readLocalsNode.execute(frame, callerFrame);
             } else {

@@ -69,15 +69,11 @@ public final class ReadCallerFrameNode extends Node {
         return new ReadCallerFrameNode();
     }
 
-    public MaterializedFrame executeWith(Frame frame) {
-        return executeWith(frame, FrameInstance.FrameAccess.MATERIALIZE, 0);
-    }
-
-    public MaterializedFrame executeWith(Frame frame, int level) {
+    public Frame executeWith(Frame frame, int level) {
         return executeWith(frame, FrameInstance.FrameAccess.MATERIALIZE, level);
     }
 
-    public MaterializedFrame executeWith(Frame frame, FrameInstance.FrameAccess frameAccess, int level) {
+    public Frame executeWith(Frame frame, FrameInstance.FrameAccess frameAccess, int level) {
         Frame callerFrame = frame;
         if (cachedCallerFrameProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -86,14 +82,14 @@ public final class ReadCallerFrameNode extends Node {
             for (int i = 0; i <= level; i++) {
                 PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(callerFrame);
                 if (callerInfo == null) {
-                    return getCallerFrame(PArguments.getCurrentFrameInfo(callerFrame), frameAccess, level);
+                    return getCallerFrame(PArguments.getCurrentFrameInfo(frame), frameAccess, level);
                 }
                 callerFrame = callerInfo.getFrame();
             }
         } else {
             callerFrame = walkLevels(callerFrame, frameAccess, level);
         }
-        return callerFrame.materialize();
+        return callerFrame;
     }
 
     @ExplodeLoop
@@ -102,7 +98,7 @@ public final class ReadCallerFrameNode extends Node {
         for (int i = 0; i <= level; i++) {
             PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(currentFrame);
             if (cachedCallerFrameProfile.profile(callerInfo == null)) {
-                return getCallerFrame(PArguments.getCurrentFrameInfo(currentFrame), frameAccess, level);
+                return getCallerFrame(PArguments.getCurrentFrameInfo(frame), frameAccess, level);
             }
             currentFrame = callerInfo.getFrame();
         }
@@ -129,16 +125,16 @@ public final class ReadCallerFrameNode extends Node {
                         }
                     } else {
                         ((PRootNode) rootNode).setNeedsCallerFrame();
-                        i += 1;
-                        if (i == level + 1) {
+                        if (i == level) {
                             Frame frame = frameInstance.getFrame(frameAccess);
                             assert PArguments.isPythonFrame(frame);
                             return frame;
                         }
+                        i += 1;
                     }
                 }
                 return null;
             }
-        }).materialize();
+        });
     }
 }
