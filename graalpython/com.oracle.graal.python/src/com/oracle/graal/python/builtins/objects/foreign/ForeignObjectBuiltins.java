@@ -600,12 +600,12 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 }
                 Object res = null;
                 if (lib.isExecutable(callee)) {
-                    try (ExecutionContext ec = ExecutionContext.interopCall(frame, context)) {
+                    try (ExecutionContext ec = ExecutionContext.interopCall(frame, context, this)) {
                         res = lib.execute(callee, convertedArgs);
                     }
                     return toPTypeNode.executeConvert(res);
                 } else {
-                    try (ExecutionContext ec = ExecutionContext.interopCall(frame, context)) {
+                    try (ExecutionContext ec = ExecutionContext.interopCall(frame, context, this)) {
                         res = lib.instantiate(callee, convertedArgs);
                     }
                     return toPTypeNode.executeConvert(res);

@@ -55,6 +55,13 @@ import com.oracle.truffle.api.nodes.Node;
  * with a backref container that will be filled in by the caller.
  **/
 public abstract class MaterializeFrameNode extends Node {
+    public final PFrame execute(Frame frame) {
+        PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
+        Node callNode = info.getCallNode();
+        assert info != null && info.getCallNode() != null : "cannot materialize a frame without location information";
+        return execute(frame, callNode);
+    }
+
     public abstract PFrame execute(Frame frame, Node location);
 
     protected static boolean inClassBody(Frame frame) {

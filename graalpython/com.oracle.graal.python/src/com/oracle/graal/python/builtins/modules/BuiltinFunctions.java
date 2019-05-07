@@ -682,7 +682,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             inheritLocals(frame, callerFrame, args, getLocalsNode);
-            try (ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget())) {
+            try (ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget(), this)) {
                 return indirectCallNode.call(code.getRootCallTarget(), args);
             }
         }
@@ -701,7 +701,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (rootCallTarget == null) {
                 throw raise(ValueError, "cannot create the a call target from the code object: %p", code);
             }
-            try (ExecutionContext ec = ExecutionContext.call(frame, args, rootCallTarget)) {
+            try (ExecutionContext ec = ExecutionContext.call(frame, args, rootCallTarget, this)) {
                 return indirectCallNode.call(rootCallTarget, args);
             }
         }
@@ -714,7 +714,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             setCustomLocals(args, locals);
-            try (ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget())) {
+            try (ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget(), this)) {
                 return indirectCallNode.call(code.getRootCallTarget(), args);
             }
         }
@@ -726,7 +726,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object[] args = PArguments.create();
             setCustomGlobals(frame, globals, setBuiltins, args);
             setCustomLocals(args, locals);
-            try (ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget())) {
+            try (ExecutionContext ec = ExecutionContext.call(frame, args, code.getRootCallTarget(), this)) {
                 return indirectCallNode.call(code.getRootCallTarget(), args);
             }
         }

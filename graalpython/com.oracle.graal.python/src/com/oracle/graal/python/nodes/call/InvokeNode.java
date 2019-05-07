@@ -112,7 +112,7 @@ final class GenericInvokeNode extends AbstractInvokeNode {
 
     private Object doCall(VirtualFrame frame, RootCallTarget callTarget, Object[] arguments) {
         optionallySetClassBodySpecial(arguments, callTarget);
-        try (ExecutionContext ec = ExecutionContext.call(frame, arguments, callTarget)) {
+        try (ExecutionContext ec = ExecutionContext.call(frame, arguments, callTarget, this)) {
             return callNode.call(callTarget, arguments);
         }
     }
@@ -167,7 +167,7 @@ abstract class CallTargetInvokeNode extends AbstractInvokeNode {
         PArguments.setClosure(arguments, closure);
         RootCallTarget ct = (RootCallTarget) callNode.getCallTarget();
         optionallySetClassBodySpecial(arguments, ct);
-        try (ExecutionContext ec = ExecutionContext.call(frame, arguments, ct)) {
+        try (ExecutionContext ec = ExecutionContext.call(frame, arguments, ct, this)) {
             return callNode.call(arguments);
         }
     }
@@ -223,7 +223,7 @@ public abstract class InvokeNode extends AbstractInvokeNode {
         PArguments.setClosure(arguments, closure);
         RootCallTarget ct = (RootCallTarget) callNode.getCallTarget();
         optionallySetClassBodySpecial(arguments, ct);
-        try (ExecutionContext ec = ExecutionContext.call(frame, arguments, ct)) {
+        try (ExecutionContext ec = ExecutionContext.call(frame, arguments, ct, this)) {
             return callNode.call(arguments);
         }
     }

@@ -53,6 +53,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 
 /**
@@ -65,15 +66,15 @@ public abstract class ExecutionContext implements AutoCloseable {
     /**
      * Prepare a call from a Python frame to a Python function.
      */
-    public static final ExecutionContext call(VirtualFrame currentFrame, Object[] callArguments, RootCallTarget callTarget) {
-        return new CallContext(currentFrame, callArguments, callTarget);
+    public static final ExecutionContext call(VirtualFrame currentFrame, Object[] callArguments, RootCallTarget callTarget, Node callNode) {
+        return new CallContext(currentFrame, callArguments, callTarget, callNode);
     }
 
     /**
      * Prepare a call from a Python frame to a foreign callable.
      */
-    public static final ExecutionContext interopCall(VirtualFrame frame, PythonContext context) {
-        return new ForeignCallContext(frame, context);
+    public static final ExecutionContext interopCall(VirtualFrame frame, PythonContext context, Node callNode) {
+        return new ForeignCallContext(frame, context, callNode);
     }
 
     /**
@@ -95,7 +96,7 @@ public abstract class ExecutionContext implements AutoCloseable {
     public abstract void close();
 
     private static final class CallContext extends ExecutionContext {
-        private CallContext(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget) {
+        private CallContext(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget, Node callNode) {
             // equivalent to PyPy's ExecutionContext.enter `frame.f_backref =
             // self.topframeref` we here pass the current top frame reference to
             // the next frame. An optimization we do is to only pass the frame
@@ -108,6 +109,7 @@ public abstract class ExecutionContext implements AutoCloseable {
             if (calleeRootNode.needsCallerFrame()) {
                 PFrame.Reference thisInfo = PArguments.getCurrentFrameInfo(frame);
                 thisInfo.setFrame(frame.materialize());
+                thisInfo.setCallNode(callNode);
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
             }
             if (calleeRootNode.needsExceptionState()) {
@@ -188,11 +190,14 @@ public abstract class ExecutionContext implements AutoCloseable {
     private static final class ForeignCallContext extends ExecutionContext {
         private final PythonContext context;
 
-        private ForeignCallContext(VirtualFrame frame, PythonContext context) {
+        private ForeignCallContext(VirtualFrame frame, PythonContext context, Node callNode) {
             this.context = context;
             assert context.popTopFrameInfo() == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
                 "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
-            context.setTopFrameInfo(PArguments.getCurrentFrameInfo(frame));
+            PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
+            info.setCallNode(callNode);
+            // TODO: frames: add an assumption that none of the callers interop calls ever need these infos
+            context.setTopFrameInfo(info);
         }
 
         @Override

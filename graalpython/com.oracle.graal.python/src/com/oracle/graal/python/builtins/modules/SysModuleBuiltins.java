@@ -300,14 +300,14 @@ public class SysModuleBuiltins extends PythonBuiltins {
         Object first(VirtualFrame frame, @SuppressWarnings("unused") PNone arg,
                      @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
                      @Shared("materiaize") @Cached MaterializeFrameNode materializeNode) {
-            return materializeNode.execute(readCallerNode.executeWith(frame, 0), this);
+            return materializeNode.execute(readCallerNode.executeWith(frame, 0));
         }
 
         @Specialization
         Object counted(VirtualFrame frame, int num,
                      @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
                      @Shared("materiaize") @Cached MaterializeFrameNode materializeNode) {
-            return materializeNode.execute(readCallerNode.executeWith(frame, num), this);
+            return materializeNode.execute(readCallerNode.executeWith(frame, num));
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)

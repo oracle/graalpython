@@ -78,6 +78,8 @@ public final class PFrame extends PythonBuiltinObject {
         // set, sometimes this is just used as a stepping stone to get to the
         // caller.
         private MaterializedFrame frame = null;
+        // The location of the last call
+        private Node callNode = null;
         // A flag wether this frame is escaped. This is implied when frame is
         // set, but can also be set by a callee frame to inform the caller that
         // it should materialize itself when it returns.
@@ -130,6 +132,14 @@ public final class PFrame extends PythonBuiltinObject {
             this.pyFrame = escapedFrame;
             this.frame = escapedFrame.getFrame();
             this.escaped = frame != null;
+        }
+
+        public Node getCallNode() {
+            return callNode;
+        }
+
+        public void setCallNode(Node callNode) {
+            this.callNode = callNode;
         }
     }
 

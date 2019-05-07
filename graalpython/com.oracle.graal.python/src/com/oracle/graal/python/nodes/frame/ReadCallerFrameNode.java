@@ -109,7 +109,7 @@ public final class ReadCallerFrameNode extends Node {
      * Walk up the stack to find the start frame and from then (level + 1)-times
      * (counting only Python frames).
      */
-    private static MaterializedFrame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, int level) {
+    private static Frame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, int level) {
         CompilerDirectives.transferToInterpreter();
         return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Frame>() {
             int i = -1;
@@ -128,6 +128,8 @@ public final class ReadCallerFrameNode extends Node {
                         if (i == level) {
                             Frame frame = frameInstance.getFrame(frameAccess);
                             assert PArguments.isPythonFrame(frame);
+                            PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
+                            info.setCallNode(frameInstance.getCallNode());
                             return frame;
                         }
                         i += 1;
