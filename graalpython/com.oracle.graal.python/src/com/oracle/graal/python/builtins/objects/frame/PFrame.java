@@ -111,7 +111,6 @@ public final class PFrame extends PythonBuiltinObject {
         }
 
         public boolean isEscaped() {
-            assert frame == null != escaped : "inconsistent escaped reference";
             return escaped;
         }
 
