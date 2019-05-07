@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFrameNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -163,6 +164,7 @@ public class AsyncHandler {
         // Uses weakCompareAndSet because we just want to do it in a timely manner, but we don't
         // need the ordering guarantees.
         if (hasScheduledAction) {
+            CompilerDirectives.transferToInterpreter();
             processAsyncActions();
         }
     }
