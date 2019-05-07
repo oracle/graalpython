@@ -51,6 +51,8 @@ import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleStackTrace;
 
 public final class PBaseException extends PythonObject {
 
@@ -141,5 +143,16 @@ public final class PBaseException extends PythonObject {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return getFormattedMessage(null);
+    }
+
+    /**
+     * This function must be called before handing out exceptions into the Python value space,
+     * because otherwise the stack will not be correct if the exception object escapes the current
+     * function.
+     */
+    @TruffleBoundary
+    public void reifyException() {
+        // TODO: frames: get rid of this entirely
+        TruffleStackTrace.fillIn(exception);
     }
 }
