@@ -124,7 +124,7 @@ public final class PFrame extends PythonBuiltinObject {
         }
 
         public void setPyFrame(PFrame escapedFrame) {
-            assert this.pyFrame == null || this.pyFrame == escapedFrame : "cannot change the escaped frame";
+            assert this.pyFrame == null || this.pyFrame.isIncomplete() || this.pyFrame == escapedFrame : "cannot change the escaped frame";
             this.pyFrame = escapedFrame;
             this.frame = escapedFrame.getFrame();
             this.escaped = frame == null;
@@ -236,7 +236,7 @@ public final class PFrame extends PythonBuiltinObject {
      * stack attached to it, which is where we check this.
      */
     public boolean isIncomplete() {
-        return location == null;
+        return location == null && frame == null;
     }
 
     /**
