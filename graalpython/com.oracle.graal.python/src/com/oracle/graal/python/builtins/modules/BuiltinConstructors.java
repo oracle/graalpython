@@ -1991,6 +1991,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return ensureCastToStringNode().execute(frame, nameAttr);
         }
 
+        @SuppressWarnings("try")
         private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, PythonAbstractClass metaclass) {
 
             Object[] array = bases.getArray();

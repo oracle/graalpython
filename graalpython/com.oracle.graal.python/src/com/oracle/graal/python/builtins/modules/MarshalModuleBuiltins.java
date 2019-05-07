@@ -725,7 +725,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object readObject(VirtualFrame frame, byte[] dataBytes, @SuppressWarnings("unused") int version,
+        @SuppressWarnings("try")
+        Object readObject(VirtualFrame frame, byte[] dataBytes, @SuppressWarnings("unused") int version,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
                         @Cached PassCaughtExceptionNode passExceptionNode) {
             reset();

@@ -583,6 +583,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "!isJavaString(name)")
+        @SuppressWarnings("try")
         protected boolean readUncached(VirtualFrame frame, PythonObjectHybridDictStorage storage, Object name) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.hasKey(name, getEquivalence());
@@ -596,6 +597,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "isHashable(frame, key)")
+        @SuppressWarnings("try")
         protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.hasKey(key, getEquivalence());
@@ -603,6 +605,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "isHashable(frame, key)")
+        @SuppressWarnings("try")
         protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.hasKey(key, getEquivalence());
@@ -678,6 +681,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "isHashable(frame, key)")
+        @SuppressWarnings("try")
         protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.hasKey(key, getEquivalence());
@@ -685,6 +689,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "isHashable(frame, key)")
+        @SuppressWarnings("try")
         protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.hasKey(key, getEquivalence());
@@ -760,6 +765,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        @SuppressWarnings("try")
         protected HashingStorage doEmptyStorage(VirtualFrame frame, @SuppressWarnings("unused") EmptyStorage storage, Object key, Object value) {
             // immediately replace storage since empty storage is immutable
             try (DefaultContextManager cm = withGlobalState(frame)) {
@@ -798,6 +804,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        @SuppressWarnings("try")
         protected HashingStorage doLocalsGeneralize(VirtualFrame frame, LocalsStorage storage, Object key, Object value) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 HashingStorage newStorage = switchToEconomicMap(storage);
@@ -821,6 +828,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        @SuppressWarnings("try")
         protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, PythonObjectDictStorage storage, Object key, Object value) {
             HashingStorage newStorage = switchToHybridDictStorage(storage);
             try (DefaultContextManager cm = withGlobalState(frame)) {
@@ -830,6 +838,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        @SuppressWarnings("try")
         protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, FastDictStorage storage, Object key, Object value) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 HashingStorage newStorage = switchToEconomicMap(storage);
@@ -839,6 +848,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        @SuppressWarnings("try")
         protected HashingStorage doKeywordsGeneralize(VirtualFrame frame, KeywordsStorage storage, Object key, Object value) {
             // immediately replace storage since keywords storage is immutable
             EconomicMapStorage newStorage = EconomicMapStorage.create(storage.length() + 1, false);
@@ -850,6 +860,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "isHashable(frame, key)")
+        @SuppressWarnings("try")
         protected HashingStorage doHashMap(VirtualFrame frame, EconomicMapStorage storage, Object key, Object value) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 storage.setItem(key, value, getEquivalence());
@@ -859,6 +870,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "isHashable(frame, key)")
+        @SuppressWarnings("try")
         protected HashingStorage doHashMap(VirtualFrame frame, HashMapStorage storage, Object key, Object value) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 storage.setItem(key, value, getEquivalence());
@@ -1291,6 +1303,7 @@ public abstract class HashingStorageNodes {
         public abstract boolean execute(VirtualFrame frame, HashingStorage selfStorage, HashingStorage other);
 
         @Specialization(guards = "selfStorage.length() == other.length()")
+        @SuppressWarnings("try")
         boolean doLocals(VirtualFrame frame, LocalsStorage selfStorage, LocalsStorage other) {
             if (selfStorage.getFrame().getFrameDescriptor() == other.getFrame().getFrameDescriptor()) {
                 try (DefaultContextManager cm = withGlobalState(frame)) {
@@ -1301,6 +1314,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "selfStorage.length() == other.length()")
+        @SuppressWarnings("try")
         boolean doGeneric(VirtualFrame frame, HashingStorage selfStorage, HashingStorage other) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return equalsGeneric(selfStorage, other);
@@ -1494,6 +1508,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization
+        @SuppressWarnings("try")
         protected boolean doEconomicMap(VirtualFrame frame, @SuppressWarnings("unused") PHashingCollection container, EconomicMapStorage storage, Object key) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.remove(key, getEquivalence());
@@ -1501,6 +1516,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization
+        @SuppressWarnings("try")
         protected boolean doHashMap(VirtualFrame frame, @SuppressWarnings("unused") PHashingCollection container, HashMapStorage storage, Object key) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.remove(key, getEquivalence());
@@ -1528,6 +1544,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isImmutableStorage(storage)", "!isDynamicObjectStorage(storage)"})
+        @SuppressWarnings("try")
         HashingStorage doGeneric(VirtualFrame frame, HashingStorage storage) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return storage.copy(getEquivalence());
@@ -1589,6 +1606,7 @@ public abstract class HashingStorageNodes {
         public abstract HashingStorage execute(VirtualFrame frame, HashingStorage left, HashingStorage right);
 
         @Specialization(guards = "setUnion")
+        @SuppressWarnings("try")
         public HashingStorage doGenericSet(VirtualFrame frame, HashingStorage left, HashingStorage right) {
             EconomicMapStorage newStorage = EconomicMapStorage.create(setUnion);
             try (DefaultContextManager cm = withGlobalState(frame)) {
@@ -1603,6 +1621,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "!setUnion")
+        @SuppressWarnings("try")
         public HashingStorage doGeneric(VirtualFrame frame, HashingStorage left, HashingStorage right) {
             EconomicMapStorage newStorage = EconomicMapStorage.create(setUnion);
             try (DefaultContextManager cm = withGlobalState(frame)) {
@@ -1709,6 +1728,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "right.length() == 0")
+        @SuppressWarnings("try")
         public HashingStorage doRightEmpty(VirtualFrame frame, HashingStorage left, @SuppressWarnings("unused") HashingStorage right) {
             try (DefaultContextManager cm = withGlobalState(frame)) {
                 return left.copy(getEquivalence());

@@ -95,6 +95,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         @Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
 
         @Specialization
+        @SuppressWarnings("try")
         int forkExec(VirtualFrame frame, PList args, @SuppressWarnings("unused") PList execList, @SuppressWarnings("unused") boolean closeFds,
                         @SuppressWarnings("unused") PList fdsToKeep, String cwd, PList env,
                         int p2cread, int p2cwrite, int c2pread, int c2pwrite,

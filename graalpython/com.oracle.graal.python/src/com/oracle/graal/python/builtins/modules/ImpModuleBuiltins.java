@@ -152,6 +152,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__REPR__);
 
         @Specialization
+        @SuppressWarnings("try")
         public Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
                         @CachedLibrary(limit = "1") InteropLibrary interop) {
             try (DefaultContextManager cm = withGlobalState(frame)) {

@@ -164,6 +164,7 @@ public class StringFormatter {
      * Main service of this class: format one or more arguments with the format string supplied at
      * construction.
      */
+    @SuppressWarnings("try")
     public Object format(VirtualFrame frame, ContextReference<PythonContext> ctxRef, Object args1, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute,
                     LookupAndCallBinaryNode getItemNode,
                     PassCaughtExceptionNode passExceptionNode) {

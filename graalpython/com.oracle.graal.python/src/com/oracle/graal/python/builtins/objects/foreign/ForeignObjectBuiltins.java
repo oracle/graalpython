@@ -587,6 +587,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
          * optimization based on the callee has to happen on the other side.
          */
         @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"})
+        @SuppressWarnings("try")
         protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached("create()") PTypeToForeignNode toForeignNode,

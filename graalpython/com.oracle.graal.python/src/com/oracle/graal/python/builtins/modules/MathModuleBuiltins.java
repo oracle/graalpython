@@ -1052,6 +1052,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class FsumNode extends PythonUnaryBuiltinNode {
 
         @Specialization
+        @SuppressWarnings("try")
         double doIt(VirtualFrame frame, Object iterable,
                         @Cached GetIteratorNode getIterator,
                         @Cached("create(__NEXT__)") LookupAndCallUnaryNode next,

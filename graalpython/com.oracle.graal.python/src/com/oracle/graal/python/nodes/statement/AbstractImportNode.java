@@ -125,6 +125,7 @@ public abstract class AbstractImportNode extends StatementNode {
         return passExceptionNode.execute(frame);
     }
 
+    @SuppressWarnings("try")
     protected Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
         if (!getContext().getCore().isInitialized()) {

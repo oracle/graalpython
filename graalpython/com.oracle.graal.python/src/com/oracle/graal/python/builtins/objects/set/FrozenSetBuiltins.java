@@ -423,6 +423,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("try")
         PBaseSet doHashingCollection(VirtualFrame frame, PBaseSet container, EconomicMapStorage selfStorage, PHashingCollection other,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @Cached PassCaughtExceptionNode passExceptionNode) {
