@@ -272,3 +272,15 @@ def test_pop():
     except BaseException as e:
         assert type(e) == KeyError, "expected KeyError, got %s" % type(e)
 
+
+def test_set_delete():
+    s = {1, 2, 3}
+    assert s == {1, 2, 3}
+    s.discard(3)
+    assert s == {1, 2}
+
+    # string keys
+    s = {'a', 'b', 'c'}
+    assert s == {'a', 'b', 'c'}
+    s.discard('c')
+    assert s == {'a', 'b'}
