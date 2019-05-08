@@ -158,7 +158,6 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ReadExceptionStateFromArgsNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -598,7 +597,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child protected CompileNode compileNode = CompileNode.create(false);
         @Child private IndirectCallNode indirectCallNode = IndirectCallNode.create();
         @Child private HasInheritedAttributeNode hasGetItemNode;
-        @Child private ReadExceptionStateFromArgsNode readFromArgsNode;
 
         private HasInheritedAttributeNode getHasGetItemNode() {
             if (hasGetItemNode == null) {

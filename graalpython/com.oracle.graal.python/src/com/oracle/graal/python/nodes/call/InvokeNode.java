@@ -33,7 +33,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ReadExceptionStateFromArgsNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CallTarget;
@@ -51,8 +50,6 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 abstract class AbstractInvokeNode extends Node {
-
-    @Child private ReadExceptionStateFromArgsNode readFromArgsNode;
 
     @CompilationFinal private boolean excSlotInitialized;
     @CompilationFinal private FrameSlot excSlot;
